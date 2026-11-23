@@ -7,7 +7,7 @@
 'use strict';
 const { dayNum, dayStr, weekday } = require('./dates');
 const { moveCurrency, toMinor, onceSpread, periodPerPay } = require('./units_ref');
-const { merge, winner } = require('./merge_ref');
+const { merge, winner, nextAt } = require('./merge_ref');
 
 // 38.31 plan.lines ids: the bills [11.1], the loan line [E6], the four lines that are plan.shares, and the jar of each
 // budget line [11.1, B8]. Every other line (food, gas, card, custom) is a budget line.
@@ -531,9 +531,9 @@ function move(input) {
     asks, unplaced: unplaced.sort(), zero: zero.sort(), rounded: rounded.sort(), sample, saved, frozen3831: raw };
   if (!sample && (typeof cfg.ceiling === 'number' || isMap(cfg.aims))) out.plan.limits = Object.assign({}, typeof cfg.ceiling === 'number' ? { ceiling: amt(cfg.ceiling, 'cfg.ceiling') } : {}, isMap(cfg.aims) ? { aims: cfg.aims } : {}, { cur });
   // [AA5, AB rows] what has its day is written now; the rest stays on the copy, each entry a record `mv:pend:<field path>`
-  out.threePays = [];   // [AE4] the fields whose one-month amount is spread over a month with three pays (the move summary)
+  out.morePays = [];   // [AE4, AG2] the fields whose one-month amount is spread over a month with more pays than usual (the move summary)
   out.pendingMove = applyPending(out, pend.map(x => Object.assign({ id: 'mv:pend:' + x.field }, x)), moveDay);
-  out.threePays.sort();
+  out.morePays.sort();
   return out;
 }
 
@@ -571,10 +571,17 @@ function applyPending(out, pend, moveDay) {
   return all;
 }
 // [AE1] Each key a waiting entry writes is an entry of its own, `{ amount }` (a share's `{ <share or goals>: ... }`); the
-// device's stamp gives it its `at` and `by` (the entry's `at`, AE2). [AE4] A one-month amount spread over three pays or
-// payments is listed in `out.threePays` for the move summary.
+// device's stamp gives it its `at` and `by` (the entry's `at`, AE2). [AE4, AG2] A one-month amount spread over a month
+// with more pays or payments than usual is listed in `out.morePays` for the move summary: usual is the number of days
+// a monthly rule names, and for every N weeks the whole weekly count a month holds (52 / N / 12, rounded down, at least
+// 1): four weekly, two every two weeks, one every three or four weeks. So three every two weeks, five weekly.
 const entries = m => Object.fromEntries(Object.entries(m).map(([k, v]) => [k, { amount: v }]));
-function noteThree(out, p, n) { if (n === 3 && out.threePays && !out.threePays.includes(p.field)) out.threePays.push(p.field); }
+function usualPays(rule) {
+  if (rule.every === 'month' && Array.isArray(rule.days)) return new Set(rule.days.map(Number)).size;
+  if (rule.every === 'weeks' && rule.n > 0) return Math.max(1, Math.floor(52 / rule.n / 12));
+  return Infinity;
+}
+function noteMore(out, p, n, rule) { if (n > usualPays(rule) && out.morePays && !out.morePays.includes(p.field)) out.morePays.push(p.field); }
 function writePending(out, p, rule, evs, moveDay) {
   if (p.to === 'amounts') {
     const rec = out.schedules.find(s => s.id === p.waits) || out.accounts.find(a => a.id === p.waits);
@@ -583,7 +590,7 @@ function writePending(out, p, rule, evs, moveDay) {
     // bill on one day a month and [AC5, AC7] a debt's or the loan line's: that month's (first) occurrence, whole.
     const each = rec.kind === 'income' || rec.per === 'month';
     Object.assign(rec.amounts = rec.amounts || {}, entries(each ? spread(p.a, dues) : { [dues[0]]: p.a }));
-    if (each) noteThree(out, p, dues.length);
+    if (each) noteMore(out, p, dues.length, rule);
     return true;
   }
   if (p.to === 'periodEnd') {   // [Y8, AA4] the period holding that month's last day; [AB2] only once it has ended at the move
@@ -592,7 +599,7 @@ function writePending(out, p, rule, evs, moveDay) {
   }
   const keys = onceSpreadOf(p.waits, rule, p.ym, p.a), list = Object.keys(keys); if (!list.length) return false;
   const dueOf = key => key.slice(key.lastIndexOf('@') + 1);
-  if (p.to === 'once' || p.to === 'shares') noteThree(out, p, list.length);
+  if (p.to === 'once' || p.to === 'shares') noteMore(out, p, list.length, rule);
   if (p.to === 'once') { const b = out.plan.budgets.find(x => x.id === p.line); Object.assign(b.once = b.once || {}, entries(keys)); return true; }   // [AB2] spread
   if (p.to === 'shares') {   // [AA6, AB2] on the entry in force on each period's pay day, keyed by its occurrence
     for (const key of list) {
@@ -691,14 +698,14 @@ function stamp(m, now, by, saved) {
 // One device's move as it is stored: answered later when `later` is given; device-only parts dropped.
 function stored(d) {
   const o = d.later ? moveAnswer(d) : move(d), m = stamp(o, d.now, d.by, o.saved);
-  for (const k of ['device', 'asks', 'unplaced', 'zero', 'rounded', 'threePays', 'sample', 'saved', 'frozen3831']) delete m[k];
+  for (const k of ['device', 'asks', 'unplaced', 'zero', 'rounded', 'morePays', 'sample', 'saved', 'frozen3831']) delete m[k];
   return m;
 }
 // [AE5] A backup file in the 38.31 format restored after the move: the move run on it (with the person's answers), every
 // record it gives stamped with the restore's `at` (merge_ref.restore then writes it over the current copy).
 function movedBackup({ copy, answers, now, by, at }) {
   const o = move({ copy, answers, now, idb: null }), m = stamp(o, now, by, at);
-  for (const k of ['device', 'asks', 'unplaced', 'zero', 'rounded', 'threePays', 'sample', 'saved', 'frozen3831']) delete m[k];
+  for (const k of ['device', 'asks', 'unplaced', 'zero', 'rounded', 'morePays', 'sample', 'saved', 'frozen3831']) delete m[k];
   return m;
 }
 // [AB1] A device that finds a moved copy in the cloud takes it and adds only the ids it lacks; it never overwrites.
@@ -739,9 +746,26 @@ function moveLater({ phone, edits, desktop, cloud }) {
 // same move (the same `at`) are one key holding all their shares. A record a key was written on, and the record the
 // answer itself changed, carry the answer's `at` and `by` (as moveAnswer). A record keeps the `told` it first had [H1].
 // `rules` gives each answered day by the schedule or account it belongs to.
-function applyWaiting({ copy, rules, moveDay, answeredAt, by }) {
+// [AG1] Every write made now uses the D4 clock (`nextAt`): strictly newer than anything the device has seen, the copy's
+// own `at`s (a restore's `gone` marks among them) and `lastSeen`. So an answer given again after a restore never ties
+// with the restore's removal of the `rules` entry. What a waiting entry writes carries the entry's `at` [AE2], so a key
+// edited since on another device keeps its value (mg-117); but an entry a restore brought back carries the restore's
+// `at` (newer than its `told`, the copy's last save: only a restore stamps a live entry), the same as the restore's
+// removal of the key it wrote, so what it writes takes the D4 clock too and wins (mv-117, mv-118).
+function newestAt(x, best) {
+  if (Array.isArray(x)) for (const v of x) best = newestAt(v, best);
+  else if (isMap(x)) for (const [k, v] of Object.entries(x)) {
+    if (k === 'at' && typeof v === 'string' && !Number.isNaN(Date.parse(v)) && (!best || Date.parse(v) > Date.parse(best))) best = v;
+    else best = newestAt(v, best);
+  }
+  return best;
+}
+function applyWaiting({ copy, rules, moveDay, answeredAt: rawAt, by, lastSeen }) {
   const out = JSON.parse(JSON.stringify(copy)), before = JSON.parse(JSON.stringify(copy));
-  const ms = t => Date.parse(t), day = answeredAt.slice(0, 10), changed = new Set();
+  // [AG1, D4] the larger of now and the newest `at` seen plus 1 ms. The day-ahead hold [L merge q8] is left out here: a
+  // case's copy stands for what the device has seen, and its answers come days after its newest `at`.
+  const seen = newestAt(copy, lastSeen || null), answeredAt = seen && Date.parse(seen) >= Date.parse(rawAt) ? nextAt(seen, seen) : rawAt;
+  const ms = t => Date.parse(t), day = rawAt.slice(0, 10), changed = new Set();
   for (const id of Object.keys(rules || {})) {   // the answer itself, an edit of its schedule or account
     const s = (out.schedules || []).find(x => x.id === id), a = (out.accounts || []).find(x => x.id === id);
     if (s) { s.rules = [{ from: (s.steps && s.steps[0] && s.steps[0].from) || moveDay, rule: rules[id], at: answeredAt, by }]; changed.add(s); }
@@ -758,9 +782,10 @@ function applyWaiting({ copy, rules, moveDay, answeredAt, by }) {
       plan: { budgets: ((before.plan || {}).budgets || []).map(noKeys), shares: ((before.plan || {}).shares || []).map(noKeys) }, events: [], saved: p.at };
     const evs = [];
     if (!writePending(scratch, p, rule, evs, moveDay)) continue;
+    const at = p.told && ms(p.at) > ms(p.told) ? answeredAt : p.at;   // [AE2] the entry's `at`; [AG1] restored: the D4 clock
     for (const ev of evs) {
       const i = (out.events = out.events || []).findIndex(x => x.id === ev.id), old = i >= 0 ? out.events[i] : null;
-      const rec = Object.assign({}, ev, { told: old ? old.told : ev.told || p.at, at: p.at, by });
+      const rec = Object.assign({}, ev, { told: old ? old.told : ev.told || p.at, at, by });
       if (old && winner(old, rec) === old) continue;   // a newer record (an edit since) keeps its value
       if (i >= 0) out.events[i] = rec; else out.events.push(rec);
     }
@@ -769,9 +794,9 @@ function applyWaiting({ copy, rules, moveDay, answeredAt, by }) {
       const target = listIn(out, path).find(x => x.id === sr.id);
       for (const key of Object.keys(sr[k])) {
         const have = isMap(target[k]) ? target[k][key] : undefined, val = sr[k][key];
-        if (isMap(have) && (ms(have.at) > ms(p.at) || (ms(have.at) === ms(p.at) && have.gone))) continue;   // edited or removed since
-        const same = isMap(have) && !have.gone && ms(have.at) === ms(p.at);   // another entry of this move on the same key
-        (target[k] = target[k] || {})[key] = Object.assign({}, same ? have : {}, val, { at: p.at, by });
+        if (isMap(have) && (ms(have.at) > ms(at) || (ms(have.at) === ms(at) && have.gone))) continue;   // edited or removed since
+        const same = isMap(have) && !have.gone && ms(have.at) === ms(at);   // another entry of this move on the same key
+        (target[k] = target[k] || {})[key] = Object.assign({}, same ? have : {}, val, { at, by });
         changed.add(target);
       }
     }

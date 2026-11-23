@@ -1,7 +1,7 @@
 {
   "area": "merge",
   "title": "Merging two copies: union by id, newest `at` per record, `gone` against the same or older `at` only, the hybrid clock, `told` never changing",
-  "written_in": "SCHEMA_V3 0 and 2.3; DECISIONS_ROUND2 D4, H1, H6, H9, L (merge q1 to q8), M3 to M5, N1, N2, O2, O3, Q5, Q7, S3, AB watch (restoring a backup with the cloud on), AD8 (the shared ui keys restored with a new at), AE1 (keyed overrides merged key by key), AE2, AE5 (restore with the D4 clock, every list, held marks, keyed overrides, a 38.31-format backup) and AF3 (ui keys removed per key)",
+  "written_in": "SCHEMA_V3 0 and 2.3; DECISIONS_ROUND2 D4, H1, H6, H9, L (merge q1 to q8), M3 to M5, N1, N2, O2, O3, Q5, Q7, S3, AB watch (restoring a backup with the cloud on), AD8 (the shared ui keys restored with a new at), AE1 (keyed overrides merged key by key), AE2, AE5 (restore with the D4 clock, every list, held marks, keyed overrides, a 38.31-format backup), AF3 (ui keys removed per key) and AG1 (a write after a restore never ties with it)",
   "notes": [
     "Every amount is made up and in whole minor units (yen).",
     "Times are hybrid clock values written as ISO with the time zone offset (section 0). They are compared as moments, never as text: 10:00+09:00 is 01:00 UTC, 02:30+01:00 is 01:30 UTC.",
@@ -6829,6 +6829,249 @@
         "Q7",
         "X2",
         "T1"
+      ]
+    },
+    {
+      "id": "mg-120",
+      "question": "merge",
+      "title": "AG1: January's 0 written again after a restore wins at the merge over the cloud copy that holds the restore's removal",
+      "input": {
+        "mine": {
+          "schedules": [
+            {
+              "id": "mv:pay:steps.a",
+              "kind": "income",
+              "name": "Salary",
+              "cur": "JPY",
+              "acct": "mv:acct:cfg",
+              "startsPeriod": true,
+              "per": "month",
+              "steps": [
+                {
+                  "from": "2026-11-22",
+                  "amount": 250000,
+                  "at": "2026-11-29T09:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "at": "2026-11-29T10:00:00.000+09:00",
+              "by": "phn001",
+              "rules": [
+                {
+                  "from": "2026-11-22",
+                  "rule": {
+                    "every": "month",
+                    "days": [
+                      25
+                    ]
+                  },
+                  "at": "2026-11-29T10:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "amounts": {
+                "2027-01-25": {
+                  "amount": 0,
+                  "at": "2026-11-29T10:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              }
+            }
+          ],
+          "pendingMove": [
+            {
+              "id": "mv:pend:once.2027-01.a",
+              "field": "once.2027-01.a",
+              "waits": "mv:pay:steps.a",
+              "to": "amounts",
+              "ym": "2027-01",
+              "a": 0,
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "at": "2026-11-29T10:00:00.000+09:00",
+              "by": "phn001",
+              "gone": "2026-11-29"
+            }
+          ],
+          "frozen": [
+            {
+              "id": "mv:frozen:dsk001",
+              "raw": "{\"v\":1}",
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "at": "2026-11-29T09:00:00.000+09:00",
+              "by": "phn001",
+              "gone": "2026-11-29"
+            },
+            {
+              "id": "mv:frozen:phn001",
+              "raw": "{\"v\":1}",
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "at": "2026-11-29T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ]
+        },
+        "theirs": {
+          "schedules": [
+            {
+              "id": "mv:pay:steps.a",
+              "kind": "income",
+              "name": "Salary",
+              "cur": "JPY",
+              "acct": "mv:acct:cfg",
+              "startsPeriod": true,
+              "per": "month",
+              "steps": [
+                {
+                  "from": "2026-11-22",
+                  "amount": 250000,
+                  "at": "2026-11-29T09:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "at": "2026-11-29T09:00:00.000+09:00",
+              "by": "phn001",
+              "rules": [
+                {
+                  "from": "2026-11-22",
+                  "rule": {
+                    "every": "month",
+                    "days": [
+                      25
+                    ]
+                  },
+                  "at": "2026-11-29T09:00:00.000+09:00",
+                  "by": "phn001",
+                  "gone": "2026-11-29"
+                }
+              ],
+              "amounts": {
+                "2027-01-25": {
+                  "amount": 0,
+                  "gone": "2026-11-29",
+                  "at": "2026-11-29T09:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              }
+            }
+          ],
+          "pendingMove": [
+            {
+              "id": "mv:pend:once.2027-01.a",
+              "field": "once.2027-01.a",
+              "waits": "mv:pay:steps.a",
+              "to": "amounts",
+              "ym": "2027-01",
+              "a": 0,
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "at": "2026-11-29T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ],
+          "frozen": [
+            {
+              "id": "mv:frozen:dsk001",
+              "raw": "{\"v\":1}",
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "at": "2026-11-29T09:00:00.000+09:00",
+              "by": "phn001",
+              "gone": "2026-11-29"
+            },
+            {
+              "id": "mv:frozen:phn001",
+              "raw": "{\"v\":1}",
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "at": "2026-11-29T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "schedules": [
+          {
+            "id": "mv:pay:steps.a",
+            "kind": "income",
+            "name": "Salary",
+            "cur": "JPY",
+            "acct": "mv:acct:cfg",
+            "startsPeriod": true,
+            "per": "month",
+            "steps": [
+              {
+                "from": "2026-11-22",
+                "amount": 250000,
+                "at": "2026-11-29T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "told": "2026-11-23T20:00:00.000+09:00",
+            "at": "2026-11-29T10:00:00.000+09:00",
+            "by": "phn001",
+            "rules": [
+              {
+                "from": "2026-11-22",
+                "rule": {
+                  "every": "month",
+                  "days": [
+                    25
+                  ]
+                },
+                "at": "2026-11-29T10:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "amounts": {
+              "2027-01-25": {
+                "amount": 0,
+                "at": "2026-11-29T10:00:00.000+09:00",
+                "by": "phn001"
+              }
+            }
+          }
+        ],
+        "pendingMove": [
+          {
+            "id": "mv:pend:once.2027-01.a",
+            "field": "once.2027-01.a",
+            "waits": "mv:pay:steps.a",
+            "to": "amounts",
+            "ym": "2027-01",
+            "a": 0,
+            "told": "2026-11-23T20:00:00.000+09:00",
+            "at": "2026-11-29T10:00:00.000+09:00",
+            "by": "phn001",
+            "gone": "2026-11-29"
+          }
+        ],
+        "frozen": [
+          {
+            "id": "mv:frozen:dsk001",
+            "raw": "{\"v\":1}",
+            "told": "2026-11-23T20:00:00.000+09:00",
+            "at": "2026-11-29T09:00:00.000+09:00",
+            "by": "phn001",
+            "gone": "2026-11-29"
+          },
+          {
+            "id": "mv:frozen:phn001",
+            "raw": "{\"v\":1}",
+            "told": "2026-11-23T20:00:00.000+09:00",
+            "at": "2026-11-29T09:00:00.000+09:00",
+            "by": "phn001"
+          }
+        ]
+      },
+      "why": "The phone's copy of mv-117 (the pay day answered again at Sun 29 Nov 10:00) meets the cloud copy, which took the phone's restore at 09:00 (mg-111) and nothing since. The schedule: the phone's `at` 10:00 is newer than 09:00, so its record wins [D4]. Inside it, the `rules` entry from 22 Nov: the phone's live entry at 10:00 against the cloud's removed one at 09:00: the newer wins [M3], live. The `amounts` key 2027-01-25: the phone's 0 at 10:00 against the cloud's removal at 09:00: newer wins [AE1], so the 0 stays and January counts 0 on both devices. Had the key carried the entry's `at` (09:00, the restore's), the cloud's removal would win on the same `at` [H6] (mv-q56). The step from 22 Nov is the same on both (09:00, phn001). The waiting entry: the phone's `gone` at 10:00 is newer than the cloud's live copy at 09:00, so it is gone on both and never applied a third time. The frozen texts are the same on both (the desktop's removed by the restore). `told` stays each record's first [H1].",
+      "decisions": [
+        "AG1",
+        "AE1",
+        "AE5",
+        "M3",
+        "H6",
+        "H1",
+        "D4"
       ]
     }
   ],

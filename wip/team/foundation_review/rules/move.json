@@ -1,18 +1,18 @@
 {
   "area": "move",
   "title": "Moving a saved copy from 38.31, 38.28 and the 25.0 to 38.26 builds into the new shape: every saved field to its target, or listed",
-  "written_in": "SCHEMA_V3 0, 2, 11 and 11.1; DECISIONS_ROUND2 E1, E6, H9, I5, J2, K3, O (and its watch items), X1, X9 and X watch, Y, Z, AA, AB, AC, AD (AD5 its second sentence only), AE (AE2 withdraws AD5's first) and AF1; foundation_review/MOVE_FIELDS.md (the field list per build)",
+  "written_in": "SCHEMA_V3 0, 2, 11 and 11.1; DECISIONS_ROUND2 E1, E6, H9, I5, J2, K3, O (and its watch items), X1, X9 and X watch, Y, Z, AA, AB, AC, AD (AD5 its second sentence only), AE (AE2 withdraws AD5's first), AF1 and AG; foundation_review/MOVE_FIELDS.md (the field list per build)",
   "notes": [
     "Every amount is made up. Amounts in a saved copy are major units with up to two decimals (every build); the moved records hold whole minor units [section 0]; an amount with more decimals than its currency is rounded half up and flagged in `rounded` [Y23].",
     "Question `move`: `copy` is the saved copy as an object, or `raw` the stored text itself (the move reads the raw text, never a cleaned copy [O]). `idb` is the IndexedDB second copy (`{ rev, t }`, `t` the moment of its save, a time or ms); `now` is the move's own moment, with the moving device's offset (X9), which is also `offset` unless given. The copy's last save is the later of `idb.t` and the stored `rev` when it is a time, either alone, else `now` [Y13, AA10]; its day is \"the copy's last saved day\" [H9, K3]. The move month is the calendar month of `now` [Y21]. `answers` holds the answers to the move's questions: `cur` (the currency code), `loanLine` (a plan.debts id, or `drop`), `pay` (`{ a, b, side }`: each a rule, SCHEMA_V3 5, any rhythm [AA4]), `billDay` (by 38.31 line id, a rule), `debtDay` (by debt id, or the field path of a loan the move made: the payment day), `goalMoney` (by goal id: `bank`, or `{ name, type }` for another account, type `bank` or `ewallet` [AA13]), `loanTerms` (by the id of a loan the move made: `{ apr, min }` or `dontKnow` [AA12]). `make.receipts` adds that many plain receipts to the copy (test help, so mv-35 can hold 5,002 receipts).",
-    "The answer is the moved copy: `v`, `home`, `people`, `accounts`, `places`, `schedules`, `events`, `plan` (`shares`, `budgets`, `limits`), `imports`, `ui` (the shared screen answers), `device` (`look`, `tour`, `opens`), `asks` (the move's questions, `minBank` when a minimum is dropped as automatic [AD1], each answered one with its `answer`), `unplaced` (every saved field with no target, kept in frozen3831 or on the shared ui as 11.1 says, which the move test lists [11.1]), `pendingMove` (kept on the copy [AA5]: each one-month amount and month-end answer whose pay, bill or payment day is not answered yet, a month-end answer for a period not ended at the move [AB2], and a receipt on bill:loan while the loan question waits [AC2]; each a record `{ id: 'mv:pend:<field path>', field, waits, to, ... }` [AB rows], written when what it waits for is answered and then kept marked `gone`; what the move itself writes, or an answer given at the move settles, is kept marked `gone` on the move day [AD5]), `zero` (the move summary of what is not moved: lines and pay amounts that are 0 every month [Y25], and the loan line's one-month amounts when the line is dropped [AD2]), `rounded` [Y23], `sample`, `saved` (the copy's last save) and `frozen3831` (the raw text; the stored copy keeps it as the record `mv:frozen:<by>` in `frozen` [AB1]). `show` picks parts (`frozenIds` lists the `frozen` records' ids, `pendingMoveIds` the entries still waiting) (`plan.limits` picks one part of plan; `tally` counts the spends and adds them up; `ids` lists every record id; `payAmounts` gives each pay's amount on the days `payAt` names [AA4]); `pick` gives single fields as \"list id field\"; `omit` leaves a field out everywhere. Records carry `told` only on events; `at` and `by` are written by `move_two` and `move_later` (the copy's last save [AB1]) and by `move_answer` on what an answer changed (`answeredAt`). `move_two` with `cloud` and `move_later` with `cloud`: the desktop finds the phone's moved copy in the cloud and takes it, adding only the ids it lacks [AB1]; without, both copies meet in the merge.",
+    "The answer is the moved copy: `v`, `home`, `people`, `accounts`, `places`, `schedules`, `events`, `plan` (`shares`, `budgets`, `limits`), `imports`, `ui` (the shared screen answers), `device` (`look`, `tour`, `opens`), `asks` (the move's questions, `minBank` when a minimum is dropped as automatic [AD1], each answered one with its `answer`), `unplaced` (every saved field with no target, kept in frozen3831 or on the shared ui as 11.1 says, which the move test lists [11.1]), `pendingMove` (kept on the copy [AA5]: each one-month amount and month-end answer whose pay, bill or payment day is not answered yet, a month-end answer for a period not ended at the move [AB2], and a receipt on bill:loan while the loan question waits [AC2]; each a record `{ id: 'mv:pend:<field path>', field, waits, to, ... }` [AB rows], written when what it waits for is answered and then kept marked `gone`; what the move itself writes, or an answer given at the move settles, is kept marked `gone` on the move day [AD5]), `zero` (the move summary of what is not moved: lines and pay amounts that are 0 every month [Y25], and the loan line's one-month amounts when the line is dropped [AD2]), `rounded` [Y23], `morePays` (the 38.31 fields whose one-month amount is spread over a month with more pays or payments than usual: three every two weeks, five weekly [AE4, AG2]), `sample`, `saved` (the copy's last save) and `frozen3831` (the raw text; the stored copy keeps it as the record `mv:frozen:<by>` in `frozen` [AB1]). `show` picks parts (`frozenIds` lists the `frozen` records' ids, `pendingMoveIds` the entries still waiting) (`plan.limits` picks one part of plan; `tally` counts the spends and adds them up; `ids` lists every record id; `payAmounts` gives each pay's amount on the days `payAt` names [AA4]); `pick` gives single fields as \"list id field\"; `omit` leaves a field out everywhere. Records carry `told` only on events; `at` and `by` are written by `move_two` and `move_later` (the copy's last save [AB1]) and by `move_answer` on what an answer changed (`answeredAt`). `move_two` with `cloud` and `move_later` with `cloud`: the desktop finds the phone's moved copy in the cloud and takes it, adding only the ids it lacks [AB1]; without, both copies meet in the merge.",
     "Ids [X1, Y28, Z]: `mv:<kind>:<38.31 id, key or field path>` with the kinds of MOVE_FIELDS.md section 7: acct, card, debt, place, bill, line, pay, auto, item, share, person, open, check, rc, and `move` for the Emergency fund draw's move out of its place (`mv:move:once.<month>.draw`, AA6, a reading). A month-end answer is the period-end record `pe:<occurrence>:free` [Y8].",
     "The opening [B6, B7, 11.1]: the oldest bank figure (bankStart or bankNow; on the same day bankNow [Y22]) opens the bank with an `open` and a `check` on its day; a newer figure is a later `check`. A figure's day with no time is told at the end of that day, or at the copy's last save when that is earlier [Y1]. The opening day is that figure's day, else the copy's last saved day. Goal money kept in the bank is the open's `split` [B6]; the rest of the split (budget lines and Free to spend left, Waiting) is the opening's own question [B2, I4] and is not written by the move.",
     "Question `move_two` [X1, Y12]: `phone` and `desktop` each hold a `move` input plus `by` (the device part). Each device moves its own copy and stamps every record with `told` (events keep their own), `at` (its `now`) and `by`; the two moved copies are merged with rules/merge_ref.js.",
     "Question `move_answer` [AA5]: the copy is moved with `answers`, then the days in `later` (`pay`, `billDay`, `debtDay`) are answered on the moved copy and what waits in `pendingMove` for them is written.",
-    "Question `apply_waiting` [AD5]: `copy` is a stored copy (records with `at` and `by`, `pendingMove` among them), `rules` the days answered now by schedule or account id, `moveDay` the move's day (it still decides which periods had ended, AB2), `answeredAt` and `by` the answer's stamp. Each waiting entry whose day is now known is applied only where the record it would change has an older `at` than the entry, or is not there yet; otherwise it is skipped. Either way it is kept marked `gone` with the answer's day, `at` and `by`.",
+    "Question `apply_waiting` [AD5, AE2, AG1]: `copy` is a stored copy (records with `at` and `by`, `pendingMove` among them), `rules` the days answered now by schedule or account id, `moveDay` the move's day (it still decides which periods had ended, AB2), `answeredAt` and `by` the answer's stamp, `lastSeen` (optional) the newest `at` the device has seen beyond the copy. Every write made now uses the D4 clock: the larger of `answeredAt` and the newest `at` seen (the copy's own included) plus 1 ms [AG1]. Each live entry whose day is now known is applied once [AE2]: what it writes carries the entry's `at` and is judged as the merge judges it, record by record and key by key [AE1]; an entry a restore brought back (its `at` newer than its `told`) writes with the D4 clock instead, so it never ties with the restore's removal [AG1]. Either way it is kept marked `gone` with the answer's day, `at` and `by`.",
     "Sample data is never moved as real (requirements 1c): the sample shows while ui.done lacks pay, bills or goals, unless the copy is blank or cleared (every build's `sampleOn`). Receipts, cards and a typed bank figure are the person's and move as real [Y16].",
-    "The expected outputs of mv-01 to mv-45 were re-worked by hand from MOVE_FIELDS.md, SCHEMA_V3 11.1 and the decisions (Y and Z included), not taken from the reference; mv-46 to mv-67 were written by hand for Y and Z, and mv-68 and mv-69 for the coverage grid's move row (COVERAGE.md). Every open question below names what the reference does. mv-70 to mv-81 were written by hand for AA, and mv-07, mv-15, mv-33, mv-46, mv-49, mv-51, mv-52 and mv-65 re-worked by hand for it. Four cases show what the reference does on an open question AA leaves: mv-72 (mv-q45, the draw's move to Waiting; mv-q46, the debt's `amounts`), mv-75 and mv-76 (mv-q47, the receipt's own note); mv-73 leaves `per` (mv-q42) out of its view. mv-82 to mv-99 were written by hand for AB and AC (and the reviewer's d1; mv-97 to mv-99 for the coverage grid's new column L), and mv-09, mv-10, mv-15, mv-29, mv-33, mv-42, mv-46, mv-49, mv-52, mv-71, mv-72, mv-73, mv-75 and mv-76 re-worked by hand for them; AC answered mv-q42 to mv-q49. mv-100 to mv-108 were written by hand for AD (AD1, AD2, AD4, AD5), and mv-09 (its why), mv-33, mv-46, mv-52, mv-73, mv-75, mv-89, mv-90, mv-94, mv-98 and mv-99 re-worked by hand for AD5 before the reference changed; mv-45 (a 25.0 copy with a minimum) was re-worked by hand for AD1 after the first run of the changed reference showed AD1 reaches it. AD answered mv-q50 to mv-q54; mv-q55 is what AD1 leaves."
+    "The expected outputs of mv-01 to mv-45 were re-worked by hand from MOVE_FIELDS.md, SCHEMA_V3 11.1 and the decisions (Y and Z included), not taken from the reference; mv-46 to mv-67 were written by hand for Y and Z, and mv-68 and mv-69 for the coverage grid's move row (COVERAGE.md). Every open question below names what the reference does. mv-70 to mv-81 were written by hand for AA, and mv-07, mv-15, mv-33, mv-46, mv-49, mv-51, mv-52 and mv-65 re-worked by hand for it. Four cases show what the reference does on an open question AA leaves: mv-72 (mv-q45, the draw's move to Waiting; mv-q46, the debt's `amounts`), mv-75 and mv-76 (mv-q47, the receipt's own note); mv-73 leaves `per` (mv-q42) out of its view. mv-82 to mv-99 were written by hand for AB and AC (and the reviewer's d1; mv-97 to mv-99 for the coverage grid's new column L), and mv-09, mv-10, mv-15, mv-29, mv-33, mv-42, mv-46, mv-49, mv-52, mv-71, mv-72, mv-73, mv-75 and mv-76 re-worked by hand for them; AC answered mv-q42 to mv-q49. mv-100 to mv-108 were written by hand for AD (AD1, AD2, AD4, AD5), and mv-09 (its why), mv-33, mv-46, mv-52, mv-73, mv-75, mv-89, mv-90, mv-94, mv-98 and mv-99 re-worked by hand for AD5 before the reference changed; mv-45 (a 25.0 copy with a minimum) was re-worked by hand for AD1 after the first run of the changed reference showed AD1 reaches it. AD answered mv-q50 to mv-q54; mv-q55 is what AD1 leaves. mv-117 to mv-121 were written by hand for AG (mv-117 and mv-118 for AG1, mv-119 to mv-121 for AG2), and mv-111 to mv-113 re-worked for AG2: the move summary's list is `morePays` (was `threePays`). AG answered mv-q56 and mv-q57."
   ],
   "defaults": {
     "idb": {
@@ -13887,7 +13887,7 @@
           ]
         ],
         "show": [
-          "threePays"
+          "morePays"
         ]
       },
       "expected": {
@@ -13906,11 +13906,11 @@
           },
           "schedules mv:bill:net at": "2026-11-24T12:00:00.000+09:00"
         },
-        "threePays": [
+        "morePays": [
           "once.2027-04.bill:net"
         ]
       },
-      "why": "The copy of mv-105, moved with the internet bill's day not answered; answered three hours later: every two weeks from Fri 11 Dec 2026. A bill schedule may carry `per` too [AE3, AD4]: the bill is per month, and April's one-month amount, 10,000, is that month's total, spread over its three payments, 2, 16 and 30 Apr: 10,000 / 3 = 3,333 and 1 over, to the earliest: 3,334 + 3,333 + 3,333 = 10,000 [AB2]. The keys carry the entry's `at` when stored (the copy's last save, AE2; mv-109). The record carries the answer's `at`. April is a three-payment month, so the move summary notes the field [AE4].",
+      "why": "The copy of mv-105, moved with the internet bill's day not answered; answered three hours later: every two weeks from Fri 11 Dec 2026. A bill schedule may carry `per` too [AE3, AD4]: the bill is per month, and April's one-month amount, 10,000, is that month's total, spread over its three payments, 2, 16 and 30 Apr: 10,000 / 3 = 3,333 and 1 over, to the earliest: 3,334 + 3,333 + 3,333 = 10,000 [AB2]. The keys carry the entry's `at` when stored (the copy's last save, AE2; mv-109). The record carries the answer's `at`. April is a three-payment month, so the move summary notes the field [AE4, AG2].",
       "decisions": [
         "AE3",
         "AE4",
@@ -13985,17 +13985,17 @@
           }
         },
         "show": [
-          "threePays"
+          "morePays"
         ]
       },
       "expected": {
-        "threePays": [
+        "morePays": [
           "once.2027-01.a",
           "once.2027-01.bill:food",
           "once.2027-01.envelope"
         ]
       },
-      "why": "The copy of mv-88: pay every two weeks from Fri 1 Jan 2027, so January has three pays (1, 15 and 29 Jan). The pay's, Food's and Free to spend's January amounts are each spread over the three [AB2]: Food's 50,000 becomes 16,667 + 16,667 + 16,666, less a period than the usual 40,000 x 12 / 26 = 18,461. The person meant \"more than usual\", so the move summary names each field spread over a three-pay month [AE4], in field order.",
+      "why": "The copy of mv-88: pay every two weeks from Fri 1 Jan 2027, so January has three pays (1, 15 and 29 Jan). The pay's, Food's and Free to spend's January amounts are each spread over the three [AB2]: Food's 50,000 becomes 16,667 + 16,667 + 16,666, less a period than the usual 40,000 x 12 / 26 = 18,461. The person meant \"more than usual\", so the move summary names each field spread over a three-pay month [AE4, AG2], in field order.",
       "decisions": [
         "AE4",
         "AB2"
@@ -14060,13 +14060,13 @@
           ]
         },
         "show": [
-          "threePays"
+          "morePays"
         ]
       },
       "expected": {
-        "threePays": []
+        "morePays": []
       },
-      "why": "The copy of mv-87: pay twice a month, the 15th and the last day. January's one-month amount is spread over its two pays (160,000 + 160,000 = 320,000) [AB2]; two is the usual number of pays a month here, so nothing is noted [AE4].",
+      "why": "The copy of mv-87: pay twice a month, the 15th and the last day. January's one-month amount is spread over its two pays (160,000 + 160,000 = 320,000) [AB2]; two is the usual number of pays a month here, so nothing is noted [AE4, AG2].",
       "decisions": [
         "AE4",
         "AB2"
@@ -14370,18 +14370,828 @@
         "AB1",
         "AB2"
       ]
-    }
-  ],
-  "open": [
-    {
-      "id": "mv-q56",
-      "question": "AE2 with AE5: a backup made while an entry waited, restored after the entry was applied. The restore brings the entry back live and removes the key it wrote with its own `gone`, both stamped with the restore's `at` (mg-111). When the day is answered again, the entry writes its key with the entry's `at`, which is now the restore's `at`: the same as the removed key's, and on the same `at` a removed key wins [H6], so the key is never written again (January's 0 stays removed and January counts the usual 250,000). Should the key an entry writes after a restore win over the restore's own removal (for example: the restore leaves out the keys whose entry it brings back, or the entry writes with the answer's `at`), or does the restore keep the entry `gone` when the backup's entry is already answered in the current copy?",
-      "ref_does": "Follows AE2 and AE5 as written: the removed key wins on the same `at`; the entry is marked `gone` and nothing is written. No case depends on it."
     },
     {
-      "id": "mv-q57",
-      "question": "AE4 notes a one-month amount spread over a three-pay month. Pay weekly gives four or five pays a month; a month with five spreads the amount over five, each less than the usual weekly share (monthly x 12 / 52), the same effect AE4 notes for three. Is a five-pay month (weekly) noted too?",
-      "ref_does": "Notes only a spread over exactly three pays or payments (every two weeks, mv-112). No case has weekly pay with a one-month amount."
+      "id": "mv-117",
+      "question": "apply_waiting",
+      "title": "AG1: a backup made while January's 0 waited, restored after it was applied; the pay day answered again writes the 0 with the D4 clock, and it wins",
+      "input": {
+        "copy": {
+          "schedules": [
+            {
+              "id": "mv:pay:steps.a",
+              "kind": "income",
+              "name": "Salary",
+              "cur": "JPY",
+              "acct": "mv:acct:cfg",
+              "startsPeriod": true,
+              "per": "month",
+              "steps": [
+                {
+                  "from": "2026-11-22",
+                  "amount": 250000,
+                  "at": "2026-11-29T09:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "at": "2026-11-29T09:00:00.000+09:00",
+              "by": "phn001",
+              "rules": [
+                {
+                  "from": "2026-11-22",
+                  "rule": {
+                    "every": "month",
+                    "days": [
+                      25
+                    ]
+                  },
+                  "at": "2026-11-29T09:00:00.000+09:00",
+                  "by": "phn001",
+                  "gone": "2026-11-29"
+                }
+              ],
+              "amounts": {
+                "2027-01-25": {
+                  "amount": 0,
+                  "gone": "2026-11-29",
+                  "at": "2026-11-29T09:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              }
+            }
+          ],
+          "pendingMove": [
+            {
+              "id": "mv:pend:once.2027-01.a",
+              "field": "once.2027-01.a",
+              "waits": "mv:pay:steps.a",
+              "to": "amounts",
+              "ym": "2027-01",
+              "a": 0,
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "at": "2026-11-29T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ],
+          "frozen": [
+            {
+              "id": "mv:frozen:dsk001",
+              "raw": "{\"v\":1}",
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "at": "2026-11-29T09:00:00.000+09:00",
+              "by": "phn001",
+              "gone": "2026-11-29"
+            },
+            {
+              "id": "mv:frozen:phn001",
+              "raw": "{\"v\":1}",
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "at": "2026-11-29T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ],
+          "accounts": [],
+          "events": [],
+          "plan": {
+            "shares": [],
+            "budgets": []
+          }
+        },
+        "rules": {
+          "mv:pay:steps.a": {
+            "every": "month",
+            "days": [
+              25
+            ]
+          }
+        },
+        "moveDay": "2026-11-24",
+        "answeredAt": "2026-11-29T10:00:00.000+09:00",
+        "by": "phn001",
+        "show": [
+          "schedules",
+          "pendingMove"
+        ]
+      },
+      "expected": {
+        "schedules": [
+          {
+            "id": "mv:pay:steps.a",
+            "kind": "income",
+            "name": "Salary",
+            "cur": "JPY",
+            "acct": "mv:acct:cfg",
+            "startsPeriod": true,
+            "per": "month",
+            "steps": [
+              {
+                "from": "2026-11-22",
+                "amount": 250000,
+                "at": "2026-11-29T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "told": "2026-11-23T20:00:00.000+09:00",
+            "at": "2026-11-29T10:00:00.000+09:00",
+            "by": "phn001",
+            "rules": [
+              {
+                "from": "2026-11-22",
+                "rule": {
+                  "every": "month",
+                  "days": [
+                    25
+                  ]
+                },
+                "at": "2026-11-29T10:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "amounts": {
+              "2027-01-25": {
+                "amount": 0,
+                "at": "2026-11-29T10:00:00.000+09:00",
+                "by": "phn001"
+              }
+            }
+          }
+        ],
+        "pendingMove": [
+          {
+            "id": "mv:pend:once.2027-01.a",
+            "field": "once.2027-01.a",
+            "waits": "mv:pay:steps.a",
+            "to": "amounts",
+            "ym": "2027-01",
+            "a": 0,
+            "told": "2026-11-23T20:00:00.000+09:00",
+            "at": "2026-11-29T10:00:00.000+09:00",
+            "by": "phn001",
+            "gone": "2026-11-29"
+          }
+        ]
+      },
+      "why": "The copy of mg-111 just after its restore. The phone moved its 38.31 copy (last saved Mon 23 Nov 20:00) and made a backup while January's pay of 0 waited for the pay day. On Sat 28 Nov it answered the 25th and applied the entry; on Sun 29 Nov 09:00 it restored the backup [AE5]: the entry is back, waiting, with the restore's `at` (09:00), and the `rules` entry and the `amounts` key 2027-01-25 are removed by their own `gone` with the same `at`. At 10:00 the pay day is answered again: the 25th. Every write made now uses the D4 clock [AG1]: the newest `at` this device has seen is the restore's, 09:00, and 10:00 is later than 09:00 + 1 ms, so each write is stamped 10:00. The `rules` entry from the 22nd: 10:00, live, newer than the removed one (09:00), so it wins. January has one pay, 25 Jan: 0 / 1 = 0 on it [AB2], the key at 10:00, newer than the restore's removal (09:00), so it is written and January counts 0, not the usual 250,000. The record and the entry take the answer's `at`; the entry is `gone` (29 Nov), applied once again. Before AG1 the key took the entry's `at`, 09:00, the same as the removal's, the removal won [H6] and nothing was written (mv-q56).",
+      "decisions": [
+        "AG1",
+        "AE2",
+        "AE5",
+        "D4",
+        "H6",
+        "AB2"
+      ]
+    },
+    {
+      "id": "mv-118",
+      "question": "apply_waiting",
+      "title": "AG1: the same with the phone's clock behind the restore: every write is the restore's `at` plus 1 ms, never a tie",
+      "input": {
+        "copy": {
+          "schedules": [
+            {
+              "id": "mv:pay:steps.a",
+              "kind": "income",
+              "name": "Salary",
+              "cur": "JPY",
+              "acct": "mv:acct:cfg",
+              "startsPeriod": true,
+              "per": "month",
+              "steps": [
+                {
+                  "from": "2026-11-22",
+                  "amount": 250000,
+                  "at": "2026-11-29T09:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "at": "2026-11-29T09:00:00.000+09:00",
+              "by": "phn001",
+              "rules": [
+                {
+                  "from": "2026-11-22",
+                  "rule": {
+                    "every": "month",
+                    "days": [
+                      25
+                    ]
+                  },
+                  "at": "2026-11-29T09:00:00.000+09:00",
+                  "by": "phn001",
+                  "gone": "2026-11-29"
+                }
+              ],
+              "amounts": {
+                "2027-01-25": {
+                  "amount": 0,
+                  "gone": "2026-11-29",
+                  "at": "2026-11-29T09:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              }
+            }
+          ],
+          "pendingMove": [
+            {
+              "id": "mv:pend:once.2027-01.a",
+              "field": "once.2027-01.a",
+              "waits": "mv:pay:steps.a",
+              "to": "amounts",
+              "ym": "2027-01",
+              "a": 0,
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "at": "2026-11-29T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ],
+          "frozen": [
+            {
+              "id": "mv:frozen:dsk001",
+              "raw": "{\"v\":1}",
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "at": "2026-11-29T09:00:00.000+09:00",
+              "by": "phn001",
+              "gone": "2026-11-29"
+            },
+            {
+              "id": "mv:frozen:phn001",
+              "raw": "{\"v\":1}",
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "at": "2026-11-29T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ],
+          "accounts": [],
+          "events": [],
+          "plan": {
+            "shares": [],
+            "budgets": []
+          }
+        },
+        "rules": {
+          "mv:pay:steps.a": {
+            "every": "month",
+            "days": [
+              25
+            ]
+          }
+        },
+        "moveDay": "2026-11-24",
+        "answeredAt": "2026-11-29T08:50:00.000+09:00",
+        "by": "phn001",
+        "show": [
+          "schedules",
+          "pendingMove"
+        ]
+      },
+      "expected": {
+        "schedules": [
+          {
+            "id": "mv:pay:steps.a",
+            "kind": "income",
+            "name": "Salary",
+            "cur": "JPY",
+            "acct": "mv:acct:cfg",
+            "startsPeriod": true,
+            "per": "month",
+            "steps": [
+              {
+                "from": "2026-11-22",
+                "amount": 250000,
+                "at": "2026-11-29T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "told": "2026-11-23T20:00:00.000+09:00",
+            "at": "2026-11-29T09:00:00.001+09:00",
+            "by": "phn001",
+            "rules": [
+              {
+                "from": "2026-11-22",
+                "rule": {
+                  "every": "month",
+                  "days": [
+                    25
+                  ]
+                },
+                "at": "2026-11-29T09:00:00.001+09:00",
+                "by": "phn001"
+              }
+            ],
+            "amounts": {
+              "2027-01-25": {
+                "amount": 0,
+                "at": "2026-11-29T09:00:00.001+09:00",
+                "by": "phn001"
+              }
+            }
+          }
+        ],
+        "pendingMove": [
+          {
+            "id": "mv:pend:once.2027-01.a",
+            "field": "once.2027-01.a",
+            "waits": "mv:pay:steps.a",
+            "to": "amounts",
+            "ym": "2027-01",
+            "a": 0,
+            "told": "2026-11-23T20:00:00.000+09:00",
+            "at": "2026-11-29T09:00:00.001+09:00",
+            "by": "phn001",
+            "gone": "2026-11-29"
+          }
+        ]
+      },
+      "why": "The copy of mv-117, but the phone's clock was set back after the restore and reads 08:50 when the pay day is answered again. The D4 clock is the larger of now (08:50) and the newest `at` this device has seen plus 1 ms: the restore's 09:00:00.000 + 1 ms = 09:00:00.001 [AG1, D4]. Every write takes it: the `rules` entry, the `amounts` key 2027-01-25 with 0 (0 / 1 pay = 0, AB2), the record and the entry (`gone` on the answer's day, 29 Nov). 09:00:00.001 is newer than the restore's removal at 09:00:00.000 by 1 ms, so the key is live and January counts 0. A new write never ties with a restore [AG1].",
+      "decisions": [
+        "AG1",
+        "AE2",
+        "AE5",
+        "D4",
+        "H6",
+        "AB2"
+      ]
+    },
+    {
+      "id": "mv-119",
+      "question": "move",
+      "title": "AG2: weekly pay: one-month amounts spread over a five-pay month are listed in the move summary",
+      "input": {
+        "copy": {
+          "v": 1,
+          "cfg": {
+            "bankStart": 200000,
+            "bankAt": "2026-11-24"
+          },
+          "ui": {
+            "cur": "¥",
+            "preset": "¥",
+            "done": {
+              "pay": true,
+              "bills": true,
+              "goals": true
+            }
+          },
+          "plan": {
+            "lines": [
+              {
+                "id": "food",
+                "key": "bill:food",
+                "jar": "nec",
+                "name": "Food and groceries",
+                "def": 40000
+              },
+              {
+                "id": "spend",
+                "key": "envelope",
+                "jar": "play",
+                "name": "Free to spend",
+                "def": 15000
+              }
+            ],
+            "goals": []
+          },
+          "steps": {
+            "a": [
+              {
+                "from": "2026-11",
+                "v": 250000
+              }
+            ]
+          },
+          "once": {
+            "2027-01": {
+              "a": 500000,
+              "bill:food": 50000,
+              "envelope": 30000
+            }
+          }
+        },
+        "answers": {
+          "cur": "JPY",
+          "pay": {
+            "a": {
+              "every": "weeks",
+              "n": 1,
+              "from": "2027-01-01"
+            }
+          }
+        },
+        "show": [
+          "schedules",
+          "plan.budgets",
+          "plan.shares",
+          "morePays"
+        ]
+      },
+      "expected": {
+        "schedules": [
+          {
+            "id": "mv:pay:steps.a",
+            "kind": "income",
+            "name": "Salary",
+            "cur": "JPY",
+            "acct": "mv:acct:cfg",
+            "startsPeriod": true,
+            "per": "month",
+            "steps": [
+              {
+                "from": "2026-11-24",
+                "amount": 250000
+              }
+            ],
+            "rules": [
+              {
+                "from": "2026-11-24",
+                "rule": {
+                  "every": "weeks",
+                  "n": 1,
+                  "from": "2027-01-01"
+                }
+              }
+            ],
+            "amounts": {
+              "2027-01-01": {
+                "amount": 100000
+              },
+              "2027-01-08": {
+                "amount": 100000
+              },
+              "2027-01-15": {
+                "amount": 100000
+              },
+              "2027-01-22": {
+                "amount": 100000
+              },
+              "2027-01-29": {
+                "amount": 100000
+              }
+            }
+          }
+        ],
+        "plan.budgets": [
+          {
+            "id": "mv:line:food",
+            "name": "Food and groceries",
+            "place": "bills",
+            "cur": "JPY",
+            "per": "month",
+            "steps": [
+              {
+                "from": "2026-11-24",
+                "amount": 40000
+              }
+            ],
+            "once": {
+              "mv:pay:steps.a@2027-01-01": {
+                "amount": 10000
+              },
+              "mv:pay:steps.a@2027-01-08": {
+                "amount": 10000
+              },
+              "mv:pay:steps.a@2027-01-15": {
+                "amount": 10000
+              },
+              "mv:pay:steps.a@2027-01-22": {
+                "amount": 10000
+              },
+              "mv:pay:steps.a@2027-01-29": {
+                "amount": 10000
+              }
+            }
+          }
+        ],
+        "plan.shares": [
+          {
+            "id": "mv:share:steps",
+            "from": "2026-11-24",
+            "cur": "JPY",
+            "free": 15000,
+            "per": {
+              "free": "month"
+            },
+            "once": {
+              "mv:pay:steps.a@2027-01-01": {
+                "free": 6000
+              },
+              "mv:pay:steps.a@2027-01-08": {
+                "free": 6000
+              },
+              "mv:pay:steps.a@2027-01-15": {
+                "free": 6000
+              },
+              "mv:pay:steps.a@2027-01-22": {
+                "free": 6000
+              },
+              "mv:pay:steps.a@2027-01-29": {
+                "free": 6000
+              }
+            }
+          }
+        ],
+        "morePays": [
+          "once.2027-01.a",
+          "once.2027-01.bill:food",
+          "once.2027-01.envelope"
+        ]
+      },
+      "why": "The copy of mv-112, pay answered weekly from Fri 1 Jan 2027, so January has five pays: 1, 8, 15, 22 and 29 Jan (29 Jan + 7 days is 5 Feb). Each one-month amount replaces January's total, spread over its five pays or the five periods starting in it [AB2, AA4]: pay 500,000 / 5 = 100,000 on each; Food 50,000 / 5 = 10,000 on each period; Free to spend 30,000 / 5 = 6,000 on each period's plan.shares entry [AA6]. Nothing is left over. Weekly gives four pays in most months (52 / 12 = 4.33, so four is usual), and five is more than usual, so the move summary notes each field [AG2], in field order, as AE4 does for three pays every two weeks.",
+      "decisions": [
+        "AG2",
+        "AE4",
+        "AB2",
+        "AA4",
+        "AA6"
+      ]
+    },
+    {
+      "id": "mv-120",
+      "question": "move",
+      "title": "AG2: weekly pay: a month with four pays, the usual number, gets no note",
+      "input": {
+        "copy": {
+          "v": 1,
+          "cfg": {
+            "bankStart": 200000,
+            "bankAt": "2026-11-24"
+          },
+          "ui": {
+            "cur": "¥",
+            "preset": "¥",
+            "done": {
+              "pay": true,
+              "bills": true,
+              "goals": true
+            }
+          },
+          "plan": {
+            "lines": [
+              {
+                "id": "food",
+                "key": "bill:food",
+                "jar": "nec",
+                "name": "Food and groceries",
+                "def": 40000
+              },
+              {
+                "id": "spend",
+                "key": "envelope",
+                "jar": "play",
+                "name": "Free to spend",
+                "def": 15000
+              }
+            ],
+            "goals": []
+          },
+          "steps": {
+            "a": [
+              {
+                "from": "2026-11",
+                "v": 250000
+              }
+            ]
+          },
+          "once": {
+            "2027-02": {
+              "a": 400000,
+              "bill:food": 48000,
+              "envelope": 20000
+            }
+          }
+        },
+        "answers": {
+          "cur": "JPY",
+          "pay": {
+            "a": {
+              "every": "weeks",
+              "n": 1,
+              "from": "2027-01-01"
+            }
+          }
+        },
+        "show": [
+          "schedules",
+          "plan.budgets",
+          "plan.shares",
+          "morePays"
+        ]
+      },
+      "expected": {
+        "schedules": [
+          {
+            "id": "mv:pay:steps.a",
+            "kind": "income",
+            "name": "Salary",
+            "cur": "JPY",
+            "acct": "mv:acct:cfg",
+            "startsPeriod": true,
+            "per": "month",
+            "steps": [
+              {
+                "from": "2026-11-24",
+                "amount": 250000
+              }
+            ],
+            "rules": [
+              {
+                "from": "2026-11-24",
+                "rule": {
+                  "every": "weeks",
+                  "n": 1,
+                  "from": "2027-01-01"
+                }
+              }
+            ],
+            "amounts": {
+              "2027-02-05": {
+                "amount": 100000
+              },
+              "2027-02-12": {
+                "amount": 100000
+              },
+              "2027-02-19": {
+                "amount": 100000
+              },
+              "2027-02-26": {
+                "amount": 100000
+              }
+            }
+          }
+        ],
+        "plan.budgets": [
+          {
+            "id": "mv:line:food",
+            "name": "Food and groceries",
+            "place": "bills",
+            "cur": "JPY",
+            "per": "month",
+            "steps": [
+              {
+                "from": "2026-11-24",
+                "amount": 40000
+              }
+            ],
+            "once": {
+              "mv:pay:steps.a@2027-02-05": {
+                "amount": 12000
+              },
+              "mv:pay:steps.a@2027-02-12": {
+                "amount": 12000
+              },
+              "mv:pay:steps.a@2027-02-19": {
+                "amount": 12000
+              },
+              "mv:pay:steps.a@2027-02-26": {
+                "amount": 12000
+              }
+            }
+          }
+        ],
+        "plan.shares": [
+          {
+            "id": "mv:share:steps",
+            "from": "2026-11-24",
+            "cur": "JPY",
+            "free": 15000,
+            "per": {
+              "free": "month"
+            },
+            "once": {
+              "mv:pay:steps.a@2027-02-05": {
+                "free": 5000
+              },
+              "mv:pay:steps.a@2027-02-12": {
+                "free": 5000
+              },
+              "mv:pay:steps.a@2027-02-19": {
+                "free": 5000
+              },
+              "mv:pay:steps.a@2027-02-26": {
+                "free": 5000
+              }
+            }
+          }
+        ],
+        "morePays": []
+      },
+      "why": "The same weekly pay from Fri 1 Jan 2027, with one-month amounts for February 2027 instead. February has four Fridays: 5, 12, 19 and 26 Feb (29 Jan + 7 days is 5 Feb; 26 Feb + 7 days is 5 Mar). Pay 400,000 / 4 = 100,000; Food 48,000 / 4 = 12,000; Free to spend 20,000 / 4 = 5,000 on each [AB2]. Four is the usual number of weekly pays in a month (52 / 12 = 4.33), so nothing is noted [AG2].",
+      "decisions": [
+        "AG2",
+        "AE4",
+        "AB2",
+        "AA4",
+        "AA6"
+      ]
+    },
+    {
+      "id": "mv-121",
+      "question": "move_answer",
+      "title": "AG2: a moved bill answered later as weekly: April's one-month amount spread over five payments and noted",
+      "input": {
+        "copy": {
+          "v": 1,
+          "cfg": {
+            "bankStart": 200000,
+            "bankAt": "2026-11-24"
+          },
+          "ui": {
+            "cur": "¥",
+            "preset": "¥",
+            "done": {
+              "pay": true,
+              "bills": true,
+              "goals": true
+            }
+          },
+          "plan": {
+            "lines": [
+              {
+                "id": "net",
+                "key": "bill:net",
+                "jar": "nec",
+                "name": "Internet",
+                "def": 13000
+              }
+            ],
+            "goals": []
+          },
+          "once": {
+            "2027-04": {
+              "bill:net": 10000
+            }
+          }
+        },
+        "answers": {
+          "cur": "JPY"
+        },
+        "later": {
+          "billDay": {
+            "net": {
+              "every": "weeks",
+              "n": 1,
+              "from": "2026-12-04"
+            }
+          }
+        },
+        "answeredAt": "2026-11-24T12:00:00.000+09:00",
+        "by": "phn001",
+        "pick": [
+          [
+            "schedules",
+            "mv:bill:net",
+            "per"
+          ],
+          [
+            "schedules",
+            "mv:bill:net",
+            "amounts"
+          ],
+          [
+            "schedules",
+            "mv:bill:net",
+            "at"
+          ]
+        ],
+        "show": [
+          "morePays"
+        ]
+      },
+      "expected": {
+        "pick": {
+          "schedules mv:bill:net per": "month",
+          "schedules mv:bill:net amounts": {
+            "2027-04-02": {
+              "amount": 2000
+            },
+            "2027-04-09": {
+              "amount": 2000
+            },
+            "2027-04-16": {
+              "amount": 2000
+            },
+            "2027-04-23": {
+              "amount": 2000
+            },
+            "2027-04-30": {
+              "amount": 2000
+            }
+          },
+          "schedules mv:bill:net at": "2026-11-24T12:00:00.000+09:00"
+        },
+        "morePays": [
+          "once.2027-04.bill:net"
+        ]
+      },
+      "why": "The copy of mv-111 (internet 13,000 a month, April 2027 10,000), the bill's day answered three hours after the move: weekly from Fri 4 Dec 2026. Fridays in April 2027: 2, 9, 16, 23 and 30 Apr (4 Dec + 17 weeks = 2 Apr). The bill is per month [AE3, AD4], so April's 10,000 is spread over its five payments: 10,000 / 5 = 2,000 each, nothing over [AB2]. Weekly has four payments in a usual month, so a five-payment month is noted [AG2]. The record carries the answer's `at`.",
+      "decisions": [
+        "AG2",
+        "AE3",
+        "AE4",
+        "AD4",
+        "AB2"
+      ]
     }
-  ]
+  ],
+  "open": []
 }
