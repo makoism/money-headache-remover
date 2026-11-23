@@ -156,7 +156,9 @@ function drawHome3() {
         : od ? `${fig3('cards.*.overdue.*.amount', od.amount, cur)} was due ${esc3(day3(od.payment_date, yr))}, not ticked off yet` : 'Nothing to pay yet';
       /* [BL5] paid more than it owed: in credit by the engine's figure, never as owed with a minus */
       const amt = k.credit ? `<span data-fig="credit">${esc3(label3('inCredit').toLowerCase())} ${fig3('cards.*.credit', k.credit, cur)}</span>` : `<span data-fig="owed">${fig3('cards.*.owedNow', k.owedNow, cur)}</span>`;
-      return `<li data-cardid="${esc3(id)}"><span>${esc3(E3.nameOf(id))}<br><span class="when">${when}</span></span><span class="amt">${amt}</span></li>`;
+      /* [NS-FIX 7] the day this card's figure was last typed */
+      const ck = E3.lastCheckOf(id, day), seen = ck ? `<br><span class="a3-age" data-fig="cardchecked">checked ${esc3(day3(ck.date, yr))}</span>` : '';
+      return `<li data-cardid="${esc3(id)}"><span>${esc3(E3.nameOf(id))}<br><span class="when">${when}</span>${seen}</span><span class="amt">${amt}</span></li>`;
     }).join('');
     out.push(`<section class="a3-card" data-card="cards"><h2>${esc3(label3('owed'))} on your cards</h2><ul class="a3-rows">${rows}${afterCards3(r, yr)}</ul></section>`);
   }

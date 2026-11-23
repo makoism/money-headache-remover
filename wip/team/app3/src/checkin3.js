@@ -110,10 +110,6 @@ function askCards3(id) {
   return check3.list.filter(o => o.account === id && o.statement === 'all owed' && rowOf(o) && rowOf(o).querySelector('input[type=checkbox]').checked)
     .map(o => { const v = typed3(rowOf(o).querySelector('[data-amt]').value, E3.curOf(id)); return `Was ${E3.occName(o.item)}'s payment ${money3(v === null ? o.amount : v, E3.curOf(id))}?`; });
 }
-/* the last figure typed for a card, and its day (a lookup in the book) */
-function lastCardCheck3(id) {
-  return ((E3.book && E3.book.events) || []).filter(e => e && !e.gone && e.k === 'check' && !e.stmt && e.acct === id && e.date <= check3.day).sort((x, y) => (x.date < y.date ? -1 : x.date > y.date ? 1 : 0)).pop() || null;
-}
 /* while typing: what the app expects each figure to be now, with what is ticked (the engine on the book the check-in
    would make with no figure), and the gap each typed figure leaves (the engine on the book with the figures) */
 function checkPreview3() {
@@ -124,7 +120,7 @@ function checkPreview3() {
   for (const el of sheet.querySelectorAll('[data-expected]')) {
     const id = el.dataset.expected, a = r0.accounts[id];
     if (a) el.textContent = `Expected now ${money3(a.bank, a.currency)}, last checked ${money3(a.checked, a.currency)} on ${day3(a.asOf, yr)}`;
-    else if (r0.cards[id]) { const c = lastCardCheck3(id); el.textContent = `Expected now ${money3(r0.cards[id].owedNow, E3.curOf(id))}${c ? `, last checked ${money3(c.a, E3.curOf(id))} on ${day3(c.date, yr)}` : ''}`; }
+    else if (r0.cards[id]) { const c = E3.lastCheckOf(id, check3.day); el.textContent = `Expected now ${money3(r0.cards[id].owedNow, E3.curOf(id))}${c ? `, last checked ${money3(c.a, E3.curOf(id))} on ${day3(c.date, yr)}` : ''}`; }
   }
   for (const el of sheet.querySelectorAll('[data-gap]')) {
     const id = el.dataset.gap, g = id in d.figures ? gapWords3(r1, id, check3.day) : null;

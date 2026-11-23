@@ -135,6 +135,10 @@ const E3 = (() => {
     const s = (book.schedules || []).find(x => x.id === id); if (s) return s.name;
     return id;
   }
+  /* the last figure typed for an account or card known by the day (its own check, never a statement's), or null: a
+     lookup for "checked 23 Nov" on Home and "last checked" at Check your bank */
+  const lastCheckOf = (id, day) => ((book && book.events) || []).filter(e => e && !e.gone && e.k === 'check' && !e.stmt && e.acct === id && e.date <= day && String(e.told || e.date).slice(0, 10) <= day)
+    .sort((x, y) => (x.date !== y.date ? (x.date < y.date ? -1 : 1) : String(x.told) < String(y.told) ? -1 : 1)).pop() || null;
   const occName = item => { const o = BurrowEngine.ids.occurrence(item); return o ? nameOf(o.schedule) : nameOf(item); };
   const curOf = id => { const a = (book.accounts || []).find(x => x.id === id); return a ? a.cur : BurrowEngine.ledger.homeOn(book, today()); };
   const home = () => BurrowEngine.ledger.homeOn(book, today());
@@ -160,6 +164,6 @@ const E3 = (() => {
   }
   /* is a the day before b (two YYYY-MM-DD days) */
   const dayBefore = (a, b) => BurrowEngine.dates.dayNum(b) - BurrowEngine.dates.dayNum(a) === 1;
-  return { today, setToday, useTry, leaveTry, start, told, dayBefore, newId, load, view, nameOf, occName, curOf, home, put, replace, rec, onSaved: f => savedFns.push(f),
+  return { today, setToday, useTry, leaveTry, start, told, dayBefore, newId, load, view, nameOf, occName, lastCheckOf, curOf, home, put, replace, rec, onSaved: f => savedFns.push(f),
     get book() { return book; }, get mode() { return mode; } };
 })();

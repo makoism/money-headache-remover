@@ -26,7 +26,7 @@ body::before { content: none; }
 .a3-rows { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
 .a3-rows li { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--hair); font-variant-numeric: tabular-nums; }
 .a3-rows li:last-child { border-bottom: 0; }
-.a3-rows .when { color: var(--ink2); font-size: var(--t-sm); }
+.a3-rows .when, .a3-rows .a3-age { color: var(--ink2); font-size: var(--t-sm); }
 .a3-rows .amt { white-space: nowrap; }
 .a3-rows li.total { font-weight: 600; }
 .a3-acct { margin: 14px 0 0; font-size: var(--t-sm); font-weight: 600; color: var(--ink2); }

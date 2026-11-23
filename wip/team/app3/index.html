@@ -1290,7 +1290,7 @@ body::before { content: none; }
 .a3-rows { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
 .a3-rows li { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--hair); font-variant-numeric: tabular-nums; }
 .a3-rows li:last-child { border-bottom: 0; }
-.a3-rows .when { color: var(--ink2); font-size: var(--t-sm); }
+.a3-rows .when, .a3-rows .a3-age { color: var(--ink2); font-size: var(--t-sm); }
 .a3-rows .amt { white-space: nowrap; }
 .a3-rows li.total { font-weight: 600; }
 .a3-acct { margin: 14px 0 0; font-size: var(--t-sm); font-weight: 600; color: var(--ink2); }
@@ -7511,6 +7511,10 @@ const E3 = (() => {
     const s = (book.schedules || []).find(x => x.id === id); if (s) return s.name;
     return id;
   }
+  /* the last figure typed for an account or card known by the day (its own check, never a statement's), or null: a
+     lookup for "checked 23 Nov" on Home and "last checked" at Check your bank */
+  const lastCheckOf = (id, day) => ((book && book.events) || []).filter(e => e && !e.gone && e.k === 'check' && !e.stmt && e.acct === id && e.date <= day && String(e.told || e.date).slice(0, 10) <= day)
+    .sort((x, y) => (x.date !== y.date ? (x.date < y.date ? -1 : 1) : String(x.told) < String(y.told) ? -1 : 1)).pop() || null;
   const occName = item => { const o = BurrowEngine.ids.occurrence(item); return o ? nameOf(o.schedule) : nameOf(item); };
   const curOf = id => { const a = (book.accounts || []).find(x => x.id === id); return a ? a.cur : BurrowEngine.ledger.homeOn(book, today()); };
   const home = () => BurrowEngine.ledger.homeOn(book, today());
@@ -7536,7 +7540,7 @@ const E3 = (() => {
   }
   /* is a the day before b (two YYYY-MM-DD days) */
   const dayBefore = (a, b) => BurrowEngine.dates.dayNum(b) - BurrowEngine.dates.dayNum(a) === 1;
-  return { today, setToday, useTry, leaveTry, start, told, dayBefore, newId, load, view, nameOf, occName, curOf, home, put, replace, rec, onSaved: f => savedFns.push(f),
+  return { today, setToday, useTry, leaveTry, start, told, dayBefore, newId, load, view, nameOf, occName, lastCheckOf, curOf, home, put, replace, rec, onSaved: f => savedFns.push(f),
     get book() { return book; }, get mode() { return mode; } };
 })();
 /* ---------- act3: the one door for every write in app3 (SCHEMA_V3 section 0; DECISIONS_ROUND2 H6, D2, BD4) ----------
@@ -8232,7 +8236,9 @@ function drawHome3() {
         : od ? `${fig3('cards.*.overdue.*.amount', od.amount, cur)} was due ${esc3(day3(od.payment_date, yr))}, not ticked off yet` : 'Nothing to pay yet';
       /* [BL5] paid more than it owed: in credit by the engine's figure, never as owed with a minus */
       const amt = k.credit ? `<span data-fig="credit">${esc3(label3('inCredit').toLowerCase())} ${fig3('cards.*.credit', k.credit, cur)}</span>` : `<span data-fig="owed">${fig3('cards.*.owedNow', k.owedNow, cur)}</span>`;
-      return `<li data-cardid="${esc3(id)}"><span>${esc3(E3.nameOf(id))}<br><span class="when">${when}</span></span><span class="amt">${amt}</span></li>`;
+      /* [NS-FIX 7] the day this card's figure was last typed */
+      const ck = E3.lastCheckOf(id, day), seen = ck ? `<br><span class="a3-age" data-fig="cardchecked">checked ${esc3(day3(ck.date, yr))}</span>` : '';
+      return `<li data-cardid="${esc3(id)}"><span>${esc3(E3.nameOf(id))}<br><span class="when">${when}</span>${seen}</span><span class="amt">${amt}</span></li>`;
     }).join('');
     out.push(`<section class="a3-card" data-card="cards"><h2>${esc3(label3('owed'))} on your cards</h2><ul class="a3-rows">${rows}${afterCards3(r, yr)}</ul></section>`);
   }
@@ -8368,10 +8374,6 @@ function askCards3(id) {
   return check3.list.filter(o => o.account === id && o.statement === 'all owed' && rowOf(o) && rowOf(o).querySelector('input[type=checkbox]').checked)
     .map(o => { const v = typed3(rowOf(o).querySelector('[data-amt]').value, E3.curOf(id)); return `Was ${E3.occName(o.item)}'s payment ${money3(v === null ? o.amount : v, E3.curOf(id))}?`; });
 }
-/* the last figure typed for a card, and its day (a lookup in the book) */
-function lastCardCheck3(id) {
-  return ((E3.book && E3.book.events) || []).filter(e => e && !e.gone && e.k === 'check' && !e.stmt && e.acct === id && e.date <= check3.day).sort((x, y) => (x.date < y.date ? -1 : x.date > y.date ? 1 : 0)).pop() || null;
-}
 /* while typing: what the app expects each figure to be now, with what is ticked (the engine on the book the check-in
    would make with no figure), and the gap each typed figure leaves (the engine on the book with the figures) */
 function checkPreview3() {
@@ -8382,7 +8384,7 @@ function checkPreview3() {
   for (const el of sheet.querySelectorAll('[data-expected]')) {
     const id = el.dataset.expected, a = r0.accounts[id];
     if (a) el.textContent = `Expected now ${money3(a.bank, a.currency)}, last checked ${money3(a.checked, a.currency)} on ${day3(a.asOf, yr)}`;
-    else if (r0.cards[id]) { const c = lastCardCheck3(id); el.textContent = `Expected now ${money3(r0.cards[id].owedNow, E3.curOf(id))}${c ? `, last checked ${money3(c.a, E3.curOf(id))} on ${day3(c.date, yr)}` : ''}`; }
+    else if (r0.cards[id]) { const c = E3.lastCheckOf(id, check3.day); el.textContent = `Expected now ${money3(r0.cards[id].owedNow, E3.curOf(id))}${c ? `, last checked ${money3(c.a, E3.curOf(id))} on ${day3(c.date, yr)}` : ''}`; }
   }
   for (const el of sheet.querySelectorAll('[data-gap]')) {
     const id = el.dataset.gap, g = id in d.figures ? gapWords3(r1, id, check3.day) : null;
