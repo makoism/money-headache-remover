@@ -454,3 +454,8 @@ Mako: "there is no old data on the old app. We don't need to calculate with that
 BE1. Version one starts empty. setup3 is the only way in, and made-up numbers are offered to look at first. The move is not wired into app3. engine/move.js and its tests stay in the repo for anyone who does have old data later.
 BE2. These drop out of version one: E1 (the move proved on every old build), WIRING_PLAN F2 and F3 (questions after a move, which copy wins), the comparison of the move before deploy, and the old app's backup as a way in.
 BE3. Backup and restore of the new shape (store/pack) stay in slice 4.
+
+## BF. Engine follow-ups (23 Nov night JST)
+BF1. Goal per period: toGo spread over the period-starting pays still to come on or before the date. A pay due today that is not settled yet counts. A late pay that is still expected counts. Leftover minor units go on the earliest pay. With no fixed pay, perPeriod is null until slice 6.
+BF2. Overdue card and loan payments are listed under `overdue`, with state late or notSeen. `next` is always today or later. Screens must show overdue items, so one never disappears.
+BF3. Past periods group records by date and list only records told by the day asked (O1).
