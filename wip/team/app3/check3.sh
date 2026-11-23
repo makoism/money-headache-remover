@@ -51,6 +51,7 @@ step "as a plain file: the first screen, the try book and its day box"; run test
 step "setup3"; run tests/e3_setup.js "e3_setup: ALL PASS"
 step "walk 2 fixes (BI3 bills not gone out yet, BI4 may still go through, a pay by its landing day)"; run tests/e3_walk2.js "e3_walk2: ALL PASS"
 step "walk 4 fixes (an outstanding pay's own amount on Plan, the typed note beside a statement row in Receipts)"; run tests/e3_walk4.js "e3_walk4: ALL PASS"
+step "the real-page walk, walk 4 run A: setup 24 Nov to 15 Feb, hand-worked figures at every step"; run tests/e3_walk.js "e3_walk: ALL PASS"
 step "guard (idle CPU, long tasks, outside requests, errors)"; run tests/guard3.js "guard3: ALL PASS"
 step "offline load"; run tests/offline.js "offline: ALL PASS"
 step "the private publish (a made-up path, a copy of public/ served by the worker's rules)"; run tests/e3_publish.js "e3_publish: ALL PASS"

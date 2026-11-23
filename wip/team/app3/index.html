@@ -7151,9 +7151,12 @@ const E3 = (() => {
   }
   /* the moment a record is told: the shown day at the device's clock time (to the minute, then the given seconds),
      with the device's offset */
+  /* to the millisecond (walk 4 gate): with minutes and a fixed ':00', a spend logged in the same minute as a check-in was
+     told before the check (':01') and held inside its figure, so the bank did not move. '01' is one millisecond later,
+     so a check-in's check still comes after the records it writes with it. */
   function told(sec) {
-    const d = new Date(), off = -d.getTimezoneOffset(), sign = off < 0 ? '-' : '+', a = Math.abs(off);
-    return today() + 'T' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + ':' + (sec || '00') + sign + pad2(Math.floor(a / 60)) + ':' + pad2(a % 60);
+    const d = new Date(Date.now() + (sec === '01' ? 1 : 0)), off = -d.getTimezoneOffset(), sign = off < 0 ? '-' : '+', a = Math.abs(off);
+    return today() + 'T' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + ':' + pad2(d.getSeconds()) + '.' + String(d.getMilliseconds()).padStart(3, '0') + sign + pad2(Math.floor(a / 60)) + ':' + pad2(a % 60);
   }
   /* ids `<device part>-<session part>-<n>`: the store keeps the device part (store/idb.js). A try book writes nothing,
      not even the device part, so its ids use a made-up one. */

@@ -32,6 +32,7 @@
   { "name": "Reminders, pure: check-in days (after pay, mid period) and bill days from the engine's calendar, the calendar file, Google and Outlook links, words only", "test": "tests/remind3.test.js", "passes": true },
   { "name": "Walk 2: setup asks whether each bill due since the last pay has gone out yet (BI3); Home lists what may still go through (BI4a); a late or not seen pay is named by the day it lands (BI4b)", "test": "tests/e3_walk2.js", "passes": true },
   { "name": "Walk 4: Plan shows an outstanding pay with its own amount; Receipts shows the typed note beside a statement row and search finds it", "test": "tests/e3_walk4.js", "passes": true },
+  { "name": "The real-page walk (walk 4 run A) as a gate: Mako's made-up shape from setup on 24 Nov to 15 Feb through the page, safe to spend and the bank at every step are the hand-worked figures", "test": "tests/e3_walk.js", "passes": true },
   { "name": "Setup, short (setup3): bank today, pay with a second income, cards with a close day or not sure, bills, the minimum; through build_book and the store", "test": "tests/e3_setup.js", "passes": true }
  ]
 }
