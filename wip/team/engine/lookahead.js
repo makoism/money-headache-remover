@@ -314,6 +314,10 @@
     const pays = periodStream ? items.filter(o => o.sid === periodStream.id) : [];
     const startsPeriod = e => e.k === 'in' && e.sub !== 'refund' && !!periodStream && e.settles.some(s => I.scheduleOf(s) === periodStream.id);
     const nextPays = pays.filter(o => !o.settled && (o.land >= today || lateExpected(o)));
+    // [BJ1] a pay due today left unticked at a check-in made today is not seen: it is not counted (BH1 over G4)
+    const checkedOn = {};
+    for (const e of all) if (e.e && !e.e.gone && e.e.k === 'check' && !e.e.stmt && e.e.date && dayNum(e.e.date) === today && !isOpeningCheck(e.e) && dayNum(e.e.told || e.e.date) <= knownTo) checkedOn[e.e.acct] = true;
+    const leftToday = o => o.land === today && !o.settled && !!checkedOn[o.acct];
     const psOf = {}, peEnd = {};
     for (const e of live()) {
       if (e.k === 'periodStart' && e.day <= knownTo) { const oc = I.periodOcc(e.id); if (oc) psOf[oc] = e.day; }
@@ -986,7 +990,7 @@
       if (periodStream) {
         // [AU4] every pay the walk counts (due today or later) brings its period's lines on the day it lands; [BH1] a late
         // pay is not counted and its period has not started, so it brings none
-        const starts = nextPays.filter(p => p.land >= today).sort((x, z) => x.land - z.land);
+        const starts = nextPays.filter(p => p.land >= today && !leftToday(p)).sort((x, z) => x.land - z.land);
         starts.forEach((p, i) => {
           const end = starts[i + 1] ? starts[i + 1].land : p.land + 30;
           for (const l of lines) list.push({ land: Math.max(p.land, today), amount: perPeriod({ per: l.per, amount: periodAmount(l.src, p.land, p.id) }, p.land, end, p.id), label: l.name + ' for the period from ' + short(p.land) });
@@ -1026,7 +1030,7 @@
         if (o.settled) continue;
         // [BH1, replaces H8 for safe to spend] money not yet seen never counts: a pay past its day and not ticked (late or
         // not seen) is left out of the walk until it is ticked; a pay due today counts [G4]
-        if (o.kind === 'income' && o.acct === id && !o.otherCur && o.land >= today && o.land <= end)
+        if (o.kind === 'income' && o.acct === id && !o.otherCur && o.land >= today && !leftToday(o) && o.land <= end)
           steps.push({ day: o.land, order: 0, amount: o.amount, label: o.name + ' ' + short(o.land) });
         if (o.kind === 'loan' && cur(o.card) !== cur(id)) continue;   // [V2] warned below
         if ((o.kind === 'bill' || o.kind === 'transfer' || o.kind === 'auto' || o.kind === 'loan') && o.acct === id && o.land <= end) {

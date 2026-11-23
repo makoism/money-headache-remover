@@ -75,4 +75,15 @@ t('while the main pay is late, it does not count: safe to spend is the walk with
   w.ci('2027-01-11');
   ok(w.on('2027-01-11').accounts[w.ids.bank].headroom > bank.headroom);
 });
+t('a pay left unticked at a check-in on its due day is not counted that day [BJ1, BH1 over G4]', () => {
+  const w = life();
+  const before = w.on('2026-12-10').accounts[w.ids.bank];   // no check-in yet: both pays due today count [G4]
+  w.ci('2026-12-10', ['pay_side']);
+  const r = w.on('2026-12-10'), bank = r.accounts[w.ids.bank];
+  // the main pay was ticked (in the bank figure now); the side job's 60,000 is not counted any more
+  eq(bank.headroom, before.headroom - 60000);
+  ok(r.checkIn.toConfirm.some(w.of('pay_side')));
+  // the next day it is late, and still not counted
+  eq(w.on('2026-12-11').accounts[w.ids.bank].why.includes('Side job'), false);
+});
 done('mako_walk');
