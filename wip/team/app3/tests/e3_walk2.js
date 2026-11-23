@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /* Walk 2 fixes (DECISIONS_ROUND2 BI3, BI4), made-up yen.
-   BI3: setup on 24 Nov asks, only for a bill due between the last pay and the setup day, "Has it gone out of your bank
-   yet?". Phone (due 20 Nov) not gone yet: safe to spend is 196,600, not 201,400.
+   BI3: setup on 24 Nov asks, only for a bill due between the last pay and the setup day, whether it left the bank,
+   naming its own day: "Did the Phone of 20 Nov leave your bank?" (QC F3). Phone (due 20 Nov) not gone yet: safe to spend is 196,600, not 201,400.
    BI4a: Home lists what may still go through: on 28 Nov Rent and Internet by name, on 11 Dec the late side job.
    BI4b: a late or not seen pay is named by the day it lands (after the weekend rule), not its unmoved due day: with
    pay moved to the working day before, the January pay lands Fri 8 Jan, and on 13 Jan Home says "due 8 Jan". */
@@ -36,7 +36,7 @@ const typeIn = async (p, sel, v) => { await p.click(sel, { clickCount: 3 }); awa
     await p.click('#s3Min'); await T.w(200);
     const asked = await p.$$eval('[data-row^=bill]', rs => rs.map(r => { const q = r.querySelector('[data-f=takenOut]'); return [r.querySelector('[data-f=name]').value, !!q && !q.closest('[hidden]'), q && q.value, q && q.closest('.a3-field').textContent]; }));
     ck('only Phone (due 20 Nov, after the 10 Nov pay) is asked whether it has gone out yet', asked.filter(x => x[1]).map(x => x[0]).join() === 'Phone', JSON.stringify(asked));
-    ck('the question says what it asks, and the answer starts as yes', /Has it gone out of your bank yet\?/.test(asked[2][3]) && asked[2][2] === 'yes', JSON.stringify(asked[2]));
+    ck('the question names the bill and its own day (QC F3), and the answer starts as yes', /^Did the Phone of 20 Nov leave your bank\?/.test(asked[2][3]) && asked[2][2] === 'yes', JSON.stringify(asked[2]));
     await p.select('[data-row=bill3] [data-f=takenOut]', 'no');
     await T.shot(p, 'setup_bi3_2026-11-24');
     await p.click('#a3SetupSave'); await T.w(600);

@@ -78,7 +78,7 @@ function openSetup3() {
       <div class="a3-field"><label for="s3-${k}-n">Called</label><input class="a3-in a3-txt" id="s3-${k}-n" data-f="name" placeholder="Bill" autocomplete="off"></div>
       <div class="a3-field"><label for="s3-${k}-a">Amount</label><input class="a3-in" id="s3-${k}-a" data-f="amount" data-money></div></div>
       <div class="a3-field"><label for="s3-${k}-d">Day of the month it leaves</label><select class="a3-in a3-sel" id="s3-${k}-d" data-f="day">${dayOptions3('27')}</select></div>
-      <div class="a3-field" data-q="takenOut" hidden><label for="s3-${k}-t">Has it gone out of your bank yet?</label><select class="a3-in a3-sel" id="s3-${k}-t" data-f="takenOut"><option value="yes" selected>Yes</option><option value="no">No, not yet</option></select></div></div>`);
+      <div class="a3-field" data-q="takenOut" hidden><label for="s3-${k}-t">Did it leave your bank?</label><select class="a3-in a3-sel" id="s3-${k}-t" data-f="takenOut"><option value="yes" selected>Yes</option><option value="no">No, not yet</option></select></div></div>`);
     bindMoney3($(`#s3-${k}-a`));
     askTaken3();
   });
@@ -127,20 +127,22 @@ function answers3(strict) {
   }
   return ans;
 }
-/* [BI3, X3] which bills to ask "Has it gone out of your bank yet?": build_book itself says, from a draft where every
-   bill is still to go (the opening check's notYet names each one due between the last pay and the setup day) */
+/* [BI3, X3, QC F3] which bills to ask whether they have left the bank, and by which day: build_book itself says
+   (`asked`: each bill landing after the last pay and on or before the setup day, with its landing days). The question
+   names the bill and its own day: "Did the Rent of 27 Oct leave your bank?" */
 function askTaken3() {
   if (!setup3) return;
-  let due = new Set();
-  try {
-    const ans = answers3(false);
-    ans.bills.forEach(x => { x.takenOut = false; });
-    const built = BurrowEngine.build.buildBook(ans, { newId: BurrowEngine.ids.idMaker('draft0') });
-    const open = built.book.events.find(e => e.k === 'check' && e.acct === built.ids.bank1 && !e.stmt);
-    const sched = (open && open.notYet || []).map(o => BurrowEngine.ids.scheduleOf(typeof o === 'string' ? o : o.s + '@' + o.due));
-    for (const key of Object.keys(built.ids)) if (sched.includes(built.ids[key])) due.add(key);
-  } catch (e) { due = new Set(); }
-  $$('#a3Setup [data-row^=bill]').forEach(row => { row.querySelector('[data-q=takenOut]').hidden = !due.has(row.dataset.row); });
+  let asked = {};
+  try { asked = BurrowEngine.build.buildBook(answers3(false), { newId: BurrowEngine.ids.idMaker('draft0') }).asked || {}; } catch (e) { asked = {}; }
+  const yr = (E3.today() || '').slice(0, 4);
+  $$('#a3Setup [data-row^=bill]').forEach(row => {
+    const q = row.querySelector('[data-q=takenOut]'), days = asked[row.dataset.row];
+    q.hidden = !days;
+    if (!days) return;
+    const name = row.querySelector('[data-f=name]').value.trim() || 'bill';
+    const when = days.map(d => day3(d, yr)), list = when.length > 1 ? when.slice(0, -1).join(', ') + ' and ' + when.slice(-1)[0] : when[0];
+    q.querySelector('label').textContent = `Did the ${name} of ${list} leave your bank?`;
+  });
 }
 async function saveSetup3() {
   const err = $('#a3SetupErr');

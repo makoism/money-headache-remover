@@ -8,7 +8,8 @@
        bills: [{ key, name, from, amount, day | days, every?, n?, shift?, takenOut? }] }
    `takenOut` [X3]: for a bill due between the last pay and the setup day, whether it has already come out of the
    account (true, the default: it is inside the opening figure) or is still to go (false: each such occurrence is
-   named in the opening check's `notYet`, so it stays expected and on the check-in list). "The last pay" is the
+   named in the opening check's `notYet`, so it stays expected and on the check-in list). The result's `asked` gives,
+   for each bill key with such an occurrence, its landing days (YYYY-MM-DD): the bills setup asks about. "The last pay" is the
    period-starting pay (else any pay) landing on or before the setup day; with no pay, the month before setup.
    Amounts are whole minor units of the home currency. `shift` is 'before', 'after' or 'none' (the weekend and holiday
    rule). The first bank is the main one unless another says `main`. Each account opens with one `open` and one `check`
@@ -97,24 +98,28 @@
       book.schedules.push(stamp({ id: idFor(b.key), kind: 'bill', name: b.name, acct: acctOf(b.from), cur, shift: shift(b.shift, b.name),
         rules: [{ from: null, rule: ruleOf(b, b.name) }], steps: [{ from: null, amount: whole(b.amount, b.name) }] }));
     }
-    // [X3] bills still to go that were due between the last pay and the setup day
+    // [X3] bills due between the last pay and the setup day: `asked` names each one's landing days (setup asks about
+    // those, QC F3), and the ones still to go are marked on the opening check
+    const asked = {};
     const toGo = (ans.bills || []).filter(b => b.takenOut === false);
-    if (toGo.length) {
+    if ((ans.bills || []).length) {
       const cal = S.calendar(ans.country || 'XX');
       const d0 = D.dayNum(day), occ = (sch, from) => S.occurrences(sch, cal, from, d0);
       const payStarts = book.schedules.filter(x => x.kind === 'income' && x.startsPeriod);
       const pays = (payStarts.length ? payStarts : book.schedules.filter(x => x.kind === 'income'))
         .map(x => occ(x, d0 - 62).filter(o => o.land <= d0).map(o => o.land)).reduce((a, l) => a.concat(l), []);
       const since = pays.length ? Math.max(...pays) : d0 - 31;
-      for (const b of toGo) {
+      for (const b of ans.bills) {
         const sch = book.schedules.find(x => x.id === ids[b.key]);
-        const names = occ(sch, since).filter(o => o.land > since && o.land <= d0).map(o => o.id);
-        if (!names.length) continue;
+        const inside = occ(sch, since).filter(o => o.land > since && o.land <= d0);
+        if (inside.length) asked[b.key] = inside.map(o => D.dayStr(o.land));
+        const names = inside.map(o => o.id);
+        if (!names.length || !toGo.includes(b)) continue;
         const check = book.events.find(e => e.k === 'check' && e.acct === sch.acct && e.grp === grp);
         check.notYet = (check.notYet || []).concat(names);
       }
     }
-    return { book, ids };
+    return { book, ids, asked };
   }
   const api = { buildBook };
   if (node) module.exports = api;

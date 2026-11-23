@@ -94,4 +94,17 @@ t('a bill due between the last pay and the setup day: taken out already (inside 
   const a3 = clone(ANSWERS); a3.bills.find(b => b.key === 'rent').takenOut = false;
   eq(B.buildBook(a3, { newId }).book.events.find(e => e.k === 'check').notYet, undefined);
 });
+t('setup asks only about bills landing after the last pay and on or before the setup day, each with its own day (QC F3)', () => {
+  // set up Fri 20 Nov; the last pay landed Tue 10 Nov. Gym on the 10th landed with the pay: not asked. Water on the 5th:
+  // before the pay, not asked. Club on the 15th (a Sunday, moved after): lands Mon 16 Nov, asked by that day. Phone on
+  // the 20th, the setup day: asked. TV on the 21st: still to come, not asked. Rent on the 27th: 27 Oct, before the pay.
+  const a = clone(ANSWERS);
+  a.bills.push({ key: 'gym', name: 'Gym', from: 'bank', amount: 3000, day: 10, shift: 'after' }, { key: 'water', name: 'Water', from: 'bank', amount: 2000, day: 5, shift: 'after' },
+    { key: 'club', name: 'Club', from: 'bank', amount: 1000, day: 15, shift: 'after' }, { key: 'tv', name: 'TV', from: 'bank', amount: 1500, day: 21, shift: 'after' });
+  const b = B.buildBook(a, { newId });
+  eq(b.asked, { phone: ['2026-11-20'], club: ['2026-11-16'] });
+  // the same whatever the answers so far: it says which bills to ask about
+  a.bills.forEach(x => { x.takenOut = false; });
+  eq(B.buildBook(a, { newId }).asked, { phone: ['2026-11-20'], club: ['2026-11-16'] });
+});
 done('build_book');
