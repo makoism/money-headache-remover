@@ -51,7 +51,8 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     eq(h.book.plan.budgets[0].steps.slice(-1).map(s => [s.from, s.amount, s.by]), [[DAY, 45000, 'p3wrtd']]);
     eq(view(h.book).period.lines[0].amount, 40000, 'this period keeps its amount');
     r = await h.go('changeLine', id, { amount: 38000, when: 'now' });
-    eq(h.book.plan.budgets[0].steps.slice(-1).map(s => [s.from, s.amount]), [[DAY, 38000]], 'the next periods');
+    eq(h.book.plan.budgets[0].steps.slice(-1).map(s => [s.from, s.amount]), [['2026-11-10', 38000]], 'one step from the period start (BF, the engine counts it in the setup period)');
+    eq(h.book.plan.budgets[0].once, undefined, 'no once key for a change from now');
     eq(view(h.book).period.lines[0].amount, 38000, 'this period follows');
     r = await h.go('changeLine', id, { amount: 50000, when: 'once' });
     const p = view(h.book).period;
@@ -80,6 +81,7 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     eq(view(h.book).period.free.amount, 60000);
     r = await h.go('setFree', { amount: 65000, when: 'now' });
     eq(view(h.book).period.free.amount, 65000);
+    eq([h.book.plan.shares.slice(-1)[0].from, h.book.plan.shares.slice(-1)[0].once], ['2026-11-10', undefined], 'a share from the period start, no once key');
     r = await h.go('setFree', { amount: 20000, when: 'once' }); ok(r.ok, JSON.stringify(r));
     eq(view(h.book).period.free.amount, 20000);
   });

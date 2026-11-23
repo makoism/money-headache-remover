@@ -1359,6 +1359,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
 .a3-goal > span:first-child { flex: 1; min-width: 0; }
 .a3-past { border-bottom: 1px solid var(--hair); padding: 8px 0; }
 .a3-past summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-weight: 600; }
+.a3-late { display: inline-block; margin-top: 4px; color: var(--warn); font-size: var(--t-sm); }
 .a3-past summary:focus-visible { outline: 3px solid var(--acc-ring); outline-offset: 2px; }
 /* Settings (settings3.js, backup lane) */
 .a3-link { margin-left: auto; border: 0; background: none; color: var(--ink2); font: inherit; font-size: var(--t-sm); min-height: 44px; padding: 0 4px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
@@ -6880,14 +6881,13 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     const l = find(w, 'budgets', id), a = x.amount == null || x.amount === 0 ? x.amount : amountOk(x.amount, 'an amount'), p = period(w);
     const ch = {};
     if (x.name != null && x.name !== l.name) { ch.name = nameOk(x.name); sameName(A3.listOf(w.book, 'budgets'), ch.name, id); }
-    /* 'now' is a step from today (the next periods) and a once key for this one: the engine reads a step only from a
-       period start it has recorded, and the period holding the setup day has none */
+    /* 'now' is a step from this period's first day: it counts in this period and after [V, BF] */
     if (a == null) { if (!ch.name) bad('Nothing changed'); }
-    else if (x.when === 'once' || x.when === 'now') {
+    else if (x.when === 'once') {
       if (!p.startsWith) bad('This pay period has no pay to name it by yet. Change it from the next one');
       ch.once = Object.assign({}, l.once || {}, { [p.startsWith]: { amount: a } });
     }
-    if (a != null && (x.when === 'now' || x.when === 'next')) ch.steps = (l.steps || []).concat([{ from: w.today, amount: a }]);
+    if (a != null && (x.when === 'now' || x.when === 'next')) ch.steps = (l.steps || []).concat([{ from: x.when === 'now' ? p.start : w.today, amount: a }]);
     else if (a != null && x.when !== 'once') bad('Pick when the change starts');
     const r = w.edit('budgets', id, ch);
     if (ch.steps) stampNew(r, 'steps');
@@ -6911,12 +6911,8 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
       Object.assign(r.once[p.startsWith], { at: r.at, by: r.by });
       return s.id;
     }
-    const rec = { from: shares.length ? w.today : null, cur: home(w), per: { free: 'pay' }, free: a, goals: {} };
-    const p = shares.length && x.when === 'now' ? period(w) : null;   // 'now': this period too, as a once key (see changeLine)
-    if (p && p.startsWith) rec.once = { [p.startsWith]: { free: a } };
-    const id = w.add('shares', rec);
-    if (rec.once) { const r = find(w, 'shares', id); Object.assign(r.once[p.startsWith], { at: r.at, by: r.by }); }
-    return id;
+    const from = !shares.length ? null : x.when === 'now' ? period(w).start : w.today;   // 'now': from this period's first day [V]
+    return w.add('shares', { from, cur: home(w), per: { free: 'pay' }, free: a, goals: {} });
   }
 
   /* ---- bills ---- */
@@ -7106,6 +7102,10 @@ function renderHome3() {
     out.push(`<section class="a3-card" data-card="cards"><h2>${esc3(label3('owed'))} on your cards</h2><ul class="a3-rows">${rows}</ul>
       <p class="a3-sub">${esc3(label3('bankAfterCards'))}: <b data-fig="aftercards">${fig3('total.afterCards', r.total.afterCards, home)}</b></p></section>`);
   }
+  /* overdue card and loan payments: past their day and not ticked, never dropped from the page [F4, H8, BF2] (plan lane) */
+  const od = [].concat(...[['cards', r.cards], ['owed', r.owed || {}]].map(([k, m]) => Object.keys(m).map(id => (m[id].overdue || []).map(o =>
+    `<li data-fig="overdue" data-owed="${esc3(id)}" data-state="${esc3(o.state)}"><span>${esc3(E3.nameOf(id))}<br><span class="when">${overdueWords3(o, E3.curOf(id), yr, k + '.*.overdue.*.amount')}</span></span></li>`))));
+  if (od.length) out.push(`<section class="a3-card" data-card="overdue"><h2>Card and loan payments overdue</h2><ul class="a3-rows">${[].concat(...od).join('')}</ul></section>`);
   /* not seen yet, and later on */
   const late = r.notSeenYet.items;
   if (late.length) out.push(`<section class="a3-card" data-card="notseen"><h2>${esc3(label3('notSeenYet'))}</h2><p class="a3-sub">These were due and are not ticked off. Check your bank to tick them</p><ul class="a3-rows">${rowsHtml3(late, home, yr, 'notSeenYet.items')}</ul></section>`);
@@ -7427,6 +7427,10 @@ function plFig3(path, minor, cur) { return fig3(path, minor, cur || E3.home()); 
 function plRow3(attrs, left, right) {
   return `<li><button type="button" class="a3-rcrow" ${attrs}><span>${left}</span><span class="amt">${right}</span></button></li>`;
 }
+/* an overdue card or loan payment (the engine's `overdue`: past its day and not ticked [F4, H8, BF2]) */
+function overdueWords3(o, cur, yr, path) {
+  return `${fig3(path, o.amount, cur)} due ${esc3(day3(o.payment_date, yr))} ${o.state === 'late' ? 'is late' : 'has not been seen'}. Tick it at Check your bank when it has gone`;
+}
 function plAccounts3(kinds) { return ((E3.book && E3.book.accounts) || []).filter(a => plLive3(a) && kinds[a.type] && !a.closed); }
 
 function renderPlan3() {
@@ -7469,8 +7473,9 @@ function renderPlan3() {
   const goals = (book.places || []).filter(g => plLive3(g) && g.kind === 'goal' && r.places[g.id]).map(g => {
     const kept = r.places[g.id].kept, where = g.keptIn && g.keptIn.mode === 'ownAccount' ? 'in ' + esc3(E3.nameOf(g.keptIn.acct)) : 'kept in your bank';
     const due = g.due ? `, ${esc3(label3('placeDue')).toLowerCase()} ${esc3(day3(g.due, yr))}` : '';
+    const pl = r.places[g.id], pace = pl.perPeriod && g.due ? `<br><span class="when" data-fig="goal-pace">about ${plFig3('places.*.perPeriod', pl.perPeriod, g.cur)} each pay to reach it by ${esc3(day3(g.due, yr))}</span>` : '';
     return `<li><button type="button" class="a3-rcrow a3-goal" data-goal="${esc3(g.id)}"><span>${esc3(g.name)}<br><span class="when">${where}${due}</span>
-      <meter min="0" max="${esc3(g.target)}" value="${esc3(kept)}" aria-label="${esc3(g.name)}: set aside so far"></meter></span>
+      <meter min="0" max="${esc3(g.target)}" value="${esc3(kept)}" aria-label="${esc3(g.name)}: set aside so far"></meter>${pace}</span>
       <span class="amt"><span data-fig="goal-kept">${plFig3('places.*.kept', kept, g.cur)}</span><br><span class="when">of ${plFig3('places.*.target', g.target, g.cur)}</span></span></button></li>`;
   });
   out.push(`<section class="a3-card" data-card="plan-goals"><h2>Goals</h2>${goals.length ? `<ul class="a3-rows a3-rclist">${goals.join('')}</ul>` : '<p class="a3-sub">No goals yet. A goal is money set aside for something, kept in your bank or in an account of its own</p>'}
@@ -7482,7 +7487,8 @@ function renderPlan3() {
     const days = a.type === 'card' ? `paid on day ${esc3(a.payDay)} from ${esc3(E3.nameOf(a.payFrom))}, ${a.cutDay == null ? 'close day not sure' : 'closes on day ' + esc3(a.cutDay)}`
       : `paid on day ${esc3(a.payDay)} from ${esc3(E3.nameOf(a.payFrom))}`;
     const nx = k.next && k.next.amount ? `<br><span class="when">${esc3(label3('nextPayment'))} ${plFig3(a.type === 'card' ? 'cards.*.next.amount' : 'owed.*.next.amount', k.next.amount, a.cur)} on ${esc3(day3(k.next.payment_date, yr))}</span>` : '';
-    return plRow3(`data-owed="${esc3(a.id)}"`, `${esc3(a.name)}<br><span class="when">${days}</span>${nx}`, `<span data-fig="owed-now">${plFig3(a.type === 'card' ? 'cards.*.owedNow' : 'owed.*.owedNow', k.owedNow, a.cur)}</span><br><span class="when">${esc3(label3('owed')).toLowerCase()}</span>`);
+    const od = (k.overdue || []).map(o => `<br><span class="a3-late" data-fig="overdue" data-state="${esc3(o.state)}">${overdueWords3(o, a.cur, yr, a.type === 'card' ? 'cards.*.overdue.*.amount' : 'owed.*.overdue.*.amount')}</span>`).join('');
+    return plRow3(`data-owed="${esc3(a.id)}"`, `${esc3(a.name)}<br><span class="when">${days}</span>${od}${nx}`, `<span data-fig="owed-now">${plFig3(a.type === 'card' ? 'cards.*.owedNow' : 'owed.*.owedNow', k.owedNow, a.cur)}</span><br><span class="when">${esc3(label3('owed')).toLowerCase()}</span>`);
   }).filter(Boolean);
   out.push(`<section class="a3-card" data-card="plan-owed"><h2>Cards and loans</h2>${owedRows.length ? `<ul class="a3-rows a3-rclist">${owedRows.join('')}</ul>` : '<p class="a3-sub">No cards or loans</p>'}
     <div class="a3-actions"><button type="button" class="a3-btn" id="plAddLoan">Add a loan</button></div></section>`);

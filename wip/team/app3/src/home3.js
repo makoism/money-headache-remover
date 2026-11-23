@@ -79,6 +79,10 @@ function renderHome3() {
     out.push(`<section class="a3-card" data-card="cards"><h2>${esc3(label3('owed'))} on your cards</h2><ul class="a3-rows">${rows}</ul>
       <p class="a3-sub">${esc3(label3('bankAfterCards'))}: <b data-fig="aftercards">${fig3('total.afterCards', r.total.afterCards, home)}</b></p></section>`);
   }
+  /* overdue card and loan payments: past their day and not ticked, never dropped from the page [F4, H8, BF2] (plan lane) */
+  const od = [].concat(...[['cards', r.cards], ['owed', r.owed || {}]].map(([k, m]) => Object.keys(m).map(id => (m[id].overdue || []).map(o =>
+    `<li data-fig="overdue" data-owed="${esc3(id)}" data-state="${esc3(o.state)}"><span>${esc3(E3.nameOf(id))}<br><span class="when">${overdueWords3(o, E3.curOf(id), yr, k + '.*.overdue.*.amount')}</span></span></li>`))));
+  if (od.length) out.push(`<section class="a3-card" data-card="overdue"><h2>Card and loan payments overdue</h2><ul class="a3-rows">${[].concat(...od).join('')}</ul></section>`);
   /* not seen yet, and later on */
   const late = r.notSeenYet.items;
   if (late.length) out.push(`<section class="a3-card" data-card="notseen"><h2>${esc3(label3('notSeenYet'))}</h2><p class="a3-sub">These were due and are not ticked off. Check your bank to tick them</p><ul class="a3-rows">${rowsHtml3(late, home, yr, 'notSeenYet.items')}</ul></section>`);

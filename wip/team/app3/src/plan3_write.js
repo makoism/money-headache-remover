@@ -46,14 +46,13 @@
     const l = find(w, 'budgets', id), a = x.amount == null || x.amount === 0 ? x.amount : amountOk(x.amount, 'an amount'), p = period(w);
     const ch = {};
     if (x.name != null && x.name !== l.name) { ch.name = nameOk(x.name); sameName(A3.listOf(w.book, 'budgets'), ch.name, id); }
-    /* 'now' is a step from today (the next periods) and a once key for this one: the engine reads a step only from a
-       period start it has recorded, and the period holding the setup day has none */
+    /* 'now' is a step from this period's first day: it counts in this period and after [V, BF] */
     if (a == null) { if (!ch.name) bad('Nothing changed'); }
-    else if (x.when === 'once' || x.when === 'now') {
+    else if (x.when === 'once') {
       if (!p.startsWith) bad('This pay period has no pay to name it by yet. Change it from the next one');
       ch.once = Object.assign({}, l.once || {}, { [p.startsWith]: { amount: a } });
     }
-    if (a != null && (x.when === 'now' || x.when === 'next')) ch.steps = (l.steps || []).concat([{ from: w.today, amount: a }]);
+    if (a != null && (x.when === 'now' || x.when === 'next')) ch.steps = (l.steps || []).concat([{ from: x.when === 'now' ? p.start : w.today, amount: a }]);
     else if (a != null && x.when !== 'once') bad('Pick when the change starts');
     const r = w.edit('budgets', id, ch);
     if (ch.steps) stampNew(r, 'steps');
@@ -77,12 +76,8 @@
       Object.assign(r.once[p.startsWith], { at: r.at, by: r.by });
       return s.id;
     }
-    const rec = { from: shares.length ? w.today : null, cur: home(w), per: { free: 'pay' }, free: a, goals: {} };
-    const p = shares.length && x.when === 'now' ? period(w) : null;   // 'now': this period too, as a once key (see changeLine)
-    if (p && p.startsWith) rec.once = { [p.startsWith]: { free: a } };
-    const id = w.add('shares', rec);
-    if (rec.once) { const r = find(w, 'shares', id); Object.assign(r.once[p.startsWith], { at: r.at, by: r.by }); }
-    return id;
+    const from = !shares.length ? null : x.when === 'now' ? period(w).start : w.today;   // 'now': from this period's first day [V]
+    return w.add('shares', { from, cur: home(w), per: { free: 'pay' }, free: a, goals: {} });
   }
 
   /* ---- bills ---- */
