@@ -68,7 +68,7 @@ test('one account under its minimum while the headline is fine: never "ok" (free
   assert.strictEqual(s.state, 'warning');
   assert.strictEqual(s.level, 'bad');
   assert.strictEqual(s.reason.account, 'ewallet');
-  assert.strictEqual(s.text.reason, 'E-wallet goes ₱1,500 under its minimum on 12 Mar');
+  assert.strictEqual(s.text.reason, 'E-wallet goes ₱1,500 below zero on 12 Mar');
   assert.ok(s.also.includes('later_on'));
 });
 
@@ -158,6 +158,28 @@ test('the words are drafts for Mako\'s copy pass and follow VOICE: no full stop 
     assert.strictEqual(w.forMako, true, k);
     assert.ok(!/[.;!]$/.test(w.text) && !/[–—]/.test(w.text), k + ': ' + w.text);
   }
+});
+
+test('warnings are worded here from the engine\'s data, never its text: "below zero" with no minimum, days and months as VOICE', () => {
+  const ctx = { currency: 'USD', names: { bank: 'Checking' } };
+  const iso = /\d{4}-\d{2}/;
+  const zero = status.warningText({ account: 'bank', code: 'below_minimum', day: '2027-01-05', amount: 1000, short: 1000, minimum: null, text: 'engine 2027-01-05' }, ctx);
+  assert.strictEqual(zero, 'Checking goes $10 below zero on 5 Jan');
+  const min = status.warningText({ account: 'bank', code: 'below_minimum', day: '2027-01-05', amount: 1000, short: 1000, minimum: 5000, text: 'x' }, ctx);
+  assert.strictEqual(min, 'Checking goes $10 below its minimum of $50 on 5 Jan');
+  const later = status.laterText({ account: 'bank', day: '2027-02-01', balance: -2500, amount: 2500, minimum: null, text: 'Later on: Checking goes below zero in 2027-02' }, ctx);
+  assert.strictEqual(later, 'Later on: Checking goes below zero in Feb 2027');
+  const again = status.warningText({ account: 'bank', code: 'check_again', day: '2026-12-03', text: 'raw 2026-12-03' }, ctx);
+  assert.ok(!iso.test(again) && /3 Dec/.test(again), again);
+  for (const code of ['reopened', 'gain_to_ask', 'minimum_other_currency', 'card_other_currency', 'loan_other_currency', 'something_new']) {
+    const s = status.warningText({ account: 'bank', card: 'visa', loan: 'car', code, day: '2026-12-03', gain: 100, text: 'raw 2026-12-03' }, ctx);
+    assert.ok(s && !iso.test(s) && !/raw/.test(s) && !/[.;!]$/.test(s), code + ': ' + s);
+  }
+  // the status line under a minimum of none says below zero too
+  const r = engine('mako_shape', '2026-11-25');
+  r.warnings = [{ account: Object.keys(r.accounts)[0], code: 'below_minimum', day: '2026-12-07', amount: 12000, short: 12000, minimum: null }];
+  const s = status.statusOf(r, YEN);
+  assert.match(s.text.reason, /goes ¥12,000 below zero on 7 Dec/);
 });
 
 run('status.js');

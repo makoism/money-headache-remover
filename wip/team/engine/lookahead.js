@@ -1102,12 +1102,16 @@
         spendFrom: isClosed ? false : a.spendFrom != null ? a.spendFrom : !!SPEND_TYPES[a.type] && a.cur === home && !backsGoal(id),
         why: whyText(w.why, w.headroom, a.cur), fillers: banks[id].fillers };
       if (id === mainAcct && mainMinOtherCur()) res.warnings.push({ account: id, code: 'minimum_other_currency', text: `The minimum kept for ${a.name} is in ${main.min.cur}, not ${a.cur}: what is its minimum in ${a.cur}?` });
-      if (w.headroom < 0) res.warnings.push({ account: id, code: 'below_minimum', day: r.lowestDay, short: -w.headroom, text: `${a.name} goes ${fmt(-w.headroom, a.cur)} below its minimum on ${r.lowestDay}` });
+      // [QC fix] data for the screens to word (account, amount, day, minimum or null for none); the text is only for Ask's
+      // summary, and says "below zero" when there is no minimum, with the day as "1 Jan", never an ISO day
+      if (w.headroom < 0) res.warnings.push({ account: id, code: 'below_minimum', day: r.lowestDay, amount: -w.headroom, short: -w.headroom, minimum: minimum || null,
+        text: minimum ? `${a.name} goes ${fmt(-w.headroom, a.cur)} below its minimum of ${fmt(minimum, a.cur)} on ${short(w.lowestDay)}` : `${a.name} goes ${fmt(-w.headroom, a.cur)} below zero on ${short(w.lowestDay)}` });
       const later = walk(id, today + LATER_ON_DAYS, 0);   // [B11]
-      if (later.firstBelowZero !== null && later.firstBelowZero > horizon) res.laterOn.push({ account: id, day: dayStr(later.firstBelowZero), balance: later.belowBal, text: `Later on: ${a.name} goes below zero in ${dayStr(later.firstBelowZero).slice(0, 7)}` });
+      if (later.firstBelowZero !== null && later.firstBelowZero > horizon) res.laterOn.push({ account: id, day: dayStr(later.firstBelowZero), balance: later.belowBal, amount: -later.belowBal, minimum: null,
+        text: `Later on: ${a.name} goes below zero in ${MONTHS[+dayStr(later.firstBelowZero).slice(5, 7) - 1]} ${dayStr(later.firstBelowZero).slice(0, 4)}` });
     }
     for (const id in banks) {
-      if (banks[id].askAgain !== null) res.warnings.push({ account: id, code: 'check_again', day: dayStr(banks[id].askAgain), text: `The ${acct[id].name} figure of ${dayStr(banks[id].askAgain)} was wrong: what does it show now?` });   // [Z1]
+      if (banks[id].askAgain !== null) res.warnings.push({ account: id, code: 'check_again', day: dayStr(banks[id].askAgain), text: `The ${acct[id].name} figure of ${short(banks[id].askAgain)} was wrong: what does it show now?` });   // [Z1]
       const g = banks[id].lastGap;
       if (g && largeGain(id, g) && g.answer !== 'right') res.warnings.push({ account: id, code: 'gain_to_ask', day: dayStr(g.day), gain: g.gain, text: `${acct[id].name} shows ${fmt(g.gain, cur(id))} more than the app had: was that figure right?` });
     }

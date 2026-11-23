@@ -121,4 +121,10 @@ test('forMako() lists every undecided name with its choices and source, for the 
   for (const x of list) { assert.ok(x.key && x.label && x.choices && x.source); assert.strictEqual(names.NAMES[x.key].state, 'for Mako'); }
 });
 
+test('a month as VOICE: "Feb 2027", never "2027-02"', () => {
+  assert.strictEqual(names.monthLabel('2027-02-01'), 'Feb 2027');
+  assert.strictEqual(names.monthLabel('2026-12-31'), 'Dec 2026');
+  assert.throws(() => names.monthLabel('2027-02'), /day/);
+});
+
 run('names.js');

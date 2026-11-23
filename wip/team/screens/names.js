@@ -158,6 +158,8 @@
     return { y: m[1], m: m[2], d: m[3].replace(/^0/, ''), s: m[0] };
   }
   function dayLabel(s, withYear) { const p = parseDay(s); return [p.d, MONTHS[p.m]].concat(withYear ? [p.y] : []).join(' '); }
+  /* a month as VOICE says: "Feb 2027" (from a real day in it) */
+  function monthLabel(s) { const p = parseDay(s); return MONTHS[p.m] + ' ' + p.y; }
   /* "10 Nov to 9 Dec"; across the new year both days carry their year (for Mako: whether the year shows otherwise) */
   function periodLabel(start, end) {
     const a = parseDay(start), b = parseDay(end);
@@ -166,5 +168,5 @@
     return dayLabel(start, years) + ' to ' + dayLabel(end, years);
   }
 
-  return { NAMES, label, byFigure, labelKey, check, forMako, notInEngine, dayLabel, periodLabel };
+  return { NAMES, label, byFigure, labelKey, check, forMako, notInEngine, dayLabel, monthLabel, periodLabel };
 });

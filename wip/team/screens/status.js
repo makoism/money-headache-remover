@@ -43,6 +43,7 @@
     'reason.short': W('You\'re short by {amount}'),
     'reason.short_on': W('You\'re short by {amount} on {day}'),
     'reason.below_minimum': W('{account} goes {amount} under its minimum on {day}'),
+    'reason.below_zero': W('{account} goes {amount} below zero on {day}'),
     'reason.gain_to_ask': W('{account} has more in it than the app expected'),
     'reason.check_again': W('Check {account} again'),
     'reason.minimum_other_currency': W('What\'s the minimum for {account} in its own currency'),
@@ -64,21 +65,40 @@
     'next.check_in_when_it_lands': W('Check in when it lands'),
     'next.wait_for_pay': W('It turns safe once your pay is in'),
     'next.log_money_in': W('Log money in when it comes'),
+    /* the engine's warnings, worded here from their data (account, amount, day, minimum or none), never its text */
+    'warn.below_zero': W('{account} goes {amount} below zero on {day}'),
+    'warn.below_minimum': W('{account} goes {amount} below its minimum of {minimum} on {day}'),
+    'warn.later_on': W('Later on: {account} goes below zero in {month}'),
+    'warn.check_again': W('The {account} figure of {day} was wrong: what does it show now'),
+    'warn.gain_to_ask': W('{account} shows {amount} more than the app had: was that figure right'),
+    'warn.reopened': W('{account} was closed, but money came into it, so it is open again'),
+    'warn.minimum_other_currency': W('The minimum kept for {account} is in another currency: what is its minimum in its own'),
+    'warn.card_other_currency': W('{card} is paid from {account} in another currency: it is not taken off safe to spend until it is paid'),
+    'warn.loan_other_currency': W('{loan} is paid from {account} in another currency: it is not taken off safe to spend until it is paid'),
+    'warn.income_other_currency': W('A pay into {account} is in another currency: it is not counted until it arrives'),
+    'warn.spend_other_currency': W('A spend from {account} in another currency is listed apart: it is not counted yet'),
+    'warn.unknown': W('Something about {account} needs a look'),
   };
 
   function fill(key, p, ctx) {
     const w = WORDS[key];
     if (!w) throw new Error('status: no words for ' + key);
+    /* one sentence, one way of writing cents: when one amount in it has cents, every amount does (money.formatter) */
+    const code = p.currency || ctx.currency;
+    const amounts = ['amount', 'minimum'].map(k => p[k]).filter(v => typeof v === 'number');
+    const fmt = amounts.length && code ? money.formatter(code, amounts) : null;
     return w.text.replace(/\{(\w+)\}/g, (all, k) => {
       const v = p[k];
       if (v === undefined || v === null) throw new Error('status: ' + key + ' needs ' + k);
-      if (k === 'amount') return money.format(v, p.currency || ctx.currency);
+      if (k === 'amount' || k === 'minimum') return fmt(v);
       if (k === 'day' || k === 'since' || k === 'until') return names.dayLabel(v);
-      if (k === 'account') return (ctx.names && ctx.names[v]) || v;
+      if (k === 'month') return names.monthLabel(v);
+      if (k === 'account' || k === 'card' || k === 'loan') return (ctx.names && ctx.names[v]) || 'an account';
       return String(v);
     });
   }
   function reasonKey(r) {
+    if (r.code === 'below_minimum' && !r.minimum) return 'reason.below_zero';
     if (r.code === 'short') return r.day ? 'reason.short_on' : 'reason.short';
     if (r.code === 'to_confirm') return r.count === 1 ? 'reason.to_confirm_one' : 'reason.to_confirm_many';
     if (r.code === 'nothing_safe') return r.until ? 'reason.nothing_safe' : 'reason.nothing_safe_no_pay';
@@ -101,7 +121,7 @@
       const day = below.length ? below[0].day : null;
       out.push({ state: 'short', reason: { code: 'short', amount: stp.shortfall, currency: ctx.currency, day }, next: { code: 'move_money_in', day }, note: below.length ? 'below_minimum' : 'short' });
     }
-    for (const w of below) out.push({ state: 'warning', reason: { code: 'below_minimum', account: w.account, amount: w.short, currency: (accounts[w.account] || {}).currency || ctx.currency, day: w.day }, next: { code: 'move_money_in', day: w.day }, note: 'below_minimum' });
+    for (const w of below) out.push({ state: 'warning', reason: { code: 'below_minimum', account: w.account, amount: w.amount != null ? w.amount : w.short, currency: (accounts[w.account] || {}).currency || ctx.currency, day: w.day, minimum: minimumOf(w, accounts) }, next: { code: 'move_money_in', day: w.day }, note: 'below_minimum' });
     for (const w of warnings) {
       if (w.code === 'below_minimum' || NOTE_ONLY.includes(w.code)) continue;
       const known = WARNING_STATE[w.code];
@@ -122,6 +142,31 @@
     return out;
   }
 
+  /* the minimum a warning is measured against, or null for none (zero): the engine's own field, else the account's */
+  function minimumOf(w, accounts) {
+    const m = w.minimum !== undefined ? w.minimum : (accounts[w.account] || {}).minimum;
+    return m ? m : null;
+  }
+  /* one engine warning in words: from its data only, so no raw ISO day and no engine text reaches a screen.
+     ctx: { currency, names: { id: name }, accounts (the engine's, for each account's currency) } */
+  function warningText(w, ctx) {
+    ctx = ctx || {};
+    const accounts = ctx.accounts || {};
+    const currency = (accounts[w.account] || {}).currency || ctx.currency;
+    if (w.code === 'below_minimum') {
+      const minimum = minimumOf(w, accounts), amount = w.amount != null ? w.amount : w.short;
+      return fill(minimum ? 'warn.below_minimum' : 'warn.below_zero', { account: w.account, amount, minimum, day: w.day, currency }, ctx);
+    }
+    if (w.code === 'check_again') return fill('warn.check_again', { account: w.account, day: w.day }, ctx);
+    if (w.code === 'gain_to_ask') return fill('warn.gain_to_ask', { account: w.account, amount: w.gain, currency }, ctx);
+    if (w.code === 'card_other_currency') return fill('warn.card_other_currency', { account: w.account, card: w.card }, ctx);
+    if (w.code === 'loan_other_currency') return fill('warn.loan_other_currency', { account: w.account, loan: w.loan }, ctx);
+    if (WORDS['warn.' + w.code]) return fill('warn.' + w.code, { account: w.account }, ctx);
+    return fill('warn.unknown', { account: w.account }, ctx);
+  }
+  /* one "later on" entry in words: the month it goes below zero, as "Mar 2027" */
+  function laterText(l, ctx) { return fill('warn.later_on', { account: l.account, month: l.day }, ctx || {}); }
+
   function deepFreeze(o) { Object.values(o).forEach(v => { if (v && typeof v === 'object') deepFreeze(v); }); return Object.freeze(o); }
 
   function statusOf(r, ctx) {
@@ -138,5 +183,5 @@
     return deepFreeze(s);
   }
 
-  return { statusOf, WORDS, STALE_DAYS };
+  return { statusOf, warningText, laterText, WORDS, STALE_DAYS };
 });

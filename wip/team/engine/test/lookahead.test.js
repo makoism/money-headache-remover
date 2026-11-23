@@ -316,4 +316,40 @@ t('when Free to spend caps the headline, the sum shows the cap as its last step 
   const r2 = run(b, '2026-12-03');
   eq([r2.safeToSpend.cappedByFreeToSpend, r2.safeToSpend.why], [false, null]);
 });
+// The warnings are data for the screens: account, amount, day, and the minimum or none. With no minimum the words say
+// "below zero", and no text carries a raw ISO day or month. Rent 300,000 on the 1st, pay 250,000 on the 25th.
+function short(min, rent, open) {
+  return { v: 3, home: { curs: [{ from: '2026-01-01', cur: 'JPY' }], country: { v: 'JP' }, main: { v: { acct: 'bank', min } } },
+    accounts: [{ id: 'bank', name: 'Bank', type: 'bank', cur: 'JPY' }],
+    schedules: [{ id: 'pay', kind: 'income', name: 'Pay', acct: 'bank', cur: 'JPY', startsPeriod: true, shift: 'before', rules: [{ rule: { every: 'month', days: [25] } }], steps: [{ amount: 250000 }] },
+      { id: 'rent', kind: 'bill', name: 'Rent', acct: 'bank', cur: 'JPY', shift: 'none', rules: [{ rule: { every: 'month', days: [1] } }], steps: [{ amount: rent }] }],
+    plan: { shares: [], budgets: [] },
+    events: [{ id: 'o', k: 'open', acct: 'bank', date: '2026-12-01', a: open, told: '2026-12-01T10:00' + TZ, grp: 's' },
+      { id: 'c', k: 'check', acct: 'bank', date: '2026-12-01', a: open, told: '2026-12-01T10:00' + TZ, grp: 's' }] };
+}
+const ISO = /\d{4}-\d{2}/;
+t('below zero with no minimum: structured, "goes below zero", no ISO day', () => {
+  // 40,000 on 2 Dec; the 1 Jan rent of 300,000 comes after the 25 Dec pay of 250,000: 40,000 + 250,000 - 300,000 = -10,000
+  const r = run(short(null, 300000, 40000), '2026-12-02');
+  const w = r.warnings.find(x => x.code === 'below_minimum');
+  ok(w, JSON.stringify(r.warnings));
+  eq([w.account, w.amount, w.day, w.minimum], ['bank', 10000, '2027-01-01', null]);
+  ok(/goes 10,000 below zero on 1 Jan/.test(w.text) && !ISO.test(w.text) && !/minimum/.test(w.text), w.text);
+});
+t('below a minimum: the minimum is given, the words name it, no ISO day', () => {
+  // 100,000 + 250,000 - 300,000 = 50,000 on 1 Jan, at the minimum: no warning
+  ok(!run(short({ a: 50000, cur: 'JPY' }, 300000, 100000), '2026-12-02').warnings.some(x => x.code === 'below_minimum'));
+  // 80,000 + 250,000 - 300,000 = 30,000 on 1 Jan, 20,000 under the minimum of 50,000
+  const r2 = run(short({ a: 50000, cur: 'JPY' }, 300000, 80000), '2026-12-02');
+  const w2 = r2.warnings.find(x => x.code === 'below_minimum');
+  eq([w2.account, w2.amount, w2.day, w2.minimum], ['bank', 20000, '2027-01-01', 50000]);
+  ok(/below its minimum of 50,000 on 1 Jan/.test(w2.text) && !ISO.test(w2.text), w2.text);
+});
+t('later on: structured with the minimum or none, and no "2027-03" in the words', () => {
+  const r = run(short(null, 300000, 100000), '2026-12-02');
+  eq(r.laterOn.length, 1);
+  const l = r.laterOn[0];
+  eq([l.account, l.day, l.balance, l.amount, l.minimum], ['bank', '2027-03-01', -50000, 50000, null]);
+  ok(/Bank goes below zero in Mar 2027/.test(l.text) && !ISO.test(l.text), l.text);
+});
 done('lookahead');
