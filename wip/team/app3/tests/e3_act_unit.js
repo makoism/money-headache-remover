@@ -223,6 +223,46 @@ const ev = (b, id) => b.events.find(e => e.id === id);
     eq(view(h.book).accounts[bank].bank, r0.accounts[bank].bank);
     ok(h.book.checkins.every(c => c.gone) && out.events.every(e => ev(h.book, e.id).gone), 'all marked gone');
   });
+  /* a check-in taken back with Undo leaves its `set:<occ>` records gone; a new check-in the same day writes the same
+     ids. The new step writes fresh records in their place (no clash, one record each), its own Undo puts the gone ones
+     back as they were, and the first step's history stays whole */
+  await t('check in, Undo, check in again the same day: fresh records in place of the gone ones, each counted once', async () => {
+    /* the made-up Mako book on 10 Dec: both pays, card A and the November bills to tick */
+    const D = '2026-12-10', mk = JSON.parse(require('fs').readFileSync(path.join(__dirname, '../fixtures/mako_madeup_book.json'), 'utf8'));
+    const mb = mk.home.main.v.acct, at = b => L.lookahead(b, D);
+    let book = mk;
+    const A = A3.make({ book: () => book, put: async b => { book = b; return true; }, told: () => D + 'T12:00+09:00', newId: I.idMaker('t3actu', () => 0.3),
+      today: () => D, queue: { post: () => {} }, check: b => at(b) });
+    const li = at(mk).checkIn.toConfirm;
+    ok(li.length >= 5, 'pays, card A and the bills to tick');
+    const ci = (fig, n) => CI.checkIn(book, { day: D, told: D + 'T12:0' + n + '+09:00', newId: I.idMaker('t3actr' + n, () => 0.4), figures: { [mb]: fig }, ticked: li.map(o => o.item),
+      expected: Object.fromEntries(li.map(o => [o.item, o.amount])), lands: Object.fromEntries(li.map(o => [o.item, o.lands])) });
+    const a = await A.addRecords('Check your bank', ci(387000, 1));
+    ok(a.ok, a.text);
+    const setIds = book.events.filter(e => String(e.id).startsWith('set:') && !e.gone).map(e => e.id);
+    eq(setIds.length, li.length, 'one set: record per item');
+    ok((await A.undo(a.step.id)).ok, 'undo 1');
+    ok(setIds.every(id => ev(book, id).gone), 'undone: the set: records are gone');
+    const goneCopy = clone(setIds.map(id => ev(book, id)));
+    const b = await A.addRecords('Check your bank', ci(386000, 2));
+    ok(b.ok, 'the second check-in is saved: ' + b.text);
+    for (const id of setIds) {
+      const recs = book.events.filter(e => e.id === id);
+      eq(recs.length, 1, id + ' once');
+      ok(!recs[0].gone && !recs[0].goneBy && recs[0].told === D + 'T12:02+09:00', id + ' is fresh: ' + JSON.stringify(recs[0]));
+    }
+    const r = at(book);
+    eq(r.accounts[mb].bank, 386000, 'the bank is the second figure');
+    eq(r.checkIn.toConfirm.length, 0, 'every item ticked once');
+    eq(r.accounts[mb].fillers.length, at(mk).accounts[mb].fillers.length + 1, 'one new check, the undone one counts nowhere');
+    /* Undo of the second puts the gone records back as they were; a third check-in still works */
+    ok((await A.undo(b.step.id)).ok, 'undo 2');
+    const strip = x => { const y = clone(x); delete y.at; return y; };
+    eq(setIds.map(id => strip(ev(book, id))), goneCopy.map(strip), 'the gone records are back as they were');
+    eq(at(book).accounts[mb].bank, at(mk).accounts[mb].bank, 'the bank is the setup figure again');
+    ok((await A.addRecords('Check your bank', ci(385000, 3))).ok, 'a third check-in');
+    eq(at(book).accounts[mb].bank, 385000);
+  });
   await t('the door never writes into the book it was given (a step works on a copy until it is saved)', async () => {
     const h = setup(), given = h.book, before = clone(given);
     await h.A.logSpend({ date: DAY, a: 1000, acct: bank });

@@ -27,7 +27,6 @@ async function typeIn(p, sel, v) { await p.tap(sel); await p.keyboard.type(v); a
   /* a kept book (the made-up one, saved through the store), so what was written can be read back */
   let b, p; const errLists = [];
   const fresh = async () => {
-    if (b) await b.close();
     const o = await T.open({ profile: require('fs').mkdtempSync(require('os').tmpdir() + '/a3prof-') });
     b = o.b; p = o.p; errLists.push(o.errs);
     await p.goto(T.URL0 + '?today=' + DAY); await T.w(300);
@@ -55,10 +54,11 @@ async function typeIn(p, sel, v) { await p.tap(sel); await p.keyboard.type(v); a
   ck('after saving: the Undo bar says it too', bar.includes(LOSS), bar);
   const ckOut = await view().then(({ r }) => ({ bank: r.accounts[bank].bank, gap: r.accounts[bank].fillers.slice(-1)[0].amount }));
   ck('the engine counts 850 as the gap and the bank is 386,550', ckOut.gap === 850 && ckOut.bank === 386550, JSON.stringify(ckOut));
-  /* the made-up book again, so 3 starts from the same records (a check-in taken back with Undo keeps its set: ids as
-     gone records, and a second check-in on the same day ticking the same items is refused: reported, not fixed here),
-     in a new profile */
-  await fresh();
+  /* Undo, so 3 starts from the same records, in the same page: the check-in's set: records are left gone, and the
+     check-in in 3 writes fresh ones in their place (act3), each counted once */
+  await p.click('#a3Msg .burrow-msg button'); await T.w(400);
+  const undone = await kept().then(c => ({ checks: c.events.filter(e => e.k === 'check' && !e.gone && e.date === DAY).length, sets: c.events.filter(e => String(e.id).startsWith('set:') && e.date >= '2026-11-21').map(e => !!e.gone) }));
+  ck('Undo takes the check-in back: its set: records are gone', undone.checks === 0 && undone.sets.length > 0 && undone.sets.every(Boolean), JSON.stringify(undone));
   /* 3 */
   await openSheet(p);
   await typeIn(p, `[data-bankfig="${bank}"]`, '386,550');
@@ -68,6 +68,8 @@ async function typeIn(p, sel, v) { await p.tap(sel); await p.keyboard.type(v); a
   const bar3 = await p.evaluate(() => { const m = document.querySelector('#a3Msg .burrow-msg'); return m ? m.querySelector('span').textContent : ''; });
   ck('logged as a spend: the Undo bar says where it went', /logged as a spend on Free to spend/.test(bar3), bar3);
   const out3 = await view().then(({ c, r }) => ({ bank: r.accounts[bank].bank, gap: r.accounts[bank].fillers.slice(-1)[0].amount, spends: c.events.filter(e => e.k === 'spend' && !e.gone && e.date === DAY && !(e.settles || []).length).map(e => [e.a, e.date, e.line, e.dayInside]) }));
+  { const c = await kept(), ids = c.events.filter(e => String(e.id).startsWith('set:')).map(e => e.id);
+    ck('a check-in after an undone one: each set: record once, live again, no clash', ids.length === new Set(ids).size && c.events.filter(e => String(e.id).startsWith('set:') && e.date >= '2026-11-21').every(e => !e.gone), JSON.stringify(ids.length)); }
   ck('the engine: no gap left, the bank is 386,550, one 850 spend on Free to spend on 10 Dec, inside the figure (dayInside, BK4)', out3.gap === 0 && out3.bank === 386550 && JSON.stringify(out3.spends) === JSON.stringify([[850, DAY, 'free', true]]), JSON.stringify(out3));
   await p.click('#a3Msg .burrow-msg button'); await T.w(400);
   const back = await kept().then(c => ({ spends: c.events.filter(e => e.k === 'spend' && !e.gone && e.date === DAY && !(e.settles || []).length).length, checks: c.events.filter(e => e.k === 'check' && !e.gone && e.date === DAY).length }));

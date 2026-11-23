@@ -7722,7 +7722,7 @@ const E3 = (() => {
 
   /* ---- one step on a copy of the book: what it added, changed and removed ---- */
   function writer(book, s) {
-    const log = { added: [], edited: [], removed: [] };
+    const log = { added: [], edited: [], removed: [], revived: [] };
     const stamp = r => { r.at = s.at; r.by = s.by; };
     return {
       log,
@@ -7730,10 +7730,21 @@ const E3 = (() => {
         if (!rec || typeof rec !== 'object') throw new Error('act3: add needs a record');
         const r = Object.assign({}, rec);
         if (!r.id) r.id = s.newId();
-        if (findIn(book, r.id)) throw new Error('act3: there is already a record ' + r.id);
         if (!r.told) r.told = s.told;
         if (r.grp == null) r.grp = s.id;
         stamp(r);
+        const had = findIn(book, r.id);
+        /* a record a writer names by its meaning (a check-in's `set:<occ>`) that an Undo left gone: the new record takes
+           its place, fresh (its own told, grp and fields), so one id is one record; the gone one is kept in the step so
+           this step's Undo puts it back exactly as it was */
+        if (had && had.list === list && had.rec.gone) {
+          const before = clone(had.rec);
+          for (const k of Object.keys(had.rec)) delete had.rec[k];
+          Object.assign(had.rec, r);
+          log.revived.push({ list, id: r.id, before });
+          return r.id;
+        }
+        if (had) throw new Error('act3: there is already a record ' + r.id);
         listOf(book, list, true).push(r);
         log.added.push({ list, id: r.id });
         return r.id;
@@ -7760,6 +7771,16 @@ const E3 = (() => {
         const before = { at: r.at, by: r.by };
         r.gone = s.day; r.goneBy = s.id; stamp(r);
         log.removed.push({ list, id, before });
+        return r;
+      },
+      /* Undo of a revived record: the gone record it replaced comes back whole, with a new `at` (BD4) */
+      putBack(list, id, before) {
+        const r = listOf(book, list).find(x => x && x.id === id);
+        if (!r) throw new Bad('That is not there any more');
+        const now = clone(r);
+        for (const k of Object.keys(r)) delete r[k];
+        Object.assign(r, clone(before)); stamp(r);
+        log.edited.push({ list, id, before: { at: now.at, by: now.by } });
         return r;
       },
       restore(list, id) {   // put back a removed record [H6]: both marks cleared, `at` moved
@@ -7839,11 +7860,11 @@ const E3 = (() => {
       const w = writer(book, s);
       w.today = s.day;
       const out = fn(w);
-      if (!w.log.added.length && !w.log.edited.length && !w.log.removed.length) throw new Bad('Nothing changed');
+      if (!w.log.added.length && !w.log.edited.length && !w.log.removed.length && !w.log.revived.length) throw new Bad('Nothing changed');
       if (o.check && !dry) {
         try { o.check(book); } catch (e) { const err = new Bad('This would leave numbers the app refuses: ' + e.message); err.why = 'engine'; throw err; }
       }
-      return { book, step: { id, label, out, at: s.at, added: w.log.added, edited: w.log.edited, removed: w.log.removed } };
+      return { book, step: { id, label, out, at: s.at, added: w.log.added, edited: w.log.edited, removed: w.log.removed, revived: w.log.revived } };
     }
     function run(label, fn, opts) {
       opts = opts || {};
@@ -7857,7 +7878,7 @@ const E3 = (() => {
         if (ok !== true) return { ok: false, why: (ok && ok.why) || 'save', text: (ok && ok.text) || 'This could not be saved on this device. Nothing changed' };   // put may say why (another tab changed the same record)
         if (clock) clock.see(planned.step.at);
         const st = planned.step;
-        st.own = {}; for (const x of st.added.concat(st.edited, st.removed)) st.own[x.id] = st.at;   // the `at` this step left on each record
+        st.own = {}; for (const x of st.added.concat(st.edited, st.removed, st.revived)) st.own[x.id] = st.at;   // the `at` this step left on each record
         if (opts.after) opts.after(st);
         if (!opts.isUndo) steps.push(st);
         if (o.queue && !opts.quiet && !opts.isUndo) {
@@ -7885,10 +7906,12 @@ const E3 = (() => {
         const added = mem ? mem.added : [].concat(...all.map(([n, l]) => l.filter(r => r && r.grp === stepId && !r.gone).map(r => ({ list: n, id: r.id }))));
         const removed = mem ? mem.removed : [].concat(...all.map(([n, l]) => l.filter(r => r && r.goneBy === stepId).map(r => ({ list: n, id: r.id }))));
         const edited = mem ? mem.edited : [];
+        const revived = mem ? mem.revived || [] : [];   // after a reload a revived record is found by grp with the added ones, and marked gone
         const recOf = x => listOf(w.book, x.list).find(r => r && r.id === x.id);
         const later = x => { const r = recOf(x); return !r || (mem && r.at !== mem.own[x.id]); };
-        if (added.concat(removed, edited).some(later)) { const e = new Bad('Something changed it since. Undo that change first'); e.why = 'later'; throw e; }
+        if (added.concat(removed, edited, revived).some(later)) { const e = new Bad('Something changed it since. Undo that change first'); e.why = 'later'; throw e; }
         for (const x of added) w.remove(x.list, x.id);
+        for (const x of revived) w.putBack(x.list, x.id, x.before);
         for (const x of removed) {
           if (recOf(x).goneBy === stepId) w.restore(x.list, x.id);
         }
