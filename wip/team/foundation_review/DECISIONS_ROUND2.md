@@ -270,3 +270,8 @@ AF1 (mv-q55). A minimum whose origin cannot be told is neither kept nor dropped 
 AF2 (ed-q3). A loan or pay-later answered "no, not paid" asks the amount, filled with that month's usual payment.
 AF3 (mg-q13). Shared `ui` keys carry `gone` per key like keyed overrides (AE1); a restore writes `gone` for keys not in the backup.
 The AD helper's readings (AD1: a `rev` that is a count, or a last save before 20 Nov 2026; the dropped minimum is asked; AD2's summary is the move's `zero` list) are confirmed.
+
+## AG. Answers after AE and AF
+AG1 (mv-q56). Every write made now, including a waiting entry applied after a restore and an answer given again, uses the D4 clock (`nextAt`): strictly newer than anything the device has seen, the restore's `gone` marks included. A new write never ties with a restore.
+AG2 (mv-q57). AE4's note applies to any month with more pays than usual (three for every two weeks, five for weekly).
+The AE and AF helper's readings are confirmed.
