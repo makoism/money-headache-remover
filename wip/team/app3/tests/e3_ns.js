@@ -4,7 +4,8 @@
      period" (/tmp/qc/north-star/rs_1280.png): it sits on the page itself, as tall as everything on it, not on a layer
      fixed to one screen's height.
    - The cards box shows the day each card's figure was checked ("checked 20 Nov"), and after a card figure is typed
-     at a check-in on 23 Nov, "checked 23 Nov". */
+     at a check-in on 23 Nov, "checked 23 Nov".
+   - Home has "Log a spend": it opens Receipts' own log form (no second form), with the amount box ready. */
 'use strict';
 const T = require('./lib3.js');
 const { ck } = T;
@@ -30,6 +31,15 @@ const { ck } = T;
   await p.click('#a3CheckSave'); await T.w(400);
   c = await checked();
   ck('card B typed on 23 Nov says checked 23 Nov; card A still 20 Nov', c[cardB] === 'checked 23 Nov' && c[cardA] === 'checked 20 Nov', JSON.stringify(c));
+  /* Log a spend from Home: Receipts' own form (one form in the page), ready to type */
+  await p.goto(T.URL0 + '?try=mako&today=2026-11-23'); await T.w(400);
+  const go = await p.$('#a3LogGo');
+  ck('Home has "Log a spend"', !!go && (await p.$eval('#a3LogGo', e => e.textContent)) === 'Log a spend');
+  if (go) { await p.click('#a3LogGo'); await T.w(300); }
+  const at = await p.evaluate(() => ({ rc: !document.getElementById('a3Rc').hidden, home: document.getElementById('a3Home').hidden, head: (document.querySelector('#rcForm h2') || {}).textContent, focus: document.activeElement && document.activeElement.id, forms: document.querySelectorAll('#rcAmt').length, tab: (document.querySelector('[data-tab][aria-current]') || {}).textContent }));
+  ck('it opens Receipts\' log form, the one form, with the amount box ready', at.rc && at.home && at.head === 'Log a spend' && at.focus === 'rcAmt' && at.forms === 1 && at.tab === 'Receipts', JSON.stringify(at));
+  await p.keyboard.type('1200'); await p.click('#rcSave'); await T.w(400);
+  ck('and the spend is logged through it', /Logged \u00a51,200 on Free to spend/.test(await p.evaluate(() => (document.querySelector('#a3Msg .burrow-msg span') || {}).textContent || '')));
   ck('no page errors', errs.length === 0, errs.join(' | '));
   await b.close(); T.done('e3_ns');
 })().catch(e => { console.log('FAIL crashed ' + e.stack); process.exit(1); });

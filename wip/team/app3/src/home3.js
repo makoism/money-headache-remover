@@ -174,11 +174,12 @@ function drawHome3() {
   const late = r.notSeenYet.items;
   if (late.length) out.push(`<section class="a3-card" data-card="notseen"><h2>${esc3(label3('notSeenYet'))}</h2><p class="a3-sub">These were due and are not ticked off. Check your bank to tick them</p><ul class="a3-rows">${rowsHtml3(late, home, yr, 'notSeenYet.items')}</ul></section>`);
   for (const l of r.laterOn) out.push(`<p class="a3-warn" data-warn="later">${esc3(BurrowScreens.status.laterText(l, wctx))}</p>`);
-  out.push(`<div class="a3-actions"><button type="button" class="a3-btn solid" id="a3CheckGo">Check your bank</button></div>`);
+  out.push(`<div class="a3-actions"><button type="button" class="a3-btn solid" id="a3CheckGo">Check your bank</button><button type="button" class="a3-btn" id="a3LogGo">Log a spend</button></div>`);
   host.setAttribute('data-origin', origin);
   host.innerHTML = out.join('');
   /* every figure carries where it came from: a sample screen shows only sample values; the person's bank figure is typed, the rest worked out */
   const P = BurrowScreens.provenance;
   host.querySelectorAll('[data-figure]').forEach(el => P.stamp(el, P.mark(Number(el.dataset.amt), origin === 'sample' ? 'sample' : el.dataset.figure === 'accounts.*.bank' ? 'typed' : 'worked')));
   $('#a3CheckGo').addEventListener('click', openCheck3);
+  $('#a3LogGo').addEventListener('click', rcLogFromHome3);
 }

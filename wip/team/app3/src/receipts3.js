@@ -244,6 +244,13 @@ function rcList3() {
   for (const r of host.querySelectorAll('[data-rc] button')) r.addEventListener('click', () => rcOpen3(r.parentNode.dataset.rc));
 }
 
+/* [NS-FIX 3] Home's "Log a spend": Receipts' own log form, in spend mode, with the amount box ready (no second form) */
+function rcLogFromHome3() {
+  RC3.edit = null; RC3.mode = 'spend';
+  showTab3('receipts'); renderRc3();
+  const f = $('#rcForm'); if (f) f.scrollIntoView({ block: 'start' });
+  const a = $('#rcAmt'); if (a) a.focus();
+}
 /* every saved write and Undo draws Home and Receipts again */
 if (ACT3) ACT3.onChange((step, opts) => {
   if (opts && opts.isUndo) RC3.last = null;   // "was" figures belong to the step just taken back
