@@ -318,12 +318,12 @@ function answerQuestion(ctx, d, q) {
   const { r } = ctx;
   const st = stampOf(d);
   if (q.q === 'which') {
-    const k = d.copy.kept.find(x => x.id === q.kept);
+    const k = d.copy.keptVersions.find(x => x.id === q.kept);
     d.copy = S.answer({ copy: d.copy, of: q.of, pick: r.int(0, k.versions.length - 1), now: st.at, by: d.part, lastSeen: d.lastSeen });
     const list = k.in.split('.').reduce((o, x) => (o || {})[x], d.copy);
-    return [Array.isArray(list) ? { list: k.in, id: q.of } : { path: q.of }, { list: 'kept', id: q.kept }];
+    return [Array.isArray(list) ? { list: k.in, id: q.of } : { path: q.of }, { list: 'keptVersions', id: q.kept }];
   }
-  const pick = q.q === 'x8' ? (q.offer && r.chance(0.7) ? 'offer' : 'back') : q.q === 'closed' ? r.pick(['reopen', 'move']) : q.q === 'minimum' ? r.pick(['own', 'main']) : 'undo';
+  const pick = q.q === 'x8' ? (q.offer && r.chance(0.7) ? 'offer' : 'back') : q.q === 'closed' ? r.pick(['reopen', 'move']) : q.q === 'minimum' ? r.pick(['own', 'main']) : q.q === 'main' ? r.pick(q.options) : r.pick(['undo', 'undoOlder']);   // [AW4, AW6]
   const before = C(d.copy);
   d.copy = S.answerCheck({ copy: d.copy, question: q, pick, now: st.at, by: d.part, lastSeen: d.lastSeen });
   return changedItems(before, d.copy);
@@ -384,7 +384,7 @@ function runSeed(seed) {
           const after = items ? oneDeviceQuestions(d.copy) : [];
           if (!items || after.some(q => !beforeQ.has(q))) { d.copy = before; d.n = beforeN; d.lastSeen = beforeSeen; seen('refused'); continue; }   // refused or asked on its own device: not made
           seen('edits'); seen('op ' + op);
-          for (const it of items) if (it.list !== 'kept') touched[d.name].set(keyOfItem(it), it);
+          for (const it of items) if (it.list !== 'keptVersions') touched[d.name].set(keyOfItem(it), it);
         }
       }
       clock = Math.max(devs.phone.now, devs.desktop.now) + r.int(1, 120) * MIN;
@@ -411,7 +411,7 @@ function runSeed(seed) {
       seen('rounds');
       for (const q of S.afterSync(final).questions) seen('question ' + q.q);
       for (const n of S.afterSync(final).notices) seen('notice ' + n.notice);
-      for (const k of final.kept || []) if (k.ask) seen('kept asked'); else seen('kept by rank or answered');
+      for (const k of final.keptVersions || []) if (k.ask) seen('kept asked'); else seen('kept by rank or answered');
       { const a = new Set(A0.events.filter(e => /^imp:/.test(e.id)).map(e => e.id)); seen('linesBoth', B0.events.filter(e => /^imp:/.test(e.id) && a.has(e.id) && !commonBase.events.some(x => x.id === e.id)).length); }
       // 3. every edit present, or kept and waiting
       for (const nm of ['phone', 'desktop']) {
@@ -420,21 +420,26 @@ function runSeed(seed) {
           const v = itemIn(mine, it), f = itemIn(final, it);
           if (v === undefined) { fail('an edited item vanished on its own device', key); continue; }
           if (S.same(v, f)) continue;
-          const k = (final.kept || []).find(x => x.id === 'kept:' + key);
+          // [AW1] matched again after the sync: the typed record gave way to the other device's statement line
+          if (f && f.gone && String(f.goneBy || '').startsWith('imp:') && !v.gone) continue;
+          // [AW6] a check-in changed on both only in its settled list is joined, not asked
+          if (it.list === 'checkins' && f && S.same(Object.assign({}, v, { settled: [] }), Object.assign({}, f, { settled: [] }))) continue;
+          const k = (final.keptVersions || []).find(x => x.id === 'kept:' + key);
+          if (k && !k.ask && /^close:/.test(key) && k.versions.some(x => S.same(x, v))) continue;   // [AW6] a closing worked out again
           const inKept = k && k.versions.some(x => S.same(x, v));
           const below = k && !k.ask && typeof v.src === 'string' && v.src !== 'person';   // [AP7] a guess below a lesson
           if (!inKept) fail('an edit was lost', nm + ' ' + key);
           else if (!k.ask && !below) fail('an edit was kept but not asked', nm + ' ' + key);
         }
       }
-      for (const k of A0.kept || []) { const b = (B0.kept || []).find(x => x.id === k.id), z = (commonBase.kept || []).find(x => x.id === k.id); if (b && canon(b) !== canon(k) && canon(k) !== canon(z) && canon(b) !== canon(z)) seen('kept changed on both'); }
+      for (const k of A0.keptVersions || []) { const b = (B0.keptVersions || []).find(x => x.id === k.id), z = (commonBase.keptVersions || []).find(x => x.id === k.id); if (b && canon(b) !== canon(k) && canon(k) !== canon(z) && canon(b) !== canon(z)) seen('kept changed on both'); }
       // ... and no kept version is ever dropped: Undo can bring back any of them [AQ3]
-      for (const mine of [A0, B0]) for (const k of mine.kept || []) {
-        const f = (final.kept || []).find(x => x.id === k.id);
+      for (const mine of [A0, B0]) for (const k of mine.keptVersions || []) {
+        const f = (final.keptVersions || []).find(x => x.id === k.id);
         for (const v of k.versions) if (!f || !f.versions.some(x => S.same(x, v))) fail('a kept version was dropped', k.id);
       }
       // 4. nothing doubled
-      for (const list of ['events', 'schedules', 'accounts', 'checkins', 'people', 'places', 'kept']) {
+      for (const list of ['events', 'schedules', 'accounts', 'checkins', 'people', 'places', 'keptVersions']) {
         const ids = (final[list] || []).map(x => x.id);
         if (new Set(ids).size !== ids.length) fail('an id is doubled', list);
       }

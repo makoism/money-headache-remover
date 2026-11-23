@@ -1,0 +1,993 @@
+{
+ "life": "checker_au4_pay_due_today",
+ "title": "AU4: a pay due today counted (B3 income first) takes its period's Free to spend off with it (checker seed 81)",
+ "story": "A life made by the checker's generator (wip/team/checker/life_gen.js, seed 81), with ordinary ids. Every amount is made up. The hand answers are checker_differences_1.md's, as AU4 decided them.",
+ "currency": "JPY",
+ "window": {
+  "from": "2027-11-29",
+  "to": "2028-03-08"
+ },
+ "main_bank": "u048xw-lbj6n4khps-1",
+ "holidays": {
+  "country": "XX",
+  "dates": [
+   {
+    "date": "2027-12-19",
+    "name": "Holiday"
+   },
+   {
+    "date": "2027-12-28",
+    "name": "Holiday"
+   },
+   {
+    "date": "2027-12-30",
+    "name": "Holiday"
+   },
+   {
+    "date": "2028-03-25",
+    "name": "Holiday"
+   }
+  ],
+  "bank_closed": [
+   {
+    "date": "2027-12-29",
+    "name": "Banks closed"
+   }
+  ]
+ },
+ "accounts": [
+  {
+   "id": "u048xw-lbj6n4khps-1",
+   "name": "Main bank",
+   "kind": "bank",
+   "currency": "JPY",
+   "minimum": 20000,
+   "opening": {
+    "date": "2027-11-29",
+    "amount": 153000,
+    "split": {
+     "free": 81900
+    }
+   }
+  },
+  {
+   "id": "u048xw-lbj6n4khps-2",
+   "name": "Cash",
+   "kind": "cash",
+   "currency": "JPY",
+   "minimum": 0,
+   "opening": {
+    "date": "2027-11-29",
+    "amount": 17000
+   }
+  },
+  {
+   "id": "u048xw-lbj6n4khps-3",
+   "name": "Card 1",
+   "kind": "card",
+   "currency": "JPY",
+   "statement_close_day": "last",
+   "payment": {
+    "day": 26,
+    "months_after_close": 1,
+    "from": "u048xw-lbj6n4khps-1",
+    "pays": "in full",
+    "weekend_holiday": "move later"
+   },
+   "opening": {
+    "date": "2027-11-29",
+    "statement": {
+     "closed": "2027-10-31",
+     "amount": 70000,
+     "paid": true
+    },
+    "current": 37000
+   }
+  }
+ ],
+ "income": [
+  {
+   "id": "u048xw-lbj6n4khps-4",
+   "name": "Pay",
+   "account": "u048xw-lbj6n4khps-1",
+   "currency": "JPY",
+   "amount": 356000,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 31
+   },
+   "weekend_holiday": "move later",
+   "starts_period": true
+  },
+  {
+   "id": "u048xw-lbj6n4khps-5",
+   "name": "Side job",
+   "account": "u048xw-lbj6n4khps-1",
+   "currency": "JPY",
+   "amount": 36000,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 10
+   },
+   "weekend_holiday": "move earlier",
+   "starts_period": false
+  }
+ ],
+ "bills": [
+  {
+   "id": "u048xw-lbj6n4khps-6",
+   "name": "Rent",
+   "account": "u048xw-lbj6n4khps-1",
+   "currency": "JPY",
+   "amount": 92000,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 27
+   },
+   "weekend_holiday": "none"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-7",
+   "name": "Power and water",
+   "account": "u048xw-lbj6n4khps-1",
+   "currency": "JPY",
+   "amount": 12000,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 31
+   },
+   "weekend_holiday": "none"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-8",
+   "name": "Phone",
+   "account": "u048xw-lbj6n4khps-1",
+   "currency": "JPY",
+   "amount": 15000,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 27
+   },
+   "weekend_holiday": "move later"
+  }
+ ],
+ "goals": [],
+ "plan": {
+  "lines": [],
+  "free": {
+   "per": "month",
+   "amount": 117000
+  }
+ },
+ "events": [
+  {
+   "id": "u048xw-lbj6n4khps-9",
+   "date": "2027-11-30",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 10900,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-10",
+   "date": "2027-11-30",
+   "kind": "bill_paid",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 12000,
+   "settles": "u048xw-lbj6n4khps-7@2027-11-30"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-11",
+   "date": "2027-11-30",
+   "kind": "pay_in",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 356000,
+   "settles": "u048xw-lbj6n4khps-4@2027-11-30"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-12",
+   "date": "2027-12-03",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 2600,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-13",
+   "date": "2027-12-03",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-3",
+   "amount": 17100,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-14",
+   "date": "2027-12-04",
+   "kind": "check",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 471922
+  },
+  {
+   "id": "u048xw-lbj6n4khps-15",
+   "date": "2027-12-04",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 4600,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-16",
+   "date": "2027-12-04",
+   "kind": "check",
+   "account": "u048xw-lbj6n4khps-2",
+   "amount": 16531
+  },
+  {
+   "id": "u048xw-lbj6n4khps-17",
+   "date": "2027-12-04",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-3",
+   "amount": 29800,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-18",
+   "date": "2027-12-07",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-2",
+   "amount": 700,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-19",
+   "date": "2027-12-07",
+   "kind": "refund",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 3600
+  },
+  {
+   "id": "u048xw-lbj6n4khps-20",
+   "date": "2027-12-07",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-3",
+   "amount": 10300,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-21",
+   "date": "2027-12-07",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-2",
+   "amount": 1700,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-22",
+   "date": "2027-12-08",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 1200,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-23",
+   "date": "2027-12-09",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-2",
+   "amount": 2200,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-24",
+   "date": "2027-12-09",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 10000,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-25",
+   "date": "2027-12-10",
+   "kind": "pay_in",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 36000,
+   "settles": "u048xw-lbj6n4khps-5@2027-12-10"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-26",
+   "date": "2027-12-10",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-2",
+   "amount": 3300,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-27",
+   "date": "2027-12-11",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 4900,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-28",
+   "date": "2027-12-12",
+   "kind": "check",
+   "account": "u048xw-lbj6n4khps-2",
+   "amount": 8577
+  },
+  {
+   "id": "u048xw-lbj6n4khps-29",
+   "date": "2027-12-12",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 4600,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-30",
+   "date": "2027-12-12",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-3",
+   "amount": 15400,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-31",
+   "date": "2027-12-12",
+   "kind": "check",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 485717
+  },
+  {
+   "id": "u048xw-lbj6n4khps-32",
+   "date": "2027-12-13",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-2",
+   "amount": 1900,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-33",
+   "date": "2027-12-14",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 11400,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-34",
+   "date": "2027-12-15",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 3100,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-35",
+   "date": "2027-12-15",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-2",
+   "amount": 3400,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-36",
+   "date": "2027-12-16",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-3",
+   "amount": 23900,
+   "line": "free",
+   "posted": "2027-12-19",
+   "told": "2027-12-19"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-37",
+   "date": "2027-12-16",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 2700,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-38",
+   "date": "2027-12-16",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-2",
+   "amount": 3100,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-39",
+   "date": "2027-12-16",
+   "kind": "refund",
+   "account": "u048xw-lbj6n4khps-3",
+   "amount": 8600,
+   "line": "free",
+   "posted": "2027-12-17",
+   "told": "2027-12-17"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-40",
+   "date": "2027-12-18",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 11400,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-41",
+   "date": "2027-12-19",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 2600,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-42",
+   "date": "2027-12-19",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 5500,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-43",
+   "date": "2027-12-20",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 6000,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-44",
+   "date": "2027-12-20",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 10600,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-45",
+   "date": "2027-12-21",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 4000,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-46",
+   "date": "2027-12-21",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-3",
+   "amount": 18200,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-47",
+   "date": "2027-12-22",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-2",
+   "amount": 1000,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-48",
+   "date": "2027-12-22",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-3",
+   "amount": 21700,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-49",
+   "date": "2027-12-24",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 8500,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-50",
+   "date": "2027-12-24",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-3",
+   "amount": 8400,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-51",
+   "date": "2027-12-26",
+   "kind": "transfer",
+   "from": "u048xw-lbj6n4khps-1",
+   "to": "u048xw-lbj6n4khps-2",
+   "amount": 19000
+  },
+  {
+   "id": "u048xw-lbj6n4khps-52",
+   "date": "2027-12-26",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-2",
+   "amount": 3600,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-53",
+   "date": "2027-12-27",
+   "kind": "card_payment",
+   "from": "u048xw-lbj6n4khps-1",
+   "card": "u048xw-lbj6n4khps-3",
+   "amount": 37000,
+   "settles": "u048xw-lbj6n4khps-3@2027-12-26"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-54",
+   "date": "2027-12-27",
+   "kind": "bill_paid",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 15000,
+   "settles": "u048xw-lbj6n4khps-8@2027-12-27"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-55",
+   "date": "2027-12-27",
+   "kind": "check",
+   "account": "u048xw-lbj6n4khps-2",
+   "amount": 14335
+  },
+  {
+   "id": "u048xw-lbj6n4khps-56",
+   "date": "2027-12-27",
+   "kind": "check",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 348917
+  },
+  {
+   "id": "u048xw-lbj6n4khps-57",
+   "date": "2027-12-27",
+   "kind": "bill_paid",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 92000,
+   "settles": "u048xw-lbj6n4khps-6@2027-12-27",
+   "told": "2027-12-28"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-58",
+   "date": "2027-12-30",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-3",
+   "amount": 11600,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-59",
+   "date": "2027-12-31",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 8700,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-60",
+   "date": "2027-12-31",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 10500,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-61",
+   "date": "2027-12-31",
+   "kind": "pay_in",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 356000,
+   "settles": "u048xw-lbj6n4khps-4@2027-12-31",
+   "told": "2028-01-01"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-62",
+   "date": "2027-12-31",
+   "kind": "bill_paid",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 12000,
+   "settles": "u048xw-lbj6n4khps-7@2027-12-31"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-63",
+   "date": "2028-01-01",
+   "kind": "check",
+   "account": "u048xw-lbj6n4khps-2",
+   "amount": 14335
+  },
+  {
+   "id": "u048xw-lbj6n4khps-64",
+   "date": "2028-01-01",
+   "kind": "check",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 581717
+  },
+  {
+   "id": "u048xw-lbj6n4khps-65",
+   "date": "2028-01-02",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-3",
+   "amount": 20600,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-66",
+   "date": "2028-01-02",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-3",
+   "amount": 26700,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-67",
+   "date": "2028-01-03",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-2",
+   "amount": 1800,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-68",
+   "date": "2028-01-03",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 10500,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-69",
+   "date": "2028-01-04",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 800,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-70",
+   "date": "2028-01-07",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 10000,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-71",
+   "date": "2028-01-08",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-3",
+   "amount": 28300,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-72",
+   "date": "2028-01-09",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-2",
+   "amount": 2800,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-73",
+   "date": "2028-01-10",
+   "kind": "pay_in",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 36000,
+   "settles": "u048xw-lbj6n4khps-5@2028-01-10"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-74",
+   "date": "2028-01-11",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 8700,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-75",
+   "date": "2028-01-11",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-3",
+   "amount": 4400,
+   "line": "free",
+   "posted": "2028-01-14",
+   "told": "2028-01-14"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-76",
+   "date": "2028-01-12",
+   "kind": "check",
+   "account": "u048xw-lbj6n4khps-2",
+   "amount": 9735
+  },
+  {
+   "id": "u048xw-lbj6n4khps-77",
+   "date": "2028-01-12",
+   "kind": "check",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 576369
+  },
+  {
+   "id": "u048xw-lbj6n4khps-78",
+   "date": "2028-01-12",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-3",
+   "amount": 29600,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-79",
+   "date": "2028-01-12",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-3",
+   "amount": 4000,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-80",
+   "date": "2028-01-14",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-3",
+   "amount": 6600,
+   "line": "free",
+   "posted": "2028-01-16",
+   "told": "2028-01-16"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-81",
+   "date": "2028-01-14",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-2",
+   "amount": 600,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-82",
+   "date": "2028-01-16",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 700,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-83",
+   "date": "2028-01-16",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 2100,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-84",
+   "date": "2028-01-17",
+   "kind": "refund",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 7700,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-85",
+   "date": "2028-01-17",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-3",
+   "amount": 27900,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-86",
+   "date": "2028-01-17",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-2",
+   "amount": 1200,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-87",
+   "date": "2028-01-17",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 8000,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-88",
+   "date": "2028-01-18",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-2",
+   "amount": 1000,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-89",
+   "date": "2028-01-19",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 6100,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-90",
+   "date": "2028-01-19",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 3500,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-91",
+   "date": "2028-01-19",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 7800,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-92",
+   "date": "2028-01-20",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 900,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-93",
+   "date": "2028-01-20",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 6600,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-94",
+   "date": "2028-01-20",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-3",
+   "amount": 22500,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-95",
+   "date": "2028-01-21",
+   "kind": "check",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 533326
+  },
+  {
+   "id": "u048xw-lbj6n4khps-96",
+   "date": "2028-01-22",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 10000,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-97",
+   "date": "2028-01-22",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-3",
+   "amount": 20000,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-98",
+   "date": "2028-01-23",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-3",
+   "amount": 11200,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-99",
+   "date": "2028-01-23",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-3",
+   "amount": 1200,
+   "line": "free",
+   "posted": "2028-01-25",
+   "told": "2028-01-25"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-100",
+   "date": "2028-01-24",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 11600,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-101",
+   "date": "2028-01-25",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 9100,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-102",
+   "date": "2028-01-26",
+   "kind": "card_payment",
+   "from": "u048xw-lbj6n4khps-1",
+   "card": "u048xw-lbj6n4khps-3",
+   "amount": 147800,
+   "settles": "u048xw-lbj6n4khps-3@2028-01-26"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-103",
+   "date": "2028-01-27",
+   "kind": "bill_paid",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 15000,
+   "settles": "u048xw-lbj6n4khps-8@2028-01-27"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-104",
+   "date": "2028-01-28",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 6700,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-105",
+   "date": "2028-01-28",
+   "kind": "check",
+   "account": "u048xw-lbj6n4khps-2",
+   "amount": 7001
+  },
+  {
+   "id": "u048xw-lbj6n4khps-106",
+   "date": "2028-01-28",
+   "kind": "check",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 331843
+  },
+  {
+   "id": "u048xw-lbj6n4khps-107",
+   "date": "2028-01-30",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-3",
+   "amount": 7500,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-108",
+   "date": "2028-01-30",
+   "kind": "spend",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 9400,
+   "line": "free"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-109",
+   "date": "2028-01-31",
+   "kind": "pay_in",
+   "account": "u048xw-lbj6n4khps-1",
+   "amount": 356000,
+   "settles": "u048xw-lbj6n4khps-4@2028-01-31",
+   "told": "2028-02-01"
+  },
+  {
+   "id": "u048xw-lbj6n4khps-110",
+   "date": "2028-01-31",
+   "kind": "skip",
+   "account": "u048xw-lbj6n4khps-1",
+   "settles": "u048xw-lbj6n4khps-7@2028-01-31"
+  }
+ ],
+ "asks": [
+  {
+   "id": "cau81-01",
+   "date": "2028-01-31",
+   "question": "safe_to_spend",
+   "account": "u048xw-lbj6n4khps-1",
+   "expected": 167943,
+   "why": "322,443 (Main bank today) + 356,000 (Pay 31 Jan) - 92,000 (Rent 27 Jan, on 31 Jan) - 117,000 (Free to spend for the period from 31 Jan) + 36,000 (Side job 10 Feb) - 92,000 (Rent 27 Feb) - 15,000 (Phone 27 Feb, on 28 Feb) - 210,500 (Card 1 26 Feb, on 28 Feb) - 20,000 (minimum) = 167,943",
+   "decisions": [
+    "AU4"
+   ]
+  }
+ ]
+}

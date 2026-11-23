@@ -1,0 +1,991 @@
+{
+ "life": "checker_au2_place_below_zero",
+ "title": "AU2: a place may go below zero; money placed later adds to it from where it is; in the walk it holds nothing (checker seed 131)",
+ "story": "A life made by the checker's generator (wip/team/checker/life_gen.js, seed 131), with ordinary ids. Every amount is made up. The hand answers are checker_differences_1.md's, as AU2 decided them.",
+ "currency": "JPY",
+ "window": {
+  "from": "2027-02-03",
+  "to": "2027-05-14"
+ },
+ "main_bank": "zliaq3-p7knzvymlp-1",
+ "holidays": {
+  "country": "XX",
+  "dates": [
+   {
+    "date": "2027-02-04",
+    "name": "Holiday"
+   },
+   {
+    "date": "2027-02-27",
+    "name": "Holiday"
+   },
+   {
+    "date": "2027-05-04",
+    "name": "Holiday"
+   },
+   {
+    "date": "2027-05-31",
+    "name": "Holiday"
+   },
+   {
+    "date": "2027-07-12",
+    "name": "Holiday"
+   },
+   {
+    "date": "2027-07-13",
+    "name": "Holiday"
+   }
+  ],
+  "bank_closed": [
+   {
+    "date": "2027-02-07",
+    "name": "Banks closed"
+   }
+  ]
+ },
+ "accounts": [
+  {
+   "id": "zliaq3-p7knzvymlp-1",
+   "name": "Main bank",
+   "kind": "bank",
+   "currency": "JPY",
+   "minimum": 10000,
+   "opening": {
+    "date": "2027-02-03",
+    "amount": 445000
+   }
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-2",
+   "name": "Cash",
+   "kind": "cash",
+   "currency": "JPY",
+   "minimum": 0,
+   "opening": {
+    "date": "2027-02-03",
+    "amount": 29000
+   }
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-3",
+   "name": "Card 1",
+   "kind": "card",
+   "currency": "JPY",
+   "statement_close_day": "last",
+   "payment": {
+    "day": 10,
+    "months_after_close": 1,
+    "from": "zliaq3-p7knzvymlp-1",
+    "pays": "in full",
+    "weekend_holiday": "move earlier"
+   },
+   "opening": {
+    "date": "2027-02-03",
+    "statement": {
+     "closed": "2027-01-31",
+     "amount": 72000,
+     "paid": false
+    },
+    "current": 92000
+   }
+  }
+ ],
+ "income": [
+  {
+   "id": "zliaq3-p7knzvymlp-4",
+   "name": "Pay",
+   "account": "zliaq3-p7knzvymlp-1",
+   "currency": "JPY",
+   "amount": 259000,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 15
+   },
+   "weekend_holiday": "move later",
+   "starts_period": true
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-5",
+   "name": "Side job",
+   "account": "zliaq3-p7knzvymlp-1",
+   "currency": "JPY",
+   "amount": 79000,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 10
+   },
+   "weekend_holiday": "none",
+   "starts_period": false
+  }
+ ],
+ "bills": [
+  {
+   "id": "zliaq3-p7knzvymlp-6",
+   "name": "Rent",
+   "account": "zliaq3-p7knzvymlp-1",
+   "currency": "JPY",
+   "amount": 77000,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 27
+   },
+   "weekend_holiday": "move later"
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-7",
+   "name": "Power and water",
+   "account": "zliaq3-p7knzvymlp-1",
+   "currency": "JPY",
+   "amount": 14000,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 30
+   },
+   "weekend_holiday": "none"
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-8",
+   "name": "Phone",
+   "account": "zliaq3-p7knzvymlp-1",
+   "currency": "JPY",
+   "amount": 4000,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 30
+   },
+   "weekend_holiday": "none"
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-9",
+   "name": "Internet",
+   "account": "zliaq3-p7knzvymlp-1",
+   "currency": "JPY",
+   "amount": 14000,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 25
+   },
+   "weekend_holiday": "move earlier"
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-10",
+   "name": "Gym",
+   "account": "zliaq3-p7knzvymlp-1",
+   "currency": "JPY",
+   "amount": 5000,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 1
+   },
+   "weekend_holiday": "move earlier"
+  }
+ ],
+ "goals": [
+  {
+   "id": "zliaq3-p7knzvymlp-11",
+   "name": "Trip",
+   "kept_in": "zliaq3-p7knzvymlp-1",
+   "opening": {
+    "date": "2027-02-03",
+    "amount": 21000
+   }
+  }
+ ],
+ "events": [
+  {
+   "id": "zliaq3-p7knzvymlp-12",
+   "date": "2027-02-04",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-2",
+   "amount": 3500
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-13",
+   "date": "2027-02-04",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 11800
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-14",
+   "date": "2027-02-06",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 10200
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-15",
+   "date": "2027-02-07",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 9600
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-16",
+   "date": "2027-02-09",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-1",
+   "goal": "zliaq3-p7knzvymlp-11",
+   "amount": 22000
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-17",
+   "date": "2027-02-09",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-3",
+   "amount": 18600
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-18",
+   "date": "2027-02-10",
+   "kind": "card_payment",
+   "from": "zliaq3-p7knzvymlp-1",
+   "card": "zliaq3-p7knzvymlp-3",
+   "amount": 72000,
+   "settles": "zliaq3-p7knzvymlp-3@2027-02-10"
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-19",
+   "date": "2027-02-10",
+   "kind": "pay_in",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 79000,
+   "settles": "zliaq3-p7knzvymlp-5@2027-02-10"
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-20",
+   "date": "2027-02-10",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-3",
+   "amount": 28200
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-21",
+   "date": "2027-02-10",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-3",
+   "amount": 2300
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-22",
+   "date": "2027-02-11",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-1",
+   "goal": "zliaq3-p7knzvymlp-11",
+   "amount": 41000
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-23",
+   "date": "2027-02-11",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 10400
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-24",
+   "date": "2027-02-12",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-3",
+   "amount": 17800
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-25",
+   "date": "2027-02-13",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-2",
+   "amount": 1600
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-26",
+   "date": "2027-02-13",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 10600
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-27",
+   "date": "2027-02-13",
+   "kind": "transfer",
+   "from": "zliaq3-p7knzvymlp-1",
+   "to": "zliaq3-p7knzvymlp-2",
+   "amount": 9000
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-28",
+   "date": "2027-02-15",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-2",
+   "amount": 1200
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-29",
+   "date": "2027-02-15",
+   "kind": "check",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 328974
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-30",
+   "date": "2027-02-15",
+   "kind": "pay_in",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 259000,
+   "settles": "zliaq3-p7knzvymlp-4@2027-02-15"
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-31",
+   "date": "2027-02-16",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-3",
+   "amount": 18000
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-32",
+   "date": "2027-02-16",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 9200
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-33",
+   "date": "2027-02-18",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-3",
+   "amount": 28500
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-34",
+   "date": "2027-02-18",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 9300
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-35",
+   "date": "2027-02-18",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 6400
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-36",
+   "date": "2027-02-20",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 8900
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-37",
+   "date": "2027-02-21",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-2",
+   "amount": 2700
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-38",
+   "date": "2027-02-21",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-2",
+   "amount": 2900
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-39",
+   "date": "2027-02-22",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 7100
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-40",
+   "date": "2027-02-22",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 6300
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-41",
+   "date": "2027-02-23",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-2",
+   "amount": 3600
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-42",
+   "date": "2027-02-24",
+   "kind": "refund",
+   "account": "zliaq3-p7knzvymlp-3",
+   "amount": 8800
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-43",
+   "date": "2027-02-24",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 4400
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-44",
+   "date": "2027-02-24",
+   "kind": "money_in",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 8000
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-45",
+   "date": "2027-02-24",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 9100
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-46",
+   "date": "2027-02-24",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-3",
+   "amount": 3700
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-47",
+   "date": "2027-02-25",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 1600
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-48",
+   "date": "2027-02-25",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-3",
+   "amount": 18900
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-49",
+   "date": "2027-02-25",
+   "kind": "bill_paid",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 14000,
+   "settles": "zliaq3-p7knzvymlp-9@2027-02-25"
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-50",
+   "date": "2027-02-25",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-3",
+   "amount": 6800
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-51",
+   "date": "2027-02-26",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 12000
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-52",
+   "date": "2027-02-28",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-3",
+   "amount": 20900
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-53",
+   "date": "2027-02-28",
+   "kind": "check",
+   "account": "zliaq3-p7knzvymlp-2",
+   "amount": 22169
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-54",
+   "date": "2027-02-28",
+   "kind": "bill_paid",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 4000,
+   "settles": "zliaq3-p7knzvymlp-8@2027-02-28"
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-55",
+   "date": "2027-02-28",
+   "kind": "check",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 503674
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-56",
+   "date": "2027-02-28",
+   "kind": "bill_paid",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 12918,
+   "settles": "zliaq3-p7knzvymlp-7@2027-02-28"
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-57",
+   "date": "2027-03-01",
+   "kind": "bill_paid",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 5000,
+   "settles": "zliaq3-p7knzvymlp-10@2027-03-01"
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-58",
+   "date": "2027-03-01",
+   "kind": "bill_paid",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 77000,
+   "settles": "zliaq3-p7knzvymlp-6@2027-02-27"
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-59",
+   "date": "2027-03-02",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-3",
+   "amount": 7200
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-60",
+   "date": "2027-03-04",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 3800
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-61",
+   "date": "2027-03-04",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 10100
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-62",
+   "date": "2027-03-05",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-2",
+   "amount": 4000
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-63",
+   "date": "2027-03-06",
+   "kind": "transfer",
+   "from": "zliaq3-p7knzvymlp-1",
+   "to": "zliaq3-p7knzvymlp-2",
+   "amount": 24000
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-64",
+   "date": "2027-03-07",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-2",
+   "amount": 1500
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-65",
+   "date": "2027-03-08",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 9700
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-66",
+   "date": "2027-03-08",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 1800
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-67",
+   "date": "2027-03-09",
+   "kind": "transfer",
+   "from": "zliaq3-p7knzvymlp-1",
+   "to": "zliaq3-p7knzvymlp-2",
+   "amount": 16000
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-68",
+   "date": "2027-03-09",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-3",
+   "amount": 5100,
+   "posted": "2027-03-11",
+   "told": "2027-03-11"
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-69",
+   "date": "2027-03-10",
+   "kind": "check",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 338601
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-70",
+   "date": "2027-03-10",
+   "kind": "transfer",
+   "from": "zliaq3-p7knzvymlp-1",
+   "to": "zliaq3-p7knzvymlp-2",
+   "amount": 15000
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-71",
+   "date": "2027-03-10",
+   "kind": "card_payment",
+   "from": "zliaq3-p7knzvymlp-1",
+   "card": "zliaq3-p7knzvymlp-3",
+   "amount": 174900,
+   "settles": "zliaq3-p7knzvymlp-3@2027-03-10"
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-72",
+   "date": "2027-03-10",
+   "kind": "pay_in",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 79000,
+   "settles": "zliaq3-p7knzvymlp-5@2027-03-10"
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-73",
+   "date": "2027-03-11",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-2",
+   "amount": 900
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-74",
+   "date": "2027-03-11",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-2",
+   "amount": 1000
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-75",
+   "date": "2027-03-11",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-3",
+   "amount": 18300
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-76",
+   "date": "2027-03-14",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 11500
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-77",
+   "date": "2027-03-14",
+   "kind": "transfer",
+   "from": "zliaq3-p7knzvymlp-1",
+   "to": "zliaq3-p7knzvymlp-2",
+   "amount": 27000
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-78",
+   "date": "2027-03-15",
+   "kind": "pay_in",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 259000,
+   "settles": "zliaq3-p7knzvymlp-4@2027-03-15"
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-79",
+   "date": "2027-03-15",
+   "kind": "check",
+   "account": "zliaq3-p7knzvymlp-2",
+   "amount": 95360
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-80",
+   "date": "2027-03-15",
+   "kind": "check",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 448201
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-81",
+   "date": "2027-03-17",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-3",
+   "amount": 8000,
+   "posted": "2027-03-18",
+   "told": "2027-03-18"
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-82",
+   "date": "2027-03-17",
+   "kind": "transfer",
+   "from": "zliaq3-p7knzvymlp-1",
+   "to": "zliaq3-p7knzvymlp-2",
+   "amount": 29000
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-83",
+   "date": "2027-03-18",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-2",
+   "amount": 2800
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-84",
+   "date": "2027-03-19",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-2",
+   "amount": 2600
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-85",
+   "date": "2027-03-20",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-3",
+   "amount": 10900
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-86",
+   "date": "2027-03-21",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 11100
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-87",
+   "date": "2027-03-21",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-3",
+   "amount": 24300
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-88",
+   "date": "2027-03-21",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-3",
+   "amount": 6100
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-89",
+   "date": "2027-03-22",
+   "kind": "check",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 396890
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-90",
+   "date": "2027-03-22",
+   "kind": "check",
+   "account": "zliaq3-p7knzvymlp-2",
+   "amount": 118960
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-91",
+   "date": "2027-03-24",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 9900
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-92",
+   "date": "2027-03-25",
+   "kind": "bill_paid",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 14000,
+   "settles": "zliaq3-p7knzvymlp-9@2027-03-25",
+   "told": "2027-03-26"
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-93",
+   "date": "2027-03-25",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 900
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-94",
+   "date": "2027-03-26",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-2",
+   "amount": 3400
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-95",
+   "date": "2027-03-26",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-2",
+   "amount": 800
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-96",
+   "date": "2027-03-27",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 7600
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-97",
+   "date": "2027-03-28",
+   "kind": "transfer",
+   "from": "zliaq3-p7knzvymlp-1",
+   "to": "zliaq3-p7knzvymlp-2",
+   "amount": 22000
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-98",
+   "date": "2027-03-28",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-2",
+   "amount": 3900
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-99",
+   "date": "2027-03-29",
+   "kind": "set_aside",
+   "account": "zliaq3-p7knzvymlp-1",
+   "goal": "zliaq3-p7knzvymlp-11",
+   "amount": 15000
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-100",
+   "date": "2027-03-29",
+   "kind": "bill_paid",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 77000,
+   "settles": "zliaq3-p7knzvymlp-6@2027-03-27"
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-101",
+   "date": "2027-03-30",
+   "kind": "bill_paid",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 4000,
+   "settles": "zliaq3-p7knzvymlp-8@2027-03-30"
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-102",
+   "date": "2027-03-30",
+   "kind": "bill_paid",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 14000,
+   "settles": "zliaq3-p7knzvymlp-7@2027-03-30"
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-103",
+   "date": "2027-04-01",
+   "kind": "bill_paid",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 5000,
+   "settles": "zliaq3-p7knzvymlp-10@2027-04-01"
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-104",
+   "date": "2027-04-02",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-3",
+   "amount": 13700
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-105",
+   "date": "2027-04-03",
+   "kind": "check",
+   "account": "zliaq3-p7knzvymlp-2",
+   "amount": 132860
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-106",
+   "date": "2027-04-03",
+   "kind": "check",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 244403
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-107",
+   "date": "2027-04-04",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 10700
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-108",
+   "date": "2027-04-04",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 7100
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-109",
+   "date": "2027-04-05",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-3",
+   "amount": 2200,
+   "posted": "2027-04-06",
+   "told": "2027-04-06"
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-110",
+   "date": "2027-04-06",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 6200
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-111",
+   "date": "2027-04-07",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 8100
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-112",
+   "date": "2027-04-07",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 11400
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-113",
+   "date": "2027-04-07",
+   "kind": "set_aside",
+   "account": "zliaq3-p7knzvymlp-1",
+   "goal": "zliaq3-p7knzvymlp-11",
+   "amount": 7000
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-114",
+   "date": "2027-04-08",
+   "kind": "transfer",
+   "from": "zliaq3-p7knzvymlp-1",
+   "to": "zliaq3-p7knzvymlp-2",
+   "amount": 11000
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-115",
+   "date": "2027-04-09",
+   "kind": "card_payment",
+   "from": "zliaq3-p7knzvymlp-1",
+   "card": "zliaq3-p7knzvymlp-3",
+   "amount": 71399,
+   "settles": "zliaq3-p7knzvymlp-3@2027-04-10"
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-116",
+   "date": "2027-04-10",
+   "kind": "pay_in",
+   "account": "zliaq3-p7knzvymlp-1",
+   "amount": 79000,
+   "settles": "zliaq3-p7knzvymlp-5@2027-04-10"
+  },
+  {
+   "id": "zliaq3-p7knzvymlp-117",
+   "date": "2027-04-10",
+   "kind": "spend",
+   "account": "zliaq3-p7knzvymlp-3",
+   "amount": 19000
+  }
+ ],
+ "asks": [
+  {
+   "id": "cau131-01",
+   "date": "2027-04-10",
+   "question": "safe_to_spend",
+   "account": "zliaq3-p7knzvymlp-1",
+   "expected": 187504,
+   "why": "197,504 (Main bank today) + 0 (Trip: 21,000 - 22,000 - 41,000 + 15,000 + 7,000 = -20,000, below zero, so it holds nothing) - 10,000 (minimum) = 187,504",
+   "decisions": [
+    "AU2"
+   ]
+  }
+ ]
+}

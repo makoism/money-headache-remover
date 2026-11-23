@@ -163,6 +163,12 @@ function convert(sc) {
   }
 
   // [AN5] what waits for add or replace, in minor units of its schedule's currency
+  // [AW7] kept versions of a schedule, written in a file as amounts: each version is the whole schedule with that amount
+  if (sc.keptVersions) book.keptVersions = sc.keptVersions.map(k => {
+    const s0 = book.schedules.find(x => x.id === k.of);
+    return { id: 'kept:' + k.of, of: k.of, in: s0 ? 'schedules' : undefined, ask: !!k.ask,
+      versions: (k.versions || []).map(v => (s0 && v.amount != null ? Object.assign({}, s0, { steps: [{ from: null, amount: mn(v.amount, s0.cur) }] }) : v)) };
+  });
   // [AO4] a waiting `once` amount is in the minor units of its budget line's or share's currency
   const planCurOf = p => { const l = ((sc.plan && sc.plan.lines) || []).find(y => y.id === p.line); return cur((l && l.account) || (sc.plan && sc.plan.free && sc.plan.free.account) || mainId); };
   if (sc.pendingMove) book.pendingMove = sc.pendingMove.map(p => Object.assign({}, p,

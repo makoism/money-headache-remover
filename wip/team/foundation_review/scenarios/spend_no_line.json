@@ -1,0 +1,26 @@
+{
+ "life": "spend_no_line",
+ "title": "AU other points: a spend with no budget line, in a life with a plan, counts against Free to spend",
+ "story": "Set up Mon 4 Jan 2027: the bank holds 300,000, of which Food 30,000 and Free to spend 50,000 (typed). Pay of 250,000 on the 25th (moved earlier). Wed 6 Jan: a 5,000 spend typed with no line. Thu 7 Jan: 2,000 of food. Every amount is made up.",
+ "currency": "JPY",
+ "window": { "from": "2027-01-04", "to": "2027-01-31" },
+ "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+ "main_bank": "b",
+ "accounts": [
+  { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 300000, "split": { "lines": { "food": 30000 }, "free": 50000 } } }
+ ],
+ "income": [
+  { "id": "pay", "name": "Pay", "account": "b", "amount": 250000, "schedule": { "frequency": "monthly", "day": 25 }, "weekend_holiday": "move earlier", "starts_period": true }
+ ],
+ "bills": [],
+ "goals": [],
+ "plan": { "lines": [ { "id": "food", "name": "Food", "per": "month", "amount": 30000 } ], "free": { "per": "month", "amount": 50000 } },
+ "events": [
+  { "id": "s1", "date": "2027-01-06", "told": "2027-01-06T12:00", "kind": "spend", "account": "b", "amount": 5000 },
+  { "id": "s2", "date": "2027-01-07", "told": "2027-01-07T12:00", "kind": "spend", "account": "b", "amount": 2000, "line": "food" }
+ ],
+ "asks": [
+  { "id": "snl-01", "date": "2027-01-07", "question": "headline", "expected": 45000, "why": "50,000 (Free to spend at the opening, typed) - 5,000 (the spend with no line, 6 Jan) = 45,000", "decisions": ["AU"] },
+  { "id": "snl-02", "date": "2027-01-07", "question": "safe_to_spend", "account": "b", "expected": 265000, "why": "293,000 (bank today: 300,000 - 5,000 - 2,000) - 28,000 (Food left this period: 30,000 - 2,000) = 265,000", "note": "The lowest day is today: the pay of 25 Jan (250,000) is more than the new period's Food (30,000) and Free to spend (50,000) taken with it, and again on 25 Feb.", "decisions": ["AU"] }
+ ]
+}

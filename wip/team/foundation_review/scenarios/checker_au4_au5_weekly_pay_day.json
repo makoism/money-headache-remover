@@ -1,0 +1,571 @@
+{
+ "life": "checker_au4_au5_weekly_pay_day",
+ "title": "AU4 and AU5: weekly pay due today, then late and still counted: that week's Food and Free to spend come off with it (checker seed 2)",
+ "story": "A life made by the checker's generator (wip/team/checker/life_gen.js, seed 2), with ordinary ids. Every amount is made up. The hand answers are checker_differences_1.md's, as AU4, AU5 decided them.",
+ "currency": "PHP",
+ "window": {
+  "from": "2027-11-12",
+  "to": "2028-02-20"
+ },
+ "main_bank": "fx8kvh-wvn8m4480k-1",
+ "holidays": {
+  "country": "XX",
+  "dates": [
+   {
+    "date": "2027-11-15",
+    "name": "Holiday"
+   },
+   {
+    "date": "2027-11-20",
+    "name": "Holiday"
+   },
+   {
+    "date": "2027-12-05",
+    "name": "Holiday"
+   },
+   {
+    "date": "2028-02-22",
+    "name": "Holiday"
+   }
+  ],
+  "bank_closed": [
+   {
+    "date": "2027-11-26",
+    "name": "Banks closed"
+   }
+  ]
+ },
+ "accounts": [
+  {
+   "id": "fx8kvh-wvn8m4480k-1",
+   "name": "Main bank",
+   "kind": "bank",
+   "currency": "PHP",
+   "minimum": 0,
+   "opening": {
+    "date": "2027-11-12",
+    "amount": 13220
+   }
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-2",
+   "name": "Cash",
+   "kind": "cash",
+   "currency": "PHP",
+   "minimum": 0,
+   "opening": {
+    "date": "2027-11-12",
+    "amount": 40
+   }
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-3",
+   "name": "Card 1",
+   "kind": "card",
+   "currency": "PHP",
+   "statement_close_day": 20,
+   "payment": {
+    "day": 10,
+    "months_after_close": 1,
+    "from": "fx8kvh-wvn8m4480k-1",
+    "pays": "in full",
+    "weekend_holiday": "none"
+   },
+   "opening": {
+    "date": "2027-11-12",
+    "statement": {
+     "closed": "2027-10-20",
+     "amount": 280,
+     "paid": true
+    },
+    "current": 540
+   }
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-4",
+   "name": "Card 2",
+   "kind": "card",
+   "currency": "PHP",
+   "statement_close_day": 25,
+   "payment": {
+    "day": 24,
+    "months_after_close": 1,
+    "from": "fx8kvh-wvn8m4480k-1",
+    "pays": "in full",
+    "weekend_holiday": "move later"
+   },
+   "opening": {
+    "date": "2027-11-12",
+    "statement": {
+     "closed": "2027-10-25",
+     "amount": 1600,
+     "paid": false
+    },
+    "current": 2000
+   }
+  }
+ ],
+ "income": [
+  {
+   "id": "fx8kvh-wvn8m4480k-5",
+   "name": "Pay",
+   "account": "fx8kvh-wvn8m4480k-1",
+   "currency": "PHP",
+   "amount": 1880,
+   "schedule": {
+    "frequency": "weekly",
+    "weekday": "Fri"
+   },
+   "weekend_holiday": "move later",
+   "starts_period": true
+  }
+ ],
+ "bills": [
+  {
+   "id": "fx8kvh-wvn8m4480k-6",
+   "name": "Rent",
+   "account": "fx8kvh-wvn8m4480k-1",
+   "currency": "PHP",
+   "amount": 2080,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 5
+   },
+   "weekend_holiday": "move later"
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-7",
+   "name": "Power and water",
+   "account": "fx8kvh-wvn8m4480k-1",
+   "currency": "PHP",
+   "amount": 120,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 20
+   },
+   "weekend_holiday": "move later"
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-8",
+   "name": "Phone",
+   "account": "fx8kvh-wvn8m4480k-1",
+   "currency": "PHP",
+   "amount": 140,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 5
+   },
+   "weekend_holiday": "none"
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-9",
+   "name": "Internet",
+   "account": "fx8kvh-wvn8m4480k-1",
+   "currency": "PHP",
+   "amount": 120.6,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 31
+   },
+   "weekend_holiday": "move later"
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-10",
+   "name": "Gym",
+   "account": "fx8kvh-wvn8m4480k-1",
+   "currency": "PHP",
+   "amount": 220,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 28
+   },
+   "weekend_holiday": "move later"
+  }
+ ],
+ "goals": [
+  {
+   "id": "fx8kvh-wvn8m4480k-11",
+   "name": "Trip",
+   "kept_in": "fx8kvh-wvn8m4480k-1",
+   "opening": {
+    "date": "2027-11-12",
+    "amount": 1580
+   }
+  }
+ ],
+ "plan": {
+  "lines": [
+   {
+    "id": "fx8kvh-wvn8m4480k-12",
+    "name": "Food",
+    "per": "month",
+    "amount": 240
+   }
+  ],
+  "free": {
+   "per": "month",
+   "amount": 2380
+  }
+ },
+ "events": [
+  {
+   "id": "fx8kvh-wvn8m4480k-13",
+   "date": "2027-11-14",
+   "kind": "money_in",
+   "account": "fx8kvh-wvn8m4480k-2",
+   "amount": 60
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-14",
+   "date": "2027-11-14",
+   "kind": "spend",
+   "account": "fx8kvh-wvn8m4480k-3",
+   "amount": 224.97,
+   "line": "free"
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-15",
+   "date": "2027-11-15",
+   "kind": "spend",
+   "account": "fx8kvh-wvn8m4480k-1",
+   "amount": 226,
+   "line": "fx8kvh-wvn8m4480k-12"
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-16",
+   "date": "2027-11-15",
+   "kind": "spend",
+   "account": "fx8kvh-wvn8m4480k-1",
+   "amount": 122.91,
+   "line": "fx8kvh-wvn8m4480k-12"
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-17",
+   "date": "2027-11-16",
+   "kind": "check",
+   "account": "fx8kvh-wvn8m4480k-1",
+   "amount": 12903.66
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-18",
+   "date": "2027-11-16",
+   "kind": "spend",
+   "account": "fx8kvh-wvn8m4480k-1",
+   "amount": 178.48,
+   "line": "fx8kvh-wvn8m4480k-12"
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-19",
+   "date": "2027-11-17",
+   "kind": "spend",
+   "account": "fx8kvh-wvn8m4480k-1",
+   "amount": 156,
+   "line": "free"
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-20",
+   "date": "2027-11-17",
+   "kind": "spend",
+   "account": "fx8kvh-wvn8m4480k-3",
+   "amount": 454,
+   "line": "fx8kvh-wvn8m4480k-12"
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-21",
+   "date": "2027-11-17",
+   "kind": "pay_in",
+   "account": "fx8kvh-wvn8m4480k-1",
+   "amount": 1880,
+   "settles": "fx8kvh-wvn8m4480k-5@2027-11-19"
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-22",
+   "date": "2027-11-19",
+   "kind": "transfer",
+   "from": "fx8kvh-wvn8m4480k-1",
+   "to": "fx8kvh-wvn8m4480k-2",
+   "amount": 220
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-23",
+   "date": "2027-11-19",
+   "kind": "spend",
+   "account": "fx8kvh-wvn8m4480k-1",
+   "amount": 170,
+   "line": "fx8kvh-wvn8m4480k-12"
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-24",
+   "date": "2027-11-20",
+   "kind": "spend",
+   "account": "fx8kvh-wvn8m4480k-4",
+   "amount": 204,
+   "line": "free"
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-25",
+   "date": "2027-11-20",
+   "kind": "refund",
+   "account": "fx8kvh-wvn8m4480k-1",
+   "amount": 114
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-26",
+   "date": "2027-11-22",
+   "kind": "spend",
+   "account": "fx8kvh-wvn8m4480k-4",
+   "amount": 302.19,
+   "line": "fx8kvh-wvn8m4480k-12"
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-27",
+   "date": "2027-11-22",
+   "kind": "spend",
+   "account": "fx8kvh-wvn8m4480k-3",
+   "amount": 276,
+   "line": "fx8kvh-wvn8m4480k-12"
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-28",
+   "date": "2027-11-22",
+   "kind": "bill_paid",
+   "account": "fx8kvh-wvn8m4480k-1",
+   "amount": 120,
+   "settles": "fx8kvh-wvn8m4480k-7@2027-11-20"
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-29",
+   "date": "2027-11-23",
+   "kind": "transfer",
+   "from": "fx8kvh-wvn8m4480k-1",
+   "to": "fx8kvh-wvn8m4480k-2",
+   "amount": 320
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-30",
+   "date": "2027-11-23",
+   "kind": "check",
+   "account": "fx8kvh-wvn8m4480k-1",
+   "amount": 13733.18
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-31",
+   "date": "2027-11-23",
+   "kind": "check",
+   "account": "fx8kvh-wvn8m4480k-2",
+   "amount": 636.92
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-32",
+   "date": "2027-11-24",
+   "kind": "spend",
+   "account": "fx8kvh-wvn8m4480k-3",
+   "amount": 520,
+   "line": "free",
+   "posted": "2027-11-25",
+   "told": "2027-11-25"
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-33",
+   "date": "2027-11-24",
+   "kind": "card_payment",
+   "from": "fx8kvh-wvn8m4480k-1",
+   "card": "fx8kvh-wvn8m4480k-4",
+   "amount": 1600,
+   "settles": "fx8kvh-wvn8m4480k-4@2027-11-24"
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-34",
+   "date": "2027-11-24",
+   "kind": "spend",
+   "account": "fx8kvh-wvn8m4480k-1",
+   "amount": 192,
+   "line": "fx8kvh-wvn8m4480k-12"
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-35",
+   "date": "2027-11-25",
+   "kind": "spend",
+   "account": "fx8kvh-wvn8m4480k-1",
+   "amount": 102,
+   "line": "fx8kvh-wvn8m4480k-12"
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-36",
+   "date": "2027-11-25",
+   "kind": "spend",
+   "account": "fx8kvh-wvn8m4480k-4",
+   "amount": 174.55,
+   "line": "free"
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-37",
+   "date": "2027-11-25",
+   "kind": "spend",
+   "account": "fx8kvh-wvn8m4480k-1",
+   "amount": 64,
+   "line": "fx8kvh-wvn8m4480k-12"
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-38",
+   "date": "2027-11-26",
+   "kind": "spend",
+   "account": "fx8kvh-wvn8m4480k-1",
+   "amount": 240,
+   "line": "free"
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-39",
+   "date": "2027-11-27",
+   "kind": "spend",
+   "account": "fx8kvh-wvn8m4480k-4",
+   "amount": 370,
+   "line": "free"
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-40",
+   "date": "2027-11-27",
+   "kind": "spend",
+   "account": "fx8kvh-wvn8m4480k-1",
+   "amount": 184.88,
+   "line": "fx8kvh-wvn8m4480k-12"
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-41",
+   "date": "2027-11-27",
+   "kind": "spend",
+   "account": "fx8kvh-wvn8m4480k-1",
+   "goal": "fx8kvh-wvn8m4480k-11",
+   "amount": 480
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-42",
+   "date": "2027-11-28",
+   "kind": "spend",
+   "account": "fx8kvh-wvn8m4480k-1",
+   "amount": 152.82,
+   "line": "free"
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-43",
+   "date": "2027-11-28",
+   "kind": "spend",
+   "account": "fx8kvh-wvn8m4480k-2",
+   "amount": 40,
+   "line": "free"
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-44",
+   "date": "2027-11-28",
+   "kind": "spend",
+   "account": "fx8kvh-wvn8m4480k-1",
+   "amount": 28,
+   "line": "free"
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-45",
+   "date": "2027-11-29",
+   "kind": "set_aside",
+   "account": "fx8kvh-wvn8m4480k-1",
+   "goal": "fx8kvh-wvn8m4480k-11",
+   "amount": 300
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-46",
+   "date": "2027-11-29",
+   "kind": "bill_paid",
+   "account": "fx8kvh-wvn8m4480k-1",
+   "amount": 220,
+   "settles": "fx8kvh-wvn8m4480k-10@2027-11-28"
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-47",
+   "date": "2027-11-29",
+   "kind": "spend",
+   "account": "fx8kvh-wvn8m4480k-3",
+   "amount": 162,
+   "line": "free"
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-48",
+   "date": "2027-11-29",
+   "kind": "pay_in",
+   "account": "fx8kvh-wvn8m4480k-1",
+   "amount": 1880,
+   "settles": "fx8kvh-wvn8m4480k-5@2027-11-26"
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-49",
+   "date": "2027-11-30",
+   "kind": "spend",
+   "account": "fx8kvh-wvn8m4480k-1",
+   "amount": 136,
+   "line": "free"
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-50",
+   "date": "2027-11-30",
+   "kind": "bill_paid",
+   "account": "fx8kvh-wvn8m4480k-1",
+   "amount": 120.6,
+   "settles": "fx8kvh-wvn8m4480k-9@2027-11-30"
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-51",
+   "date": "2027-11-30",
+   "kind": "transfer",
+   "from": "fx8kvh-wvn8m4480k-1",
+   "to": "fx8kvh-wvn8m4480k-2",
+   "amount": 260
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-52",
+   "date": "2027-12-02",
+   "kind": "check",
+   "account": "fx8kvh-wvn8m4480k-1",
+   "amount": 11832.88
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-53",
+   "date": "2027-12-03",
+   "kind": "spend",
+   "account": "fx8kvh-wvn8m4480k-1",
+   "amount": 192.78,
+   "line": "free"
+  },
+  {
+   "id": "fx8kvh-wvn8m4480k-54",
+   "date": "2027-12-03",
+   "kind": "spend",
+   "account": "fx8kvh-wvn8m4480k-3",
+   "amount": 296,
+   "line": "free"
+  }
+ ],
+ "asks": [
+  {
+   "id": "cau2-01",
+   "date": "2027-12-03",
+   "question": "safe_to_spend",
+   "account": "fx8kvh-wvn8m4480k-1",
+   "expected": 9252.56,
+   "why": "11,640.10 (Main bank today) - 1,454.34 (Trip, kept in it, and Food left this week) + 1,880.00 (Pay 3 Dec) - 54.34 (Food for the period from 3 Dec) - 538.86 (Free to spend for the period from 3 Dec) - 140.00 (Phone 5 Dec) - 2,080.00 (Rent 5 Dec, on 6 Dec) + 0.00 (minimum) = 9,252.56",
+   "decisions": [
+    "AU4",
+    "AU5"
+   ]
+  },
+  {
+   "id": "cau2-02",
+   "date": "2027-12-04",
+   "question": "safe_to_spend",
+   "account": "fx8kvh-wvn8m4480k-1",
+   "expected": 9252.56,
+   "why": "11,640.10 (Main bank today) - 1,454.34 (Trip, kept in it, and Food left this week) + 1,880.00 (Pay 3 Dec, on 4 Dec) - 54.34 (Food for the period from 4 Dec) - 538.86 (Free to spend for the period from 4 Dec) - 140.00 (Phone 5 Dec) - 2,080.00 (Rent 5 Dec, on 6 Dec) + 0.00 (minimum) = 9,252.56",
+   "decisions": [
+    "AU4",
+    "AU5"
+   ]
+  }
+ ]
+}

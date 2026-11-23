@@ -223,15 +223,31 @@
     const earliest = (openDays.length ? Math.min(...openDays) : today) - 70;
     const farEnd = today + LATER_ON_DAYS + 62;
     const items = [];
+    // [AW7] each kept version of a schedule still asked about (whole schedule records), as amounts by occurrence
+    const keptAmounts = s => {
+      const out = {};
+      for (const k of book.keptVersions || []) {
+        if (!k || k.gone || !k.ask || k.of !== s.id || (k.in != null && k.in !== 'schedules')) continue;
+        for (const v of k.versions || []) {
+          if (!v || typeof v !== 'object' || v.gone) continue;
+          for (const o of occOf(Object.assign({}, s, v, { id: s.id }), earliest, farEnd)) (out[o.id] = out[o.id] || []).push(o.amount || 0);
+        }
+      }
+      return out;
+    };
     const KIND_OF = { income: 'income', bill: 'bill', transfer: 'transfer', autoSpend: 'auto', once: 'bill' };
     for (const s of schedules) {
       const kind = KIND_OF[s.kind] || 'bill';
       const other = kind === 'income' && !!s.cur && s.cur !== cur(s.acct);   // [Q4] pay in another currency
       const fee = kind === 'transfer' && s.fee ? s.fee : 0;                  // [Q2] what each occurrence costs on top
+      const kept = keptAmounts(s);
       for (const o of occOf(s, earliest, farEnd)) {
         // [AN5, AO3] until the person picks add or replace, money out counts on the safe side: the larger of what is
         // written and each amount waiting for that occurrence; a waiting pay amount adds nothing
         if (kind !== 'income') for (const w of waitingFor(s.id, dayStr(o.due))) o.amount = Math.max(o.amount || 0, w.a);
+        // [AW7, AR1] while a money question waits, the safe side across the kept versions: the smaller pay, the larger bill
+        const alt = kept[o.id];
+        if (alt) o.amount = kind === 'income' ? Math.min(o.amount || 0, ...alt) : Math.max(o.amount || 0, ...alt);
         const it = { id: o.id, sid: s.id, kind, acct: s.acct, to: s.acct2, place: s.place, due: o.due, land: o.land, amount: o.amount || 0,
           startsPeriod: !!s.startsPeriod, name: s.name, otherCur: other };
         if (other) it.currency = s.cur;
@@ -261,6 +277,7 @@
       let best = null;
       for (const imp of freeLines) {
         if (imp.settles.length || imp.untick || imp.account !== o.acct || (o.kind === 'income' ? 'in' : 'out') !== dirOf(imp)
+          || (o.kind === 'income' && imp.sub === 'refund')   // [AV4] a refund never settles a pay
           || Math.abs(imp.a - o.amount) * 1000 > o.amount * Math.round(vary * 1000)) continue;
         const ds = importDays(imp).filter(d => d >= from && d <= to);
         if (!ds.length) continue;
@@ -683,7 +700,8 @@
       if (occ) for (const w of book.pendingMove || []) {
         if (!w || w.gone || w.waits !== 'pick' || w.to !== 'once' || w.key !== occ || (w.line !== src.id && !(src.id === 'free' && w.share))) continue;
         const wa = typeof w.a === 'number' ? w.a : w.a && typeof w.a[src.field] === 'number' ? w.a[src.field] : null;
-        if (wa !== null) a = Math.max(a, wa);
+        // [AV3] the safe side for what it is: the larger for a spending line, the smaller for Free to spend
+        if (wa !== null) a = src.field === 'free' ? Math.min(a, wa) : Math.max(a, wa);
       }
       return a;
     };
@@ -806,13 +824,15 @@
       }
       // a line's opening split stays on the account it was typed on, also after the line moved (closing the main bank)
       const splitAt = lineId => Object.keys(openEv).find(id => { const sp = openEv[id].split; return sp && (lineId === 'free' ? sp.free != null : (sp.lines || {})[lineId] != null); });
+      // [AU] in a life with a plan, a spend with no line (not a bill paid, not from a place, not a fee) is Free to spend's
+      const lineOfSpend = e => (e.line ? e.line : e.k === 'spend' && freeSrc && !e.settles.length && !e.place && !isFeeRecord(e) ? 'free' : null);
       const leftOf = (lineId, acctId, amount) => {
         const sa = splitAt(lineId), moved = sa && sa !== acctId;
         const atOpening = moved ? (lineId === 'free' ? openEv[sa].split.free : openEv[sa].split.lines[lineId])
           : lineId === 'free' ? openingShares(acctId).free : openingShares(acctId).lines[lineId];
         const fromOpening = lastPay === null || lastPay <= openDay(moved ? sa : acctId);
         const start = fromOpening ? (atOpening != null ? atOpening : amount) : amount;
-        const inLine = e => e.line === lineId && e.account && openEv[e.account] && !inside(e, openingOf(e.account), e.account) && (fromOpening || e.day >= lastPay);
+        const inLine = e => lineOfSpend(e) === lineId && e.account && openEv[e.account] && !inside(e, openingOf(e.account), e.account) && (fromOpening || e.day >= lastPay);
         const counts = e => inLine(e) && cur(e.account) === cur(acctId);   // [T5] only spends in the line's own currency
         for (const e of live().filter(x => x.k === 'spend' && !isFeeRecord(x) && inLine(x) && cur(x.account) !== cur(acctId)))
           res.warnings.push({ account: e.account, code: 'spend_other_currency', line: lineId, event: e.id,

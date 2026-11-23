@@ -1,0 +1,188 @@
+{
+ "life": "checker_au8_units",
+ "title": "AU8: weekly pay in a year of 53 Fridays: the units rules everywhere, never the plain 52 / n (checker seed 18)",
+ "story": "A life made by the checker's generator (wip/team/checker/life_gen.js, seed 18), with ordinary ids. Every amount is made up. The hand answers are checker_differences_1.md's, as AU8 decided them.",
+ "currency": "JPY",
+ "window": {
+  "from": "2027-04-21",
+  "to": "2027-07-30"
+ },
+ "main_bank": "hpftxt-teouo1u0ed-1",
+ "holidays": {
+  "country": "XX",
+  "dates": [
+   {
+    "date": "2027-05-24",
+    "name": "Holiday"
+   },
+   {
+    "date": "2027-07-15",
+    "name": "Holiday"
+   },
+   {
+    "date": "2027-08-04",
+    "name": "Holiday"
+   },
+   {
+    "date": "2027-08-07",
+    "name": "Holiday"
+   },
+   {
+    "date": "2027-08-14",
+    "name": "Holiday"
+   },
+   {
+    "date": "2027-09-08",
+    "name": "Holiday"
+   }
+  ],
+  "bank_closed": [
+   {
+    "date": "2027-05-25",
+    "name": "Banks closed"
+   }
+  ]
+ },
+ "accounts": [
+  {
+   "id": "hpftxt-teouo1u0ed-1",
+   "name": "Main bank",
+   "kind": "bank",
+   "currency": "JPY",
+   "minimum": 0,
+   "opening": {
+    "date": "2027-04-21",
+    "amount": 387000,
+    "split": {
+     "free": 83000
+    }
+   }
+  },
+  {
+   "id": "hpftxt-teouo1u0ed-2",
+   "name": "E-wallet",
+   "kind": "ewallet",
+   "currency": "JPY",
+   "minimum": 0,
+   "opening": {
+    "date": "2027-04-21",
+    "amount": 14000
+   }
+  }
+ ],
+ "income": [
+  {
+   "id": "hpftxt-teouo1u0ed-3",
+   "name": "Pay",
+   "account": "hpftxt-teouo1u0ed-1",
+   "currency": "JPY",
+   "amount": 76000,
+   "schedule": {
+    "frequency": "weekly",
+    "weekday": "Fri"
+   },
+   "weekend_holiday": "move later",
+   "starts_period": true
+  }
+ ],
+ "bills": [
+  {
+   "id": "hpftxt-teouo1u0ed-4",
+   "name": "Rent",
+   "account": "hpftxt-teouo1u0ed-1",
+   "currency": "JPY",
+   "amount": 86000,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 1
+   },
+   "weekend_holiday": "move earlier"
+  },
+  {
+   "id": "hpftxt-teouo1u0ed-5",
+   "name": "Power and water",
+   "account": "hpftxt-teouo1u0ed-1",
+   "currency": "JPY",
+   "amount": 8000,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 15
+   },
+   "weekend_holiday": "move later"
+  },
+  {
+   "id": "hpftxt-teouo1u0ed-6",
+   "name": "Phone",
+   "account": "hpftxt-teouo1u0ed-1",
+   "currency": "JPY",
+   "amount": 5000,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 25
+   },
+   "weekend_holiday": "none"
+  }
+ ],
+ "goals": [],
+ "plan": {
+  "lines": [
+   {
+    "id": "hpftxt-teouo1u0ed-7",
+    "name": "Food",
+    "per": "month",
+    "amount": 15000
+   }
+  ],
+  "free": {
+   "per": "month",
+   "amount": 83000
+  }
+ },
+ "events": [
+  {
+   "id": "hpftxt-teouo1u0ed-8",
+   "date": "2027-04-22",
+   "kind": "spend",
+   "account": "hpftxt-teouo1u0ed-1",
+   "amount": 9200,
+   "line": "free"
+  },
+  {
+   "id": "hpftxt-teouo1u0ed-9",
+   "date": "2027-04-23",
+   "kind": "spend",
+   "account": "hpftxt-teouo1u0ed-2",
+   "amount": 4100,
+   "line": "hpftxt-teouo1u0ed-7"
+  },
+  {
+   "id": "hpftxt-teouo1u0ed-10",
+   "date": "2027-04-23",
+   "kind": "spend",
+   "account": "hpftxt-teouo1u0ed-1",
+   "amount": 500,
+   "line": "free"
+  },
+  {
+   "id": "hpftxt-teouo1u0ed-11",
+   "date": "2027-04-23",
+   "kind": "pay_in",
+   "account": "hpftxt-teouo1u0ed-1",
+   "amount": 76000,
+   "settles": "hpftxt-teouo1u0ed-3@2027-04-23"
+  }
+ ],
+ "asks": [
+  {
+   "id": "cau18-01",
+   "date": "2027-04-23",
+   "question": "safe_to_spend",
+   "account": "hpftxt-teouo1u0ed-1",
+   "expected": 416111,
+   "why": "453,300 (Main bank today) - 5,000 (Phone 25 Apr) + 76,000 (Pay 30 Apr) - 86,000 (Rent 1 May, on 30 Apr) - 3,396 (Food for the period from 30 Apr) - 18,793 (Free to spend for the period from 30 Apr) + 0 (minimum) = 416,111",
+   "decisions": [
+    "AU8"
+   ]
+  }
+ ]
+}
