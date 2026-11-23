@@ -223,15 +223,31 @@
     const earliest = (openDays.length ? Math.min(...openDays) : today) - 70;
     const farEnd = today + LATER_ON_DAYS + 62;
     const items = [];
+    // [AW7] each kept version of a schedule still asked about (whole schedule records), as amounts by occurrence
+    const keptAmounts = s => {
+      const out = {};
+      for (const k of book.keptVersions || []) {
+        if (!k || k.gone || !k.ask || k.of !== s.id || (k.in != null && k.in !== 'schedules')) continue;
+        for (const v of k.versions || []) {
+          if (!v || typeof v !== 'object' || v.gone) continue;
+          for (const o of occOf(Object.assign({}, s, v, { id: s.id }), earliest, farEnd)) (out[o.id] = out[o.id] || []).push(o.amount || 0);
+        }
+      }
+      return out;
+    };
     const KIND_OF = { income: 'income', bill: 'bill', transfer: 'transfer', autoSpend: 'auto', once: 'bill' };
     for (const s of schedules) {
       const kind = KIND_OF[s.kind] || 'bill';
       const other = kind === 'income' && !!s.cur && s.cur !== cur(s.acct);   // [Q4] pay in another currency
       const fee = kind === 'transfer' && s.fee ? s.fee : 0;                  // [Q2] what each occurrence costs on top
+      const kept = keptAmounts(s);
       for (const o of occOf(s, earliest, farEnd)) {
         // [AN5, AO3] until the person picks add or replace, money out counts on the safe side: the larger of what is
         // written and each amount waiting for that occurrence; a waiting pay amount adds nothing
         if (kind !== 'income') for (const w of waitingFor(s.id, dayStr(o.due))) o.amount = Math.max(o.amount || 0, w.a);
+        // [AW7, AR1] while a money question waits, the safe side across the kept versions: the smaller pay, the larger bill
+        const alt = kept[o.id];
+        if (alt) o.amount = kind === 'income' ? Math.min(o.amount || 0, ...alt) : Math.max(o.amount || 0, ...alt);
         const it = { id: o.id, sid: s.id, kind, acct: s.acct, to: s.acct2, place: s.place, due: o.due, land: o.land, amount: o.amount || 0,
           startsPeriod: !!s.startsPeriod, name: s.name, otherCur: other };
         if (other) it.currency = s.cur;

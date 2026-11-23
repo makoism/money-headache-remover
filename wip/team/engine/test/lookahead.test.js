@@ -231,4 +231,16 @@ t('a refund never settles a pay, whatever its size [AV4]', () => {
   const d = run(b, '2026-12-26').daysToNextPay;
   eq([d.item, d.late], ['pay@2026-12-25', true]);
 });
+t('while a money question waits, the walk counts the safe side across the kept versions [AW7, AR1]', () => {
+  const b = base(x => {
+    x.schedules.push({ id: 'rent', kind: 'bill', name: 'Rent', acct: 'bank', cur: 'JPY', shift: 'none', rules: [{ rule: { every: 'month', days: [27] } }], steps: [{ amount: 300000 }] });
+    const ver = (id, amount) => Object.assign({}, x.schedules.find(y => y.id === id), { steps: [{ amount }] });
+    x.keptVersions = [{ id: 'kept:pay', of: 'pay', in: 'schedules', ask: true, versions: [ver('pay', 240000), ver('pay', 250000)] },
+      { id: 'kept:rent', of: 'rent', in: 'schedules', ask: true, versions: [ver('rent', 300000), ver('rent', 310000)] }];
+  });
+  // 400,000 - 30,000 food left + 240,000 (pay 25 Dec, the smaller) - 30,000 - 50,000 (next period) - 310,000 (rent 27 Dec, the larger) = 220,000
+  eq(run(b, '2026-12-02').accounts.bank.lowest, 220000);
+  b.keptVersions.forEach(k => { k.ask = false; });
+  eq(run(b, '2026-12-02').accounts.bank.lowest, 240000);   // picked: what shows, 250,000 and 300,000
+});
 done('lookahead');
