@@ -245,3 +245,14 @@ Watch decided: restoring an older backup while the cloud copy is on writes `gone
 ## AC. Answers to mv-q42 to mv-q49
 AC1. The field is `per: 'month' | 'pay'` on income schedules (AB2); moved pay is `per: 'month'`. AC2. A loan payment receipt waits in `pendingMove` until "which loan is this" is answered. AC3. A loan the move made holds rate 0 and the old monthly payment as a fixed minimum, marked as asked, until answered. AC4. The Emergency fund draw goes to Waiting, where that period's plan places it. AC5. A debt's one-month amount is that month's whole payment. AC6. The move appends "(moved: loan line removed)" to the receipt's own note. AC7. `once[ym].bill:loan` becomes that month's payment `amounts` on the matched loan, else on the bill schedule. AC8. A month-end answer naming a goal the plan no longer has moves to Waiting as "to place".
 The AA helper's readings are confirmed.
+
+## AD. Answers after AB and AC
+AD1 (mv-q50). A minimum saved by a build before 20 Nov with no `ui.minAuto` is treated as automatic and dropped (Mako: no minimum without the person choosing it); setup asks anyway.
+AD2 (mv-q51). A dropped loan line's one-month amount is dropped and listed in the move summary.
+AD3 (mv-q52). A waiting month-end answer is offered as the default at that period's own question, capped (L q10); the person confirms or changes it.
+AD4 (mv-q53). A moved bill answered with another rhythm is per month like pay, spread over its payments.
+AD5 (mv-q54). A waiting entry is applied only when the record it would change has an older `at` than the entry; otherwise it is skipped. A device that applies an answer at its own move also writes the matching waiting entry as `gone`, so other devices skip it.
+AD6 (ed-q1). "No, not paid" asks the amount, with everything owed filled in.
+AD7 (ed-q2). "Don't know" on a loan or pay-later means that month's usual payment is due on the next payment day.
+AD8 (mg-q12). A restore gives the shared `ui` keys a new `at` too.
+The helper's readings (leftover yen to the earliest pays, `terms: 'asked'`, AC6's wording after a space) are confirmed.
