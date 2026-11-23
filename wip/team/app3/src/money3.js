@@ -29,5 +29,8 @@ const period3 = p => (p.payToday ? SN.periodLabel(p.start, p.end).split(' to ')[
 const esc3 = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 /* a figure on screen: its engine path (data-figure, checked by names and provenance), its amount (data-amt) */
 const fig3 = (path, minor, cur, tag) => `<${tag || 'span'} data-figure="${esc3(path)}" data-amt="${minor}">${money3(minor, cur)}</${tag || 'span'}>`;
+/* [NS-FIX 4] a line taken over, in one set of words for Plan and Receipts: "¥1,076 over Food, taken from safe to spend"
+   (the amount already written by the screen's formatter, the engine's `over`) */
+const overWords3 = (name, overText) => `${overText} over ${name}, taken from safe to spend`;
 const MSG3 = BurrowScreens.messages.createQueue();
 const msg3 = text => MSG3.post({ kind: 'toast', key: 'a3', text });

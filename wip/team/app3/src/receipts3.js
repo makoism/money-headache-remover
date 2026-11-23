@@ -62,6 +62,13 @@ function rcFigs3(book) {
     return { free: r.period && r.period.free ? r.period.free.left : null, safe: r.safeToSpend.headline, period: r.period };
   } catch (e) { return null; }
 }
+/* [NS-FIX 4] a spend on a line that leaves the line over (the engine's `over` on the book the draft would make): the same
+   words as Plan, "¥1,076 over Food, taken from safe to spend"; null otherwise */
+function rcOver3(f, x) {
+  if (!f || !f.period || !x || !x.line || x.line === 'free' || RC3.mode !== 'spend') return null;
+  const l = (f.period.lines || []).find(y => y.id === x.line && y.over > 0);
+  return l ? overWords3(l.name, money3(l.over, E3.home())) : null;
+}
 function rcFigRow3(label, path, now, was, fig) {
   const cur = E3.home();
   const wasTxt = was != null && was !== now ? ` <span class="a3-was" data-fig="${fig}-was">was ${fig3(path, was, cur)}</span>` : '';
@@ -143,7 +150,8 @@ function rcPreview3() {
   try { b = RC3.edit ? ACT3.dry('edit', RC3.edit.id, rcFields3(x)) : ACT3.dry(RC_KIND3[RC3.mode], x); } catch (e) { out.textContent = ''; return; }
   const f = rcFigs3(b), cur = E3.home();
   if (!f) { out.textContent = ''; return; }
-  out.innerHTML = `After this: ${f.free != null ? `${esc3(label3('freeToSpendLeft'))} <b data-fig="rc-free-after">${fig3('period.free.left', f.free, cur)}</b>, ` : ''}${esc3(label3('safeToSpend').toLowerCase())} <b data-fig="rc-safe-after">${fig3('safeToSpend.headline', f.safe, cur)}</b>`;
+  const ov = rcOver3(f, x);
+  out.innerHTML = `After this: ${f.free != null ? `${esc3(label3('freeToSpendLeft'))} <b data-fig="rc-free-after">${fig3('period.free.left', f.free, cur)}</b>, ` : ''}${esc3(label3('safeToSpend').toLowerCase())} <b data-fig="rc-safe-after">${fig3('safeToSpend.headline', f.safe, cur)}</b>${ov ? `<br><span class="a3-late" data-fig="rc-over">${esc3(ov)}</span>` : ''}`;
 }
 function rcWire3() {
   const amt = $('#rcAmt');
@@ -173,7 +181,10 @@ async function rcSave3() {
   const err = $('#rcErr'), x = rcDraft3();
   if (x.bad) { err.textContent = x.bad; $('#rcAmt').focus(); return; }
   const before = rcFigs3(E3.book);
-  const r = RC3.edit ? await ACT3.edit(RC3.edit.id, rcFields3(x), { undo: rcWords3(x) }) : await ACT3[RC_KIND3[RC3.mode]](x, { undo: rcWords3(x) });
+  let ov = null;
+  try { ov = rcOver3(rcFigs3(RC3.edit ? ACT3.dry('edit', RC3.edit.id, rcFields3(x)) : ACT3.dry(RC_KIND3[RC3.mode], x)), x); } catch (e) { ov = null; }
+  const said = [rcWords3(x), ov].filter(Boolean).join('. ');
+  const r = RC3.edit ? await ACT3.edit(RC3.edit.id, rcFields3(x), { undo: said }) : await ACT3[RC_KIND3[RC3.mode]](x, { undo: said });
   if (!r.ok) { $('#rcErr').textContent = r.text; return; }   // the form may have been drawn again meanwhile (another tab)
   RC3.last = before;
   if (RC3.edit) { RC3.edit = null; RC3.mode = 'spend'; }
