@@ -13,8 +13,38 @@ const w = ms => new Promise(r => setTimeout(r, ms));
 let bad = 0, n = 0;
 const ck = (name, ok, extra) => { n++; console.log((ok ? 'PASS ' : 'FAIL ') + name + (ok ? '' : ' ' + String(extra === undefined ? '' : extra).slice(0, 400))); if (!ok) bad++; };
 const errs = [];
+const WALK_CLOCK = /^\d\d:\d\d$/.test(process.env.WALK_CLOCK || '') ? process.env.WALK_CLOCK : null;
+/* every figure on Home, Plan and Receipts: its name, its amount and its words */
+async function allFigs(p) {
+  const out = [];
+  for (const [t, panel] of [['home', '#a3Home'], ['plan', '#a3Plan'], ['receipts', '#a3Rc']]) {
+    await p.click(`[data-tab=${t}]`); await w(150);
+    out.push(...await p.$$eval(panel + ' [data-fig]', (es, tb) => es.map(e => {
+      const a = e.dataset.amt !== undefined ? e : e.querySelector('[data-amt]');
+      return tb + ':' + e.dataset.fig + '=' + (a ? a.dataset.amt : '') + ' ' + e.textContent.replace(/\s+/g, ' ').trim();
+    }), t));
+  }
+  await p.click('[data-tab=home]'); await w(100);
+  return out;
+}
+/* [QC numbers blocker 1] what a check-in leaves on the page is what the page shows after it is reopened */
+async function sameAfterReload(p, label) {
+  const before = await allFigs(p);
+  await p.reload(); await w(500);
+  const after = await allFigs(p);
+  const diff = before.map((x, i) => (x === after[i] ? null : `${x}  ->  ${after[i]}`)).filter(Boolean);
+  ck(`${label}: every figure the same after a reload (${before.length})`, before.length > 5 && before.length === after.length && !diff.length, diff.join(' | ') || `${before.length} vs ${after.length}`);
+}
 async function ctx(dir) {
-  const c = await chromium.launchPersistentContext(dir, { executablePath: '/usr/bin/google-chrome', headless: true, viewport: { width: 390, height: 844 }, acceptDownloads: true, args: ['--no-sandbox'] });
+  const c = await chromium.launchPersistentContext(dir, Object.assign({ executablePath: '/usr/bin/google-chrome', headless: true, viewport: { width: 390, height: 844 }, acceptDownloads: true, args: ['--no-sandbox'] }, process.env.TZ ? { timezoneId: process.env.TZ } : {}));
+  /* WALK_CLOCK=HH:MM sets the device's clock to that time of day (ticking on from there); with TZ= the walk runs in that
+     time zone. Check3 runs it in Tokyo early in the morning and late at night (QC numbers blocker 1). */
+  if (WALK_CLOCK) await c.addInitScript(hm => {
+    const R = Date, t = new R(); t.setHours(+hm.slice(0, 2), +hm.slice(3, 5), 0, 0);
+    const off = t.getTime() - R.now();
+    class F extends R { constructor(...a) { if (a.length) super(...a); else super(R.now() + off); } static now() { return R.now() + off; } }
+    window.Date = F;
+  }, WALK_CLOCK);
   await c.addInitScript(() => {
     window.__asked = [];
     const fn = async () => ({ text: '' });
@@ -57,6 +87,7 @@ async function checkin(p, figures, amts = {}, untick = [], landed = {}) {
   await p.click('#a3CheckSave'); await w(600);
   const err = await txt(p, '#a3CheckErr');
   ck('check-in saved', !err || err === '(none)', err);
+  await sameAfterReload(p, 'check-in ' + (await p.evaluate(() => location.search)));
 }
 /* Home's safe to spend (data-fig=safe) and the main bank's figure, against the walk 4 report's hand-worked ones */
 async function home(p, label, safe, bank) {
@@ -217,6 +248,7 @@ async function home(p, label, safe, bank) {
   const secs = Math.round((Date.now() - t0) / 1000);
   ck(`the walk took ${secs} s (limit 300)`, secs < 300);
   for (const d of [dir, dir2]) fs.rmSync(d, { recursive: true, force: true });
-  console.log(bad ? `e3_walk: ${bad} FAIL of ${n}` : `e3_walk: ALL PASS (${n})`);
+  const how = (process.env.TZ ? ' ' + process.env.TZ : '') + (WALK_CLOCK ? ' at ' + WALK_CLOCK : '');
+  console.log(bad ? `e3_walk${how}: ${bad} FAIL of ${n}` : `e3_walk: ALL PASS (${n})${how}`);
   process.exit(bad ? 1 : 0);
 })().catch(e => { console.log('FAIL crashed ' + e.stack); process.exit(1); });
