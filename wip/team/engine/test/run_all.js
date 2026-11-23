@@ -5,7 +5,7 @@
 'use strict';
 const path = require('path');
 const { spawnSync } = require('child_process');
-const runs = ['dates.test.js', 'units.test.js', 'ids.test.js', 'schedules.test.js', 'ledger.test.js', 'lookahead.test.js', 'speed.test.js', 'platform.test.js', 'run_against_ref.js'];
+const runs = ['dates.test.js', 'units.test.js', 'ids.test.js', 'schedules.test.js', 'ledger.test.js', 'lookahead.test.js', 'move.test.js', 'speed.test.js', 'platform.test.js', 'run_against_ref.js'];
 let bad = 0;
 for (const f of runs) {
   const r = spawnSync(process.execPath, [path.join(__dirname, f)].concat(f === 'run_against_ref.js' ? ['--fails'] : []), { encoding: 'utf8' });
