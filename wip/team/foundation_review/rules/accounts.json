@@ -1,11 +1,11 @@
 {
   "area": "accounts",
   "title": "Closing an account: only at zero or with its money moved out or written off, owed accounts paid to zero first, links moved first, and its schedules end on the closing day",
-  "written_in": "SCHEMA_V3 3, 5; DECISIONS_ROUND2 O (close, never delete), P6, Q7, Q (write-off), R3, R4, R5",
+  "written_in": "SCHEMA_V3 3, 5; DECISIONS_ROUND2 O (close, never delete), P6, Q7, Q (write-off), R3, R4, R5, S3",
   "notes": [
     "Every amount is made up and in whole minor units (yen).",
     "Question `close` [P6]: closing `account` on `date` with its final figure `figure` (the final `check`). `transfers` are the transfers out that the closing asks for, `{ to, a }`. The account closes only when the figure less the transfers is zero; otherwise the closing is refused and `left` shows what is still in it. On a close the answer gives `closed` (the date), the events written (the final `check`, then each transfer, all dated the closing day) and `ends`: each schedule of the account (paid from it, landing in it, or a transfer into it) with its new `ends`, the closing day, unless it already ends on or before that day. Other schedules are untouched.",
-    "[Q7] The closing's transfer out, or its write-off, has the built id `close:<account>`, so the same closing written on two devices is one record (merge.json mg-70).",
+    "[Q7] The closing's transfer out, or its write-off, has the built id `close:<account>`, so the same closing written on two devices is one record (merge.json mg-70). [S3] A closing that writes several records (a transfer and a write-off, or transfers to two accounts) names them `close:<account>:1`, `:2`, in the order written: the transfers as listed, then the write-off (merge.json mg-71 to mg-73).",
     "[Q watch item] Closing may write off a balance that cannot be moved out (a few pesos in a dead e-wallet): `writeOff` is that amount, written as a spend from the account dated the closing day, id `close:<account>`; with it the figure less the transfers less the write-off must be zero.",
     "[R3] `kind` is the account's type (left out: bank). A card, loan or pay-later account whose `figure` (what it still owes) is above zero, or a bank whose figure is below zero, cannot be closed: the answer is refused with `owes` (an owed account) or `left` (a bank below zero) and `offer`, the payment that gets it to zero: a `repay` from the account's `payFrom` into it, or for a bank a `transfer` into it from an account the person picks (no `acct`).",
     "[R4] `links` lists what hangs on the account: `cards` paid from it and `places` kept in it. Each needs a new account in `newLinks` (`{ <card or place id>: <account id> }`) before the closing goes on; without one the closing is refused with `needs`, the links still to move. A close answer with links gives `links`, each moved to its new account.",
@@ -404,13 +404,114 @@
       "decisions": [
         "R4"
       ]
+    },
+    {
+      "id": "acc-15",
+      "question": "close",
+      "title": "Most of a dead e-wallet moved to the bank, the rest written off: two records, close:g:1 and close:g:2",
+      "input": {
+        "account": "g",
+        "kind": "ewallet",
+        "date": "2027-01-08",
+        "figure": 100350,
+        "transfers": [
+          {
+            "to": "b",
+            "a": 100000
+          }
+        ],
+        "writeOff": 350,
+        "schedules": []
+      },
+      "expected": {
+        "closed": "2027-01-08",
+        "events": [
+          {
+            "k": "check",
+            "date": "2027-01-08",
+            "acct": "g",
+            "a": 100350
+          },
+          {
+            "id": "close:g:1",
+            "k": "transfer",
+            "date": "2027-01-08",
+            "acct": "g",
+            "acct2": "b",
+            "a": 100000
+          },
+          {
+            "id": "close:g:2",
+            "k": "spend",
+            "date": "2027-01-08",
+            "acct": "g",
+            "a": 350
+          }
+        ],
+        "ends": {}
+      },
+      "why": "Pesos, in centavos. 1,003.50 (final figure) - 1,000.00 (moved to the bank) - 3.50 (written off) = 0.00, so it closes [P6, Q watch item]. The closing writes two records, named in the order written: the transfer `close:g:1`, then the write-off `close:g:2` [S3]. Before S3 neither had a built id (accounts-open-4).",
+      "decisions": [
+        "S3",
+        "P6",
+        "Q"
+      ]
+    },
+    {
+      "id": "acc-16",
+      "question": "close",
+      "title": "An old bank's money moved to two accounts: close:old:1 and close:old:2, in the order listed",
+      "input": {
+        "account": "old",
+        "kind": "bank",
+        "date": "2027-01-08",
+        "figure": 50000,
+        "transfers": [
+          {
+            "to": "b",
+            "a": 30000
+          },
+          {
+            "to": "b2",
+            "a": 20000
+          }
+        ],
+        "schedules": []
+      },
+      "expected": {
+        "closed": "2027-01-08",
+        "events": [
+          {
+            "k": "check",
+            "date": "2027-01-08",
+            "acct": "old",
+            "a": 50000
+          },
+          {
+            "id": "close:old:1",
+            "k": "transfer",
+            "date": "2027-01-08",
+            "acct": "old",
+            "acct2": "b",
+            "a": 30000
+          },
+          {
+            "id": "close:old:2",
+            "k": "transfer",
+            "date": "2027-01-08",
+            "acct": "old",
+            "acct2": "b2",
+            "a": 20000
+          }
+        ],
+        "ends": {}
+      },
+      "why": "50,000 (final figure) - 30,000 (to the main bank) - 20,000 (to the second bank) = 0, so it closes [P6]. Two records: `close:old:1` and `close:old:2`, in the order the closing writes them [S3].",
+      "decisions": [
+        "S3",
+        "P6"
+      ]
     }
   ],
-  "open": [
-    {
-      "id": "accounts-open-4",
-      "question": "A closing that writes more than one record (a transfer and a write-off, or transfers to two accounts): `close:<account>` [Q7] names one record. What are the ids of the others?",
-      "ref_does": "The built id goes on the closing's record only when there is exactly one (one transfer, or one write-off); with more, none gets it. No case has more than one."
-    }
-  ]
+  "open": []
 }

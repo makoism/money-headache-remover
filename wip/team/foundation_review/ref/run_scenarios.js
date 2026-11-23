@@ -21,15 +21,19 @@ const files = named.length ? named.map(f => path.isAbsolute(f) ? f : path.join(d
   : fs.readdirSync(dir).filter(f => f.endsWith('.json')).sort().map(f => path.join(dir, f));
 
 // Each answer as a short line, so expected and model can be compared as text.
-function itemsLine(list, cur) { return list.map(i => `${i.item} ${i.lands} ${fmt(i.amount, cur)}`).sort().join('; ') || 'none'; }   // order does not matter
+// [S6] An item in another currency than the ask's (pay in dollars into a yen bank) is shown in its own currency.
+function itemsLine(list, cur) { return list.map(i => `${i.item} ${i.lands} ${fmt(i.amount, i.currency || cur)}${i.currency && i.currency !== cur ? ' ' + i.currency : ''}`).sort().join('; ') || 'none'; }   // order does not matter
 const nextPayLine = e => e.days === null ? 'no next pay' : e.late ? `late, expected since ${e.next_pay}` : `${e.days} days to ${e.next_pay}`;
 
 function expectedLine(ask, cur) {
   const e = ask.expected, mm = x => fmt(minor(x, cur), cur);
-  const mItems = list => list.map(i => ({ ...i, amount: minor(i.amount, cur) }));
+  const mItems = list => list.map(i => ({ ...i, amount: minor(i.amount, i.currency || cur) }));
+  const apart = list => (list && list.length ? ' | apart ' + itemsLine(mItems(list), cur) : '');   // [S6]
   switch (ask.question) {
     case 'days_to_next_pay': return nextPayLine(e);
-    case 'due_before_next_pay': case 'check_in_list': return `${itemsLine(mItems(e.items), cur)} | total ${mm(e.total)}`;
+    case 'due_before_next_pay': return `${itemsLine(mItems(e.items), cur)} | total ${mm(e.total)}`;
+    case 'check_in_list': return `${itemsLine(mItems(e.items), cur)} | total ${mm(e.total)}${apart(e.apart)}`;   // [S6] pay in another currency apart
+    case 'later_on': return e.map(x => `${x.account} ${x.month} ${fmt(minor(x.balance, cur), cur)}`).sort().join('; ') || 'none';   // [B11, S4]
     case 'may_still_post': return itemsLine(mItems(e.items), cur);
     case 'not_seen_yet': return `${itemsLine(mItems(e.items), cur)} | in ${mm(e.money_in)} out ${mm(e.money_out)}`;
     case 'card_due': return `${mm(e.amount)} on ${e.payment_date}, ${e.statement}`;
@@ -47,7 +51,9 @@ function modelLine(ask, r, cur) {
     case 'headline': return fmt(r.safeToSpend.headline, cur);
     case 'days_to_next_pay': return nextPayLine(r.daysToNextPay);
     case 'due_before_next_pay': return `${itemsLine(r.dueBeforeNextPay.items, cur)} | total ${fmt(r.dueBeforeNextPay.total, cur)}`;
-    case 'check_in_list': return `${itemsLine(r.checkIn.toConfirm, cur)} | total ${fmt(r.checkIn.toConfirm.reduce((t, i) => t + i.amount, 0), cur)}`;
+    case 'check_in_list': return `${itemsLine(r.checkIn.toConfirm, cur)} | total ${fmt(r.checkIn.toConfirm.reduce((t, i) => t + i.amount, 0), cur)}`
+      + ((r.checkIn.apart || []).length ? ' | apart ' + itemsLine(r.checkIn.apart, cur) : '');   // [S6]
+    case 'later_on': return (r.laterOn || []).map(l => `${l.account} ${l.day.slice(0, 7)} ${l.balance == null ? '?' : fmt(l.balance, cur)}`).sort().join('; ') || 'none';   // [B11, S4]
     case 'may_still_post': return itemsLine(r.mayStillPost, cur);
     case 'not_seen_yet': return `${itemsLine(r.notSeenYet.items, cur)} | in ${fmt(r.notSeenYet.money_in, cur)} out ${fmt(r.notSeenYet.money_out, cur)}`;
     case 'card_due': { const n = r.cards[ask.account].next; return `${fmt(n.amount, cur)} on ${n.payment_date}, ${n.statement}`; }

@@ -36,8 +36,8 @@
       "why": "120,000 (laptop) - 10,000 (part 1, 15 Feb) - 10,000 (part 2, 15 Mar) = 100,000" },
     { "id": "inst-06", "date": "2027-03-16", "question": "owed_now", "account": "c", "expected": 10000,
       "why": "10,000 (part 1) + 10,000 (part 2) - 10,000 (paid Wed 10 Mar) = 10,000" },
-    { "id": "inst-07", "date": "2027-03-16", "question": "safe_to_spend", "account": "b", "expected": 280000,
-      "why": "300,000 (opening) - 10,000 (card paid Wed 10 Mar) - 10,000 (Card statement closed 15 Mar, paid 12 Apr: laptop part 2) = 280,000",
-      "note": "No fixed pay: the walk runs to Fri 30 Apr. The part posted 15 Apr is paid on 10 May, after it; parts not yet posted are not walked (section 14)." }
+    { "id": "inst-07", "date": "2027-03-16", "question": "safe_to_spend", "account": "b", "expected": 270000,
+      "why": "300,000 (opening) - 10,000 (card paid Wed 10 Mar) - 10,000 (Card statement closed 15 Mar, paid 12 Apr: laptop part 2) - 10,000 (laptop part 3, walked on the day it posts, Thu 15 Apr) = 270,000",
+      "note": "No fixed pay: the walk runs to Fri 30 Apr. Parts not yet posted are walked on their posting dates [S4], so part 3 comes off on 15 Apr, not on its payment day of 10 May. Before S4 the parts not yet posted were not walked: 280,000." }
   ]
 }

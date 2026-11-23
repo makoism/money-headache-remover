@@ -61,9 +61,15 @@ Written 23 Nov 2026 from foundation_review/RECOMMENDATION.md, life_walks_salarie
 | closing_write_off.json | A dead e-wallet's last pesos written off at the closing, id `close:<account>` (Q7, Q watch). | PHP | 4 |
 | paid_by_someone_else.json | A card statement paid by a parent (a repay with no paying account) and a travel spend posted 8 working days late (Q watch; final review 2 S10, S6). | JPY | 5 |
 | pending_hold.json | A pending hold: a filler at the first check-in that the next one gives back (final review 2 S7, watch). | JPY | 6 |
+| rough_transfer.json | Rough top-ups met by statement lines: within 10% a side takes the line's amount, the other side keeps its typed amount and the difference is a fee from Free to spend; a line more than 10% away is a record of its own (S1). | PHP | 6 |
+| settle_later_stretch.json | A deposit settles the pay before a check-in; the pay's own line, read in the next stretch, moves the settle and the period start (S2). | JPY | 4 |
+| settle_ticked.json | The same, but the person ticked the deposit's settle at the check-in: it stays (S2). | JPY | 3 |
+| card_plan_later.json | A 12-part card buy: the parts not yet posted are walked on their posting dates and show in "Later on" (S4). | JPY | 4 |
+| fee_place.json | A fee as its own spend record `of` its transfer, paid from the place the person picked, else Free to spend; it moves no money of its own (S5). | PHP | 6 |
+| other_currency_lists.json | Pay in dollars into a yen bank: listed apart, in dollars, on the check-in list, and left out of the "not seen yet" totals (S6). | JPY (+USD) | 2 |
 | check_specs.js | Checks every file's shape and that every `why` adds up to its expected figure. `node check_specs.js` | | |
 
-Total: 431 asks (the first eight files: 180; the H files: 64; the I files: 34; the J files: 21; the K, L and M files: 22; the O files: 35; the P files: 12; the Q and R files: 63).
+Total: 456 asks (the first eight files: 180; the H files: 64; the I files: 34; the J files: 21; the K, L and M files: 22; the O files: 35; the P files: 12; the Q and R files: 63; the S files: 25). S4 also changed card_instalments inst-07 (280,000 to 270,000: the part posting on 15 Apr is now walked).
 
 ### The review v3 situations and where each one is now
 
@@ -161,6 +167,24 @@ The reviewer's own scripts (final_review_2.md) are in `../ref/final_review2_situ
 | S11. A goal removed on two devices | Q7 | rules mg-62, mg-65, mg-68 (and `close:` mg-63, mg-66, mg-70; acc-02, acc-07, acc-13) |
 | P2's record replacing move events; closing with a write-off | Q watch | to_place tp-05; closing_write_off woff-01 to woff-04; rules acc-07 |
 | R1 to R4 | R | to_place tp-01 to tp-04 (R1); rules units-70 to units-74 (R2), acc-08 to acc-11 (R3), acc-12 to acc-14 (R4) |
+
+### Decisions S and where each one is now
+
+| Decision | Asks or cases |
+|---|---|
+| S1. A rough transfer side met by a line within 10% takes its amount; the other side keeps its own; the difference is a fee | rough_transfer rough-01 to rough-06; rules match-59 to match-63 |
+| S2. A nearer line read later moves a settle and the period start, unless the person ticked it | settle_later_stretch later-01 to later-04, settle_ticked tick-01 to tick-03; rules match-64 to match-66 |
+| S3. Several closing records are `close:<account>:1`, `:2`, in order | rules acc-15, acc-16, mg-71 to mg-73 |
+| S4. Card plan parts not yet posted are walked on their posting dates and appear in "Later on" | card_plan_later later-plan-01 to later-plan-04; card_instalments inst-07 |
+| S5. A fee is its own spend record `of` its transfer, with the place picked (Free to spend by default) | fee_place feeplace-01 to feeplace-06; rough_transfer rough-03, rough-06 (no fee record: Free to spend) |
+| S6. Pay in another currency is left out of the "not seen yet" totals and listed apart on the check-in list | other_currency_lists ocl-01, ocl-02 |
+
+### What the S files add to the way a file is written
+- A `transfer` may carry **est: true** (typed roughly). A statement line within 10% of one side's amount meets that side and the side takes the line's amount; the other side keeps its typed amount (S1).
+- An imported line may carry the **settles** it saved when it was read. Unless it also carries **ticked: true** (the person ticked that settle at a check-in: the check-in's `settled` names the line), the settle is worked out again with every import the app knows, so a nearer line read later moves it (S2).
+- A `spend` with **of** (a transfer's id) is that transfer's fee record: its amount is what left less what arrived, it may name a `goal` (the place the person picked, else Free to spend) and moves no money of its own (S5).
+- **later_on**: the accounts that go below zero after the walk's end and within 12 months (B11), each `{ account, month, balance }`, the balance at the end of the first day below zero; `why` gives each account's sum.
+- **check_in_list** may give **apart**: items in another currency than their account, each with `currency`, listed apart and not in `total`. A **not_seen_yet** item may carry `currency` too; it is listed and left out of `money_in` (S6).
 
 ### What the Q and R files add to the way a file is written
 - An imported line may meet one side of a `transfer`, `repay`, `borrow` or `convert`: a money-out line on the side money leaves, a money-in line on the side it reaches. It then attaches to that record (its `posted` becomes that side's posted date: `posted` for the leaving side, `posted2` for the reaching side) and is not counted again (Q1). An imported line that is itself two-sided names the statement it came from with `account`.

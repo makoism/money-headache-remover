@@ -1,0 +1,35 @@
+{
+  "life": "card_plan_later",
+  "title": "A card buy in 12 parts: the parts not yet posted are walked on their posting dates and show in \"Later on\" (decision S4, answering section 14 question 4)",
+  "story": "Set up Mon 4 Jan 2027: the bank holds 50,000. A card closes on the 15th and is paid on the 10th of the next month (moved later) from the bank; its last statement (15 Dec) was 0 and nothing is on it. On Wed 20 Jan a laptop of 120,000 is bought on the card in 12 monthly parts of 10,000 with no interest, saved on its own pay-later account `of` the card: the first part posts to the card on Mon 15 Feb, then one on the 15th of each month to 15 Jan 2028. No fixed pay and no bills. On Tue 16 Feb the first part is on the card's statement of 15 Feb, due Wed 10 Mar; the other eleven are not posted yet. Each one is walked on the day it posts, so the bank runs out in July. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2027-01-04", "to": "2027-03-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 50000 } },
+    { "id": "c", "name": "Card", "kind": "card", "currency": "JPY", "statement_close_day": 15,
+      "payment": { "day": 10, "months_after_close": 1, "from": "b", "pays": "in full", "weekend_holiday": "move later" },
+      "opening": { "date": "2027-01-04", "statement": { "closed": "2026-12-15", "amount": 0, "paid": true }, "current": 0 } },
+    { "id": "lap", "name": "Laptop on the card, 12 parts", "kind": "paylater", "currency": "JPY", "of": "c",
+      "opening": { "date": "2027-01-04", "owed": 0 },
+      "plans": [ { "id": "laptop", "amount": 10000, "count": 12, "first": "2027-02-15" } ] }
+  ],
+  "income": [],
+  "bills": [],
+  "goals": [],
+  "events": [
+    { "id": "e1", "date": "2027-01-20", "told": "2027-01-20T12:00", "kind": "spend", "account": "lap", "amount": 120000, "note": "laptop, on the card in 12 parts" }
+  ],
+  "asks": [
+    { "id": "later-plan-01", "date": "2027-02-16", "question": "card_due", "account": "c", "expected": { "amount": 10000, "payment_date": "2027-03-10", "statement": "closed" },
+      "why": "10,000 (laptop part 1 of 12, posted Mon 15 Feb, in the statement closed that day) = 10,000" },
+    { "id": "later-plan-02", "date": "2027-02-16", "question": "owed_now", "account": "lap", "expected": 110000,
+      "why": "0 (opening) + 120,000 (laptop, Wed 20 Jan) - 10,000 (part 1, posted to the card Mon 15 Feb) = 110,000" },
+    { "id": "later-plan-03", "date": "2027-02-16", "question": "safe_to_spend", "account": "b", "expected": 30000,
+      "why": "50,000 (Bank today) - 10,000 (Card statement closed 15 Feb, paid Wed 10 Mar: part 1) - 10,000 (laptop part 2, walked on the day it posts, Mon 15 Mar) = 30,000",
+      "note": "No fixed pay: the walk runs to Fri 2 Apr (today + 45 days). Part 2 is not on any statement yet; it is walked on its posting date [S4], and the card's open statement (closes 15 Mar) asks nothing more, so it is not taken twice. Before S4 the parts not yet posted were not walked: 40,000." },
+    { "id": "later-plan-04", "date": "2027-02-16", "question": "later_on", "expected": [ { "account": "b", "month": "2027-07", "balance": -10000 } ],
+      "why": { "b": "50,000 (Bank today) - 10,000 (part 1, paid Wed 10 Mar) - 10,000 (part 2, posts 15 Mar) - 10,000 (part 3, posts 15 Apr) - 10,000 (part 4, posts 15 May) - 10,000 (part 5, posts 15 Jun) - 10,000 (part 6, posts Thu 15 Jul) = -10,000" },
+      "note": "The bank first goes below zero on Thu 15 Jul, after the walk's end (2 Apr), so Home shows \"Later on: Bank goes below zero in 2027-07\" [B11, S4]. Before S4 the bank ended at 40,000 and nothing showed." }
+  ]
+}

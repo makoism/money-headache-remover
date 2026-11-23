@@ -1,0 +1,36 @@
+{
+  "life": "settle_later_stretch",
+  "title": "A nearer line read after a check-in still moves a settle an import made, and the period start with it (decision S2, answering section 14 question 2)",
+  "story": "Set up Mon 1 Mar 2027: the bank holds 100,000, of which 40,000 is what is left of Free to spend (typed). Pay of about 250,000 (it varies with overtime, vary 0.3) lands on the 25th (moved earlier) and starts the period; Free to spend is 60,000 a month. On Tue 23 Mar the person spends 5,000 from Free to spend. On Wed 24 Mar a first statement is read: the old flat's deposit of 200,000 came back on Mon 22 Mar. It is the only line that fits the pay, so it settles pay@2027-03-25 (saved on the line at import time) and the period starts on 22 Mar. That evening the person does a check-in: the bank shows 295,000. The check-in lists nothing to tick (the pay is already settled), so nobody ticked that settle. On Mon 29 Mar, in the next check-in stretch, a second statement is read: the real pay of 262,000 on Thu 25 Mar. It is nearer the pay's day (0 days, the deposit 3), so the settle moves to it and the period starts on 25 Mar. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2027-03-01", "to": "2027-04-30" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "b",
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-03-01", "amount": 100000, "split": { "free": 40000 } } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "b", "amount": 250000, "vary": 0.3, "schedule": { "frequency": "monthly", "day": 25 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [],
+  "goals": [],
+  "plan": { "free": { "per": "month", "amount": 60000 } },
+  "events": [
+    { "id": "i1", "date": "2027-03-22", "posted": "2027-03-22", "told": "2027-03-24T09:00", "kind": "money_in", "account": "b", "amount": 200000, "source": "statement", "settles": "pay@2027-03-25", "note": "first statement: the deposit back; it settled the pay when it was read" },
+    { "id": "f1", "date": "2027-03-23", "told": "2027-03-23T12:00", "kind": "spend", "account": "b", "amount": 5000, "line": "free", "note": "dinner" },
+    { "id": "c1", "date": "2027-03-24", "told": "2027-03-24T20:00", "kind": "check", "account": "b", "amount": 295000, "note": "check-in: nothing ticked" },
+    { "id": "i2", "date": "2027-03-25", "posted": "2027-03-25", "told": "2027-03-29T09:00", "kind": "money_in", "account": "b", "amount": 262000, "source": "statement", "note": "second statement, next stretch: the pay" }
+  ],
+  "asks": [
+    { "id": "later-01", "date": "2027-03-24", "question": "headline", "expected": 55000,
+      "why": "60,000 (Free to spend for the period from Mon 22 Mar, as the deposit settles the pay) - 5,000 (dinner, Tue 23 Mar) = 55,000" },
+    { "id": "later-02", "date": "2027-03-29", "question": "headline", "expected": 60000,
+      "why": "60,000 (Free to spend for the period from Thu 25 Mar, nothing spent from it yet) = 60,000",
+      "note": "The pay's own line, read after the check-in of 24 Mar, is nearer the pay's day (0 days against 3), so the settle moves to it and the period now starts on 25 Mar [S2]; the dinner belongs to the period before. Before S2 a settle made before a check-in stayed (matching-open-2)." },
+    { "id": "later-03", "date": "2027-03-29", "question": "days_to_next_pay", "expected": { "days": 25, "next_pay": "2027-04-23" },
+      "why": "2027-04-23 - 2027-03-29 = 25",
+      "note": "25 Apr is a Sunday, moved earlier to Fri 23 Apr." },
+    { "id": "later-04", "date": "2027-03-29", "question": "bank_today", "account": "b", "expected": 557000,
+      "why": "295,000 (check of Wed 24 Mar) + 262,000 (pay, Thu 25 Mar) = 557,000" }
+  ]
+}

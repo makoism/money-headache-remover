@@ -1,0 +1,33 @@
+{
+  "life": "settle_ticked",
+  "title": "A settle the person ticked at a check-in stays, even when a nearer line is read later (decision S2)",
+  "story": "The same life as settle_later_stretch.json: set up Mon 1 Mar 2027, the bank holds 100,000, of which 40,000 is what is left of Free to spend (typed); pay of about 250,000 (vary 0.3) on the 25th (moved earlier) starts the period; Free to spend is 60,000 a month; a dinner of 5,000 on Tue 23 Mar. On Wed 24 Mar the first statement's deposit of 200,000 (Mon 22 Mar) settles pay@2027-03-25. At the check-in that evening the bank shows 295,000, and the person ticks that settle: it was their pay, paid early (the check-in's `settled` names the line, written `ticked` here). On Mon 29 Mar a second statement shows 262,000 on Thu 25 Mar, nearer the pay's day; the ticked settle stays, so the period still starts on 22 Mar and the 262,000 is plain money in. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2027-03-01", "to": "2027-04-30" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "b",
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-03-01", "amount": 100000, "split": { "free": 40000 } } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "b", "amount": 250000, "vary": 0.3, "schedule": { "frequency": "monthly", "day": 25 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [],
+  "goals": [],
+  "plan": { "free": { "per": "month", "amount": 60000 } },
+  "events": [
+    { "id": "i1", "date": "2027-03-22", "posted": "2027-03-22", "told": "2027-03-24T09:00", "kind": "money_in", "account": "b", "amount": 200000, "source": "statement", "settles": "pay@2027-03-25", "ticked": true, "note": "first statement: the pay, early; its settle ticked at the check-in of 24 Mar" },
+    { "id": "f1", "date": "2027-03-23", "told": "2027-03-23T12:00", "kind": "spend", "account": "b", "amount": 5000, "line": "free", "note": "dinner" },
+    { "id": "c1", "date": "2027-03-24", "told": "2027-03-24T20:00", "kind": "check", "account": "b", "amount": 295000, "note": "check-in: the settle ticked" },
+    { "id": "i2", "date": "2027-03-25", "posted": "2027-03-25", "told": "2027-03-29T09:00", "kind": "money_in", "account": "b", "amount": 262000, "source": "statement", "note": "second statement: other money in" }
+  ],
+  "asks": [
+    { "id": "tick-01", "date": "2027-03-29", "question": "headline", "expected": 55000,
+      "why": "60,000 (Free to spend for the period from Mon 22 Mar: the ticked settle stays) - 5,000 (dinner, Tue 23 Mar) = 55,000",
+      "note": "The 25 Mar line is nearer the pay's day, but the person ticked the earlier settle at a check-in, so it stays [S2]." },
+    { "id": "tick-02", "date": "2027-03-29", "question": "days_to_next_pay", "expected": { "days": 25, "next_pay": "2027-04-23" },
+      "why": "2027-04-23 - 2027-03-29 = 25" },
+    { "id": "tick-03", "date": "2027-03-29", "question": "bank_today", "account": "b", "expected": 557000,
+      "why": "295,000 (check of Wed 24 Mar) + 262,000 (money in, Thu 25 Mar) = 557,000" }
+  ]
+}

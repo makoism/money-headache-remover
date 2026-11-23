@@ -1,0 +1,45 @@
+{
+  "life": "rough_transfer",
+  "title": "A rough transfer side met by a statement line within 10% takes the line's amount; the other side keeps its typed amount, and the difference is a fee on the sender (decision S1, answering section 14 question 1)",
+  "story": "Set up Mon 4 Jan 2027 in pesos: the bank holds 20,000.00, of which 3,000.00 is what is left of Free to spend (typed), and an e-wallet holds nothing. Pay of 30,000.00 lands in the bank on the 25th (moved earlier) and starts the period; Free to spend is 5,000.00 a month. On Tue 5 Jan the person tops up the e-wallet and types it roughly (`est`) as 1,000.00 from the bank. On Wed 6 Jan the bank statement is read: 1,020.00 out on 5 Jan. It is within 10% of 1,000.00, so it meets the transfer's bank side, which takes 1,020.00; the e-wallet side keeps 1,000.00, and the 20.00 between them is a fee from the bank, in Free to spend. On Thu 7 Jan a second top-up is typed roughly as 500.00. On Fri 8 Jan the e-wallet statement is read: 490.00 in on 7 Jan. It meets the e-wallet side, which takes 490.00; the bank side keeps 500.00 and the 10.00 is a fee. On Fri 8 Jan a third top-up is typed roughly as 200.00, and the bank statement read that evening shows 230.00 out on 8 Jan: 30.00 is more than 10% of 230.00, so the line does not meet the transfer and is a spend of its own. Every amount is made up.",
+  "currency": "PHP",
+  "window": { "from": "2027-01-04", "to": "2027-01-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "b",
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "PHP", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 20000.00, "split": { "free": 3000.00 } } },
+    { "id": "g", "name": "E-wallet", "kind": "ewallet", "currency": "PHP", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 0 } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "b", "amount": 30000.00, "schedule": { "frequency": "monthly", "day": 25 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [],
+  "goals": [],
+  "plan": { "free": { "per": "month", "amount": 5000.00 } },
+  "events": [
+    { "id": "t1", "date": "2027-01-05", "told": "2027-01-05T12:00", "kind": "transfer", "from": "b", "to": "g", "amount": 1000.00, "est": true, "note": "top-up, typed roughly" },
+    { "id": "i1", "date": "2027-01-05", "posted": "2027-01-05", "told": "2027-01-06T09:00", "kind": "spend", "account": "b", "amount": 1020.00, "source": "statement", "note": "bank statement: 1,020.00 out" },
+    { "id": "t2", "date": "2027-01-07", "told": "2027-01-07T12:00", "kind": "transfer", "from": "b", "to": "g", "amount": 500.00, "est": true, "note": "second top-up, typed roughly" },
+    { "id": "j1", "date": "2027-01-07", "posted": "2027-01-07", "told": "2027-01-08T09:00", "kind": "money_in", "account": "g", "amount": 490.00, "source": "statement", "note": "e-wallet statement: 490.00 in" },
+    { "id": "t3", "date": "2027-01-08", "told": "2027-01-08T12:00", "kind": "transfer", "from": "b", "to": "g", "amount": 200.00, "est": true, "note": "third top-up, typed roughly" },
+    { "id": "i2", "date": "2027-01-08", "posted": "2027-01-08", "told": "2027-01-08T20:00", "kind": "spend", "account": "b", "amount": 230.00, "source": "statement", "note": "bank statement: 230.00 out, more than 10% away" }
+  ],
+  "asks": [
+    { "id": "rough-01", "date": "2027-01-06", "question": "bank_today", "account": "b", "expected": 18980.00,
+      "why": "20,000.00 (opening) - 1,020.00 (top-up of Tue 5 Jan: the bank side takes the statement line's amount) = 18,980.00",
+      "note": "20.00 x 10 = 200.00, not more than 1,020.00, so the line is within 10% and meets the rough transfer's bank side [S1, Q1]. Before S1 a line that differed was a spend of its own and the bank showed 17,980.00." },
+    { "id": "rough-02", "date": "2027-01-06", "question": "bank_today", "account": "g", "expected": 1000.00,
+      "why": "0.00 (opening) + 1,000.00 (top-up of Tue 5 Jan: the e-wallet side keeps its typed amount) = 1,000.00" },
+    { "id": "rough-03", "date": "2027-01-06", "question": "headline", "expected": 2980.00,
+      "why": "3,000.00 (Free to spend at the opening, typed) - 20.00 (the fee: 1,020.00 left the bank, 1,000.00 arrived) = 2,980.00",
+      "note": "The difference is a fee on the sender [S1, Q2], from Free to spend as no other place was picked [S5]." },
+    { "id": "rough-04", "date": "2027-01-08", "question": "bank_today", "account": "g", "expected": 1690.00,
+      "why": "0.00 (opening) + 1,000.00 (Tue 5 Jan) + 490.00 (Thu 7 Jan: the e-wallet side takes the statement line's amount) + 200.00 (Fri 8 Jan, typed) = 1,690.00" },
+    { "id": "rough-05", "date": "2027-01-08", "question": "bank_today", "account": "b", "expected": 18050.00,
+      "why": "20,000.00 (opening) - 1,020.00 (Tue 5 Jan, as the statement shows) - 500.00 (Thu 7 Jan: the bank side keeps its typed amount) - 200.00 (Fri 8 Jan, typed) - 230.00 (the statement line of Fri 8 Jan, a spend of its own) = 18,050.00",
+      "note": "30.00 x 10 = 300.00 is more than 230.00, so the 230.00 line is more than 10% from 200.00 and does not meet the transfer: it stays a record of its own, and the person sees both [S1, Q1]." },
+    { "id": "rough-06", "date": "2027-01-08", "question": "headline", "expected": 2970.00,
+      "why": "3,000.00 (Free to spend at the opening, typed) - 20.00 (fee of Tue 5 Jan) - 10.00 (fee of Thu 7 Jan: 500.00 left, 490.00 arrived) = 2,970.00",
+      "note": "The 230.00 line names no budget line, so it takes nothing from Free to spend." }
+  ]
+}

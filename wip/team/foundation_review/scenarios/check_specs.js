@@ -11,7 +11,7 @@ const KINDS = ['bank', 'cash', 'ewallet', 'card', 'loan', 'paylater'];
 const EVENT_KINDS = ['pay_in', 'money_in', 'spend', 'refund', 'bill_paid', 'card_payment', 'transfer', 'convert', 'set_aside', 'check', 'card_check', 'skip', 'repay', 'borrow',
   'place_money', 'period_end_answer'];   // borrow: cash taken on a card [O5], or drawn on a loan [Q3]; place_money: money to place placed [R1]; period_end_answer: a pe: record with its moves [P2]
 const QUESTIONS = ['bank_today', 'safe_to_spend', 'days_to_next_pay', 'due_before_next_pay', 'not_seen_yet', 'card_due', 'total', 'not_explained',
-  'check_in_list', 'may_still_post', 'owed_now', 'headline', 'place', 'warnings', 'total_after_cards'];
+  'check_in_list', 'may_still_post', 'owed_now', 'headline', 'place', 'warnings', 'total_after_cards', 'later_on'];   // later_on: the 12-month warnings [B11, S4]
 const WE_RULES = ['move earlier', 'move later', 'none'];
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const TOLD = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/;   // a date, or a date and a time [H1]
@@ -109,6 +109,10 @@ function checkAnswer(file, where, q, expected, why, d, askDate) {
     for (const it of expected.items) {
       if (!isDate(it.lands) || typeof it.amount !== 'number' || !['in', 'out'].includes(it.direction)) bad(file, where, `item ${it.item} needs lands, amount, direction in/out`);
       if (isDate(it.lands) && dayNum(it.lands) >= dayNum(askDate)) bad(file, where, `item ${it.item} lands on or after the ask date, so it is not late`);
+      if (it.currency !== undefined) {   // [S6] pay in another currency: listed in its own currency, left out of the totals
+        if (!(it.currency in DIGITS) || it.direction !== 'in' || !decimalsOk(it.amount, DIGITS[it.currency])) bad(file, where, `item ${it.item}: currency is only on money in, in a known currency [S6]`);
+        continue;
+      }
       if (it.direction === 'in') inn += numMinor(it.amount, d); else out += numMinor(it.amount, d);
     }
     if (inn !== numMinor(expected.money_in, d)) bad(file, where, 'items in do not add to money_in');
@@ -134,10 +138,22 @@ function checkAnswer(file, where, q, expected, why, d, askDate) {
     for (const it of expected.items) {
       if (!isDate(it.lands) || typeof it.amount !== 'number') bad(file, where, `item ${it.item} needs lands and amount`);
       else if (dayNum(it.lands) > dayNum(askDate)) bad(file, where, `item ${it.item} lands after the ask date (a check-in only lists what has landed)`);
+      if (it.currency !== undefined) bad(file, where, `item ${it.item}: an item in another currency is listed apart [S6]`);
       s += numMinor(it.amount, d);
+    }
+    // [S6] Pay in another currency is listed apart, each in its own currency, and is not in the total.
+    for (const it of expected.apart || []) {
+      if (!isDate(it.lands) || dayNum(it.lands) > dayNum(askDate) || !(it.currency in DIGITS) || typeof it.amount !== 'number' || !decimalsOk(it.amount, DIGITS[it.currency])) bad(file, where, `apart item ${it.item} needs lands (by the ask date), currency and an amount in it [S6]`);
     }
     if (s !== numMinor(expected.total, d)) bad(file, where, 'items do not add to total');
     return checkSum(file, where, why, numMinor(expected.total, d), d);
+  }
+  if (q === 'later_on') {   // [B11, S4] each account that goes below zero after the horizon: its month and its balance that day
+    if (!Array.isArray(expected) || expected.some(x => !x.account || !/^\d{4}-\d{2}$/.test(x.month || '') || typeof x.balance !== 'number' || x.balance >= 0)) return bad(file, where, 'expected is a list of { account, month (YYYY-MM), balance (below zero) }');
+    if (!expected.length) { if (typeof why !== 'string' || why.includes('=')) bad(file, where, 'nothing later on: why should be words with no sum'); return; }
+    if (!why || typeof why !== 'object') return bad(file, where, 'why must be { <account>: sum }');
+    for (const x of expected) checkSum(file, where + ' ' + x.account, why[x.account], numMinor(x.balance, d), d);
+    return;
   }
   if (q === 'may_still_post') {
     if (!expected || !Array.isArray(expected.items)) return bad(file, where, 'expected needs items');
@@ -276,6 +292,14 @@ function checkFile(fp) {
     }
     if ('told' in e && e.told !== null && !(TOLD.test(e.told) && isDate(e.told.slice(0, 10)))) bad(file, w, 'told must be a date, a date and time, or null');
     if (e.posted !== undefined && !isDate(e.posted)) bad(file, w, 'posted must be a date');
+    // [S2] ticked: the person ticked this imported line's settle at a check-in (the check-in's `settled` names it)
+    if (e.ticked !== undefined && !(e.ticked === true && e.source && e.settles !== undefined)) bad(file, w, 'ticked is only on an imported line that settles an item [S2]');
+    // [S5] of: a fee, its own spend record linked to its transfer; its amount is what left less what arrived
+    if (e.of !== undefined) {
+      const t = (s.events || []).find(x => x.id === e.of);
+      if (e.kind !== 'spend' || !t || t.kind !== 'transfer' || t.from !== e.account || typeof t.amount_out !== 'number' || typeof t.amount_in !== 'number'
+        || numMinor(t.amount_out, DIGITS[acc[t.from].currency]) - numMinor(t.amount_in, DIGITS[acc[t.from].currency]) !== numMinor(e.amount, DIGITS[acc[t.from].currency])) bad(file, w, 'of names the transfer a fee belongs to: a spend from its sending account of what left less what arrived [S5, Q2]');
+    }
     if (e.avail !== undefined && !(e.kind === 'check' && ['available', 'current'].includes(e.avail))) bad(file, w, 'avail is only on a bank check, "available" or "current" [I1]');
     if (e.own_time !== undefined && !(e.moved === true && TOLD.test(e.own_time) && e.own_time.length > 10)) bad(file, w, 'own_time is a date and time, only on a moved record [I5]');
     if (e.moved === true && !(s.moved_copy && TOLD.test(s.moved_copy.saved || '') && s.moved_copy.saved.length > 10)) bad(file, w, 'a moved record needs the top-level moved_copy.saved (a date and time) [I5]');

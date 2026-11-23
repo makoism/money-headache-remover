@@ -1,7 +1,7 @@
 {
   "area": "matching",
   "title": "Matching an import to a typed line or an expected item, the vary margin, the source ranking, est within 10%, and the possible double typed on two devices",
-  "written_in": "SCHEMA_V3 6.4 and 12; DECISIONS_ROUND2 A6, F4, H2, H9, L (matching q1 to q13), M1, M2, O1, Q1, Q2, Q6",
+  "written_in": "SCHEMA_V3 6.4 and 12; DECISIONS_ROUND2 A6, F4, H2, H9, L (matching q1 to q13), M1, M2, O1, Q1, Q2, Q6, S1, S2",
   "notes": [
     "Every amount is made up and in whole minor units (yen, so 1 is 1).",
     "Dates: Fri 20 Nov 2026, Sat 21, Sun 22, Mon 23, Tue 24, Wed 25, Thu 26; Thu 10 Dec 2026, Fri 11, Sat 12, Mon 14.",
@@ -10,8 +10,8 @@
     "Question `import`: the lines after every import is applied, as `gone` (line id to the id that removed it) and `settled` (occurrence name to the live line that settles it). Question `import_counts`: how many lines are gone and how many import lines are live. Question `import_dropped`: the import lines dropped as repeats of an equal-rank line [L matching q9]. Question `possible_doubles`: the pairs of typed lines offered as a possible double; nothing is removed. Question `not_double_mark`: what the answer \"both are real\" writes [L matching q12].",
     "A statement import carries its own dates, `from` and `to` [L matching q8]; a screenshot read after it that falls inside those dates and matches no statement line is removed too, goneBy the statement import [M2]. An import may carry the `file` it was read from, and each of its lines the `line` it was on; with the type they are the line's `src`. A line's id for repeats is its date, amount, direction and count (the first, second, ... line with that date, amount and direction in its own import) [L matching q9].",
     "Question `import_told` [O1]: each live imported line's `told`. An import that replaces a typed line keeps that line's `told`; one that replaces nothing keeps its own. Whether an unmatched import dated on a check's day or the setup day is inside that figure, and the printed running balance (`src.bal`) deciding the order, are in the reference model (scenarios/import_after_check.json).",
-    "Question `import_sides` [Q1]: an import line that meets one side of a two-sided record (a `transfer`, `repay`, `borrow` or `convert`, written with `k`, `acct`, the side the money leaves, and `acct2`, the side it reaches, and `a2` when what arrived differs [Q2]) attaches to it: it sets that side's posted date and source (`posted` and `src` for the side it leaves, `posted2` and `src2` for the side it reaches) and never replaces the record. A money-out line on `acct` meets the leaving side by `a`; a money-in line on `acct2` meets the reaching side by `a2` (else `a`), inside the posting window either side of the record's date. The answer gives `attached` (record id to the sides set, each source as `{ type, file, line }`), `gone` as in `import`, and `live`, the import lines that became records of their own.",
-    "[Q6] Across one import, the line nearest an expected item's landing day settles it, then the line nearest its amount, then the first listed; items are taken in landing order. A later import read in the same check-in stretch (the same `grp` on the import) with a nearer line moves the settle to it. An import with no `grp` is a stretch of its own. Dates added: Mon 7 Dec 2026."
+    "Question `import_sides` [Q1]: an import line that meets one side of a two-sided record (a `transfer`, `repay`, `borrow` or `convert`, written with `k`, `acct`, the side the money leaves, and `acct2`, the side it reaches, and `a2` when what arrived differs [Q2]) attaches to it: it sets that side's posted date and source (`posted` and `src` for the side it leaves, `posted2` and `src2` for the side it reaches) and never replaces the record. A money-out line on `acct` meets the leaving side by `a`; a money-in line on `acct2` meets the reaching side by `a2` (else `a`), inside the posting window either side of the record's date. [S1] On a rough record (`est`) a side is met by a line within 10% of that side's amount and takes the line's amount; the other side keeps its typed amount, and in one currency the difference is a fee on the sender [Q2, S5]. The answer gives `attached` (record id to the sides set, each source as `{ type, file, line }`, and the record's `a` and `a2` when a side took a line's amount), `gone` as in `import`, and `live`, the import lines that became records of their own.",
+    "[Q6] Across one import, the line nearest an expected item's landing day settles it, then the line nearest its amount, then the first listed; items are taken in landing order. A later import with a nearer line moves the settle to it, whether read in the same check-in stretch (the same `grp`) [Q6] or a later one [S2]; so does a later import when the settle is held by an imported line already there (in `lines`, with its `settles`). [S2] A settle the person ticked at a check-in stays: the line carries `ticked: true` (the check-in's `settled` names it). A settle a typed line holds (a ticked `set:` record) stays as before. Dates added: Mon 7 Dec 2026."
   ],
   "defaults": {
     "accounts": { "bank": { "kind": "bank", "postingDays": 1 }, "card": { "kind": "card" } },
@@ -1459,18 +1459,604 @@
       "decisions": [
         "Q6"
       ]
+    },
+    {
+      "id": "match-59",
+      "question": "import_sides",
+      "title": "A rough ATM transfer of 10,000, the bank's line 10,500: the bank side takes 10,500, the cash side keeps 10,000",
+      "input": {
+        "accounts": {
+          "bank": {
+            "kind": "bank",
+            "postingDays": 1
+          },
+          "card": {
+            "kind": "card"
+          },
+          "cash": {
+            "kind": "cash",
+            "postingDays": 1
+          },
+          "ew": {
+            "kind": "ewallet",
+            "postingDays": 1
+          }
+        },
+        "lines": [
+          {
+            "id": "t1",
+            "k": "transfer",
+            "acct": "bank",
+            "acct2": "cash",
+            "date": "2026-11-23",
+            "a": 10000,
+            "est": true,
+            "src": "typed",
+            "told": "2026-11-23T12:00:00.000+09:00"
+          }
+        ],
+        "imports": [
+          {
+            "id": "f1",
+            "src": "statement",
+            "acct": "bank",
+            "file": "nov.csv",
+            "from": "2026-11-01",
+            "to": "2026-11-30",
+            "lines": [
+              {
+                "id": "i1",
+                "dir": "out",
+                "a": 10500,
+                "date": "2026-11-23",
+                "posted": "2026-11-23",
+                "line": 4
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "attached": {
+          "t1": {
+            "posted": "2026-11-23",
+            "src": {
+              "type": "statement",
+              "file": "nov.csv",
+              "line": 4
+            },
+            "a": 10500,
+            "a2": 10000
+          }
+        },
+        "gone": {},
+        "live": []
+      },
+      "why": "10,500 - 10,000 = 500, and 500 x 10 = 5,000 is not more than 10,500, so the line is within 10% of the rough transfer's bank side and meets it [S1, Q1]. That side takes the line's amount, a = 10,500; the cash side keeps its typed 10,000 as a2; 10,500 - 10,000 = 500 is a fee on the bank [S1, Q2]. Before S1 the line was a record of its own (matching-open-1).",
+      "decisions": [
+        "S1",
+        "Q1",
+        "Q2"
+      ]
+    },
+    {
+      "id": "match-60",
+      "question": "import_sides",
+      "title": "A rough top-up of 1,000, the e-wallet's line 990: the e-wallet side takes 990, the bank side keeps 1,000",
+      "input": {
+        "accounts": {
+          "bank": {
+            "kind": "bank",
+            "postingDays": 1
+          },
+          "card": {
+            "kind": "card"
+          },
+          "cash": {
+            "kind": "cash",
+            "postingDays": 1
+          },
+          "ew": {
+            "kind": "ewallet",
+            "postingDays": 1
+          }
+        },
+        "lines": [
+          {
+            "id": "t1",
+            "k": "transfer",
+            "acct": "bank",
+            "acct2": "ew",
+            "date": "2026-11-20",
+            "a": 1000,
+            "est": true,
+            "src": "typed",
+            "told": "2026-11-20T12:00:00.000+09:00"
+          }
+        ],
+        "imports": [
+          {
+            "id": "f2",
+            "src": "statement",
+            "acct": "ew",
+            "file": "ew-nov.csv",
+            "lines": [
+              {
+                "id": "j1",
+                "dir": "in",
+                "a": 990,
+                "date": "2026-11-23",
+                "posted": "2026-11-23",
+                "line": 2
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "attached": {
+          "t1": {
+            "posted2": "2026-11-23",
+            "src2": {
+              "type": "statement",
+              "file": "ew-nov.csv",
+              "line": 2
+            },
+            "a": 1000,
+            "a2": 990
+          }
+        },
+        "gone": {},
+        "live": []
+      },
+      "why": "1,000 - 990 = 10, and 10 x 10 = 100 is not more than 1,000: within 10% of the reaching side, so the line meets it on Mon 23 Nov, inside Fri 20 + 1 working day [S1, Q1]. The e-wallet side takes 990 (a2); the bank side keeps its typed 1,000 (a); 1,000 - 990 = 10 is a fee on the bank [S1, Q2].",
+      "decisions": [
+        "S1",
+        "Q1",
+        "Q2"
+      ]
+    },
+    {
+      "id": "match-61",
+      "question": "import_sides",
+      "title": "A rough transfer of 10,000, the bank's line 11,500: more than 10% away, a record of its own",
+      "input": {
+        "accounts": {
+          "bank": {
+            "kind": "bank",
+            "postingDays": 1
+          },
+          "card": {
+            "kind": "card"
+          },
+          "cash": {
+            "kind": "cash",
+            "postingDays": 1
+          },
+          "ew": {
+            "kind": "ewallet",
+            "postingDays": 1
+          }
+        },
+        "lines": [
+          {
+            "id": "t1",
+            "k": "transfer",
+            "acct": "bank",
+            "acct2": "cash",
+            "date": "2026-11-23",
+            "a": 10000,
+            "est": true,
+            "src": "typed",
+            "told": "2026-11-23T12:00:00.000+09:00"
+          }
+        ],
+        "imports": [
+          {
+            "id": "f1",
+            "src": "statement",
+            "acct": "bank",
+            "file": "nov.csv",
+            "lines": [
+              {
+                "id": "i1",
+                "dir": "out",
+                "a": 11500,
+                "date": "2026-11-23",
+                "posted": "2026-11-23",
+                "line": 4
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "attached": {},
+        "gone": {},
+        "live": [
+          "i1"
+        ]
+      },
+      "why": "11,500 - 10,000 = 1,500, and 1,500 x 10 = 15,000 is more than 11,500: outside 10%, so the line does not meet the rough transfer and is a new line [S1, H9]. The transfer keeps 10,000 on both sides.",
+      "decisions": [
+        "S1",
+        "H9"
+      ]
+    },
+    {
+      "id": "match-62",
+      "question": "import_sides",
+      "title": "A rough top-up met on both sides: the bank's 10,300 and the e-wallet's 10,000",
+      "input": {
+        "accounts": {
+          "bank": {
+            "kind": "bank",
+            "postingDays": 1
+          },
+          "card": {
+            "kind": "card"
+          },
+          "cash": {
+            "kind": "cash",
+            "postingDays": 1
+          },
+          "ew": {
+            "kind": "ewallet",
+            "postingDays": 1
+          }
+        },
+        "lines": [
+          {
+            "id": "t1",
+            "k": "transfer",
+            "acct": "bank",
+            "acct2": "ew",
+            "date": "2026-11-20",
+            "a": 10000,
+            "est": true,
+            "src": "typed",
+            "told": "2026-11-20T12:00:00.000+09:00"
+          }
+        ],
+        "imports": [
+          {
+            "id": "f1",
+            "src": "statement",
+            "acct": "bank",
+            "file": "nov.csv",
+            "lines": [
+              {
+                "id": "i1",
+                "dir": "out",
+                "a": 10300,
+                "date": "2026-11-20",
+                "posted": "2026-11-20",
+                "line": 3
+              }
+            ]
+          },
+          {
+            "id": "f2",
+            "src": "statement",
+            "acct": "ew",
+            "file": "ew-nov.csv",
+            "lines": [
+              {
+                "id": "j1",
+                "dir": "in",
+                "a": 10000,
+                "date": "2026-11-20",
+                "posted": "2026-11-20",
+                "line": 1
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "attached": {
+          "t1": {
+            "posted": "2026-11-20",
+            "src": {
+              "type": "statement",
+              "file": "nov.csv",
+              "line": 3
+            },
+            "posted2": "2026-11-20",
+            "src2": {
+              "type": "statement",
+              "file": "ew-nov.csv",
+              "line": 1
+            },
+            "a": 10300,
+            "a2": 10000
+          }
+        },
+        "gone": {},
+        "live": []
+      },
+      "why": "The bank line: 300 x 10 = 3,000, not more than 10,300, so the bank side takes 10,300 [S1]. The e-wallet side keeps its typed 10,000 (a2), and the e-wallet line of 10,000 meets it exactly [Q1]. 10,300 - 10,000 = 300 is a fee on the bank [S1, Q2].",
+      "decisions": [
+        "S1",
+        "Q1",
+        "Q2"
+      ]
+    },
+    {
+      "id": "match-63",
+      "question": "import_sides",
+      "title": "A transfer typed exactly (not rough), the bank's line 10,300: a record of its own",
+      "input": {
+        "accounts": {
+          "bank": {
+            "kind": "bank",
+            "postingDays": 1
+          },
+          "card": {
+            "kind": "card"
+          },
+          "cash": {
+            "kind": "cash",
+            "postingDays": 1
+          },
+          "ew": {
+            "kind": "ewallet",
+            "postingDays": 1
+          }
+        },
+        "lines": [
+          {
+            "id": "t1",
+            "k": "transfer",
+            "acct": "bank",
+            "acct2": "cash",
+            "date": "2026-11-23",
+            "a": 10000,
+            "src": "typed",
+            "told": "2026-11-23T12:00:00.000+09:00"
+          }
+        ],
+        "imports": [
+          {
+            "id": "f1",
+            "src": "statement",
+            "acct": "bank",
+            "file": "nov.csv",
+            "lines": [
+              {
+                "id": "i1",
+                "dir": "out",
+                "a": 10300,
+                "date": "2026-11-23",
+                "posted": "2026-11-23",
+                "line": 4
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "attached": {},
+        "gone": {},
+        "live": [
+          "i1"
+        ]
+      },
+      "why": "S1 is about a rough side only. This transfer is not `est`, so a side is met only by its own amount, 10,000; 10,300 is a new line [Q1, S1].",
+      "decisions": [
+        "S1",
+        "Q1"
+      ]
+    },
+    {
+      "id": "match-64",
+      "question": "import",
+      "title": "A settle made by an import before a check-in moves to a nearer line read after it",
+      "input": {
+        "schedules": {
+          "pay": {
+            "vary": 0.3
+          }
+        },
+        "expected": [
+          {
+            "s": "pay",
+            "due": "2026-12-10",
+            "lands": "2026-12-10",
+            "acct": "bank",
+            "dir": "in",
+            "a": 250000
+          }
+        ],
+        "lines": [
+          {
+            "id": "i1",
+            "acct": "bank",
+            "dir": "in",
+            "a": 200000,
+            "date": "2026-12-07",
+            "posted": "2026-12-07",
+            "src": "statement",
+            "file": "dec1.csv",
+            "line": 1,
+            "grp": "k1",
+            "settles": [
+              "pay@2026-12-10"
+            ]
+          }
+        ],
+        "imports": [
+          {
+            "id": "f2",
+            "src": "statement",
+            "acct": "bank",
+            "file": "dec2.csv",
+            "grp": "k2",
+            "lines": [
+              {
+                "id": "i2",
+                "dir": "in",
+                "a": 262000,
+                "date": "2026-12-10",
+                "posted": "2026-12-10",
+                "line": 1
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "gone": {},
+        "settled": {
+          "pay@2026-12-10": "i2"
+        }
+      },
+      "why": "i1 (Mon 7 Dec, 3 days from the pay) settled the pay when it was read, in the stretch before a check-in (k1); nobody ticked that settle. i2, read in the next stretch (k2), is 0 days from the pay and inside 30% of 250,000 (12,000 off), so the settle moves to it, and the period start with it [S2, Q6]. Before S2 a settle of another stretch stayed (matching-open-2).",
+      "decisions": [
+        "S2",
+        "Q6"
+      ]
+    },
+    {
+      "id": "match-65",
+      "question": "import",
+      "title": "The same, but the person ticked that settle at the check-in: it stays",
+      "input": {
+        "schedules": {
+          "pay": {
+            "vary": 0.3
+          }
+        },
+        "expected": [
+          {
+            "s": "pay",
+            "due": "2026-12-10",
+            "lands": "2026-12-10",
+            "acct": "bank",
+            "dir": "in",
+            "a": 250000
+          }
+        ],
+        "lines": [
+          {
+            "id": "i1",
+            "acct": "bank",
+            "dir": "in",
+            "a": 200000,
+            "date": "2026-12-07",
+            "posted": "2026-12-07",
+            "src": "statement",
+            "file": "dec1.csv",
+            "line": 1,
+            "grp": "k1",
+            "settles": [
+              "pay@2026-12-10"
+            ],
+            "ticked": true
+          }
+        ],
+        "imports": [
+          {
+            "id": "f2",
+            "src": "statement",
+            "acct": "bank",
+            "file": "dec2.csv",
+            "grp": "k2",
+            "lines": [
+              {
+                "id": "i2",
+                "dir": "in",
+                "a": 262000,
+                "date": "2026-12-10",
+                "posted": "2026-12-10",
+                "line": 1
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "gone": {},
+        "settled": {
+          "pay@2026-12-10": "i1"
+        }
+      },
+      "why": "The person ticked i1's settle at the check-in (`ticked`: the check-in's `settled` names it), so it stays although i2 is nearer (0 days against 3); i2 is plain money in [S2].",
+      "decisions": [
+        "S2"
+      ]
+    },
+    {
+      "id": "match-66",
+      "question": "import",
+      "title": "Two imports in two check-in stretches: the nearer line in the later one moves the settle",
+      "input": {
+        "schedules": {
+          "pay": {
+            "vary": 0.3
+          }
+        },
+        "expected": [
+          {
+            "s": "pay",
+            "due": "2026-12-10",
+            "lands": "2026-12-10",
+            "acct": "bank",
+            "dir": "in",
+            "a": 250000
+          }
+        ],
+        "imports": [
+          {
+            "id": "f1",
+            "src": "screenshot",
+            "acct": "bank",
+            "grp": "k1",
+            "lines": [
+              {
+                "id": "i1",
+                "dir": "in",
+                "a": 200000,
+                "date": "2026-12-07",
+                "posted": "2026-12-07"
+              }
+            ]
+          },
+          {
+            "id": "f2",
+            "src": "screenshot",
+            "acct": "bank",
+            "grp": "k2",
+            "lines": [
+              {
+                "id": "i2",
+                "dir": "in",
+                "a": 262000,
+                "date": "2026-12-10",
+                "posted": "2026-12-10"
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "gone": {},
+        "settled": {
+          "pay@2026-12-10": "i2"
+        }
+      },
+      "why": "The first screenshot (stretch k1) holds only Mon 7 Dec, 3 days from the pay, so it settles it. The second, read after a check-in (stretch k2), has Thu 10 Dec, 0 days from it: the settle moves [S2]; i1 is plain money in. Before S2 the settle of k1 stayed (matching-open-2; compare match-58, the same stretch).",
+      "decisions": [
+        "S2",
+        "Q6"
+      ]
     }
   ],
   "open": [
     {
-      "id": "matching-open-1",
-      "question": "An `est` (rough) two-sided record met by an import line of a different amount, within 10%: does that side take the import's amount, and what happens to the other side? Q1 says the line attaches and never replaces the record, and says nothing of the amount.",
-      "ref_does": "`import_sides` attaches only on the side's exact amount (`a` leaving, `a2` reaching); a line that differs is a record of its own. No case depends on it."
-    },
-    {
-      "id": "matching-open-2",
-      "question": "A nearer line for an expected item read in a later check-in stretch (after a check-in): does it move a settle made in an earlier stretch? Q6 says a later import in the same stretch does, and says nothing of a later stretch.",
-      "ref_does": "A settle made by an import of another `grp`, or with none, stays. No case depends on it. The reference model (lookahead_ref.js) knows no stretches and takes the nearest line among every import it knows."
+      "id": "matching-open-3",
+      "question": "A rough two-sided record in one currency where the line makes more arrive than left: a bank line out below the typed amount (an ATM withdrawal typed as 10,000, the bank shows 9,800), or an e-wallet line in above it. S1 says the side takes the line's amount and the difference is a fee on the sender (Q2), but a fee is what is lost when less arrives than leaves (the Q2 reading); here more arrived than left.",
+      "ref_does": "The side takes the line's amount [S1], the other side keeps its typed amount, and nothing is a fee (a fee only when less arrived than left). So the receiving account shows more than left the sender. No case depends on it."
     }
   ]
 }

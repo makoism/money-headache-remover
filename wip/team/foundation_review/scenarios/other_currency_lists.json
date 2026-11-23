@@ -1,0 +1,30 @@
+{
+  "life": "other_currency_lists",
+  "title": "Pay in another currency is left out of the \"not seen yet\" totals and listed apart, in its own currency, on the check-in list (decision S6, answering section 14 question 6)",
+  "story": "Home currency yen. Set up Mon 4 Jan 2027: a yen bank holds 300,000. An employer pays 1,000.00 USD on the 25th (moved earlier) into the yen bank, and that pay starts the period. Rent of 80,000 yen leaves the bank on the 22nd. Nothing is ticked or imported in January. On Mon 25 Jan the check-in lists the rent with its yen total, and the dollar pay apart, in dollars. On Thu 28 Jan both are past their posting windows and not seen yet: the rent is in the money-out total, the dollar pay is listed in dollars and added to no total. Every amount is made up.",
+  "currency": "JPY",
+  "window": { "from": "2027-01-04", "to": "2027-01-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "accounts": [
+    { "id": "b", "name": "Yen bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 300000 } }
+  ],
+  "income": [
+    { "id": "payu", "name": "Pay in USD", "account": "b", "currency": "USD", "amount": 1000.00, "schedule": { "frequency": "monthly", "day": 25 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [
+    { "id": "rent", "name": "Rent", "account": "b", "amount": 80000, "schedule": { "frequency": "monthly", "day": 22 }, "weekend_holiday": "none" }
+  ],
+  "goals": [],
+  "events": [],
+  "asks": [
+    { "id": "ocl-01", "date": "2027-01-25", "question": "check_in_list",
+      "expected": { "items": [ { "item": "rent@2027-01-22", "lands": "2027-01-22", "amount": 80000 } ], "total": 80000,
+        "apart": [ { "item": "payu@2027-01-25", "lands": "2027-01-25", "amount": 1000.00, "currency": "USD" } ] },
+      "why": "80,000 (Rent, Fri 22 Jan) = 80,000",
+      "note": "The dollar pay is listed apart, as 1,000.00 USD, and is not in the yen total [S6]. Before S6 its 100,000 cents were added to the yen total as 100,000 yen: 180,000." },
+    { "id": "ocl-02", "date": "2027-01-28", "question": "not_seen_yet",
+      "expected": { "items": [ { "item": "rent@2027-01-22", "lands": "2027-01-22", "amount": 80000, "direction": "out" }, { "item": "payu@2027-01-25", "lands": "2027-01-25", "amount": 1000.00, "currency": "USD", "direction": "in" } ], "money_in": 0, "money_out": 80000 },
+      "why": { "money_in": "none = 0", "money_out": "80,000 (Rent, Fri 22 Jan) = 80,000" },
+      "note": "The pay's posting window ended Tue 26 Jan. It is still listed, in dollars, and left out of the money-in total [S6]. Before S6 money in showed 100,000 (the dollar cents read as yen)." }
+  ]
+}

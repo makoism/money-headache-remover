@@ -1,14 +1,14 @@
 {
   "area": "merge",
   "title": "Merging two copies: union by id, newest `at` per record, `gone` against the same or older `at` only, the hybrid clock, `told` never changing",
-  "written_in": "SCHEMA_V3 0 and 2.3; DECISIONS_ROUND2 D4, H1, H6, H9, L (merge q1 to q8), M3 to M5, N1, N2, O2, O3, Q5, Q7",
+  "written_in": "SCHEMA_V3 0 and 2.3; DECISIONS_ROUND2 D4, H1, H6, H9, L (merge q1 to q8), M3 to M5, N1, N2, O2, O3, Q5, Q7, S3",
   "notes": [
     "Every amount is made up and in whole minor units (yen).",
     "Times are hybrid clock values written as ISO with the time zone offset (section 0). They are compared as moments, never as text: 10:00+09:00 is 01:00 UTC, 02:30+01:00 is 01:30 UTC.",
     "Question `next_at`: the `at` a device writes, the larger of now and (newest seen + 1 ms), in now's offset; a now more than a day ahead of the newest seen is held at the newest seen + 1 ms [L merge q8]. Question `next_at_warn`: the same, with whether the warning is shown. Question `came_back`: the records removed in `mine` that the merge brings back [L merge q4]. Each record may carry `by`, the device part of its last writer [L merge q1]; `steps` and `rules` entries carry their own `at` [L merge q2]; shared `ui` carries `ui.at`, one `at` per key [L merge q6]; the copy's `rev` after a merge is the larger of both plus one [L merge q3]. A `steps` or `rules` entry is removed by its own `gone` with its own `at`, and is settled like a record: newer `at`, then `gone`, then the larger `by` [M3]. Entries carry their own `by` beside their `at`, and shared `ui` keys carry theirs in `ui.by` beside `ui.at` [M5]. Question `receive`: a copy that arrives is merged in after every `at` in it more than a day ahead of the newest `at` the receiving device has seen is held at that point plus 1 ms, with the warning [M4]; the `devices` syncs do the same. Question `newer`: which of two times is later. Question `merge`: two copies merged, lists ordered by id. Questions `merge_symmetric` and `merge_same`: whether merging A with B gives the same as B with A, and whether merging a copy with itself changes nothing. Question `devices`: a short story of edits and syncs on two devices, and the record one device ends with.",
     "A copy held on arrival is marked `held: { came, at }`: the `at` it came with and the `at` it was held at (a `ui` key's mark is in `ui.held`). A record held once keeps its held `at`: a copy whose `at` is the mark's `came` counts at the held `at`, so the fast device takes the held value when the merged copy comes back, and its copy arriving again is not held a second time [N1]. `told` is held the same way as `at` [N2]; the earliest `told` is then kept, so the first held one stays.",
     "Ids [O2, O3]: question `id_for` builds the id of a record the app writes for a known moment (`set:<occurrence>`, `auto:<schedule>@<due>`, `pe:<period last day>:<place>`, `ps:<date>`), so two devices writing the same moment make one record and the merge keeps the newest `at`; a `devices` edit may give `make` (what the record is) instead of `id`. Question `id_ok`: whether an id has the shape section 0 gives, `<device part>-<session part>-<counter>` with a 10-character session part, or is a built id.",
-    "Ids [Q5, Q7]: `id_for` also builds `rm:<place>` (the move to Waiting written when a place with money is removed), `close:<account>` (the closing's transfer or write-off) and `skip:<occurrence>` (the skip written when a self-logged spend is removed). So the same removal, closing or skip written on two devices is one record."
+    "Ids [Q5, Q7]: `id_for` also builds `rm:<place>` (the move to Waiting written when a place with money is removed), `close:<account>` (the closing's transfer or write-off; with several records `close:<account>:1`, `:2`, in order, `n` giving the number [S3]) and `skip:<occurrence>` (the skip written when a self-logged spend is removed). So the same removal, closing or skip written on two devices is one record."
   ],
   "defaults": {},
   "cases": [
@@ -1832,6 +1832,121 @@
       "decisions": [
         "Q7",
         "P6"
+      ]
+    },
+    {
+      "id": "mg-71",
+      "question": "id_for",
+      "title": "The second record of a closing that writes several",
+      "input": {
+        "k": "close",
+        "acct": "old",
+        "n": 2
+      },
+      "expected": "close:old:2",
+      "why": "A closing that writes several records names them `close:<account>:1`, `:2`, in order [S3]; the second is `close:old:2`.",
+      "decisions": [
+        "S3"
+      ]
+    },
+    {
+      "id": "mg-72",
+      "question": "id_ok",
+      "title": "A numbered closing id is a built id",
+      "input": {
+        "id": "close:old:1"
+      },
+      "expected": true,
+      "why": "`close:<account>:<n>` is a built id [S3].",
+      "decisions": [
+        "S3"
+      ]
+    },
+    {
+      "id": "mg-73",
+      "question": "merge",
+      "title": "A two-record closing written on two devices: each record once",
+      "input": {
+        "mine": {
+          "events": [
+            {
+              "id": "close:g:1",
+              "k": "transfer",
+              "date": "2027-01-08",
+              "acct": "g",
+              "acct2": "b",
+              "a": 100000,
+              "told": "2027-01-08T09:00:00.000+09:00",
+              "at": "2027-01-08T09:00:00.000+09:00",
+              "by": "k7qzpa"
+            },
+            {
+              "id": "close:g:2",
+              "k": "spend",
+              "date": "2027-01-08",
+              "acct": "g",
+              "a": 350,
+              "told": "2027-01-08T09:00:00.000+09:00",
+              "at": "2027-01-08T09:00:00.000+09:00",
+              "by": "k7qzpa"
+            }
+          ]
+        },
+        "theirs": {
+          "events": [
+            {
+              "id": "close:g:1",
+              "k": "transfer",
+              "date": "2027-01-08",
+              "acct": "g",
+              "acct2": "b",
+              "a": 100000,
+              "told": "2027-01-08T09:30:00.000+09:00",
+              "at": "2027-01-08T09:30:00.000+09:00",
+              "by": "p9x2mm"
+            },
+            {
+              "id": "close:g:2",
+              "k": "spend",
+              "date": "2027-01-08",
+              "acct": "g",
+              "a": 350,
+              "told": "2027-01-08T09:30:00.000+09:00",
+              "at": "2027-01-08T09:30:00.000+09:00",
+              "by": "p9x2mm"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "events": [
+          {
+            "id": "close:g:1",
+            "k": "transfer",
+            "date": "2027-01-08",
+            "acct": "g",
+            "acct2": "b",
+            "a": 100000,
+            "told": "2027-01-08T09:00:00.000+09:00",
+            "at": "2027-01-08T09:30:00.000+09:00",
+            "by": "p9x2mm"
+          },
+          {
+            "id": "close:g:2",
+            "k": "spend",
+            "date": "2027-01-08",
+            "acct": "g",
+            "a": 350,
+            "told": "2027-01-08T09:00:00.000+09:00",
+            "at": "2027-01-08T09:30:00.000+09:00",
+            "by": "p9x2mm"
+          }
+        ]
+      },
+      "why": "Both devices close the e-wallet the same way and write `close:g:1` (the transfer) and `close:g:2` (the write-off) [S3]: two records, not four. Each keeps the newer `at` (09:30) and the earliest `told` (09:00). The bank gets 1,000.00 once.",
+      "decisions": [
+        "S3",
+        "Q7"
       ]
     }
   ],

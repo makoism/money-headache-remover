@@ -1,4 +1,4 @@
-// Matching an import to a typed line or an expected item (SCHEMA_V3 6.4; DECISIONS_ROUND2 A6, F4, H2, H9, L, M, O1, Q1, Q2, Q6).
+// Matching an import to a typed line or an expected item (SCHEMA_V3 6.4; DECISIONS_ROUND2 A6, F4, H2, H9, L, M, O1, Q1, Q2, Q6, S1, S2).
 // A plain reference for the engine lane, checked by run_rules.js against rules/matching.json.
 // Every amount is in whole minor units. Where the decisions leave a point open, the line says so and
 // names the open question in matching.json.
@@ -87,6 +87,10 @@ function applyImports(input) {
   const sideOf = (t, n) => (sides[t.id] || {})[n];
   // [Q6] Lines that may settle an expected item (step 3), with the import and stretch (`grp`) they came in.
   const settleable = [];
+  // [S2] An imported line already there that settles an item, and whose settle the person did not tick at a
+  // check-in (`ticked`: the check-in's `settled` names it), may have its settle moved by a nearer line read
+  // later, in any check-in stretch. A ticked settle stays, as does one a typed line holds.
+  for (const l of lines) if (rank(l.src) > 0 && !l.gone && !l.ticked && l.settles.length) settleable.push(l);
 
   for (const imp of input.imports || []) {
     const incoming = imp.lines.map(raw => Object.assign({}, raw, { acct: raw.acct || imp.acct, src: imp.src, file: imp.file, settles: [] }));
@@ -122,8 +126,12 @@ function applyImports(input) {
       //    either side of the record's date, the side not yet attached by a line of the same or higher rank.
       //    It attaches: it sets that side's posted date and source and is not a record of its own; the record
       //    is never replaced. Several fit: the closest date, then the earliest `told`.
+      //    [S1] A side of a rough (`est`) record is met by a line within 10% of that side's amount and takes the
+      //    line's amount; the other side keeps its typed amount (the difference, in one currency, a fee on the
+      //    sender [Q2]). A side of a record that is not rough is met only by its own amount.
       const sideFits = (t, n) => {
-        if (!twoSided(t) || (n === 1 ? t.acct : t.acct2) !== line.acct || line.dir !== (n === 1 ? 'out' : 'in') || sideAmount(t, n) !== line.a) return false;
+        if (!twoSided(t) || (n === 1 ? t.acct : t.acct2) !== line.acct || line.dir !== (n === 1 ? 'out' : 'in')) return false;
+        if (t.est ? !amountFits(Object.assign({}, t, { a: sideAmount(t, n) }), line.a) : sideAmount(t, n) !== line.a) return false;
         const had = sideOf(t, n);
         return !had || had.rank < rank(line.src);
       };
@@ -135,6 +143,11 @@ function applyImports(input) {
       }
       const meet = closest(meets);
       if (meet) {
+        const t = meet.t;
+        if (sideAmount(t, meet.n) !== line.a) {   // [S1] the side takes the line's amount; the other keeps its own
+          if (meet.n === 1) { if (t.a2 == null) t.a2 = t.a; t.a = line.a; } else t.a2 = line.a;
+          t.amountsMoved = true;
+        }
         (sides[meet.t.id] = sides[meet.t.id] || {})[meet.n] = { acct: line.acct, rank: rank(line.src), rid: line.rid, srcKey: srcKey(line),
           posted: line.posted || line.date, src: { type: line.src, file: line.file, line: line.line } };
         continue;
@@ -147,9 +160,10 @@ function applyImports(input) {
     // 3. [Q6] Across one import, each unsettled expected item (in landing order) is settled by the line nearest
     //    its landing day, then nearest its amount, then the first listed (6.4, last point), when it lands from
     //    5 working days before the item's landing day to the end of its posting window [L matching q2]. A later
-    //    import in the same check-in stretch (the same `grp`) joins the earlier one's lines, so a nearer line
-    //    moves the settle. Lines of another stretch keep what they settle (matching-open-2).
-    const pool = settleable.filter(l => !l.gone && (l.imp === imp.id || (imp.grp != null && l.grp === imp.grp)));
+    //    import joins the earlier imports' lines, in the same check-in stretch [Q6] or a later one [S2], so a
+    //    nearer line moves the settle, and the period start with it. A settle the person ticked at a check-in
+    //    stays (it is never in the pool).
+    const pool = settleable.filter(l => !l.gone && !l.ticked);
     for (const l of pool) l.settles = [];
     const done = settledNames();
     for (const o of expected.slice().sort((x, y) => dayNum(x.lands) - dayNum(y.lands))) {
@@ -176,12 +190,14 @@ function applyImports(input) {
       }
     }
   }
-  // [Q1] What each attached side now holds.
+  // [Q1] What each attached side now holds; [S1] with the record's amounts when a side took a line's amount.
   const attached = {};
   for (const [id, ss] of Object.entries(sides)) {
     const a = attached[id] = {};
     if (ss[1]) { a.posted = ss[1].posted; a.src = ss[1].src; }
     if (ss[2]) { a.posted2 = ss[2].posted; a.src2 = ss[2].src; }
+    const t = lines.find(l => l.id === id);
+    if (t && t.amountsMoved) { a.a = t.a; a.a2 = t.a2; }
   }
   return { lines, dropped, attached };
 }

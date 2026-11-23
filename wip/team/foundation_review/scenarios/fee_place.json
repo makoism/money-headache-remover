@@ -1,0 +1,43 @@
+{
+  "life": "fee_place",
+  "title": "A fee is its own spend record linked to its transfer (`of`), with the place the person picked, Free to spend by default (decision S5, answering section 14 question 5)",
+  "story": "Set up Mon 4 Jan 2027 in pesos: the bank holds 20,000.00, of which 2,000.00 is kept for a trip and 3,000.00 is what is left of Free to spend (typed); an e-wallet holds nothing. Pay of 30,000.00 lands in the bank on the 25th (moved earlier) and starts the period; Free to spend is 5,000.00 a month. On Tue 5 Jan the person tops up the e-wallet: 1,015.00 leaves the bank and 1,000.00 arrives. The 15.00 fee is written as its own spend record linked to the top-up (`of`), on the line `fees`, and the person picks the trip money to pay it. On Wed 20 Jan a second top-up costs the same; its fee record names no place, so it is paid from Free to spend. The fee records say which place pays; the money left the bank once, with the top-up's 1,015.00. Every amount is made up.",
+  "currency": "PHP",
+  "window": { "from": "2027-01-04", "to": "2027-01-31" },
+  "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+  "main_bank": "b",
+  "accounts": [
+    { "id": "b", "name": "Bank", "kind": "bank", "currency": "PHP", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 20000.00, "split": { "goals": { "trip": 2000.00 }, "free": 3000.00 } } },
+    { "id": "g", "name": "E-wallet", "kind": "ewallet", "currency": "PHP", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 0 } }
+  ],
+  "income": [
+    { "id": "pay", "name": "Pay", "account": "b", "amount": 30000.00, "schedule": { "frequency": "monthly", "day": 25 }, "weekend_holiday": "move earlier", "starts_period": true }
+  ],
+  "bills": [],
+  "goals": [
+    { "id": "trip", "name": "Trip", "kept_in": "b", "due": "2027-12-31" }
+  ],
+  "plan": { "free": { "per": "month", "amount": 5000.00 } },
+  "events": [
+    { "id": "t1", "date": "2027-01-05", "told": "2027-01-05T12:00", "kind": "transfer", "from": "b", "to": "g", "amount_out": 1015.00, "amount_in": 1000.00, "note": "top-up: 1,015.00 left, 1,000.00 arrived" },
+    { "id": "fee1", "date": "2027-01-05", "told": "2027-01-05T12:00", "kind": "spend", "account": "b", "amount": 15.00, "of": "t1", "line": "fees", "goal": "trip", "note": "the top-up's fee, paid from the trip money (the person's pick)" },
+    { "id": "t2", "date": "2027-01-20", "told": "2027-01-20T12:00", "kind": "transfer", "from": "b", "to": "g", "amount_out": 1015.00, "amount_in": 1000.00, "note": "second top-up" },
+    { "id": "fee2", "date": "2027-01-20", "told": "2027-01-20T12:00", "kind": "spend", "account": "b", "amount": 15.00, "of": "t2", "line": "fees", "note": "its fee, no place picked: Free to spend" }
+  ],
+  "asks": [
+    { "id": "feeplace-01", "date": "2027-01-06", "question": "bank_today", "account": "b", "expected": 18985.00,
+      "why": "20,000.00 (opening) - 1,015.00 (top-up of Tue 5 Jan, what left the bank) = 18,985.00",
+      "note": "The fee record is linked to the top-up and moves no money of its own: the bank went down by what left it once [S5, Q2]." },
+    { "id": "feeplace-02", "date": "2027-01-06", "question": "place", "account": "b", "place": "trip", "expected": { "kept": 1985.00, "due": "2027-12-31" },
+      "why": "2,000.00 (opening) - 15.00 (the top-up's fee, paid from the trip money) = 1,985.00" },
+    { "id": "feeplace-03", "date": "2027-01-06", "question": "headline", "expected": 3000.00,
+      "why": "3,000.00 (Free to spend at the opening, typed; the fee came from the trip money) = 3,000.00",
+      "note": "Before S5 the fee always came from Free to spend: 2,985.00." },
+    { "id": "feeplace-04", "date": "2027-01-21", "question": "bank_today", "account": "b", "expected": 17970.00,
+      "why": "20,000.00 (opening) - 1,015.00 (top-up of Tue 5 Jan) - 1,015.00 (top-up of Wed 20 Jan) = 17,970.00" },
+    { "id": "feeplace-05", "date": "2027-01-21", "question": "bank_today", "account": "g", "expected": 2000.00,
+      "why": "0.00 (opening) + 1,000.00 (Tue 5 Jan, what arrived) + 1,000.00 (Wed 20 Jan) = 2,000.00" },
+    { "id": "feeplace-06", "date": "2027-01-21", "question": "headline", "expected": 2985.00,
+      "why": "3,000.00 (Free to spend at the opening, typed) - 15.00 (the second top-up's fee: no place picked, so Free to spend) = 2,985.00" }
+  ]
+}

@@ -1,4 +1,4 @@
-// Accounts: closing (SCHEMA_V3 3 and 5; DECISIONS_ROUND2 O, P6, Q7, the Q watch item (write-off), R3, R4, R5).
+// Accounts: closing (SCHEMA_V3 3 and 5; DECISIONS_ROUND2 O, P6, Q7, the Q watch item (write-off), R3, R4, R5, S3).
 // A plain reference for the engine lane, checked by run_rules.js against rules/accounts.json.
 // Open points name their question in accounts.json.
 'use strict';
@@ -14,8 +14,8 @@ const { dayNum } = require('./dates');
 // cannot be closed until it is at zero: refused, with the payment that gets it there offered (a repay from its
 // `payFrom`, or for a bank a transfer in from an account the person picks).
 // [Q watch item] A balance that cannot be moved out may be written off as a spend (`writeOff`).
-// [Q7] The closing's transfer or write-off has the built id `close:<account>`; with more than one such record
-// none gets it (accounts-open-4).
+// [Q7] The closing's transfer or write-off has the built id `close:<account>`. [S3] A closing that writes several
+// records names them `close:<account>:1`, `:2`, in the order written (the transfers as listed, then the write-off).
 const OWED = { card: 1, loan: 1, paylater: 1 };
 function close({ account, kind, payFrom, date, figure, transfers, writeOff, schedules, links, newLinks }) {
   const linked = [].concat((links || {}).cards || [], (links || {}).places || []);
@@ -27,7 +27,8 @@ function close({ account, kind, payFrom, date, figure, transfers, writeOff, sche
   if (figure - out !== 0) return { refused: { account, left: figure - out } };
   const recs = (transfers || []).map(x => ({ k: 'transfer', date, acct: account, acct2: x.to, a: x.a }))
     .concat(writeOff ? [{ k: 'spend', date, acct: account, a: writeOff }] : []);
-  const events = [{ k: 'check', date, acct: account, a: figure }].concat(recs.length === 1 ? [Object.assign({ id: 'close:' + account }, recs[0])] : recs);
+  const events = [{ k: 'check', date, acct: account, a: figure }]
+    .concat(recs.map((r, i) => Object.assign({ id: 'close:' + account + (recs.length > 1 ? ':' + (i + 1) : '') }, r)));
   const ends = {};
   for (const s of schedules || []) {
     if (s.acct !== account && s.acct2 !== account) continue;
