@@ -97,14 +97,18 @@
   /* sumLine(parts, result, code): the engine's sum as a person reads it (numbers review S4), "¥312,000 (Main bank today)
      − ¥100,000 (Trip) = ¥212,000". parts: [{ label, amount }] in order, signed; a part of zero is left out (no
      "- 0 (minimum)"). One minus sign (U+2212) everywhere, one way of writing cents for the whole line. It writes the
-     engine's figures only: nothing is added up here. */
-  function sumLine(parts, result, code) {
+     engine's figures only: nothing is added up here. opts.cents true writes every amount with cents (the screen has some). */
+  function sumLine(parts, result, code, opts) {
     const shown = (parts || []).filter(p => p.amount !== 0);
-    const f = formatter(code, shown.map(p => p.amount).concat([result]));
+    /* opts.cents: the screen's own cents rule (BL4), so the sum is written the way every other amount on it is */
+    const f = opts && opts.cents ? (n => format(n, code, { cents: true })) : formatter(code, shown.map(p => p.amount).concat([result]));
     const label = p => ' (' + String(p.label).replace(/[()]/g, '') + ')';
     const body = shown.map((p, i) => (i === 0 ? f(p.amount) : (p.amount < 0 ? ' \u2212 ' + f(-p.amount) : ' + ' + f(p.amount))) + label(p)).join('');
     return body + ' = ' + f(result);
   }
 
-  return { MINUS, digits, symbol, format, formatter, toInput, parse, sumLine };
+  /* hasCents(minor, code): whether the amount has a part below one whole unit (for one cents rule per screen, BL4) */
+  function hasCentsOf(n, code) { return hasCents(checkMinor(n), digits(code)); }
+
+  return { MINUS, digits, symbol, format, formatter, hasCents: hasCentsOf, toInput, parse, sumLine };
 });

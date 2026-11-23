@@ -2,7 +2,22 @@
    money.js writes and reads amounts, names.js gives every label and day, status.js the one verdict, inputs.js the one
    box behaviour, provenance.js the typed-or-sample mark, messages.js the one message band. No sums here. */
 const SM = BurrowScreens.money, SN = BurrowScreens.names;
-const money3 = (minor, cur) => SM.format(minor, cur);
+/* [BL4] one way of writing cents per screen, the sum lines included: a screen draws itself through screen3(draw); every
+   amount written while it draws is noted, and when any has cents the screen draws again with cents on every amount
+   ("$0.00" over "= $0.00", never "$0"). Outside a screen's drawing each amount or sentence keeps its own rule. */
+const CENTS3 = { on: false, seen: false };
+function note3(amounts, cur) { if (!CENTS3.on && amounts.some(n => SM.hasCents(n, cur))) CENTS3.seen = true; }
+const money3 = (minor, cur) => { note3([minor], cur); return SM.format(minor, cur, CENTS3.on ? { cents: true } : {}); };
+/* the one formatter for a sentence: the screen's rule when it has cents, else the sentence's own */
+function fmt3(cur, amounts) { note3(amounts, cur); return CENTS3.on ? (n => SM.format(n, cur, { cents: true })) : SM.formatter(cur, amounts); }
+function sum3(parts, result, cur) { note3(parts.map(x => x.amount).concat([result]), cur); return SM.sumLine(parts, result, cur, CENTS3.on ? { cents: true } : undefined); }
+function screen3(draw) {
+  CENTS3.on = false; CENTS3.seen = false;
+  draw();
+  if (!CENTS3.seen) return;
+  CENTS3.on = true;
+  try { draw(); } finally { CENTS3.on = false; }
+}
 /* a typed amount as whole minor units, or null (never rounded; a minus is refused) */
 function typed3(text, cur) { const r = SM.parse(text, cur); return r.ok ? r.minor : null; }
 /* '2026-12-10' as '10 Dec', with the year when it is not the shown day's year */

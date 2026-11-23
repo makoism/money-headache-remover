@@ -19,7 +19,8 @@ function overdueWords3(o, cur, yr, path) {
 }
 function plAccounts3(kinds) { return ((E3.book && E3.book.accounts) || []).filter(a => plLive3(a) && kinds[a.type] && !a.closed); }
 
-function renderPlan3() {
+function renderPlan3() { screen3(drawPlan3); }
+function drawPlan3() {
   const host = $('#a3Plan');
   if (!host || host.hidden) return;
   if (PL3.form) return;   // a form is open: it draws itself
@@ -38,12 +39,12 @@ function renderPlan3() {
       const rec = ((book.plan || {}).budgets || []).find(x => x.id === l.id) || {};
       const ends = rec.ends ? `<br><span class="when">Ends after this pay period</span>` : '';
       /* [QC F5, B2] one amount for the period, the one that counts now; the full amount only in the sentence under it */
-      const cur = E3.home(), f = SM.formatter(cur, [l.amount, l.counts, l.spent, l.over]);
+      const cur = E3.home(), f = fmt3(cur, [l.amount, l.counts, l.spent, l.over]);
       const part = l.counts !== l.amount ? `<br><span class="when" data-fig="line-part">Only the part for the days left in this pay period counts now: ${f(l.counts)} of ${f(l.amount)}</span>` : '';
       const over = l.over ? `<br><span class="when a3-late" data-fig="line-over">Spent ${f(l.spent)} of ${f(l.counts)}: ${f(l.over)} over, taken from safe to spend</span>` : '';
       return plRow3(`data-line="${esc3(l.id)}"`, `${esc3(l.name)}${ends}${part}${over}`, `<span data-fig="line-left">${plFig3('period.lines.*.left', l.left)}</span> <span class="when">left of <span data-fig="line-amount">${plFig3('period.lines.*.counts', l.counts)}</span></span>`);
     });
-    const fp = p.free && p.free.counts !== p.free.amount ? (f => `<br><span class="when" data-fig="free-part">Only the part for the days left in this pay period counts now: ${f(p.free.counts)} of ${f(p.free.amount)}</span>`)(SM.formatter(E3.home(), [p.free.counts, p.free.amount])) : '';
+    const fp = p.free && p.free.counts !== p.free.amount ? (f => `<br><span class="when" data-fig="free-part">Only the part for the days left in this pay period counts now: ${f(p.free.counts)} of ${f(p.free.amount)}</span>`)(fmt3(E3.home(), [p.free.counts, p.free.amount])) : '';
     const free = p.free ? plRow3('data-line="free"', `${esc3(label3('freeToSpendLeft'))}${fp}`, `<span data-fig="free-left">${plFig3('period.free.left', p.free.left)}</span> <span class="when">of <span data-fig="free-amount">${plFig3('period.free.counts', p.free.counts)}</span></span>`) : '';
     out.push(`<section class="a3-card" data-card="plan-period"><h2>${esc3(label3('period'))}</h2>
       <p class="a3-mid" data-fig="plan-period" data-start="${esc3(p.start)}" data-end="${esc3(p.end)}">${esc3(period3(p))}</p>

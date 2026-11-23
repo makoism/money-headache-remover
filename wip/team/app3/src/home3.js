@@ -14,7 +14,7 @@ function ageWords3(days) {
    says "checked today". One way of writing cents for the sentence (money.js formatter). */
 function bankParts3(a, yr) {
   if (!a.loggedIn && !a.loggedOut) return `${ageWords3(a.ageDays)}, on ${esc3(day3(a.asOf, yr))}`;
-  const f = SM.formatter(a.currency, [a.checked, a.loggedOut, a.loggedIn]);
+  const f = fmt3(a.currency, [a.checked, a.loggedOut, a.loggedIn]);
   const moved = [a.loggedOut ? `${f(a.loggedOut)} out` : '', a.loggedIn ? `${f(a.loggedIn)} in` : ''].filter(Boolean).join(' and ');
   return `${f(a.checked)} checked ${esc3(day3(a.asOf, yr))}, ${moved} logged since`;
 }
@@ -39,7 +39,7 @@ function besidePay3(day, land, yr) {
   return '';
 }
 /* the engine's sum, from its parts, written by screens/money.js: one minus sign, no "- 0 (minimum)" (numbers review S4) */
-function whyWords3(a) { return SM.sumLine(a.whyParts, a.headroom, a.currency); }
+function whyWords3(a) { return sum3(a.whyParts, a.headroom, a.currency); }
 /* the one next pay on Home is res.period.nextPay, named by the day it lands after the weekend rule [BI4b]: the engine
    gives that day for the item in its lists (next pay, may still go through, not seen yet, the check-in list) */
 function nextPay3(r) {
@@ -56,7 +56,7 @@ function afterCards3(r, yr) {
   const m = r.bankAfterCards || {};
   const days = list => esc3(SN.dayList(list, list.some(d => d.slice(0, 4) !== yr)));
   return Object.keys(m).map(id => {
-    const x = m[id], f = SM.formatter(x.currency, [x.amount].concat(x.setAside.map(g => g.amount), x.dip ? [x.dip.amount] : []));
+    const x = m[id], f = fmt3(x.currency, [x.amount].concat(x.setAside.map(g => g.amount), x.dip ? [x.dip.amount] : []));
     const notIn = [...new Set(x.paysNotCounted.map(p => p.due))];
     const notes = [x.pays.length ? `Your pay on ${days(x.pays)} is in it` : '', notIn.length ? `The pay due ${days(notIn)} is not counted, it has not come in` : '',
       x.ifAllTaken ? 'If everything on the cards now is taken' : '', ...x.setAside.map(g => `${esc3(f(g.amount))} of it is set aside for ${esc3(g.name)}`),
@@ -86,7 +86,8 @@ function nextPayWords3(r, yr) {
   if (n.state === 'late') return `<p class="a3-warn" data-fig="nextpay" data-state="late">Pay due ${d} is late. Check your bank when it lands</p>`;
   return `<p class="a3-sub" data-fig="nextpay" data-state="coming">${esc3(label3('nextPay'))} ${d}, ${dueWords3(n.days)}</p>`;
 }
-function renderHome3() {
+function renderHome3() { screen3(drawHome3); }
+function drawHome3() {
   const host = $('#a3Home');
   if (!E3.book) {
     host.removeAttribute('data-origin');
@@ -122,7 +123,7 @@ function renderHome3() {
   /* [BJ5] when Free to spend caps the headline, the engine's sum ends with the cap, so the two figures agree */
   /* [S6] Free to spend over: that part says by how much (the engine's `over`), so the sum never hides the overspend */
   const capParts = (r.safeToSpend.whyParts || []).map(x => (x.over ? Object.assign({}, x, { label: `Free to spend is ${money3(x.over, home)} over this period` }) : x));
-  const capLine = r.safeToSpend.whyParts ? `<p class="a3-sum" data-fig="cap">${esc3(SM.sumLine(capParts, r.safeToSpend.headline, home))}</p>` : '';
+  const capLine = r.safeToSpend.whyParts ? `<p class="a3-sum" data-fig="cap">${esc3(sum3(capParts, r.safeToSpend.headline, home))}</p>` : '';
   const sums = `${ids.filter(id => r.accounts[id].spendFrom).map(id => `<p class="a3-sum" data-fig="why">${esc3(whyWords3(r.accounts[id]))}</p>`).join('')}${capLine}`;
   /* [BL3] short: the sum's own total, before the pay after its lowest point (only when one brings money), and the first
      day the bank goes under beside it */

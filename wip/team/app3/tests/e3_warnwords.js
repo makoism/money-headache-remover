@@ -92,6 +92,39 @@ async function warns(bk, day) {
     ck('G: the sum under it ends with the same figure', /= −¥105,000/.test(all.replace(/⁠/g, '')), (all.replace(/⁠/g, '').match(/.{40}= −?¥[\d,]+/) || [])[0]);
     ck('G: no page errors', errs.length === 0, errs.join(' | '));
   }
+  /* H. [BL4] one way of writing cents per screen, the sum lines included: US dollars, $400.00 in Checking with no minimum
+     and $1.50 spent on 2 Dec. Every amount on Home is written with cents, the headline and its sum alike. */
+  {
+    const bk = usBook(40000);
+    const chk = bk.accounts.find(a => a.name === 'Checking').id;
+    bk.events.push({ id: 'usd003-k7m2qa-901', k: 'spend', acct: chk, date: '2026-12-02', a: 150, told: '2026-12-02T09:00-05:00', at: '2026-12-02T09:00-05:00', by: 'usd003' });
+    const { all, errs } = await warns(bk, '2026-12-02');
+    const amts = (all.replace(/⁠/g, '').match(/\$[\d,]+(\.\d+)?/g) || []);
+    ck('H: every dollar amount on Home has cents when one does', amts.length > 3 && amts.every(x => /\.\d\d$/.test(x)), amts.join(' '));
+    ck('H: no page errors', errs.length === 0, errs.join(' | '));
+  }
+  /* I. [BL4] Plan in US dollars, set up 1 Dec in the period 25 Nov to 24 Dec: Free to spend $150 a pay period (its share
+     for the days left, $120.00) with $112.50 spent, Food $200 ($160.00 for the days left) untouched. Every amount on Plan
+     is written with cents: Food's "$160.00 left of $160.00" beside Free's "$7.50 of $120.00", never "$160 left of $160". */
+  {
+    const bk = usBook(400000);
+    const chk = bk.accounts.find(a => a.name === 'Checking').id, st = { at: '2026-12-01T09:00-05:00', by: 'usd003', told: '2026-12-01T09:00-05:00' };
+    bk.plan.shares.push(Object.assign({ id: 'usd003-k7m2qa-911', from: '2026-12-01', cur: 'USD', per: { free: 'pay' }, free: 15000, goals: {} }, st));
+    bk.plan.budgets.push(Object.assign({ id: 'usd003-k7m2qa-912', name: 'Food', place: 'bills', cur: 'USD', per: 'pay', from: '2026-12-01', steps: [Object.assign({ from: null, amount: 20000 }, st)] }, st));
+    bk.events.push(Object.assign({ id: 'usd003-k7m2qa-913', k: 'spend', acct: chk, line: 'free', date: '2026-12-02', a: 11250 }, st));
+    const prof = require('fs').mkdtempSync(require('os').tmpdir() + '/a3prof-');
+    const { b, p, errs } = await T.open({ profile: prof });
+    await p.goto(T.URL0 + '?today=2026-12-02'); await T.w(300);
+    await p.evaluate(async bk0 => { const s = await BurrowStore.open(); await s.save(bk0, { full: true }); s.db && s.db.close(); }, bk);
+    await p.reload(); await T.w(400);
+    await p.$eval('[data-tab=plan]', el => el.click()); await T.w(500);
+    const plan = (await p.$eval('#a3Plan', e => e.textContent)).replace(/⁠/g, '');
+    const amts = plan.match(/\$[\d,]+(\.\d+)?/g) || [];
+    ck('I: Plan shows Free to spend $7.50 left (its share for the days left, $120.00) and Food $160.00', /\$7\.50 of \$120\.00/.test(plan) && /\$160\.00 left of \$160\.00/.test(plan), plan.slice(0, 300));
+    ck('I: every dollar amount on Plan has cents when one does', amts.length > 3 && amts.every(x => /\.\d\d$/.test(x)), amts.join(' '));
+    ck('I: no page errors', errs.length === 0, errs.join(' | '));
+    await b.close();
+  }
   /* F. [S6] Free to spend over: set up Mon 23 Nov with 300,000, Pay 250,000 on the 25th, Free to spend 50,000 a month
      from 23 Nov, 70,000 spent from it on 26 Nov. Seen on 27 Nov: Free to spend left is below zero, and the sum under
      safe to spend says by how much, never hides it. */

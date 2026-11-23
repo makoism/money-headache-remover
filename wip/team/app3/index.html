@@ -3999,16 +3999,20 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
   /* sumLine(parts, result, code): the engine's sum as a person reads it (numbers review S4), "¥312,000 (Main bank today)
      − ¥100,000 (Trip) = ¥212,000". parts: [{ label, amount }] in order, signed; a part of zero is left out (no
      "- 0 (minimum)"). One minus sign (U+2212) everywhere, one way of writing cents for the whole line. It writes the
-     engine's figures only: nothing is added up here. */
-  function sumLine(parts, result, code) {
+     engine's figures only: nothing is added up here. opts.cents true writes every amount with cents (the screen has some). */
+  function sumLine(parts, result, code, opts) {
     const shown = (parts || []).filter(p => p.amount !== 0);
-    const f = formatter(code, shown.map(p => p.amount).concat([result]));
+    /* opts.cents: the screen's own cents rule (BL4), so the sum is written the way every other amount on it is */
+    const f = opts && opts.cents ? (n => format(n, code, { cents: true })) : formatter(code, shown.map(p => p.amount).concat([result]));
     const label = p => ' (' + String(p.label).replace(/[()]/g, '') + ')';
     const body = shown.map((p, i) => (i === 0 ? f(p.amount) : (p.amount < 0 ? ' \u2212 ' + f(-p.amount) : ' + ' + f(p.amount))) + label(p)).join('');
     return body + ' = ' + f(result);
   }
 
-  return { MINUS, digits, symbol, format, formatter, toInput, parse, sumLine };
+  /* hasCents(minor, code): whether the amount has a part below one whole unit (for one cents rule per screen, BL4) */
+  function hasCentsOf(n, code) { return hasCents(checkMinor(n), digits(code)); }
+
+  return { MINUS, digits, symbol, format, formatter, hasCents: hasCentsOf, toInput, parse, sumLine };
 });
 /* The one name table (DECISIONS_ROUND2 C, sweep2_repeats A8, LESSONS lesson 2). Each label is tied to the engine figure
    it names (a path in the engine result, SCHEMA_V3 section 12; `*` stands for an account, card, loan or place id), so one
@@ -7329,7 +7333,22 @@ RULES
    money.js writes and reads amounts, names.js gives every label and day, status.js the one verdict, inputs.js the one
    box behaviour, provenance.js the typed-or-sample mark, messages.js the one message band. No sums here. */
 const SM = BurrowScreens.money, SN = BurrowScreens.names;
-const money3 = (minor, cur) => SM.format(minor, cur);
+/* [BL4] one way of writing cents per screen, the sum lines included: a screen draws itself through screen3(draw); every
+   amount written while it draws is noted, and when any has cents the screen draws again with cents on every amount
+   ("$0.00" over "= $0.00", never "$0"). Outside a screen's drawing each amount or sentence keeps its own rule. */
+const CENTS3 = { on: false, seen: false };
+function note3(amounts, cur) { if (!CENTS3.on && amounts.some(n => SM.hasCents(n, cur))) CENTS3.seen = true; }
+const money3 = (minor, cur) => { note3([minor], cur); return SM.format(minor, cur, CENTS3.on ? { cents: true } : {}); };
+/* the one formatter for a sentence: the screen's rule when it has cents, else the sentence's own */
+function fmt3(cur, amounts) { note3(amounts, cur); return CENTS3.on ? (n => SM.format(n, cur, { cents: true })) : SM.formatter(cur, amounts); }
+function sum3(parts, result, cur) { note3(parts.map(x => x.amount).concat([result]), cur); return SM.sumLine(parts, result, cur, CENTS3.on ? { cents: true } : undefined); }
+function screen3(draw) {
+  CENTS3.on = false; CENTS3.seen = false;
+  draw();
+  if (!CENTS3.seen) return;
+  CENTS3.on = true;
+  try { draw(); } finally { CENTS3.on = false; }
+}
 /* a typed amount as whole minor units, or null (never rounded; a minus is refused) */
 function typed3(text, cur) { const r = SM.parse(text, cur); return r.ok ? r.minor : null; }
 /* '2026-12-10' as '10 Dec', with the year when it is not the shown day's year */
@@ -8059,7 +8078,7 @@ function ageWords3(days) {
    says "checked today". One way of writing cents for the sentence (money.js formatter). */
 function bankParts3(a, yr) {
   if (!a.loggedIn && !a.loggedOut) return `${ageWords3(a.ageDays)}, on ${esc3(day3(a.asOf, yr))}`;
-  const f = SM.formatter(a.currency, [a.checked, a.loggedOut, a.loggedIn]);
+  const f = fmt3(a.currency, [a.checked, a.loggedOut, a.loggedIn]);
   const moved = [a.loggedOut ? `${f(a.loggedOut)} out` : '', a.loggedIn ? `${f(a.loggedIn)} in` : ''].filter(Boolean).join(' and ');
   return `${f(a.checked)} checked ${esc3(day3(a.asOf, yr))}, ${moved} logged since`;
 }
@@ -8084,7 +8103,7 @@ function besidePay3(day, land, yr) {
   return '';
 }
 /* the engine's sum, from its parts, written by screens/money.js: one minus sign, no "- 0 (minimum)" (numbers review S4) */
-function whyWords3(a) { return SM.sumLine(a.whyParts, a.headroom, a.currency); }
+function whyWords3(a) { return sum3(a.whyParts, a.headroom, a.currency); }
 /* the one next pay on Home is res.period.nextPay, named by the day it lands after the weekend rule [BI4b]: the engine
    gives that day for the item in its lists (next pay, may still go through, not seen yet, the check-in list) */
 function nextPay3(r) {
@@ -8101,7 +8120,7 @@ function afterCards3(r, yr) {
   const m = r.bankAfterCards || {};
   const days = list => esc3(SN.dayList(list, list.some(d => d.slice(0, 4) !== yr)));
   return Object.keys(m).map(id => {
-    const x = m[id], f = SM.formatter(x.currency, [x.amount].concat(x.setAside.map(g => g.amount), x.dip ? [x.dip.amount] : []));
+    const x = m[id], f = fmt3(x.currency, [x.amount].concat(x.setAside.map(g => g.amount), x.dip ? [x.dip.amount] : []));
     const notIn = [...new Set(x.paysNotCounted.map(p => p.due))];
     const notes = [x.pays.length ? `Your pay on ${days(x.pays)} is in it` : '', notIn.length ? `The pay due ${days(notIn)} is not counted, it has not come in` : '',
       x.ifAllTaken ? 'If everything on the cards now is taken' : '', ...x.setAside.map(g => `${esc3(f(g.amount))} of it is set aside for ${esc3(g.name)}`),
@@ -8131,7 +8150,8 @@ function nextPayWords3(r, yr) {
   if (n.state === 'late') return `<p class="a3-warn" data-fig="nextpay" data-state="late">Pay due ${d} is late. Check your bank when it lands</p>`;
   return `<p class="a3-sub" data-fig="nextpay" data-state="coming">${esc3(label3('nextPay'))} ${d}, ${dueWords3(n.days)}</p>`;
 }
-function renderHome3() {
+function renderHome3() { screen3(drawHome3); }
+function drawHome3() {
   const host = $('#a3Home');
   if (!E3.book) {
     host.removeAttribute('data-origin');
@@ -8167,7 +8187,7 @@ function renderHome3() {
   /* [BJ5] when Free to spend caps the headline, the engine's sum ends with the cap, so the two figures agree */
   /* [S6] Free to spend over: that part says by how much (the engine's `over`), so the sum never hides the overspend */
   const capParts = (r.safeToSpend.whyParts || []).map(x => (x.over ? Object.assign({}, x, { label: `Free to spend is ${money3(x.over, home)} over this period` }) : x));
-  const capLine = r.safeToSpend.whyParts ? `<p class="a3-sum" data-fig="cap">${esc3(SM.sumLine(capParts, r.safeToSpend.headline, home))}</p>` : '';
+  const capLine = r.safeToSpend.whyParts ? `<p class="a3-sum" data-fig="cap">${esc3(sum3(capParts, r.safeToSpend.headline, home))}</p>` : '';
   const sums = `${ids.filter(id => r.accounts[id].spendFrom).map(id => `<p class="a3-sum" data-fig="why">${esc3(whyWords3(r.accounts[id]))}</p>`).join('')}${capLine}`;
   /* [BL3] short: the sum's own total, before the pay after its lowest point (only when one brings money), and the first
      day the bank goes under beside it */
@@ -8577,7 +8597,8 @@ function overdueWords3(o, cur, yr, path) {
 }
 function plAccounts3(kinds) { return ((E3.book && E3.book.accounts) || []).filter(a => plLive3(a) && kinds[a.type] && !a.closed); }
 
-function renderPlan3() {
+function renderPlan3() { screen3(drawPlan3); }
+function drawPlan3() {
   const host = $('#a3Plan');
   if (!host || host.hidden) return;
   if (PL3.form) return;   // a form is open: it draws itself
@@ -8596,12 +8617,12 @@ function renderPlan3() {
       const rec = ((book.plan || {}).budgets || []).find(x => x.id === l.id) || {};
       const ends = rec.ends ? `<br><span class="when">Ends after this pay period</span>` : '';
       /* [QC F5, B2] one amount for the period, the one that counts now; the full amount only in the sentence under it */
-      const cur = E3.home(), f = SM.formatter(cur, [l.amount, l.counts, l.spent, l.over]);
+      const cur = E3.home(), f = fmt3(cur, [l.amount, l.counts, l.spent, l.over]);
       const part = l.counts !== l.amount ? `<br><span class="when" data-fig="line-part">Only the part for the days left in this pay period counts now: ${f(l.counts)} of ${f(l.amount)}</span>` : '';
       const over = l.over ? `<br><span class="when a3-late" data-fig="line-over">Spent ${f(l.spent)} of ${f(l.counts)}: ${f(l.over)} over, taken from safe to spend</span>` : '';
       return plRow3(`data-line="${esc3(l.id)}"`, `${esc3(l.name)}${ends}${part}${over}`, `<span data-fig="line-left">${plFig3('period.lines.*.left', l.left)}</span> <span class="when">left of <span data-fig="line-amount">${plFig3('period.lines.*.counts', l.counts)}</span></span>`);
     });
-    const fp = p.free && p.free.counts !== p.free.amount ? (f => `<br><span class="when" data-fig="free-part">Only the part for the days left in this pay period counts now: ${f(p.free.counts)} of ${f(p.free.amount)}</span>`)(SM.formatter(E3.home(), [p.free.counts, p.free.amount])) : '';
+    const fp = p.free && p.free.counts !== p.free.amount ? (f => `<br><span class="when" data-fig="free-part">Only the part for the days left in this pay period counts now: ${f(p.free.counts)} of ${f(p.free.amount)}</span>`)(fmt3(E3.home(), [p.free.counts, p.free.amount])) : '';
     const free = p.free ? plRow3('data-line="free"', `${esc3(label3('freeToSpendLeft'))}${fp}`, `<span data-fig="free-left">${plFig3('period.free.left', p.free.left)}</span> <span class="when">of <span data-fig="free-amount">${plFig3('period.free.counts', p.free.counts)}</span></span>`) : '';
     out.push(`<section class="a3-card" data-card="plan-period"><h2>${esc3(label3('period'))}</h2>
       <p class="a3-mid" data-fig="plan-period" data-start="${esc3(p.start)}" data-end="${esc3(p.end)}">${esc3(period3(p))}</p>
