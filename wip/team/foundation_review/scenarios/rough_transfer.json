@@ -38,8 +38,8 @@
     { "id": "rough-05", "date": "2027-01-08", "question": "bank_today", "account": "b", "expected": 18050.00,
       "why": "20,000.00 (opening) - 1,020.00 (Tue 5 Jan, as the statement shows) - 500.00 (Thu 7 Jan: the bank side keeps its typed amount) - 200.00 (Fri 8 Jan, typed) - 230.00 (the statement line of Fri 8 Jan, a spend of its own) = 18,050.00",
       "note": "30.00 x 10 = 300.00 is more than 230.00, so the 230.00 line is more than 10% from 200.00 and does not meet the transfer: it stays a record of its own, and the person sees both [S1, Q1]." },
-    { "id": "rough-06", "date": "2027-01-08", "question": "headline", "expected": 2970.00,
-      "why": "3,000.00 (Free to spend at the opening, typed) - 20.00 (fee of Tue 5 Jan) - 10.00 (fee of Thu 7 Jan: 500.00 left, 490.00 arrived) = 2,970.00",
-      "note": "The 230.00 line names no budget line, so it takes nothing from Free to spend." }
+    { "id": "rough-06", "date": "2027-01-08", "question": "headline", "expected": 2740.00,
+      "why": "3,000.00 (Free to spend at the opening, typed) - 20.00 (fee of Tue 5 Jan) - 10.00 (fee of Thu 7 Jan: 500.00 left, 490.00 arrived) - 230.00 (the 8 Jan line, a spend of its own with no budget line) = 2,740.00",
+      "note": "AU (other points): in a life with a plan a spend with no budget line counts against Free to spend. Before AU it took nothing from it (2,970.00).", "decisions": ["AU"] }
   ]
 }

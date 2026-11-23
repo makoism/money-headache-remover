@@ -25,7 +25,7 @@ const M = require('./merge_ref');
 const IDS = require('./ids');
 const E = require('./edits_ref');
 const LA = require('../ref/lookahead_ref');
-const { dayNum, dayStr } = require('./dates');
+const { dayNum, dayStr, addWorking, subWorking } = require('./dates');
 
 const ms = t => Date.parse(t);
 const isMap = x => !!x && typeof x === 'object' && !Array.isArray(x);
@@ -81,9 +81,33 @@ function versionsOf(list) {
   }
   return [...byContent.values()].sort((a, b) => ms(a.at) - ms(b.at) || (canon(a) < canon(b) ? -1 : 1));
 }
-function keptRecord(of, where, versions, ask) {
+function keptRecord(of, where, versions, ask, both) {
   const vs = versionsOf(versions), last = vs.reduce((w, v) => (!w || M.winner(w, v) === v ? v : w), null);
-  return { id: 'kept:' + of, of, in: where, versions: vs, ask, told: earliest(...vs.map(v => v.told || v.at)), at: last.at, by: last.by };
+  return Object.assign({ id: 'kept:' + of, of, in: where, versions: vs, ask }, both ? { both } : {}, { told: earliest(...vs.map(v => v.told || v.at)), at: last.at, by: last.by });
+}
+// [AW6] A record changed on two devices in different fields: "keep both" is offered, the base with each device's changed
+// fields (each list entry keeps its own `at` and `by`), the newer `at` and `by`, the earliest `told`.
+function keepBoth(b, m, t) {
+  if (!isMap(b) || !isMap(m) || !isMap(t) || m.gone || t.gone) return null;
+  const keys = new Set([...Object.keys(b), ...Object.keys(m), ...Object.keys(t)].filter(k => !NOT_CONTENT.has(k)));
+  const changed = x => [...keys].filter(k => canon(content(x[k])) !== canon(content(b[k])));
+  const cm = changed(m), ct = changed(t);
+  if (!cm.length || !ct.length || cm.some(k => ct.includes(k))) return null;
+  const w = M.winner(m, t), o = C(b);
+  for (const k of cm) { if (m[k] === undefined) delete o[k]; else o[k] = C(m[k]); }
+  for (const k of ct) { if (t[k] === undefined) delete o[k]; else o[k] = C(t[k]); }
+  const told = earliest(m.told, t.told);
+  return Object.assign(o, told ? { told } : {}, { at: w.at, by: w.by });
+}
+// [AW6] Check-ins that differ only in their `settled` lists are joined three ways: what either device ticked since the base
+// is added, what either unticked is taken off.
+function joinSettled(b, m, t) {
+  const strip = x => { const o = content(x); delete o.settled; return canon(o); };
+  if (!isMap(m) || !isMap(t) || m.gone || t.gone || strip(m) !== strip(t)) return null;
+  const bs = new Set((b && b.settled) || []), mset = new Set(m.settled || []), ts = new Set(t.settled || []);
+  const all = [...new Set([...bs, ...mset, ...ts])].filter(x => (bs.has(x) ? mset.has(x) && ts.has(x) : mset.has(x) || ts.has(x))).sort();
+  const w = M.winner(m, t), told = earliest(m.told, t.told);
+  return Object.assign(C(w), { settled: all }, told ? { told } : {});
 }
 // Two copies of one kept record changed on both sides (both answered, or answered and asked again): every version
 // stays; whether it is still asked, and its `at` and `by`, come from the newer [AQ3].
@@ -116,10 +140,19 @@ function item(of, where, b, m, t, isRecord, conflicts) {
     return o;
   };
   if (same(m, t)) return join(M.winner(m, t));
+  if (where === 'checkins') { const j = joinSettled(b, m, t); if (j) return j; }   // [AW6]
+  // [AW1] A record a statement line replaced (`goneBy` an `imp:` line), otherwise as the other side has it: the matching
+  // write stands, nothing is asked (one device matched it, or the join did).
+  const matched = (x, y) => x.gone && String(x.goneBy || '').startsWith('imp:') && !y.gone && same(Object.assign({}, x, { gone: undefined, goneBy: undefined }), y);
+  if (isRecord && matched(m, t)) return join(m);
+  if (isRecord && matched(t, m)) return join(t);
+  // [AW6] A closing transfer written on both devices is worked out again from the joined events (after the join, below):
+  // both versions are kept for Undo, nothing is asked.
+  if (where === 'events' && /^close:/.test(String(of))) { conflicts.push({ of, where, versions: [m, t], ask: false, recompute: true }); return join(M.winner(m, t)); }
   const rm = rankOf(m), rt = rankOf(t);
   const higher = rm > rt ? m : t;
   const byRank = rm !== rt && !higher.gone;   // [AP7] a guess never replaces a lesson that was not taken back
-  conflicts.push({ of, where, versions: [m, t], ask: !byRank });
+  conflicts.push({ of, where, versions: [m, t], ask: !byRank, both: !byRank && isRecord ? keepBoth(b, m, t) : null });
   return join(byRank ? higher : M.winner(m, t));
 }
 const isRecords = (...ls) => ls.every(l => l === undefined || (Array.isArray(l) && l.every(r => isMap(r) && typeof r.id === 'string')));
@@ -140,7 +173,7 @@ function walk(b, m, t, path, top, conflicts) {
   b = b || {}; m = m || {}; t = t || {};
   const out = {};
   for (const k of new Set(Object.keys(m).concat(Object.keys(t)))) {
-    if (top && k === 'kept') continue;
+    if (top && k === 'keptVersions') continue;
     const x = m[k], y = t[k], z = b[k], p = path ? path + '.' + k : k;
     if (top && (k === 'rev' || k === 'v') && (typeof x === 'number' || typeof y === 'number')) out[k] = Math.max(...[x, y].filter(n => typeof n === 'number'));
     else if (top && k === 'at' && (typeof x === 'string' || typeof y === 'string')) out[k] = newest(x, y);   // when the copy was saved
@@ -155,7 +188,7 @@ function sync(base, mine, theirs) {
   const conflicts = [];
   const out = walk(base, mine, theirs, '', true, conflicts);
   // The kept records themselves: changed on one side, taken; on both, joined (every version stays) [AQ3].
-  const index = c => new Map(((c || {}).kept || []).map(r => [r.id, r]));
+  const index = c => new Map(((c || {}).keptVersions || []).map(r => [r.id, r]));
   const B = index(base), Mi = index(mine), Ti = index(theirs), kept = new Map();
   for (const id of new Set([...Mi.keys(), ...Ti.keys()])) {
     let x = Mi.get(id), y = Ti.get(id); const z = B.get(id);
@@ -165,11 +198,68 @@ function sync(base, mine, theirs) {
     kept.set(id, C(canon(x) === canon(y) || !yc ? x : !xc ? y : joinKept(x, y)));
   }
   for (const c of conflicts) {
-    const fresh = keptRecord(c.of, c.where, c.versions, c.ask);
+    const fresh = keptRecord(c.of, c.where, c.versions, c.ask, c.both);
     kept.set(fresh.id, addConflict(kept.get(fresh.id), fresh));
   }
-  if (kept.size) out.kept = [...kept.values()].sort((a, b) => (a.id < b.id ? -1 : 1));
+  for (const c of conflicts.filter(x => x.recompute)) {
+    recomputeClosing(out, c.of);
+    // the figure worked out is not a version of its own: joining again adds nothing
+    const now = out.events.find(e => e.id === c.of), k = kept.get('kept:' + c.of);
+    if (now && k) { k.versions = k.versions.filter(v => !same(v, now)); if (!k.versions.length) kept.delete('kept:' + c.of); }
+  }
+  if (kept.size) out.keptVersions = [...kept.values()].sort((a, b) => (a.id < b.id ? -1 : 1));
+  rematch(out, mine, theirs);
   return out;
+}
+
+// ---------- after the join: matching again, closings worked out again [AW1, AW6] ----------
+// [AW1] 6.4 matching runs again between import lines and typed or `set:` records that came from the other device (an import
+// on one side only, a record on the other side only): the same account and direction, the same amount (a rough `est` one
+// within 10%), inside the account's posting window either side of the record's day (1 working day, a card 7), or the same
+// occurrence settled. Closest day first, then the earliest `told`, then the id. The record is `gone`, `goneBy` the line, with
+// the newer `at` and `by` of the two (so both devices write the same); the line keeps the record's `told` [O1] and takes its
+// `settles` when it has none.
+const isImp = e => String(e.id).startsWith('imp:');
+const dirOf = e => (e.k === 'spend' ? 'out' : e.k === 'in' || e.k === 'refund' ? 'in' : null);
+const occs = e => [].concat(e.settles || []).map(o => (isMap(o) ? o.s + '@' + o.due : String(o)));
+function rematch(out, mine, theirs) {
+  const evs = out.events;
+  if (!Array.isArray(evs)) return;
+  const ids = c => new Set(((c || {}).events || []).map(e => e.id));
+  const Mi = ids(mine), Ti = ids(theirs);
+  const accts = new Map((out.accounts || []).map(a => [a.id, a]));
+  const win = id => { const a = accts.get(id) || {}; return a.postingDays != null ? a.postingDays : a.kind === 'card' ? 7 : 1; };
+  const fits = (t, a) => (t.est ? Math.abs(a - t.a) * 10 <= Math.max(a, t.a) : a === t.a);
+  const imps = evs.filter(e => !e.gone && isImp(e) && dirOf(e) && e.acct2 == null && typeof e.date === 'string')
+    .sort((x, y) => (x.date < y.date ? -1 : x.date > y.date ? 1 : x.id < y.id ? -1 : 1));
+  for (const imp0 of imps) {
+    const imp = evs.find(e => e.id === imp0.id);
+    const inM = Mi.has(imp.id), inT = Ti.has(imp.id);
+    if (inM === inT) continue;   // read on both devices (or neither): each device matched it on its own
+    const own = inM ? Mi : Ti, other = inM ? Ti : Mi, d = dayNum(imp.date), w = win(imp.acct);
+    const io = occs(imp);
+    const hits = evs.filter(t => !t.gone && !isImp(t) && t.acct2 == null && dirOf(t) === dirOf(imp) && t.acct === imp.acct
+      && other.has(t.id) && !own.has(t.id) && typeof t.date === 'string'
+      && ((io.length && occs(t).some(o => io.includes(o))) || (fits(t, Number(imp.a)) && d >= subWorking(dayNum(t.date), w) && d <= addWorking(dayNum(t.date), w))))
+      .sort((x, y) => Math.abs(dayNum(x.date) - d) - Math.abs(dayNum(y.date) - d) || ms(x.told) - ms(y.told) || (x.id < y.id ? -1 : 1));
+    if (!hits.length) continue;
+    const t = hits[0], wn = M.winner(imp, t);
+    evs[evs.indexOf(t)] = Object.assign({}, t, { gone: String(wn.at).slice(0, 10), goneBy: imp.id, at: wn.at, by: wn.by });
+    const told = earliest(imp.told, t.told);
+    evs[evs.indexOf(imp)] = Object.assign({}, imp, told ? { told } : {}, !io.length && t.settles ? { settles: C(t.settles) } : {});
+  }
+}
+// [AW6] A closing transfer written on both devices: its amount is worked out again from the joined events, what the account
+// holds at its closing before the closing's own records.
+function recomputeClosing(out, of) {
+  const i = (out.events || []).findIndex(e => e.id === of);
+  if (i < 0) return;
+  const rec = out.events[i], id = String(of).slice('close:'.length).split(':')[0];
+  const a = live(out.accounts).find(x => x.id === id);
+  if (!a || !a.closed) return;
+  const fig = figureAtClose(a, live(out.events).filter(e => names(e, id) && typeof e.date === 'string' && !isClosing(e, id)));
+  if (fig === null) return;
+  out.events[i] = Object.assign({}, rec, { a: rec.acct === id ? fig : -fig });
 }
 
 // ---------- the revision [AQ1] ----------
@@ -179,8 +269,24 @@ function push({ cloud, baseRev }) {
 const noRev = c => { const o = Object.assign({}, c); delete o.rev; return o; };
 // One device syncs: behind, it takes the latest first and joins it with its own; then it writes when its copy differs
 // from the cloud's. Its `base` becomes what the cloud holds.
+const hasData = c => !!c && ['accounts', 'schedules', 'events'].some(k => live(c[k]).length);
+// [AW2] A device with its own data and no `sync.base` meeting a cloud copy with data: nothing is joined. Which whole copy to
+// keep is asked (`kept:copy`); the cloud's copy shows meanwhile, and both wait in `keptVersions`, written so either device
+// can answer.
+function wholeCopyQuestion(own, cloudCopy) {
+  const strip = c => { const o = C(c); delete o.rev; delete o.keptVersions; return o; };
+  const out = C(cloudCopy), vs = [strip(own), strip(cloudCopy)].sort((a, b) => ms(a.at) - ms(b.at) || (canon(a) < canon(b) ? -1 : 1));
+  const last = vs[vs.length - 1];
+  out.keptVersions = (cloudCopy.keptVersions || []).filter(k => k.id !== 'kept:copy').concat([{ id: 'kept:copy', of: 'copy', in: '', versions: vs, ask: true,
+    told: earliest(...vs.map(v => v.at)), at: last.at, by: (last.home && last.home.main && last.home.main.by) || null }]).sort((a, b) => (a.id < b.id ? -1 : 1));
+  return out;
+}
 function syncDevice(device, cloud) {
   let copy = device.copy, merged = false;
+  if ((device.base === undefined || device.base === null) && hasData(device.copy) && hasData(cloud.copy) && canon(noRev(device.copy)) !== canon(noRev(cloud.copy))) {
+    const p = push({ cloud, baseRev: cloud.rev }), written = Object.assign(wholeCopyQuestion(device.copy, cloud.copy), { rev: p.rev });
+    return { merged: false, pushed: true, rev: p.rev, device: { copy: written, base: C(written), baseRev: p.rev }, cloud: { rev: p.rev, copy: C(written) } };
+  }
   if (device.baseRev !== cloud.rev) { copy = sync(device.base, device.copy, cloud.copy); merged = true; }
   if (canon(noRev(copy)) === canon(noRev(cloud.copy))) {
     return { merged, pushed: false, rev: cloud.rev, device: { copy: C(cloud.copy), base: C(cloud.copy), baseRev: cloud.rev }, cloud };
@@ -188,6 +294,14 @@ function syncDevice(device, cloud) {
   const p = push({ cloud, baseRev: cloud.rev });   // based on the latest now
   const written = Object.assign(C(copy), { rev: p.rev });
   return { merged, pushed: true, rev: p.rev, device: { copy: written, base: C(written), baseRev: p.rev }, cloud: { rev: p.rev, copy: C(written) } };
+}
+// [AW5] A refused write: the device took `fetched` and joined; before its write landed the cloud moved on to `cloudNow`. It
+// saves the joined copy with `fetched` as its base before pushing, so the retry joins against the copy it took.
+function race({ device, fetched, cloudNow }) {
+  const joined = device.baseRev === fetched.rev ? C(device.copy) : sync(device.base, device.copy, fetched.copy);
+  const refused = !push({ cloud: cloudNow, baseRev: fetched.rev }).accepted;
+  const r = syncDevice({ copy: joined, base: C(fetched.copy), baseRev: fetched.rev }, cloudNow);
+  return { refused, rev: r.rev, copy: r.device.copy };
 }
 function casStory({ cloud, devices, steps }) {
   const st = C(devices); let cl = C(cloud);
@@ -242,7 +356,11 @@ function x8Questions(copy) {
     }
     for (const [gov, dues] of failing) {
       const due = dues.sort().pop(), first = gov === entries[0];
-      const offer = first ? null : dayStr(dayNum(due) + 1);   // X8's own offer: the day after
+      // [AW3, correcting AT2] X8's offer is the day after the settled occurrence for a monthly or weekly rule; for any other
+      // rule it is the day after the old rule's next occurrence after the last settled one, so nothing is paid twice in a cycle.
+      const old = entries.filter(e => e.from < gov.from).pop();
+      const cycle = old && old.rule && !['month', 'weeks', 'lastWorkday'].includes(old.rule.every) ? firstFrom(old.rule, dayStr(dayNum(due) + 1)) : null;
+      const offer = first ? null : dayStr(dayNum(cycle || due) + 1);
       out.push({ q: 'x8', schedule: s.id, due, from: gov.from, offer, next: offer && firstFrom(gov.rule, offer) });
     }
   }
@@ -289,7 +407,8 @@ function closedChecks(copy) {
   for (const a of live(copy.accounts)) {
     if (!a.closed) continue;
     const evs = live(copy.events).filter(e => names(e, a.id) && typeof e.date === 'string');
-    if (evs.some(e => dayNum(e.date) > dayNum(a.closed))) { notices.push({ account: a.id, notice: 'reopened', closed: a.closed }); continue; }
+    // [AV1] a zero check after the closing day reopens nothing
+    if (evs.some(e => dayNum(e.date) > dayNum(a.closed) && !(e.k === 'check' && !Number(e.a)))) { notices.push({ account: a.id, notice: 'reopened', closed: a.closed }); continue; }
     const fig = figureAtClose(a, evs);
     if (fig !== null && fig !== 0) questions.push({ q: 'closed', account: a.id, left: fig });
   }
@@ -323,17 +442,35 @@ function sharesQuestions(copy) {
   for (const [p, f] of [...fig].sort((x, y) => (x[0] < y[0] ? -1 : 1))) {
     if (p === 'free' || f >= 0) continue;
     const outs = evs.filter(e => e.k === 'move' && e.place === p).sort((x, y) => ms(y.at) - ms(x.at) || (x.id < y.id ? 1 : -1));
-    const undo = []; let g = f;
-    for (const o of outs) { if (g >= 0) break; undo.push(o.id); g += Number(o.a) || 0; }
-    out.push({ q: 'shares', place: p, over: -f, undo });
+    const undoFrom = list => { const u = []; let g = f; for (const o of list) { if (g >= 0) break; u.push(o.id); g += Number(o.a) || 0; } return u; };
+    // [AW6] either placing may give way: the newest first (`undo`), or the oldest first (`undoOlder`)
+    out.push({ q: 'shares', place: p, over: -f, undo: undoFrom(outs), undoOlder: undoFrom(outs.slice().reverse()) });
   }
   return out;
 }
 const keyOf = q => q.schedule || q.account || q.place || q.of || '';
+function mainQuestion(copy, which, mins) {
+  const kv = id => (copy.keptVersions || []).find(k => k.id === id);
+  const mk = which.find(q => q.of === 'home.main');
+  const banks = new Set([].concat(mk ? kv(mk.kept).versions.map(v => v.v && v.v.acct) : [], copy.home && copy.home.main ? [copy.home.main.v.acct] : [], mins.map(q => q.account)).filter(Boolean));
+  const accts = which.filter(q => kv(q.kept).in === 'accounts' && banks.has(q.of) && new Set(kv(q.kept).versions.map(v => canon(v.minBank === undefined ? null : v.minBank))).size > 1);
+  const parts = (mk ? 1 : 0) + accts.length + mins.length;
+  if (parts < 2 || !(mk || mins.length)) return null;
+  const kept = [].concat(mk ? [mk.kept] : [], accts.map(q => q.kept)).sort();
+  const acct = mins.length ? mins[0].account : accts.length ? accts[0].of : copy.home.main.v.acct;
+  const a = (copy.accounts || []).find(x => x.id === acct) || {};
+  const options = [...new Set([].concat(...kept.map(id => kv(id).versions.map(v => v.by))))].filter(Boolean).sort();
+  return { q: 'main', account: acct, kept, main: copy.home.main.v.min == null ? null : copy.home.main.v.min, own: a.minBank == null ? null : a.minBank, options };
+}
 function afterSync(copy) {
   const c = closedChecks(copy);
-  const which = (copy.kept || []).filter(k => k.ask).map(k => ({ q: 'which', of: k.of, kept: k.id }));
-  const questions = [].concat(x8Questions(copy), c.questions, minimumQuestions(copy), sharesQuestions(copy), which)
+  let which = (copy.keptVersions || []).filter(k => k.ask).map(k => ({ q: 'which', of: k.of, kept: k.id }));
+  let mins = minimumQuestions(copy);
+  // [AW4, AT3] A main-bank switch and a minimum change meeting at a sync are one question: the `which` about `home.main`, the
+  // `which` about the bank it names (or named) and the minimum check, shown together; the person picks one device's view.
+  const mainQ = mainQuestion(copy, which, mins);
+  if (mainQ) { which = which.filter(q => !mainQ.kept.includes(q.kept)); mins = []; }
+  const questions = [].concat(x8Questions(copy), c.questions, mins, sharesQuestions(copy), which, mainQ ? [mainQ] : [])
     .sort((a, b) => (a.q < b.q ? -1 : a.q > b.q ? 1 : keyOf(a) < keyOf(b) ? -1 : keyOf(a) > keyOf(b) ? 1 : 0));
   return { questions, notices: c.notices };
 }
@@ -352,9 +489,17 @@ function at(copy, path, make) {
 // clock; every version stays kept, the one shown before it too when it was edited since.
 function answer({ copy, of, pick, now, by, lastSeen }) {
   const out = C(copy), stamp = stampFor(out, now, by, lastSeen);
-  const k = (out.kept || []).find(r => r.of === of);
+  const k = (out.keptVersions || []).find(r => r.of === of);
   if (!k) throw new Error('nothing kept for ' + of);
-  const v = k.versions[pick];
+  if (of === 'copy') {   // [AW2] the whole copy picked: every list and setting from it; the kept versions stay
+    const v = k.versions[pick], kv = out.keptVersions;
+    for (const key of Object.keys(out)) if (key !== 'rev' && key !== 'keptVersions') delete out[key];
+    Object.assign(out, C(v), { keptVersions: kv });
+    Object.assign(k, { ask: false }, stamp);
+    return out;
+  }
+  const v = pick === 'both' ? k.both : k.versions[pick];   // [AW6] "keep both"
+  if (!v) throw new Error('no version ' + pick + ' kept for ' + of);
   const holder = at(out, k.in, false);
   let current;
   if (Array.isArray(holder)) {
@@ -396,7 +541,19 @@ function answerCheck({ copy, question: q, pick, now, by, lastSeen }) {
     const min = pick === 'own' ? a.minBank : out.home.main.v.min;
     out.home.main = Object.assign({}, out.home.main, { v: { acct: q.account, min } }, stamp);
     Object.assign(a, { minBank: null }, stamp);
+  } else if (q.q === 'main') {   // [AW4] one device's view: its version of each kept item, then the minimum from that view
+    let cur = out;
+    for (const id of q.kept) {
+      const k = cur.keptVersions.find(x => x.id === id);
+      const vs = k.versions.map((v, i) => ({ v, i })).filter(x => x.v.by === pick);
+      const i = vs.length ? vs.reduce((w, x) => (M.winner(w.v, x.v) === x.v ? x : w)).i : k.versions.length - 1;
+      cur = answer({ copy: cur, of: k.of, pick: i, now, by, lastSeen });
+    }
+    const mq = minimumQuestions(cur)[0];
+    if (mq) { const a = cur.accounts.find(x => x.id === mq.account); cur = answerCheck({ copy: cur, question: mq, pick: a.by === pick && a.minBank ? 'own' : 'main', now, by, lastSeen }); }
+    return cur;
   } else if (q.q === 'shares') {
+    if (pick === 'undoOlder') out.events = out.events.map(e => ((q.undoOlder || []).includes(e.id) ? Object.assign({}, e, { gone: day }, stamp) : e));
     if (pick === 'undo') out.events = out.events.map(e => (q.undo.includes(e.id) ? Object.assign({}, e, { gone: day }, stamp) : e));
   } else throw new Error('no answer for ' + q.q);
   return out;
@@ -446,7 +603,8 @@ const show = (copy, keys) => (keys ? Object.fromEntries(keys.filter(k => copy[k]
 function ask(question, input) {
   switch (question) {
     case 'push': return push(input);
-    case 'sync_device': { const r = syncDevice(input.device, input.cloud); return { merged: r.merged, pushed: r.pushed, rev: r.rev, copy: show(r.device.copy, input.show) }; }
+    case 'sync_device': { const r = syncDevice(input.device, input.cloud); return Object.assign({ merged: r.merged, pushed: r.pushed, rev: r.rev, copy: show(r.device.copy, input.show) }, input.questions ? { questions: afterSync(r.device.copy).questions } : {}); }
+    case 'race': { const r = race(input); return { refused: r.refused, rev: r.rev, questions: afterSync(r.copy).questions, copy: show(r.copy, input.show) }; }
     case 'cas_story': return casStory(input);
     case 'sync': return show(sync(input.base, input.mine, input.theirs), input.show);
     case 'sync_symmetric': return canon(sync(input.base, input.mine, input.theirs)) === canon(sync(input.base, input.theirs, input.mine));
@@ -466,4 +624,4 @@ function ask(question, input) {
   throw new Error('unknown question ' + question);
 }
 
-module.exports = { ask, laRule, CAL, placeFigures, sync, push, syncDevice, casStory, afterSync, answer, answerCheck, x8Questions, closedChecks, minimumQuestions, sharesQuestions, makes, firstFrom, figureAtClose, impIds, idOk, catKey, catLearn, stmtNorm, content, same, canon };
+module.exports = { ask, race, rematch, mainQuestion, laRule, CAL, placeFigures, sync, push, syncDevice, casStory, afterSync, answer, answerCheck, x8Questions, closedChecks, minimumQuestions, sharesQuestions, makes, firstFrom, figureAtClose, impIds, idOk, catKey, catLearn, stmtNorm, content, same, canon };

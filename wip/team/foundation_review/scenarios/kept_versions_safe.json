@@ -1,0 +1,27 @@
+{
+ "life": "kept_versions_safe",
+ "title": "AW7: while a question about money waits, the walk counts the safe side across the kept versions",
+ "story": "Set up Mon 4 Jan 2027: the bank holds 100,000. Pay on the 25th, rent of 330,000 on the 27th. Offline, the phone raised the pay to 260,000 while the desktop kept it at 250,000; the desktop raised the rent to 340,000 while the phone set 330,000. After the sync both are asked (`which`); until the person picks, the newer shows (pay 260,000, rent 330,000) and every version is in `keptVersions`. Every amount is made up.",
+ "currency": "JPY",
+ "window": { "from": "2027-01-04", "to": "2027-01-31" },
+ "holidays": { "country": "none", "dates": [], "bank_closed": [] },
+ "main_bank": "b",
+ "accounts": [
+  { "id": "b", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-04", "amount": 100000 } }
+ ],
+ "income": [
+  { "id": "pay", "name": "Pay", "account": "b", "amount": 260000, "schedule": { "frequency": "monthly", "day": 25 }, "weekend_holiday": "move earlier", "starts_period": true }
+ ],
+ "bills": [
+  { "id": "rent", "name": "Rent", "account": "b", "amount": 330000, "schedule": { "frequency": "monthly", "day": 27 }, "weekend_holiday": "none" }
+ ],
+ "goals": [],
+ "keptVersions": [
+  { "of": "pay", "ask": true, "versions": [ { "amount": 250000 }, { "amount": 260000 } ] },
+  { "of": "rent", "ask": true, "versions": [ { "amount": 330000 }, { "amount": 340000 } ] }
+ ],
+ "events": [],
+ "asks": [
+  { "id": "kvs-01", "date": "2027-01-05", "question": "safe_to_spend", "account": "b", "expected": 10000, "why": "100,000 (bank today) + 250,000 (Pay 25 Jan: the smaller of the kept 250,000 and 260,000 [AW7, AR1]) - 340,000 (Rent 27 Jan: the larger of the kept 330,000 and 340,000) - 0 (minimum) = 10,000", "note": "The lowest day is 27 Jan; the 25 Feb pay comes after it. With the versions shown and nothing else it would be 30,000, too high while the person has not picked.", "decisions": ["AW7"] }
+ ]
+}

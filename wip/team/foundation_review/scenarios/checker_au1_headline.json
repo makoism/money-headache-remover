@@ -1,0 +1,194 @@
+{
+ "life": "checker_au1_headline",
+ "title": "AU1: pay every Friday in a year of 53 Fridays: the headline is this week's converted Free to spend (checker seed 42)",
+ "story": "A life made by the checker's generator (wip/team/checker/life_gen.js, seed 42), with ordinary ids. Every amount is made up. The hand answers are checker_differences_1.md's, as AU1 decided them.",
+ "currency": "JPY",
+ "window": {
+  "from": "2027-05-13",
+  "to": "2027-08-21"
+ },
+ "main_bank": "w2kqw0-pwo1t9aybm-1",
+ "holidays": {
+  "country": "XX",
+  "dates": [
+   {
+    "date": "2027-05-18",
+    "name": "Holiday"
+   },
+   {
+    "date": "2027-06-05",
+    "name": "Holiday"
+   },
+   {
+    "date": "2027-07-03",
+    "name": "Holiday"
+   },
+   {
+    "date": "2027-07-21",
+    "name": "Holiday"
+   },
+   {
+    "date": "2027-09-01",
+    "name": "Holiday"
+   },
+   {
+    "date": "2027-09-21",
+    "name": "Holiday"
+   }
+  ],
+  "bank_closed": []
+ },
+ "accounts": [
+  {
+   "id": "w2kqw0-pwo1t9aybm-1",
+   "name": "Main bank",
+   "kind": "bank",
+   "currency": "JPY",
+   "minimum": 0,
+   "opening": {
+    "date": "2027-05-13",
+    "amount": 413000
+   }
+  },
+  {
+   "id": "w2kqw0-pwo1t9aybm-2",
+   "name": "Cash",
+   "kind": "cash",
+   "currency": "JPY",
+   "minimum": 0,
+   "opening": {
+    "date": "2027-05-13",
+    "amount": 19000
+   }
+  },
+  {
+   "id": "w2kqw0-pwo1t9aybm-3",
+   "name": "Savings",
+   "kind": "bank",
+   "currency": "JPY",
+   "minimum": 0,
+   "spend_from": false,
+   "opening": {
+    "date": "2027-05-13",
+    "amount": 251000
+   }
+  }
+ ],
+ "income": [
+  {
+   "id": "w2kqw0-pwo1t9aybm-4",
+   "name": "Pay",
+   "account": "w2kqw0-pwo1t9aybm-1",
+   "currency": "JPY",
+   "amount": 92000,
+   "schedule": {
+    "frequency": "weekly",
+    "weekday": "Fri"
+   },
+   "weekend_holiday": "move earlier",
+   "starts_period": true
+  }
+ ],
+ "bills": [
+  {
+   "id": "w2kqw0-pwo1t9aybm-5",
+   "name": "Rent",
+   "account": "w2kqw0-pwo1t9aybm-1",
+   "currency": "JPY",
+   "amount": 117000,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 10
+   },
+   "weekend_holiday": "none"
+  },
+  {
+   "id": "w2kqw0-pwo1t9aybm-6",
+   "name": "Power and water",
+   "account": "w2kqw0-pwo1t9aybm-1",
+   "currency": "JPY",
+   "amount": 3000,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 25
+   },
+   "weekend_holiday": "move later"
+  },
+  {
+   "id": "w2kqw0-pwo1t9aybm-7",
+   "name": "Phone",
+   "account": "w2kqw0-pwo1t9aybm-1",
+   "currency": "JPY",
+   "amount": 8000,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 30
+   },
+   "weekend_holiday": "move later"
+  },
+  {
+   "id": "w2kqw0-pwo1t9aybm-8",
+   "name": "Internet",
+   "account": "w2kqw0-pwo1t9aybm-1",
+   "currency": "JPY",
+   "amount": 9000,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 1
+   },
+   "weekend_holiday": "move later"
+  },
+  {
+   "id": "w2kqw0-pwo1t9aybm-9",
+   "name": "Gym",
+   "account": "w2kqw0-pwo1t9aybm-1",
+   "currency": "JPY",
+   "amount": 14000,
+   "schedule": {
+    "frequency": "monthly",
+    "day": 5
+   },
+   "weekend_holiday": "move earlier"
+  }
+ ],
+ "goals": [
+  {
+   "id": "w2kqw0-pwo1t9aybm-10",
+   "name": "Rainy day",
+   "kept_in": "w2kqw0-pwo1t9aybm-3",
+   "opening": {
+    "date": "2027-05-13",
+    "amount": 27000
+   }
+  }
+ ],
+ "plan": {
+  "lines": [],
+  "free": {
+   "per": "month",
+   "amount": 90000
+  }
+ },
+ "events": [
+  {
+   "id": "w2kqw0-pwo1t9aybm-11",
+   "date": "2027-05-14",
+   "kind": "pay_in",
+   "account": "w2kqw0-pwo1t9aybm-1",
+   "amount": 92000,
+   "settles": "w2kqw0-pwo1t9aybm-4@2027-05-14"
+  }
+ ],
+ "asks": [
+  {
+   "id": "cau42-01",
+   "date": "2027-05-14",
+   "question": "headline",
+   "expected": 20377,
+   "why": "20,377 (Free to spend for the week from 14 May: 90,000 x 12 / 53 Fridays in 2027 is 20,377.4; the 19 leftover yen go to the first 19 pays and 14 May is the 20th; nothing spent yet) = 20,377",
+   "decisions": [
+    "AU1"
+   ]
+  }
+ ]
+}
