@@ -818,7 +818,8 @@
       const toGo = Math.max(0, g.target - Math.max(0, amt));
       if (!periodStream) return { target: g.target, toGo, periodsLeft: null, perPeriod: null };
       const dd = dayNum(due);
-      const n = dd < today ? 0 : occOf(periodStream, today, dd).filter(o => o.land <= dd && !settledBy[o.id]
+      // [BJ3, BF1] a late pay still expected counts here (pace is a plan), though safe to spend leaves it out (BH1)
+      const n = dd < today ? 0 : occOf(periodStream, today - 62, dd).filter(o => o.land <= dd && !settledBy[o.id]
         && (o.land >= today || nextPays.some(p => p.id === o.id))).length;
       return { target: g.target, toGo, periodsLeft: n, perPeriod: n ? U.spread(toGo, n)[0] : toGo };
     }

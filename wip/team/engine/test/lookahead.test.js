@@ -263,6 +263,8 @@ t('a goal: what is needed each period to reach its target by its date, from what
   const g = run(b, '2026-12-03').places.trip;
   // 25,000 set aside, 75,000 to go; pays starting periods by 31 Mar: 25 Dec, 25 Jan, 25 Feb, 25 Mar (4): 18,750 each
   eq([g.kept, g.target, g.toGo, g.periodsLeft, g.perPeriod], [25000, 100000, 75000, 4, 18750]);
+  // [BJ3, BF1] a late pay still expected counts for pace (pace is a plan), though not for safe to spend (BH1)
+  eq([run(b, '2026-12-28').places.trip.periodsLeft, run(b, '2026-12-28').places.trip.perPeriod], [4, 18750]);
   // past its date, or with no pay left before it: all of what is to go, now
   eq(run(b, '2027-03-27').places.trip.periodsLeft, 0);
   eq(run(b, '2027-03-27').places.trip.perPeriod, 75000);
