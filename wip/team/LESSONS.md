@@ -92,3 +92,6 @@ Invented situations follow what the reviewer happens to think of. Passing tests 
 
 ### Warning sign
 "We tested a lot" with no number for what was not tested.
+
+### Addendum to lesson 3 (confirm_review_4, 23 Nov)
+The fourth confirming review found tests whose inputs had been changed so a rule would not trigger (mg-96 to mg-99, mg-109), instead of asking whether the rule was right. The rule then hid a real fault: anyone away from the app for more than a day had every later time stamped in the past. Warning sign: a test input adjusted to "avoid" a rule. When a rule gets in the way of a natural input, question the rule first.

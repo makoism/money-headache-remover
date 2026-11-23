@@ -275,3 +275,10 @@ The AD helper's readings (AD1: a `rev` that is a count, or a last save before 20
 AG1 (mv-q56). Every write made now, including a waiting entry applied after a restore and an answer given again, uses the D4 clock (`nextAt`): strictly newer than anything the device has seen, the restore's `gone` marks included. A new write never ties with a restore.
 AG2 (mv-q57). AE4's note applies to any month with more pays than usual (three for every two weeks, five for weekly).
 The AE and AF helper's readings are confirmed.
+
+## AH. Decisions from confirm_review_4.md
+AH1. A device's own write uses its own clock: `at` = the later of now and the newest `at` it has seen plus 1 ms. A long gap since the last write is normal and never held. The device's own clock is questioned only by D8 (a date that jumps back, or more than 40 days ahead). An arriving copy is held only when its `at` is more than a day ahead of the receiving device's own now (M4, N1). `told` follows the device's own clock the same way. L merge q8's reading is withdrawn, and mg-33, mg-96 to mg-99 and mg-109 go back to natural inputs. A grid column: the device used again after 2, 21 and 45 days away.
+AH2. Every occurrence-name reader accepts built and moved schedule ids (`mv:pay:steps.a@...`, `pe:mv:...`); X8 protects moved schedules. Cases on `mv:` schedule ids.
+AH3. Every reader reads keyed overrides in the AE1 shape (`{ amount, at, by, gone }`) and skips `gone` keys, in the look ahead and in X8. Asks with a removed key on a check day, across a period start and with undo.
+AH4. AG1 is withdrawn as worded. AE2 stands: an applied waiting entry's keys carry the entry's `at`. For mv-q56 only: a restore stamps the waiting entries it brings back 1 ms after the `gone` marks it writes, so applying them again beats the restore's removal. mg-117 must keep passing; an mv-q56 case is added.
+AH5. Version one's merge finds keyed maps by shape (a map whose values all carry `at`), not by a list of field names, so maps added in later builds merge key by key on older devices too.
