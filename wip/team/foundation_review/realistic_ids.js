@@ -5,7 +5,7 @@
 // `<6 letters>-<10 chars>-<n>` (SCHEMA_V3 section 0). This check copies scenarios/ and rules/ with their
 // references into a temp folder, rewrites every short made-up id into the ordinary form (the same id the same
 // way everywhere in one file, inside built ids too: `set:`, `auto:`, `skip:`, `pe:`, `ps:`, `rm:`, `close:`,
-// `fee:`, `<schedule>@<date>`), and runs both suites on the rewritten copies.
+// `fee:`, `<schedule>@<date>`), and runs both suites on the rewritten copies (and check_specs.js on the scenarios).
 // Left as they are: `mv:` ids and the 38.31 copies the move reads (those are the ids a moved copy really has),
 // device parts (`by`), and words that are not ids (`free`, kinds, currencies, prose).
 // Usage: node realistic_ids.js [scenarios|rules] [--show]   (--show prints every id rewritten and the failing lines)
@@ -20,11 +20,11 @@ const { spawnSync } = require('child_process');
 const here = __dirname;
 const SLUG = /^[a-z][a-z0-9_]*$/;
 // Words that look like slugs but name no record: places and lines the app names itself, kinds, answers.
-const NOT_IDS = new Set(['amounts', 'once', 'free', 'waiting', 'bills', 'fees', 'other', 'none', 'cfg', 'true', 'false', 'dont_know', 'month', 'week']);
+const NOT_IDS = new Set(['any', 'amounts', 'once', 'free', 'waiting', 'bills', 'fees', 'other', 'none', 'cfg', 'true', 'false', 'dont_know', 'month', 'week']);
 // Fields whose value is never an id (prose, kinds, currencies, device parts) and subtrees left as they are.
 const SKIP_KEYS = new Set(['why', 'note', 'notes', 'story', 'title', 'life', 'name', 'kind', 'k', 'question', 'frequency',
   'weekend_holiday', 'currency', 'cur', 'curs', 'country', 'code', 'src', 'dir', 'by', 'decisions', 'lines_note',
-  'raw', 'frozen', 'idb', 'ui', 'field', 'statement', 'per', 'rhythm', 'area',
+  'raw', 'frozen', 'idb', 'ui', 'field', 'avail', 'statement', 'per', 'rhythm', 'area',
   'written_in', 'open', 'alt_note', 'held_note', 'kind2', 'type', 'question2', 'texts', 'text']);
 // Fields whose slug value names a record (collected as ids).
 const REF_KEYS = new Set(['id', 'account', 'acct', 'schedule', 'place', 'goal', 'card', 'loan', 'kept_in', 'main_bank',
@@ -135,6 +135,8 @@ function rewriteString(s, map) {
   }).join('');
 }
 function rewrite(x, key, map, inArray) {
+  // A `why` given per account (`{ <account>: "sum" }`): its keys are ids, its words are left as they are.
+  if (key === 'why' && x && typeof x === 'object' && !Array.isArray(x)) return Object.fromEntries(Object.entries(x).map(([k, v]) => [map.has(k) ? map.get(k) : k, v]));
   if (skipped(key) || copy3831(x)) return x;
   // A map at the top of an answer whose keys are all ids (the `told` of each line, mg results keyed by record).
   if (key === null && x && typeof x === 'object' && !Array.isArray(x) && Object.keys(x).length && Object.keys(x).every(k => map.has(k))) key = '#map';
@@ -196,14 +198,16 @@ function run(suites, show) {
     if (suites.includes('rules')) for (const f of fs.readdirSync(path.join(here, 'rules')).filter(f => f.endsWith('.json')))
       count += rewriteFile(path.join(here, 'rules', f), path.join(tmp, 'rules', f), true, show);
     const env = Object.assign({}, process.env, { REALISTIC_IDS_INNER: '1' });
-    for (const s of suites) {
-      const runner = s === 'scenarios' ? path.join(tmp, 'ref', 'run_scenarios.js') : path.join(tmp, 'rules', 'run_rules.js');
+    // The scenarios are also checked by check_specs.js (its own readers of occurrence names), the rules by run_rules.js.
+    const runs = [].concat(suites.includes('scenarios') ? [['scenarios', path.join(tmp, 'ref', 'run_scenarios.js')], ['scenario specs', path.join(tmp, 'scenarios', 'check_specs.js')]] : [],
+      suites.includes('rules') ? [['rules', path.join(tmp, 'rules', 'run_rules.js')]] : []);
+    for (const [name, runner] of runs) {
       const r = spawnSync(process.execPath, [runner], { cwd: path.dirname(runner), env, encoding: 'utf8' });
       const out = (r.stdout || '') + (r.stderr || '');
-      const fails = out.split('\n').filter(l => /^FAIL /.test(l) || /^ {5}(expected|got) /.test(l));
+      const fails = out.split('\n').filter(l => /^(FAIL|BAD) /.test(l) || /^ {5}(expected|got) /.test(l));
       const last = out.trim().split('\n').pop();
       if (r.status !== 0) failed = true;
-      lines.push(`realistic ids, ${s}: ${last}${r.status !== 0 ? ' (FAILED)' : ''}`);
+      lines.push(`realistic ids, ${name}: ${last}${r.status !== 0 ? ' (FAILED)' : ''}`);
       if (show || r.status !== 0) for (const l of fails) lines.push('  ' + l);
     }
     lines.unshift(`Realistic-ids check [AJ1]: ${count} made-up ids rewritten to the ordinary form in ${tmp}`);

@@ -5,6 +5,11 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+// [AJ1] Occurrence names and built ids are read by the one shared reader, so ordinary ids (`k7qzpa-m2xq7ab9zt-41@...`)
+// are schedule ids like any other.
+const IDS = require('../rules/ids');
+const OCC_WHOLE = new RegExp('^(' + IDS.REF + ')@(' + IDS.DATE + ')$');
+const PE_ID = new RegExp('^pe:(' + IDS.REF + '@' + IDS.DATE + '):(' + IDS.REF + ')$');
 
 const DIGITS = { JPY: 0, PHP: 2, USD: 2, EUR: 2 };
 const KINDS = ['bank', 'cash', 'ewallet', 'wallet', 'investment', 'card', 'loan', 'paylater'];   // investment: its gap is a market move [B10, T watch]
@@ -12,7 +17,7 @@ const EVENT_KINDS = ['pay_in', 'money_in', 'spend', 'refund', 'bill_paid', 'card
   'place_money', 'period_end_answer',
   'period_start', 'adjust'];   // period_start: ps:<occurrence> with the chosen day [T1, T6]; adjust: an accepted difference, signed [T7]   // borrow: cash taken on a card [O5], or drawn on a loan [Q3]; place_money: money to place placed [R1]; period_end_answer: a pe: record with its moves [P2]
 const QUESTIONS = ['bank_today', 'safe_to_spend', 'days_to_next_pay', 'due_before_next_pay', 'not_seen_yet', 'card_due', 'total', 'not_explained',
-  'check_in_list', 'may_still_post', 'owed_now', 'headline', 'place', 'warnings', 'total_after_cards', 'later_on'];   // later_on: the 12-month warnings [B11, S4]
+  'check_in_list', 'may_still_post', 'owed_now', 'headline', 'place', 'warnings', 'total_after_cards', 'later_on', 'refused'];   // later_on: the 12-month warnings [B11, S4]; refused: a copy the model must refuse, by the decision named [X8, AJ1]
 const WE_RULES = ['move earlier', 'move later', 'none'];
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const TOLD = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}([+-]\d{2}:\d{2}|Z)?)?$/;   // a date, or a date and a time [H1], maybe with its offset (compared as moments, T watch)
@@ -98,6 +103,11 @@ function checkSum(file, where, why, expectedMinor, d, isDays) {
 }
 
 function checkAnswer(file, where, q, expected, why, d, askDate) {
+  if (q === 'refused') {   // [X8, AJ1] the decision the refusal cites, and words with no sum
+    if (typeof expected !== 'string' || !/^[A-Z]+\d*$/.test(expected)) bad(file, where, 'expected is the decision the refusal cites, like X8');
+    if (typeof why !== 'string' || why.includes('=')) bad(file, where, 'a refusal: why should be words with no sum');
+    return;
+  }
   if (q === 'days_to_next_pay') {
     if (!expected || typeof expected !== 'object' || !('days' in expected)) return bad(file, where, 'expected needs { days, next_pay }');
     if (expected.days === null || expected.late) {
@@ -303,7 +313,7 @@ function checkFile(fp) {
   }
   // [X3] The opening's `not_yet`: occurrences of this file's pay and bills due from the last pay to the setup day.
   for (const a of s.accounts || []) for (const o of (a.opening || {}).not_yet || []) {
-    const mm = String(o).match(/^((?:mv:[a-z]+:[A-Za-z0-9_.:-]+)|[a-z0-9_]+)@(\d{4}-\d{2}-\d{2})$/);   // a moved schedule too [X1, Y28]
+    const mm = String(o).match(OCC_WHOLE);   // a moved schedule too [X1, Y28], an ordinary one [AJ1]
     if (!mm || !(s.income || []).concat(s.bills || []).some(x => x.id === mm[1] && x.account === a.id) || mm[2] > a.opening.date) bad(file, `account ${a.id}`, `not_yet ${o}: an occurrence of a schedule of this account, due on or before the setup day [X3]`);
   }
 
@@ -331,7 +341,7 @@ function checkFile(fp) {
     if (e.unticked !== undefined && !(e.unticked === true && e.source && e.settles === undefined)) bad(file, w, 'unticked is only on an imported line, with no settles of its own [U2]');
     if (e.goal !== undefined && !goals.has(e.goal)) bad(file, w, `goal ${e.goal} not found`);
     if (e.settles !== undefined) {
-      const m = String(e.settles).match(/^((?:mv:[a-z]+:[A-Za-z0-9_.:-]+)|[a-z0-9_]+)@(\d{4}-\d{2}-\d{2})$/);
+      const m = String(e.settles).match(OCC_WHOLE);
       if (!m || !sched.has(m[1])) bad(file, w, `settles "${e.settles}" must be <schedule id>@<date>`);
     }
     if ('told' in e && e.told !== null && !(TOLD.test(e.told) && isDate(e.told.slice(0, 10)))) bad(file, w, 'told must be a date, a date and time, or null');
@@ -356,9 +366,9 @@ function checkFile(fp) {
     if (e.amount2 !== undefined && !(e.kind === 'pay_in' && typeof e.amount2 === 'number' && e.amount2 > 0)) bad(file, w, 'amount2 is the original amount of a pay in another currency, on pay_in only [Q4]');
     if (e.kind === 'place_money' && !((e.into === 'free' || e.into === 'waiting') && goals.has(e.to_place_of))) bad(file, w, 'place_money needs to_place_of (a removed goal) and into (free or waiting; into a goal is a set_aside with to_place_of) [R1]');
     // [T1] A period is named by the occurrence of the pay that starts it (of the period stream).
-    const periodOcc = o => { const mm = String(o).match(/^((?:mv:[a-z]+:[A-Za-z0-9_.:-]+)|[a-z0-9_]+)@\d{4}-\d{2}-\d{2}$/); return !!mm && (s.income || []).some(x => x.id === mm[1] && x.starts_period); };
+    const periodOcc = o => { const mm = String(o).match(OCC_WHOLE); return !!mm && (s.income || []).some(x => x.id === mm[1] && x.starts_period); };
     if (e.kind === 'period_end_answer') {
-      const mm = String(e.id).match(/^pe:((?:mv:[a-z]+:[A-Za-z0-9_.:-]+|[a-z0-9_]+)@\d{4}-\d{2}-\d{2}):((?:mv:[a-z]+:[A-Za-z0-9_.-]+)|[a-z0-9_]+)$/);
+      const mm = String(e.id).match(PE_ID);
       if (!mm || !periodOcc(mm[1]) || mm[2] !== e.place || !Array.isArray(e.moves) || !e.moves.length) bad(file, w, 'a period-end answer is the record pe:<the occurrence that started the period>:<place> holding its moves, dated the period\'s last day [P2, O2, T1]');
       for (const mv of e.moves || []) if (!(mv.to === 'free' || mv.to === 'waiting' || mv.to === e.place || goals.has(mv.to)) || typeof mv.amount !== 'number' || mv.amount <= 0) bad(file, w, 'each move needs to (a place) and a positive amount [P2]');
     } else if (e.kind === 'period_start') {
