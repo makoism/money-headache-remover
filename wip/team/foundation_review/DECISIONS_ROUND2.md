@@ -413,3 +413,12 @@ AX4. Helpers own whole areas on their own branches and commit there. The main se
 
 ## AY. qc-foundation on WIRING_PLAN (23 Nov evening JST): FAIL, four small slice 1 fixes, all accepted
 AY1 to AY4 are F1 to F4 in WIRING_PLAN.md "Corrections". There is no second review round (AX3). The checks named there are the gate.
+
+## AZ. How we build from here (23 Nov night JST, from the deep research on building with agents)
+AZ1. The new screens are their own small page, wip/team/app3/, built on the new engine. It reuses the style tokens, art and pixel files, and the old app stays frozen beside it as Mako's fallback. app3 reads old saved data only through engine/move.js and never writes it. This replaces WIRING_PLAN's switch, guard lines, retire list and changeover commit. engine_equiv stays as an engine-only test.
+AZ2. Each lane merges itself, one at a time: rebase on wip-38.31, run app3/check3.sh and ./check.sh at the quick level, then push. A rejected push means rebase and check again. The main session sets the order of work, decides, and decides what reaches Mako. main and deploys stay with Mako.
+AZ3. Reviews: one qc-foundation pass on a plan and one at the end of a slice, correctness only. Findings outside the slice go on a list.
+AZ4. No new copies of the rules and no new scenario rounds. Add invariant checks instead (for example: bank today equals the last check plus what has settled since; safe to spend is never more than bank today minus what is due before pay), plus a daily walk of Mako's shape through the real page.
+AZ5. Each slice keeps a FEATURES.json, and an agent flips "passes" only when its test is green.
+AZ6. Mako gets something he can open as soon as slice 1 runs, then at each step after.
+Sources: anthropic.com/engineering/effective-harnesses-for-long-running-agents, anthropic.com/engineering/building-c-compiler, code.claude.com/docs/en/best-practices, claude.com/blog/building-multi-agent-systems-when-and-how-to-use-them, metr.org (2025 study, 2026 update), DORA 2025. Knight and Leveson 1986: separately written versions share failures.
