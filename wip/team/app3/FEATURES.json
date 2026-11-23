@@ -9,7 +9,7 @@
   { "name": "No money maths in screens", "test": "tests/no_maths.js", "passes": true },
   { "name": "Idle CPU, long tasks, no outside requests, no errors", "test": "tests/guard3.js", "passes": true },
   { "name": "Opens offline", "test": "tests/offline.js", "passes": true },
-  { "name": "Period dates on Home (needs lane A's res.period)", "test": "tests/e3_period.js", "passes": false },
+  { "name": "Period dates on Home and the next pay state (res.period)", "test": "tests/e3_period.js", "passes": true },
   { "name": "Setup, short (setup3)", "test": "tests/e3_setup.js", "passes": false }
  ]
 }

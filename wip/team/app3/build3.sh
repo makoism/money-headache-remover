@@ -1,9 +1,10 @@
 #!/bin/bash
 # Builds app3/index.html: slice 1 of the new engine as its own small page (DECISIONS_ROUND2 AZ1).
 # It reuses, copied in at build time and never edited: the style tokens of ../style.css (the :root palettes only),
-# ../art.js and ../pixel.js, and the engine (../engine/). The old app is not touched.
+# ../art.js and ../pixel.js, the engine (../engine/) and the shared screen pieces (../screens/). The old app is not touched.
 cd "$(dirname "$0")" || exit 1
 ENGINE="dates.js units.js ids.js schedules.js ledger.js lookahead.js"
+SCREENS="money.js names.js status.js inputs.js provenance.js messages.js"
 OUT=index.html
 {
 cat <<'HEAD'
@@ -25,6 +26,7 @@ echo '<body>'
 cat src/shell.html
 echo '<script>'
 for f in $ENGINE; do cat "../engine/$f"; done
+for f in $SCREENS; do cat "../screens/$f"; done
 echo '</script>'
 echo '<script>'
 echo '(function () {'

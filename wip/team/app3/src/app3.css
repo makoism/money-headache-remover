@@ -40,7 +40,7 @@ body::before { content: ''; position: fixed; inset: 0; z-index: -1; background: 
 .a3-field { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
 .a3-field label { font-weight: 600; }
 .a3-err { color: var(--bad); font-size: var(--t-sm); margin: 4px 0 0; min-height: 1em; }
-.a3-msg { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); max-width: calc(100% - 32px); background: var(--float); color: var(--ink); border-radius: 980px; padding: 10px 18px; font-size: var(--t-sm); box-shadow: 0 6px 20px rgba(0, 0, 0, .2); opacity: 0; transition: opacity .25s; pointer-events: none; }
-.a3-msg.on { opacity: 1; }
+.a3-msg:empty { display: none; }
+.a3-msg .burrow-msg { background: var(--acc-tint2); color: var(--ink); border-radius: var(--r-ctl); padding: 10px 14px; font-size: var(--t-sm); }
 .a3-later { font-size: var(--t-sm); color: var(--ink2); margin: 0; }
 @media (max-width: 360px) { .a3-tick { grid-template-columns: 28px 1fr; } .a3-tick .a3-in { grid-column: 2; } }

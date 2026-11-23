@@ -1304,8 +1304,8 @@ body::before { content: ''; position: fixed; inset: 0; z-index: -1; background: 
 .a3-field { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
 .a3-field label { font-weight: 600; }
 .a3-err { color: var(--bad); font-size: var(--t-sm); margin: 4px 0 0; min-height: 1em; }
-.a3-msg { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); max-width: calc(100% - 32px); background: var(--float); color: var(--ink); border-radius: 980px; padding: 10px 18px; font-size: var(--t-sm); box-shadow: 0 6px 20px rgba(0, 0, 0, .2); opacity: 0; transition: opacity .25s; pointer-events: none; }
-.a3-msg.on { opacity: 1; }
+.a3-msg:empty { display: none; }
+.a3-msg .burrow-msg { background: var(--acc-tint2); color: var(--ink); border-radius: var(--r-ctl); padding: 10px 14px; font-size: var(--t-sm); }
 .a3-later { font-size: var(--t-sm); color: var(--ink2); margin: 0; }
 @media (max-width: 360px) { .a3-tick { grid-template-columns: 28px 1fr; } .a3-tick .a3-in { grid-column: 2; } }
 </style>
@@ -1316,9 +1316,9 @@ body::before { content: ''; position: fixed; inset: 0; z-index: -1; background: 
     <p class="a3-brand"><span id="a3Pix"></span>the burrow</p>
     <p class="a3-try" id="a3Try" hidden></p>
   </header>
+  <div class="a3-msg" id="a3Msg"></div>
   <div id="a3Home" aria-live="polite"></div>
   <section class="a3-sheet" id="a3Check" role="dialog" aria-modal="true" aria-labelledby="a3CheckT" hidden></section>
-  <div class="a3-msg" id="a3Msg" role="status" aria-live="polite"></div>
 </main>
 <script>
 /* The Burrow engine: days and moments (SCHEMA_V3 section 0, decisions D8, H1, X9, AN4, T watch).
@@ -2363,7 +2363,8 @@ body::before { content: ''; position: fixed; inset: 0; z-index: -1; background: 
         for (const cl of closes) {
           if (cl > last) break;
           apply(cl);
-          const folding = list.filter(b => !b.into && b.land <= cl);   // [I3] only statements whose payment day has come
+          // [I3] only statements whose payment day has come; [AU6, H3] a credit carries to the next statement at once
+          const folding = list.filter(b => !b.into && (b.land <= cl || b.left < 0));
           const carried = folding.reduce((t, b) => t + b.left, 0);
           const interest = interestOn(carried, c.apr);
           const amount = carried + interest + openAmt;
@@ -2433,7 +2434,9 @@ body::before { content: ''; position: fixed; inset: 0; z-index: -1; background: 
       for (const p of points) {
         const item = !p.paid && p.basis > 0;
         if (item) { p.part = carries ? planned(p.amount, p.due) : Math.max(0, p.basis - p.held); p.asks = carries ? p.part : p.basis; unpaid.push(p); }
-        const asked = !item ? 0 : carries ? p.part + p.held : p.basis;
+        // [AU3, I3] a statement that is no item (ticked, or nothing owed) still carries on what older items ask and is
+        // still inside its remainder, so a remainder carried on again is asked once
+        const asked = !item ? Math.min(p.held, Math.max(0, p.basis)) : carries ? p.part + p.held : p.basis;
         if (p.into) p.into.held += asked;
         else { stillAsked += asked; if (!notSure && nextPoint && p.land <= nextPoint.closes) projCarried += p.left - asked; }
       }
@@ -2564,7 +2567,11 @@ body::before { content: ''; position: fixed; inset: 0; z-index: -1; background: 
     };
     // the period a day is in, named by the pay that started it: started, else the last pay landing on or before it
     const occOn = (start, day) => (start != null && occByStart[start] ? occByStart[start]
-      : (pays.filter(o => o.land <= day).sort((x, z) => x.land - z.land).pop() || {}).id || null);
+      : (pays.filter(o => (o.land <= day && (o.settled || o.land <= firstOpenDay)) || (o.due <= firstOpenDay && firstOpenDay <= day)).sort((x, z) => startDayOf(x) - startDayOf(z)).pop() || {}).id || null);
+    // [H8, AU4, AU5] a pay not ticked (still to come, late, or not seen) never starts a period; one inside the opening has [AU7]
+    // [AU7] a pay inside the opening (due on or before the setup day) starts its period by the setup day at the latest
+    const startDayOf = o => (o.due <= firstOpenDay ? Math.min(o.land, firstOpenDay) : o.land);
+    const firstOpenDay = Object.keys(openEv).length ? Math.min(...Object.keys(openEv).map(openDay)) : -Infinity;
 
     // [AU1] The period running now, converted like every other: from the pay that started it (or the day it started) to
     // the next pay. Its amount for a source by the units rules.
@@ -2572,8 +2579,8 @@ body::before { content: ''; position: fixed; inset: 0; z-index: -1; background: 
       const started = periodStartDays.length ? Math.max(...periodStartDays) : null;
       const occ = occOn(started, today);
       const o = occ && pays.find(p => p.id === occ);
-      const start = started !== null ? started : o ? o.land : null;
-      const next = nextPays.filter(p => p.land > today)[0];
+      const start = started !== null ? started : o ? startDayOf(o) : null;
+      const next = nextPays.slice().sort((x, z) => x.land - z.land)[0];   // [AU4, AU5] a pay counted today or late ends it
       const end = next ? next.land : start !== null ? start + 30 : null;
       return { started, occ, start, end };
     }
@@ -2655,12 +2662,13 @@ body::before { content: ''; position: fixed; inset: 0; z-index: -1; background: 
       function openingShares(acctId) {
         if (opening[acctId]) return opening[acctId];
         const split = (openEv[acctId] && openEv[acctId].split) || {}, od = openDay(acctId), out = { lines: {}, free: null };
-        const before = pays.filter(o => o.land <= od).sort((x, z) => x.land - z.land), after = pays.filter(o => o.land > od).sort((x, z) => x.land - z.land);
+        const inOpening = o => o.land <= od || o.due <= od;   // [AU7]
+        const before = pays.filter(inOpening).sort((x, z) => x.land - z.land), after = pays.filter(o => !inOpening(o)).sort((x, z) => x.land - z.land);
         // [I4] shared by days left: from the setup day to the period's last day, both counted, over the period's days
-        const share = before.length && after.length ? { d: after[0].land - od, D: after[0].land - before[before.length - 1].land } : null;
+        const share = before.length && after.length ? { d: after[0].land - od, D: after[0].land - startDayOf(before[before.length - 1]) } : null;
         // [AS, AU1] of the amount of the period holding the opening, by the units rules
         const holding = before.length ? before[before.length - 1] : null;
-        const openAmount = (src, per) => { const a = periodAmount(src, null, occOn(null, od)); return holding && after.length ? perPeriod({ per, amount: a }, holding.land, after[0].land, holding.id) : a; };
+        const openAmount = (src, per) => { const a = periodAmount(src, null, occOn(null, od)); return holding && after.length ? perPeriod({ per, amount: a }, startDayOf(holding), after[0].land, holding.id) : a; };
         let leftOver = 0;
         for (const l of lineSrcs.filter(x => moneyAcct(lineAcct(x)) === acctId)) {
           const typed = (split.lines || {})[l.id], amount = openAmount(l, l.per);
@@ -2716,6 +2724,26 @@ body::before { content: ''; position: fixed; inset: 0; z-index: -1; background: 
     }
     const planLeft = planNow();
 
+    // ----- the period in the answer [F8, T1, AU4, AU5; WIRING_PLAN 1.4 step 2] -----
+    // start: the day the period running now started; end: the day before the next period-starting pay lands, or today
+    // while that pay is due or late and not ticked (`waitingForPay`); startsWith: the occurrence of the pay that started it
+    if (periodStream) {
+      const n = nowPeriod();
+      // [F4, H8, F3, G4] its next pay: the first pay after the one that started it not ticked yet. Coming (today or
+      // later), late (past its day, inside its posting window, still counted) or not seen (after the window, no longer
+      // counted). While it is due, late or not seen the period runs to today: its end is never a day already past.
+      const next = pays.filter(o => !o.settled && (n.start === null || o.land > n.start)).sort((x, z) => x.land - z.land)[0];
+      const waiting = !!next && next.land <= today;
+      const state = !next ? null : next.land >= today ? 'coming' : nextPays.includes(next) ? 'late' : 'notSeen';
+      res.period = {
+        start: n.start === null ? null : dayStr(n.start),
+        end: next ? dayStr(waiting ? today : next.land - 1) : n.end === null ? null : dayStr(Math.max(today, n.end - 1)),
+        startsWith: n.occ, waitingForPay: waiting,
+        nextPay: next ? { occ: next.id, due: dayStr(next.due), state } : null,
+        lines: (planLeft.lines || []).map(l => ({ id: l.src.id, name: l.name, acct: l.acct, per: l.per, amount: l.amount, left: l.left })),
+        free: planLeft.free ? { acct: planLeft.free.acct, per: planLeft.free.per, amount: planLeft.free.amount, left: planLeft.free.left } : null };
+    } else res.period = null;   // [B4] no fixed pay: no periods
+
     // ----- the horizon [SCHEMA 10.3, B4] -----
     let horizon;
     if (periodStream) { const second = nextPays[1] || nextPays[0]; horizon = Math.max(second ? second.land : today, today + HORIZON_MIN_DAYS); }
@@ -2746,10 +2774,12 @@ body::before { content: ''; position: fixed; inset: 0; z-index: -1; background: 
       if (planLeft.free && planLeft.free.acct === id) lines.push(planLeft.free);
       if (!lines.length) return list;
       if (periodStream) {
-        const starts = nextPays.filter(p => p.land > today);
+        // [AU4, AU5] every pay the walk counts (due today, or late and still expected) brings its period's lines, on the
+        // day the walk counts the pay
+        const starts = nextPays.slice().sort((x, z) => x.land - z.land);
         starts.forEach((p, i) => {
           const end = starts[i + 1] ? starts[i + 1].land : p.land + 30;
-          for (const l of lines) list.push({ land: p.land, amount: perPeriod({ per: l.per, amount: periodAmount(l.src, p.land, p.id) }, p.land, end, p.id), label: l.name + ' for the period from ' + short(p.land) });
+          for (const l of lines) list.push({ land: Math.max(p.land, today), amount: perPeriod({ per: l.per, amount: periodAmount(l.src, p.land, p.id) }, p.land, end, p.id), label: l.name + ' for the period from ' + short(p.land) });
         });
       } else {
         // [B4, M9, M10] no fixed pay: by day. A monthly amount x 12 / the year's days a day, rounded down, the rest of each
@@ -2875,7 +2905,7 @@ body::before { content: ''; position: fixed; inset: 0; z-index: -1; background: 
 
     // ----- days to next pay [F3, F8, F12, F13, H8] -----
     const np = nextPays[0];
-    res.daysToNextPay = np ? { days: np.land - today, next_pay: dayStr(np.land), item: np.id, late: np.land < today || undefined } : { days: null };
+    res.daysToNextPay = np ? { days: Math.max(0, np.land - today), next_pay: dayStr(np.land), item: np.id, late: np.land < today || undefined } : { days: null };
     if (!periodStream) {   // [B4] "lasts about N weeks"
       const lastDay = homeSpend.map(id => walk(id, today + LATER_ON_DAYS, res.accounts[id].minimum).firstBelowZero);
       res.lastsAboutWeeks = planLeft.lines || planLeft.free ? Math.floor((Math.min(...lastDay.map(d => (d === null ? today + LATER_ON_DAYS : d))) - today) / 7) : null;
@@ -2926,6 +2956,702 @@ body::before { content: ''; position: fixed; inset: 0; z-index: -1; background: 
   if (node) module.exports = api;
   else (root.BurrowEngine = root.BurrowEngine || {}).lookahead = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
+/* The one amount formatter every screen uses (DECISIONS_ROUND2 C, sweep2_repeats A11 "$180" next to "$180.00", B3, B4).
+   Amounts come in as whole minor units of an ISO 4217 currency (cents, or yen), the shape the engine returns. This file
+   writes them and reads them back from a box. It never adds, splits or rounds an amount: that is the engine's job.
+   Plain browser JavaScript, no dependencies. In a page it is BurrowScreens.money; in node, require('./money.js'). */
+(function (root, make) {
+  const m = make();
+  if (typeof module === 'object' && module.exports) module.exports = m;
+  else (root.BurrowScreens = root.BurrowScreens || {}).money = m;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+
+  /* the minus sign in front of an amount, joined to it by a word joiner (U+2060, no width, no break) so a line never ends
+     on the sign with the amount on the next line (QC round 7, ui0.js MINUS). Screen readers and copy and paste skip it. */
+  const MINUS = '−⁠';
+  /* the signs people know. Any other code is written as its letters and a space ("CHF 19.99", "BHD 1.234"). */
+  const SIGNS = { USD: '$', JPY: '¥', EUR: '€', GBP: '£', PHP: '₱', KRW: '₩', INR: '₹', CNY: '¥' };
+  /* whole units a box takes at most: 12 digits, so every amount stays an exact whole number of minor units */
+  const MAX_WHOLE_DIGITS = 12;
+
+  function code3(code) {
+    if (typeof code !== 'string' || !/^[A-Z]{3}$/.test(code)) throw new Error('money: currency must be an ISO 4217 code like "USD", got ' + JSON.stringify(code));
+    return code;
+  }
+  const digitsCache = {};
+  /* minor units per currency, from ISO 4217 as the platform knows it (JPY 0, USD 2, BHD 3) */
+  function digits(code) {
+    code3(code);
+    if (!(code in digitsCache)) {
+      let d = 2;
+      try { d = new Intl.NumberFormat('en', { style: 'currency', currency: code }).resolvedOptions().maximumFractionDigits; } catch (e) { d = 2; }
+      digitsCache[code] = d;
+    }
+    return digitsCache[code];
+  }
+  function symbol(code) { code3(code); return SIGNS[code] || code + ' '; }
+  function checkMinor(n) {
+    if (typeof n !== 'number' || !Number.isSafeInteger(n)) throw new Error('money: amounts are whole minor units (an exact integer), got ' + String(n));
+    return n;
+  }
+  /* splits |n| into its whole and minor digits as text, so nothing goes through a decimal number */
+  function parts(n, d) {
+    const s = String(Math.abs(n)).padStart(d + 1, '0');
+    return { whole: s.slice(0, s.length - d), frac: d ? s.slice(s.length - d) : '' };
+  }
+  const hasCents = (n, d) => d > 0 && /[1-9]/.test(parts(n, d).frac);
+  const group = w => w.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+  /* format(minor, code, { cents, sign })
+     cents: true writes every decimal the currency has; false writes whole units and refuses an amount that has cents
+     (they are never dropped); left out, cents show only when the amount has them. sign: false leaves out the currency sign. */
+  function format(n, code, opts) {
+    opts = opts || {};
+    checkMinor(n);
+    const d = digits(code);
+    const p = parts(n, d);
+    let cents = opts.cents;
+    if (cents === undefined) cents = hasCents(n, d);
+    if (cents === false && hasCents(n, d)) throw new Error('money: ' + n + ' ' + code + ' has cents, but the screen asked for whole amounts. Build the formatter from every amount on the screen');
+    const body = group(p.whole) + (cents && d ? '.' + p.frac : '');
+    return (n < 0 ? MINUS : '') + (opts.sign === false ? '' : symbol(code)) + body;
+  }
+
+  /* formatter(code, amounts): one way of writing cents for one screen or one sentence. When any amount on it has cents,
+     every amount is written with cents (€20.00 beside €80.01, never €20); otherwise all are whole. */
+  function formatter(code, amounts) {
+    const d = digits(code);
+    const cents = (amounts || []).some(n => hasCents(checkMinor(n), d));
+    return (n, opts) => format(n, code, Object.assign({}, opts, { cents }));
+  }
+
+  /* what an input box shows: plain digits, a hyphen for minus, decimals only when the amount has them */
+  function toInput(n, code) {
+    checkMinor(n);
+    const d = digits(code), p = parts(n, d);
+    return (n < 0 ? '-' : '') + p.whole + (hasCents(n, d) ? '.' + p.frac : '');
+  }
+
+  /* parse(text, code, { allowMinus }): what a person typed, as whole minor units, or the reason it can't be read:
+     'empty', 'not_a_number', 'decimals' (more than the currency has, never rounded), 'minus', 'too_big' */
+  function parse(text, code, opts) {
+    opts = opts || {};
+    const d = digits(code);
+    let s = String(text == null ? '' : text).normalize('NFKC').replace(/⁠/g, '').replace(/−/g, '-').replace(/\s+/g, '');
+    const sign = symbol(code).trim();
+    s = s.split(sign).join('').split(code).join('');
+    if (s === '') return { ok: false, reason: 'empty' };
+    const m = /^(-)?(\d[\d,]*)?(?:\.(\d*))?$/.exec(s);
+    if (!m || (!m[2] && !m[3])) return { ok: false, reason: 'not_a_number' };
+    const whole = (m[2] || '0').replace(/,/g, '').replace(/^0+(?=\d)/, ''), frac = m[3] || '';
+    if (frac.length > d) return { ok: false, reason: 'decimals' };
+    if (whole.length > MAX_WHOLE_DIGITS) return { ok: false, reason: 'too_big' };
+    if (m[1] && !opts.allowMinus) return { ok: false, reason: 'minus' };
+    const minor = Number(whole + frac.padEnd(d, '0'));
+    return { ok: true, minor: m[1] && minor !== 0 ? -minor : minor };
+  }
+
+  return { MINUS, digits, symbol, format, formatter, toInput, parse };
+});
+/* The one name table (DECISIONS_ROUND2 C, sweep2_repeats A8, LESSONS lesson 2). Each label is tied to the engine figure
+   it names (a path in the engine result, SCHEMA_V3 section 12; `*` stands for an account, card, loan or place id), so one
+   figure has one name and one name one figure. A screen never writes a label for a money figure itself: it asks here.
+
+   state:  'decided'  a written decision names it (source says which)
+           'in use'   the app's wording today, no clash found, kept until Mako's copy pass says otherwise
+           'for Mako' an open choice for his copy pass; `choices` lists the options, the label is the one in use until then
+   engine: false when the engine result has no such field yet (the screens need it before wiring)
+
+   Plain browser JavaScript, no dependencies. In a page it is BurrowScreens.names; in node, require('./names.js'). */
+(function (root, make) {
+  const m = make();
+  if (typeof module === 'object' && module.exports) module.exports = m;
+  else (root.BurrowScreens = root.BurrowScreens || {}).names = m;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+
+  const NAMES = {
+    bankToday: {
+      label: 'Bank today', figures: ['accounts.*.bank'], state: 'for Mako', choices: ['Bank today', 'In your bank'],
+      source: 'MAKO_RUN 2.1; the check itself is decided: one dated question, what does your bank show today (LESSONS lesson 1, sweep2_repeats C)',
+      note: 'shown with its day, see bankAsOf',
+    },
+    bankAsOf: {
+      label: 'Checked on', figures: ['accounts.*.asOf'], state: 'for Mako', choices: ['Checked on', 'As of', 'Typed on'],
+      source: 'DECISIONS_ROUND2 A1, F24 (each figure carries its day, its age shown)',
+    },
+    bankAfterCards: {
+      label: 'Bank after the cards are paid', figures: ['total.afterCards'], state: 'decided',
+      source: 'DECISIONS_ROUND2 F10 (Mako, A5); DECISIONS.md 169',
+      note: 'for Mako: the engine figure is Total less what is owed on the cards, so with a second account (savings, cash) it is more than the bank alone. Either the label becomes "Total after the cards are paid" or the engine gives a per-bank figure',
+    },
+    safeToSpend: {
+      label: 'Safe to spend', figures: ['safeToSpend.headline'], state: 'decided',
+      source: 'DECISIONS_ROUND2 B and F9 (one headline); MAKO_RUN 1.2 choice C',
+      note: 'whether it reads "Safe to spend today" is for Mako',
+    },
+    safeFromAccount: {
+      label: 'Safe to spend from this account', figures: ['accounts.*.headroom'], state: 'for Mako',
+      choices: ['Safe to spend from this account', 'Room in this account'],
+      source: 'DECISIONS_ROUND2 F9 (each account walked and warned on its own)',
+    },
+    shortBy: {
+      label: 'Short by', figures: ['safeToSpend.shortfall'], state: 'for Mako', choices: ['Short by', 'Under your minimum by'],
+      source: 'MAKO_RUN 2.2 (one word for short)',
+    },
+    freeToSpendLeft: {
+      label: 'Free to spend left', figures: ['freeToSpend.left'], state: 'for Mako', engine: false,
+      choices: ['Free to spend left', 'Left to spend'],
+      source: 'COPY_QC8_FOR_MAKO one word per thing (four names today); MAKO_RUN 2.5',
+      note: 'the engine reads plan.free.left as the cap on safe to spend but does not return it; the screens need it returned',
+    },
+    notPlacedYet: {
+      label: 'Not placed yet', figures: ['toPlace.*.amount'], state: 'decided',
+      source: 'QC_ROLES shared glossary ("say not placed yet"); MAKO_RUN 2.6 asks only to confirm',
+    },
+    setAside: {
+      label: 'Set aside', figures: ['places.*.kept'], state: 'for Mako', choices: ['Set aside', 'Saved'],
+      source: 'MAKO_RUN 2.4 ("Saved" names two figures today); DECISIONS.md new foundation 3 ("Kept in my bank, set aside")',
+    },
+    placeDue: {
+      label: 'Next due', figures: ['places.*.due'], state: 'for Mako', choices: ['Next due', 'Needed by'],
+      source: 'SCHEMA_V3 section 12 (each place\'s money and when it is next due)',
+    },
+    owed: {
+      label: 'Still owed', figures: ['cards.*.owedNow', 'owed.*.owedNow'], state: 'decided',
+      source: 'QC_ROLES shared glossary (paid off, still owed); DECISIONS_ROUND2 F18, F19',
+    },
+    nextPayment: {
+      label: 'Next payment', figures: ['cards.*.next.amount', 'owed.*.next.amount'], state: 'for Mako',
+      choices: ['Next payment', 'To pay next'], source: 'SCHEMA_V3 section 12 (each card\'s and loan\'s next payment)',
+    },
+    total: {
+      label: 'Total', figures: ['total.amount'], state: 'decided', source: 'QC_ROLES shared glossary; VOICE D2',
+    },
+    totalBeside: {
+      label: 'Also held', figures: ['total.beside'], state: 'for Mako', choices: ['Also held', 'In other currencies'],
+      source: 'DECISIONS_ROUND2 F11 (other currencies beside Total, never converted)',
+    },
+    dueBeforeNextPay: {
+      label: 'Due before next pay', when: { noFixedPay: 'Due in the next 30 days' }, figures: ['dueBeforeNextPay.total'], state: 'decided',
+      source: 'DECISIONS_ROUND2 F7, F13, F21',
+    },
+    notSeenYet: {
+      label: 'Not seen yet', figures: ['notSeenYet.items'], state: 'decided', source: 'DECISIONS_ROUND2 F3, F4',
+    },
+    mayStillPost: {
+      label: 'May still go through', figures: ['mayStillPost'], state: 'for Mako', choices: ['May still go through', 'Still on its way'],
+      source: 'DECISIONS_ROUND2 F4, Z2 (inside the posting window)',
+    },
+    nextPay: {
+      label: 'Next pay', figures: ['daysToNextPay.next_pay'], state: 'in use', source: 'DECISIONS_ROUND2 F3, F8; the app\'s pay wording',
+    },
+    lowest: {
+      label: 'Lowest point', figures: ['accounts.*.lowest'], state: 'for Mako', choices: ['Lowest point', 'Lowest before pay'],
+      source: 'sweep2_repeats A8 (a figure the new engine adds)',
+    },
+    minimum: {
+      label: 'Keep at least', figures: ['accounts.*.minimum'], state: 'decided', source: 'DECISIONS.md new foundation 5 (Mako, 23 Nov)',
+    },
+    laterOn: {
+      label: 'Later on', figures: ['laterOn'], state: 'decided', source: 'DECISIONS_ROUND2 B11 ("Later on: Jul 2027 ends below zero")',
+    },
+    lastsAbout: {
+      label: 'Lasts about', figures: ['lastsAboutWeeks'], state: 'decided', source: 'DECISIONS_ROUND2 B4 ("lasts about N weeks")',
+    },
+    oldestInput: {
+      label: 'Oldest figure from', figures: ['safeToSpend.oldestInput'], state: 'for Mako', choices: ['Oldest figure from', 'Based on figures from'],
+      source: 'DECISIONS_ROUND2 A1 (safe to spend reports its oldest input)',
+    },
+    checkInList: {
+      label: 'To tick off', figures: ['checkIn.toConfirm'], state: 'for Mako', choices: ['To tick off', 'Since your last check'],
+      source: 'DECISIONS_ROUND2 A2 (expected items since the last check-in, ticked by default)',
+    },
+    period: {
+      label: 'This pay period', figures: ['period.start', 'period.end'], state: 'for Mako', engine: false,
+      choices: ['This pay period', 'This period', 'Until next pay'],
+      source: 'LESSONS lesson 1 (periods run pay to pay); QC_ROLES glossary "This month" no longer fits a pay period',
+      note: 'written with periodLabel, "10 Nov to 9 Dec"; the engine works out period starts but does not return them yet',
+    },
+  };
+
+  function label(key, ctx) {
+    const n = NAMES[key];
+    if (!n) throw new Error('names: "' + key + '" is not in the name table (screens/names.js); add it there, never on a screen');
+    if (ctx && n.when) for (const k of Object.keys(n.when)) if (ctx[k]) return n.when[k];
+    return n.label;
+  }
+  function byFigure(figure) {
+    for (const k of Object.keys(NAMES)) if (NAMES[k].figures.includes(figure)) return k;
+    return null;
+  }
+  function labelKey(text) {
+    const low = String(text).toLowerCase();
+    for (const k of Object.keys(NAMES)) if ([NAMES[k].label].concat(Object.values(NAMES[k].when || {})).some(l => l.toLowerCase() === low)) return k;
+    return null;
+  }
+  /* check([{ label, figure }]): what a screen shows, label beside figure. Returns one line per mismatch, none when right. */
+  function check(shown) {
+    const out = [];
+    for (const s of shown) {
+      const k = labelKey(s.label);
+      if (!k) { out.push('"' + s.label + '" is not in the name table'); continue; }
+      if (!NAMES[k].figures.includes(s.figure)) out.push('"' + s.label + '" names ' + NAMES[k].figures.join(' and ') + ', not ' + s.figure);
+    }
+    return out;
+  }
+  const forMako = () => Object.keys(NAMES).filter(k => NAMES[k].state === 'for Mako')
+    .map(k => ({ key: k, label: NAMES[k].label, choices: NAMES[k].choices, source: NAMES[k].source, note: NAMES[k].note }));
+  const notInEngine = () => Object.keys(NAMES).filter(k => NAMES[k].engine === false);
+
+  /* days, as VOICE says: day then short month, "10 Nov" */
+  const MONTHS = { '01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr', '05': 'May', '06': 'Jun', '07': 'Jul', '08': 'Aug', '09': 'Sep', '10': 'Oct', '11': 'Nov', '12': 'Dec' };
+  function parseDay(s) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(typeof s === 'string' ? s : '');
+    const d = m && new Date(m[0] + 'T00:00:00Z');
+    if (!m || !MONTHS[m[2]] || isNaN(d) || d.toISOString().slice(0, 10) !== m[0]) throw new Error('names: a day must be a real YYYY-MM-DD, got ' + JSON.stringify(s));
+    return { y: m[1], m: m[2], d: m[3].replace(/^0/, ''), s: m[0] };
+  }
+  function dayLabel(s, withYear) { const p = parseDay(s); return [p.d, MONTHS[p.m]].concat(withYear ? [p.y] : []).join(' '); }
+  /* "10 Nov to 9 Dec"; across the new year both days carry their year (for Mako: whether the year shows otherwise) */
+  function periodLabel(start, end) {
+    const a = parseDay(start), b = parseDay(end);
+    if (b.s < a.s) throw new Error('names: the period ends before it starts: ' + start + ' to ' + end);
+    const years = a.y !== b.y;
+    return dayLabel(start, years) + ' to ' + dayLabel(end, years);
+  }
+
+  return { NAMES, label, byFigure, labelKey, check, forMako, notInEngine, dayLabel, periodLabel };
+});
+/* The one status every screen reads (DECISIONS_ROUND2 C, sweep2_repeats A1 and B2, LESSONS lesson 2). It is worked out
+   from the engine's result only (SCHEMA_V3 section 12: safe to spend, warnings, next pay, not seen yet, the check-in
+   list), so Home, Plan, setup and every sheet say the same thing about the same money. No screen writes its own verdict:
+   a screen shows status.text, or picks its own words by status.state and status.reason.code, nothing else.
+
+   statusOf(result, ctx) -> frozen { state, level, reason, next, also, underlying, text }
+     ctx.currency  the home currency code (required; amounts in the words are written in it)
+     ctx.origin    'typed' or 'sample' (required, from provenance.js): sample numbers are never judged as the person's
+     ctx.names     { accountId: 'Main bank' } for the words, optional
+     ctx.staleDays a bank figure older than this asks for a check-in (7 until Mako says otherwise)
+
+   One state, in this order (the first that is true wins, the rest go in `also` so they can sit under it):
+     sample > empty > short > warning > question > late > check > zero > ok
+   Plain browser JavaScript. In a page it is BurrowScreens.status (load money.js and names.js first). */
+(function (root, make) {
+  const dep = n => (typeof module === 'object' && module.exports ? require('./' + n + '.js') : root.BurrowScreens[n]);
+  const m = make(dep('money'), dep('names'));
+  if (typeof module === 'object' && module.exports) module.exports = m;
+  else (root.BurrowScreens = root.BurrowScreens || {}).status = m;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (money, names) {
+  'use strict';
+
+  const STALE_DAYS = 7;   // for Mako: how old a bank figure may get before the status asks for a check-in
+  const LEVEL = { sample: 'wait', empty: 'wait', short: 'bad', warning: 'bad', question: 'wait', late: 'wait', check: 'wait', zero: 'wait', ok: 'good' };
+  /* engine warning codes (lookahead_ref.js): which change the state, which are notes under it */
+  const WARNING_STATE = { below_minimum: 'warning', check_again: 'question', gain_to_ask: 'question', minimum_other_currency: 'question' };
+  const NOTE_ONLY = ['card_other_currency', 'loan_other_currency', 'income_other_currency', 'spend_other_currency', 'reopened'];
+
+  /* every word the status says, all drafts for Mako's copy pass (VOICE: one-line notes have no full stop) */
+  const W = (text) => ({ text, forMako: true });
+  const WORDS = {
+    'state.sample': W('Sample numbers'),
+    'state.empty': W('No bank figure yet'),
+    'state.short': W('Not safe to spend'),
+    'state.warning': W('Under a minimum'),
+    'state.question': W('A question for you'),
+    'state.late': W('Pay not in yet'),
+    'state.check': W('Time to check in'),
+    'state.zero': W('Nothing safe to spend yet'),
+    'state.ok': W('Fine for now'),
+    'reason.sample_numbers': W('These numbers are made up - put yours in to see your own'),
+    'reason.no_figures': W('There\'s no bank figure yet'),
+    'reason.short': W('You\'re short by {amount}'),
+    'reason.short_on': W('You\'re short by {amount} on {day}'),
+    'reason.below_minimum': W('{account} goes {amount} under its minimum on {day}'),
+    'reason.gain_to_ask': W('{account} has more in it than the app expected'),
+    'reason.check_again': W('Check {account} again'),
+    'reason.minimum_other_currency': W('What\'s the minimum for {account} in its own currency'),
+    'reason.unknown_warning': W('Something about {account} needs a look'),
+    'reason.pay_late': W('Your pay due {since} isn\'t in yet'),
+    'reason.to_confirm_one': W('1 thing to tick off since {since}'),
+    'reason.to_confirm_many': W('{count} things to tick off since {since}'),
+    'reason.old_figure': W('Your bank figure is from {since}'),
+    'reason.nothing_safe': W('Nothing\'s safe to spend until pay on {until}'),
+    'reason.nothing_safe_no_pay': W('Nothing\'s safe to spend right now'),
+    'reason.free_used_up': W('Free to spend is used up until pay on {until}'),
+    'reason.safe': W('{amount} is safe to spend until pay on {until}'),
+    'reason.safe_no_pay': W('{amount} is safe to spend'),
+    'next.put_yours_in': W('Put your numbers in'),
+    'next.check_in': W('Check your bank'),
+    'next.move_money_in': W('Move money in before {day}'),
+    'next.move_money_in_now': W('Move money in or spend less'),
+    'next.answer': W('Answer the question'),
+    'next.check_in_when_it_lands': W('Check in when it lands'),
+    'next.wait_for_pay': W('It turns safe once your pay is in'),
+    'next.log_money_in': W('Log money in when it comes'),
+  };
+
+  function fill(key, p, ctx) {
+    const w = WORDS[key];
+    if (!w) throw new Error('status: no words for ' + key);
+    return w.text.replace(/\{(\w+)\}/g, (all, k) => {
+      const v = p[k];
+      if (v === undefined || v === null) throw new Error('status: ' + key + ' needs ' + k);
+      if (k === 'amount') return money.format(v, p.currency || ctx.currency);
+      if (k === 'day' || k === 'since' || k === 'until') return names.dayLabel(v);
+      if (k === 'account') return (ctx.names && ctx.names[v]) || v;
+      return String(v);
+    });
+  }
+  function reasonKey(r) {
+    if (r.code === 'short') return r.day ? 'reason.short_on' : 'reason.short';
+    if (r.code === 'to_confirm') return r.count === 1 ? 'reason.to_confirm_one' : 'reason.to_confirm_many';
+    if (r.code === 'nothing_safe') return r.until ? 'reason.nothing_safe' : 'reason.nothing_safe_no_pay';
+    if (r.code === 'safe') return r.until ? 'reason.safe' : 'reason.safe_no_pay';
+    return 'reason.' + r.code;
+  }
+  function nextKey(n) { return n.code === 'move_money_in' && !n.day ? 'next.move_money_in_now' : 'next.' + n.code; }
+
+  /* every condition that is true, in the order above; the first one is the state */
+  function conditions(r, ctx) {
+    const out = [];
+    const accounts = r.accounts || {};
+    const stp = r.safeToSpend || {};
+    const pay = r.daysToNextPay || {};
+    const until = pay.next_pay || null;
+    const warnings = r.warnings || [];
+    const below = warnings.filter(w => w.code === 'below_minimum').sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0));
+    if (!Object.keys(accounts).length) out.push({ state: 'empty', reason: { code: 'no_figures' }, next: { code: 'check_in' } });
+    if (stp.shortfall > 0) {
+      const day = below.length ? below[0].day : null;
+      out.push({ state: 'short', reason: { code: 'short', amount: stp.shortfall, currency: ctx.currency, day }, next: { code: 'move_money_in', day }, note: below.length ? 'below_minimum' : 'short' });
+    }
+    for (const w of below) out.push({ state: 'warning', reason: { code: 'below_minimum', account: w.account, amount: w.short, currency: (accounts[w.account] || {}).currency || ctx.currency, day: w.day }, next: { code: 'move_money_in', day: w.day }, note: 'below_minimum' });
+    for (const w of warnings) {
+      if (w.code === 'below_minimum' || NOTE_ONLY.includes(w.code)) continue;
+      const known = WARNING_STATE[w.code];
+      out.push({ state: known || 'question', reason: known ? { code: w.code, account: w.account } : { code: 'unknown_warning', warning: w.code, account: w.account }, next: { code: 'answer' }, note: w.code });
+    }
+    const paySeen = (r.notSeenYet && r.notSeenYet.items || []).find(i => i.direction === 'in');
+    if (pay.late || paySeen) out.push({ state: 'late', reason: { code: 'pay_late', since: pay.late ? pay.next_pay : paySeen.lands }, next: { code: 'check_in_when_it_lands' }, note: 'pay_late' });
+    const toConfirm = (r.checkIn && r.checkIn.toConfirm) || [];
+    if (toConfirm.length) out.push({ state: 'check', reason: { code: 'to_confirm', count: toConfirm.length, since: r.checkIn.since }, next: { code: 'check_in' }, note: 'to_confirm' });
+    const stale = ctx.staleDays == null ? STALE_DAYS : ctx.staleDays;
+    if (Object.keys(accounts).some(id => accounts[id].ageDays > stale)) out.push({ state: 'check', reason: { code: 'old_figure', since: stp.oldestInput }, next: { code: 'check_in' }, note: 'old_figure' });
+    if (Object.keys(accounts).length && stp.headline === 0) {
+      out.push({ state: 'zero', reason: { code: stp.cappedByFreeToSpend && until ? 'free_used_up' : 'nothing_safe', until }, next: until ? { code: 'wait_for_pay', until } : { code: 'log_money_in' } });
+    }
+    if (Object.keys(accounts).length && stp.headline > 0) out.push({ state: 'ok', reason: { code: 'safe', amount: stp.headline, currency: ctx.currency, until, capped: !!stp.cappedByFreeToSpend }, next: null });
+    for (const w of warnings) if (NOTE_ONLY.includes(w.code)) out.push({ note: w.code });
+    if ((r.laterOn || []).length) out.push({ note: 'later_on' });
+    return out;
+  }
+
+  function deepFreeze(o) { Object.values(o).forEach(v => { if (v && typeof v === 'object') deepFreeze(v); }); return Object.freeze(o); }
+
+  function statusOf(r, ctx) {
+    ctx = ctx || {};
+    if (ctx.origin !== 'typed' && ctx.origin !== 'sample') throw new Error('status: ctx.origin must be "typed" or "sample" (provenance.js), got ' + JSON.stringify(ctx.origin));
+    if (typeof ctx.currency !== 'string') throw new Error('status: ctx.currency (the home currency code) is required');
+    const all = conditions(r || {}, ctx);
+    const states = all.filter(c => c.state);
+    const top = states[0] || { state: 'empty', reason: { code: 'no_figures' }, next: { code: 'check_in' } };
+    const also = all.filter(c => c !== top && c.note).map(c => c.note).filter((x, i, a) => a.indexOf(x) === i && x !== top.note);
+    let s = { state: top.state, level: LEVEL[top.state], reason: top.reason, next: top.next, also, underlying: null };
+    if (ctx.origin === 'sample') s = { state: 'sample', level: LEVEL.sample, reason: { code: 'sample_numbers' }, next: { code: 'put_yours_in' }, also: [], underlying: top.state };
+    s.text = { state: WORDS['state.' + s.state].text, reason: fill(reasonKey(s.reason), s.reason, ctx), next: s.next ? fill(nextKey(s.next), s.next, ctx) : null };
+    return deepFreeze(s);
+  }
+
+  return { statusOf, WORDS, STALE_DAYS };
+});
+/* One input behaviour for every box (DECISIONS_ROUND2 C, sweep2_repeats A11: "$1,212", "TripLisbon"). The first tap or
+   click into a box selects what is in it, so what is typed next replaces the old value instead of adding to it. A
+   second tap while the box is still open puts the caret where it lands, for a small fix.
+
+   Amount boxes also read what was typed through money.js when the box is left (or Enter is pressed): whole minor units,
+   never rounded. A box that can't be read keeps the typed text and says what happened and what to do. Escape puts the
+   old value back.
+
+   bind(input, { kind: 'amount' | 'text', code, optional, onValue(minor | text), onError(result) })
+   Plain browser JavaScript. In a page it is BurrowScreens.inputs (load money.js first). */
+(function (root, make) {
+  const dep = n => (typeof module === 'object' && module.exports ? require('./' + n + '.js') : root.BurrowScreens[n]);
+  const m = make(dep('money'));
+  if (typeof module === 'object' && module.exports) module.exports = m;
+  else (root.BurrowScreens = root.BurrowScreens || {}).inputs = m;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (money) {
+  'use strict';
+
+  /* words for a box that can't be read: drafts for Mako's copy pass (VOICE: what happened, then what to do) */
+  const E = text => ({ text, forMako: true });
+  const ERRORS = {
+    empty: E('This one needs an amount. Type 0 if there is none'),
+    not_a_number: E('That isn\'t an amount. Type digits only'),
+    decimals: E('That has too many decimals. Use {digits} at most'),
+    decimals_none: E('{name} has no decimals. Type a whole amount'),
+    minus: E('That can\'t be below zero. Type it without the minus'),
+    too_big: E('That amount is too big. Check the digits'),
+  };
+  const CURRENCY_NAMES = { JPY: 'Yen', KRW: 'Won' };
+
+  /* what leaving a box does with its text, as data (the part node can test) */
+  function commit(text, opts) {
+    opts = opts || {};
+    const raw = String(text == null ? '' : text);
+    if (opts.optional && !raw.trim()) return { ok: true, minor: null, value: '' };
+    const r = money.parse(raw, opts.code, { allowMinus: !!opts.allowMinus });
+    if (r.ok) return { ok: true, minor: r.minor, value: money.toInput(r.minor, opts.code) };
+    const d = money.digits(opts.code);
+    const key = r.reason === 'decimals' && d === 0 ? 'decimals_none' : r.reason;
+    const message = ERRORS[key].text.replace('{digits}', String(d)).replace('{name}', CURRENCY_NAMES[opts.code] || opts.code);
+    return { ok: false, reason: r.reason, value: raw, message };
+  }
+
+  function bind(input, opts) {
+    if (!input || typeof input.addEventListener !== 'function' || !('value' in input)) throw new Error('inputs: bind needs an input box');
+    opts = opts || {};
+    const kind = opts.kind || 'text';
+    if (kind === 'amount') {
+      if (!input.getAttribute('inputmode')) input.setAttribute('inputmode', 'decimal');
+      input.setAttribute('autocomplete', 'off');
+    }
+    let fresh = false, before = input.value;
+    input.addEventListener('focus', () => {
+      fresh = true; before = input.value;
+      input.select();
+    });
+    /* the click or tap that focused the box would put the caret down and undo the selection: keep it selected once */
+    /* a press on a box that was already open (reached by Tab, or tapped before) is a small fix: no select */
+    const down = () => { if (input.ownerDocument.activeElement === input) fresh = false; };
+    input.addEventListener('pointerdown', down);
+    input.addEventListener('mousedown', down);
+    const keep = e => { if (fresh) { e.preventDefault(); input.select(); fresh = false; } };
+    input.addEventListener('mouseup', keep);
+    input.addEventListener('pointerup', keep);
+    input.addEventListener('touchend', keep);
+    input.addEventListener('keydown', e => {
+      fresh = false;
+      if (e.key === 'Escape') { input.value = before; input.select(); }
+      if (e.key === 'Enter' && kind === 'amount') finish();
+    });
+    input.addEventListener('blur', () => { fresh = false; finish(); });
+    function finish() {
+      if (kind !== 'amount') { if (opts.onValue) opts.onValue(input.value); return; }
+      const r = commit(input.value, opts);
+      input.value = r.value;
+      if (r.ok) {
+        input.removeAttribute('aria-invalid');
+        input.removeAttribute('data-error');
+        if (opts.onValue) opts.onValue(r.minor);
+      } else {
+        input.setAttribute('aria-invalid', 'true');
+        input.setAttribute('data-error', r.message);
+        if (opts.onError) opts.onError(r);
+      }
+    }
+    return input;
+  }
+
+  return { bind, commit, ERRORS };
+});
+/* Typed or sample, on every shown value (DECISIONS_ROUND2 C, sweep2_repeats A3, requirements 1c). Each value a screen
+   shows carries where it came from:
+     typed     the person typed it
+     imported  read from the person's statement or screenshot
+     worked    worked out by the engine from the person's values
+     sample    made-up numbers for the tour or a preview
+   Sample data lives apart from the person's data. A sample value is never shown on the person's screen, the person's
+   value never on a sample screen, the two never mix into one figure, and the move never carries a sample record as real.
+
+   In a page: stamp(el, marked) writes data-from on the element, and audit(root) lists every shown figure with no mark
+   or with the wrong one. Plain browser JavaScript. In a page it is BurrowScreens.provenance. */
+(function (root, make) {
+  const m = make();
+  if (typeof module === 'object' && module.exports) module.exports = m;
+  else (root.BurrowScreens = root.BurrowScreens || {}).provenance = m;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+
+  const ORIGINS = ['typed', 'imported', 'worked', 'sample'];
+  const BADGE = 'Sample numbers';   // the app's wording today (in use); the copy pass may change it
+
+  function origin(o) {
+    if (!ORIGINS.includes(o)) throw new Error('provenance: origin must be one of ' + ORIGINS.join(', ') + ', got ' + JSON.stringify(o));
+    return o;
+  }
+  const isMarked = v => !!v && typeof v === 'object' && Object.prototype.hasOwnProperty.call(v, 'from') && Object.prototype.hasOwnProperty.call(v, 'value');
+  function mark(value, from) { return Object.freeze({ value, from: origin(from) }); }
+
+  /* the origin of a figure worked out from several values */
+  function combine(list) {
+    if (!list || !list.length) throw new Error('provenance: nothing to combine');
+    const froms = list.map(v => origin(isMarked(v) ? v.from : v));
+    const samples = froms.filter(f => f === 'sample').length;
+    if (samples && samples !== froms.length) throw new Error('provenance: sample values and the person\'s values never mix into one figure');
+    return samples ? 'sample' : 'worked';
+  }
+
+  /* the engine result, run either on the person's data or on the sample data, never both */
+  function markResult(result, from) {
+    if (from !== 'typed' && from !== 'sample') throw new Error('provenance: an engine result is typed or sample, got ' + JSON.stringify(from));
+    return Object.freeze({ value: result, from });
+  }
+
+  function screenOrigin(o) {
+    if (o !== 'typed' && o !== 'sample') throw new Error('provenance: the screen is showing typed or sample data, got ' + JSON.stringify(o));
+    return o;
+  }
+  /* what a screen may show: { value, from, sample, badge } or a refusal */
+  function display(v, opts) {
+    const screen = screenOrigin(opts && opts.screen);
+    if (!isMarked(v)) throw new Error('provenance: every shown value needs a mark (typed, imported, worked or sample)');
+    const isSample = v.from === 'sample';
+    if (isSample && screen !== 'sample') throw new Error('provenance: a sample value cannot be shown as the person\'s');
+    if (!isSample && screen === 'sample') throw new Error('provenance: the person\'s value cannot be shown on a sample screen');
+    return { value: v.value, from: v.from, sample: isSample, badge: isSample ? BADGE : null };
+  }
+
+  /* the move of an old saved copy keeps the person's records only */
+  function keepForMove(records) {
+    return records.filter(r => origin(r && r.from) !== 'sample');
+  }
+
+  /* ---- in a page ---- */
+  function stamp(el, v) {
+    if (!isMarked(v)) throw new Error('provenance: stamp needs a marked value');
+    el.setAttribute('data-from', origin(v.from));
+    if (v.from === 'sample') el.setAttribute('data-sample', BADGE); else el.removeAttribute('data-sample');
+    return el;
+  }
+  /* audit(root): every element showing a figure (data-figure) has a mark that fits the screen (root's data-origin) */
+  function audit(rootEl) {
+    const screen = rootEl.getAttribute('data-origin');
+    const out = [];
+    if (screen !== 'typed' && screen !== 'sample') out.push('the screen has no data-origin (typed or sample)');
+    rootEl.querySelectorAll('[data-figure]').forEach(el => {
+      const f = el.getAttribute('data-from'), name = el.getAttribute('data-figure');
+      if (!ORIGINS.includes(f)) out.push(name + ': no typed-or-sample mark');
+      else if ((f === 'sample') !== (screen === 'sample')) out.push(name + ': ' + f + ' value on a ' + screen + ' screen');
+    });
+    return out;
+  }
+
+  return { ORIGINS, BADGE, mark, combine, markResult, display, keepForMove, stamp, audit };
+});
+/* The one message queue (DECISIONS_ROUND2 C, sweep2_repeats A7, MAKO_RUN 3.3). Toasts, the Undo bar and the notices from
+   sync and the move all go through here, and one message is shown at a time, in one band that has its own place in the
+   layout. Nothing posts a message anywhere else, so nothing covers a control.
+
+   Kinds, highest first: undo (with its button, 8 s), toast (one line, 3 s), notice (sync, the move; stays until closed).
+   Within a kind the newest shows first. A message that runs out of time while waiting is dropped, never shown late.
+   One key holds one message: posting "Saved to the cloud" with key 'sync' replaces "Saving to the cloud".
+
+   The band: mount(bandEl) renders the queue into bandEl. The page gives the band its own slot in a column layout
+   (BAND_CSS: header, the scrolling main area, the band, the tab bar), so the band never sits on top of the page.
+   Plain browser JavaScript. In a page it is BurrowScreens.messages. */
+(function (root, make) {
+  const m = make();
+  if (typeof module === 'object' && module.exports) module.exports = m;
+  else (root.BurrowScreens = root.BurrowScreens || {}).messages = m;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+
+  const KINDS = { undo: 3, toast: 2, notice: 1 };
+  const LIFE = { undo: 8000, toast: 3000, notice: null };   // for Mako: how long each stays (MAKO_RUN 3.3)
+
+  function createQueue(opts) {
+    opts = opts || {};
+    const now = opts.now || (() => Date.now());
+    const setT = opts.setTimeout || ((f, ms) => setTimeout(f, ms));
+    const clearT = opts.clearTimeout || (id => clearTimeout(id));
+    const listeners = opts.onChange ? [opts.onChange] : [];
+    let items = [], seq = 0, timer = null, last;
+
+    const better = (a, b) => (KINDS[a.kind] !== KINDS[b.kind] ? KINDS[a.kind] > KINDS[b.kind] : a.seq > b.seq);
+    function current() { let best = null; for (const x of items) if (!best || better(x, best)) best = x; return best; }
+    function purge() { const t = now(); items = items.filter(x => x.expiresAt === null || x.expiresAt > t); }
+    function changed() {
+      purge();
+      if (timer !== null) { clearT(timer); timer = null; }
+      let next = null;
+      for (const x of items) if (x.expiresAt !== null && (next === null || x.expiresAt < next)) next = x.expiresAt;
+      if (next !== null) timer = setT(changed, next - now());   // not money: milliseconds until the next message runs out
+      const c = current();
+      const view = c ? Object.freeze({ id: c.id, kind: c.kind, text: c.text, action: c.action ? c.action.label : null }) : null;
+      const sig = view ? view.id + '|' + view.text : null;
+      if (sig !== last) { last = sig; listeners.forEach(f => f(view)); }
+    }
+
+    function post(m) {
+      m = m || {};
+      if (!(m.kind in KINDS)) throw new Error('messages: kind must be undo, toast or notice, got ' + JSON.stringify(m.kind));
+      if (typeof m.text !== 'string' || !m.text.trim()) throw new Error('messages: a message needs words');
+      if (m.kind === 'undo' && !(m.action && typeof m.action.run === 'function' && m.action.label)) throw new Error('messages: an Undo needs its action { label, run }');
+      purge();
+      const c = current();
+      if (m.kind === 'toast' && c && c.kind === 'toast' && c.text === m.text) { c.expiresAt = now() + LIFE.toast; changed(); return c.id; }   // not money: time
+      if (m.key) items = items.filter(x => x.key !== m.key);
+      seq++;
+      const life = m.ms != null ? m.ms : LIFE[m.kind];
+      const item = { id: 'msg' + seq, seq, kind: m.kind, text: m.text, key: m.key || null, action: m.action || null, source: m.source || null, expiresAt: life === null ? null : now() + life };   // not money: time
+      items.push(item);
+      changed();
+      return item.id;
+    }
+    function dismiss(id) { items = items.filter(x => x.id !== id); changed(); }
+    function act(id) {
+      const x = items.find(i => i.id === id);
+      if (!x) return false;
+      dismiss(id);
+      if (x.action) x.action.run();
+      return true;
+    }
+    function waiting() { purge(); return items.length ? items.length - 1 : 0; }   // not money: a count
+    function view() { purge(); const c = current(); return c ? { id: c.id, kind: c.kind, text: c.text, action: c.action ? c.action.label : null } : null; }
+    function onChange(f) { listeners.push(f); }
+    return { post, dismiss, act, waiting, current: view, onChange };
+  }
+
+  /* ---- the band, in a page ---- */
+  const BAND_CSS = [
+    '.burrow-shell{display:flex;flex-direction:column;height:100vh;height:100dvh}',
+    '.burrow-main{flex:1 1 auto;overflow:auto;min-height:0}',
+    '.burrow-msg-band{flex:none}',
+    '.burrow-msg-band:empty{display:none}',
+    '.burrow-msg{display:flex;align-items:center;gap:12px;padding:10px 16px}',
+    '.burrow-msg button{min-height:44px}',
+  ].join('\n');
+  let mounted = null;
+  function mount(bandEl, queue) {
+    const doc = bandEl.ownerDocument;
+    if (mounted && mounted.isConnected && mounted !== bandEl) throw new Error('messages: there is one message band, already mounted');
+    mounted = bandEl;
+    bandEl.classList.add('burrow-msg-band');
+    bandEl.setAttribute('role', 'status');
+    bandEl.setAttribute('aria-live', 'polite');
+    queue = queue || createQueue();
+    const render = v => {
+      bandEl.textContent = '';
+      if (!v) return;
+      const box = doc.createElement('div');
+      box.className = 'burrow-msg burrow-msg-' + v.kind;
+      box.setAttribute('data-msg', v.id);
+      const words = doc.createElement('span');
+      words.textContent = v.text;
+      box.appendChild(words);
+      if (v.action) { const b = doc.createElement('button'); b.type = 'button'; b.textContent = v.action; b.addEventListener('click', () => queue.act(v.id)); box.appendChild(b); }
+      if (v.kind === 'notice') { const x = doc.createElement('button'); x.type = 'button'; x.textContent = 'Close'; x.setAttribute('aria-label', 'Close this message.'); x.addEventListener('click', () => queue.dismiss(v.id)); box.appendChild(x); }
+      bandEl.appendChild(box);
+    };
+    queue.onChange(render);
+    render(queue.current());
+    return queue;
+  }
+
+  return { createQueue, mount, KINDS, LIFE, BAND_CSS };
+});
 </script>
 <script>
 (function () {
@@ -3346,24 +4072,21 @@ const TRY_BOOKS = { mako: {
   if (node) module.exports = api;
   else root.CHECKIN3 = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
-/* ---------- money3: one way to write an amount (WIRING_PLAN Q3 fallback until lane D's formatter lands) ----------
-   TODO(lane D): switch to the wip/team/screens/ formatter in slice 2. Amounts come in whole minor units from the
-   engine; BurrowEngine.units.fmt writes them, this only adds the currency's sign. No sums here. */
-const CUR_SIGN = { JPY: '¥', USD: '$', PHP: '₱', EUR: '€', GBP: '£' };
-function money3(minor, cur) {
-  const s = BurrowEngine.units.fmt(minor, cur), sign = CUR_SIGN[cur] || (cur + ' ');
-  return s.charAt(0) === '-' ? `-${sign}${s.slice(1)}` : `${sign}${s}`;
-}
-/* a typed amount as whole minor units, or null: commas, spaces and the sign in front are dropped, a minus is refused */
-function typed3(text, cur) {
-  const t = String(text || '').replace(/[,\s]/g, '').replace(/^[¥$₱€£]/, '');
-  if (!/^\d+(\.\d+)?$/.test(t)) return null;
-  try { const r = BurrowEngine.units.toMinor(t, cur); return r.ask ? null : r.minor; } catch (e) { return null; }
-}
-const MON3 = { '01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr', '05': 'May', '06': 'Jun', '07': 'Jul', '08': 'Aug', '09': 'Sep', '10': 'Oct', '11': 'Nov', '12': 'Dec' };
-/* '2026-12-10' written as '10 Dec' (and '2027-01-12' as '12 Jan 2027' when the year is not the shown day's) */
-function day3(s, thisYear) { if (!s) return ''; const d = s.slice(8, 10).replace(/^0/, '') + ' ' + MON3[s.slice(5, 7)]; return thisYear && s.slice(0, 4) !== thisYear ? d + ' ' + s.slice(0, 4) : d; }
+/* ---------- the shared screen pieces, in short names (wip/team/screens/, lane D) ----------
+   money.js writes and reads amounts, names.js gives every label and day, status.js the one verdict, inputs.js the one
+   box behaviour, provenance.js the typed-or-sample mark, messages.js the one message band. No sums here. */
+const SM = BurrowScreens.money, SN = BurrowScreens.names;
+const money3 = (minor, cur) => SM.format(minor, cur);
+/* a typed amount as whole minor units, or null (never rounded; a minus is refused) */
+function typed3(text, cur) { const r = SM.parse(text, cur); return r.ok ? r.minor : null; }
+/* '2026-12-10' as '10 Dec', with the year when it is not the shown day's year */
+const day3 = (s, thisYear) => (s ? SN.dayLabel(s, !!thisYear && s.slice(0, 4) !== thisYear) : '');
+const label3 = key => SN.label(key);
 const esc3 = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+/* a figure on screen: its engine path (data-figure, checked by names and provenance), its amount (data-amt) */
+const fig3 = (path, minor, cur, tag) => `<${tag || 'span'} data-figure="${esc3(path)}" data-amt="${minor}">${money3(minor, cur)}</${tag || 'span'}>`;
+const MSG3 = BurrowScreens.messages.createQueue();
+const msg3 = text => MSG3.post({ kind: 'toast', key: 'a3', text });
 /* ---------- E3: the book and the one call the screens use (WIRING_PLAN 1.2, as changed by DECISIONS_ROUND2 AZ1) ----------
    The page holds one book (shape v3). E3.view(day) is the engine's look ahead for that day; the screens only place and
    write what it returns. No sums here.
@@ -3428,8 +4151,6 @@ const E3 = (() => {
   }
   function view(day) {
     const res = BurrowEngine.lookahead.lookahead(book, day || today());
-    // TODO(lane A, WIRING_PLAN step 2 and F4): res.period { start, end, startsWith } and res.period.nextPay arrive on
-    // wip-38.31 soon. Until then Home shows the next pay from res.daysToNextPay and no period dates.
     return res;
   }
   /* names for what the engine returns by id (a lookup, nothing worked out) */
@@ -3452,10 +4173,11 @@ const E3 = (() => {
     get book() { return book; }, get mode() { return mode; } };
 })();
 /* ---------- Home, the new top (WIRING_PLAN 1.1 item 2, step 7) ----------
-   Bank today and its age, safe to spend until next pay with the sum behind it, the period (TODO lane A: res.period),
-   days to next pay, what is due before next pay by account, each card, all the money after the cards are paid,
-   warnings, not seen yet and later on. Every figure is one the engine returned for the day: this file chooses, writes
-   and places, it never adds, takes away or rounds (tests: app3/tests/no_maths.js, app3/tests/e3_home.js). */
+   The one status (screens/status.js), bank today and its age, safe to spend until next pay with the sum behind it, the
+   period by its dates (res.period), the next pay and its state, what is due before next pay by account, each card,
+   the bank after the cards are paid, not seen yet and later on. Every figure is one the engine returned for the day,
+   every label comes from screens/names.js, every figure carries its typed-or-sample mark (screens/provenance.js).
+   This file chooses, writes and places; it never adds, takes away or rounds (tests: no_maths.js, e3_home.js). */
 function ageWords3(days) {
   if (days === 0) return 'checked today';
   if (days === 1) return 'checked yesterday';
@@ -3466,13 +4188,22 @@ function dueWords3(n) {
   if (n === 1) return 'tomorrow';
   return 'in ' + n + ' days';
 }
-function rowsHtml3(items, cur, yr) {
-  return items.map(o => `<li><span>${esc3(E3.occName(o.item))}<br><span class="when">${esc3(day3(o.lands, yr))}</span></span><span class="amt" data-amt="${o.amount}">${money3(o.amount, o.currency || cur)}</span></li>`).join('');
+function rowsHtml3(items, cur, yr, path) {
+  return items.map(o => `<li><span>${esc3(E3.occName(o.item))}<br><span class="when">${esc3(day3(o.lands, yr))}</span></span><span class="amt">${fig3(path, o.amount, o.currency || cur)}</span></li>`).join('');
+}
+function nextPayWords3(r, yr) {
+  const np = r.daysToNextPay || {}, p = r.period, st = p && p.nextPay ? p.nextPay.state : null;
+  if (!np.next_pay) return `<p class="a3-sub">No pay day set</p>`;
+  const d = esc3(day3(np.next_pay, yr));
+  if (st === 'notSeen') return `<p class="a3-warn" data-fig="nextpay" data-state="notSeen">Pay due ${esc3(day3(p.nextPay.due, yr))} has not been seen yet. Check your bank when it lands</p>`;
+  if (st === 'late' || np.late) return `<p class="a3-warn" data-fig="nextpay" data-state="late">Pay due ${d} is late</p>`;
+  return `<p class="a3-sub" data-fig="nextpay" data-state="coming">${esc3(label3('nextPay'))} ${d}, ${dueWords3(np.days)}</p>`;
 }
 function renderHome3() {
   const host = $('#a3Home');
   if (!E3.book) {
-    host.innerHTML = `<section class="a3-card"><h2>Nothing here yet</h2><p class="a3-sub">This page is the new money engine. Setup comes next. To look around with made-up numbers shaped like a real month, open <a href="?try=mako">the try book</a>.</p></section>`;
+    host.removeAttribute('data-origin');
+    host.innerHTML = `<section class="a3-card"><h2>Nothing here yet</h2><p class="a3-sub">This page is the new money engine. Setup comes next. To look around with made-up numbers shaped like a real month, open <a href="?try=mako">the try book</a></p></section>`;
     return;
   }
   const day = E3.today(), yr = day.slice(0, 4);
@@ -3481,50 +4212,58 @@ function renderHome3() {
     host.innerHTML = `<section class="a3-card"><h2>The numbers could not be worked out</h2><p class="a3-warn a3-bad">${esc3(e.message)}</p></section>`;
     return;
   }
-  const home = E3.home();
+  const home = E3.home(), origin = E3.mode === 'try' ? 'sample' : 'typed';
   const ids = Object.keys(r.accounts);
   const out = [];
+  /* the one status */
+  const names = {}; for (const id of ids.concat(Object.keys(r.cards))) names[id] = E3.nameOf(id);
+  const st = BurrowScreens.status.statusOf(r, { currency: home, origin, names });
+  out.push(`<section class="a3-card a3-status" data-card="status" data-level="${esc3(st.level)}"><h2>${esc3(st.text.state)}</h2><p class="a3-sub">${esc3(st.text.reason)}</p></section>`);
   /* bank today, one figure per account, with its age */
   for (const id of ids) {
     const a = r.accounts[id];
-    out.push(`<section class="a3-card" data-card="bank" data-acct="${esc3(id)}"><h2>${esc3(E3.nameOf(id))} today</h2>
-      <p class="a3-big" data-fig="bank" data-amt="${a.bank}">${money3(a.bank, a.currency)}</p>
+    out.push(`<section class="a3-card" data-card="bank" data-acct="${esc3(id)}"><h2>${esc3(label3('bankToday'))}: ${esc3(E3.nameOf(id))}</h2>
+      <p class="a3-big" data-fig="bank">${fig3('accounts.*.bank', a.bank, a.currency)}</p>
       <p class="a3-sub" data-fig="age">${ageWords3(a.ageDays)}, on ${esc3(day3(a.asOf, yr))}</p></section>`);
   }
   /* safe to spend until next pay, with the sum behind it */
   const np = r.daysToNextPay || {};
   const until = np.next_pay ? `until next pay on ${esc3(day3(np.next_pay, yr))}` : 'for now';
   const sums = ids.filter(id => r.accounts[id].spendFrom).map(id => `<p class="a3-sum" data-fig="why">${esc3(r.accounts[id].why)}</p>`).join('');
-  const short = r.safeToSpend.shortfall ? `<p class="a3-warn a3-bad" data-fig="shortfall" data-amt="${r.safeToSpend.shortfall}">Short by ${money3(r.safeToSpend.shortfall, home)} before then.</p>` : '';
+  const short = r.safeToSpend.shortfall ? `<p class="a3-warn a3-bad">${esc3(label3('shortBy'))} ${fig3('safeToSpend.shortfall', r.safeToSpend.shortfall, home)} before then</p>` : '';
   const warns = (r.warnings || []).map(w => `<p class="a3-warn" data-warn="${esc3(w.code)}">${esc3(w.text)}</p>`).join('');
-  out.push(`<section class="a3-card" data-card="safe"><h2>Safe to spend ${until}</h2>
-    <p class="a3-big" data-fig="safe" data-amt="${r.safeToSpend.headline}">${money3(r.safeToSpend.headline, home)}</p>${short}${sums}${warns}</section>`);
-  /* the period and the next pay */
-  const per = r.period && r.period.start ? `<p class="a3-mid" data-fig="period">${esc3(day3(r.period.start, yr))} to ${esc3(day3(r.period.end, yr))}</p>` : '';
-  const nextLine = np.next_pay ? `<p class="a3-sub" data-fig="nextpay">Next pay ${esc3(day3(np.next_pay, yr))}, ${np.late ? 'late' : dueWords3(np.days)}</p>` : '<p class="a3-sub">No pay day set.</p>';
-  out.push(`<section class="a3-card" data-card="period"><h2>This pay period</h2>${per}${nextLine}</section>`);
+  out.push(`<section class="a3-card" data-card="safe"><h2>${esc3(label3('safeToSpend'))} ${until}</h2>
+    <p class="a3-big" data-fig="safe">${fig3('safeToSpend.headline', r.safeToSpend.headline, home)}</p>${short}${sums}${warns}</section>`);
+  /* the period by its dates, and the next pay */
+  const p = r.period;
+  const per = p && p.start && p.end ? `<p class="a3-mid" data-fig="period" data-start="${esc3(p.start)}" data-end="${esc3(p.end)}">${esc3(SN.periodLabel(p.start, p.end))}</p>` : '';
+  out.push(`<section class="a3-card" data-card="period"><h2>${esc3(label3('period'))}</h2>${per}${nextPayWords3(r, yr)}</section>`);
   /* due before next pay, by account */
   const due = r.dueBeforeNextPay;
-  const byAcct = Object.keys(due.byAccount).map(acct => `<p class="a3-acct">From ${esc3(E3.nameOf(acct))}</p><ul class="a3-rows">${rowsHtml3(due.items.filter(o => o.account === acct), E3.curOf(acct), yr)}</ul>`).join('');
-  out.push(`<section class="a3-card" data-card="due"><h2>Due before next pay</h2>${due.items.length ? byAcct + `<ul class="a3-rows"><li class="total"><span>Together</span><span class="amt" data-fig="duetotal" data-amt="${due.total}">${money3(due.total, home)}</span></li></ul>` : '<p class="a3-sub">Nothing is due before next pay.</p>'}</section>`);
-  /* each card */
+  const byAcct = Object.keys(due.byAccount).map(acct => `<p class="a3-acct">From ${esc3(E3.nameOf(acct))}</p><ul class="a3-rows">${rowsHtml3(due.items.filter(o => o.account === acct), E3.curOf(acct), yr, 'dueBeforeNextPay.items')}</ul>`).join('');
+  out.push(`<section class="a3-card" data-card="due"><h2>${esc3(label3('dueBeforeNextPay'))}</h2>${due.items.length ? byAcct + `<ul class="a3-rows"><li class="total"><span>Together</span><span class="amt" data-fig="duetotal">${fig3('dueBeforeNextPay.total', due.total, home)}</span></li></ul>` : '<p class="a3-sub">Nothing is due before next pay</p>'}</section>`);
+  /* each card, and the bank after the cards are paid */
   const cardIds = Object.keys(r.cards);
   if (cardIds.length) {
     const rows = cardIds.map(id => {
       const k = r.cards[id], cur = E3.curOf(id), nx = k.next;
-      const when = nx && nx.amount ? `${money3(nx.amount, cur)} leaves your bank on ${esc3(day3(nx.payment_date, yr))}` : 'Nothing to pay yet';
-      return `<li data-cardid="${esc3(id)}"><span>${esc3(E3.nameOf(id))}<br><span class="when">${when}</span></span><span class="amt" data-fig="owed" data-amt="${k.owedNow}">${money3(k.owedNow, cur)}</span></li>`;
+      const when = nx && nx.amount ? `${esc3(label3('nextPayment'))} ${fig3('cards.*.next.amount', nx.amount, cur)} on ${esc3(day3(nx.payment_date, yr))}` : 'Nothing to pay yet';
+      return `<li data-cardid="${esc3(id)}"><span>${esc3(E3.nameOf(id))}<br><span class="when">${when}</span></span><span class="amt" data-fig="owed">${fig3('cards.*.owedNow', k.owedNow, cur)}</span></li>`;
     }).join('');
-    out.push(`<section class="a3-card" data-card="cards"><h2>On your cards now</h2><ul class="a3-rows">${rows}</ul>
-      <p class="a3-sub">All your money after the cards are paid: <b data-fig="aftercards" data-amt="${r.total.afterCards}">${money3(r.total.afterCards, home)}</b></p></section>`);
+    out.push(`<section class="a3-card" data-card="cards"><h2>${esc3(label3('owed'))} on your cards</h2><ul class="a3-rows">${rows}</ul>
+      <p class="a3-sub">${esc3(label3('bankAfterCards'))}: <b data-fig="aftercards">${fig3('total.afterCards', r.total.afterCards, home)}</b></p></section>`);
   }
   /* not seen yet, and later on */
   const late = r.notSeenYet.items;
-  if (late.length) out.push(`<section class="a3-card" data-card="notseen"><h2>Not seen yet</h2><p class="a3-sub">These were due and are not ticked off. Check your bank to tick them.</p><ul class="a3-rows">${rowsHtml3(late, home, yr)}</ul></section>`);
+  if (late.length) out.push(`<section class="a3-card" data-card="notseen"><h2>${esc3(label3('notSeenYet'))}</h2><p class="a3-sub">These were due and are not ticked off. Check your bank to tick them</p><ul class="a3-rows">${rowsHtml3(late, home, yr, 'notSeenYet.items')}</ul></section>`);
   for (const l of r.laterOn) out.push(`<p class="a3-warn" data-warn="later">${esc3(l.text)}</p>`);
   out.push(`<div class="a3-actions"><button type="button" class="a3-btn solid" id="a3CheckGo">Check your bank</button></div>`);
-  out.push('<p class="a3-later">Coming next: your plan, receipts and burrows.</p>');
+  out.push('<p class="a3-later">Coming next: your plan, receipts and burrows</p>');
+  host.setAttribute('data-origin', origin);
   host.innerHTML = out.join('');
+  /* every figure carries where it came from: a sample screen shows only sample values; the person's bank figure is typed, the rest worked out */
+  const P = BurrowScreens.provenance;
+  host.querySelectorAll('[data-figure]').forEach(el => P.stamp(el, P.mark(Number(el.dataset.amt), origin === 'sample' ? 'sample' : el.dataset.figure === 'accounts.*.bank' ? 'typed' : 'worked')));
   $('#a3CheckGo').addEventListener('click', openCheck3);
 }
 /* ---------- Check your bank (WIRING_PLAN 1.1 item 3, step 9) ----------
@@ -3538,20 +4277,22 @@ function openCheck3() {
   const rows = list.map((o, i) => `<div class="a3-tick" data-item="${esc3(o.item)}">
       <input type="checkbox" id="a3t${i}" checked aria-describedby="a3d${i}">
       <label for="a3t${i}"><span>${esc3(E3.occName(o.item))}</span><span class="when" id="a3d${i}">${esc3(day3(o.lands, yr))}, ${esc3(E3.nameOf(o.account))}</span></label>
-      <input class="a3-in" type="text" inputmode="decimal" autocomplete="off" aria-label="Amount for ${esc3(E3.occName(o.item))}" data-amt="${esc3(o.item)}" value="${BurrowEngine.units.fmt(o.amount, E3.curOf(o.account))}">
+      <input class="a3-in" type="text" inputmode="decimal" autocomplete="off" aria-label="Amount for ${esc3(E3.occName(o.item))}" data-amt="${esc3(o.item)}" value="${SM.toInput(o.amount, E3.curOf(o.account))}">
     </div>`).join('');
   const figs = Object.keys(r.accounts).map(id => `<div class="a3-field"><label for="a3f-${esc3(id)}">What does ${esc3(E3.nameOf(id))} show today?</label>
-      <input class="a3-in" type="text" inputmode="decimal" autocomplete="off" id="a3f-${esc3(id)}" data-bankfig="${esc3(id)}" placeholder="${esc3(CUR_SIGN[r.accounts[id].currency] || '')}">
-      <p class="a3-sub">Last time: ${money3(r.accounts[id].bank, r.accounts[id].currency)} on ${esc3(day3(r.accounts[id].asOf, yr))}</p></div>`).join('');
+      <input class="a3-in" type="text" inputmode="decimal" autocomplete="off" id="a3f-${esc3(id)}" data-bankfig="${esc3(id)}" placeholder="${esc3(SM.symbol(r.accounts[id].currency).trim())}">
+      <p class="a3-sub">Last time ${money3(r.accounts[id].bank, r.accounts[id].currency)} on ${esc3(day3(r.accounts[id].asOf, yr))}</p></div>`).join('');
   const sheet = $('#a3Check');
   sheet.innerHTML = `<div class="a3-sheet-in">
     <h1 id="a3CheckT">Check your bank</h1>
-    <section class="a3-card"><h2>Since ${esc3(day3(r.checkIn.since, yr))}</h2>${list.length ? '<p class="a3-sub">Untick anything that has not gone through yet. Change an amount if it was different.</p>' + rows : '<p class="a3-sub">Nothing was due since then.</p>'}</section>
+    <section class="a3-card"><h2>${esc3(label3('checkInList'))} since ${esc3(day3(r.checkIn.since, yr))}</h2>${list.length ? '<p class="a3-sub">Untick anything that has not gone through yet. Change an amount if it was different</p>' + rows : '<p class="a3-sub">Nothing was due since then</p>'}</section>
     <section class="a3-card"><h2>Your bank today</h2>${figs}<p class="a3-err" id="a3CheckErr"></p></section>
     <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3CheckSave">Save</button><button type="button" class="a3-btn" id="a3CheckX">Back</button></div>
   </div>`;
   sheet.hidden = false; $('#a3Home').hidden = true; scrollTo(0, 0);
-  sheet.querySelectorAll('.a3-in').forEach(el => el.addEventListener('focus', () => el.select()));
+  /* one input behaviour (screens/inputs.js): the first tap selects, so typing replaces; read through money.js when left */
+  sheet.querySelectorAll('[data-amt]').forEach(el => { const o = list.find(x => x.item === el.dataset.amt); BurrowScreens.inputs.bind(el, { kind: 'amount', code: E3.curOf(o.account) }); });
+  sheet.querySelectorAll('[data-bankfig]').forEach(el => BurrowScreens.inputs.bind(el, { kind: 'amount', code: E3.curOf(el.dataset.bankfig), optional: true }));
   $('#a3CheckX').addEventListener('click', closeCheck3);
   $('#a3CheckSave').addEventListener('click', saveCheck3);
   const first = sheet.querySelector("[data-bankfig]"); if (first) first.focus();
@@ -3563,7 +4304,7 @@ async function saveCheck3() {
   const figures = {};
   for (const el of sheet.querySelectorAll("[data-bankfig]")) {
     const id = el.dataset.bankfig, v = typed3(el.value, E3.curOf(id));
-    if (v === null) { err.textContent = `Type what ${E3.nameOf(id)} shows today, as an amount.`; el.focus(); return; }
+    if (v === null) { err.textContent = `Type what ${E3.nameOf(id)} shows today, as an amount`; el.focus(); return; }
     figures[id] = v;
   }
   const ticked = [], amounts = {}, expected = {}, lands = {};
@@ -3572,25 +4313,24 @@ async function saveCheck3() {
     const row = [...sheet.querySelectorAll('.a3-tick')].find(x => x.dataset.item === o.item);
     if (!row || !row.querySelector('input[type=checkbox]').checked) continue;
     const v = typed3(row.querySelector('[data-amt]').value, E3.curOf(o.account));
-    if (v === null) { err.textContent = `Type the amount for ${E3.occName(o.item)}.`; row.querySelector('[data-amt]').focus(); return; }
+    if (v === null) { err.textContent = `Type the amount for ${E3.occName(o.item)}`; row.querySelector('[data-amt]').focus(); return; }
     ticked.push(o.item); if (v !== o.amount) amounts[o.item] = v;
   }
   const out = CHECKIN3.checkIn(E3.book, { day: check3.day, told: E3.told(), newId: E3.newId, figures, ticked, unticked: [], amounts, expected, lands });
   const ok = await E3.write(out);
-  if (!ok) { err.textContent = 'This could not be saved on this device. Nothing changed.'; return; }
+  if (!ok) { err.textContent = 'This could not be saved on this device. Nothing changed'; return; }
   closeCheck3(); renderHome3();
-  msg3(E3.mode === 'try' ? 'Done. These are made-up numbers, so nothing is saved.' : 'Saved.');
+  msg3(E3.mode === 'try' ? 'Done. These are made-up numbers, so nothing is saved' : 'Saved');
 }
-let msg3T = 0;
-function msg3(text) { const m = $('#a3Msg'); m.textContent = text; m.classList.add('on'); clearTimeout(msg3T); msg3T = setTimeout(() => m.classList.remove('on'), 3200); }
 /* ---------- start ---------- */
 (async () => {
   try { $('#a3Pix').innerHTML = pix('sprout', 2); } catch (e) { /* art is a nicety */ }
   await E3.load();
   if (E3.mode === 'try') {
     const t = $('#a3Try'); t.hidden = false;
-    t.textContent = 'Made-up numbers shaped like a real month. Nothing you do here is saved.' + (new URLSearchParams(location.search).get('today') ? ' Shown as on ' + day3(E3.today()) + ' ' + E3.today().slice(0, 4) + '.' : '');
+    t.textContent = 'Made-up numbers shaped like a real month. Nothing you do here is saved' + (new URLSearchParams(location.search).get('today') ? '. Shown as on ' + day3(E3.today(), 'any') : '');
   }
+  BurrowScreens.messages.mount($('#a3Msg'), MSG3);
   renderHome3();
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#a3Check').hidden) closeCheck3(); });
 })();

@@ -4,8 +4,9 @@
   await E3.load();
   if (E3.mode === 'try') {
     const t = $('#a3Try'); t.hidden = false;
-    t.textContent = 'Made-up numbers shaped like a real month. Nothing you do here is saved.' + (new URLSearchParams(location.search).get('today') ? ' Shown as on ' + day3(E3.today()) + ' ' + E3.today().slice(0, 4) + '.' : '');
+    t.textContent = 'Made-up numbers shaped like a real month. Nothing you do here is saved' + (new URLSearchParams(location.search).get('today') ? '. Shown as on ' + day3(E3.today(), 'any') : '');
   }
+  BurrowScreens.messages.mount($('#a3Msg'), MSG3);
   renderHome3();
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#a3Check').hidden) closeCheck3(); });
 })();

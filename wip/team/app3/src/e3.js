@@ -62,8 +62,6 @@ const E3 = (() => {
   }
   function view(day) {
     const res = BurrowEngine.lookahead.lookahead(book, day || today());
-    // TODO(lane A, WIRING_PLAN step 2 and F4): res.period { start, end, startsWith } and res.period.nextPay arrive on
-    // wip-38.31 soon. Until then Home shows the next pay from res.daysToNextPay and no period dates.
     return res;
   }
   /* names for what the engine returns by id (a lookup, nothing worked out) */

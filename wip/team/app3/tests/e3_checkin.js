@@ -47,7 +47,7 @@ async function walk(p, bk) {
     ck('safe to spend is the engine\'s after the check-in', one('safe')[0].amt === r.safeToSpend.headline, one('safe')[0].amt + ' vs ' + r.safeToSpend.headline);
     ck('the sum behind it is the engine\'s', one('why')[0].text === r.accounts[bank].why, one('why')[0].text);
     const cardB = bk.accounts.find(a => a.name === 'Card B').id, cardA = bk.accounts.find(a => a.name === 'Card A').id;
-    const owed = await p.evaluate(() => Object.fromEntries([...document.querySelectorAll('[data-cardid]')].map(e => [e.dataset.cardid, { amt: Number(e.querySelector('[data-fig=owed]').dataset.amt), text: e.textContent }])));
+    const owed = await p.evaluate(() => Object.fromEntries([...document.querySelectorAll('[data-cardid]')].map(e => [e.dataset.cardid, { amt: Number(e.querySelector('[data-fig=owed] [data-amt]').dataset.amt), text: e.textContent }])));
     ck('card A is paid', owed[cardA] && owed[cardA].amt === 0 && r.cards[cardA].owedNow === 0, JSON.stringify(owed[cardA]));
     ck('card B still leaves on 11 Dec', owed[cardB] && /on 11 Dec/.test(owed[cardB].text), JSON.stringify(owed[cardB]));
     ck('the next pay is in January', /Jan/.test(one('nextpay')[0].text), one('nextpay')[0].text);

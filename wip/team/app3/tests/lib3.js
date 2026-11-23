@@ -44,6 +44,6 @@ async function readOld(p) {
 }
 const OLD_IDB = JSON.stringify({ rev: 1763600000000, t: 1763600000000, json: OLD_TEXT });
 /* what the page shows, by data-fig */
-const figs = p => p.evaluate(() => [...document.querySelectorAll('[data-fig]')].map(e => ({ fig: e.dataset.fig, amt: e.dataset.amt === undefined ? null : Number(e.dataset.amt), text: e.textContent.trim(), card: (e.closest('[data-card]') || {}).dataset ? e.closest('[data-card]').dataset.card : null })));
+const figs = p => p.evaluate(() => [...document.querySelectorAll('[data-fig]')].map(e => ({ fig: e.dataset.fig, amt: (x => x ? Number(x.dataset.amt) : null)(e.dataset.amt !== undefined ? e : e.querySelector('[data-amt]')), text: e.textContent.trim(), card: (e.closest('[data-card]') || {}).dataset ? e.closest('[data-card]').dataset.card : null })));
 const shot = async (p, name) => { const dir = path.join(__dirname, '../shots'); fs.mkdirSync(dir, { recursive: true }); await p.screenshot({ path: path.join(dir, name + '.png'), fullPage: true }); };
 module.exports = { open, URL0, L, book, w, ck, done, seedOld, readOld, OLD_KEY, OLD_TEXT, OLD_IDB, figs, shot };

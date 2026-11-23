@@ -1,18 +1,15 @@
-/* ---------- money3: one way to write an amount (WIRING_PLAN Q3 fallback until lane D's formatter lands) ----------
-   TODO(lane D): switch to the wip/team/screens/ formatter in slice 2. Amounts come in whole minor units from the
-   engine; BurrowEngine.units.fmt writes them, this only adds the currency's sign. No sums here. */
-const CUR_SIGN = { JPY: '¥', USD: '$', PHP: '₱', EUR: '€', GBP: '£' };
-function money3(minor, cur) {
-  const s = BurrowEngine.units.fmt(minor, cur), sign = CUR_SIGN[cur] || (cur + ' ');
-  return s.charAt(0) === '-' ? `-${sign}${s.slice(1)}` : `${sign}${s}`;
-}
-/* a typed amount as whole minor units, or null: commas, spaces and the sign in front are dropped, a minus is refused */
-function typed3(text, cur) {
-  const t = String(text || '').replace(/[,\s]/g, '').replace(/^[¥$₱€£]/, '');
-  if (!/^\d+(\.\d+)?$/.test(t)) return null;
-  try { const r = BurrowEngine.units.toMinor(t, cur); return r.ask ? null : r.minor; } catch (e) { return null; }
-}
-const MON3 = { '01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr', '05': 'May', '06': 'Jun', '07': 'Jul', '08': 'Aug', '09': 'Sep', '10': 'Oct', '11': 'Nov', '12': 'Dec' };
-/* '2026-12-10' written as '10 Dec' (and '2027-01-12' as '12 Jan 2027' when the year is not the shown day's) */
-function day3(s, thisYear) { if (!s) return ''; const d = s.slice(8, 10).replace(/^0/, '') + ' ' + MON3[s.slice(5, 7)]; return thisYear && s.slice(0, 4) !== thisYear ? d + ' ' + s.slice(0, 4) : d; }
+/* ---------- the shared screen pieces, in short names (wip/team/screens/, lane D) ----------
+   money.js writes and reads amounts, names.js gives every label and day, status.js the one verdict, inputs.js the one
+   box behaviour, provenance.js the typed-or-sample mark, messages.js the one message band. No sums here. */
+const SM = BurrowScreens.money, SN = BurrowScreens.names;
+const money3 = (minor, cur) => SM.format(minor, cur);
+/* a typed amount as whole minor units, or null (never rounded; a minus is refused) */
+function typed3(text, cur) { const r = SM.parse(text, cur); return r.ok ? r.minor : null; }
+/* '2026-12-10' as '10 Dec', with the year when it is not the shown day's year */
+const day3 = (s, thisYear) => (s ? SN.dayLabel(s, !!thisYear && s.slice(0, 4) !== thisYear) : '');
+const label3 = key => SN.label(key);
 const esc3 = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+/* a figure on screen: its engine path (data-figure, checked by names and provenance), its amount (data-amt) */
+const fig3 = (path, minor, cur, tag) => `<${tag || 'span'} data-figure="${esc3(path)}" data-amt="${minor}">${money3(minor, cur)}</${tag || 'span'}>`;
+const MSG3 = BurrowScreens.messages.createQueue();
+const msg3 = text => MSG3.post({ kind: 'toast', key: 'a3', text });

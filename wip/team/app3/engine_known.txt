@@ -1,4 +1,1 @@
-# Engine test failures already on wip-38.31 when app3 started (23 Nov 2026), lane A's to fix. check3.sh fails on any other.
-FAIL the same answers in Los Angeles and in Tokyo: Expected values to be strictly deep-equal:
-FAIL cro-09 2027-01-15 warnings: expected g2 below_minimum; g2 reopened; g3 gain_to_ask; g3 reopened; g4 reopened; engine g2 below_minimum; g2 reopened; g3 gain_to_ask; g3 reopened
-FAIL cro-09 2027-01-15 warnings: expected cnjaqo-a9qfwcv4lm-19 below_minimum; cnjaqo-a9qfwcv4lm-19 reopened; cnjaqo-a9qfwcv4lm-20 gain_to_ask; cnjaqo-a9qfwcv4lm-20 reopened; cnjaqo-a9qfwcv4lm-21 reopened; engine cnjaqo-a9qfwcv4lm-19 below_minimum; cnjaqo-a9qfwcv4lm-19 reopened; cnjaqo-a9qfwcv4lm-20 gain_to_ask; cnjaqo-a9qfwcv4lm-20 reopened
+# Engine test failures already on wip-38.31 that lane A has to fix. check3.sh fails on any other. Empty now (all pass).
