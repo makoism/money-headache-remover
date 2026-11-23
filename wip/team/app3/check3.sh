@@ -60,6 +60,7 @@ step "a spend larger than what its account holds asks first, new or changed (nor
 step "only the tapped tab's panel shows (every tab after every other, the sheets)"; run tests/e3_panels.js "e3_panels: ALL PASS"
 step "a line added mid-period: one amount that counts now, the full one in a sentence, how far over"; run tests/e3_lineshare.js "e3_lineshare: ALL PASS"
 step "the Plan tab"; run tests/e3_plan.js "e3_plan: ALL PASS"
+step "Plan names every rhythm: two days, weeks with the weekday, every few months, set months, once a year, once, the last working day, no fixed day (slice 6)"; run tests/e3_rhythms.js "e3_rhythms: ALL PASS"
 step "one figure, one name on Home, Receipts and Plan (labels from screens/names.js)"; run tests/e3_names.js "e3_names: ALL PASS"
 step "the ways out of the first screen and the made-up numbers"; run tests/e3_first.js "e3_first: ALL PASS"
 step "as a plain file:the first screen, the try book and its day box"; run tests/e3_file.js "e3_file: ALL PASS"
