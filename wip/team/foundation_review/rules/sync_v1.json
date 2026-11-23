@@ -1764,16 +1764,54 @@
        }
       ],
       "ask": true,
+      "both": {
+       "id": "k7qzpa-m2xq7ab9zt-42",
+       "kind": "bill",
+       "name": "Rent (flat)",
+       "acct": "k7qzpa-m2xq7ab9zt-2",
+       "cur": "JPY",
+       "rules": [
+        {
+         "from": "2026-11-23",
+         "rule": {
+          "every": "month",
+          "days": [
+           27
+          ]
+         },
+         "at": "2026-11-23T09:00:00.000+09:00",
+         "by": "k7qzpa"
+        }
+       ],
+       "steps": [
+        {
+         "from": "2026-11-23",
+         "amount": 80000,
+         "at": "2026-11-23T09:00:00.000+09:00",
+         "by": "k7qzpa"
+        },
+        {
+         "from": "2026-12-01",
+         "amount": 85000,
+         "at": "2026-11-28T08:00:00.000+09:00",
+         "by": "k7qzpa"
+        }
+       ],
+       "told": "2026-11-23T09:00:00.000+09:00",
+       "at": "2026-11-28T20:00:00.000+09:00",
+       "by": "w3hmxd"
+      },
       "told": "2026-11-23T09:00:00.000+09:00",
       "at": "2026-11-28T20:00:00.000+09:00",
       "by": "w3hmxd"
      }
     ]
    },
-   "why": "Phone: rent up to 85,000 from 1 Dec (08:00). Desktop: renamed \"Rent (flat)\" (20:00). The same record, changed on both: one question. Shown meanwhile: the newer, the desktop's. `kept:<rent>` holds both versions, so whichever is picked the other stays for Undo [AQ3]. No field-by-field merge (that is stage 2, AQ5).",
+   "why": "Phone: rent up to 85,000 from 1 Dec (08:00). Desktop: renamed \"Rent (flat)\" (20:00). The same record, changed on both: one question. Shown meanwhile: the newer, the desktop's. `kept:<rent>` holds both versions, so whichever is picked the other stays for Undo [AQ3]. No field-by-field merge (that is stage 2, AQ5). AW6: the phone added a step, the desktop renamed it: different fields, so \"keep both\" is offered too (Rent (flat) with the 85,000 step).",
    "decisions": [
     "AQ3",
-    "AQ5"
+    "AQ5",
+    "AW6"
    ]
   },
   {

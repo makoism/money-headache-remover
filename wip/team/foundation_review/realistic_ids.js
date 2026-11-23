@@ -20,7 +20,7 @@ const { spawnSync } = require('child_process');
 const here = __dirname;
 const SLUG = /^[a-z][a-z0-9_]*$/;
 // Words that look like slugs but name no record: places and lines the app names itself, kinds, answers.
-const NOT_IDS = new Set(['any', 'amounts', 'once', 'free', 'waiting', 'bills', 'fees', 'other', 'none', 'cfg', 'true', 'false', 'dont_know', 'month', 'week', 'pick', 'kept', 'imp']);   // [AN5] `waits: 'pick'`: a moved amount waiting for add or replace; [AQ3, AP3] the `kept:` and `imp:` prefixes
+const NOT_IDS = new Set(['any', 'amounts', 'once', 'free', 'waiting', 'bills', 'fees', 'other', 'none', 'cfg', 'true', 'false', 'dont_know', 'month', 'week', 'pick', 'kept', 'imp', 'copy']);   // [AW2] `kept:copy`, the whole copy; [AN5] `waits: 'pick'`: a moved amount waiting for add or replace; [AQ3, AP3] the `kept:` and `imp:` prefixes
 // Fields whose value is never an id (prose, kinds, currencies, device parts) and subtrees left as they are.
 const SKIP_KEYS = new Set(['why', 'note', 'notes', 'story', 'title', 'life', 'name', 'kind', 'k', 'question', 'frequency',
   'weekend_holiday', 'currency', 'cur', 'curs', 'country', 'code', 'src', 'dir', 'by', 'decisions', 'lines_note',
