@@ -81,4 +81,24 @@ t('an imported line unticked on the list is saved in `unticked` [U2, AS5]', () =
   eq(o5.checkins[0].unticked, ['imp:bank:x1']);
   eq(o5.events.length, 0);
 });
+// [BI1] an item left unticked at one check-in and ticked at a later one is dated after the earlier check, never on its
+// due day before it: by default the day after that check; a `landed` answer on or before it is refused
+t('an item ticked after being left at an earlier check-in is dated the day after that check [BI1]', () => {
+  const b1 = W.apply(book0, W.checkIn(book0, Object.assign({}, known, { day: DAY, told: DAY + 'T19:30+09:00', newId, figures: { [bank]: 286000 }, ticked: [] })));
+  const occ = payMain + '@2026-12-10';
+  const li = L.lookahead(b1, '2026-12-14').checkIn.toConfirm;
+  ok(li.some(o => o.item === occ));
+  const exp = Object.fromEntries(li.map(o => [o.item, o.amount])), lands = Object.fromEntries(li.map(o => [o.item, o.lands]));
+  const o1 = W.checkIn(b1, { day: '2026-12-14', told: '2026-12-14T19:30+09:00', newId, figures: { [bank]: 466000 }, ticked: [occ], expected: exp, lands });
+  eq(o1.events.find(e => e.id === 'set:' + occ).date, '2026-12-11');
+  const o2 = W.checkIn(b1, { day: '2026-12-14', told: '2026-12-14T19:30+09:00', newId, ticked: [occ], expected: exp, lands, landed: { [occ]: '2026-12-13' } });
+  eq(o2.events.find(e => e.id === 'set:' + occ).date, '2026-12-13');
+  assert.throws(() => W.checkIn(b1, { day: '2026-12-14', told: '2026-12-14T19:30+09:00', newId, ticked: [occ], expected: exp, lands, landed: { [occ]: '2026-12-10' } }));
+  assert.throws(() => W.checkIn(b1, { day: '2026-12-14', told: '2026-12-14T19:30+09:00', newId, ticked: [occ], expected: exp, lands, landed: { [occ]: '2026-12-15' } }));
+  // the later check's figure holds the pay: no gap is asked about
+  const r = L.lookahead(W.apply(b1, o1), '2026-12-14');
+  ok(!r.warnings.some(w => w.code === 'gain_to_ask'));
+  eq(r.accounts[bank].bank, 466000);
+  eq(W.landedFrom(b1, { day: '2026-12-14' }, occ), '2026-12-11');
+});
 done('checkin');

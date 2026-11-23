@@ -5,11 +5,17 @@
 let check3 = null;
 function openCheck3() {
   const day = E3.today(), yr = day.slice(0, 4), r = E3.view(day), list = r.checkIn.toConfirm;
-  check3 = { day, list };
+  /* [BI1] an item left unticked at an earlier check-in did not land before that check: the sheet asks the day it landed,
+     the day after that check by default (the engine's landedFrom gives it) */
+  const from = {}; for (const o of list) { const f = BurrowEngine.checkin.landedFrom(E3.book, { day }, o.item); if (f && o.lands < f) from[o.item] = f > day ? day : f; }
+  check3 = { day, list, from };
+  const landedRow = (o, i) => (from[o.item] ? `<div class="a3-field a3-landed"><label for="a3l${i}">Landed on</label>
+      <input class="a3-in" type="date" id="a3l${i}" data-landed="${esc3(o.item)}" value="${esc3(from[o.item])}" min="${esc3(from[o.item])}" max="${esc3(day)}"></div>` : '');
   const rows = list.map((o, i) => `<div class="a3-tick" data-item="${esc3(o.item)}">
       <input type="checkbox" id="a3t${i}" checked aria-describedby="a3d${i}">
       <label for="a3t${i}"><span>${esc3(E3.occName(o.item))}</span><span class="when" id="a3d${i}">${esc3(day3(o.lands, yr))}, ${esc3(E3.nameOf(o.account))}</span></label>
       <input class="a3-in" type="text" inputmode="decimal" autocomplete="off" aria-label="Amount for ${esc3(E3.occName(o.item))}" data-amt="${esc3(o.item)}" value="${SM.toInput(o.amount, E3.curOf(o.account))}">
+      ${landedRow(o, i)}
     </div>`).join('');
   const figs = Object.keys(r.accounts).map(id => `<div class="a3-field"><label for="a3f-${esc3(id)}">What does ${esc3(E3.nameOf(id))} show today?</label>
       <input class="a3-in" type="text" inputmode="decimal" autocomplete="off" id="a3f-${esc3(id)}" data-bankfig="${esc3(id)}" placeholder="${esc3(SM.symbol(r.accounts[id].currency).trim())}">
@@ -39,7 +45,7 @@ async function saveCheck3() {
     if (v === null) { err.textContent = `Type what ${E3.nameOf(id)} shows today, as an amount`; el.focus(); return; }
     figures[id] = v;
   }
-  const ticked = [], amounts = {}, expected = {}, lands = {};
+  const ticked = [], amounts = {}, expected = {}, lands = {}, landed = {};
   for (const o of check3.list) {
     expected[o.item] = o.amount; lands[o.item] = o.lands;
     const row = [...sheet.querySelectorAll('.a3-tick')].find(x => x.dataset.item === o.item);
@@ -47,8 +53,13 @@ async function saveCheck3() {
     const v = typed3(row.querySelector('[data-amt]').value, E3.curOf(o.account));
     if (v === null) { err.textContent = `Type the amount for ${E3.occName(o.item)}`; row.querySelector('[data-amt]').focus(); return; }
     ticked.push(o.item); if (v !== o.amount) amounts[o.item] = v;
+    const ld = row.querySelector('[data-landed]');
+    if (ld) {
+      if (!ld.value || ld.value < check3.from[o.item] || ld.value > check3.day) { err.textContent = `${E3.occName(o.item)} was not in your last check, so it landed between ${day3(check3.from[o.item], check3.day.slice(0, 4))} and today`; ld.focus(); return; }
+      landed[o.item] = ld.value;
+    }
   }
-  const out = BurrowEngine.checkin.checkIn(E3.book, { day: check3.day, told: E3.told('00'), newId: E3.newId, figures, ticked, unticked: [], amounts, expected, lands });
+  const out = BurrowEngine.checkin.checkIn(E3.book, { day: check3.day, told: E3.told('00'), newId: E3.newId, figures, ticked, unticked: [], amounts, expected, lands, landed });
   /* TODO(lane A, lane C): the figure is read after the ticked items went through, but the writer gives them all one
      `told`, so the engine orders them by their place in the list, and the store hands events back sorted by id. A
      reload then put the check before the pay and counted the pay twice. Until the writer or the store keeps that order,

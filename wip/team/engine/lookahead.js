@@ -766,6 +766,10 @@
     const gaveWay = new Set();
     function placeBalance(g) {
       let amt = 0;
+      const own = g.keptIn && g.keptIn.mode === 'ownAccount' ? g.keptIn.acct : null;
+      let outside = 0;
+      if (own) for (const id of Object.keys(openEv)) { const sp = (openEv[id].split || {}).places || {}; if (id !== own && sp[g.id] != null) outside += sp[g.id]; }
+      const placeMoveGrps = new Set(live().filter(e => e.k === 'move' && (e.place === g.id || e.place2 === g.id) && e.grp != null).map(e => e.grp));
       for (const id of Object.keys(openEv)) { const sp = (openEv[id].split || {}).places || {}; if (sp[g.id] != null) amt += sp[g.id]; }
       for (const e of live()) {
         if (e.k === 'move' && e.place2 === g.id && e.place !== g.id && !gaveWay.has(e.id)) amt += e.a;
@@ -773,6 +777,14 @@
         if (e.k === 'move' && e.place === g.id && e.place2 !== g.id && !e.toPlace) amt -= e.a;
         if (e.k === 'spend' && fromPlace(e) === g.id && (!isFeeRecord(e) || isFee(e))) amt -= e.a;   // [H7, S5]
         if (e.k === 'adjust' && e.place === g.id) amt += e.a;   // [T7]
+        // [BI5] a goal kept in its own account: money moved into that account is set aside for it, and money moved out
+        // of it is taken from it, unless a move of the place was written with it (the same `grp`), which already counts.
+        // [V1] Money the goal already held outside its account (its opening split on another account) moved in is the
+        // same money: it moves first, and only what is beyond it is new.
+        if (own && TWO_SIDED[e.k] && e.from !== e.to && (e.to === own || e.from === own) && !(e.grp != null && placeMoveGrps.has(e.grp))) {
+          if (e.to === own) { const inn = e.a2 != null ? e.a2 : e.a, same = Math.min(outside, inn); outside -= same; amt += inn - same; }
+          else amt -= e.a;
+        }
         if (e.k === 'periodEnd') for (const mv of e.moves || []) {   // [P2]
           if (mv.to === g.id && e.place !== g.id) amt += mv.a;
           if (e.place === g.id && mv.to !== g.id) amt -= mv.a;

@@ -2745,6 +2745,10 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     const gaveWay = new Set();
     function placeBalance(g) {
       let amt = 0;
+      const own = g.keptIn && g.keptIn.mode === 'ownAccount' ? g.keptIn.acct : null;
+      let outside = 0;
+      if (own) for (const id of Object.keys(openEv)) { const sp = (openEv[id].split || {}).places || {}; if (id !== own && sp[g.id] != null) outside += sp[g.id]; }
+      const placeMoveGrps = new Set(live().filter(e => e.k === 'move' && (e.place === g.id || e.place2 === g.id) && e.grp != null).map(e => e.grp));
       for (const id of Object.keys(openEv)) { const sp = (openEv[id].split || {}).places || {}; if (sp[g.id] != null) amt += sp[g.id]; }
       for (const e of live()) {
         if (e.k === 'move' && e.place2 === g.id && e.place !== g.id && !gaveWay.has(e.id)) amt += e.a;
@@ -2752,6 +2756,14 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
         if (e.k === 'move' && e.place === g.id && e.place2 !== g.id && !e.toPlace) amt -= e.a;
         if (e.k === 'spend' && fromPlace(e) === g.id && (!isFeeRecord(e) || isFee(e))) amt -= e.a;   // [H7, S5]
         if (e.k === 'adjust' && e.place === g.id) amt += e.a;   // [T7]
+        // [BI5] a goal kept in its own account: money moved into that account is set aside for it, and money moved out
+        // of it is taken from it, unless a move of the place was written with it (the same `grp`), which already counts.
+        // [V1] Money the goal already held outside its account (its opening split on another account) moved in is the
+        // same money: it moves first, and only what is beyond it is new.
+        if (own && TWO_SIDED[e.k] && e.from !== e.to && (e.to === own || e.from === own) && !(e.grp != null && placeMoveGrps.has(e.grp))) {
+          if (e.to === own) { const inn = e.a2 != null ? e.a2 : e.a, same = Math.min(outside, inn); outside -= same; amt += inn - same; }
+          else amt -= e.a;
+        }
         if (e.k === 'periodEnd') for (const mv of e.moves || []) {   // [P2]
           if (mv.to === g.id && e.place !== g.id) amt += mv.a;
           if (e.place === g.id && mv.to !== g.id) amt -= mv.a;
@@ -3537,11 +3549,13 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
    it turns what the person ticked and typed into records. Taken over from app3/src/checkin_write.js (WIRING_PLAN step 8).
    checkIn(book, { day, told, newId, figures: { acct: amount }, ticked: [occ], amounts: { occ: amount },
                    expected: { occ: amount }, lands: { occ: day }, unticked: [import line id],
-                   fillerPlace: { acct: place }, from, split })
+                   fillerPlace: { acct: place }, from, split, landed: { occ: day } })
    returns { checkins: [one record], events: [...] } and never changes the book:
      - each ticked item writes `set:<occ>` [O2]: pay as `in` with `stream` (it starts the period), a card payment as
        `repay` from its paying account, a bill or transfer as `spend` from its account, each with `settles` and the
-       amount typed (or the expected one), dated the day it landed (or the check-in day);
+       amount typed (or the expected one), dated the day it landed: `landed` when the person typed it, else its landing
+       day (`lands`) or the check-in day, never on or before the account's previous check [BI1] (landedFrom gives the
+       first day allowed; a typed day before it, or after the check-in day, is refused);
      - each typed figure writes a `check` on the check-in day;
      - every record carries `grp: <check-in id>`; the check-in lists its figures, what it settled, the imported lines
        the person unticked [U2, AS5], each account's filler place for an account typed in it [AS6], its stretch start
@@ -3565,8 +3579,21 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
       if (!o) throw new Error('not an occurrence: ' + occ);
       const typed = a.amounts && Object.prototype.hasOwnProperty.call(a.amounts, occ);
       const amt = whole(typed ? a.amounts[occ] : (a.expected || {})[occ], 'the amount of ' + occ);
-      const rec = { id: I.built.set(occ), date: (a.lands || {})[occ] || a.day, told: at, at, grp: cid, settles: [{ s: o.schedule, due: o.due }] };
       const s = scheds[o.schedule], card = accts[o.schedule];
+      // [BI1] the day it landed: never on or before the account's previous check (it was not in that figure); by
+      // default its landing day, or the day after that check when the landing day is not after it
+      const from = landedFrom(book, a, occ), typedDay = (a.landed || {})[occ];
+      let date;
+      if (typedDay) {
+        if (typedDay > a.day) throw new Error(occ + ' cannot have landed after the check-in day: ' + typedDay);
+        if (from && typedDay < from && !(from > a.day && typedDay === a.day)) throw new Error(occ + ' cannot have landed on or before the previous check: ' + typedDay);
+        date = typedDay;
+      } else {
+        date = (a.lands || {})[occ] || a.day;
+        if (from && date < from) date = from;
+        if (date > a.day) date = a.day;
+      }
+      const rec = { id: I.built.set(occ), date, told: at, at, grp: cid, settles: [{ s: o.schedule, due: o.due }] };
       if (s && s.kind === 'income') Object.assign(rec, { k: 'in', sub: 'pay', acct: s.acct, a: amt, stream: s.id });
       else if (s) Object.assign(rec, { k: 'spend', acct: s.acct, a: amt });
       else if (card) Object.assign(rec, { k: 'repay', acct: card.payFrom || null, acct2: card.id, a: amt, a2: amt });
@@ -3589,13 +3616,33 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     if (a.by) { rec.by = a.by; for (const e of events) e.by = a.by; }
     return { checkins: [rec], events };
   }
+  // [BI1] The first day an item ticked at this check-in can have landed: the day after its account's previous check
+  // (the last check of that account dated before the check-in day, or that day and told before it), or null when the
+  // account has none. A card payment goes by its paying account.
+  function landedFrom(book, a, occ) {
+    const o = I.occurrence(occ);
+    if (!o) return null;
+    const s = (book.schedules || []).find(x => x && !x.gone && x.id === o.schedule);
+    const card = (book.accounts || []).find(x => x && !x.gone && x.id === o.schedule);
+    const acct = s ? s.acct : card ? card.payFrom : null;
+    if (!acct) return null;
+    let prev = null;
+    for (const e of book.events || []) {
+      if (!e || e.gone || e.k !== 'check' || e.stmt || e.acct !== acct || !e.date || e.date > a.day) continue;
+      if (e.date === a.day && a.told && e.told && e.told >= a.told) continue;
+      if (prev === null || e.date > prev) prev = e.date;
+    }
+    if (prev === null) return null;
+    const D = node ? require('./dates.js') : root.BurrowEngine.dates;
+    return D.dayStr(D.dayNum(prev) + 1);
+  }
   function apply(book, out) {
     const b = JSON.parse(JSON.stringify(book));
     b.events = (b.events || []).concat(out.events);
     b.checkins = (b.checkins || []).concat(out.checkins);
     return b;
   }
-  const api = { checkIn, apply };
+  const api = { checkIn, apply, landedFrom };
   if (node) module.exports = api;
   else (root.BurrowEngine = root.BurrowEngine || {}).checkin = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
@@ -7821,11 +7868,17 @@ function renderHome3() {
 let check3 = null;
 function openCheck3() {
   const day = E3.today(), yr = day.slice(0, 4), r = E3.view(day), list = r.checkIn.toConfirm;
-  check3 = { day, list };
+  /* [BI1] an item left unticked at an earlier check-in did not land before that check: the sheet asks the day it landed,
+     the day after that check by default (the engine's landedFrom gives it) */
+  const from = {}; for (const o of list) { const f = BurrowEngine.checkin.landedFrom(E3.book, { day }, o.item); if (f && o.lands < f) from[o.item] = f > day ? day : f; }
+  check3 = { day, list, from };
+  const landedRow = (o, i) => (from[o.item] ? `<div class="a3-field a3-landed"><label for="a3l${i}">Landed on</label>
+      <input class="a3-in" type="date" id="a3l${i}" data-landed="${esc3(o.item)}" value="${esc3(from[o.item])}" min="${esc3(from[o.item])}" max="${esc3(day)}"></div>` : '');
   const rows = list.map((o, i) => `<div class="a3-tick" data-item="${esc3(o.item)}">
       <input type="checkbox" id="a3t${i}" checked aria-describedby="a3d${i}">
       <label for="a3t${i}"><span>${esc3(E3.occName(o.item))}</span><span class="when" id="a3d${i}">${esc3(day3(o.lands, yr))}, ${esc3(E3.nameOf(o.account))}</span></label>
       <input class="a3-in" type="text" inputmode="decimal" autocomplete="off" aria-label="Amount for ${esc3(E3.occName(o.item))}" data-amt="${esc3(o.item)}" value="${SM.toInput(o.amount, E3.curOf(o.account))}">
+      ${landedRow(o, i)}
     </div>`).join('');
   const figs = Object.keys(r.accounts).map(id => `<div class="a3-field"><label for="a3f-${esc3(id)}">What does ${esc3(E3.nameOf(id))} show today?</label>
       <input class="a3-in" type="text" inputmode="decimal" autocomplete="off" id="a3f-${esc3(id)}" data-bankfig="${esc3(id)}" placeholder="${esc3(SM.symbol(r.accounts[id].currency).trim())}">
@@ -7855,7 +7908,7 @@ async function saveCheck3() {
     if (v === null) { err.textContent = `Type what ${E3.nameOf(id)} shows today, as an amount`; el.focus(); return; }
     figures[id] = v;
   }
-  const ticked = [], amounts = {}, expected = {}, lands = {};
+  const ticked = [], amounts = {}, expected = {}, lands = {}, landed = {};
   for (const o of check3.list) {
     expected[o.item] = o.amount; lands[o.item] = o.lands;
     const row = [...sheet.querySelectorAll('.a3-tick')].find(x => x.dataset.item === o.item);
@@ -7863,8 +7916,13 @@ async function saveCheck3() {
     const v = typed3(row.querySelector('[data-amt]').value, E3.curOf(o.account));
     if (v === null) { err.textContent = `Type the amount for ${E3.occName(o.item)}`; row.querySelector('[data-amt]').focus(); return; }
     ticked.push(o.item); if (v !== o.amount) amounts[o.item] = v;
+    const ld = row.querySelector('[data-landed]');
+    if (ld) {
+      if (!ld.value || ld.value < check3.from[o.item] || ld.value > check3.day) { err.textContent = `${E3.occName(o.item)} was not in your last check, so it landed between ${day3(check3.from[o.item], check3.day.slice(0, 4))} and today`; ld.focus(); return; }
+      landed[o.item] = ld.value;
+    }
   }
-  const out = BurrowEngine.checkin.checkIn(E3.book, { day: check3.day, told: E3.told('00'), newId: E3.newId, figures, ticked, unticked: [], amounts, expected, lands });
+  const out = BurrowEngine.checkin.checkIn(E3.book, { day: check3.day, told: E3.told('00'), newId: E3.newId, figures, ticked, unticked: [], amounts, expected, lands, landed });
   /* TODO(lane A, lane C): the figure is read after the ticked items went through, but the writer gives them all one
      `told`, so the engine orders them by their place in the list, and the store hands events back sorted by id. A
      reload then put the check before the pay and counted the pay twice. Until the writer or the store keeps that order,

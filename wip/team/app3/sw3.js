@@ -4,7 +4,7 @@
    - activate: older builds' caches are removed; the money is never here (it lives in IndexedDB), so nothing is lost.
    - fetch: the page is asked from the network first; with no answer in 3 seconds, or none at all, the kept copy is used.
      Calls to /api/ (the cloud copy, the relay) are never kept or answered from here. */
-const CACHE = 'burrow3-d19317ba44c2';
+const CACHE = 'burrow3-1538f220c7f0';
 const FILES = ['./', 'index.html'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => Promise.all(FILES.map(f => fetch(f, { cache: 'reload' }).then(r => { if (r.ok) return c.put(f, r); })))).then(() => self.skipWaiting()));
