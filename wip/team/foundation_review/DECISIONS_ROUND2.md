@@ -256,3 +256,11 @@ AD6 (ed-q1). "No, not paid" asks the amount, with everything owed filled in.
 AD7 (ed-q2). "Don't know" on a loan or pay-later means that month's usual payment is due on the next payment day.
 AD8 (mg-q12). A restore gives the shared `ui` keys a new `at` too.
 The helper's readings (leftover yen to the earliest pays, `terms: 'asked'`, AC6's wording after a space) are confirmed.
+
+## AE. Decisions from confirm_review_3.md (two findings)
+AE1. Keyed overrides carry their own `at`, `by` and `gone` per key and merge key by key like `steps`: `amounts` on schedules and loans, `once` on budget lines and `plan.shares` entries, `extraSteps` on loans. A new grid row, "keyed overrides".
+AE2. AD5's first sentence is withdrawn. A waiting entry is applied once, by the device that applies it, which writes the entry `gone`; the keys it writes carry the entry's `at` and are judged key by key (AE1).
+AE3. Bill schedules may carry `per` too (AD4); a moved bill's one-month amount is spread over its payments like pay.
+AE4. The move summary notes when a moved one-month amount is spread over a three-pay month.
+AE5. A restore stamps with the D4 clock (`nextAt`), never the raw time, and covers built ids, `pendingMove`, `frozen`, held marks and keyed overrides. Restoring a 38.31-format backup after the move runs the move on it and stamps every record with the restore. A restore column is added to the grid.
+AE6. AB3's question is asked as "Has your last card statement already left your bank?", with a line that automatic debits count as "not yet" until the day they come out. The meaning, not the field, is what changes; it is checked with real people before setup ships (MAKO_RUN).
