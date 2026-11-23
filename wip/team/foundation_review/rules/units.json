@@ -1211,15 +1211,20 @@
       "input": {
         "amount": 40000,
         "once": {
-          "pay@2027-01-10": 55000
+          "pay@2027-01-10": {
+            "amount": 55000,
+            "at": "2026-12-20T10:00:00.000+09:00",
+            "by": "phn001"
+          }
         },
         "period": "pay@2027-01-10"
       },
       "expected": 55000,
-      "why": "`once` names the period by its pay, pay@2027-01-10 [T1]: that period gets 55,000 instead of 40,000.",
+      "why": "`once` names the period by its pay, pay@2027-01-10 [T1]: that period gets 55,000 instead of 40,000. The key is in the AE1 shape, `{ amount, at, by }` [AE1, AH3].",
       "decisions": [
         "T1",
-        "B8"
+        "B8",
+        "AH3"
       ]
     },
     {
@@ -1229,15 +1234,20 @@
       "input": {
         "amount": 40000,
         "once": {
-          "pay@2027-01-10": 55000
+          "pay@2027-01-10": {
+            "amount": 55000,
+            "at": "2026-12-20T10:00:00.000+09:00",
+            "by": "phn001"
+          }
         },
         "period": "pay@2027-02-10"
       },
       "expected": 40000,
-      "why": "No override names pay@2027-02-10: 40,000 [T1, B8].",
+      "why": "No override names pay@2027-02-10: 40,000 [T1, B8]. The key is in the AE1 shape, `{ amount, at, by }` [AE1, AH3].",
       "decisions": [
         "T1",
-        "B8"
+        "B8",
+        "AH3"
       ]
     },
     {
@@ -1247,15 +1257,20 @@
       "input": {
         "amount": 40000,
         "once": {
-          "pay@2027-01-10": 55000
+          "pay@2027-01-10": {
+            "amount": 55000,
+            "at": "2026-12-20T10:00:00.000+09:00",
+            "by": "phn001"
+          }
         },
         "period": "pay@2027-01-10",
         "periodFrom": "2027-01-12"
       },
       "expected": 55000,
-      "why": "The pay due Sun 10 Jan was late and the person started the period on Tue 12 Jan (ps:pay@2027-01-10). The period is still pay@2027-01-10, so the override set before the pay landed still applies: 55,000 [T1]. Keyed by its start day it would have been lost.",
+      "why": "The pay due Sun 10 Jan was late and the person started the period on Tue 12 Jan (ps:pay@2027-01-10). The period is still pay@2027-01-10, so the override set before the pay landed still applies: 55,000 [T1]. Keyed by its start day it would have been lost. The key is in the AE1 shape, `{ amount, at, by }` [AE1, AH3].",
       "decisions": [
-        "T1"
+        "T1",
+        "AH3"
       ]
     },
     {
@@ -1488,6 +1503,53 @@
       "decisions": [
         "AB2",
         "X watch"
+      ]
+    },
+    {
+      "id": "units-85",
+      "question": "period_amount_once",
+      "title": "AH3: a removed `once` key is not read: the period keeps the usual amount",
+      "input": {
+        "amount": 40000,
+        "once": {
+          "pay@2027-01-10": {
+            "amount": 55000,
+            "gone": "2026-12-22",
+            "at": "2026-12-22T10:00:00.000+09:00",
+            "by": "phn001"
+          }
+        },
+        "period": "pay@2027-01-10"
+      },
+      "expected": 40000,
+      "why": "Food for the period started by pay@2027-01-10 was set to 55,000 for a family visit, then removed on 22 Dec when the visit was called off: the key stays with `gone` [AE1] and is not read [AH3], so the period gets the usual 40,000. Read as a plain value, the removed 55,000 still counted.",
+      "decisions": [
+        "AH3",
+        "AE1",
+        "T1"
+      ]
+    },
+    {
+      "id": "units-86",
+      "question": "period_amount_once",
+      "title": "AH3: a `once` key undone and put back with Redo is read again",
+      "input": {
+        "amount": 40000,
+        "once": {
+          "pay@2027-01-10": {
+            "amount": 55000,
+            "at": "2026-12-22T10:05:00.000+09:00",
+            "by": "phn001"
+          }
+        },
+        "period": "pay@2027-01-10"
+      },
+      "expected": 55000,
+      "why": "The key was undone at 10:00 (`gone`) and put back with Redo at 10:05: Redo clears `gone` with a newer `at` [H6, AE1], so the key is live and the period gets 55,000 [AH3].",
+      "decisions": [
+        "AH3",
+        "AE1",
+        "H6"
       ]
     }
   ],

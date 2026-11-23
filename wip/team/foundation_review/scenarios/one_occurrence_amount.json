@@ -1,7 +1,7 @@
 {
   "life": "one_occurrence_amount",
   "title": "One occurrence changed (`amounts`), keyed by its due date before any move (SCHEMA_V3 5, B8; X watch decided)",
-  "story": "Set up Tue 1 Dec 2026: the bank holds 400,000, of which 50,000 is what is left of Free to spend (typed). Pay of 250,000 on the 10th (moved earlier) starts the period; Free to spend is 50,000 a month. Rent of 80,000 on the 27th (moved later) rises to 85,000 from 1 Feb 2027. December's rent is 95,000 this once (a repair added), and February's 90,000: each is saved in `amounts` under its due date before any move (27 Dec lands Mon 28 Dec; 27 Feb lands Mon 1 Mar). The pays and the December and January rents are ticked; a check-in on Sat 20 Feb 2027 shows 975,000. Every amount is made up.",
+  "story": "Set up Tue 1 Dec 2026: the bank holds 400,000, of which 50,000 is what is left of Free to spend (typed). Pay of 250,000 on the 10th (moved earlier) starts the period; Free to spend is 50,000 a month. Rent of 80,000 on the 27th (moved later) rises to 85,000 from 1 Feb 2027. December's rent is 95,000 this once (a repair added), and February's 90,000: each is saved in `amounts` under its due date before any move, as a keyed override `{ amount, at, by }` (AE1, AH3) (27 Dec lands Mon 28 Dec; 27 Feb lands Mon 1 Mar). The pays and the December and January rents are ticked; a check-in on Sat 20 Feb 2027 shows 975,000. Every amount is made up.",
   "currency": "JPY",
   "window": {
     "from": "2026-12-01",
@@ -65,8 +65,8 @@
         }
       ],
       "amounts": {
-        "2026-12-27": 95000,
-        "2027-02-27": 90000
+        "2026-12-27": { "amount": 95000, "at": "2026-12-05T10:00:00.000+09:00", "by": "phn001" },
+        "2027-02-27": { "amount": 90000, "at": "2027-01-20T10:00:00.000+09:00", "by": "phn001" }
       }
     }
   ],

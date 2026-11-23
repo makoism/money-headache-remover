@@ -1,0 +1,127 @@
+{
+  "life": "keyed_removed_x8",
+  "title": "A schedule change after a removed key: the removed key names nothing, so the copy is sound (X8, AH3; confirm_review_4 g3)",
+  "story": "Set up Tue 1 Dec 2026: the bank holds 400,000, of which 50,000 is what is left of Free to spend (typed). Pay of 250,000 on the 10th (moved earlier) starts the period; Free to spend is 50,000 a month. January's pay was set to 0 (unpaid leave) and removed on 20 Dec when the leave was cancelled (a keyed override with `gone`, AE1). On 21 Dec the employer moves pay day to the 25th from 1 Jan 2027: allowed, because a removed key names nothing (X8, AH3). Rent of 80,000 on the 27th (moved later). Every amount is made up.",
+  "currency": "JPY",
+  "window": {
+    "from": "2026-12-01",
+    "to": "2027-02-28"
+  },
+  "holidays": {
+    "country": "none",
+    "dates": [],
+    "bank_closed": []
+  },
+  "main_bank": "bank",
+  "accounts": [
+    {
+      "id": "bank",
+      "name": "Bank",
+      "kind": "bank",
+      "currency": "JPY",
+      "minimum": 0,
+      "opening": {
+        "date": "2026-12-01",
+        "amount": 400000,
+        "split": {
+          "free": 50000
+        }
+      }
+    }
+  ],
+  "income": [
+    {
+      "id": "pay",
+      "name": "Pay",
+      "account": "bank",
+      "amount": 250000,
+      "schedule": {
+        "frequency": "monthly",
+        "day": 10
+      },
+      "weekend_holiday": "move earlier",
+      "starts_period": true,
+      "amounts": {
+        "2027-01-10": {
+          "amount": 0,
+          "gone": "2026-12-20",
+          "at": "2026-12-20T10:00:00.000+09:00",
+          "by": "phn001"
+        }
+      },
+      "changes": [
+        {
+          "from": "2027-01-01",
+          "schedule": {
+            "frequency": "monthly",
+            "day": 25
+          },
+          "amount": 250000
+        }
+      ]
+    }
+  ],
+  "bills": [
+    {
+      "id": "rent",
+      "name": "Rent",
+      "account": "bank",
+      "amount": 80000,
+      "schedule": {
+        "frequency": "monthly",
+        "day": 27
+      },
+      "weekend_holiday": "move later"
+    }
+  ],
+  "goals": [],
+  "plan": {
+    "lines": [],
+    "free": {
+      "per": "month",
+      "amount": 50000
+    }
+  },
+  "events": [
+    {
+      "id": "set:pay@2026-12-10",
+      "date": "2026-12-10",
+      "told": "2026-12-10T12:00",
+      "kind": "pay_in",
+      "account": "bank",
+      "amount": 250000,
+      "settles": "pay@2026-12-10"
+    },
+    {
+      "id": "set:rent@2026-12-27",
+      "date": "2026-12-28",
+      "told": "2026-12-28T12:00",
+      "kind": "bill_paid",
+      "account": "bank",
+      "amount": 80000,
+      "settles": "rent@2026-12-27"
+    }
+  ],
+  "asks": [
+    {
+      "id": "krx-01",
+      "date": "2027-01-02",
+      "question": "days_to_next_pay",
+      "expected": {
+        "days": 23,
+        "next_pay": "2027-01-25",
+        "item": "pay@2027-01-25"
+      },
+      "why": "2027-01-25 - 2027-01-02 = 23",
+      "note": "Mon 25 Jan. The removed 10 Jan key names no occurrence, so the change from 1 Jan is sound [X8, AH3]. Read with the removed key the copy was refused: the key names the 10 Jan pay, which the change no longer makes."
+    },
+    {
+      "id": "krx-02",
+      "date": "2027-01-02",
+      "question": "bank_today",
+      "account": "bank",
+      "expected": 570000,
+      "why": "400,000 (opening) + 250,000 (pay 10 Dec) - 80,000 (rent 28 Dec) = 570,000"
+    }
+  ]
+}

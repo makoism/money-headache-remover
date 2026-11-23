@@ -1,0 +1,264 @@
+{
+  "life": "keyed_removed",
+  "title": "Keyed overrides in the AE1 shape, removed, undone and put back with Redo: a removed key is not read (AE1, AH3; confirm_review_4 item 3)",
+  "story": "Set up Tue 1 Dec 2026 as in one_occurrence_amount: the bank holds 400,000, of which 50,000 is what is left of Free to spend (typed). Pay of 250,000 on the 10th (moved earlier) starts the period; Free to spend is 50,000 a month. Rent of 80,000 on the 27th (moved later) rises to 85,000 from 1 Feb 2027. Each one-occurrence change is a keyed override `{ amount, at, by }`, removed by its own `gone` (AE1). December's rent was set to 95,000 (a repair) and undone straight away (Undo: `gone` 5 Dec). January's pay was set to 0 (unpaid leave), then removed on 20 Dec because the leave was cancelled. February's rent of 90,000 was removed by mistake and put back with Redo (live, a newer `at`). March's rent of 70,000 (a discount) was removed on 2 Mar. January's pay lands Fri 8 Jan and is ticked the next morning. A check-in on Sat 20 Feb 2027 shows 990,000. Every amount is made up.",
+  "currency": "JPY",
+  "window": {
+    "from": "2026-12-01",
+    "to": "2027-03-31"
+  },
+  "holidays": {
+    "country": "none",
+    "dates": [],
+    "bank_closed": []
+  },
+  "main_bank": "bank",
+  "accounts": [
+    {
+      "id": "bank",
+      "name": "Bank",
+      "kind": "bank",
+      "currency": "JPY",
+      "minimum": 0,
+      "opening": {
+        "date": "2026-12-01",
+        "amount": 400000,
+        "split": {
+          "free": 50000
+        }
+      }
+    }
+  ],
+  "income": [
+    {
+      "id": "pay",
+      "name": "Pay",
+      "account": "bank",
+      "amount": 250000,
+      "schedule": {
+        "frequency": "monthly",
+        "day": 10
+      },
+      "weekend_holiday": "move earlier",
+      "starts_period": true,
+      "amounts": {
+        "2027-01-10": {
+          "amount": 0,
+          "gone": "2026-12-20",
+          "at": "2026-12-20T10:00:00.000+09:00",
+          "by": "phn001"
+        }
+      }
+    }
+  ],
+  "bills": [
+    {
+      "id": "rent",
+      "name": "Rent",
+      "account": "bank",
+      "amount": 80000,
+      "schedule": {
+        "frequency": "monthly",
+        "day": 27
+      },
+      "weekend_holiday": "move later",
+      "changes": [
+        {
+          "from": "2027-02-01",
+          "schedule": {
+            "frequency": "monthly",
+            "day": 27
+          },
+          "amount": 85000
+        }
+      ],
+      "amounts": {
+        "2026-12-27": {
+          "amount": 95000,
+          "gone": "2026-12-05",
+          "at": "2026-12-05T10:01:00.000+09:00",
+          "by": "phn001"
+        },
+        "2027-02-27": {
+          "amount": 90000,
+          "at": "2027-02-01T10:05:00.000+09:00",
+          "by": "phn001"
+        },
+        "2027-03-27": {
+          "amount": 70000,
+          "gone": "2027-03-02",
+          "at": "2027-03-02T10:00:00.000+09:00",
+          "by": "phn001"
+        }
+      }
+    }
+  ],
+  "goals": [],
+  "plan": {
+    "lines": [],
+    "free": {
+      "per": "month",
+      "amount": 50000
+    }
+  },
+  "events": [
+    {
+      "id": "set:pay@2026-12-10",
+      "date": "2026-12-10",
+      "told": "2026-12-10T12:00",
+      "kind": "pay_in",
+      "account": "bank",
+      "amount": 250000,
+      "settles": "pay@2026-12-10"
+    },
+    {
+      "id": "set:rent@2026-12-27",
+      "date": "2026-12-28",
+      "told": "2026-12-28T12:00",
+      "kind": "bill_paid",
+      "account": "bank",
+      "amount": 80000,
+      "settles": "rent@2026-12-27"
+    },
+    {
+      "id": "set:pay@2027-01-10",
+      "date": "2027-01-08",
+      "told": "2027-01-09T09:00",
+      "kind": "pay_in",
+      "account": "bank",
+      "amount": 250000,
+      "settles": "pay@2027-01-10",
+      "note": "ticked the next morning"
+    },
+    {
+      "id": "set:rent@2027-01-27",
+      "date": "2027-01-27",
+      "told": "2027-01-27T12:00",
+      "kind": "bill_paid",
+      "account": "bank",
+      "amount": 80000,
+      "settles": "rent@2027-01-27"
+    },
+    {
+      "id": "set:pay@2027-02-10",
+      "date": "2027-02-10",
+      "told": "2027-02-10T12:00",
+      "kind": "pay_in",
+      "account": "bank",
+      "amount": 250000,
+      "settles": "pay@2027-02-10"
+    },
+    {
+      "id": "c1",
+      "date": "2027-02-20",
+      "told": "2027-02-20T10:00",
+      "kind": "check",
+      "account": "bank",
+      "amount": 990000
+    },
+    {
+      "id": "set:pay@2027-03-10",
+      "date": "2027-03-10",
+      "told": "2027-03-10T12:00",
+      "kind": "pay_in",
+      "account": "bank",
+      "amount": 250000,
+      "settles": "pay@2027-03-10"
+    }
+  ],
+  "asks": [
+    {
+      "id": "kr-01",
+      "date": "2026-12-11",
+      "question": "due_before_next_pay",
+      "expected": {
+        "items": [
+          {
+            "item": "rent@2026-12-27",
+            "lands": "2026-12-28",
+            "amount": 80000
+          }
+        ],
+        "total": 80000
+      },
+      "why": "80,000 (December's rent: the 95,000 key was undone, so it is `gone` and the usual amount counts) = 80,000",
+      "note": "Read with the removed key: 95,000 (confirm_review_4 item 3)."
+    },
+    {
+      "id": "kr-02",
+      "date": "2026-12-11",
+      "question": "safe_to_spend",
+      "account": "bank",
+      "expected": 570000,
+      "why": "650,000 (Bank today) - 80,000 (Rent 27 Dec, the undone 95,000 not counted) = 570,000",
+      "note": "Across the period start on Fri 8 Jan: January's pay of 0 was removed, so the walk counts 250,000 on 8 Jan and the lowest point is after the December rent. Read with the removed key the pay counts 0 and the walk falls to 650,000 - 80,000 - 80,000 = 490,000 after the January rent."
+    },
+    {
+      "id": "kr-03",
+      "date": "2027-01-08",
+      "question": "check_in_list",
+      "expected": {
+        "items": [
+          {
+            "item": "pay@2027-01-10",
+            "lands": "2027-01-08",
+            "amount": 250000
+          }
+        ],
+        "total": 250000
+      },
+      "why": "250,000 (January's pay, due Sun 10 Jan, lands Fri 8 Jan: its 0 key was removed when the leave was cancelled) = 250,000",
+      "note": "On its check day, before the tick (9 Jan). Read with the removed key: 0."
+    },
+    {
+      "id": "kr-04",
+      "date": "2027-02-11",
+      "question": "due_before_next_pay",
+      "expected": {
+        "items": [
+          {
+            "item": "rent@2027-02-27",
+            "lands": "2027-03-01",
+            "amount": 90000
+          }
+        ],
+        "total": 90000
+      },
+      "why": "90,000 (February's rent: removed by mistake and put back with Redo, so the key is live and wins over the 85,000 step) = 90,000"
+    },
+    {
+      "id": "kr-05",
+      "date": "2027-03-02",
+      "question": "check_in_list",
+      "expected": {
+        "items": [
+          {
+            "item": "rent@2027-02-27",
+            "lands": "2027-03-01",
+            "amount": 90000
+          }
+        ],
+        "total": 90000
+      },
+      "why": "90,000 (February's rent, the key put back with Redo, landed Mon 1 Mar) = 90,000",
+      "note": "On the check day after it lands."
+    },
+    {
+      "id": "kr-06",
+      "date": "2027-03-11",
+      "question": "due_before_next_pay",
+      "expected": {
+        "items": [
+          {
+            "item": "rent@2027-03-27",
+            "lands": "2027-03-29",
+            "amount": 85000
+          }
+        ],
+        "total": 85000
+      },
+      "why": "85,000 (March's rent: the 70,000 key was removed on 2 Mar, so the step from 1 Feb) = 85,000",
+      "note": "Read with the removed key: 70,000."
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 {
   "life": "loan_one_month_amount",
   "title": "A moved debt's one-month amount is that month's whole payment, in place of the minimum and the planned extra (decision AC5)",
-  "story": "Set up Sat 16 Jan 2027. The bank holds 300,000 and takes a pay of 250,000 on the 30th. A car loan owing 400,000 is paid on the 27th from the bank: 20,000 a month, plus a planned extra of 5,000 a month from 1 Dec 2026. In 38.31 the person had typed a one-month amount of 24,000 for the loan in January 2027 (`once['2027-01']['debt:car']`); the move wrote it as `amounts` on the 27 Jan payment. AC5: that is the month's whole payment, so 24,000 is due on 27 Jan, not 24,000 on top of the usual payment and not 24,000 plus the extra. Every amount is made up.",
+  "story": "Set up Sat 16 Jan 2027. The bank holds 300,000 and takes a pay of 250,000 on the 30th. A car loan owing 400,000 is paid on the 27th from the bank: 20,000 a month, plus a planned extra of 5,000 a month from 1 Dec 2026. In 38.31 the person had typed a one-month amount of 24,000 for the loan in January 2027 (`once['2027-01']['debt:car']`); the move wrote it as `amounts` on the 27 Jan payment, a keyed override `{ amount, at, by }` (AE1, AH3). AC5: that is the month's whole payment, so 24,000 is due on 27 Jan, not 24,000 on top of the usual payment and not 24,000 plus the extra. Every amount is made up.",
   "currency": "JPY",
   "window": { "from": "2027-01-16", "to": "2027-03-31" },
   "holidays": { "country": "none", "dates": [], "bank_closed": [] },
@@ -9,7 +9,7 @@
   "accounts": [
     { "id": "bank", "name": "Bank", "kind": "bank", "currency": "JPY", "minimum": 0, "opening": { "date": "2027-01-16", "amount": 300000 } },
     { "id": "car", "name": "Car loan", "kind": "loan", "currency": "JPY",
-      "payment": { "day": 27, "from": "bank", "weekend_holiday": "none", "amount": 20000, "extra_steps": [ { "from": "2026-12-01", "amount": 5000 } ], "amounts": { "2027-01-27": 24000 } },
+      "payment": { "day": 27, "from": "bank", "weekend_holiday": "none", "amount": 20000, "extra_steps": [ { "from": "2026-12-01", "amount": 5000 } ], "amounts": { "2027-01-27": { "amount": 24000, "at": "2027-01-16T09:00:00.000+09:00", "by": "phn001" } } },
       "opening": { "date": "2027-01-16", "owed": 400000 } }
   ],
   "income": [

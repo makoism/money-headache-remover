@@ -1,0 +1,105 @@
+{
+  "life": "away_clock",
+  "title": "Used again after three weeks away: `told` on the device's own clock, so a spend typed after a check that day is counted (AH1; confirm_review_4 g1)",
+  "story": "Ken (made up) uses a phone and a desktop. The bank opened Sun 1 Nov 2026 with 320,000, typed on the phone at 20:00; the phone is then not opened until Sun 22 Nov. Pay of 250,000 on the 25th (moved earlier) starts the period. On 21 Nov he spent 3,000 and on 22 Nov he lunches for 8,000. On Sun 22 Nov at 09:00 he checks the bank on the desktop: 300,000. At 12:00 he opens the phone and logs both spends. Each `told` is the phone's own clock, 22 Nov 12:00 (AH1); before AH1 both were stamped 1 Nov 21:00:00.001 and the 8,000 read as already inside the 09:00 check. Times carry the device's offset, +09:00. Every amount is made up.",
+  "currency": "JPY",
+  "window": {
+    "from": "2026-11-01",
+    "to": "2027-01-31"
+  },
+  "holidays": {
+    "country": "none",
+    "dates": [],
+    "bank_closed": []
+  },
+  "main_bank": "bank",
+  "device_offset": "+09:00",
+  "accounts": [
+    {
+      "id": "bank",
+      "name": "Bank",
+      "kind": "bank",
+      "currency": "JPY",
+      "minimum": 0,
+      "opening": {
+        "date": "2026-11-01",
+        "told": "2026-11-01T20:00+09:00",
+        "amount": 320000
+      }
+    }
+  ],
+  "income": [
+    {
+      "id": "pay",
+      "name": "Pay",
+      "account": "bank",
+      "amount": 250000,
+      "schedule": {
+        "frequency": "monthly",
+        "day": 25
+      },
+      "weekend_holiday": "move earlier",
+      "starts_period": true
+    }
+  ],
+  "bills": [],
+  "goals": [],
+  "events": [
+    {
+      "id": "ac2",
+      "date": "2026-11-21",
+      "told": "2026-11-22T12:00+09:00",
+      "kind": "spend",
+      "account": "bank",
+      "amount": 3000,
+      "note": "logged on the phone after three weeks away; dated the day before the check"
+    },
+    {
+      "id": "ac1",
+      "date": "2026-11-22",
+      "told": "2026-11-22T09:00+09:00",
+      "kind": "check",
+      "account": "bank",
+      "amount": 300000,
+      "note": "typed on the desktop"
+    },
+    {
+      "id": "ac3",
+      "date": "2026-11-22",
+      "told": "2026-11-22T12:00+09:00",
+      "kind": "spend",
+      "account": "bank",
+      "amount": 8000,
+      "note": "lunch, logged on the phone at 12:00, after the 09:00 check"
+    }
+  ],
+  "asks": [
+    {
+      "id": "ac-01",
+      "date": "2026-11-22",
+      "question": "bank_today",
+      "account": "bank",
+      "expected": 292000,
+      "why": "300,000 (the desktop check at 09:00) - 8,000 (lunch, told at 12:00 on the phone's own clock, after the check) = 292,000",
+      "note": "The 3,000 is dated the day before the check, so it is inside the 300,000 whatever its `told`. Before AH1 the lunch's `told` was 1 Nov 21:00:00.001, before the check: 300,000, and the 8,000 was never counted."
+    },
+    {
+      "id": "ac-02",
+      "date": "2026-11-22",
+      "question": "safe_to_spend",
+      "account": "bank",
+      "expected": 292000,
+      "why": "292,000 (Bank today) - 0 (nothing due before the 25 Nov pay) = 292,000",
+      "note": "Before AH1: 300,000, 8,000 too high (confirm_review_4 item 1)."
+    },
+    {
+      "id": "ac-03",
+      "date": "2026-11-22",
+      "question": "not_explained",
+      "account": "bank",
+      "expected": 17000,
+      "why": "320,000 (opening) - 3,000 (21 Nov) - 300,000 (the check) = 17,000",
+      "note": "17,000 more went out than the app knows of by the 09:00 check. The lunch, told after the check, is not part of it."
+    }
+  ]
+}

@@ -15191,6 +15191,139 @@
         "AD4",
         "AB2"
       ]
+    },
+    {
+      "id": "mv-122",
+      "question": "apply_waiting",
+      "title": "AH4: a waiting entry no restore brought back keeps its own `at`; a later correction of that month is kept (g2 the other way round)",
+      "input": {
+        "copy": {
+          "schedules": [
+            {
+              "id": "mv:pay:steps.a",
+              "kind": "income",
+              "name": "Salary",
+              "cur": "JPY",
+              "acct": "mv:acct:cfg",
+              "startsPeriod": true,
+              "per": "month",
+              "steps": [
+                {
+                  "from": "2026-11-22",
+                  "amount": 250000
+                }
+              ],
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "at": "2026-11-27T10:00:00.000+09:00",
+              "by": "dsk001",
+              "amounts": {
+                "2027-01-25": {
+                  "amount": 250000,
+                  "at": "2026-11-27T10:00:00.000+09:00",
+                  "by": "dsk001"
+                }
+              }
+            }
+          ],
+          "pendingMove": [
+            {
+              "id": "mv:pend:once.2027-01.a",
+              "field": "once.2027-01.a",
+              "waits": "mv:pay:steps.a",
+              "to": "amounts",
+              "ym": "2027-01",
+              "a": 300000,
+              "told": "2026-11-23T20:00:00.000+09:00",
+              "at": "2026-11-23T20:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ],
+          "accounts": [],
+          "events": [],
+          "plan": {
+            "shares": [],
+            "budgets": []
+          }
+        },
+        "rules": {
+          "mv:pay:steps.a": {
+            "every": "month",
+            "days": [
+              25
+            ]
+          }
+        },
+        "moveDay": "2026-11-24",
+        "answeredAt": "2026-11-28T08:00:00.000+09:00",
+        "by": "phn001",
+        "show": [
+          "schedules",
+          "pendingMove"
+        ]
+      },
+      "expected": {
+        "schedules": [
+          {
+            "id": "mv:pay:steps.a",
+            "kind": "income",
+            "name": "Salary",
+            "cur": "JPY",
+            "acct": "mv:acct:cfg",
+            "startsPeriod": true,
+            "per": "month",
+            "steps": [
+              {
+                "from": "2026-11-22",
+                "amount": 250000
+              }
+            ],
+            "told": "2026-11-23T20:00:00.000+09:00",
+            "at": "2026-11-28T08:00:00.000+09:00",
+            "by": "phn001",
+            "amounts": {
+              "2027-01-25": {
+                "amount": 250000,
+                "at": "2026-11-27T10:00:00.000+09:00",
+                "by": "dsk001"
+              }
+            },
+            "rules": [
+              {
+                "from": "2026-11-22",
+                "rule": {
+                  "every": "month",
+                  "days": [
+                    25
+                  ]
+                },
+                "at": "2026-11-28T08:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ]
+          }
+        ],
+        "pendingMove": [
+          {
+            "id": "mv:pend:once.2027-01.a",
+            "field": "once.2027-01.a",
+            "waits": "mv:pay:steps.a",
+            "to": "amounts",
+            "ym": "2027-01",
+            "a": 300000,
+            "told": "2026-11-23T20:00:00.000+09:00",
+            "at": "2026-11-28T08:00:00.000+09:00",
+            "by": "phn001",
+            "gone": "2026-11-28"
+          }
+        ]
+      },
+      "why": "The 38.31 copy (last saved Mon 23 Nov 20:00) had a January bonus month of 300,000 waiting for the pay day. On Fri 27 Nov 10:00 the desktop typed January's pay as 250,000 (the bonus was smaller): the key 2027-01-25 at 27 Nov 10:00. On Sat 28 Nov 08:00 the phone answers the pay day, the 25th: the rule is written with the answer's `at` [AA5]. The waiting entry was not brought back by a restore (its `at` is still its `told`), so its key carries the entry's own `at`, 23 Nov 20:00 [AE2, AH4]; the desktop's 27 Nov 10:00 is newer, so 250,000 stays and pay is not overcounted by 50,000 (300,000 - 250,000 = 50,000). The entry is done: `gone` with the answer's `at` [AE2]. Read as AG1 was worded (every entry stamped now), 300,000 would win (confirm_review_4 g2).",
+      "decisions": [
+        "AH4",
+        "AE2",
+        "AE1",
+        "AA5"
+      ]
     }
   ],
   "open": []

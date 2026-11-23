@@ -80,7 +80,11 @@
           "pay@2026-12-10"
         ],
         "amounts": {
-          "2027-01-10": 260000
+          "2027-01-10": {
+            "amount": 260000,
+            "at": "2026-12-20T10:00:00.000+09:00",
+            "by": "phn001"
+          }
         }
       },
       "expected": {
@@ -88,10 +92,11 @@
         "latest": "pay@2027-01-10",
         "offer": "2027-01-11"
       },
-      "why": "`amounts` names pay@2027-01-10 (keyed by its due date). A change from 5 Jan would make that key name nothing [X8]: refused, 11 Jan offered.",
+      "why": "`amounts` names pay@2027-01-10 (keyed by its due date). A change from 5 Jan would make that key name nothing [X8]: refused, 11 Jan offered. The key is in the AE1 shape, `{ amount, at, by }` [AE1, AH3].",
       "decisions": [
         "X8",
-        "B8"
+        "B8",
+        "AH3"
       ]
     },
     {
@@ -133,7 +138,11 @@
           "pay@2027-02-10"
         ],
         "once": {
-          "pay@2027-03-10": 20000
+          "pay@2027-03-10": {
+            "amount": 20000,
+            "at": "2027-02-12T10:00:00.000+09:00",
+            "by": "phn001"
+          }
         }
       },
       "expected": {
@@ -141,11 +150,12 @@
         "latest": "pay@2027-03-10",
         "offer": "2027-03-11"
       },
-      "why": "A budget line's `once` is keyed pay@2027-03-10 [T1]; a change from 1 Mar would leave it naming nothing [X8].",
+      "why": "A budget line's `once` is keyed pay@2027-03-10 [T1]; a change from 1 Mar would leave it naming nothing [X8]. The key is in the AE1 shape, `{ amount, at, by }` [AE1, AH3].",
       "decisions": [
         "X8",
         "T1",
-        "B8"
+        "B8",
+        "AH3"
       ]
     },
     {
@@ -677,6 +687,263 @@
         "AB3",
         "AD6",
         "J5"
+      ]
+    },
+    {
+      "id": "ed-25",
+      "question": "change_from",
+      "title": "AH2: a moved pay's `amounts` key counts: a change from 1 Dec is refused (g4)",
+      "input": {
+        "schedule": "mv:pay:steps.a",
+        "wanted": "2026-12-01",
+        "amounts": {
+          "2027-01-25": {
+            "amount": 0,
+            "at": "2026-11-28T08:00:00.000+09:00",
+            "by": "phn001"
+          }
+        }
+      },
+      "expected": {
+        "refused": true,
+        "latest": "mv:pay:steps.a@2027-01-25",
+        "offer": "2027-01-26"
+      },
+      "why": "The moved pay `mv:pay:steps.a` holds January's 0 on its 25 Jan occurrence (a moved one-month amount). A change from 1 Dec would leave that key naming an occurrence the new rule might not make [X8]; a moved schedule is protected like any other [AH2]: refused, 26 Jan offered (the day after 2027-01-25). Before AH2 the occurrence name `mv:pay:steps.a@2027-01-25` did not match the name pattern and the change was allowed.",
+      "decisions": [
+        "AH2",
+        "X8",
+        "AE1"
+      ]
+    },
+    {
+      "id": "ed-26",
+      "question": "change_from",
+      "title": "AH2: a settled moved pay counts (g4, the phantom pay of confirm_review_1 item 8)",
+      "input": {
+        "schedule": "mv:pay:steps.a",
+        "wanted": "2026-12-01",
+        "settles": [
+          "mv:pay:steps.a@2026-12-25"
+        ]
+      },
+      "expected": {
+        "refused": true,
+        "latest": "mv:pay:steps.a@2026-12-25",
+        "offer": "2026-12-26"
+      },
+      "why": "The 25 Dec moved pay is ticked (`set:mv:pay:steps.a@2026-12-25` settles it). A change from 1 Dec could leave the settle pointing at an occurrence that no longer exists [X8, AH2]: refused, 26 Dec offered.",
+      "decisions": [
+        "AH2",
+        "X8"
+      ]
+    },
+    {
+      "id": "ed-27",
+      "question": "change_from",
+      "title": "AH2: a period-end answer of a moved pay's period counts (`pe:mv:...`)",
+      "input": {
+        "schedule": "mv:pay:steps.a",
+        "wanted": "2026-12-20",
+        "pe": [
+          "pe:mv:pay:steps.a@2026-12-25:free"
+        ]
+      },
+      "expected": {
+        "refused": true,
+        "latest": "mv:pay:steps.a@2026-12-25",
+        "offer": "2026-12-26"
+      },
+      "why": "`pe:mv:pay:steps.a@2026-12-25:free` names the period started by the 25 Dec moved pay [T1, Y28]. Read to its occurrence it is `mv:pay:steps.a@2026-12-25` [AH2] (before AH2 the reader took the second part, `mv`, and found nothing): refused, 26 Dec offered.",
+      "decisions": [
+        "AH2",
+        "X8",
+        "T1"
+      ]
+    },
+    {
+      "id": "ed-28",
+      "question": "change_from",
+      "title": "AH2: a period started without a moved pay counts (`ps:mv:...`)",
+      "input": {
+        "schedule": "mv:pay:steps.a",
+        "wanted": "2026-12-01",
+        "ps": [
+          "ps:mv:pay:steps.a@2026-12-25"
+        ]
+      },
+      "expected": {
+        "refused": true,
+        "latest": "mv:pay:steps.a@2026-12-25",
+        "offer": "2026-12-26"
+      },
+      "why": "`ps:mv:pay:steps.a@2026-12-25` stands in for the 25 Dec moved pay [T1]. Its occurrence is `mv:pay:steps.a@2026-12-25` [AH2]: refused, 26 Dec offered.",
+      "decisions": [
+        "AH2",
+        "X8",
+        "T1"
+      ]
+    },
+    {
+      "id": "ed-29",
+      "question": "change_from",
+      "title": "AH2: a budget line's `once` keyed by a moved pay counts",
+      "input": {
+        "schedule": "mv:pay:steps.a",
+        "wanted": "2027-01-01",
+        "once": {
+          "mv:pay:steps.a@2027-01-25": {
+            "amount": 70000,
+            "at": "2026-11-23T20:00:00.000+09:00",
+            "by": "phn001"
+          }
+        }
+      },
+      "expected": {
+        "refused": true,
+        "latest": "mv:pay:steps.a@2027-01-25",
+        "offer": "2027-01-26"
+      },
+      "why": "Food's 70,000 for January is `once` keyed by the moved pay that starts that period, `mv:pay:steps.a@2027-01-25` [AA6, AE1]. A change from 1 Jan is refused [X8, AH2]: 26 Jan offered.",
+      "decisions": [
+        "AH2",
+        "X8",
+        "AE1"
+      ]
+    },
+    {
+      "id": "ed-30",
+      "question": "change_from",
+      "title": "AH2: another schedule's occurrences do not count, moved or not",
+      "input": {
+        "schedule": "mv:pay:steps.a",
+        "wanted": "2026-12-01",
+        "settles": [
+          "mv:pay:steps.b@2026-12-25",
+          "pay@2026-12-25"
+        ],
+        "pe": [
+          "pe:pay@2026-12-25:free"
+        ],
+        "ps": [
+          "ps:mv:pay:steps.side@2026-12-25"
+        ]
+      },
+      "expected": {
+        "ok": true
+      },
+      "why": "Only the changed schedule's own occurrences count [X8]. `mv:pay:steps.b`, `pay` and `mv:pay:steps.side` are other schedules, so nothing names an occurrence of `mv:pay:steps.a`: the change from 1 Dec is allowed.",
+      "decisions": [
+        "AH2",
+        "X8"
+      ]
+    },
+    {
+      "id": "ed-31",
+      "question": "change_from",
+      "title": "AH2: a moved period-end answer on a moved place is read to its pay",
+      "input": {
+        "schedule": "mv:pay:steps.a",
+        "wanted": "2026-11-25",
+        "pe": [
+          "pe:mv:pay:steps.a@2026-11-25:mv:place:trip"
+        ]
+      },
+      "expected": {
+        "refused": true,
+        "latest": "mv:pay:steps.a@2026-11-25",
+        "offer": "2026-11-26"
+      },
+      "why": "`pe:mv:pay:steps.a@2026-11-25:mv:place:trip`: the period of the 25 Nov moved pay, the moved place `mv:place:trip` [Y28]. Its occurrence is the part before the place, `mv:pay:steps.a@2026-11-25`. A change from 25 Nov is on that occurrence: refused, 26 Nov offered [X8, AH2].",
+      "decisions": [
+        "AH2",
+        "X8",
+        "Y28"
+      ]
+    },
+    {
+      "id": "ed-32",
+      "question": "change_from",
+      "title": "AH3: a removed `amounts` key names nothing: the pay day may change from 1 Dec (g3)",
+      "input": {
+        "schedule": "pay",
+        "wanted": "2026-12-01",
+        "amounts": {
+          "2026-12-25": {
+            "amount": 0,
+            "gone": "2026-11-24",
+            "at": "2026-11-24T10:00:00.000+09:00",
+            "by": "phn001"
+          }
+        }
+      },
+      "expected": {
+        "ok": true
+      },
+      "why": "December's pay of 0 (leave) was removed on 24 Nov because the leave was cancelled: the key is kept with `gone` [AE1], and a removed key names nothing [AH3]. No settle or live key names a pay on or after 1 Dec, so the change is allowed. Before AH3 the removed key still refused it, offering 26 Dec.",
+      "decisions": [
+        "AH3",
+        "X8",
+        "AE1"
+      ]
+    },
+    {
+      "id": "ed-33",
+      "question": "change_from",
+      "title": "AH3: only live keys count; a removed `once` key after a live `amounts` key",
+      "input": {
+        "schedule": "pay",
+        "wanted": "2027-01-01",
+        "amounts": {
+          "2026-12-25": {
+            "amount": 0,
+            "at": "2026-11-20T10:00:00.000+09:00",
+            "by": "phn001"
+          }
+        },
+        "once": {
+          "pay@2027-01-25": {
+            "amount": 20000,
+            "gone": "2026-11-24",
+            "at": "2026-11-24T10:00:00.000+09:00",
+            "by": "phn001"
+          }
+        }
+      },
+      "expected": {
+        "ok": true
+      },
+      "why": "The live `amounts` key names pay@2026-12-25; the `once` key naming pay@2027-01-25 was removed on 24 Nov [AE1] and names nothing [AH3]. The latest named occurrence is 25 Dec, before 1 Jan: allowed.",
+      "decisions": [
+        "AH3",
+        "X8"
+      ]
+    },
+    {
+      "id": "ed-34",
+      "question": "change_from",
+      "title": "AH3: a removed key put back with Redo counts again",
+      "input": {
+        "schedule": "pay",
+        "wanted": "2026-12-01",
+        "amounts": {
+          "2026-12-25": {
+            "amount": 0,
+            "at": "2026-11-24T10:05:00.000+09:00",
+            "by": "phn001"
+          }
+        }
+      },
+      "expected": {
+        "refused": true,
+        "latest": "pay@2026-12-25",
+        "offer": "2026-12-26"
+      },
+      "why": "The key was removed at 10:00 and put back with Redo at 10:05: the Redo clears `gone` with a newer `at` [H6, AE1], so the key is live and names pay@2026-12-25 [AH3]: refused, 26 Dec offered.",
+      "decisions": [
+        "AH3",
+        "X8",
+        "H6"
       ]
     }
   ],
