@@ -321,6 +321,9 @@
       if (c.opening && notGoneOut(e, id)) return false;   // [AB4]
       const d = dayFor(e, c, id);
       if (d > c.day) return false;
+      // [AP1] a closing's final check holds everything dated on or before the closing day, whatever its told; the
+      // closing's own records (`close:<account>`, Q7) come after it
+      if (c.closing) return !isClosingRecord(e, id);
       if ((d + 1) * D.MS - zoneMinOf(e) * 60000 <= c.key) return true;   // [AN4] its day was over when the figure was read
       if (d < c.day) {
         if (e.key !== c.key) return e.key < c.key;
@@ -344,6 +347,7 @@
       return j === null ? null : same.indexOf(e) <= j;
     }
     const byTime = (x, y) => x.day - y.day || keyCmp(x.key, y.key) || x.idx - y.idx;
+    const isClosingRecord = (e, id) => e.id === I.built.close(id) || String(e.id).startsWith(I.built.close(id) + ':');
     function bankInfo(id) {
       let base = openingOf(id);
       // [Z1] a check whose large gain was answered "wrong" counts nowhere; the account asks for the figure again
@@ -358,14 +362,16 @@
       for (const f of live()) if (f.k === 'filler' && f.acct === id && f.stretch && f.stretch.to && f.place) fillerPlaces[f.stretch.to] = f;
       const span = moves.map(e => { const ds = [e.day].concat([e.posted, e.posted2].filter(Boolean).map(dayNum)); return [Math.min(...ds), Math.max(...ds)]; });
       let wasIn = moves.map(e => inside(e, base, id));
+      // [AP1] the closing's final check: the last check dated on the closing day
+      const closingCheck = closedOn(id) === null ? null : checks.filter(c => c.day === closedOn(id)).pop() || null;
       for (const c of checks) {
-        const cc = { day: c.day, key: c.key, idx: c.idx, avail: c.avail, moved: c.moved, amount: c.a };
+        const cc = { day: c.day, key: c.key, idx: c.idx, avail: c.avail, moved: c.moved, amount: c.a, closing: c === closingCheck };
         // [A3] the filler is worked out every time: what the events say minus what the check shows; [I1] an event inside
         // an earlier available check and not yet inside a later current one is added back
         // A record whose every date is two or more days before the check's day was over in every offset when it was read;
         // one dated after it is never inside. Only the rest need the full rule (so a long history stays quick).
         const settledDay = cc.key >= cc.day * D.MS - 15 * 3600000;
-        const isIn = moves.map((e, k) => (settledDay && span[k][1] <= cc.day - 2 ? true : span[k][0] > cc.day ? false : inside(e, cc, id)));
+        const isIn = moves.map((e, k) => (cc.closing && span[k][0] <= cc.day ? inside(e, cc, id) : settledDay && span[k][1] <= cc.day - 2 ? true : span[k][0] > cc.day ? false : inside(e, cc, id)));
         let computed = base.amount;
         moves.forEach((e, k) => { if (isIn[k] !== wasIn[k]) computed += isIn[k] ? delta(e, id) : -delta(e, id); });
         wasIn = isIn;
