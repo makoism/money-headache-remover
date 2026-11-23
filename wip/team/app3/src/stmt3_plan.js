@@ -78,6 +78,24 @@
     if (amt.length === 1) return { to: amt[0].id };
     return { cards: pool.map(c => c.id) };
   }
+  /* [BJ4] a line moving money out to another of the person's own accounts (not a card). In order: the person's answer
+     for this line, their answer before for this shop, the one own account named in the line's words (a word of its
+     name other than the plain ones; only on a line the reader filed as money sent, cash or other). A line filed as money
+     sent that names none: { accts } and the review asks "Is this a move to one of your accounts?". 'no' is a spend. */
+  const OWN_TYPES = { bank: 1, cash: 1, ewallet: 1, wallet: 1, investment: 1 };
+  const PLAIN = new Set(['account', 'acct', 'bank', 'main', 'my', 'the', 'to', 'of', 'and', 'for', 'from']);
+  const words = s => String(s || '').toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+  function moveOfLine(own, l, o) {
+    const known = id => id === 'no' || own.some(a => a.id === id);
+    if (o.moveFor && o.moveFor[l.id] && known(o.moveFor[l.id])) return { to: o.moveFor[l.id], chosen: true };
+    if (o.moveOf && o.moveOf[l.key] && known(o.moveOf[l.key])) return { to: o.moveOf[l.key] };
+    if (!['transfer_out', 'cash', 'other'].includes(l.cat)) return {};
+    const tw = new Set(words(l.text));
+    const named = own.filter(a => words(a.name).some(w => w.length >= 3 && !PLAIN.has(w) && tw.has(w)));
+    if (named.length === 1) return { to: named[0].id };
+    if (l.cat === 'transfer_out' && own.length) return { accts: (named.length ? named : own).map(a => a.id) };
+    return {};
+  }
   function linesOf(book, read, acct, cats, o, expected) {
     const cur = acct.cur, seen = {}, cards = liveAccts(book).filter(a => isCard(a) && a.payFrom === acct.id);
     return read.rows.map((r, i) => {
@@ -95,6 +113,12 @@
         const c = cardOfLine(cards, acct, l, o, expected);
         if (c.to) Object.assign(l, { k: 'repay', from: acct.id, to: c.to, side: 1, acct2: c.to }, c.chosen ? { chosen: true } : {});
         else Object.assign(l, { k: 'repay', from: acct.id, to: null, side: 1, status: 'pick', cards: c.cards });
+      } else if (!isCard(acct) && r.dir === 'out') {
+        const own = liveAccts(book).filter(x => x.id !== acct.id && OWN_TYPES[x.type]);
+        const m = moveOfLine(own, l, o);
+        if (m.to && m.to !== 'no') Object.assign(l, { k: 'transfer', from: acct.id, to: m.to, side: 1, acct2: m.to }, m.chosen ? { chosen: true } : {});
+        else if (m.to === 'no' && m.chosen) l.chosenNo = true;
+        else if (m.accts) Object.assign(l, { status: 'askmove', accts: m.accts });
       }
       return l;
     });
@@ -139,6 +163,9 @@
       if (l.status) continue;
       const r = out[l.id];
       if (dropped.has(l.id)) { l.status = 'repeat'; continue; }
+      if (res.met[l.id] && l.k === 'spend' && kept[res.met[l.id]] && kept[res.met[l.id]].k === 'transfer' && kept[res.met[l.id]].acct === l.acct) {
+        Object.assign(l, { k: 'transfer', from: l.acct, to: kept[res.met[l.id]].acct2, side: 1 });   // [BJ4] it met a typed move: it is that move, never a spend
+      }
       if (res.met[l.id]) { l.status = 'meets'; l.meets = res.met[l.id]; l.metImport = incoming.has(l.meets) || !!(kept[l.meets] && kept[l.meets].src && kept[l.meets].src.type === 'statement'); continue; }
       if (!r) { l.status = 'repeat'; continue; }
       if (r.gone) { l.status = 'repeat'; l.heldBy = r.goneBy; continue; }
@@ -171,7 +198,7 @@
     }
     const count = s => all.filter(l => l.status === s).length;
     return { today, lines: all, statements, merchants: Object.values(merchants).sort((x, y) => (y.inA + y.outA) - (x.inA + x.outA)),
-      counts: { read: all.length, repeat: count('repeat'), typed: count('typed'), settles: count('settles'), meets: count('meets'), new: count('new'), pick: count('pick') },
+      counts: { read: all.length, repeat: count('repeat'), typed: count('typed'), settles: count('settles'), meets: count('meets'), new: count('new'), pick: count('pick'), askmove: count('askmove') },
       reads: byRead.map(g => ({ idx: g.idx, file: g.read.file, acct: g.acct.id, from: g.read.from, to: g.read.to, rows: g.lines.length, notes: g.read.notes || [] })) };
   }
 
@@ -181,13 +208,13 @@
     const kept = {}; for (const e of book.events || []) if (e && !e.gone) kept[e.id] = e;
     const events = [], settled = [];
     for (const l of p.lines) {
-      if (l.status === 'repeat' || l.status === 'pick' || skip[l.id]) continue;
+      if (l.status === 'repeat' || l.status === 'pick' || l.status === 'askmove' || skip[l.id]) continue;
       const src = { type: 'statement', file: l.file, line: l.line, acct: l.acct };
       const read = p.reads.find(r => r.file === l.file && r.acct === l.acct);
       if (read && read.from) { src.from = read.from; src.to = read.to; }
       if (l.bal != null) src.bal = l.bal;
       const e = { id: l.id, k: l.k, date: l.date, a: l.a, note: l.text, src, told: o.told, at: o.told, grp: o.grp };
-      if (l.k === 'repay') {
+      if (TWO[l.k]) {
         e.acct = l.from; e.acct2 = l.to;
         if (l.posted) e[l.side === 1 ? 'posted' : 'posted2'] = l.posted;
       } else {
@@ -227,8 +254,16 @@
     for (const m of p.merchants) {
       out['k:' + m.key] = { v: m.cat, src: changed && changed[m.key] ? 'person' : 'reader', at };
       const ch = p.lines.find(l => l.key === m.key && l.chosen);   // the card the person chose for this shop's payments
-      if (ch) out['k:' + m.key].card = ch.to;
+      if (ch && ch.k === 'repay') out['k:' + m.key].card = ch.to;
+      if (ch && ch.k === 'transfer') out['k:' + m.key].move = ch.to;   // [BJ4] the account they said it moves to
+      if (p.lines.some(l => l.key === m.key && l.chosenNo)) out['k:' + m.key].move = 'no';
     }
+    return out;
+  }
+  /* [BJ4] the person's answers before, by shop key: the account a shop's lines move to, or 'no' */
+  function knownMoves(book) {
+    const c = (book.imports && book.imports.cats) || {}, out = {};
+    for (const k of Object.keys(c)) if (c[k] && !c[k].gone && c[k].move && k.startsWith('k:')) out[k.slice(2)] = c[k].move;
     return out;
   }
   /* the cards the person chose before, by shop key */
@@ -252,7 +287,7 @@
     return { bank: d.balance !== null ? { a: m(d.balance), date: d.balanceDate } : null, pay: d.pay !== null ? { a: m(d.pay), how: d.how } : null, bills, cards: d.card !== null ? m(d.card) : null };
   }
 
-  const api = { plan, records, catsToKeep, knownCats, knownCards, setupHints, expectedOf, use };
+  const api = { plan, records, catsToKeep, knownCats, knownCards, knownMoves, setupHints, expectedOf, use };
   if (node) module.exports = api;
   else root.STMT3P = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

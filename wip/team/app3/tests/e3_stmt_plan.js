@@ -57,7 +57,7 @@ ck('the card\'s coffee replaces the typed coffee', cafe.status === 'typed' && ca
 ck('the card keeps its posting date beside the buy date', cafe.posted === '2026-11-24' && cafe.date === '2026-11-22');
 const thanks = line(CA, '2026-12-10', 54450, 'in');
 ck('the card\'s "payment received" meets the bank\'s payment line: one payment, not two [Q1]', thanks.status === 'meets' && thanks.meets === pa.id && thanks.metImport, JSON.stringify(thanks));
-ck('the counts', JSON.stringify(p.counts) === JSON.stringify({ read: 11, repeat: 0, typed: 1, settles: 6, meets: 1, new: 3, pick: 0 }), JSON.stringify(p.counts));
+ck('the counts', JSON.stringify(p.counts) === JSON.stringify({ read: 11, repeat: 0, typed: 1, settles: 6, meets: 1, new: 3, pick: 0, askmove: 0 }), JSON.stringify(p.counts));
 ck('the card statement is found', p.statements.length === 1 && p.statements[0].a === 2930 && p.statements[0].close === '2026-12-15');
 const m = p.merchants.find(x => x.key === R.key('BOOKS'));
 ck('merchants with their rows and totals (for tapping a merchant)', m && m.rows.length === 1 && m.outA === 2930 && m.cat === 'play');
@@ -153,6 +153,45 @@ ck('setup hints come from the old reader\'s own sums: pay, rent', h.pay && h.pay
   const kept = P.catsToKeep(P.plan(bk, [pay('JCB', '2026-12-21', 5)], { today: D2, assign: [BANK], cats: {}, cardFor: { [tie.id]: CB } }), {}, D2);
   ck('the choice is remembered for the shop, and used next time', kept['k:' + R.key('JCB')].card === CB
     && one(pay('JCB', '2026-12-22', 7), { cardOf: P.knownCards({ imports: { cats: kept } }) }).to === CB);
+}
+
+/* ---- [BJ4] a statement line moving money to the person's own account is a move, never a spend ----
+   Walk 3's case on walk 2's made-up book with Free to spend (walk/v2/bookFree.json), seen on 15 Dec: the 1 Dec move of
+   20,000 to the Trip account was typed, the 5 Dec one of 5,000 was not. The bank statement has both "TO TRIP ACCT". */
+{
+  const PR = require('../../engine/periods.js');
+  const D3 = '2026-12-15';
+  const raw = JSON.parse(fs.readFileSync(path.join(__dirname, '../walk/v2/bookFree.json'), 'utf8'));
+  const bk = raw.book || raw;
+  bk.events = bk.events.filter(e => !(e.src && e.src.type === 'statement') && e.note !== 'extra for trip' && e.date <= D3);
+  bk.checkins = (bk.checkins || []).filter(c => !c.from);
+  const MB = bk.accounts.find(a => a.name === 'Main bank').id, TRIP = bk.accounts.find(a => a.name === 'Trip account').id;
+  const GOAL = bk.places.find(g => g.name === 'Trip').id;
+  const rd = rows => R.cleanRead({ kind: 'bank', rows }, 'bank_dec.csv', D3);
+  const trip = rd([{ date: '2026-12-01', text: 'TO TRIP ACCT', amount: 20000, dir: 'out', cat: 'transfer_out' }, { date: '2026-12-05', text: 'TO TRIP ACCT', amount: 5000, dir: 'out', cat: 'transfer_out' }]);
+  const pt = P.plan(bk, [trip], { today: D3, assign: [MB], cats: {} });
+  const l1 = pt.lines.find(l => l.date === '2026-12-01'), l5 = pt.lines.find(l => l.date === '2026-12-05');
+  ck('[BJ4] the 5 Dec line with no typed move is a move to the Trip account, by the account\'s name', l5.k === 'transfer' && l5.to === TRIP && l5.status === 'new', JSON.stringify(l5));
+  ck('[BJ4] the 1 Dec line meets the typed move and is a move too, never a spend', l1.k === 'transfer' && l1.status === 'meets', JSON.stringify(l1));
+  const ot = P.records(bk, pt, { told: D3 + 'T10:00+09:00' });
+  ck('[BJ4] no spend is written', ot.events.every(e => e.k !== 'spend') && ot.events.find(e => e.id === l5.id).acct2 === TRIP, JSON.stringify(ot.events.map(e => [e.k, e.acct2])));
+  const af = JSON.parse(JSON.stringify(bk)); af.events = af.events.concat(ot.events); af.checkins = (af.checkins || []).concat(ot.checkins);
+  const past = PR.periods(af, D3).past.find(x => x.start <= '2026-12-05' && x.end >= '2026-12-05');
+  ck('the period\'s spending stays at 20,000', past && past.free && past.free.spent === 20000, JSON.stringify(past && past.free));
+  const ra = L.lookahead(af, D3);
+  ck('the goal and the Trip account agree', ra.places[GOAL].kept === ra.accounts[TRIP].bank && ra.accounts[TRIP].bank === 25000, JSON.stringify([ra.places[GOAL].kept, ra.accounts[TRIP].bank]));
+  const vague = rd([{ date: '2026-12-08', text: 'FURIKOMI 0123', amount: 7000, dir: 'out', cat: 'transfer_out' }]);
+  const lv = P.plan(bk, [vague], { today: D3, assign: [MB], cats: {} }).lines[0];
+  ck('a transfer out that names no account of yours: the review asks, nothing is written yet', lv.status === 'askmove' && lv.accts.includes(TRIP) && P.records(bk, P.plan(bk, [vague], { today: D3, assign: [MB], cats: {} }), { told: D3 }).events.length === 0, JSON.stringify(lv));
+  const yes = P.plan(bk, [vague], { today: D3, assign: [MB], cats: {}, moveFor: { [lv.id]: TRIP } });
+  ck('"it went to the Trip account": a move', yes.lines[0].k === 'transfer' && yes.lines[0].to === TRIP);
+  const no = P.plan(bk, [vague], { today: D3, assign: [MB], cats: {}, moveFor: { [lv.id]: 'no' } });
+  ck('"it went to someone else": a spend', no.lines[0].k === 'spend' && no.lines[0].status === 'new');
+  const kc2 = P.catsToKeep(yes, {}, D3);
+  ck('the answer is remembered for the shop and used next time', kc2['k:' + R.key('FURIKOMI 0123')].move === TRIP
+    && P.plan(bk, [vague], { today: D3, assign: [MB], cats: {}, moveOf: P.knownMoves({ imports: { cats: kc2 } }) }).lines[0].to === TRIP);
+  const shop = P.plan(bk, [rd([{ date: '2026-12-08', text: 'TRIP ADVISOR TOURS', amount: 3000, dir: 'out', cat: 'play' }])], { today: D3, assign: [MB], cats: {} }).lines[0];
+  ck('a shop line that shares a word with an account stays a spend', shop.k === 'spend' && shop.status === 'new');
 }
 console.log(bad ? `e3_stmt_plan: ${bad} FAIL of ${n}` : `e3_stmt_plan: ALL PASS (${n})`);
 process.exit(bad ? 1 : 0);
