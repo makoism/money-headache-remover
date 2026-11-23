@@ -20,6 +20,7 @@
   { "name": "Plan tab: this pay period with each line and Free to spend left, bills with their days (add, change from a date, end), goals in the bank or their own account with money set aside, cards and loans with their payment days, pay periods gone by from what happened", "test": "tests/e3_plan.js", "passes": true },
   { "name": "Backup file: save (optional code, own salt), read directly, newer shape and old app refused", "test": "tests/backup3.test.js", "passes": true },
   { "name": "Settings: currency, storage line, save a backup, restore from a file after asking with the copy here kept whole first, Put it back, a backup as the way in", "test": "tests/e3_backup.js", "passes": true },
+  { "name": "Cloud copy on the page: turn on with a code shown once, I have a code, taken on opening, sent on leaving and at most every 90 s, Send now, the same record changed on two devices asked in Settings with the other kept, refused sends said, turn off saying what is lost", "test": "tests/e3_cloud.js", "passes": true },
   { "name": "Setup, short (setup3)", "test": "tests/e3_setup.js", "passes": false }
  ]
 }

@@ -42,6 +42,7 @@ step "the Plan tab"; run tests/e3_plan.js "e3_plan: ALL PASS"
 step "guard (idle CPU, long tasks, outside requests, errors)"; run tests/guard3.js "guard3: ALL PASS"
 step "offline load"; run tests/offline.js "offline: ALL PASS"
 step "Settings and the backup file"; run tests/e3_backup.js "e3_backup: ALL PASS"
+step "the cloud copy, two devices through the page (local fake vault)"; run tests/e3_cloud.js "e3_cloud: ALL PASS"
 
 step "FEATURES.json (a feature marked passing must have its test green in this run)"
 node -e "

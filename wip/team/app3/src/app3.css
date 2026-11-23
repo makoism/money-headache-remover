@@ -105,3 +105,5 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
 .a3-btn:disabled { opacity: .5; cursor: default; }
 .a3-code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: var(--t-h3); letter-spacing: .04em; overflow-wrap: anywhere; margin: 10px 0 0; }
 .a3-tabs[hidden] { display: none; }
+.a3-q { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--hair); }
+.a3-q .a3-rows li { align-items: center; }
