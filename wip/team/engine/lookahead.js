@@ -294,11 +294,11 @@
       if (e.k === 'periodStart' && e.day <= knownTo) { const oc = I.periodOcc(e.id); if (oc) psOf[oc] = e.day; }
       if (e.k === 'periodEnd') { const oc = I.periodOcc(e.id); if (oc) peEnd[oc] = Math.min(peEnd[oc] == null ? Infinity : peEnd[oc], e.day); }
     }
-    const periodStartDays = [];
+    const periodStartDays = [], occByStart = {};   // [T1] each period is named by the occurrence of the pay that starts it
     pays.slice().sort((x, y) => x.due - y.due).forEach((o, i, list) => {
       const prev = list[i - 1], s = settledBy[o.id];
       const d = psOf[o.id] != null ? psOf[o.id] : prev && peEnd[prev.id] != null ? peEnd[prev.id] + 1 : s && startsPeriod(s) ? s.day : null;
-      if (d !== null && d <= knownTo) periodStartDays.push(d);
+      if (d !== null && d <= knownTo) { periodStartDays.push(d); occByStart[d] = o.id; }
     });
 
     // ----- bank today per account [A1, B7, H1, I1, J3, O1, AN4] -----
@@ -656,13 +656,31 @@
     };
     const freeSrc = shares.length ? { id: 'free', acct: shares[0].acct, per: (shares[0].per || {}).free || 'month',
       steps: shares.map((x, i) => ({ from: i === 0 ? null : x.from, amount: x.free })) } : null;
-    const lineSrcs = budgets.map(l => ({ id: l.id, name: l.name, acct: l.acct, per: l.per, steps: l.steps }));
+    const lineSrcs = budgets.map(l => ({ id: l.id, name: l.name, acct: l.acct, per: l.per, steps: l.steps, once: [l.once], field: 'amount' }));
+    if (freeSrc) Object.assign(freeSrc, { once: shares.map(x => x.once), field: 'free' });
+    // [B8, T1, AE1] A period's amount: a live `once` key named by the occurrence of the pay that starts it, else the step in
+    // force. [AO4, AR1] Until the person picks add or replace, a `once` amount waiting for that period counts on the safe
+    // side: the larger, so more is kept aside for the line.
+    const periodAmount = (src, start, occ) => {
+      let a = null;
+      if (occ) for (const m of src.once) { const v = m && m[occ]; if (v && typeof v === 'object' && !v.gone && typeof v[src.field] === 'number') a = v[src.field]; }
+      if (a === null) a = stepAmount(src.steps, start);
+      if (occ) for (const w of book.pendingMove || []) {
+        if (!w || w.gone || w.waits !== 'pick' || w.to !== 'once' || w.key !== occ || (w.line !== src.id && !(src.id === 'free' && w.share))) continue;
+        const wa = typeof w.a === 'number' ? w.a : w.a && typeof w.a[src.field] === 'number' ? w.a[src.field] : null;
+        if (wa !== null) a = Math.max(a, wa);
+      }
+      return a;
+    };
+    // the period a day is in, named by the pay that started it: started, else the last pay landing on or before it
+    const occOn = (start, day) => (start != null && occByStart[start] ? occByStart[start]
+      : (pays.filter(o => o.land <= day).sort((x, z) => x.land - z.land).pop() || {}).id || null);
 
     function freePeriodAmount() {
       if (!periodStream || !freeSrc) return null;
       const started = periodStartDays.length ? Math.max(...periodStartDays) : null;
       const coming = nextPays.filter(p => p.land > today);
-      return perPeriod({ per: freeSrc.per, amount: stepAmount(freeSrc.steps, started) }, coming[0] ? coming[0].land : today, coming[1] ? coming[1].land : (coming[0] ? coming[0].land : today) + 30);
+      return perPeriod({ per: freeSrc.per, amount: periodAmount(freeSrc, started, occOn(started, today)) }, coming[0] ? coming[0].land : today, coming[1] ? coming[1].land : (coming[0] ? coming[0].land : today) + 30);
     }
     // [O watch, X4] a check-in figure above what the app had by more than the period's Free to spend, or by more than
     // 20% of what it had, is held until the person answers that it is right; an investment's rise is never asked [T watch]
@@ -738,13 +756,13 @@
         const share = before.length && after.length ? { d: after[0].land - od, D: after[0].land - before[before.length - 1].land } : null;
         let leftOver = 0;
         for (const l of lineSrcs.filter(x => moneyAcct(lineAcct(x)) === acctId)) {
-          const typed = (split.lines || {})[l.id], amount = stepAmount(l.steps, null);
+          const typed = (split.lines || {})[l.id], amount = periodAmount(l, null, occOn(null, od));
           if (typed != null) out.lines[l.id] = typed;
           else if (share) { out.lines[l.id] = Math.floor(amount * share.d / share.D); leftOver += amount * share.d - out.lines[l.id] * share.D; }
           else out.lines[l.id] = amount;
         }
         if (freeSrc && moneyAcct(lineAcct(freeSrc)) === acctId) {
-          const amount = stepAmount(freeSrc.steps, null);
+          const amount = periodAmount(freeSrc, null, occOn(null, od));
           out.free = split.free != null ? split.free : share ? Math.floor((amount * share.d + leftOver) / share.D) : amount;   // [J4]
         }
         return (opening[acctId] = out);
@@ -784,8 +802,9 @@
         const adjusted = live().filter(e => e.k === 'adjust' && !e.place && acct[e.account] && cur(e.account) === cur(acctId) && inPeriod(e, e.account)).reduce((t, e) => t + e.a, 0);   // [T7]
         return start - spent - fees + placed + adjusted;
       };
-      const lines = lineSrcs.map(l => { const id = moneyAcct(lineAcct(l)), a = stepAmount(l.steps, lastPay); return { name: l.name, acct: id, per: l.per, amount: a, left: leftOf(l.id, id, a), src: l }; });
-      const fid = freeSrc && moneyAcct(lineAcct(freeSrc)), fa = freeSrc && stepAmount(freeSrc.steps, lastPay);
+      const curOcc = occOn(lastPay, today);
+      const lines = lineSrcs.map(l => { const id = moneyAcct(lineAcct(l)), a = periodAmount(l, lastPay, curOcc); return { name: l.name, acct: id, per: l.per, amount: a, left: leftOf(l.id, id, a), src: l }; });
+      const fid = freeSrc && moneyAcct(lineAcct(freeSrc)), fa = freeSrc && periodAmount(freeSrc, lastPay, curOcc);
       const free = freeSrc && { name: 'Free to spend', acct: fid, per: freeSrc.per, amount: fa, left: leftOf('free', fid, fa), src: freeSrc };
       return { lines, free };
     }
@@ -824,7 +843,7 @@
         const starts = nextPays.filter(p => p.land > today);
         starts.forEach((p, i) => {
           const end = starts[i + 1] ? starts[i + 1].land : p.land + 30;
-          for (const l of lines) list.push({ land: p.land, amount: perPeriod({ per: l.per, amount: stepAmount(l.src.steps, p.land) }, p.land, end), label: l.name + ' for the period from ' + short(p.land) });
+          for (const l of lines) list.push({ land: p.land, amount: perPeriod({ per: l.per, amount: periodAmount(l.src, p.land, p.id) }, p.land, end), label: l.name + ' for the period from ' + short(p.land) });
         });
       } else {
         // [B4, M9, M10] no fixed pay: by day. A monthly amount x 12 / the year's days a day, rounded down, the rest of each
