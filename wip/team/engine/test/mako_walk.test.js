@@ -94,4 +94,63 @@ t('on pay day safe to spend runs to the pay after it; a main pay left unticked a
   const r = w.on('2026-12-10');
   eq([r.safeToSpend.until, r.safeToSpend.notCounting, r.period.payToday], ['2027-01-08', w.ids.pay_main + '@2026-12-10', false]);
 });
+// [NORTH_STAR, BK3] the bank after the cards are paid: the walk's own figure, per bank, dated, naming the pays in it.
+// The app's made-up book (card spending dated ahead). Hand-worked on 23 Nov, 9 Dec and 10 Dec: D1 is 10 Dec (card A),
+// N the 12 Jan pay, the day 11 Dec: 286,000 - 7,400 - 72,000 - 5,200 (Nov bills) + 240,000 (10 Dec pay) - 54,000 (A)
+// - 23,000 (B) = 364,400. After ticking the pay and card A on 10 Dec (the bank typed as the app has it, 387,400):
+// D1 is 11 Dec, the day 11 Dec, 387,400 - 23,000 = 364,400 with no pay named (it is in the bank already).
+const bacBase = { currency: 'JPY', setAside: [], dip: null, paysNotCounted: [], ifAllTaken: true };
+t('the bank after the cards are paid: 11 Dec on 23 Nov, 9 Dec and 10 Dec, before and after the tick [BK3]', () => {
+  const sc = JSON.parse(JSON.stringify(require('./mako_madeup.js').SC));
+  sc.events = [{ id: 'sp1', date: '2026-12-18', kind: 'spend', account: 'card_a', amount: 18000 }, { id: 'sp2', date: '2026-12-20', kind: 'spend', account: 'card_b', amount: 9500 },
+    { id: 'sp3', date: '2026-12-29', kind: 'spend', account: 'card_b', amount: 7400 }];
+  const book = require('./scenario_to_book.js').convert(sc).book, bank = 'bank';
+  book.home.main = { v: { acct: 'bank', min: null } };
+  const at = (bk, day) => L.lookahead(bk, day).bankAfterCards[bank];
+  for (const day of ['2026-11-23', '2026-12-09', '2026-12-10'])
+    eq(at(book, day), Object.assign({ day: '2026-12-11', amount: 364400, cardDays: ['2026-12-10', '2026-12-11'], cards: ['card_a', 'card_b'], pays: ['2026-12-10'], billsTaken: 3 }, bacBase), day);
+  ok(L.lookahead(book, '2026-11-23').safeToSpend.headline !== 364400);
+  const newId = I.idMaker('q4zt8m', () => 0.25), day = '2026-12-10';
+  const li = L.lookahead(book, day).checkIn.toConfirm.filter(o => !o.item.startsWith('card_b'));
+  let bk = W.apply(book, W.checkIn(book, { day, told: day + 'T20:00+09:00', newId, ticked: li.map(o => o.item), figures: {}, expected: Object.fromEntries(li.map(o => [o.item, o.amount])), lands: Object.fromEntries(li.map(o => [o.item, o.lands])) }));
+  bk = W.apply(bk, W.checkIn(bk, { day, told: day + 'T20:01+09:00', newId, figures: { [bank]: L.lookahead(bk, day).accounts[bank].bank } }));
+  eq(at(bk, day), Object.assign({ day: '2026-12-11', amount: 364400, cardDays: ['2026-12-11'], cards: ['card_b'], pays: [], billsTaken: 0 }, bacBase));
+});
+// The walk's life (pay moved earlier: the January pay and card B on Fri 8 Jan, card A on Tue 12 Jan), card spending
+// typed on 11 Dec (A 18,000, B 9,500). From 12 Dec to 7 Jan: D1 is 8 Jan (B), N the 10 Feb pay, the day 12 Jan, with the
+// 8 Jan pay in it: 364,400 - 89,400 (Dec bills) + 240,000 - 9,500 - 18,000 = 487,500. On 11 Jan, the 8 Jan pay left
+// unticked (late or not seen, not counted, BH1) and card B ticked on 8 Jan: the 12 Jan card without the pay:
+// 265,500 - 18,000 = 247,500, the pay named as not counted.
+t('the bank after the cards are paid: 12 Jan from 12 Dec, and on 11 Jan with the pay late, without it [BK3, BH1]', () => {
+  const w = life(), bank = w.ids.bank;
+  w.ci('2026-12-10'); w.ci('2026-12-11');
+  for (const [k, a] of [['card_a', 18000], ['card_b', 9500]]) w.book.events.push({ id: 'k7m2qa-sp' + k + '-1', k: 'spend', acct: w.ids[k], a, date: '2026-12-11', told: '2026-12-11T21:00+09:00', line: 'free', src: { type: 'typed' } });
+  const at = day => L.lookahead(w.book, day).bankAfterCards[bank];
+  for (const day of ['2026-12-12', '2026-12-20', '2027-01-07'])
+    eq(at(day), Object.assign({ day: '2027-01-12', amount: 487500, cardDays: ['2027-01-08', '2027-01-12'], cards: [w.ids.card_b, w.ids.card_a], pays: ['2027-01-08'], billsTaken: 4 }, bacBase), day);
+  w.ci('2026-12-28'); w.ci('2027-01-08', ['pay_main', 'pay_side']);
+  const x = at('2027-01-11');
+  eq([x.day, x.amount, x.pays, x.cardDays, x.paysNotCounted.map(p => p.due)], ['2027-01-12', 247500, [], ['2027-01-12'], ['2027-01-08', '2027-01-08']]);
+});
+// goals stay in X and are named; a dip below zero before the day is given with its day [BK3]
+t('the bank after the cards are paid keeps goals in it, names them, and gives a dip before its day', () => {
+  const w = life(), bank = w.ids.bank;
+  w.book.events.push({ id: 'k7m2qa-spbig-1', k: 'spend', acct: bank, a: 300000, date: '2026-11-23', told: '2026-11-23T21:00+09:00', line: 'free', src: { type: 'typed' } });
+  const x = L.lookahead(w.book, '2026-11-24').bankAfterCards[bank];
+  // 286,000 - 300,000 - 84,600 (Nov bills by 27 Nov) = -98,600 at its lowest, then + 240,000 on 10 Dec pay day
+  eq([x.day, x.dip], ['2026-12-11', { day: '2026-11-27', amount: 98600 }]);
+  // a goal kept in the bank: 50,000 set aside on 21 Nov is not taken off (safe to spend takes it off) and is named
+  const g = life(), gb = g.ids.bank, trip = 'k7m2qa-tripgoal00-1';
+  g.book.places = [{ id: trip, name: 'Trip', kind: 'goal', keptIn: { acct: gb, mode: 'inBank' }, told: '2026-11-20T21:00+09:00' }];
+  g.book.events.push({ id: 'k7m2qa-tripmove0-1', k: 'move', place: 'waiting', place2: trip, a: 50000, date: '2026-11-21', told: '2026-11-21T12:00+09:00' });
+  const y = L.lookahead(g.book, '2026-11-23');
+  eq([y.bankAfterCards[gb].amount, y.bankAfterCards[gb].setAside], [364400, [{ place: trip, name: 'Trip', amount: 50000 }]]);
+});
+// [check your bank gap] a card figure above what the app had is spending not logged (more), below it comes off (less)
+t('a card check names its gap as more or less, never a negative to flip', () => {
+  const w = life(), A = w.ids.card_a, B = w.ids.card_b;
+  const out = W.checkIn(w.book, { day: '2026-11-25', told: '2026-11-25T20:00+09:00', newId: I.idMaker('q4zt8m', () => 0.3), figures: { [A]: 54850, [B]: 22150 } });
+  const r = L.lookahead(W.apply(w.book, out), '2026-11-25');
+  eq([r.cards[A].fillers.slice(-1)[0].more, r.cards[A].fillers.slice(-1)[0].less, r.cards[B].fillers.slice(-1)[0].more, r.cards[B].fillers.slice(-1)[0].less], [850, 0, 0, 850]);
+});
 done('mako_walk');

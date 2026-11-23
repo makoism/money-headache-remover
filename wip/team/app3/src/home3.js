@@ -49,6 +49,22 @@ function nextPay3(r) {
   const listed = [].concat(r.mayStillPost || [], (r.notSeenYet || {}).items || [], (r.checkIn || {}).toConfirm || []).find(o => o.item === occ);
   return { state: p.nextPay.state, day: counted ? np.next_pay : listed ? listed.lands : p.nextPay.due, days: counted ? np.days : null };
 }
+/* [NORTH_STAR, BK1, BK3] what each bank holds after its cards are paid: the engine's dated figure (res.bankAfterCards),
+   with what is in it (a pay), what is not (a late pay), goals kept in it, close days not sure, and a dip before its day;
+   said once, in the cards box, never as safe to spend */
+function afterCards3(r, yr) {
+  const m = r.bankAfterCards || {};
+  const days = list => esc3(SN.dayList(list, list.some(d => d.slice(0, 4) !== yr)));
+  return Object.keys(m).map(id => {
+    const x = m[id], f = SM.formatter(x.currency, [x.amount].concat(x.setAside.map(g => g.amount), x.dip ? [x.dip.amount] : []));
+    const notIn = [...new Set(x.paysNotCounted.map(p => p.due))];
+    const notes = [x.pays.length ? `Your pay on ${days(x.pays)} is in it` : '', notIn.length ? `The pay due ${days(notIn)} is not counted, it has not come in` : '',
+      x.ifAllTaken ? 'If everything on the cards now is taken' : '', ...x.setAside.map(g => `${esc3(f(g.amount))} of it is set aside for ${esc3(g.name)}`),
+      'This is the bank, not safe to spend'].filter(Boolean).join('. ');
+    const dip = x.dip ? `<br><span class="a3-late" data-fig="aftercards-dip">Before then it goes ${esc3(f(x.dip.amount))} below zero on ${esc3(day3(x.dip.day, yr))}</span>` : '';
+    return `<li data-fig="aftercards" data-acct="${esc3(id)}" data-day="${esc3(x.day)}"><span>${esc3(label3('bankAfterCards'))} on ${days(x.cardDays)}: ${esc3(E3.nameOf(id))}<br><span class="when">${notes}</span>${dip}</span><span class="amt">${fig3('bankAfterCards.*.amount', x.amount, x.currency)}</span></li>`;
+  }).join('');
+}
 /* money coming in (a pay) or going out, by the schedule an item belongs to (a lookup) */
 const isIncome3 = item => (E3.book.schedules || []).some(s => s.kind === 'income' && s.id === BurrowEngine.ids.scheduleOf(item));
 /* the safe to spend heading, by that pay's state: a late or not seen pay is not counted until it is ticked [BH1, BH3] */
@@ -138,7 +154,7 @@ function renderHome3() {
         : od ? `${fig3('cards.*.overdue.*.amount', od.amount, cur)} was due ${esc3(day3(od.payment_date, yr))}, not ticked off yet` : 'Nothing to pay yet';
       return `<li data-cardid="${esc3(id)}"><span>${esc3(E3.nameOf(id))}<br><span class="when">${when}</span></span><span class="amt" data-fig="owed">${fig3('cards.*.owedNow', k.owedNow, cur)}</span></li>`;
     }).join('');
-    out.push(`<section class="a3-card" data-card="cards"><h2>${esc3(label3('owed'))} on your cards</h2><ul class="a3-rows">${rows}</ul></section>`);
+    out.push(`<section class="a3-card" data-card="cards"><h2>${esc3(label3('owed'))} on your cards</h2><ul class="a3-rows">${rows}${afterCards3(r, yr)}</ul></section>`);
   }
   /* overdue card and loan payments: past their day and not ticked, never dropped from the page [F4, H8, BF2] (plan lane) */
   const od = [].concat(...[['cards', r.cards], ['owed', r.owed || {}]].map(([k, m]) => Object.keys(m).map(id => (m[id].overdue || []).map(o =>

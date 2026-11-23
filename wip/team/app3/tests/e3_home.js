@@ -32,11 +32,21 @@ const DAYS = ['2026-11-23', '2026-12-09', '2026-12-10', '2026-12-11', '2026-12-1
     ck(day + ' due before next pay', r.dueBeforeNextPay.items.length ? dt.length === 1 && dt[0].amt === r.dueBeforeNextPay.total : dt.length === 0, JSON.stringify(dt) + ' vs ' + r.dueBeforeNextPay.total);
     const owed = one('owed');
     ck(day + ' each card', owed.length === Object.keys(r.cards).length && Object.keys(r.cards).every((id, i) => owed[i].amt === r.cards[id].owedNow), JSON.stringify(owed));
-    ck(day + ' no second figure beside safe to spend (no "bank after the cards")', !(await p.$('[data-figure="total.afterCards"]')) && !/after the cards/i.test(await p.$eval('#a3Home', e => e.textContent)));
+    ck(day + ' no undated "bank after the cards" (BB2)', !(await p.$('[data-figure="total.afterCards"]')) && !/after the cards/i.test(await p.$eval('#a3Home', e => e.textContent)));
+    /* [NORTH_STAR, BB2] the bank after the cards are paid: the engine's dated per-bank figure, once, in the cards box,
+       naming the pay in it and the card days, and saying it is not safe to spend */
+    { const ac = one('aftercards'), want = r.bankAfterCards || {}, accts = Object.keys(want);
+      ck(day + ' the bank after the cards are paid, once per bank, the engine\'s, in the cards box', ac.length === accts.length && accts.every((id, i) => ac[i].amt === want[id].amount && ac[i].card === 'cards'), JSON.stringify(ac) + ' vs ' + JSON.stringify(want));
+      for (const [i, id] of accts.entries()) {
+        const x = want[id], head = `After your cards are paid on ${SN0.dayList(x.cardDays, x.cardDays.some(d => d.slice(0, 4) !== day.slice(0, 4)))}: Main bank`;
+        const t = ac[i] ? ac[i].text : '';
+        ck(day + ' it names its day, the pay in it, close days not sure, and says it is not safe to spend', t.startsWith(head) && /not safe to spend/.test(t) && (!x.pays.length || t.includes('Your pay on')) && (!x.ifAllTaken || t.includes('If everything on the cards now is taken')) && (!x.paysNotCounted.length || /is not counted/.test(t)), t);
+      } }
     if (day === '2026-11-23') {
       const lines = await p.$$eval('[data-cardid] .when', es => es.map(e => e.textContent));
       ck(day + ' card A comes out the day pay lands', lines[0] === 'Comes out on 10 Dec, the day your pay lands', lines[0]);
       ck(day + ' card B comes out the day after', lines[1] === 'Comes out on 11 Dec', lines[1]);
+      ck(day + ' the bank after the cards are paid, hand-worked: 286,000 - 84,600 + 240,000 - 54,000 - 23,000 = 364,400', one('aftercards')[0] && one('aftercards')[0].amt === 364400 && one('aftercards')[0].text.startsWith('After your cards are paid on 10 and 11 Dec: Main bank') && one('aftercards')[0].text.includes('Your pay on 10 Dec is in it'), JSON.stringify(one('aftercards')));
     }
     const shown = await p.evaluate(() => [...document.querySelectorAll('[data-amt]')].every(e => e.textContent.replace(/[^\d]/g, '') === String(Math.abs(Number(e.dataset.amt)))));
     ck(day + ' every amount written is the amount it stands for', shown);

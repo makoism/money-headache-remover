@@ -26,9 +26,9 @@
       source: 'DECISIONS_ROUND2 A1, F24 (each figure carries its day, its age shown)',
     },
     bankAfterCards: {
-      label: 'Bank after the cards are paid', figures: ['total.afterCards'], state: 'decided',
-      source: 'DECISIONS_ROUND2 F10 (Mako, A5); DECISIONS.md 169',
-      note: 'for Mako: the engine figure is Total less what is owed on the cards, so with a second account (savings, cash) it is more than the bank alone. Either the label becomes "Total after the cards are paid" or the engine gives a per-bank figure',
+      label: 'After your cards are paid', figures: ['bankAfterCards.*.amount'], state: 'decided',
+      source: 'DECISIONS_ROUND2 F10 (Mako, A5), BB2, BK1, BK3; NORTH_STAR; DECISIONS.md 169',
+      note: 'per bank and dated: "After your cards are paid on 10 and 11 Dec: Main bank", the engine walk to the last card payment day before the next counted pay after the first one (res.bankAfterCards, BK3). Shown once, in the cards box, with its day and the pays in it, so it is never read as safe to spend. The undated total.afterCards is not shown (BB2)',
     },
     safeToSpend: {
       label: 'Safe to spend', figures: ['safeToSpend.headline'], state: 'decided',
@@ -168,5 +168,15 @@
     return dayLabel(start, years) + ' to ' + dayLabel(end, years);
   }
 
-  return { NAMES, label, byFigure, labelKey, check, forMako, notInEngine, dayLabel, monthLabel, periodLabel };
+  /* several days in one phrase: "10 and 11 Dec", "8, 10 and 12 Jan", "11 Dec, 8 Jan and 12 Jan" (the month once when
+     every day shares it) */
+  function dayList(days, withYear) {
+    const ps = days.map(parseDay), one = ps.every(p => p.m === ps[0].m && p.y === ps[0].y);
+    const words = ps.map(p => (one ? p.d : dayLabel(p.s, withYear))), last = words.pop();
+    if (last === undefined) return '';
+    const tail = one ? dayLabel(ps.slice(-1)[0].s, withYear) : last;
+    return words.length ? words.join(', ') + ' and ' + tail : tail;
+  }
+
+  return { NAMES, label, byFigure, labelKey, check, forMako, notInEngine, dayLabel, dayList, monthLabel, periodLabel };
 });

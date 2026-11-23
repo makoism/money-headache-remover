@@ -2539,7 +2539,8 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
         const g2 = e.a - owedAt(e.day);
         if (g2) lines.push({ day: e.day, amount: g2, what: 'filler' });
         gap += g2;
-        fillers.push({ account: id, day: e.date, amount: gap });
+        // more: typed above what the app had (spending not logged); less: below it (comes off spending), each 0 or more
+        fillers.push({ account: id, day: e.date, amount: gap, more: Math.max(0, gap), less: Math.max(0, -gap) });
       }
       const owedNow = owedAt(knownTo) + lines.filter(l => l.day > knownTo).reduce((t, l) => t + l.amount, 0);
 
@@ -3042,7 +3043,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
         if ((o.kind === 'bill' || o.kind === 'transfer' || o.kind === 'auto' || o.kind === 'loan') && o.acct === id && o.land <= end) {
           const fromIt = o.place && placeLeft[o.place] ? Math.min(placeLeft[o.place], o.amount) : 0;   // [H7] the place's money first
           if (fromIt) placeLeft[o.place] -= fromIt;
-          steps.push({ day: Math.max(o.land, today), order: 1, amount: -(o.amount - fromIt), label: o.name + ' ' + short(o.land) + (o.land < today ? ', late' : '') });
+          steps.push({ day: Math.max(o.land, today), order: 1, amount: -(o.amount - fromIt), label: o.name + ' ' + short(o.land) + (o.land < today ? ', late' : ''), fromPlace: fromIt ? { place: o.place, amount: fromIt } : undefined });
         }
         if (o.kind === 'transfer' && o.to === id && o.land >= today && o.land <= end) steps.push({ day: o.land, order: 0, amount: o.amount2 != null ? o.amount2 : o.amount, label: o.name + ' in ' + short(o.land) });
       }
@@ -3052,7 +3053,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
           if (!w.amount) continue;
           if (w.future && w.land > end) continue;
           const day = Math.min(Math.max(w.land, today), end);   // [F14] beyond the horizon: off at its end
-          steps.push({ day, order: 1, amount: -Math.max(0, w.amount), label: w.label + ', paid ' + short(w.land) + (w.land > end ? ', taken at the horizon end' : '') });
+          steps.push({ day, order: 1, amount: -Math.max(0, w.amount), label: w.label + ', paid ' + short(w.land) + (w.land > end ? ', taken at the horizon end' : ''), card: cid });
         }
       }
       for (const pa of Object.values(acct).filter(x => x.of && cards[x.of] && cards[x.of].payFrom === id && cur(x.of) === cur(id))) {   // [S4]
@@ -3080,7 +3081,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
       }
       for (let i = 0; i < lowAt; i++) why.push({ label: steps[i].label, amount: steps[i].amount });
       why.push({ label: 'minimum', amount: -minimum });
-      return { lowest: low, lowestDay: lowDay, headroom: low - minimum, why, firstBelowZero, belowBal, firstUnder, payAfter };
+      return { lowest: low, lowestDay: lowDay, headroom: low - minimum, why, firstBelowZero, belowBal, firstUnder, payAfter, start, steps };
     }
 
     const backsGoal = id => places.some(g => g.keptIn && g.keptIn.acct === id && g.keptIn.mode === 'ownAccount' && removedOn(g) === null);
@@ -3187,6 +3188,41 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
       money_in: late.filter(o => o.kind === 'income' && !o.otherCur).reduce((t, o) => t + o.amount, 0),
       money_out: late.filter(o => isOut(o) && !o.otherCur).reduce((t, o) => t + o.amount, 0) };
     res.mayStillPost = past.filter(o => today <= windowEnd(o) || stillExpected(o)).map(o => Object.assign(itemOut(o), today <= windowEnd(o) ? { postsBy: dayStr(windowEnd(o)) } : { stillExpected: true }));
+
+    // ----- each bank after its cards are paid [NORTH_STAR, BK1, BK3; refines BB2] -----
+    // Per bank, dated, from the walk's own steps. D1 is the earliest unpaid card payment from the bank (an overdue one
+    // is taken today); N is the first counted pay landing after D1; the day is the last card payment on or after D1 and
+    // before N. It starts from the bank today, adds the counted pays and takes off bills, moves, loan parts and card
+    // payments up to that day; never plan lines, never goals (money set aside in the bank stays in it and is named).
+    // A late or not seen pay is not counted (BH1) and is named; close days "not sure" are named (all on the card is
+    // taken); the lowest end of day below zero before the day is given as a dip.
+    res.bankAfterCards = {};
+    for (const id in banks) {
+      if (!res.accounts[id]) continue;
+      const w = walk(id, horizon, 0), real = w.steps.filter(x => x.order !== 2);
+      const cardSteps = real.filter(x => x.card && x.amount < 0);
+      if (!cardSteps.length) continue;
+      const d1 = Math.min(...cardSteps.map(x => x.day));
+      const n = real.find(x => x.pay && x.amount > 0 && x.day > d1);
+      const inStretch = cardSteps.filter(x => x.day >= d1 && (!n || x.day < n.day));
+      const last = Math.max(...inStretch.map(x => x.day));
+      let bal = w.start, dip = null;
+      const upTo = real.filter(x => x.day <= last);
+      for (let i = 0; i < upTo.length; i++) {
+        bal += upTo[i].amount + (upTo[i].fromPlace ? -upTo[i].fromPlace.amount : 0);
+        if (upTo[i + 1] && upTo[i + 1].day === upTo[i].day) continue;
+        if (upTo[i].day < last && bal < 0 && (!dip || -bal > dip.amount)) dip = { day: dayStr(upTo[i].day), amount: -bal };
+      }
+      const usedFrom = {}; for (const x of upTo) if (x.fromPlace) usedFrom[x.fromPlace.place] = (usedFrom[x.fromPlace.place] || 0) + x.fromPlace.amount;
+      const setAside = (keptIn[id] || []).map(g => ({ place: g.id, name: g.name, amount: g.amount - (usedFrom[g.id] || 0) })).filter(g => g.amount > 0);
+      const cardIds = [...new Set(inStretch.map(x => x.card))];
+      const notCounted = items.filter(o => o.kind === 'income' && o.acct === id && !o.otherCur && !o.settled && o.amount && o.land <= last && (o.land < today || leftToday(o)) && fallsDue(o));
+      res.bankAfterCards[id] = { day: dayStr(last), amount: bal, currency: cur(id),
+        cardDays: [...new Set(inStretch.map(x => x.day))].sort((x, z) => x - z).map(dayStr), cards: cardIds,
+        pays: [...new Set(upTo.filter(x => x.pay).map(x => x.day))].map(dayStr), billsTaken: upTo.filter(x => !x.card && !x.pay && x.amount < 0).length,
+        paysNotCounted: notCounted.map(o => ({ item: o.id, due: dayStr(o.land) })), ifAllTaken: cardIds.some(c => cards[c].cardItems.some(x => x.statement === 'all owed')),
+        setAside, dip };
+    }
 
     // ----- total [F10, F11, O6] -----
     const ids = Object.keys(res.accounts);
@@ -3992,9 +4028,9 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
       source: 'DECISIONS_ROUND2 A1, F24 (each figure carries its day, its age shown)',
     },
     bankAfterCards: {
-      label: 'Bank after the cards are paid', figures: ['total.afterCards'], state: 'decided',
-      source: 'DECISIONS_ROUND2 F10 (Mako, A5); DECISIONS.md 169',
-      note: 'for Mako: the engine figure is Total less what is owed on the cards, so with a second account (savings, cash) it is more than the bank alone. Either the label becomes "Total after the cards are paid" or the engine gives a per-bank figure',
+      label: 'After your cards are paid', figures: ['bankAfterCards.*.amount'], state: 'decided',
+      source: 'DECISIONS_ROUND2 F10 (Mako, A5), BB2, BK1, BK3; NORTH_STAR; DECISIONS.md 169',
+      note: 'per bank and dated: "After your cards are paid on 10 and 11 Dec: Main bank", the engine walk to the last card payment day before the next counted pay after the first one (res.bankAfterCards, BK3). Shown once, in the cards box, with its day and the pays in it, so it is never read as safe to spend. The undated total.afterCards is not shown (BB2)',
     },
     safeToSpend: {
       label: 'Safe to spend', figures: ['safeToSpend.headline'], state: 'decided',
@@ -4134,7 +4170,17 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     return dayLabel(start, years) + ' to ' + dayLabel(end, years);
   }
 
-  return { NAMES, label, byFigure, labelKey, check, forMako, notInEngine, dayLabel, monthLabel, periodLabel };
+  /* several days in one phrase: "10 and 11 Dec", "8, 10 and 12 Jan", "11 Dec, 8 Jan and 12 Jan" (the month once when
+     every day shares it) */
+  function dayList(days, withYear) {
+    const ps = days.map(parseDay), one = ps.every(p => p.m === ps[0].m && p.y === ps[0].y);
+    const words = ps.map(p => (one ? p.d : dayLabel(p.s, withYear))), last = words.pop();
+    if (last === undefined) return '';
+    const tail = one ? dayLabel(ps.slice(-1)[0].s, withYear) : last;
+    return words.length ? words.join(', ') + ' and ' + tail : tail;
+  }
+
+  return { NAMES, label, byFigure, labelKey, check, forMako, notInEngine, dayLabel, dayList, monthLabel, periodLabel };
 });
 /* The one status every screen reads (DECISIONS_ROUND2 C, sweep2_repeats A1 and B2, LESSONS lesson 2). It is worked out
    from the engine's result only (SCHEMA_V3 section 12: safe to spend, warnings, next pay, not seen yet, the check-in
@@ -8026,6 +8072,22 @@ function nextPay3(r) {
   const listed = [].concat(r.mayStillPost || [], (r.notSeenYet || {}).items || [], (r.checkIn || {}).toConfirm || []).find(o => o.item === occ);
   return { state: p.nextPay.state, day: counted ? np.next_pay : listed ? listed.lands : p.nextPay.due, days: counted ? np.days : null };
 }
+/* [NORTH_STAR, BK1, BK3] what each bank holds after its cards are paid: the engine's dated figure (res.bankAfterCards),
+   with what is in it (a pay), what is not (a late pay), goals kept in it, close days not sure, and a dip before its day;
+   said once, in the cards box, never as safe to spend */
+function afterCards3(r, yr) {
+  const m = r.bankAfterCards || {};
+  const days = list => esc3(SN.dayList(list, list.some(d => d.slice(0, 4) !== yr)));
+  return Object.keys(m).map(id => {
+    const x = m[id], f = SM.formatter(x.currency, [x.amount].concat(x.setAside.map(g => g.amount), x.dip ? [x.dip.amount] : []));
+    const notIn = [...new Set(x.paysNotCounted.map(p => p.due))];
+    const notes = [x.pays.length ? `Your pay on ${days(x.pays)} is in it` : '', notIn.length ? `The pay due ${days(notIn)} is not counted, it has not come in` : '',
+      x.ifAllTaken ? 'If everything on the cards now is taken' : '', ...x.setAside.map(g => `${esc3(f(g.amount))} of it is set aside for ${esc3(g.name)}`),
+      'This is the bank, not safe to spend'].filter(Boolean).join('. ');
+    const dip = x.dip ? `<br><span class="a3-late" data-fig="aftercards-dip">Before then it goes ${esc3(f(x.dip.amount))} below zero on ${esc3(day3(x.dip.day, yr))}</span>` : '';
+    return `<li data-fig="aftercards" data-acct="${esc3(id)}" data-day="${esc3(x.day)}"><span>${esc3(label3('bankAfterCards'))} on ${days(x.cardDays)}: ${esc3(E3.nameOf(id))}<br><span class="when">${notes}</span>${dip}</span><span class="amt">${fig3('bankAfterCards.*.amount', x.amount, x.currency)}</span></li>`;
+  }).join('');
+}
 /* money coming in (a pay) or going out, by the schedule an item belongs to (a lookup) */
 const isIncome3 = item => (E3.book.schedules || []).some(s => s.kind === 'income' && s.id === BurrowEngine.ids.scheduleOf(item));
 /* the safe to spend heading, by that pay's state: a late or not seen pay is not counted until it is ticked [BH1, BH3] */
@@ -8115,7 +8177,7 @@ function renderHome3() {
         : od ? `${fig3('cards.*.overdue.*.amount', od.amount, cur)} was due ${esc3(day3(od.payment_date, yr))}, not ticked off yet` : 'Nothing to pay yet';
       return `<li data-cardid="${esc3(id)}"><span>${esc3(E3.nameOf(id))}<br><span class="when">${when}</span></span><span class="amt" data-fig="owed">${fig3('cards.*.owedNow', k.owedNow, cur)}</span></li>`;
     }).join('');
-    out.push(`<section class="a3-card" data-card="cards"><h2>${esc3(label3('owed'))} on your cards</h2><ul class="a3-rows">${rows}</ul></section>`);
+    out.push(`<section class="a3-card" data-card="cards"><h2>${esc3(label3('owed'))} on your cards</h2><ul class="a3-rows">${rows}${afterCards3(r, yr)}</ul></section>`);
   }
   /* overdue card and loan payments: past their day and not ticked, never dropped from the page [F4, H8, BF2] (plan lane) */
   const od = [].concat(...[['cards', r.cards], ['owed', r.owed || {}]].map(([k, m]) => Object.keys(m).map(id => (m[id].overdue || []).map(o =>

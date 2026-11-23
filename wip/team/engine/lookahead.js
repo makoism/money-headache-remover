@@ -562,7 +562,8 @@
         const g2 = e.a - owedAt(e.day);
         if (g2) lines.push({ day: e.day, amount: g2, what: 'filler' });
         gap += g2;
-        fillers.push({ account: id, day: e.date, amount: gap });
+        // more: typed above what the app had (spending not logged); less: below it (comes off spending), each 0 or more
+        fillers.push({ account: id, day: e.date, amount: gap, more: Math.max(0, gap), less: Math.max(0, -gap) });
       }
       const owedNow = owedAt(knownTo) + lines.filter(l => l.day > knownTo).reduce((t, l) => t + l.amount, 0);
 
@@ -1065,7 +1066,7 @@
         if ((o.kind === 'bill' || o.kind === 'transfer' || o.kind === 'auto' || o.kind === 'loan') && o.acct === id && o.land <= end) {
           const fromIt = o.place && placeLeft[o.place] ? Math.min(placeLeft[o.place], o.amount) : 0;   // [H7] the place's money first
           if (fromIt) placeLeft[o.place] -= fromIt;
-          steps.push({ day: Math.max(o.land, today), order: 1, amount: -(o.amount - fromIt), label: o.name + ' ' + short(o.land) + (o.land < today ? ', late' : '') });
+          steps.push({ day: Math.max(o.land, today), order: 1, amount: -(o.amount - fromIt), label: o.name + ' ' + short(o.land) + (o.land < today ? ', late' : ''), fromPlace: fromIt ? { place: o.place, amount: fromIt } : undefined });
         }
         if (o.kind === 'transfer' && o.to === id && o.land >= today && o.land <= end) steps.push({ day: o.land, order: 0, amount: o.amount2 != null ? o.amount2 : o.amount, label: o.name + ' in ' + short(o.land) });
       }
@@ -1075,7 +1076,7 @@
           if (!w.amount) continue;
           if (w.future && w.land > end) continue;
           const day = Math.min(Math.max(w.land, today), end);   // [F14] beyond the horizon: off at its end
-          steps.push({ day, order: 1, amount: -Math.max(0, w.amount), label: w.label + ', paid ' + short(w.land) + (w.land > end ? ', taken at the horizon end' : '') });
+          steps.push({ day, order: 1, amount: -Math.max(0, w.amount), label: w.label + ', paid ' + short(w.land) + (w.land > end ? ', taken at the horizon end' : ''), card: cid });
         }
       }
       for (const pa of Object.values(acct).filter(x => x.of && cards[x.of] && cards[x.of].payFrom === id && cur(x.of) === cur(id))) {   // [S4]
@@ -1103,7 +1104,7 @@
       }
       for (let i = 0; i < lowAt; i++) why.push({ label: steps[i].label, amount: steps[i].amount });
       why.push({ label: 'minimum', amount: -minimum });
-      return { lowest: low, lowestDay: lowDay, headroom: low - minimum, why, firstBelowZero, belowBal, firstUnder, payAfter };
+      return { lowest: low, lowestDay: lowDay, headroom: low - minimum, why, firstBelowZero, belowBal, firstUnder, payAfter, start, steps };
     }
 
     const backsGoal = id => places.some(g => g.keptIn && g.keptIn.acct === id && g.keptIn.mode === 'ownAccount' && removedOn(g) === null);
@@ -1210,6 +1211,41 @@
       money_in: late.filter(o => o.kind === 'income' && !o.otherCur).reduce((t, o) => t + o.amount, 0),
       money_out: late.filter(o => isOut(o) && !o.otherCur).reduce((t, o) => t + o.amount, 0) };
     res.mayStillPost = past.filter(o => today <= windowEnd(o) || stillExpected(o)).map(o => Object.assign(itemOut(o), today <= windowEnd(o) ? { postsBy: dayStr(windowEnd(o)) } : { stillExpected: true }));
+
+    // ----- each bank after its cards are paid [NORTH_STAR, BK1, BK3; refines BB2] -----
+    // Per bank, dated, from the walk's own steps. D1 is the earliest unpaid card payment from the bank (an overdue one
+    // is taken today); N is the first counted pay landing after D1; the day is the last card payment on or after D1 and
+    // before N. It starts from the bank today, adds the counted pays and takes off bills, moves, loan parts and card
+    // payments up to that day; never plan lines, never goals (money set aside in the bank stays in it and is named).
+    // A late or not seen pay is not counted (BH1) and is named; close days "not sure" are named (all on the card is
+    // taken); the lowest end of day below zero before the day is given as a dip.
+    res.bankAfterCards = {};
+    for (const id in banks) {
+      if (!res.accounts[id]) continue;
+      const w = walk(id, horizon, 0), real = w.steps.filter(x => x.order !== 2);
+      const cardSteps = real.filter(x => x.card && x.amount < 0);
+      if (!cardSteps.length) continue;
+      const d1 = Math.min(...cardSteps.map(x => x.day));
+      const n = real.find(x => x.pay && x.amount > 0 && x.day > d1);
+      const inStretch = cardSteps.filter(x => x.day >= d1 && (!n || x.day < n.day));
+      const last = Math.max(...inStretch.map(x => x.day));
+      let bal = w.start, dip = null;
+      const upTo = real.filter(x => x.day <= last);
+      for (let i = 0; i < upTo.length; i++) {
+        bal += upTo[i].amount + (upTo[i].fromPlace ? -upTo[i].fromPlace.amount : 0);
+        if (upTo[i + 1] && upTo[i + 1].day === upTo[i].day) continue;
+        if (upTo[i].day < last && bal < 0 && (!dip || -bal > dip.amount)) dip = { day: dayStr(upTo[i].day), amount: -bal };
+      }
+      const usedFrom = {}; for (const x of upTo) if (x.fromPlace) usedFrom[x.fromPlace.place] = (usedFrom[x.fromPlace.place] || 0) + x.fromPlace.amount;
+      const setAside = (keptIn[id] || []).map(g => ({ place: g.id, name: g.name, amount: g.amount - (usedFrom[g.id] || 0) })).filter(g => g.amount > 0);
+      const cardIds = [...new Set(inStretch.map(x => x.card))];
+      const notCounted = items.filter(o => o.kind === 'income' && o.acct === id && !o.otherCur && !o.settled && o.amount && o.land <= last && (o.land < today || leftToday(o)) && fallsDue(o));
+      res.bankAfterCards[id] = { day: dayStr(last), amount: bal, currency: cur(id),
+        cardDays: [...new Set(inStretch.map(x => x.day))].sort((x, z) => x - z).map(dayStr), cards: cardIds,
+        pays: [...new Set(upTo.filter(x => x.pay).map(x => x.day))].map(dayStr), billsTaken: upTo.filter(x => !x.card && !x.pay && x.amount < 0).length,
+        paysNotCounted: notCounted.map(o => ({ item: o.id, due: dayStr(o.land) })), ifAllTaken: cardIds.some(c => cards[c].cardItems.some(x => x.statement === 'all owed')),
+        setAside, dip };
+    }
 
     // ----- total [F10, F11, O6] -----
     const ids = Object.keys(res.accounts);

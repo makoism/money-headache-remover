@@ -127,4 +127,15 @@ test('a month as VOICE: "Feb 2027", never "2027-02"', () => {
   assert.throws(() => names.monthLabel('2027-02'), /day/);
 });
 
+/* several days in one phrase, as VOICE says: "10 and 11 Dec", "8 and 12 Jan", "11 Dec, 8 Jan and 12 Jan" */
+test('dayList writes several days once each, the month once when they share it', () => {
+  assert.strictEqual(names.dayList(['2026-12-10']), '10 Dec');
+  assert.strictEqual(names.dayList(['2026-12-10', '2026-12-11']), '10 and 11 Dec');
+  assert.strictEqual(names.dayList(['2027-01-08', '2027-01-10', '2027-01-12']), '8, 10 and 12 Jan');
+  assert.strictEqual(names.dayList(['2026-12-11', '2027-01-08', '2027-01-12']), '11 Dec, 8 Jan and 12 Jan');
+  assert.strictEqual(names.dayList(['2026-12-11', '2027-01-08'], true), '11 Dec 2026 and 8 Jan 2027');
+  assert.strictEqual(names.dayList([]), '');
+  assert.deepStrictEqual(names.NAMES.bankAfterCards.figures, ['bankAfterCards.*.amount']);
+});
+
 run('names.js');
