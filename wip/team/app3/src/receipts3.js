@@ -63,7 +63,7 @@ function rcFigs3(book) {
   } catch (e) { return null; }
 }
 /* [NS-FIX 4] a spend on a line that leaves the line over (the engine's `over` on the book the draft would make): the same
-   words as Plan, "¥1,076 over Food, taken from safe to spend"; null otherwise */
+   words as Plan, "¥1,076 over Food. It comes out of what your bank can spare" (BM1); null otherwise */
 function rcOver3(f, x) {
   if (!f || !f.period || !x || !x.line || x.line === 'free' || RC3.mode !== 'spend') return null;
   const l = (f.period.lines || []).find(y => y.id === x.line && y.over > 0);

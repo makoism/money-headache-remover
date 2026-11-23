@@ -29,9 +29,10 @@ const period3 = p => (p.payToday ? SN.periodLabel(p.start, p.end).split(' to ')[
 const esc3 = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 /* a figure on screen: its engine path (data-figure, checked by names and provenance), its amount (data-amt) */
 const fig3 = (path, minor, cur, tag) => `<${tag || 'span'} data-figure="${esc3(path)}" data-amt="${minor}">${money3(minor, cur)}</${tag || 'span'}>`;
-/* [NS-FIX 4] a line taken over, in one set of words for Plan and Receipts: "¥1,076 over Food, taken from safe to spend"
+/* [NS-FIX 4, BM1] a line taken over, in one set of words for Plan and Receipts: "¥1,076 over Food. It comes out of what
+   your bank can spare" (the over part is paid from what the bank can spare; safe to spend does not change for it)
    (the amount already written by the screen's formatter, the engine's `over`) */
-const overWords3 = (name, overText) => `${overText} over ${name}, taken from safe to spend`;
+const overWords3 = (name, overText) => `${overText} over ${name}. It comes out of what your bank can spare`;
 /* [NS-FIX 5] a heading with the one help piece's "?" beside it (never inside it) and its hidden lines under it */
 const HELP3 = BurrowScreens.help;
 const helpHead3 = (h2, keys, ctx) => `<div class="a3-head">${h2}${HELP3.button([].concat(keys)[0])}</div>${HELP3.text(keys, ctx)}`;

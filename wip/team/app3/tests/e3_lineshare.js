@@ -3,8 +3,8 @@
    set up 20 Nov): Food of 30,000 each pay period. Only the part for the days left counts in this period, 20 of 30 days:
    30,000 x 20 / 30 = 20,000. The row shows one amount for the period, the one that counts now (20,000), and a sentence
    gives the full 30,000. After 35,000 is spent on Food: 20,000 - 35,000 = -15,000, and the sentence says
-   "Spent ¥35,000 of ¥20,000: ¥15,000 over Food, taken from safe to spend". Receipts says the same words when a spend
-   takes a line over (1,076 more: "¥16,076 over Food, taken from safe to spend"). Every figure is the engine's. */
+   "Spent ¥35,000 of ¥20,000: ¥15,000 over Food. It comes out of what your bank can spare". Receipts says the same words when a spend
+   takes a line over (1,076 more: "¥16,076 over Food. It comes out of what your bank can spare"). Every figure is the engine's. */
 'use strict';
 const T = require('./lib3.js'), { ck } = T;
 const DAY = '2026-11-25', BANK = 'k7m2qa-f3n8p1x6wd-1';
@@ -38,7 +38,7 @@ const row = (p, id) => p.$eval(`[data-line="${id}"]`, e => ({ left: Number(e.que
   ck('the engine after 35,000 spent: -15,000 left, 15,000 over', l2.spent === 35000 && l2.left === -15000 && l2.over === 15000, JSON.stringify(l2));
   x = await row(p, food.id);
   ck('the row: -15,000 left of 20,000, which adds up', x.left === -15000 && x.amount === 20000, JSON.stringify(x));
-  ck('and says how far over: Spent ¥35,000 of ¥20,000: ¥15,000 over Food, taken from safe to spend', /Spent ¥35,000 of ¥20,000: ¥15,000 over Food, taken from safe to spend/.test(x.text), x.text);
+  ck('and says how far over: Spent ¥35,000 of ¥20,000: ¥15,000 over Food. It comes out of what your bank can spare', /Spent ¥35,000 of ¥20,000: ¥15,000 over Food. It comes out of what your bank can spare/.test(x.text), x.text);
   /* [NS-FIX 4] Receipts says the same words (one shared function) when a spend takes a line over: 1,076 more on Food
      makes it 15,000 + 1,076 = 16,076 over, the engine's figure, before saving and after */
   await p.tap('[data-tab="receipts"]'); await T.w(300);
@@ -46,12 +46,12 @@ const row = (p, id) => p.$eval(`[data-line="${id}"]`, e => ({ left: Number(e.que
   await p.select('#rcFor', 'line:' + food.id); await T.w(300);
   const dry = T.L.lookahead(bk, DAY).period.lines.find(y => y.id === food.id);   // before; after is the engine's below
   const pre = await p.$eval('[data-fig="rc-over"]', e => e.textContent).catch(() => null);
-  ck('before saving, Receipts says: ¥16,076 over Food, taken from safe to spend', pre === '\u00a516,076 over Food, taken from safe to spend' && dry.over === 15000, pre);
+  ck('before saving, Receipts says: ¥16,076 over Food. It comes out of what your bank can spare', pre === '\u00a516,076 over Food. It comes out of what your bank can spare' && dry.over === 15000, pre);
   await p.click('#rcSave'); await T.w(400);
   const bar = await p.evaluate(() => (document.querySelector('#a3Msg .burrow-msg span') || {}).textContent || '');
   bk = await saved(p);
   const l3 = T.L.lookahead(bk, DAY).period.lines.find(y => y.id === food.id);
-  ck('after saving, the Undo bar says it too, the engine\'s figure', l3.over === 16076 && bar === 'Logged \u00a51,076 on Food. \u00a516,076 over Food, taken from safe to spend', bar + ' / ' + l3.over);
+  ck('after saving, the Undo bar says it too, the engine\'s figure', l3.over === 16076 && bar === 'Logged \u00a51,076 on Food. \u00a516,076 over Food. It comes out of what your bank can spare', bar + ' / ' + l3.over);
   ck('no page errors', errs.length === 0, errs.join(' | '));
   await b.close();
   T.done('e3_lineshare');
