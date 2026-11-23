@@ -5,7 +5,11 @@
        banks: [{ key, name, amount, type?: 'bank'|'cash'|'ewallet'|'wallet', main?, min? }],
        pays:  [{ key, name, bank, amount, every: 'month'|'weeks', day | days, n, from, shift?, startsPeriod? }],
        cards: [{ key, name, owed, payDay, closeDay: <1 to 31, 'last'> | 'not sure', payMonths?, payFrom, shift?, inFull? }],
-       bills: [{ key, name, from, amount, day | days, every?, n?, shift? }] }
+       bills: [{ key, name, from, amount, day | days, every?, n?, shift?, takenOut? }] }
+   `takenOut` [X3]: for a bill due between the last pay and the setup day, whether it has already come out of the
+   account (true, the default: it is inside the opening figure) or is still to go (false: each such occurrence is
+   named in the opening check's `notYet`, so it stays expected and on the check-in list). "The last pay" is the
+   period-starting pay (else any pay) landing on or before the setup day; with no pay, the month before setup.
    Amounts are whole minor units of the home currency. `shift` is 'before', 'after' or 'none' (the weekend and holiday
    rule). The first bank is the main one unless another says `main`. Each account opens with one `open` and one `check`
    on the setup day, written together [B6, B7, H1]; a card's opening is what it owes now. A close day "not sure" is saved
@@ -15,6 +19,7 @@
   'use strict';
   const node = typeof module === 'object' && module.exports;
   const D = node ? require('./dates.js') : root.BurrowEngine.dates;
+  const S = node ? require('./schedules.js') : root.BurrowEngine.schedules;
 
   const SHIFTS = { before: 1, after: 1, none: 1 };
   const BANK_TYPES = { bank: 1, cash: 1, ewallet: 1, wallet: 1 };
@@ -91,6 +96,23 @@
     for (const b of ans.bills || []) {
       book.schedules.push(stamp({ id: idFor(b.key), kind: 'bill', name: b.name, acct: acctOf(b.from), cur, shift: shift(b.shift, b.name),
         rules: [{ from: null, rule: ruleOf(b, b.name) }], steps: [{ from: null, amount: whole(b.amount, b.name) }] }));
+    }
+    // [X3] bills still to go that were due between the last pay and the setup day
+    const toGo = (ans.bills || []).filter(b => b.takenOut === false);
+    if (toGo.length) {
+      const cal = S.calendar(ans.country || 'XX');
+      const d0 = D.dayNum(day), occ = (sch, from) => S.occurrences(sch, cal, from, d0);
+      const payStarts = book.schedules.filter(x => x.kind === 'income' && x.startsPeriod);
+      const pays = (payStarts.length ? payStarts : book.schedules.filter(x => x.kind === 'income'))
+        .map(x => occ(x, d0 - 62).filter(o => o.land <= d0).map(o => o.land)).reduce((a, l) => a.concat(l), []);
+      const since = pays.length ? Math.max(...pays) : d0 - 31;
+      for (const b of toGo) {
+        const sch = book.schedules.find(x => x.id === ids[b.key]);
+        const names = occ(sch, since).filter(o => o.land > since && o.land <= d0).map(o => o.id);
+        if (!names.length) continue;
+        const check = book.events.find(e => e.k === 'check' && e.acct === sch.acct && e.grp === grp);
+        check.notYet = (check.notYet || []).concat(names);
+      }
     }
     return { book, ids };
   }
