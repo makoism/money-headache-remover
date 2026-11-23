@@ -500,3 +500,16 @@ BL3. The "Short by" headline is the amount short before the next pay, which is t
 BL4. One way of writing cents per screen (screens/money formatter), the sum lines included.
 BL5. A card paid more than it owed shows "in credit ¥1,500", never as owed.
 BL6. A card with a known close day, set up between that close day and its payment day, asks how much of the figure is on the statement just closed (RECOMMENDATION 3.12: two dated figures). That part is due on the coming payment day.
+
+BK3 (qc-foundation plan review, replaces the BK1 day rule):
+- **The day.** D1 is the earliest unpaid card payment from the bank; an overdue one counts as today. N is the first counted pay landing after D1. The day of X is the last card payment on or after D1 and before N. Pays landing on or before that day are included.
+- **What X counts.** It starts from the bank figure today, adds the counted pays, and takes off the bills, moves, loan parts and card payments up to that day. It never takes off plan lines or goals. Goals in that bank are named as set aside within X.
+- **A late or unseen pay** is not counted (BH1), and X says so.
+- **Close days "not sure":** X says "if everything on the cards now is taken".
+- **A dip below zero** before X's day is shown with its day and amount beside X.
+
+BK4 (check-in gap rules):
+- The gap is the stored bank figure against the typed one. It is never compared with X.
+- A gain goes to the gain question (gain_to_ask), never to spending.
+- With close days "not sure", on or after a card payment day, the app first asks "Was Card A's payment ¥Y?" before calling the gap spending.
+- A spend logged from the gap is dated on or before the check and marked as already inside its figure (the existing dayInside), so it is never counted twice.
