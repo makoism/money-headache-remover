@@ -10,7 +10,7 @@ Written 2026-11-18 on branch `wip-38.31`. Read this whole file before touching a
   - walk 1 FAIL, fixed
   - walk 2 FAIL, fixed (BI)
   - walk 3: no blockers, four fixes running (BJ1 to BJ5): engine lane on lane/engine-a7, statements lane on BJ4
-- **Walk scripts:** app3/walk/v2 and v3 (lib.js). Make them a check3 step once they pass.
+- **Walk:** walk 4 PASSED. The permanent gate is app3/tests/e3_walk.js inside check3 (71 hand-worked checks); app3/walk/v1 to v4 are kept as history. Mako has the look-only file and the screenshots (wip/team/preview/app3/). Cleanup lane done (5a96a60 to 1322428).
 - **Publish (BG):** app3/publish3.sh <path> and the e3_publish test are ready. HOLD the push to main: Coordinator 10 is asking Mako whether his "private web address" answer covers a push of only the app3 files to main. The old app's sw.js and build_site.sh notes are in app3/FOR_MAKO.md.
 - **Next:**
   1. merge the BJ fixes
