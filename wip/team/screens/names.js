@@ -157,7 +157,7 @@
     if (!m || !MONTHS[m[2]] || isNaN(d) || d.toISOString().slice(0, 10) !== m[0]) throw new Error('names: a day must be a real YYYY-MM-DD, got ' + JSON.stringify(s));
     return { y: m[1], m: m[2], d: m[3].replace(/^0/, ''), s: m[0] };
   }
-  function dayLabel(s, withYear) { const p = parseDay(s); return p.d + ' ' + MONTHS[p.m] + (withYear ? ' ' + p.y : ''); }
+  function dayLabel(s, withYear) { const p = parseDay(s); return [p.d, MONTHS[p.m]].concat(withYear ? [p.y] : []).join(' '); }
   /* "10 Nov to 9 Dec"; across the new year both days carry their year (for Mako: whether the year shows otherwise) */
   function periodLabel(start, end) {
     const a = parseDay(start), b = parseDay(end);

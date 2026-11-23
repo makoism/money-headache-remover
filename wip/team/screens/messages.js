@@ -28,12 +28,13 @@
     let items = [], seq = 0, timer = null, last;
 
     const better = (a, b) => (KINDS[a.kind] !== KINDS[b.kind] ? KINDS[a.kind] > KINDS[b.kind] : a.seq > b.seq);
-    function current() { return items.reduce((best, x) => (!best || better(x, best) ? x : best), null); }
+    function current() { let best = null; for (const x of items) if (!best || better(x, best)) best = x; return best; }
     function purge() { const t = now(); items = items.filter(x => x.expiresAt === null || x.expiresAt > t); }
     function changed() {
       purge();
       if (timer !== null) { clearT(timer); timer = null; }
-      const next = items.filter(x => x.expiresAt !== null).reduce((d, x) => (d === null || x.expiresAt < d ? x.expiresAt : d), null);
+      let next = null;
+      for (const x of items) if (x.expiresAt !== null && (next === null || x.expiresAt < next)) next = x.expiresAt;
       if (next !== null) timer = setT(changed, next - now());   // not money: milliseconds until the next message runs out
       const c = current();
       const view = c ? Object.freeze({ id: c.id, kind: c.kind, text: c.text, action: c.action ? c.action.label : null }) : null;
