@@ -44,7 +44,8 @@ function openSetup3() {
       <div class="a3-actions"><button type="button" class="a3-btn" id="s3AddBill">Add a bill</button></div>
     </section>
     <section class="a3-card"><h2>Keep at least</h2><p class="a3-sub">An amount you never want your bank to go under. Leave it blank for none</p>
-      <div class="a3-field"><label for="s3Min">Keep at least</label><input class="a3-in" id="s3Min" data-money data-optional></div>
+      <div class="a3-field"><label for="s3Min">Keep at least</label><input class="a3-in" id="s3Min" data-money data-optional aria-describedby="s3MinH">
+        <p class="a3-sub" id="s3MinH" data-hint="min">Safe to spend leaves this much in your bank as a cushion</p></div>
     </section>
     <p class="a3-err" id="a3SetupErr" role="alert"></p>
     <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3SetupSave">Save and see my money</button><button type="button" class="a3-btn" id="a3SetupX">Back</button></div>
@@ -67,7 +68,8 @@ function openSetup3() {
       <div class="a3-field"><label for="s3-${k}-o">On it now</label><input class="a3-in" id="s3-${k}-o" data-f="owed" data-money></div></div>
       <div class="a3-field"><label for="s3-${k}-p">Day of the month it is paid from your bank</label><select class="a3-in a3-sel" id="s3-${k}-p" data-f="payDay">${dayOptions3('10')}</select></div>
       <div class="a3-field"><label for="s3-${k}-s">When that day is a weekend or holiday, it comes out</label><select class="a3-in a3-sel" id="s3-${k}-s" data-f="shift">${shiftOptions3(SHIFT3.out, 'after')}</select></div>
-      <div class="a3-field"><label for="s3-${k}-c">Day its statement closes</label><select class="a3-in a3-sel" id="s3-${k}-c" data-f="closeDay">${dayOptions3('not sure', [['last', 'the last day'], ['not sure', 'not sure']])}</select></div></div>`);
+      <div class="a3-field"><label for="s3-${k}-c">Day its statement closes</label><select class="a3-in a3-sel" id="s3-${k}-c" data-f="closeDay" aria-describedby="s3-${k}-ch">${dayOptions3('not sure', [['last', 'the last day'], ['not sure', 'not sure']])}</select>
+        <p class="a3-sub" id="s3-${k}-ch" data-hint="closeDay">Spends after this day go on the next payment</p></div></div>`);
     bindMoney3($(`#s3-${k}-o`));
   });
   $('#s3AddBill').addEventListener('click', () => {

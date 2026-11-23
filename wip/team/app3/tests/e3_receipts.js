@@ -54,6 +54,7 @@ async function figsMatch(p, book, what) {
   let m = await bar(p);
   ck('the Undo bar says what was logged', !!m && /^Logged ¥1,200 on Free to spend$/.test(m.text) && m.button === 'Undo', JSON.stringify(m));
   ck('the list shows it in this period', (await rows(p)).some(x => x.id === spend.id && /Free to spend/.test(x.text) && /coffee/.test(x.text) && /¥1,200/.test(x.text)), JSON.stringify(await rows(p)));
+  ck('under the list: Tap a spend to change it', await p.$eval('#rcList', e => { const h = e.querySelector('[data-hint=rc-tap]'); return !!h && h.textContent === 'Tap a spend to change it' && h.previousElementSibling && h.previousElementSibling.matches('ul'); }));
   ck('the amount box is empty and ready for the next one', await p.$eval('#rcAmt', e => e.value) === '' && await p.evaluate(() => document.activeElement.id) === 'rcAmt');
   await T.shot(p, 'receipts_logged_' + DAY);
 

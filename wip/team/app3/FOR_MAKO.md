@@ -70,6 +70,9 @@ limits, with what would remove each one. app3 works without any of them.
 ## Draft words from the screen fixes (for your copy pass)
 - First screen: "I already use the burrow on another device" opens Settings with the line "Type the cloud code from your other device, or restore a backup file you saved there".
 - Receipts: the card over Free to spend left and Safe to spend was headed "Left to spend now", a third name for those figures. It now reads "Where you stand". The rows keep the names from screens/names.js.
+- Receipts, under the list: "Tap a spend to change it" (refunds and money moved open the same way).
+- Setup, under Keep at least: "Safe to spend leaves this much in your bank as a cushion".
+- Setup, under a card's "Day its statement closes": "Spends after this day go on the next payment".
 
 ## Ask and Reminders
 - Bill reminders carry no amount, because calendars often sync to Google or Apple. Should they show it?

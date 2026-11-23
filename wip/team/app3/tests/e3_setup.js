@@ -33,6 +33,7 @@ const typeIn = async (p, sel, v) => { await p.click(sel, { clickCount: 3 }); awa
     await typeIn(p, r + '[data-f=name]', name); await typeIn(p, r + '[data-f=owed]', owed);
     await p.select(r + '[data-f=payDay]', day); await p.select(r + '[data-f=shift]', shift);
     ck(name + ': the close day starts as "not sure"', (await p.$eval(r + '[data-f=closeDay]', e => e.value)) === 'not sure');
+    ck(name + ': one why line under the close day, read with it', await p.$eval(r + '[data-f=closeDay]', e => { const h = document.getElementById(e.getAttribute('aria-describedby')); return !!h && h.dataset.hint === 'closeDay' && /next payment$/.test(h.textContent); }));
   }
   let n = 0;
   for (const [name, amt, day] of [['Rent', 72000, '27'], ['Power', 7400, '26'], ['Phone', 4800, '20'], ['Internet', 5200, '27']]) {
@@ -41,6 +42,7 @@ const typeIn = async (p, sel, v) => { await p.click(sel, { clickCount: 3 }); awa
     await typeIn(p, r + '[data-f=name]', name); await typeIn(p, r + '[data-f=amount]', amt); await p.select(r + '[data-f=day]', day);
   }
   ck('the minimum starts blank (skipped means none)', (await p.$eval('#s3Min', e => e.value)) === '');
+  ck('one why line under Keep at least, read with it', await p.$eval('#s3Min', e => { const h = document.getElementById(e.getAttribute('aria-describedby')); return !!h && h.dataset.hint === 'min' && /^Safe to spend /.test(h.textContent) && !/\.$/.test(h.textContent); }));
   await T.shot(p, 'setup_' + DAY);
   await p.click('#a3SetupSave'); await T.w(600);
   const r = T.L.lookahead(bk, DAY);
