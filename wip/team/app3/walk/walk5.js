@@ -1,0 +1,20 @@
+const L = require('./lib.js'); const { go, home, w } = L;
+(async () => {
+  const c = await L.ctx(process.argv[2]); const p = c.pages()[0] || await c.newPage();
+  const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
+  const show = async t => console.log('\n## ' + t + '\n' + (await home(p)));
+  await go(p, '2027-01-15'); await show('15 Jan before');
+  const r = await L.checkin(p, 488000, { 'Card A': 20000 });
+  console.log(JSON.stringify(r.list.map(x => x.text + ' = ' + x.amt)), r.err);
+  await show('15 Jan after check');
+  await p.click('[data-tab=plan]'); await w(400);
+  console.log('\n## PLAN\n' + await p.$eval('#a3Plan', e => e.innerText.replace(/\n+/g, ' | ')));
+  await p.click('[data-tab=receipts]'); await w(400);
+  console.log('\n## RC\n' + await p.$eval('#a3Rc', e => e.innerText.replace(/\n+/g, ' | ')));
+  await p.click('#rcOlder').catch(()=>{}); await w(200);
+  console.log('\n## RC older\n' + await p.$eval('#rcList', e => e.innerText.replace(/\n+/g, ' | ')));
+  await p.click('#rcOlder').catch(()=>{}); await w(200);
+  console.log('\n## RC older2\n' + await p.$eval('#rcList', e => e.innerText.replace(/\n+/g, ' | ')));
+  console.log('ERR', errs);
+  await c.close();
+})().catch(e => { console.log('CRASH', e); process.exit(1); });
