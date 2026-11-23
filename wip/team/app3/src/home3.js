@@ -40,13 +40,13 @@ function nextPay3(r) {
   const counted = np.item === p.nextPay.occ;
   return { state: p.nextPay.state, day: counted ? np.next_pay : p.nextPay.due, days: counted ? np.days : null };
 }
-/* the safe to spend heading, by that pay's state (late is still counted by the engine; not seen is not) */
+/* the safe to spend heading, by that pay's state: a late or not seen pay is not counted until it is ticked [BH1, BH3] */
 function safeUntil3(r, yr) {
   const n = nextPay3(r);
   if (!n) return ' for now';
   const d = esc3(day3(n.day, yr));
   if (n.state === 'notSeen') return `, not counting the ${d} pay (not seen yet)`;
-  if (n.state === 'late') return `, counting the ${d} pay (late)`;
+  if (n.state === 'late') return `, not counting the ${d} pay yet (late)`;
   return ` until next pay on ${d}`;
 }
 function nextPayWords3(r, yr) {
