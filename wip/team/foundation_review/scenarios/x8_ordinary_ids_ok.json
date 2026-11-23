@@ -1,0 +1,130 @@
+{
+  "life": "x8_ordinary_ids_ok",
+  "title": "With the ids the app really makes, a pay day change from the day after the settled pay is worked out, and another schedule's settle with a shorter id is not this pay's (decisions AJ1, X8)",
+  "story": "x8_ordinary_ids.json's life, but the person takes the edit's offer, Fri 11 Dec, so the 10 Dec pay keeps its name and its settle. The rent (k7qzpa-m2xq7ab9zt-4) was settled on 27 Nov; its id is the start of the pay's, and it is not read as the pay. From 11 Dec the pay is on the 25th, so a pay is expected on Fri 25 Dec. Every amount is made up.",
+  "currency": "JPY",
+  "window": {
+    "from": "2026-11-20",
+    "to": "2026-12-31"
+  },
+  "holidays": {
+    "country": "JP",
+    "dates": [
+      {
+        "date": "2026-11-23",
+        "name": "Labour Thanksgiving Day"
+      },
+      {
+        "date": "2027-01-01",
+        "name": "New Year's Day"
+      },
+      {
+        "date": "2027-01-11",
+        "name": "Coming of Age Day"
+      }
+    ],
+    "bank_closed": []
+  },
+  "main_bank": "k7qzpa-m2xq7ab9zt-2",
+  "accounts": [
+    {
+      "id": "k7qzpa-m2xq7ab9zt-2",
+      "name": "Bank",
+      "kind": "bank",
+      "currency": "JPY",
+      "minimum": 0,
+      "opening": {
+        "date": "2026-11-20",
+        "amount": 300000
+      }
+    }
+  ],
+  "income": [
+    {
+      "id": "k7qzpa-m2xq7ab9zt-41",
+      "name": "Pay",
+      "account": "k7qzpa-m2xq7ab9zt-2",
+      "currency": "JPY",
+      "amount": 250000,
+      "schedule": {
+        "frequency": "monthly",
+        "day": 10
+      },
+      "changes": [
+        {
+          "from": "2026-12-11",
+          "schedule": {
+            "frequency": "monthly",
+            "day": 25
+          }
+        }
+      ],
+      "weekend_holiday": "move earlier",
+      "starts_period": true
+    }
+  ],
+  "bills": [
+    {
+      "id": "k7qzpa-m2xq7ab9zt-4",
+      "name": "Rent",
+      "account": "k7qzpa-m2xq7ab9zt-2",
+      "amount": 80000,
+      "schedule": {
+        "frequency": "monthly",
+        "day": 27
+      },
+      "weekend_holiday": "move later"
+    }
+  ],
+  "goals": [],
+  "events": [
+    {
+      "id": "k7qzpa-m2xq7ab9zt-57",
+      "date": "2026-11-27",
+      "kind": "bill_paid",
+      "account": "k7qzpa-m2xq7ab9zt-2",
+      "amount": 80000,
+      "settles": "k7qzpa-m2xq7ab9zt-4@2026-11-27"
+    },
+    {
+      "id": "k7qzpa-p4s6d8f0g2-3",
+      "date": "2026-12-10",
+      "kind": "pay_in",
+      "account": "k7qzpa-m2xq7ab9zt-2",
+      "amount": 250000,
+      "settles": "k7qzpa-m2xq7ab9zt-41@2026-12-10"
+    }
+  ],
+  "asks": [
+    {
+      "id": "x8o-02",
+      "date": "2026-12-15",
+      "question": "days_to_next_pay",
+      "expected": {
+        "days": 10,
+        "next_pay": "2026-12-25",
+        "item": "k7qzpa-m2xq7ab9zt-41@2026-12-25"
+      },
+      "why": "2026-12-25 - 2026-12-15 = 10"
+    },
+    {
+      "id": "x8o-03",
+      "date": "2026-12-15",
+      "question": "check_in_list",
+      "expected": {
+        "items": [],
+        "total": 0
+      },
+      "why": "none = 0",
+      "note": "The 10 Dec pay and the 27 Nov rent keep their occurrences and their settles: nothing to confirm."
+    },
+    {
+      "id": "x8o-04",
+      "date": "2026-12-15",
+      "question": "bank_today",
+      "account": "k7qzpa-m2xq7ab9zt-2",
+      "expected": 470000,
+      "why": "300,000 (opening) - 80,000 (rent, Fri 27 Nov) + 250,000 (pay, Thu 10 Dec) = 470,000"
+    }
+  ]
+}

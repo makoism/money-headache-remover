@@ -945,6 +945,315 @@
         "X8",
         "H6"
       ]
+    },
+    {
+      "id": "ed-35",
+      "question": "change_from",
+      "title": "AJ1: a pay day change before a settled pay of the person's own schedule is refused (confirm_review_5 h1)",
+      "input": {
+        "schedule": "k7qzpa-m2xq7ab9zt-41",
+        "wanted": "2026-12-01",
+        "settles": [
+          "k7qzpa-m2xq7ab9zt-41@2026-11-25",
+          "k7qzpa-m2xq7ab9zt-41@2026-12-25"
+        ]
+      },
+      "expected": {
+        "refused": true,
+        "latest": "k7qzpa-m2xq7ab9zt-41@2026-12-25",
+        "offer": "2026-12-26"
+      },
+      "why": "The pay the person typed has an ordinary id, k7qzpa-m2xq7ab9zt-41 (SCHEMA_V3 section 0). Its latest settled occurrence is 25 Dec; 1 Dec is on or before it, so the change would rename or remove a settled pay [X8]: refused, and the edit offers Sat 26 Dec. Before AJ1 the reader took only `[a-z0-9_]` ids, saw no occurrence of this schedule and allowed it: the phantom pay of confirm_review_1 item 8 again, for every schedule a person typed.",
+      "decisions": [
+        "AJ1",
+        "X8",
+        "H2"
+      ]
+    },
+    {
+      "id": "ed-36",
+      "question": "change_from",
+      "title": "AJ1: another schedule whose id begins the same is not this schedule",
+      "input": {
+        "schedule": "k7qzpa-m2xq7ab9zt-4",
+        "wanted": "2026-12-01",
+        "settles": [
+          "k7qzpa-m2xq7ab9zt-4@2026-11-27",
+          "k7qzpa-m2xq7ab9zt-41@2026-12-25"
+        ]
+      },
+      "expected": {
+        "ok": true
+      },
+      "why": "Rent (k7qzpa-m2xq7ab9zt-4) and pay (k7qzpa-m2xq7ab9zt-41) were typed in one session: the rent's id is the start of the pay's. The rent's latest settle is 27 Nov, before 1 Dec; the 25 Dec settle names the pay, another schedule, so it does not count [X8, AJ1]. An id is read whole, up to `@`, never by its start.",
+      "decisions": [
+        "AJ1",
+        "X8"
+      ]
+    },
+    {
+      "id": "ed-37",
+      "question": "change_from",
+      "title": "AJ1: the longer id is not the shorter one either",
+      "input": {
+        "schedule": "k7qzpa-m2xq7ab9zt-41",
+        "wanted": "2026-12-01",
+        "settles": [
+          "k7qzpa-m2xq7ab9zt-41@2026-11-25",
+          "k7qzpa-m2xq7ab9zt-4@2026-12-27"
+        ]
+      },
+      "expected": {
+        "ok": true
+      },
+      "why": "The pay's latest settle is 25 Nov, before 1 Dec; the 27 Dec settle names the rent (k7qzpa-m2xq7ab9zt-4), whose id is the start of the pay's, so it does not count [X8, AJ1].",
+      "decisions": [
+        "AJ1",
+        "X8"
+      ]
+    },
+    {
+      "id": "ed-38",
+      "question": "change_from",
+      "title": "AJ1: periods named by the person's own pay, with a place the person typed (`pe:` and `ps:`)",
+      "input": {
+        "schedule": "k7qzpa-m2xq7ab9zt-41",
+        "wanted": "2027-02-01",
+        "settles": [
+          "k7qzpa-m2xq7ab9zt-41@2026-12-25"
+        ],
+        "pe": [
+          "pe:k7qzpa-m2xq7ab9zt-41@2027-01-25:k7qzpa-m2xq7ab9zt-9"
+        ],
+        "ps": [
+          "ps:k7qzpa-m2xq7ab9zt-41@2027-02-25"
+        ]
+      },
+      "expected": {
+        "refused": true,
+        "latest": "k7qzpa-m2xq7ab9zt-41@2027-02-25",
+        "offer": "2027-02-26"
+      },
+      "why": "A period-end answer for the trip money names January's pay; a period started without the pay names February's [T1]. Both name occurrences of this schedule, read with ordinary ids [AJ1]. The latest is 25 Feb, on or after 1 Feb: refused, offering Fri 26 Feb [X8].",
+      "decisions": [
+        "AJ1",
+        "X8",
+        "T1"
+      ]
+    },
+    {
+      "id": "ed-39",
+      "question": "change_from",
+      "title": "AJ1: a one-period override keyed by the person's own pay counts",
+      "input": {
+        "schedule": "k7qzpa-m2xq7ab9zt-41",
+        "wanted": "2027-03-01",
+        "settles": [
+          "k7qzpa-m2xq7ab9zt-41@2027-02-25"
+        ],
+        "once": {
+          "k7qzpa-m2xq7ab9zt-41@2027-03-25": {
+            "amount": 20000,
+            "at": "2027-02-27T10:00:00.000+09:00",
+            "by": "phn001"
+          }
+        }
+      },
+      "expected": {
+        "refused": true,
+        "latest": "k7qzpa-m2xq7ab9zt-41@2027-03-25",
+        "offer": "2027-03-26"
+      },
+      "why": "A budget line's `once` key names the period by the pay that starts it, 25 Mar [B8, T1], read with an ordinary id [AJ1]. 1 Mar is before it: refused, offering Fri 26 Mar [X8]. A `once` key is not the pay's own amount, so nothing is offered to move [AJ5].",
+      "decisions": [
+        "AJ1",
+        "X8",
+        "AJ5"
+      ]
+    },
+    {
+      "id": "ed-40",
+      "question": "change_from",
+      "title": "AJ5: a December bonus set on the pay stops a new employer's pay day; the edit offers to move or remove it (confirm_review_5 h1, WATCH)",
+      "input": {
+        "schedule": "k7qzpa-m2xq7ab9zt-41",
+        "wanted": "2026-12-01",
+        "settles": [
+          "k7qzpa-m2xq7ab9zt-41@2026-11-25"
+        ],
+        "amounts": {
+          "2026-12-25": {
+            "amount": 400000,
+            "at": "2026-11-24T10:00:00.000+09:00",
+            "by": "phn001"
+          }
+        }
+      },
+      "expected": {
+        "refused": true,
+        "latest": "k7qzpa-m2xq7ab9zt-41@2026-12-25",
+        "offer": "2026-12-26",
+        "amounts": [
+          "2026-12-25"
+        ],
+        "amountsOffer": [
+          "move",
+          "remove"
+        ]
+      },
+      "why": "December's pay was set to 400,000 with a bonus (a one-off `amounts` key, not settled). The person changes jobs: the new employer pays on the 10th from 1 Dec. The key names 25 Dec, on or after 1 Dec, so the change alone is refused, offering Sat 26 Dec [X8]. The only thing in the way is a future one-off amount of the pay itself, so the edit also offers to move that amount (to an occurrence of the new pay day) or remove it [AJ5]; either one lets the change start on 1 Dec. Refusing only, the person could not enter the new pay day.",
+      "decisions": [
+        "AJ5",
+        "X8",
+        "AE1"
+      ]
+    },
+    {
+      "id": "ed-41",
+      "question": "change_from",
+      "title": "AJ5: a settled pay after the wanted day still only refuses; a later one-off amount is not offered",
+      "input": {
+        "schedule": "k7qzpa-m2xq7ab9zt-41",
+        "wanted": "2026-12-01",
+        "settles": [
+          "k7qzpa-m2xq7ab9zt-41@2026-12-25"
+        ],
+        "amounts": {
+          "2027-01-25": {
+            "amount": 400000,
+            "at": "2026-11-24T10:00:00.000+09:00",
+            "by": "phn001"
+          }
+        }
+      },
+      "expected": {
+        "refused": true,
+        "latest": "k7qzpa-m2xq7ab9zt-41@2027-01-25",
+        "offer": "2027-01-26"
+      },
+      "why": "The 25 Dec pay is settled, so no change can start on or before it [X8]; moving or removing January's amount would not let 1 Dec through, so it is not offered [AJ5]. The latest named occurrence is 25 Jan: the edit offers Tue 26 Jan.",
+      "decisions": [
+        "AJ5",
+        "X8"
+      ]
+    },
+    {
+      "id": "ed-42",
+      "question": "change_from",
+      "title": "AJ5: two future one-off amounts are both offered",
+      "input": {
+        "schedule": "k7qzpa-m2xq7ab9zt-41",
+        "wanted": "2026-12-01",
+        "settles": [
+          "k7qzpa-m2xq7ab9zt-41@2026-11-25"
+        ],
+        "amounts": {
+          "2027-01-25": {
+            "amount": 0,
+            "at": "2026-11-24T10:00:00.000+09:00",
+            "by": "phn001"
+          },
+          "2026-12-25": {
+            "amount": 400000,
+            "at": "2026-11-24T10:00:00.000+09:00",
+            "by": "phn001"
+          }
+        }
+      },
+      "expected": {
+        "refused": true,
+        "latest": "k7qzpa-m2xq7ab9zt-41@2027-01-25",
+        "offer": "2027-01-26",
+        "amounts": [
+          "2026-12-25",
+          "2027-01-25"
+        ],
+        "amountsOffer": [
+          "move",
+          "remove"
+        ]
+      },
+      "why": "A December bonus (400,000) and January's unpaid leave (0) are both one-off amounts of the pay, not settled, on or after 1 Dec. The latest is 25 Jan, so the change alone is refused, offering Tue 26 Jan [X8]; moving or removing both lets it start on 1 Dec, so both are offered, by date [AJ5].",
+      "decisions": [
+        "AJ5",
+        "X8"
+      ]
+    },
+    {
+      "id": "ed-43",
+      "question": "change_from",
+      "title": "AJ5: a removed one-off amount names nothing and is not offered",
+      "input": {
+        "schedule": "k7qzpa-m2xq7ab9zt-41",
+        "wanted": "2026-12-01",
+        "settles": [
+          "k7qzpa-m2xq7ab9zt-41@2026-11-25"
+        ],
+        "amounts": {
+          "2026-12-25": {
+            "amount": 400000,
+            "at": "2026-11-24T10:00:00.000+09:00",
+            "by": "phn001"
+          },
+          "2027-01-25": {
+            "amount": 0,
+            "at": "2026-11-24T11:00:00.000+09:00",
+            "by": "phn001",
+            "gone": "2026-11-24"
+          }
+        }
+      },
+      "expected": {
+        "refused": true,
+        "latest": "k7qzpa-m2xq7ab9zt-41@2026-12-25",
+        "offer": "2026-12-26",
+        "amounts": [
+          "2026-12-25"
+        ],
+        "amountsOffer": [
+          "move",
+          "remove"
+        ]
+      },
+      "why": "January's key was removed (`gone`), so it names nothing [AH3]. Only December's bonus is in the way: refused, offering Sat 26 Dec, and the bonus is offered to move or remove [AJ5].",
+      "decisions": [
+        "AJ5",
+        "AH3",
+        "X8"
+      ]
+    },
+    {
+      "id": "ed-44",
+      "question": "change_from",
+      "title": "AJ5: a period-end answer named by the same pay as a one-off amount: only refused",
+      "input": {
+        "schedule": "k7qzpa-m2xq7ab9zt-41",
+        "wanted": "2026-12-01",
+        "settles": [
+          "k7qzpa-m2xq7ab9zt-41@2026-11-25"
+        ],
+        "amounts": {
+          "2026-12-25": {
+            "amount": 400000,
+            "at": "2026-11-24T10:00:00.000+09:00",
+            "by": "phn001"
+          }
+        },
+        "pe": [
+          "pe:k7qzpa-m2xq7ab9zt-41@2026-12-25:free"
+        ]
+      },
+      "expected": {
+        "refused": true,
+        "latest": "k7qzpa-m2xq7ab9zt-41@2026-12-25",
+        "offer": "2026-12-26"
+      },
+      "why": "December's pay names an answered period too (`pe:`), which cannot be moved: moving the bonus would not free the day, so only the refusal and its offer are given [X8, AJ5, T1].",
+      "decisions": [
+        "AJ5",
+        "X8",
+        "T1"
+      ]
     }
   ],
   "open": []

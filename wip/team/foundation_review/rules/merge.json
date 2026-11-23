@@ -12970,7 +12970,2040 @@
         "M3",
         "H1"
       ]
+    },
+    {
+      "id": "mg-177",
+      "question": "id_ok",
+      "title": "AJ1: A ticked pay of the person's own pay schedule is an id",
+      "input": {
+        "id": "set:k7qzpa-m2xq7ab9zt-41@2026-12-25"
+      },
+      "expected": true,
+      "why": "Everything a person types gets an ordinary id, `<device part>-<session part>-<counter>` (SCHEMA_V3 section 0, O3), so a built id names a schedule, place or account by that id: a settlement `set:<occurrence>` [O2, AJ1]. Before AJ1 the reader of a built id took only `[a-z0-9_]` or `mv:` ids, and every id the app really makes for a person's own records was rejected (confirm_review_5 h1).",
+      "decisions": [
+        "AJ1",
+        "O2",
+        "O3"
+      ]
+    },
+    {
+      "id": "mg-178",
+      "question": "id_ok",
+      "title": "AJ1: A self-logged record of a schedule the person typed is an id",
+      "input": {
+        "id": "auto:k7qzpa-m2xq7ab9zt-41@2026-12-25"
+      },
+      "expected": true,
+      "why": "Everything a person types gets an ordinary id, `<device part>-<session part>-<counter>` (SCHEMA_V3 section 0, O3), so a built id names a schedule, place or account by that id: `auto:<schedule>@<due>` [O2, AJ1]. Before AJ1 the reader of a built id took only `[a-z0-9_]` or `mv:` ids, and every id the app really makes for a person's own records was rejected (confirm_review_5 h1).",
+      "decisions": [
+        "AJ1",
+        "O2",
+        "O3"
+      ]
+    },
+    {
+      "id": "mg-179",
+      "question": "id_ok",
+      "title": "AJ1: A removed self-logged spend of a bill the person typed is an id",
+      "input": {
+        "id": "skip:k7qzpa-m2xq7ab9zt-4@2026-12-27"
+      },
+      "expected": true,
+      "why": "Everything a person types gets an ordinary id, `<device part>-<session part>-<counter>` (SCHEMA_V3 section 0, O3), so a built id names a schedule, place or account by that id: `skip:<occurrence>` [O2, AJ1]. Before AJ1 the reader of a built id took only `[a-z0-9_]` or `mv:` ids, and every id the app really makes for a person's own records was rejected (confirm_review_5 h1).",
+      "decisions": [
+        "AJ1",
+        "O2",
+        "O3"
+      ]
+    },
+    {
+      "id": "mg-180",
+      "question": "id_ok",
+      "title": "AJ1: A period-end answer for Free to spend, the period named by the person's own pay is an id",
+      "input": {
+        "id": "pe:k7qzpa-m2xq7ab9zt-41@2026-12-25:free"
+      },
+      "expected": true,
+      "why": "Everything a person types gets an ordinary id, `<device part>-<session part>-<counter>` (SCHEMA_V3 section 0, O3), so a built id names a schedule, place or account by that id: `pe:<occurrence>:<place>` with the place `free` [O2, AJ1]. Before AJ1 the reader of a built id took only `[a-z0-9_]` or `mv:` ids, and every id the app really makes for a person's own records was rejected (confirm_review_5 h1).",
+      "decisions": [
+        "AJ1",
+        "O2",
+        "O3"
+      ]
+    },
+    {
+      "id": "mg-181",
+      "question": "id_ok",
+      "title": "AJ1: A period-end answer for a place the person typed, the period named by the person's own pay is an id",
+      "input": {
+        "id": "pe:k7qzpa-m2xq7ab9zt-41@2026-12-25:k7qzpa-m2xq7ab9zt-9"
+      },
+      "expected": true,
+      "why": "Everything a person types gets an ordinary id, `<device part>-<session part>-<counter>` (SCHEMA_V3 section 0, O3), so a built id names a schedule, place or account by that id: `pe:<occurrence>:<place>`, both ordinary ids [O2, AJ1]. Before AJ1 the reader of a built id took only `[a-z0-9_]` or `mv:` ids, and every id the app really makes for a person's own records was rejected (confirm_review_5 h1).",
+      "decisions": [
+        "AJ1",
+        "O2",
+        "O3"
+      ]
+    },
+    {
+      "id": "mg-182",
+      "question": "id_ok",
+      "title": "AJ1: A period started without the person's own pay is an id",
+      "input": {
+        "id": "ps:k7qzpa-m2xq7ab9zt-41@2026-12-25"
+      },
+      "expected": true,
+      "why": "Everything a person types gets an ordinary id, `<device part>-<session part>-<counter>` (SCHEMA_V3 section 0, O3), so a built id names a schedule, place or account by that id: `ps:<occurrence>` [O2, AJ1]. Before AJ1 the reader of a built id took only `[a-z0-9_]` or `mv:` ids, and every id the app really makes for a person's own records was rejected (confirm_review_5 h1).",
+      "decisions": [
+        "AJ1",
+        "O2",
+        "O3"
+      ]
+    },
+    {
+      "id": "mg-183",
+      "question": "id_ok",
+      "title": "AJ1: A removed place the person typed is an id",
+      "input": {
+        "id": "rm:k7qzpa-m2xq7ab9zt-9"
+      },
+      "expected": true,
+      "why": "Everything a person types gets an ordinary id, `<device part>-<session part>-<counter>` (SCHEMA_V3 section 0, O3), so a built id names a schedule, place or account by that id: `rm:<place>` [O2, AJ1]. Before AJ1 the reader of a built id took only `[a-z0-9_]` or `mv:` ids, and every id the app really makes for a person's own records was rejected (confirm_review_5 h1).",
+      "decisions": [
+        "AJ1",
+        "O2",
+        "O3"
+      ]
+    },
+    {
+      "id": "mg-184",
+      "question": "id_ok",
+      "title": "AJ1: The closing of an account the person typed is an id",
+      "input": {
+        "id": "close:k7qzpa-m2xq7ab9zt-3"
+      },
+      "expected": true,
+      "why": "Everything a person types gets an ordinary id, `<device part>-<session part>-<counter>` (SCHEMA_V3 section 0, O3), so a built id names a schedule, place or account by that id: `close:<account>` [O2, AJ1]. Before AJ1 the reader of a built id took only `[a-z0-9_]` or `mv:` ids, and every id the app really makes for a person's own records was rejected (confirm_review_5 h1).",
+      "decisions": [
+        "AJ1",
+        "O2",
+        "O3"
+      ]
+    },
+    {
+      "id": "mg-185",
+      "question": "id_ok",
+      "title": "AJ1: The second record of a closing of an account the person typed is an id",
+      "input": {
+        "id": "close:k7qzpa-m2xq7ab9zt-3:2"
+      },
+      "expected": true,
+      "why": "Everything a person types gets an ordinary id, `<device part>-<session part>-<counter>` (SCHEMA_V3 section 0, O3), so a built id names a schedule, place or account by that id: `close:<account>:<n>` [O2, AJ1]. Before AJ1 the reader of a built id took only `[a-z0-9_]` or `mv:` ids, and every id the app really makes for a person's own records was rejected (confirm_review_5 h1).",
+      "decisions": [
+        "AJ1",
+        "O2",
+        "O3"
+      ]
+    },
+    {
+      "id": "mg-186",
+      "question": "id_ok",
+      "title": "AJ1: The fee of a ticked transfer of a schedule the person typed is an id",
+      "input": {
+        "id": "fee:set:k7qzpa-m2xq7ab9zt-41@2026-12-25"
+      },
+      "expected": true,
+      "why": "Everything a person types gets an ordinary id, `<device part>-<session part>-<counter>` (SCHEMA_V3 section 0, O3), so a built id names a schedule, place or account by that id: `fee:<transfer id>`, the transfer a settlement [O2, AJ1]. Before AJ1 the reader of a built id took only `[a-z0-9_]` or `mv:` ids, and every id the app really makes for a person's own records was rejected (confirm_review_5 h1).",
+      "decisions": [
+        "AJ1",
+        "O2",
+        "O3"
+      ]
+    },
+    {
+      "id": "mg-187",
+      "question": "id_ok",
+      "title": "AJ1: A period-end answer for a place the person typed after the move, the period named by a moved pay is an id",
+      "input": {
+        "id": "pe:mv:pay:steps.a@2026-11-25:k7qzpa-m2xq7ab9zt-9"
+      },
+      "expected": true,
+      "why": "Everything a person types gets an ordinary id, `<device part>-<session part>-<counter>` (SCHEMA_V3 section 0, O3), so a built id names a schedule, place or account by that id: `pe:<occurrence>:<place>`, a moved schedule and an ordinary place [O2, AJ1]. Before AJ1 the reader of a built id took only `[a-z0-9_]` or `mv:` ids, and every id the app really makes for a person's own records was rejected (confirm_review_5 h1).",
+      "decisions": [
+        "AJ1",
+        "O2",
+        "O3"
+      ]
+    },
+    {
+      "id": "mg-188",
+      "question": "id_ok",
+      "title": "AJ1: a settlement with no occurrence is not an id, ordinary schedule id or not",
+      "input": {
+        "id": "set:k7qzpa-m2xq7ab9zt-41"
+      },
+      "expected": false,
+      "why": "`set:` names an occurrence, `<schedule>@<due>` [O2]; an ordinary schedule id alone names none, so the id is refused. Accepting ordinary ids does not accept any text after a prefix [AJ1].",
+      "decisions": [
+        "AJ1",
+        "O2"
+      ]
+    },
+    {
+      "id": "mg-189",
+      "question": "id_ok",
+      "title": "AJ1: an ordinary id in capitals is not an id",
+      "input": {
+        "id": "rm:K7QZPA-M2XQ7AB9ZT-9"
+      },
+      "expected": false,
+      "why": "Ordinary ids are lower-case letters and digits [O3]; the app never writes capitals, so a built id naming one is refused [AJ1].",
+      "decisions": [
+        "AJ1",
+        "O3"
+      ]
+    },
+    {
+      "id": "mg-190",
+      "question": "merge",
+      "title": "AJ2: two pay-later plans added on two devices before they sync: both stay (confirm_review_5 h2)",
+      "input": {
+        "mine": {
+          "accounts": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-12",
+              "kind": "paylater",
+              "name": "GGives",
+              "cur": "JPY",
+              "payDay": 5,
+              "payFrom": "k7qzpa-m2xq7ab9zt-2",
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-24T10:00:00.000+09:00",
+              "by": "phn001",
+              "plans": [
+                {
+                  "id": "phn001-q8w2e4r6t1-3",
+                  "amount": 3000,
+                  "count": 3,
+                  "first": "2026-12-05",
+                  "at": "2026-11-24T10:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ]
+            }
+          ]
+        },
+        "theirs": {
+          "accounts": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-12",
+              "kind": "paylater",
+              "name": "GGives",
+              "cur": "JPY",
+              "payDay": 5,
+              "payFrom": "k7qzpa-m2xq7ab9zt-2",
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-24T11:00:00.000+09:00",
+              "by": "dsk001",
+              "plans": [
+                {
+                  "id": "dsk001-z9x8c7v6b5-2",
+                  "amount": 5000,
+                  "count": 6,
+                  "first": "2026-12-05",
+                  "at": "2026-11-24T11:00:00.000+09:00",
+                  "by": "dsk001"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {
+        "accounts": [
+          {
+            "id": "k7qzpa-m2xq7ab9zt-12",
+            "kind": "paylater",
+            "name": "GGives",
+            "cur": "JPY",
+            "payDay": 5,
+            "payFrom": "k7qzpa-m2xq7ab9zt-2",
+            "told": "2026-11-20T10:00:00.000+09:00",
+            "at": "2026-11-24T11:00:00.000+09:00",
+            "by": "dsk001",
+            "plans": [
+              {
+                "id": "dsk001-z9x8c7v6b5-2",
+                "amount": 5000,
+                "count": 6,
+                "first": "2026-12-05",
+                "at": "2026-11-24T11:00:00.000+09:00",
+                "by": "dsk001"
+              },
+              {
+                "id": "phn001-q8w2e4r6t1-3",
+                "amount": 3000,
+                "count": 3,
+                "first": "2026-12-05",
+                "at": "2026-11-24T10:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ]
+          }
+        ]
+      },
+      "why": "On Tue 24 Nov the phone, offline, adds a plan of 3 parts of 3,000 to the pay-later account (10:00); the desktop adds one of 6 parts of 5,000 (11:00). The record: 11:00 is newer, so the desktop's `at` and `by` win [D4]. `plans` is an array whose items all carry `id` and `at`, so it merges plan by plan by `id`, each by its own `at` [AJ2]: both plans stay, in id order. So on Sat 5 Dec 3,000 + 5,000 = 8,000 is due. Taken whole from the newer record, the phone's plan was lost and 5,000 was due, so safe to spend was 3,000 too high.",
+      "decisions": [
+        "AJ2",
+        "AI2",
+        "D4"
+      ]
+    },
+    {
+      "id": "mg-191",
+      "question": "merge_symmetric",
+      "title": "AJ2: the two plans merge the same way whichever copy is mine",
+      "input": {
+        "mine": {
+          "accounts": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-12",
+              "kind": "paylater",
+              "name": "GGives",
+              "cur": "JPY",
+              "payDay": 5,
+              "payFrom": "k7qzpa-m2xq7ab9zt-2",
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-24T10:00:00.000+09:00",
+              "by": "phn001",
+              "plans": [
+                {
+                  "id": "phn001-q8w2e4r6t1-3",
+                  "amount": 3000,
+                  "count": 3,
+                  "first": "2026-12-05",
+                  "at": "2026-11-24T10:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ]
+            }
+          ]
+        },
+        "theirs": {
+          "accounts": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-12",
+              "kind": "paylater",
+              "name": "GGives",
+              "cur": "JPY",
+              "payDay": 5,
+              "payFrom": "k7qzpa-m2xq7ab9zt-2",
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-24T11:00:00.000+09:00",
+              "by": "dsk001",
+              "plans": [
+                {
+                  "id": "dsk001-z9x8c7v6b5-2",
+                  "amount": 5000,
+                  "count": 6,
+                  "first": "2026-12-05",
+                  "at": "2026-11-24T11:00:00.000+09:00",
+                  "by": "dsk001"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected": true,
+      "why": "Each plan is settled by its own `at`, and a plan only one copy holds is kept, so the order of the copies changes nothing [AJ2, D4].",
+      "decisions": [
+        "AJ2",
+        "D4"
+      ]
+    },
+    {
+      "id": "mg-192",
+      "question": "merge",
+      "title": "AJ2: an empty `plans` on the newer copy keeps the other copy's plan",
+      "input": {
+        "mine": {
+          "accounts": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-12",
+              "kind": "paylater",
+              "name": "GGives (phone app)",
+              "cur": "JPY",
+              "payDay": 5,
+              "payFrom": "k7qzpa-m2xq7ab9zt-2",
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-24T11:00:00.000+09:00",
+              "by": "dsk001",
+              "plans": []
+            }
+          ]
+        },
+        "theirs": {
+          "accounts": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-12",
+              "kind": "paylater",
+              "name": "GGives",
+              "cur": "JPY",
+              "payDay": 5,
+              "payFrom": "k7qzpa-m2xq7ab9zt-2",
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-24T10:00:00.000+09:00",
+              "by": "phn001",
+              "plans": [
+                {
+                  "id": "phn001-q8w2e4r6t1-3",
+                  "amount": 3000,
+                  "count": 3,
+                  "first": "2026-12-05",
+                  "at": "2026-11-24T10:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {
+        "accounts": [
+          {
+            "id": "k7qzpa-m2xq7ab9zt-12",
+            "kind": "paylater",
+            "name": "GGives (phone app)",
+            "cur": "JPY",
+            "payDay": 5,
+            "payFrom": "k7qzpa-m2xq7ab9zt-2",
+            "told": "2026-11-20T10:00:00.000+09:00",
+            "at": "2026-11-24T11:00:00.000+09:00",
+            "by": "dsk001",
+            "plans": [
+              {
+                "id": "phn001-q8w2e4r6t1-3",
+                "amount": 3000,
+                "count": 3,
+                "first": "2026-12-05",
+                "at": "2026-11-24T10:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ]
+          }
+        ]
+      },
+      "why": "The desktop, which has not seen the phone's 10:00 plan, renames the account at 11:00; its copy holds `plans: []`. The record: 11:00 wins, so the name is the desktop's [D4]. The shape is judged on either copy: the phone's items carry `id` and `at`, so `plans` is an entry list even though the desktop's is empty [AJ2, AJ-confirm]. A list the desktop never wrote to removes nothing, so the phone's plan stays (3 parts of 3,000 from 5 Dec).",
+      "decisions": [
+        "AJ2",
+        "AJ-confirm",
+        "D4"
+      ]
+    },
+    {
+      "id": "mg-193",
+      "question": "merge",
+      "title": "AJ2: a plan edited on one device and the account renamed on the other: both changes stay",
+      "input": {
+        "mine": {
+          "accounts": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-12",
+              "kind": "paylater",
+              "name": "GGives",
+              "cur": "JPY",
+              "payDay": 5,
+              "payFrom": "k7qzpa-m2xq7ab9zt-2",
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-24T12:00:00.000+09:00",
+              "by": "phn001",
+              "plans": [
+                {
+                  "id": "phn001-q8w2e4r6t1-3",
+                  "amount": 3000,
+                  "count": 4,
+                  "first": "2026-12-05",
+                  "at": "2026-11-24T12:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ]
+            }
+          ]
+        },
+        "theirs": {
+          "accounts": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-12",
+              "kind": "paylater",
+              "name": "GGives (phone app)",
+              "cur": "JPY",
+              "payDay": 5,
+              "payFrom": "k7qzpa-m2xq7ab9zt-2",
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-24T13:00:00.000+09:00",
+              "by": "dsk001",
+              "plans": [
+                {
+                  "id": "phn001-q8w2e4r6t1-3",
+                  "amount": 3000,
+                  "count": 3,
+                  "first": "2026-12-05",
+                  "at": "2026-11-24T10:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {
+        "accounts": [
+          {
+            "id": "k7qzpa-m2xq7ab9zt-12",
+            "kind": "paylater",
+            "name": "GGives (phone app)",
+            "cur": "JPY",
+            "payDay": 5,
+            "payFrom": "k7qzpa-m2xq7ab9zt-2",
+            "told": "2026-11-20T10:00:00.000+09:00",
+            "at": "2026-11-24T13:00:00.000+09:00",
+            "by": "dsk001",
+            "plans": [
+              {
+                "id": "phn001-q8w2e4r6t1-3",
+                "amount": 3000,
+                "count": 4,
+                "first": "2026-12-05",
+                "at": "2026-11-24T12:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ]
+          }
+        ]
+      },
+      "why": "The phone corrects the plan to 4 parts at 12:00; the desktop, holding the plan as it was at 10:00, renames the account at 13:00. The record: 13:00 wins, so the name is the desktop's [D4]. The plan is settled by its own `at`: the phone's 12:00 beats the desktop's copy at 10:00, so it has 4 parts [AJ2]. Taken whole from the newer record, the plan went back to 3 parts and the fourth payment was never asked.",
+      "decisions": [
+        "AJ2",
+        "D4"
+      ]
+    },
+    {
+      "id": "mg-194",
+      "question": "merge",
+      "title": "AJ2: a plan removed on one device stays removed, though the other copy's record is newer",
+      "input": {
+        "mine": {
+          "accounts": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-12",
+              "kind": "paylater",
+              "name": "GGives",
+              "cur": "JPY",
+              "payDay": 5,
+              "payFrom": "k7qzpa-m2xq7ab9zt-2",
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-24T12:00:00.000+09:00",
+              "by": "phn001",
+              "plans": [
+                {
+                  "id": "phn001-q8w2e4r6t1-3",
+                  "amount": 3000,
+                  "count": 3,
+                  "first": "2026-12-05",
+                  "at": "2026-11-24T12:00:00.000+09:00",
+                  "by": "phn001",
+                  "gone": "2026-11-24"
+                }
+              ]
+            }
+          ]
+        },
+        "theirs": {
+          "accounts": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-12",
+              "kind": "paylater",
+              "name": "GGives (phone app)",
+              "cur": "JPY",
+              "payDay": 5,
+              "payFrom": "k7qzpa-m2xq7ab9zt-2",
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-24T13:00:00.000+09:00",
+              "by": "dsk001",
+              "plans": [
+                {
+                  "id": "phn001-q8w2e4r6t1-3",
+                  "amount": 3000,
+                  "count": 3,
+                  "first": "2026-12-05",
+                  "at": "2026-11-24T10:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {
+        "accounts": [
+          {
+            "id": "k7qzpa-m2xq7ab9zt-12",
+            "kind": "paylater",
+            "name": "GGives (phone app)",
+            "cur": "JPY",
+            "payDay": 5,
+            "payFrom": "k7qzpa-m2xq7ab9zt-2",
+            "told": "2026-11-20T10:00:00.000+09:00",
+            "at": "2026-11-24T13:00:00.000+09:00",
+            "by": "dsk001",
+            "plans": [
+              {
+                "id": "phn001-q8w2e4r6t1-3",
+                "amount": 3000,
+                "count": 3,
+                "first": "2026-12-05",
+                "at": "2026-11-24T12:00:00.000+09:00",
+                "by": "phn001",
+                "gone": "2026-11-24"
+              }
+            ]
+          }
+        ]
+      },
+      "why": "The phone removes the plan at 12:00 (typed by mistake): it stays in the list with `gone` and its own `at` [M3]. The desktop renames the account at 13:00, still holding the plan at 10:00. The record: 13:00 wins [D4]; the plan: the removal at 12:00 beats the copy at 10:00, so it stays removed [AJ2, M3]. Taken whole from the newer record, it came back and its parts were asked again.",
+      "decisions": [
+        "AJ2",
+        "M3",
+        "D4"
+      ]
+    },
+    {
+      "id": "mg-195",
+      "question": "restore",
+      "title": "AJ2: restoring an older backup stamps its plans and removes a plan added since",
+      "input": {
+        "current": {
+          "accounts": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-12",
+              "kind": "paylater",
+              "name": "GGives",
+              "cur": "JPY",
+              "payDay": 5,
+              "payFrom": "k7qzpa-m2xq7ab9zt-2",
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-24T13:00:00.000+09:00",
+              "by": "dsk001",
+              "plans": [
+                {
+                  "id": "phn001-q8w2e4r6t1-3",
+                  "amount": 3000,
+                  "count": 4,
+                  "first": "2026-12-05",
+                  "at": "2026-11-24T12:00:00.000+09:00",
+                  "by": "phn001"
+                },
+                {
+                  "id": "dsk001-z9x8c7v6b5-2",
+                  "amount": 5000,
+                  "count": 6,
+                  "first": "2026-12-05",
+                  "at": "2026-11-24T11:00:00.000+09:00",
+                  "by": "dsk001"
+                }
+              ]
+            }
+          ]
+        },
+        "backup": {
+          "accounts": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-12",
+              "kind": "paylater",
+              "name": "GGives",
+              "cur": "JPY",
+              "payDay": 5,
+              "payFrom": "k7qzpa-m2xq7ab9zt-2",
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-22T10:00:00.000+09:00",
+              "by": "phn001",
+              "plans": [
+                {
+                  "id": "phn001-q8w2e4r6t1-3",
+                  "amount": 3000,
+                  "count": 3,
+                  "first": "2026-12-05",
+                  "at": "2026-11-22T10:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ]
+            }
+          ]
+        },
+        "now": "2026-11-25T09:00:00.000+09:00",
+        "by": "phn001",
+        "lastSeen": "2026-11-24T13:00:00.000+09:00",
+        "show": [
+          "accounts"
+        ]
+      },
+      "expected": {
+        "accounts": [
+          {
+            "id": "k7qzpa-m2xq7ab9zt-12",
+            "kind": "paylater",
+            "name": "GGives",
+            "cur": "JPY",
+            "payDay": 5,
+            "payFrom": "k7qzpa-m2xq7ab9zt-2",
+            "told": "2026-11-20T10:00:00.000+09:00",
+            "at": "2026-11-25T09:00:00.000+09:00",
+            "by": "phn001",
+            "plans": [
+              {
+                "id": "phn001-q8w2e4r6t1-3",
+                "amount": 3000,
+                "count": 3,
+                "first": "2026-12-05",
+                "at": "2026-11-25T09:00:00.000+09:00",
+                "by": "phn001"
+              },
+              {
+                "id": "dsk001-z9x8c7v6b5-2",
+                "amount": 5000,
+                "count": 6,
+                "first": "2026-12-05",
+                "at": "2026-11-25T09:00:00.000+09:00",
+                "by": "phn001",
+                "gone": "2026-11-25"
+              }
+            ]
+          }
+        ]
+      },
+      "why": "On Wed 25 Nov 09:00 the phone restores a backup of Sun 22 Nov with the cloud on. The newest `at` it has seen is 24 Nov 13:00, so the restore's `at` is 25 Nov 09:00 [D4, AE5]. The account takes the backup's fields with that `at`; `told` stays 20 Nov [H1]. `plans` is found by its shape [AJ2] and restored as `steps` is: the backup's plan (3 parts) gets the new `at`, and the 6-part plan added on 24 Nov, not in the backup, is removed by its own `gone` (25 Nov) with the new `at` [M3, AB watch]. So the next merge keeps the restore; restored whole as a plain field, the cloud brought the 6-part plan back.",
+      "decisions": [
+        "AJ2",
+        "AE5",
+        "AB watch",
+        "M3",
+        "H1"
+      ]
+    },
+    {
+      "id": "mg-196",
+      "question": "merge",
+      "title": "AJ-confirm: an empty list on one copy is an entry list when the other copy's items carry `from` and `at` (not only `steps`, `rules`, `extraSteps`)",
+      "input": {
+        "mine": {
+          "places": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-9",
+              "name": "Trip to Osaka",
+              "kind": "goal",
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-24T11:00:00.000+09:00",
+              "by": "dsk001",
+              "milestones": []
+            }
+          ]
+        },
+        "theirs": {
+          "places": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-9",
+              "name": "Trip",
+              "kind": "goal",
+              "told": "2026-11-20T10:00:00.000+09:00",
+              "at": "2026-11-24T10:00:00.000+09:00",
+              "by": "phn001",
+              "milestones": [
+                {
+                  "from": "2026-12",
+                  "amount": 5000,
+                  "at": "2026-11-24T10:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {
+        "places": [
+          {
+            "id": "k7qzpa-m2xq7ab9zt-9",
+            "name": "Trip to Osaka",
+            "kind": "goal",
+            "told": "2026-11-20T10:00:00.000+09:00",
+            "at": "2026-11-24T11:00:00.000+09:00",
+            "by": "dsk001",
+            "milestones": [
+              {
+                "from": "2026-12",
+                "amount": 5000,
+                "at": "2026-11-24T10:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ]
+          }
+        ]
+      },
+      "why": "The phone adds December's 5,000 to a list no build knows yet (`milestones`, 10:00); the desktop, which has not seen it, renames the goal at 11:00 with `milestones: []`. The name is the desktop's (11:00) [D4]. The shape is judged on either copy, so the empty list is an entry list and December stays [AI2, AJ2, AJ-confirm].",
+      "decisions": [
+        "AJ-confirm",
+        "AJ2",
+        "AI2",
+        "D4"
+      ]
+    },
+    {
+      "id": "mg-197",
+      "question": "merge",
+      "title": "AJ3: the home currency added on the phone and the country set on the desktop: both stay (confirm_review_5 h2)",
+      "input": {
+        "mine": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-24T09:00:00.000+09:00",
+                "by": "phn001"
+              },
+              {
+                "from": "2027-04-01",
+                "cur": "PHP",
+                "at": "2026-11-24T10:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "country": "JP",
+            "mode": "track",
+            "minBank": {
+              "a": 20000,
+              "cur": "JPY"
+            },
+            "mainBank": "k7qzpa-m2xq7ab9zt-2",
+            "at": "2026-11-24T10:00:00.000+09:00",
+            "by": "phn001"
+          }
+        },
+        "theirs": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-24T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "country": "PH",
+            "mode": "track",
+            "minBank": {
+              "a": 20000,
+              "cur": "JPY"
+            },
+            "mainBank": "k7qzpa-m2xq7ab9zt-2",
+            "at": "2026-11-24T11:00:00.000+09:00",
+            "by": "dsk001"
+          }
+        }
+      },
+      "expected": {
+        "home": {
+          "curs": [
+            {
+              "from": "2026-11-01",
+              "cur": "JPY",
+              "at": "2026-11-24T09:00:00.000+09:00",
+              "by": "phn001"
+            },
+            {
+              "from": "2027-04-01",
+              "cur": "PHP",
+              "at": "2026-11-24T10:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ],
+          "country": "PH",
+          "mode": "track",
+          "minBank": {
+            "a": 20000,
+            "cur": "JPY"
+          },
+          "mainBank": "k7qzpa-m2xq7ab9zt-2",
+          "at": "2026-11-24T11:00:00.000+09:00",
+          "by": "dsk001"
+        }
+      },
+      "why": "The person is moving home to the Philippines in April. On Tue 24 Nov the phone, offline, adds pesos from 1 Apr 2027 (10:00); the desktop, which has not seen it, sets the country to PH (11:00). `home` is a single record: 11:00 wins, so the country is PH [D4]. `home.curs` merges by `from`, each entry by its own `at` (SCHEMA_V3 2.1) [AJ3, AI2]: yen from 1 Nov and pesos from 1 Apr both stay, so the home currency changes in April. Taken whole from the newer `home`, only yen was left.",
+      "decisions": [
+        "AJ3",
+        "AI2",
+        "O6",
+        "D4"
+      ]
+    },
+    {
+      "id": "mg-198",
+      "question": "merge",
+      "title": "AJ3: the minimum changed on the phone and the main bank on the desktop: `home` is one record, the newer wins whole",
+      "input": {
+        "mine": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-24T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "country": "JP",
+            "mode": "track",
+            "minBank": {
+              "a": 30000,
+              "cur": "JPY"
+            },
+            "mainBank": "k7qzpa-m2xq7ab9zt-2",
+            "at": "2026-11-24T10:00:00.000+09:00",
+            "by": "phn001"
+          }
+        },
+        "theirs": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-24T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "country": "JP",
+            "mode": "track",
+            "minBank": {
+              "a": 20000,
+              "cur": "JPY"
+            },
+            "mainBank": "dsk001-w3e5r7t9y1-2",
+            "at": "2026-11-24T11:00:00.000+09:00",
+            "by": "dsk001"
+          }
+        }
+      },
+      "expected": {
+        "home": {
+          "curs": [
+            {
+              "from": "2026-11-01",
+              "cur": "JPY",
+              "at": "2026-11-24T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ],
+          "country": "JP",
+          "mode": "track",
+          "minBank": {
+            "a": 20000,
+            "cur": "JPY"
+          },
+          "mainBank": "dsk001-w3e5r7t9y1-2",
+          "at": "2026-11-24T11:00:00.000+09:00",
+          "by": "dsk001"
+        }
+      },
+      "why": "`home` is a single record with one `at` (SCHEMA_V3 section 0): its plain fields come with the newer copy, as every record's do (mg-16) [D4]. The desktop's 11:00 wins, so the main bank is the new one and the minimum stays 20,000: the phone's 30,000 of 10:00 is lost, as a second device's edit of any other field of one record is. Only `curs`, an entry list, merges entry by entry [AJ3]. Whether `home`'s fields should merge one by one like the shared `ui` keys is listed as open question mg-q16.",
+      "decisions": [
+        "AJ3",
+        "D4"
+      ]
+    },
+    {
+      "id": "mg-199",
+      "question": "merge",
+      "title": "AJ3: two devices add a home currency from the same day: the newer entry wins",
+      "input": {
+        "mine": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-24T09:00:00.000+09:00",
+                "by": "phn001"
+              },
+              {
+                "from": "2027-04-01",
+                "cur": "PHP",
+                "at": "2026-11-24T10:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "country": "JP",
+            "mode": "track",
+            "minBank": {
+              "a": 20000,
+              "cur": "JPY"
+            },
+            "mainBank": "k7qzpa-m2xq7ab9zt-2",
+            "at": "2026-11-24T10:00:00.000+09:00",
+            "by": "phn001"
+          }
+        },
+        "theirs": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-24T09:00:00.000+09:00",
+                "by": "phn001"
+              },
+              {
+                "from": "2027-04-01",
+                "cur": "USD",
+                "at": "2026-11-24T11:00:00.000+09:00",
+                "by": "dsk001"
+              }
+            ],
+            "country": "JP",
+            "mode": "track",
+            "minBank": {
+              "a": 20000,
+              "cur": "JPY"
+            },
+            "mainBank": "k7qzpa-m2xq7ab9zt-2",
+            "at": "2026-11-24T11:00:00.000+09:00",
+            "by": "dsk001"
+          }
+        }
+      },
+      "expected": {
+        "home": {
+          "curs": [
+            {
+              "from": "2026-11-01",
+              "cur": "JPY",
+              "at": "2026-11-24T09:00:00.000+09:00",
+              "by": "phn001"
+            },
+            {
+              "from": "2027-04-01",
+              "cur": "USD",
+              "at": "2026-11-24T11:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          ],
+          "country": "JP",
+          "mode": "track",
+          "minBank": {
+            "a": 20000,
+            "cur": "JPY"
+          },
+          "mainBank": "k7qzpa-m2xq7ab9zt-2",
+          "at": "2026-11-24T11:00:00.000+09:00",
+          "by": "dsk001"
+        }
+      },
+      "why": "Both entries are from 1 Apr 2027, so they are one entry [AJ3]: the desktop's 11:00 (dollars) beats the phone's 10:00 (pesos), as two edits of one `steps` entry [L merge q2, D4].",
+      "decisions": [
+        "AJ3",
+        "L merge q2",
+        "D4"
+      ]
+    },
+    {
+      "id": "mg-200",
+      "question": "receive",
+      "title": "AJ3: a `home` that arrives more than a day ahead is held, its new currency entry too",
+      "input": {
+        "mine": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-24T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "country": "JP",
+            "mode": "track",
+            "minBank": {
+              "a": 20000,
+              "cur": "JPY"
+            },
+            "mainBank": "k7qzpa-m2xq7ab9zt-2",
+            "at": "2026-11-24T09:00:00.000+09:00",
+            "by": "phn001"
+          }
+        },
+        "theirs": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-24T09:00:00.000+09:00",
+                "by": "phn001"
+              },
+              {
+                "from": "2027-04-01",
+                "cur": "PHP",
+                "at": "2026-11-26T10:00:00.000+09:00",
+                "by": "fst001"
+              }
+            ],
+            "country": "PH",
+            "mode": "track",
+            "minBank": {
+              "a": 20000,
+              "cur": "JPY"
+            },
+            "mainBank": "k7qzpa-m2xq7ab9zt-2",
+            "at": "2026-11-26T10:00:00.000+09:00",
+            "by": "fst001"
+          }
+        },
+        "lastSeen": "2026-11-24T09:00:00.000+09:00",
+        "now": "2026-11-24T10:00:00.000+09:00"
+      },
+      "expected": {
+        "copy": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-24T09:00:00.000+09:00",
+                "by": "phn001"
+              },
+              {
+                "from": "2027-04-01",
+                "cur": "PHP",
+                "at": "2026-11-24T10:00:00.001+09:00",
+                "by": "fst001",
+                "held": {
+                  "came": "2026-11-26T10:00:00.000+09:00",
+                  "at": "2026-11-24T10:00:00.001+09:00"
+                }
+              }
+            ],
+            "country": "PH",
+            "mode": "track",
+            "minBank": {
+              "a": 20000,
+              "cur": "JPY"
+            },
+            "mainBank": "k7qzpa-m2xq7ab9zt-2",
+            "at": "2026-11-24T10:00:00.001+09:00",
+            "by": "fst001",
+            "held": {
+              "came": "2026-11-26T10:00:00.000+09:00",
+              "at": "2026-11-24T10:00:00.001+09:00"
+            }
+          }
+        },
+        "warn": true
+      },
+      "why": "A tablet whose clock is two days fast writes `home` (country PH, pesos from April) at \"Thu 26 Nov 10:00\". The phone receives it at its own now, Tue 24 Nov 10:00: both `at`s are more than a day ahead, so each is held at that now plus 1 ms, 10:00:00.001, marked `held` with what it came with, and the warning is shown [M4, N1, AI1]. The yen entry (24 Nov 09:00) is not ahead and is left as it is. Then the merge: the held 10:00:00.001 beats the phone's 09:00, so PH and the peso entry are kept [AJ3, D4].",
+      "decisions": [
+        "AJ3",
+        "AI1",
+        "M4",
+        "N1",
+        "D4"
+      ]
+    },
+    {
+      "id": "mg-201",
+      "question": "merge",
+      "title": "AJ3: a home currency taken back with Undo stays removed when the other device still holds it",
+      "input": {
+        "mine": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-24T09:00:00.000+09:00",
+                "by": "phn001"
+              },
+              {
+                "from": "2027-04-01",
+                "cur": "PHP",
+                "at": "2026-11-24T10:05:00.000+09:00",
+                "by": "phn001",
+                "gone": "2026-11-24"
+              }
+            ],
+            "country": "JP",
+            "mode": "track",
+            "minBank": {
+              "a": 20000,
+              "cur": "JPY"
+            },
+            "mainBank": "k7qzpa-m2xq7ab9zt-2",
+            "at": "2026-11-24T10:05:00.000+09:00",
+            "by": "phn001"
+          }
+        },
+        "theirs": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-24T09:00:00.000+09:00",
+                "by": "phn001"
+              },
+              {
+                "from": "2027-04-01",
+                "cur": "PHP",
+                "at": "2026-11-24T10:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "country": "JP",
+            "mode": "track",
+            "minBank": {
+              "a": 20000,
+              "cur": "JPY"
+            },
+            "mainBank": "k7qzpa-m2xq7ab9zt-2",
+            "at": "2026-11-24T10:00:00.000+09:00",
+            "by": "phn001"
+          }
+        }
+      },
+      "expected": {
+        "home": {
+          "curs": [
+            {
+              "from": "2026-11-01",
+              "cur": "JPY",
+              "at": "2026-11-24T09:00:00.000+09:00",
+              "by": "phn001"
+            },
+            {
+              "from": "2027-04-01",
+              "cur": "PHP",
+              "at": "2026-11-24T10:05:00.000+09:00",
+              "by": "phn001",
+              "gone": "2026-11-24"
+            }
+          ],
+          "country": "JP",
+          "mode": "track",
+          "minBank": {
+            "a": 20000,
+            "cur": "JPY"
+          },
+          "mainBank": "k7qzpa-m2xq7ab9zt-2",
+          "at": "2026-11-24T10:05:00.000+09:00",
+          "by": "phn001"
+        }
+      },
+      "why": "The phone adds pesos from April at 10:00 and the copy reaches the desktop; at 10:05 the person taps Undo: the entry stays with `gone` and the Undo's `at` [M3, H6]. The desktop still holds it alive at 10:00. The entry's 10:05 removal is newer, so it stays removed and the home currency stays yen [AJ3].",
+      "decisions": [
+        "AJ3",
+        "M3",
+        "H6"
+      ]
+    },
+    {
+      "id": "mg-202",
+      "question": "merge",
+      "title": "AJ3: Redo puts the home currency back, over the Undo on the other device",
+      "input": {
+        "mine": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-24T09:00:00.000+09:00",
+                "by": "phn001"
+              },
+              {
+                "from": "2027-04-01",
+                "cur": "PHP",
+                "at": "2026-11-24T10:10:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "country": "JP",
+            "mode": "track",
+            "minBank": {
+              "a": 20000,
+              "cur": "JPY"
+            },
+            "mainBank": "k7qzpa-m2xq7ab9zt-2",
+            "at": "2026-11-24T10:10:00.000+09:00",
+            "by": "phn001"
+          }
+        },
+        "theirs": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-24T09:00:00.000+09:00",
+                "by": "phn001"
+              },
+              {
+                "from": "2027-04-01",
+                "cur": "PHP",
+                "at": "2026-11-24T10:05:00.000+09:00",
+                "by": "phn001",
+                "gone": "2026-11-24"
+              }
+            ],
+            "country": "JP",
+            "mode": "track",
+            "minBank": {
+              "a": 20000,
+              "cur": "JPY"
+            },
+            "mainBank": "k7qzpa-m2xq7ab9zt-2",
+            "at": "2026-11-24T10:05:00.000+09:00",
+            "by": "phn001"
+          }
+        }
+      },
+      "expected": {
+        "home": {
+          "curs": [
+            {
+              "from": "2026-11-01",
+              "cur": "JPY",
+              "at": "2026-11-24T09:00:00.000+09:00",
+              "by": "phn001"
+            },
+            {
+              "from": "2027-04-01",
+              "cur": "PHP",
+              "at": "2026-11-24T10:10:00.000+09:00",
+              "by": "phn001"
+            }
+          ],
+          "country": "JP",
+          "mode": "track",
+          "minBank": {
+            "a": 20000,
+            "cur": "JPY"
+          },
+          "mainBank": "k7qzpa-m2xq7ab9zt-2",
+          "at": "2026-11-24T10:10:00.000+09:00",
+          "by": "phn001"
+        }
+      },
+      "why": "After the Undo of 10:05 reached the desktop, the person taps Redo at 10:10: the entry is written again with no `gone` and a newer `at`. A Redo wins over the Undo it reverses [H6]: pesos from April are back on both [AJ3].",
+      "decisions": [
+        "AJ3",
+        "H6",
+        "M3"
+      ]
+    },
+    {
+      "id": "mg-203",
+      "question": "merge",
+      "title": "AJ3: the minimum taken back with Undo: the earlier value is written again and wins",
+      "input": {
+        "mine": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-24T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "country": "JP",
+            "mode": "track",
+            "minBank": {
+              "a": 20000,
+              "cur": "JPY"
+            },
+            "mainBank": "k7qzpa-m2xq7ab9zt-2",
+            "at": "2026-11-24T10:05:00.000+09:00",
+            "by": "phn001"
+          }
+        },
+        "theirs": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-24T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "country": "JP",
+            "mode": "track",
+            "minBank": {
+              "a": 30000,
+              "cur": "JPY"
+            },
+            "mainBank": "k7qzpa-m2xq7ab9zt-2",
+            "at": "2026-11-24T10:00:00.000+09:00",
+            "by": "phn001"
+          }
+        }
+      },
+      "expected": {
+        "home": {
+          "curs": [
+            {
+              "from": "2026-11-01",
+              "cur": "JPY",
+              "at": "2026-11-24T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ],
+          "country": "JP",
+          "mode": "track",
+          "minBank": {
+            "a": 20000,
+            "cur": "JPY"
+          },
+          "mainBank": "k7qzpa-m2xq7ab9zt-2",
+          "at": "2026-11-24T10:05:00.000+09:00",
+          "by": "phn001"
+        }
+      },
+      "why": "The phone raises the minimum to 30,000 at 10:00 and the copy reaches the desktop; at 10:05 the person taps Undo, which writes `home` again with the earlier 20,000 and a new `at` (a field of a single record has no `gone`: Undo is an edit back). 10:05 is newer, so the desktop takes 20,000 too [AJ3, H6, D4].",
+      "decisions": [
+        "AJ3",
+        "H6",
+        "D4"
+      ]
+    },
+    {
+      "id": "mg-204",
+      "question": "restore",
+      "title": "AJ3: restoring an older backup gives `home` its fields back, stamps its currency entries and removes one added since",
+      "input": {
+        "current": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-24T09:00:00.000+09:00",
+                "by": "phn001"
+              },
+              {
+                "from": "2027-04-01",
+                "cur": "PHP",
+                "at": "2026-11-24T10:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "country": "PH",
+            "mode": "track",
+            "minBank": {
+              "a": 30000,
+              "cur": "JPY"
+            },
+            "mainBank": "dsk001-w3e5r7t9y1-2",
+            "at": "2026-11-24T11:00:00.000+09:00",
+            "by": "dsk001"
+          }
+        },
+        "backup": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-22T10:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "country": "JP",
+            "mode": "track",
+            "minBank": {
+              "a": 20000,
+              "cur": "JPY"
+            },
+            "mainBank": "k7qzpa-m2xq7ab9zt-2",
+            "at": "2026-11-22T10:00:00.000+09:00",
+            "by": "phn001"
+          }
+        },
+        "now": "2026-11-25T09:00:00.000+09:00",
+        "by": "phn001",
+        "lastSeen": "2026-11-24T11:00:00.000+09:00",
+        "show": [
+          "home"
+        ]
+      },
+      "expected": {
+        "home": {
+          "curs": [
+            {
+              "from": "2026-11-01",
+              "cur": "JPY",
+              "at": "2026-11-25T09:00:00.000+09:00",
+              "by": "phn001"
+            },
+            {
+              "from": "2027-04-01",
+              "cur": "PHP",
+              "at": "2026-11-25T09:00:00.000+09:00",
+              "by": "phn001",
+              "gone": "2026-11-25"
+            }
+          ],
+          "country": "JP",
+          "mode": "track",
+          "minBank": {
+            "a": 20000,
+            "cur": "JPY"
+          },
+          "mainBank": "k7qzpa-m2xq7ab9zt-2",
+          "at": "2026-11-25T09:00:00.000+09:00",
+          "by": "phn001"
+        }
+      },
+      "why": "The backup is of Sun 22 Nov: country JP, minimum 20,000, the old main bank, yen only. Since then pesos from April were added (24 Nov 10:00) and the desktop set PH, 30,000 and the new main bank (11:00). On Wed 25 Nov 09:00 the phone restores the backup with the cloud on: the restore's `at` is the later of 25 Nov 09:00 and 24 Nov 11:00:00.001, so 09:00 [D4, AE5]. `home` takes the backup's fields with that `at` and `by` [AB watch]; `curs` is an entry list, so the backup's yen entry gets the new `at` and the peso entry, not in the backup, is removed by its own `gone` (25 Nov) [AJ3, M3].",
+      "decisions": [
+        "AJ3",
+        "AE5",
+        "AB watch",
+        "M3"
+      ]
+    },
+    {
+      "id": "mg-205",
+      "question": "restore_merge",
+      "title": "AJ3: the restored `home` is kept at the next merge with the cloud, either way round",
+      "input": {
+        "current": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-24T09:00:00.000+09:00",
+                "by": "phn001"
+              },
+              {
+                "from": "2027-04-01",
+                "cur": "PHP",
+                "at": "2026-11-24T10:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "country": "PH",
+            "mode": "track",
+            "minBank": {
+              "a": 30000,
+              "cur": "JPY"
+            },
+            "mainBank": "dsk001-w3e5r7t9y1-2",
+            "at": "2026-11-24T11:00:00.000+09:00",
+            "by": "dsk001"
+          }
+        },
+        "backup": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-22T10:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "country": "JP",
+            "mode": "track",
+            "minBank": {
+              "a": 20000,
+              "cur": "JPY"
+            },
+            "mainBank": "k7qzpa-m2xq7ab9zt-2",
+            "at": "2026-11-22T10:00:00.000+09:00",
+            "by": "phn001"
+          }
+        },
+        "now": "2026-11-25T09:00:00.000+09:00",
+        "by": "phn001",
+        "lastSeen": "2026-11-24T11:00:00.000+09:00",
+        "cloud": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-24T09:00:00.000+09:00",
+                "by": "phn001"
+              },
+              {
+                "from": "2027-04-01",
+                "cur": "PHP",
+                "at": "2026-11-24T10:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "country": "PH",
+            "mode": "track",
+            "minBank": {
+              "a": 30000,
+              "cur": "JPY"
+            },
+            "mainBank": "dsk001-w3e5r7t9y1-2",
+            "at": "2026-11-24T11:00:00.000+09:00",
+            "by": "dsk001"
+          }
+        }
+      },
+      "expected": {
+        "mine_first": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-25T09:00:00.000+09:00",
+                "by": "phn001"
+              },
+              {
+                "from": "2027-04-01",
+                "cur": "PHP",
+                "at": "2026-11-25T09:00:00.000+09:00",
+                "by": "phn001",
+                "gone": "2026-11-25"
+              }
+            ],
+            "country": "JP",
+            "mode": "track",
+            "minBank": {
+              "a": 20000,
+              "cur": "JPY"
+            },
+            "mainBank": "k7qzpa-m2xq7ab9zt-2",
+            "at": "2026-11-25T09:00:00.000+09:00",
+            "by": "phn001"
+          }
+        },
+        "theirs_first": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-25T09:00:00.000+09:00",
+                "by": "phn001"
+              },
+              {
+                "from": "2027-04-01",
+                "cur": "PHP",
+                "at": "2026-11-25T09:00:00.000+09:00",
+                "by": "phn001",
+                "gone": "2026-11-25"
+              }
+            ],
+            "country": "JP",
+            "mode": "track",
+            "minBank": {
+              "a": 20000,
+              "cur": "JPY"
+            },
+            "mainBank": "k7qzpa-m2xq7ab9zt-2",
+            "at": "2026-11-25T09:00:00.000+09:00",
+            "by": "phn001"
+          }
+        }
+      },
+      "why": "The cloud still holds `home` as it was at 24 Nov 11:00. The restore's 25 Nov 09:00 is newer, so its fields win; the yen entry's new `at` and the peso entry's removal are newer than the cloud's 24 Nov 09:00 and 10:00, so pesos do not come back [AJ3, AE5, M3].",
+      "decisions": [
+        "AJ3",
+        "AE5",
+        "M3"
+      ]
+    },
+    {
+      "id": "mg-206",
+      "question": "devices",
+      "title": "AJ3: `home` used again after 23 and 45 days away (grid: home x used again after days away, AH1)",
+      "input": {
+        "devices": {
+          "P": {
+            "id": "phn001",
+            "lastSeen": "2026-11-01T21:00:00.000+09:00"
+          },
+          "D": {
+            "id": "dsk001",
+            "lastSeen": "2026-11-01T21:00:00.000+09:00"
+          }
+        },
+        "copy": {
+          "home": {
+            "curs": [
+              {
+                "from": "2026-11-01",
+                "cur": "JPY",
+                "at": "2026-11-01T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "country": "JP",
+            "mode": "track",
+            "minBank": null,
+            "mainBank": "k7qzpa-m2xq7ab9zt-2",
+            "at": "2026-11-01T09:00:00.000+09:00",
+            "by": "phn001"
+          }
+        },
+        "steps": [
+          {
+            "on": "D",
+            "now": "2026-11-11T10:00:00.000+09:00",
+            "edit": {
+              "record": "home",
+              "entry": {
+                "list": "curs",
+                "from": "2027-04-01",
+                "set": {
+                  "cur": "PHP"
+                }
+              }
+            }
+          },
+          {
+            "on": "P",
+            "now": "2026-11-24T12:00:00.000+09:00",
+            "edit": {
+              "record": "home",
+              "set": {
+                "minBank": {
+                  "a": 30000,
+                  "cur": "JPY"
+                }
+              }
+            }
+          },
+          {
+            "sync": "D",
+            "to": "P",
+            "now": "2026-11-24T12:01:00.000+09:00"
+          },
+          {
+            "sync": "P",
+            "to": "D",
+            "now": "2026-11-24T12:02:00.000+09:00"
+          },
+          {
+            "on": "P",
+            "now": "2027-01-08T12:00:00.000+09:00",
+            "edit": {
+              "record": "home",
+              "set": {
+                "mainBank": "dsk001-w3e5r7t9y1-2"
+              }
+            }
+          },
+          {
+            "sync": "P",
+            "to": "D",
+            "now": "2027-01-08T12:02:00.000+09:00"
+          }
+        ],
+        "show": {
+          "on": "D",
+          "record": "home"
+        }
+      },
+      "expected": {
+        "curs": [
+          {
+            "from": "2026-11-01",
+            "cur": "JPY",
+            "at": "2026-11-01T09:00:00.000+09:00",
+            "by": "phn001"
+          },
+          {
+            "from": "2027-04-01",
+            "cur": "PHP",
+            "at": "2026-11-11T10:00:00.000+09:00",
+            "by": "dsk001"
+          }
+        ],
+        "country": "JP",
+        "mode": "track",
+        "minBank": {
+          "a": 30000,
+          "cur": "JPY"
+        },
+        "mainBank": "dsk001-w3e5r7t9y1-2",
+        "at": "2027-01-08T12:00:00.000+09:00",
+        "by": "phn001"
+      },
+      "why": "Both devices were last used Sun 1 Nov 21:00. On Wed 11 Nov 10:00 the desktop adds pesos from April: the entry and `home` take its own clock, 11 Nov 10:00 [AH1]. The phone, unopened for 23 days, raises the minimum to 30,000 on Tue 24 Nov 12:00 without having seen that: `at` 24 Nov 12:00, its own clock, never held for the gap [AH1]. They sync within minutes, so nothing is held [M4]: `home` is the phone's (newer), and `curs` merges by `from`, so the desktop's peso entry stays [AJ3]. The phone, unopened for 45 days, is opened on Fri 8 Jan 2027: D8 asks the date first (mg-122), the person confirms, and the new main bank is written at 8 Jan 12:00, so the desktop ends with it, the 30,000 minimum and both currency entries.",
+      "decisions": [
+        "AJ3",
+        "AH1",
+        "D8",
+        "M4",
+        "D4"
+      ]
+    },
+    {
+      "id": "mg-207",
+      "question": "receive",
+      "title": "AJ4: a far-ahead edit held at the receiver's now plus 1 ms loses to an earlier edit from a slightly fast device",
+      "input": {
+        "mine": {
+          "events": [
+            {
+              "id": "cccccc-h5j7k9m2n4-1",
+              "k": "spend",
+              "acct": "k7qzpa-m2xq7ab9zt-2",
+              "a": 1500,
+              "date": "2026-11-24",
+              "told": "2026-11-24T10:30:00.000+09:00",
+              "at": "2026-11-24T10:30:00.000+09:00",
+              "by": "cccccc"
+            }
+          ]
+        },
+        "theirs": {
+          "events": [
+            {
+              "id": "cccccc-h5j7k9m2n4-1",
+              "k": "spend",
+              "acct": "k7qzpa-m2xq7ab9zt-2",
+              "a": 1800,
+              "date": "2026-11-24",
+              "told": "2026-11-24T10:30:00.000+09:00",
+              "at": "2026-11-26T10:00:00.000+09:00",
+              "by": "fst001"
+            }
+          ]
+        },
+        "lastSeen": "2026-11-24T10:30:00.000+09:00",
+        "now": "2026-11-24T10:00:00.000+09:00"
+      },
+      "expected": {
+        "copy": {
+          "events": [
+            {
+              "id": "cccccc-h5j7k9m2n4-1",
+              "k": "spend",
+              "acct": "k7qzpa-m2xq7ab9zt-2",
+              "a": 1500,
+              "date": "2026-11-24",
+              "told": "2026-11-24T10:30:00.000+09:00",
+              "at": "2026-11-24T10:30:00.000+09:00",
+              "by": "cccccc"
+            }
+          ]
+        },
+        "warn": true
+      },
+      "why": "The receiving phone's now is Tue 24 Nov 10:00. It has already taken in a copy from a device 30 minutes fast: the spend of 1,500 at \"10:30\", less than a day ahead, so not held [AH1]; the newest `at` it has seen is 10:30. Then a copy arrives from a tablet two days fast, with the same spend changed to 1,800 at \"Thu 26 Nov 10:00\": more than a day ahead, so it is held at the phone's own now plus 1 ms, 10:00:00.001, never at the newest seen plus 1 ms [AI1, AJ4], and the warning is shown. 10:00:00.001 is before 10:30, so the 1,500 stays, though the 1,800 may have been typed later. Which edit should win is unclear either way, and every device ends with the same copy (confirm_review_5); this case fixes the result [AJ4].",
+      "decisions": [
+        "AJ4",
+        "AI1",
+        "AH1",
+        "M4"
+      ]
+    },
+    {
+      "id": "mg-208",
+      "question": "devices",
+      "title": "AJ-confirm: two devices holding one far-ahead copy settle on the newer held `at` and the earliest `told` (the first to receive it)",
+      "input": {
+        "devices": {
+          "F": {
+            "id": "fst001",
+            "lastSeen": "2026-11-23T08:00:00.000+09:00"
+          },
+          "A": {
+            "id": "phn001",
+            "lastSeen": "2026-11-23T08:00:00.000+09:00"
+          },
+          "B": {
+            "id": "dsk001",
+            "lastSeen": "2026-11-23T08:00:00.000+09:00"
+          }
+        },
+        "copy": {
+          "events": []
+        },
+        "steps": [
+          {
+            "on": "F",
+            "now": "2026-11-25T10:00:00.000+09:00",
+            "edit": {
+              "list": "events",
+              "id": "fst001-r4t6y8u0i2-1",
+              "set": {
+                "k": "spend",
+                "acct": "k7qzpa-m2xq7ab9zt-2",
+                "a": 2500,
+                "date": "2026-11-23"
+              }
+            }
+          },
+          {
+            "sync": "F",
+            "to": "A",
+            "now": "2026-11-23T09:00:00.000+09:00"
+          },
+          {
+            "sync": "F",
+            "to": "B",
+            "now": "2026-11-23T09:30:00.000+09:00"
+          },
+          {
+            "sync": "A",
+            "to": "B",
+            "now": "2026-11-23T09:40:00.000+09:00"
+          },
+          {
+            "sync": "B",
+            "to": "A",
+            "now": "2026-11-23T09:45:00.000+09:00"
+          }
+        ],
+        "show": {
+          "on": "A",
+          "list": "events",
+          "id": "fst001-r4t6y8u0i2-1"
+        }
+      },
+      "expected": {
+        "id": "fst001-r4t6y8u0i2-1",
+        "k": "spend",
+        "acct": "k7qzpa-m2xq7ab9zt-2",
+        "a": 2500,
+        "date": "2026-11-23",
+        "by": "fst001",
+        "told": "2026-11-23T09:00:00.001+09:00",
+        "at": "2026-11-23T09:30:00.001+09:00",
+        "held": {
+          "came": "2026-11-25T10:00:00.000+09:00",
+          "at": "2026-11-23T09:30:00.001+09:00"
+        }
+      },
+      "why": "A tablet two days fast writes a spend at \"Wed 25 Nov 10:00\" (`told` the same). The phone receives it at its own now, Mon 23 Nov 09:00: held at 09:00:00.001, `told` too, marked `held: { came: 25 Nov 10:00, at: 09:00:00.001 }` [AI1, N2]. The desktop receives the same copy at 09:30: held at 09:30:00.001, `told` too, with its own mark. The phone's copy then reaches the desktop (09:40) and the desktop's reaches the phone (09:45): neither is ahead, and neither copy's `at` is the other's `came`, so nothing is held again. Two held copies of one record meet: the newer held `at` wins, 09:30:00.001 with the desktop's mark, and the earliest `told` is kept, 09:00:00.001 [AJ-confirm, H1]. The phone, which held it first, ends with that copy.",
+      "decisions": [
+        "AJ-confirm",
+        "AI1",
+        "N1",
+        "N2",
+        "H1"
+      ]
+    },
+    {
+      "id": "mg-209",
+      "question": "devices",
+      "title": "AJ-confirm: the fast device itself ends with the same copy when the merged one comes back",
+      "input": {
+        "devices": {
+          "F": {
+            "id": "fst001",
+            "lastSeen": "2026-11-23T08:00:00.000+09:00"
+          },
+          "A": {
+            "id": "phn001",
+            "lastSeen": "2026-11-23T08:00:00.000+09:00"
+          },
+          "B": {
+            "id": "dsk001",
+            "lastSeen": "2026-11-23T08:00:00.000+09:00"
+          }
+        },
+        "copy": {
+          "events": []
+        },
+        "steps": [
+          {
+            "on": "F",
+            "now": "2026-11-25T10:00:00.000+09:00",
+            "edit": {
+              "list": "events",
+              "id": "fst001-r4t6y8u0i2-1",
+              "set": {
+                "k": "spend",
+                "acct": "k7qzpa-m2xq7ab9zt-2",
+                "a": 2500,
+                "date": "2026-11-23"
+              }
+            }
+          },
+          {
+            "sync": "F",
+            "to": "A",
+            "now": "2026-11-23T09:00:00.000+09:00"
+          },
+          {
+            "sync": "F",
+            "to": "B",
+            "now": "2026-11-23T09:30:00.000+09:00"
+          },
+          {
+            "sync": "A",
+            "to": "B",
+            "now": "2026-11-23T09:40:00.000+09:00"
+          },
+          {
+            "sync": "B",
+            "to": "A",
+            "now": "2026-11-23T09:45:00.000+09:00"
+          },
+          {
+            "sync": "B",
+            "to": "F",
+            "now": "2026-11-25T10:05:00.000+09:00"
+          }
+        ],
+        "show": {
+          "on": "F",
+          "list": "events",
+          "id": "fst001-r4t6y8u0i2-1"
+        }
+      },
+      "expected": {
+        "id": "fst001-r4t6y8u0i2-1",
+        "k": "spend",
+        "acct": "k7qzpa-m2xq7ab9zt-2",
+        "a": 2500,
+        "date": "2026-11-23",
+        "by": "fst001",
+        "told": "2026-11-23T09:00:00.001+09:00",
+        "at": "2026-11-23T09:30:00.001+09:00",
+        "held": {
+          "came": "2026-11-25T10:00:00.000+09:00",
+          "at": "2026-11-23T09:30:00.001+09:00"
+        }
+      },
+      "why": "A tablet two days fast writes a spend at \"Wed 25 Nov 10:00\" (`told` the same). The phone receives it at its own now, Mon 23 Nov 09:00: held at 09:00:00.001, `told` too, marked `held: { came: 25 Nov 10:00, at: 09:00:00.001 }` [AI1, N2]. The desktop receives the same copy at 09:30: held at 09:30:00.001, `told` too, with its own mark. The phone's copy then reaches the desktop (09:40) and the desktop's reaches the phone (09:45): neither is ahead, and neither copy's `at` is the other's `came`, so nothing is held again. Two held copies of one record meet: the newer held `at` wins, 09:30:00.001 with the desktop's mark, and the earliest `told` is kept, 09:00:00.001 [AJ-confirm, H1]. The desktop's copy then reaches the tablet at its own (fast) now, 25 Nov 10:05: nothing in it is ahead. The tablet's own copy has `at` 25 Nov 10:00, the mark's `came`, so it is the same far-ahead write: it counts at the held 09:30:00.001 and takes the mark [N1]; `told` is the earliest, 09:00:00.001. All three devices show one copy.",
+      "decisions": [
+        "AJ-confirm",
+        "AI1",
+        "N1",
+        "N2",
+        "H1"
+      ]
     }
   ],
-  "open": []
+  "open": [
+    {
+      "id": "mg-q16",
+      "question": "`home` is one record with one `at`, so its plain fields (minBank, mainBank, country, mode) come with the newer copy whole: a minimum changed on the phone and a main bank changed on the desktop before they sync keep only the desktop's (mg-198). AJ3 merges `home.curs` by `from` but says nothing of the other fields. Should `home`'s fields merge one by one, each with its own `at`, like the shared `ui` keys (L merge q6, AF3)?",
+      "ref_does": "Takes the newer `home` whole, with `curs` merged by `from` (mg-16, mg-197, mg-198)."
+    }
+  ]
 }

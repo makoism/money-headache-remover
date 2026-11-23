@@ -5,7 +5,8 @@
 //   --why    prints the model's sum on safe to spend asks
 //   --model  runs the asks against another copy of the model (for example the one before a change)
 // Any FAIL makes the run fail: the last line never says all passed when one did not.
-// A model that throws on an ask is a FAIL for that ask, and the run goes on.
+// A model that throws on an ask is a FAIL for that ask, and the run goes on; an ask `refused` expects it to throw,
+// citing the decision named in `expected` (a copy that must never be saved, X8).
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -41,9 +42,13 @@ function expectedLine(ask, cur) {
     case 'total': return mm(e) + (ask.beside ? ' beside ' + Object.entries(ask.beside).map(([c, v]) => `${c} ${fmt(minor(v, c), c)}`).join(', ') : '');
     case 'place': return `kept ${mm(e.kept)}, next due ${e.due}`;
     case 'warnings': return e.map(w => `${w.account} ${w.code}`).sort().join('; ') || 'none';
+    case 'refused': return `refused [${e}]`;   // [X8, AJ1] a copy the model must refuse, by the decision it names
     default: return mm(e);
   }
 }
+
+// [X8, AJ1] A copy the model refuses throws; the ask names the decision the refusal must cite.
+const refusedLine = err => { const codes = String(err.message).match(/\[[A-Z]+\d*\]/g); return codes ? 'refused ' + codes[codes.length - 1] : 'model error: ' + err.message; };
 
 function modelLine(ask, r, cur) {
   switch (ask.question) {
@@ -87,7 +92,8 @@ for (const fp of files) {
     const cur = acc ? acc.currency : (sc.home_curs || []).filter(h => h.from <= ask.date).reduce((c, h) => h.cur, sc.currency);
     const want = expectedLine(ask, cur);
     let got, r;
-    try { r = lookahead(sc, ask.date, { at: ask.at }); got = modelLine(ask, r, cur); } catch (err) { got = 'model error: ' + err.message; }
+    try { r = lookahead(sc, ask.date, { at: ask.at }); got = ask.question === 'refused' ? 'not refused' : modelLine(ask, r, cur); }
+    catch (err) { got = ask.question === 'refused' ? refusedLine(err) : 'model error: ' + err.message; }
     const ok = want === got;
     if (ok) pass++; else fail++;
     console.log(`${ok ? 'PASS' : 'FAIL'} ${ask.id} ${ask.date} ${ask.question}${ask.account ? ' ' + ask.account : ''}: expected ${want}; model ${got}`);
