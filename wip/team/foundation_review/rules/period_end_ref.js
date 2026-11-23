@@ -1,4 +1,4 @@
-// Period end (SCHEMA_V3 7.4 and 9; DECISIONS_ROUND2 A7, F8, H8, L, M, N5, O2, O, P2, P3, P5).
+// Period end (SCHEMA_V3 7.4 and 9; DECISIONS_ROUND2 A7, F8, H8, L, M, N5, O2, O, P2, P3, P5, T1).
 // A plain reference for the engine lane, checked by run_rules.js against rules/period_end.json.
 // Open points name their question in period_end.json.
 'use strict';
@@ -6,31 +6,41 @@ const { dayNum, dayStr, addWorking } = require('./dates');
 const { mergeList, idFor } = require('./merge_ref');
 
 // Has the period ended, its last day, and does the question start with a check-in [A7].
-// [N5] A new period the person started without the pay is saved as an event `{ k: 'periodStart', date }`.
-// The live one (no `gone`) dated after this period's first day and on or before today starts the new period;
-// one on or before the first day is what began this period (or an earlier one). The first one after the
-// first day ends this period; a later one would end a later period.
-function startedFromEvents(events, periodFrom, now) {
-  const from = periodFrom ? dayNum(periodFrom) : -Infinity;
-  const days = (events || []).filter(e => e.k === 'periodStart' && !e.gone && dayNum(e.date) > from && dayNum(e.date) <= now)
-    .map(e => e.date).sort();
-  return days.length ? days[0] : null;
+// [T1] A period is named by the occurrence of the pay that starts it (`period`, for example `pay@2026-11-10`),
+// never by a day that can move. A new period the person started without the pay is saved as
+// `{ k: 'periodStart', id: 'ps:<the occurrence it stands in for>', date }` [N5]: two phones make one record, the
+// newer `at` wins. Only the period start for the next pay's occurrence (`nextPay.occ`) ends this period; one for
+// the pay that began it does not. Period-end answers carry `period` and `date` (the period's last day when
+// answered). This period ends: at the date of its answers when it has any (a period with answers keeps its end,
+// so a moved settle, a corrected pay date or an undone pay never moves it); else the day before the period start
+// for the next pay; else the day before the next pay lands. Once the end is fixed, the late pay settles its
+// occurrence but starts no new period.
+const ms = t => Date.parse(t);
+function periodStartFor(events, occ, now) {
+  let best = null;
+  for (const e of events || []) {
+    if (e.k !== 'periodStart' || e.gone || e.id !== 'ps:' + occ) continue;
+    if (!best || ms(e.at) > ms(best.at)) best = e;   // [T1] one record: the newer `at` wins
+  }
+  return best && dayNum(best.date) <= now ? best : null;
 }
 
-function questionStart({ nextPay, checkins, today, spendFrom, postingDays, holidays, events, periodFrom }) {
+function questionStart({ nextPay, checkins, today, spendFrom, postingDays, holidays, events, answers, period }) {
   const now = dayNum(today);
-  const startedFrom = startedFromEvents(events, periodFrom, now);
+  const occ = nextPay.occ || 'pay@' + nextPay.due;
+  const ps = periodStartFor(events, occ, now);
+  const fixedBy = (answers || []).filter(a => a.period === period && a.date && !a.gone).map(a => dayNum(a.date));
   const lands = dayNum(nextPay.lands || nextPay.due);
   const windowEnd = addWorking(lands, postingDays == null ? 1 : postingDays, holidays || []);
   const landed = nextPay.landed && dayNum(nextPay.landed) <= now;
-  // [M7] The person started the new period without the pay: it starts on the day they chose. The late pay
-  // stays expected until its posting window ends, then is "not seen yet" [H8].
-  const started = !landed && startedFrom && dayNum(startedFrom) <= now;
   // [F8, H8] The period ends the day before the next pay lands; until it is seen it has not ended, even on
   // the period's last day [L period_end q2]. Past its posting window the check-in asks "did your pay
   // come?"; a "yes" writes the pay with the day it came, which ends the period [L period_end q3].
-  if (!landed && !started) return now > windowEnd ? { ended: false, askPayCame: true } : { ended: false };
-  const to = (started ? dayNum(startedFrom) : dayNum(nextPay.landed)) - 1;
+  // [M7] The person started the new period without the pay: it starts on the day they chose. The late pay
+  // stays expected until its posting window ends, then is "not seen yet" [H8].
+  if (!landed && !ps && !fixedBy.length) return now > windowEnd ? { ended: false, askPayCame: true } : { ended: false };
+  const to = fixedBy.length ? Math.min(...fixedBy) : ps ? dayNum(ps.date) - 1 : dayNum(nextPay.landed) - 1;
+  const started = !landed;
   // [A7] Fresh: the check-ins dated in the last 3 days (to - 2 .. to), or after the end up to today; one after
   // the end has its stretch split by days at the pay (A4) [L period_end q1]. Fresh only when every spend-from
   // account was typed [L period_end q9], counting those check-ins together [M6]; a check-in given as a date
@@ -103,13 +113,15 @@ function nextPeriod(input) {
   return out;
 }
 
-// [L period_end q8] Two or more unanswered ends stay apart; each answer names its period's last day.
+// [L period_end q8] Two or more unanswered ends stay apart; each answer names its period. [T1] A period is named
+// by the occurrence of the pay that started it (`period`), so an answer still answers its period when the
+// period's last day moves.
 function leftoversEnds({ ends, answers }) {
-  return ends.map(e => Object.assign({ periodTo: e.periodTo },
-    leftovers({ periodTo: e.periodTo, places: e.places, answers: (answers || []).filter(a => a.period === e.periodTo) })));
+  return ends.map(e => Object.assign({ period: e.period, periodTo: e.periodTo },
+    leftovers({ periodTo: e.periodTo, places: e.places, answers: (answers || []).filter(a => a.period === e.period) })));
 }
 
-// [P2] A period-end answer is one record per place, `pe:<period last day>:<place>`, holding all its moves:
+// [P2, T1] A period-end answer is one record per place, `pe:<the occurrence that started the period>:<place>`, holding all its moves:
 // `{ place, moves: [ { to, a } ], told, at, by }`. A move to the place itself is "keep it here" (no move
 // event, L period_end q6); for an overspent place the moves are its covers, `{ from, a }` (a cover is saved
 // under the line it covers, O reading). Turned into single answers, the shape `leftovers` reads:
@@ -133,11 +145,11 @@ function flatten(records) {
 // (the record is marked `gone`, goneBy the record kept) and the device that wrote it says "An answer from
 // your other device was used. Check it." at its next open. Repeated until nothing is refused.
 const NOTICE = 'An answer from your other device was used. Check it.';
-function leftoversMerged({ periodTo, places, mine, theirs }) {
+function leftoversMerged({ period, periodTo, places, mine, theirs }) {
   const named = list => {
     const seen = new Set();
     return (list || []).map(a => {
-      const id = idFor({ k: 'pe', periodTo, place: a.place });
+      const id = idFor({ k: 'pe', period, place: a.place });   // [T1]
       if (seen.has(id)) throw new Error('two records for ' + a.place + ' on one device: an answer is one record per place [P2]');
       seen.add(id);
       return Object.assign({ id }, a);

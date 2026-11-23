@@ -1,4 +1,4 @@
-// Accounts: closing (SCHEMA_V3 3 and 5; DECISIONS_ROUND2 O, P6, Q7, the Q watch item (write-off), R3, R4, R5, S3).
+// Accounts: closing (SCHEMA_V3 3 and 5; DECISIONS_ROUND2 O, P6, Q7, the Q watch item (write-off), R3, R4, R5, S3, T watch (the main bank)).
 // A plain reference for the engine lane, checked by run_rules.js against rules/accounts.json.
 // Open points name their question in accounts.json.
 'use strict';
@@ -17,8 +17,11 @@ const { dayNum } = require('./dates');
 // [Q7] The closing's transfer or write-off has the built id `close:<account>`. [S3] A closing that writes several
 // records names them `close:<account>:1`, `:2`, in the order written (the transfers as listed, then the write-off).
 const OWED = { card: 1, loan: 1, paylater: 1 };
-function close({ account, kind, payFrom, date, figure, transfers, writeOff, schedules, links, newLinks }) {
-  const linked = [].concat((links || {}).cards || [], (links || {}).places || []);
+// [T watch decided] Closing the main bank (`mainBank`) asks for the new main bank (`newLinks.mainBank`) and moves
+// every link to it: `home.mainBank`, the budget lines and Free to spend held on it (their `acct` is it, or none:
+// the main bank), and the pay schedules landing in it, which move instead of ending. Bills paid from it end (P6).
+function close({ account, kind, payFrom, date, figure, transfers, writeOff, schedules, links, newLinks, mainBank, lines, free }) {
+  const linked = [].concat((links || {}).cards || [], (links || {}).places || [], mainBank ? ['mainBank'] : []);
   const needs = linked.filter(x => !(newLinks || {})[x]);
   if (needs.length) return { refused: { account, needs } };
   if (OWED[kind] && figure > 0) return { refused: { account, owes: figure, offer: { k: 'repay', acct: payFrom, acct2: account, a: figure } } };
@@ -29,13 +32,21 @@ function close({ account, kind, payFrom, date, figure, transfers, writeOff, sche
     .concat(writeOff ? [{ k: 'spend', date, acct: account, a: writeOff }] : []);
   const events = [{ k: 'check', date, acct: account, a: figure }]
     .concat(recs.map((r, i) => Object.assign({ id: 'close:' + account + (recs.length > 1 ? ':' + (i + 1) : '') }, r)));
-  const ends = {};
+  const ends = {}, moved = {};
+  const nb = mainBank ? newLinks.mainBank : null;
+  const onIt = a => a === account || a == null;
+  if (nb) {
+    moved.mainBank = nb;
+    for (const l of lines || []) if (onIt(l.acct)) (moved.lines = moved.lines || {})[l.id] = nb;
+    if (free && onIt(free.acct)) moved.free = nb;
+  }
   for (const s of schedules || []) {
+    if (nb && s.kind === 'income' && s.acct === account) { (moved.schedules = moved.schedules || {})[s.id] = nb; continue; }
     if (s.acct !== account && s.acct2 !== account) continue;
     if (s.ends && dayNum(s.ends) <= dayNum(date)) continue;
     ends[s.id] = date;
   }
-  return Object.assign({ closed: date, events, ends }, linked.length ? { links: Object.assign({}, newLinks) } : {});
+  return Object.assign({ closed: date, events, ends }, linked.length ? { links: Object.assign({}, newLinks) } : {}, nb ? { moved } : {});
 }
 
 function ask(question, input) {

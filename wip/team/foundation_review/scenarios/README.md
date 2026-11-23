@@ -60,7 +60,7 @@ Written 23 Nov 2026 from foundation_review/RECOMMENDATION.md, life_walks_salarie
 | to_place.json | Money to place put in Free to spend (counts) or kept in Waiting on purpose (does not); a period-end answer record's moves fill a place (R1, P2). | JPY | 5 |
 | closing_write_off.json | A dead e-wallet's last pesos written off at the closing, id `close:<account>` (Q7, Q watch). | PHP | 4 |
 | paid_by_someone_else.json | A card statement paid by a parent (a repay with no paying account) and a travel spend posted 8 working days late (Q watch; final review 2 S10, S6). | JPY | 5 |
-| pending_hold.json | A pending hold: a filler at the first check-in that the next one gives back (final review 2 S7, watch). | JPY | 6 |
+| pending_hold.json | A pending hold: a filler at the first check-in that the next one gives back; under T2 the filler is spending, signed, so the two add up to nothing (final review 2 S7, watch; T2). | JPY | 7 |
 | rough_transfer.json | Rough top-ups met by statement lines: within 10% a side takes the line's amount, the other side keeps its typed amount and the difference is a fee from Free to spend; a line more than 10% away is a record of its own (S1). | PHP | 6 |
 | settle_later_stretch.json | A deposit settles the pay before a check-in; the pay's own line, read in the next stretch, moves the settle and the period start (S2). | JPY | 4 |
 | settle_ticked.json | The same, but the person ticked the deposit's settle at the check-in: it stays (S2). | JPY | 3 |
@@ -88,7 +88,7 @@ Written 23 Nov 2026 from foundation_review/RECOMMENDATION.md, life_walks_salarie
 | grid_borrow_window.json | Coverage grid cell: a cash advance whose bank side posts after a check-in. | JPY | 3 |
 | check_specs.js | Checks every file's shape and that every `why` adds up to its expected figure. `node check_specs.js` | | |
 
-Total: 548 asks (the first eight files: 180; the H files: 64; the I files: 34; the J files: 21; the K, L and M files: 22; the O files: 35; the P files: 12; the Q and R files: 63; the S files: 25; the T and U files and the coverage grid files: 92). T1 renamed to_place's period-end answer `pe:2027-01-24:free` to `pe:pay@2026-12-25:free` (the pay that started the period); no figure changed. S4 also changed card_instalments inst-07 (280,000 to 270,000: the part posting on 15 Apr is now walked).
+Total: 549 asks (the first eight files: 180; the H files: 64; the I files: 34; the J files: 21; the K, L and M files: 22; the O files: 35; the P files: 12; the Q and R files: 63; the S files: 25; the T and U files and the coverage grid files: 92; pending_hold hold-07, added with T2: 1). T1 renamed to_place's period-end answer `pe:2027-01-24:free` to `pe:pay@2026-12-25:free` (the pay that started the period); no figure changed. S4 also changed card_instalments inst-07 (280,000 to 270,000: the part posting on 15 Apr is now walked).
 
 ### The review v3 situations and where each one is now
 
@@ -203,7 +203,7 @@ The reviewer's own scripts (final_review_2.md) are in `../ref/final_review2_situ
 | Decision | Asks or cases |
 |---|---|
 | T1. A period is named by the occurrence of the pay that starts it; `pe:<occurrence>:<place>`, `ps:<occurrence>` with the chosen day, `once` by occurrence; a fixed end stays | period_start_model psm-01 to psm-07, period_end_fixed pef-01 to pef-03; rules pe-27, pe-31 to pe-43 (renamed), pe-48 to pe-54, mg-52, mg-53, mg-57, mg-74, mg-76 to mg-78, units-75 to units-77 |
-| T2. The filler is spending, from Free to spend by default, split as A4, or the place picked | filler_spending fs-01 to fs-07; period_start_model psm-07; told_moments tm-03; grid_two_phones_check g2p-03, g2p-05 |
+| T2. The filler is spending, from Free to spend by default, split as A4, or the place picked | filler_spending fs-01 to fs-07; period_start_model psm-07; told_moments tm-03; grid_two_phones_check g2p-03, g2p-05; pending_hold hold-05, hold-07 (signed: a filler below zero gives back) |
 | T3. Bills and self-logged spends paid by card are future card lines, off on the card's payment day | bill_on_card boc-01 to boc-05 |
 | T4. An overspent line counts as zero left in the walk | overspent_line ol-01 to ol-03 |
 | T5. A line counts only spends in its own currency; others listed apart with a warning | line_other_currency loc-01 to loc-04; grid_other_currency goc-04 |

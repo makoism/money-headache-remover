@@ -31,9 +31,12 @@
       "note": "The next filler gives it back, so the two add up to nothing." },
     { "id": "hold-04", "date": "2027-02-10", "question": "bank_today", "account": "b", "expected": 95800,
       "why": "95,800 (check, Wed 10 Feb) = 95,800" },
+    { "id": "hold-07", "date": "2027-02-08", "question": "headline", "expected": 10800,
+      "why": "30,000 (Free to spend for the period from Mon 25 Jan) - 4,200 (petrol) - 15,000 (the filler of Sun 7 Feb: the hold, spending for now) = 10,800",
+      "note": "The filler is spending [T2]; until the hold drops it lowers Free to spend, the safe side." },
     { "id": "hold-05", "date": "2027-02-10", "question": "headline", "expected": 25800,
       "why": "30,000 (Free to spend for the period from Mon 25 Jan) - 4,200 (petrol) = 25,800",
-      "note": "Fillers are not spends from Free to spend, so the hold never lowered it." },
+      "note": "The filler is spending [T2], signed: the hold's 15,000 came off Free to spend on 7 Feb and the filler of 10 Feb gives it back, so the two add up to nothing." },
     { "id": "hold-06", "date": "2027-02-10", "question": "warnings", "expected": [],
       "why": "The 15,000 back is less than the period's Free to spend and less than 20% of what the app had, so no gain question is asked." }
   ]

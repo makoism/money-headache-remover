@@ -28,16 +28,16 @@ function newer(a, b) { return ms(a) > ms(b) ? 'a' : ms(b) > ms(a) ? 'b' : 'same'
 // ---------- ids [section 0, O2, O3] ----------
 // [O2] A record the app writes for a known moment gets an id built from what it is, so two devices writing
 // the same moment make one record and the merge keeps the newest `at`: a settlement `set:<occurrence>`, a
-// self-logged spend `auto:<schedule>@<due>`, a period-end answer `pe:<period last day>:<place>`, a period
-// started without the pay `ps:<date>`. [Q7] A removed place's move to Waiting `rm:<place>`, a closing's transfer
+// self-logged spend `auto:<schedule>@<due>`, a period-end answer `pe:<the occurrence that started the period>:<place>`,
+// a period started without the pay `ps:<the occurrence it stands in for>` (its chosen day is a field) [T1]. [Q7] A removed place's move to Waiting `rm:<place>`, a closing's transfer
 // or write-off `close:<account>`, and with several records `close:<account>:1`, `:2`, in order [S3]. [Q5] The skip
 // written when a self-logged spend is removed `skip:<occurrence>`.
 function idFor(w) {
   if (w.k === 'set') return 'set:' + w.s + '@' + w.due;
   if (w.k === 'auto') return 'auto:' + w.s + '@' + w.due;
   if (w.k === 'skip') return 'skip:' + w.s + '@' + w.due;
-  if (w.k === 'pe') return 'pe:' + w.periodTo + ':' + w.place;
-  if (w.k === 'ps') return 'ps:' + w.date;
+  if (w.k === 'pe') return 'pe:' + w.period + ':' + w.place;   // [T1] never a day that can move
+  if (w.k === 'ps') return 'ps:' + w.occurrence;
   if (w.k === 'rm') return 'rm:' + w.place;
   if (w.k === 'close') return 'close:' + w.acct + (w.n ? ':' + w.n : '');   // [S3] n: the record's place in a closing that writes several
   throw new Error('no built id for ' + w.k);
@@ -45,7 +45,7 @@ function idFor(w) {
 // [O3] Every other id is `<device part>-<session part>-<counter>`: the device part 6 characters, the session
 // part 10 random characters (letters and digits) drawn on each page open, the counter from 1. The device
 // part is letters and digits too (the schema's own example is `k7qzpa`).
-const BUILT = /^((set|auto|skip):[a-z0-9_]+@\d{4}-\d{2}-\d{2}|pe:\d{4}-\d{2}-\d{2}:[a-z0-9_]+|ps:\d{4}-\d{2}-\d{2}|(rm|close):[a-z0-9_]+|close:[a-z0-9_]+:[1-9]\d*)$/;
+const BUILT = /^((set|auto|skip):[a-z0-9_]+@\d{4}-\d{2}-\d{2}|pe:[a-z0-9_]+@\d{4}-\d{2}-\d{2}:[a-z0-9_]+|ps:[a-z0-9_]+@\d{4}-\d{2}-\d{2}|(rm|close):[a-z0-9_]+|close:[a-z0-9_]+:[1-9]\d*)$/;
 const idOk = id => typeof id === 'string' && (/^[a-z0-9]{6}-[a-z0-9]{10}-[1-9]\d*$/.test(id) || BUILT.test(id));
 
 // ---------- merging ----------

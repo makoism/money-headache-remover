@@ -145,7 +145,11 @@ function applyImports(input) {
       if (meet) {
         const t = meet.t;
         if (sideAmount(t, meet.n) !== line.a) {   // [S1] the side takes the line's amount; the other keeps its own
-          if (meet.n === 1) { if (t.a2 == null) t.a2 = t.a; t.a = line.a; } else t.a2 = line.a;
+          if (meet.n === 1) { if (t.a2 == null) t.a2 = t.a; t.a = line.a; } else { if (t.a2 == null) t.a2 = t.a; t.a2 = line.a; }
+          // [U1] Unless the other side has its own line, a rough record never has more arrive than left: when the
+          // line makes it so, both sides take the line's amount, and no fee is written.
+          const other = sideOf(t, meet.n === 1 ? 2 : 1);
+          if (t.est && !other && t.a2 > t.a) { if (meet.n === 1) t.a2 = t.a; else t.a = t.a2; }
           t.amountsMoved = true;
         }
         (sides[meet.t.id] = sides[meet.t.id] || {})[meet.n] = { acct: line.acct, rank: rank(line.src), rid: line.rid, srcKey: srcKey(line),
@@ -207,11 +211,18 @@ function applyImports(input) {
 // [L matching q13]. A pair the person called "both are real" is not offered again [L matching q12].
 const deviceOf = id => String(id).split('-')[0];
 const notDouble = (x, y) => (x.notDouble || []).includes(y.id) || (y.notDouble || []).includes(x.id);
+// [T watch decided] A transfer typed on two phones is offered like a spend: the same kind, the same two
+// accounts, the same amount on the same day. A transfer is never offered against a spend.
 function possibleDoubles(lines) {
   const typed = lines.filter(l => !l.gone && rank(l.src) === 0 && l.src !== 'move');
   const pairs = [];
   for (let i = 0; i < typed.length; i++) for (let j = i + 1; j < typed.length; j++) {
     const x = typed[i], y = typed[j];
+    if (twoSided(x) || twoSided(y)) {
+      if (twoSided(x) && twoSided(y) && x.k === y.k && x.acct === y.acct && x.acct2 === y.acct2 && x.date === y.date && x.a === y.a
+        && deviceOf(x.id) !== deviceOf(y.id) && !notDouble(x, y)) pairs.push([x.id, y.id].sort());
+      continue;
+    }
     const placeX = x.place || x.line, placeY = y.place || y.line;
     if (x.date === y.date && x.a === y.a && x.dir === y.dir && placeX === placeY && deviceOf(x.id) !== deviceOf(y.id) && !notDouble(x, y))
       pairs.push([x.id, y.id].sort());

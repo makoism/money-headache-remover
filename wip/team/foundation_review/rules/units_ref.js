@@ -262,8 +262,13 @@ function weekByDayDates({ weekly, lineFrom, from, to }) {
   return { total, days: dayNum(to) - dayNum(from) + 1, daily, lastDays };
 }
 
+// [B8, T1] A one-period override (`plan.budgets[].once`) is keyed by the occurrence of the pay that starts the
+// period (`pay@2027-01-10`), never by the period's start day, which is not known until the pay lands.
+function periodAmountOnce({ amount, once, period }) { return once && once[period] != null ? once[period] : amount; }
+
 function ask(question, input) {
   switch (question) {
+    case 'period_amount_once': return periodAmountOnce(input);
     case 'to_minor': return toMinor(input.text, input.cur);
     case 'currency_for': return currencyFor(input);
     case 'load_amount': return loadAmount(input.a);
@@ -285,4 +290,4 @@ function ask(question, input) {
   throw new Error('unknown question ' + question);
 }
 
-module.exports = { ask, perPayRules, homeCurOn, moveCurrency, paysInYearRules, DECIMALS, toMinor, currencyFor, loadAmount, interest, paysInYear, periodCount, perPayList, perPay, payNumber, periodPerPay, periodAmount, weekByDay, weekByDayDates, byDay, byDayDates };
+module.exports = { ask, periodAmountOnce, perPayRules, homeCurOn, moveCurrency, paysInYearRules, DECIMALS, toMinor, currencyFor, loadAmount, interest, paysInYear, periodCount, perPayList, perPay, payNumber, periodPerPay, periodAmount, weekByDay, weekByDayDates, byDay, byDayDates };
