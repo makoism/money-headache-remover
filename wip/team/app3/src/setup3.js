@@ -20,6 +20,9 @@ const SHIFT3 = {
 /* [slice 6] the country is chosen, not guessed: its default follows the money until the person picks one */
 const COUNTRY3 = [['JP', 'Japan'], ['PH', 'The Philippines'], ['XX', 'Somewhere else (weekends only)']];
 const COUNTRY_OF3 = { JPY: 'JP', PHP: 'PH' };
+/* [slice 6b] a second income: every rhythm the pay has (after "On the same days as your pay") */
+const EVERY2_3 = [['month', 'On a day each month'], ['days', 'On two days each month'], ['weeks1', 'Every week'], ['weeks2', 'Every 2 weeks'],
+  ['weeks4', 'Every 4 weeks'], ['none', 'No fixed day']];
 const EVERY3 = [['month', 'On a day each month'], ['days', 'On two days each month'], ['weeks1', 'Every week'], ['weeks2', 'Every 2 weeks'],
   ['weeks4', 'Every 4 weeks'], ['none', 'No fixed pay: it comes when it comes']];
 const KINDS3 = [['bank', 'A bank'], ['cash', 'Cash'], ['ewallet', 'An e-wallet']];
@@ -83,8 +86,10 @@ function openSetup3() {
     $('#s3Pays').insertAdjacentHTML('beforeend', `<div class="a3-row3" data-row="${k}">
       <div class="a3-field"><label for="s3-${k}-n">Called</label><input class="a3-in a3-txt" id="s3-${k}-n" data-f="name" placeholder="Second income" autocomplete="off"></div>
       <div class="a3-field"><label for="s3-${k}-a">How much lands</label><input class="a3-in" id="s3-${k}-a" data-f="amount" data-amount data-money></div>
-      <div class="a3-field"><label for="s3-${k}-e">When it lands</label><select class="a3-in a3-sel" id="s3-${k}-e" data-f="every"><option value="same">On the same days as your pay</option><option value="month">On a day each month</option><option value="none">No fixed day</option></select></div>
+      <div class="a3-field"><label for="s3-${k}-e">When it lands</label><select class="a3-in a3-sel" id="s3-${k}-e" data-f="every"><option value="same">On the same days as your pay</option>${EVERY2_3.map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}</select></div>
       <div class="a3-field" data-q="day" hidden><label for="s3-${k}-d">Day of the month it lands</label><select class="a3-in a3-sel" id="s3-${k}-d" data-f="day">${dayOptions3('5')}</select></div>
+      <div class="a3-field" data-q="day2" hidden><label for="s3-${k}-d2">And on day</label><select class="a3-in a3-sel" id="s3-${k}-d2" data-f="day2">${dayOptions3('20', [['last', 'the last day']])}</select></div>
+      <div class="a3-field" data-q="start" hidden><label for="s3-${k}-st">The day of one of them (the last one or the next one)</label><input class="a3-in a3-date" type="date" id="s3-${k}-st" data-f="start"></div>
       <div class="a3-field" data-q="acct" hidden><label for="s3-${k}-ac">It lands in</label><select class="a3-in a3-sel" id="s3-${k}-ac" data-f="acct" data-acctsel="bank,cash,ewallet"></select></div></div>`);
     bindMoney3($(`#s3-${k}-a`));
     $('#s3AddPay').hidden = true;
@@ -165,20 +170,22 @@ function answers3(strict) {
   const acctOf = sel => (sel && !sel.closest('[data-q=acct]').hidden && sel.value) || 'bank1';
   /* the first pay's rhythm: a day each month, two days, every n weeks from the day of one, or no fixed pay */
   const every = $('#s3PayEvery').value, shift = $('#s3PayShift').value, day = Number($('#s3PayDay').value);
-  const day2 = $('#s3PayDay2').value === 'last' ? 'last' : Number($('#s3PayDay2').value);
-  let rhythm;
-  if (every === 'month') rhythm = { every: 'month', day };
-  else if (every === 'days') rhythm = { every: 'month', days: day === day2 ? [day] : [day, day2] };
-  else if (every === 'none') rhythm = { every: 'none' };
-  else {
-    const start = $('#s3PayStart').value;
-    if (!start && strict) { err.textContent = 'Type the day of one pay, the last one or the next one'; $('#s3PayStart').focus(); throw new Error('asked'); }
-    rhythm = { every: 'weeks', n: Number(every.slice(5)), start: start || ans.day };
-  }
+  /* [slice 6b] one rhythm from the answers, for the pay and for a second income: every n weeks from the day of one
+     (build_book steps it back to on or before the setup day, BP1) */
+  const rhythmOf = (ev, d, d2v, startBox) => {
+    const d2 = d2v === 'last' ? 'last' : Number(d2v);
+    if (ev === 'month') return { every: 'month', day: d };
+    if (ev === 'days') return { every: 'month', days: d === d2 ? [d] : [d, d2] };
+    if (ev === 'none') return { every: 'none' };
+    const start = startBox.value;
+    if (!start && strict) { err.textContent = 'Type the day of one pay, the last one or the next one'; startBox.focus(); throw new Error('asked'); }
+    return { every: 'weeks', n: Number(ev.slice(5)), start: start || ans.day };
+  };
+  const rhythm = rhythmOf(every, day, $('#s3PayDay2').value, $('#s3PayStart'));
   $$('#a3Setup [data-row^=pay]').forEach((row, i) => {
     const name = text(row.querySelector('[data-f=name]'), i ? 'Second income' : 'Pay');
     const ev = i ? row.querySelector('[data-f=every]').value : null;
-    const r = !i || ev === 'same' ? rhythm : ev === 'none' ? { every: 'none' } : { every: 'month', day: Number(row.querySelector('[data-f=day]').value) };
+    const r = !i || ev === 'same' ? rhythm : rhythmOf(ev, Number(row.querySelector('[data-f=day]').value), row.querySelector('[data-f=day2]').value, row.querySelector('[data-f=start]'));
     const box = row.querySelector('[data-f=amount]'), bank = acctOf(i ? row.querySelector('[data-f=acct]') : $('#s3PayAcct'));
     /* no fixed pay: the amount may be blank (it comes when it comes) */
     if (r.every === 'none' && !box.value.trim()) { ans.pays.push(Object.assign({ key: row.dataset.row, name, bank, shift: 'none' }, r)); return; }
@@ -221,7 +228,12 @@ function shape3() {
   q('start').hidden = !every.startsWith('weeks');
   q('shift').hidden = every === 'none';
   q('none').hidden = every !== 'none';
-  $$('#a3Setup [data-row^=pay] [data-f=every]').forEach(sel => { sel.closest('[data-row]').querySelector('[data-q=day]').hidden = sel.value !== 'month'; });
+  $$('#a3Setup [data-row^=pay] [data-f=every]').forEach(sel => {
+    const row = sel.closest('[data-row]'), v = sel.value;
+    row.querySelector('[data-q=day]').hidden = !(v === 'month' || v === 'days');
+    row.querySelector('[data-q=day2]').hidden = v !== 'days';
+    row.querySelector('[data-q=start]').hidden = !v.startsWith('weeks');
+  });
   $$('#a3Setup [data-row^=bill] [data-f=every]').forEach(sel => { sel.closest('[data-row]').querySelector('[data-q=month]').hidden = sel.value !== 'year'; });
   const accts = [{ key: 'bank1', name: ($('#s3BankName').value || '').trim() || 'Main bank', type: 'bank' }]
     .concat($$('#a3Setup [data-row^=acct]').map(row => { const type = row.querySelector('[data-f=type]').value; return { key: row.dataset.row, name: (row.querySelector('[data-f=name]').value || '').trim() || KIND_NAME3[type], type }; }));
