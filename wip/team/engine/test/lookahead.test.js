@@ -1,0 +1,86 @@
+'use strict';
+// The look ahead on small made-up copies, for rules the scenario files do not ask about (yet).
+const { t, done, eq, ok } = require('./t.js');
+const { lookahead } = require('../lookahead.js');
+
+const TZ = '+09:00';
+// A bank opened Tue 1 Dec 2026 with 400,000 (Free to spend 50,000 typed), pay 250,000 on the 25th (moved earlier)
+// starting periods, Food 30,000 a month on the bank. Every amount made up.
+function base(more) {
+  const b = { v: 3, home: { curs: [{ from: '2026-01-01', cur: 'JPY' }], country: { v: 'JP' }, main: { v: { acct: 'bank', min: null } } },
+    accounts: [{ id: 'bank', name: 'Bank', type: 'bank', cur: 'JPY' }, { id: 'old', name: 'Old bank', type: 'bank', cur: 'JPY' }],
+    schedules: [{ id: 'pay', kind: 'income', name: 'Pay', acct: 'bank', cur: 'JPY', startsPeriod: true, shift: 'before', rules: [{ rule: { every: 'month', days: [25] } }], steps: [{ amount: 250000 }] }],
+    plan: { shares: [{ id: 'sh', cur: 'JPY', per: { free: 'month' }, free: 50000 }], budgets: [{ id: 'food', name: 'Food', cur: 'JPY', per: 'month', steps: [{ amount: 30000 }] }] },
+    events: [
+      { id: 'o', k: 'open', acct: 'bank', date: '2026-12-01', a: 400000, told: '2026-12-01T10:00' + TZ, grp: 's', split: { free: 50000, lines: { food: 30000 } } },
+      { id: 'c', k: 'check', acct: 'bank', date: '2026-12-01', a: 400000, told: '2026-12-01T10:00' + TZ, grp: 's' },
+      { id: 'o2', k: 'open', acct: 'old', date: '2026-12-01', a: 0, told: '2026-12-01T10:00' + TZ, grp: 's' },
+      { id: 'c2', k: 'check', acct: 'old', date: '2026-12-01', a: 0, told: '2026-12-01T10:00' + TZ, grp: 's' },
+    ] };
+  return more ? more(b) || b : b;
+}
+const run = (b, day) => lookahead(b, day, { deviceOffset: TZ });
+
+t('without a once key the next period plans the usual line', () => {
+  const r = run(base(), '2026-12-02');
+  // 400,000 - 30,000 food left - (Free 50,000 is not in the walk: it is spending money) ; lowest after the 25 Dec pay is
+  // the start: 370,000; then +250,000 - 30,000 - 50,000 on 25 Dec; 24 Jan 2027 the next.
+  eq(r.accounts.bank.lowest, 370000);
+});
+t('a budget line once key for the period its pay starts replaces the usual amount there [B8, T1]', () => {
+  const b = base(x => { x.plan.budgets[0].once = { 'pay@2026-12-25': { amount: 900000, at: '2026-12-01T10:00' + TZ, by: 'aaaaaa' } }; });
+  const r = run(b, '2026-12-02');
+  // 400,000 - 30,000 + 250,000 (25 Dec) - 900,000 (food for that period) - 50,000 (free) = -330,000
+  eq(r.accounts.bank.lowest, -330000);
+});
+t('a removed once key is not read [AE1]', () => {
+  const b = base(x => { x.plan.budgets[0].once = { 'pay@2026-12-25': { amount: 900000, gone: '2026-12-01', at: '2026-12-01T10:00' + TZ, by: 'aaaaaa' } }; });
+  eq(run(b, '2026-12-02').accounts.bank.lowest, 370000);
+});
+t('a once key waiting for add or replace counts on the safe side, the larger, for a spending line [AO4, AR1]', () => {
+  const b = base(x => {
+    x.plan.budgets[0].once = { 'pay@2026-12-25': { amount: 40000, at: '2026-12-01T10:00' + TZ, by: 'aaaaaa' } };
+    x.pendingMove = [{ id: 'p1', waits: 'pick', to: 'once', line: 'food', key: 'pay@2026-12-25', a: 70000, told: '2026-12-01T10:00' + TZ, at: '2026-12-01T10:00' + TZ, by: 'aaaaaa' }];
+  });
+  // the larger of 40,000 written and 70,000 waiting: 400,000 - 30,000 + 250,000 - 70,000 - 50,000 = 500,000; lowest 370,000
+  const r = run(b, '2026-12-02');
+  ok(/70,000 \(Food for the period from 25 Dec\)/.test(r.accounts.bank.why) || r.accounts.bank.lowest === 370000);
+  const walk = run(b, '2026-12-02');
+  eq(walk.accounts.bank.lowest, 370000);
+  // seen directly: the period amount the walk uses
+  const b2 = base(x => { x.plan.budgets[0].once = { 'pay@2026-12-25': { amount: 400000, at: 'x', by: 'y' } };
+    x.pendingMove = [{ id: 'p1', waits: 'pick', to: 'once', line: 'food', key: 'pay@2026-12-25', a: 700000, at: 'x', by: 'y' }]; });
+  eq(run(b2, '2026-12-02').accounts.bank.lowest, 400000 - 30000 + 250000 - 700000 - 50000);
+});
+t('a share once key changes Free to spend for that period only [B8, T1]', () => {
+  const b = base(x => { x.plan.shares[0].once = { 'pay@2026-12-25': { free: 500000, at: 'x', by: 'y' } }; });
+  eq(run(b, '2026-12-02').accounts.bank.lowest, 400000 - 30000 + 250000 - 30000 - 500000);
+});
+t('a check other than zero dated after the closing day reopens a closed account [AP1, AO6, AR3]', () => {
+  const b = base(x => {
+    x.accounts[1].closed = '2026-12-05';
+    x.events.push({ id: 'k', k: 'check', acct: 'old', date: '2026-12-07', a: 1500, told: '2026-12-07T09:00' + TZ });
+  });
+  const r = run(b, '2026-12-08');
+  ok(r.warnings.some(w => w.account === 'old' && w.code === 'reopened'));
+  eq(r.accounts.old.bank, 1500);
+});
+t('a check of zero, or an event on the closing day, reopens nothing [AO6]', () => {
+  const b = base(x => {
+    x.accounts[1].closed = '2026-12-05';
+    x.events.push({ id: 'k', k: 'check', acct: 'old', date: '2026-12-07', a: 0, told: '2026-12-07T09:00' + TZ });
+  });
+  const r = run(b, '2026-12-08');
+  ok(!r.warnings.some(w => w.account === 'old' && w.code === 'reopened'));
+  eq(r.accounts.old.spendFrom, false);
+});
+t('any event dated after the closing day reopens it, money out too [AP1]', () => {
+  const b = base(x => {
+    x.accounts[1].closed = '2026-12-05';
+    x.events.push({ id: 'sp1', k: 'spend', acct: 'old', date: '2026-12-07', a: 200, told: '2026-12-07T09:00' + TZ });
+  });
+  const r = run(b, '2026-12-08');
+  ok(r.warnings.some(w => w.account === 'old' && w.code === 'reopened'));
+  eq(r.accounts.old.bank, -200);
+});
+done('lookahead');

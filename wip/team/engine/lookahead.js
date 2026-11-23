@@ -899,7 +899,11 @@
     }
 
     const backsGoal = id => places.some(g => g.keptIn && g.keptIn.acct === id && g.keptIn.mode === 'ownAccount' && removedOn(g) === null);
-    const reopened = id => closedOn(id) !== null && live().some(e => e.day > closedOn(id) && delta(e, id) > 0);   // [T watch]
+    // [T watch, AP1, AO6, AR3] One reopen rule: any record dated after the closing day that reaches the account reopens it,
+    // money in or out; a check does when its figure is other than zero. A record on the closing day reopens nothing.
+    const touches = (e, id) => e.account === id || e.from === id || e.to === id;
+    const reopened = id => closedOn(id) !== null && live().some(e => e.day > closedOn(id) && touches(e, id)
+      && (e.k === 'check' ? e.a !== 0 : delta(e, id) !== 0));
     for (const id in banks) {
       const isClosed = closedOn(id) !== null && !reopened(id);
       if (reopened(id)) res.warnings.push({ account: id, code: 'reopened', text: `${acct[id].name} was closed; money came into it, so it is open again` });
