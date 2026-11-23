@@ -143,12 +143,14 @@
     const r = w.edit('schedules', id, ch);
     if (ch.steps) stampNew(r, 'steps');
     if (ch.rules) stampNew(r, 'rules');
+    /* the new amounts start with the pay period that holds the change day: from the last pay landing on or before it */
+    const lineFrom = perPay.length ? PE.lastLanding(w.book, id, from) || from : from;
     for (const l of perPay) {
       const a = x.lines[l.key];
       if (a === l.amount) continue;
       amountOk(a, 'the amount each pay for ' + l.name);
-      if (l.key === 'free') w.add('shares', { from, cur: home(w), per: { free: 'pay' }, free: a, goals: {} });
-      else { const e = w.edit('budgets', l.key, { steps: (l.rec.steps || []).concat([{ from, amount: a }]) }); stampNew(e, 'steps'); }
+      if (l.key === 'free') w.add('shares', { from: lineFrom, cur: home(w), per: { free: 'pay' }, free: a, goals: {} });
+      else { const e = w.edit('budgets', l.key, { steps: (l.rec.steps || []).concat([{ from: lineFrom, amount: a }]) }); stampNew(e, 'steps'); }
     }
     return id;
   }

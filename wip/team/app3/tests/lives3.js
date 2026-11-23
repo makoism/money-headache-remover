@@ -33,6 +33,7 @@ function make(label) {
     await p.fill('#rcAmt', String(amount));
     if (mode === 'moved') { await selByText(p, '#rcFrom', acct); await w(100); await p.fill('#rcAmt', String(amount)); await selByText(p, '#rcTo', o.to); }
     else await selByText(p, '#rcAcct', acct);
+    if (o.for) await selByText(p, '#rcFor', o.for);
     if (o.note) await p.fill('#rcNote', o.note);
     await w(100); await p.click('#rcSave'); await w(400);
     const err = await txt(p, '#rcErr');

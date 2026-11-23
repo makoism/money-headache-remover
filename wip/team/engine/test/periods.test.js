@@ -182,4 +182,10 @@ t('aheadFor: a yearly cost spread over the pays before it; monthly bills and one
   const k = sam({ pays: [{ key: 'pay', name: 'Client work', bank: 'chk', every: 'none' }] });
   eq(aheadFor(k.book, '2026-12-07').map(x => [x.name, x.pays, x.perPay]), [['Water', null, null], ['Car insurance', null, null]]);
 });
+t('lastLanding: the last pay landing on or before a day, by the rules as saved', () => {
+  const { lastLanding } = require('../periods.js'), I = require('../ids.js');
+  const b = buildBook({ day: '2026-12-07', told: '2026-12-07T09:00:00-05:00', country: 'XX', currency: 'USD', banks: [{ key: 'chk', name: 'Checking', amount: 185000 }],
+    pays: [{ key: 'pay', name: 'Pay', bank: 'chk', amount: 160000, every: 'weeks', n: 2, start: '2026-12-04', startsPeriod: true }] }, { newId: I.idMaker('lst2k9') });
+  eq([lastLanding(b.book, b.ids.pay, '2027-02-01'), lastLanding(b.book, b.ids.pay, '2027-01-29'), lastLanding(b.book, 'nope', '2027-01-29')], ['2027-01-29', '2027-01-29', null]);
+});
 done('periods.test.js');

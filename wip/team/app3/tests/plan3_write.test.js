@@ -257,6 +257,13 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     eq(h.book.plan.budgets[0].steps.map(x => [x.from, x.amount]), [[null, 40000], ['2026-12-04', 20000]], 'Food from the change');
     eq(h.book.plan.shares.filter(x => !x.gone).map(x => [x.from, x.free]), [[DAY, 60000], ['2026-12-04', 30000]], 'Free to spend from the change');
     eq(PE.scheduleView(h.book, DAY)[MAIN].next.land, '2026-12-04');
+    // [slice 6] changed from a day between two pays: the new amounts start with the pay period holding that day. Every
+    // 2 weeks from Fri 4 Dec, changed on Thu 10 Dec to the 25th each month: the 4 Dec pay starts the period holding it
+    const h3 = setup();
+    await h3.go('addLine', { name: 'Food', amount: 40000 });
+    r = await h3.go('changeBill', MAIN, { every: 'weeks2', start: '2026-12-04', from: '2026-12-04', lines: { [h3.book.plan.budgets[0].id]: 20000 } }); ok(r.ok, JSON.stringify(r));
+    r = await h3.go('changeBill', MAIN, { every: 'month', day: 25, from: '2026-12-10', lines: { [h3.book.plan.budgets[0].id]: 45000 } }); ok(r.ok, JSON.stringify(r));
+    eq(h3.book.plan.budgets[0].steps.map(x => [x.from, x.amount]), [[null, 40000], ['2026-12-04', 20000], ['2026-12-04', 45000]]);
     // a line left at its amount keeps it (no new step); the rhythm the same: the lines are not touched
     const h2 = setup();
     await h2.go('addLine', { name: 'Food', amount: 40000 });

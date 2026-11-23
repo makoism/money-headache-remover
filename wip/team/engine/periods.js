@@ -137,7 +137,19 @@
     }
     return out.sort((a, b) => (a.due < b.due ? -1 : a.due > b.due ? 1 : 0));
   }
-  const api = { periods, scheduleView, aheadFor };
+  /* [slice 6] lastLanding(book, sid, day): the landing day (YYYY-MM-DD) of schedule sid's last occurrence landing on or
+     before `day`, by its rules as saved, looking back up to 400 days; null when there is none. A pay rhythm changed
+     from a day starts its lines' new amounts with the pay period that holds that day. */
+  function lastLanding(book, sid, day) {
+    const S = node ? require('./schedules.js') : E.schedules, D = node ? require('./dates.js') : E.dates;
+    const s = (book.schedules || []).find(x => x && !x.gone && x.id === sid);
+    if (!s) return null;
+    const a = (book.accounts || []).find(x => x && !x.gone && x.id === s.acct) || {};
+    const cal = S.calendar(a.country || L.fieldValue((book.home || {}).country) || null), n = D.dayNum(day);
+    const before = S.occurrences(s, cal, n - 400, n).filter(o => o.land <= n);
+    return before.length ? D.dayStr(before[before.length - 1].land) : null;
+  }
+  const api = { periods, scheduleView, aheadFor, lastLanding };
   if (node) module.exports = api;
   else (root.BurrowEngine = root.BurrowEngine || {}).periods = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

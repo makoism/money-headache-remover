@@ -70,6 +70,7 @@ step "setup for the other lives: the country chosen, more accounts, pay rhythms,
 step "walk 2 fixes (BI3 bills not gone out yet, BI4 may still go through, a pay by its landing day)"; run tests/e3_walk2.js "e3_walk2: ALL PASS"
 step "walk 4 fixes (an outstanding pay's own amount on Plan, the typed note beside a statement row in Receipts)"; run tests/e3_walk4.js "e3_walk4: ALL PASS"
 step "life C, no fixed pay (Kai, yen, Japan): setup 1 Dec to 2 Mar, hand-worked figures at every step (slice 6)"; run tests/e3_life_c.js "e3_life_c: ALL PASS"
+step "life A, every 2 weeks (Sam, dollars, weekends only): setup 7 Dec to 8 Mar, the pay changed to monthly, hand-worked figures at every step (slice 6)"; run tests/e3_life_a.js "e3_life_a: ALL PASS"
 step "the real-page walk, walk 4 run A: setup 24 Nov to 15 Feb, hand-worked figures at every step"; run tests/e3_walk.js "e3_walk: ALL PASS"
 step "the walk again in Tokyo at 04:40 (every figure the same after a reload at each check-in)"; TZ=Asia/Tokyo WALK_CLOCK=04:40 run tests/e3_walk.js "e3_walk: ALL PASS"
 step "the walk again in Tokyo at 23:30 (every figure the same after a reload at each check-in)"; TZ=Asia/Tokyo WALK_CLOCK=23:30 run tests/e3_walk.js "e3_walk: ALL PASS"

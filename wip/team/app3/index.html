@@ -3486,7 +3486,19 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     }
     return out.sort((a, b) => (a.due < b.due ? -1 : a.due > b.due ? 1 : 0));
   }
-  const api = { periods, scheduleView, aheadFor };
+  /* [slice 6] lastLanding(book, sid, day): the landing day (YYYY-MM-DD) of schedule sid's last occurrence landing on or
+     before `day`, by its rules as saved, looking back up to 400 days; null when there is none. A pay rhythm changed
+     from a day starts its lines' new amounts with the pay period that holds that day. */
+  function lastLanding(book, sid, day) {
+    const S = node ? require('./schedules.js') : E.schedules, D = node ? require('./dates.js') : E.dates;
+    const s = (book.schedules || []).find(x => x && !x.gone && x.id === sid);
+    if (!s) return null;
+    const a = (book.accounts || []).find(x => x && !x.gone && x.id === s.acct) || {};
+    const cal = S.calendar(a.country || L.fieldValue((book.home || {}).country) || null), n = D.dayNum(day);
+    const before = S.occurrences(s, cal, n - 400, n).filter(o => o.land <= n);
+    return before.length ? D.dayStr(before[before.length - 1].land) : null;
+  }
+  const api = { periods, scheduleView, aheadFor, lastLanding };
   if (node) module.exports = api;
   else (root.BurrowEngine = root.BurrowEngine || {}).periods = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
@@ -8285,12 +8297,14 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     const r = w.edit('schedules', id, ch);
     if (ch.steps) stampNew(r, 'steps');
     if (ch.rules) stampNew(r, 'rules');
+    /* the new amounts start with the pay period that holds the change day: from the last pay landing on or before it */
+    const lineFrom = perPay.length ? PE.lastLanding(w.book, id, from) || from : from;
     for (const l of perPay) {
       const a = x.lines[l.key];
       if (a === l.amount) continue;
       amountOk(a, 'the amount each pay for ' + l.name);
-      if (l.key === 'free') w.add('shares', { from, cur: home(w), per: { free: 'pay' }, free: a, goals: {} });
-      else { const e = w.edit('budgets', l.key, { steps: (l.rec.steps || []).concat([{ from, amount: a }]) }); stampNew(e, 'steps'); }
+      if (l.key === 'free') w.add('shares', { from: lineFrom, cur: home(w), per: { free: 'pay' }, free: a, goals: {} });
+      else { const e = w.edit('budgets', l.key, { steps: (l.rec.steps || []).concat([{ from: lineFrom, amount: a }]) }); stampNew(e, 'steps'); }
     }
     return id;
   }
