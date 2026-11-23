@@ -1366,6 +1366,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
 .a3-goal > span:first-child { flex: 1; min-width: 0; }
 .a3-past { border-bottom: 1px solid var(--hair); padding: 8px 0; }
 .a3-past summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-weight: 600; }
+.a3-late { display: inline-block; margin-top: 4px; color: var(--warn); font-size: var(--t-sm); }
 .a3-past summary:focus-visible { outline: 3px solid var(--acc-ring); outline-offset: 2px; }
 /* Settings (settings3.js, backup lane) */
 .a3-link { margin-left: auto; border: 0; background: none; color: var(--ink2); font: inherit; font-size: var(--t-sm); min-height: 44px; padding: 0 4px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
@@ -2553,12 +2554,15 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
         else if (!carries && (!nextPoint || p.land > nextPoint.land)) walkItems.push({ land: p.land, amount: o.amount, future: true, label: c.name + ', ' + o.name + ' ' + short(o.land) });
       }
       if (nextPoint) walkItems.push({ land: nextPoint.land, amount: nextExp ? planned(rest + nextExp, nextPoint.due) : nextAmount, label: c.name + (notSure ? ', all owed' : ' still open, closes ' + short(nextPoint.closes)) });
-      const next = unpaid.length
-        ? { item: unpaid[0].id, amount: unpaid[0].asks, payment_date: dayStr(unpaid[0].land), statement: label || 'closed', closed_on: unpaid[0].closed != null ? dayStr(unpaid[0].closed) : undefined }
-        : nextPoint && { item: nextPoint.id, amount: nextAmount, payment_date: dayStr(nextPoint.land), statement: label || 'open', closes_on: nextPoint.closes != null ? dayStr(nextPoint.closes) : undefined };
+      // [F4, H8] a payment past its day and not ticked is overdue (late, then not seen), never the next one
+      const shown = p => ({ item: p.id, amount: p.asks, payment_date: dayStr(p.land), statement: label || 'closed', closed_on: p.closed != null ? dayStr(p.closed) : undefined });
+      const overdue = unpaid.filter(p => p.land < today).map(p => Object.assign(shown(p), { state: payState(p.land, payFrom) }));
+      const coming = unpaid.filter(p => p.land >= today);
+      const next = coming.length ? Object.assign(shown(coming[0]), { state: 'coming' })
+        : nextPoint ? { item: nextPoint.id, amount: nextAmount, payment_date: dayStr(nextPoint.land), statement: label || 'open', closes_on: nextPoint.closes != null ? dayStr(nextPoint.closes) : undefined, state: 'coming' } : null;
       const cardItems = unpaid.map(p => ({ id: p.id, due: p.due, land: p.land, amount: p.part, statement: label || 'closed' }));
       if (nextPoint) cardItems.push({ id: nextPoint.id, due: nextPoint.due, land: nextPoint.land, amount: nextAmount, statement: label || 'open' });
-      return { owedNow, statements: points, next, walkItems, cardItems, fillers, payFrom };
+      return { owedNow, statements: points, next, overdue, walkItems, cardItems, fillers, payFrom };
     }
 
     // ----- loans and pay-later [B5, E6, F19, H7, I2, Q3, AB3, AC5, AD7] -----
@@ -2612,9 +2616,15 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
         if (past) unpaid += amt; else left -= amt;
         loanItems.push({ id: d.iid, sid: id, kind: 'loan', acct: payFrom, card: id, due: d.due, land: d.land, amount: amt, settled: false, name: a.name });
       }
-      return { owedNow, loanItems, payFrom, next: loanItems[0] ? { item: loanItems[0].id, amount: loanItems[0].amount, payment_date: dayStr(loanItems[0].land) } : null };
+      // [F4, H8] a payment past its day and not ticked is overdue (late, then not seen), never the next one
+      const shown = x => ({ item: x.id, amount: x.amount, payment_date: dayStr(x.land) });
+      const nx = loanItems.find(x => x.land >= today);
+      return { owedNow, loanItems, payFrom, next: nx ? Object.assign(shown(nx), { state: 'coming' }) : null,
+        overdue: loanItems.filter(x => x.land < today).map(x => Object.assign(shown(x), { state: payState(x.land, payFrom) })) };
     }
 
+    // [H8, F3, AU] a payment past its day: late inside the paying account's posting window, then not seen
+    const payState = (land, from) => (from && acct[from] && today <= calOf(from).addWorking(land, postingDays(from)) ? 'late' : 'notSeen');
     // ----- every account -----
     const banks = {}, cards = {}, loans = {};
     for (const id of Object.keys(acct)) {
@@ -2680,7 +2690,8 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
       return { started, occ, start, end };
     }
     const nowAmount = (src, per) => {
-      const n = nowPeriod(), a = periodAmount(src, n.started, n.occ);
+      // the period's own first day, also for the period holding the setup day, which has no recorded start
+      const n = nowPeriod(), a = periodAmount(src, n.start, n.occ);
       return n.start === null ? a : perPeriod({ per, amount: a }, n.start, n.end, n.occ);
     };
     function freePeriodAmount() {
@@ -2728,6 +2739,19 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
       const limit = placeBalance(g);
       while (total > limit && list.length) { const newest = list.pop(); gaveWay.add(newest.id); total -= newest.a; }
     }
+    // A goal with a target and a date: what is still to go from what is really set aside (a place below nothing holds
+    // nothing, AU2), and what each period needs to reach it: spread over the period-starting pays still to come on or
+    // before its date (a late pay still counted is one of them), the leftover minor units on the earliest, so the first
+    // is the most. No pay left before the date: all of it now. No fixed pay: periods are not known [B4].
+    function goalPace(g, amt, due) {
+      if (g.target == null || !due) return {};
+      const toGo = Math.max(0, g.target - Math.max(0, amt));
+      if (!periodStream) return { target: g.target, toGo, periodsLeft: null, perPeriod: null };
+      const dd = dayNum(due);
+      const n = dd < today ? 0 : occOf(periodStream, today, dd).filter(o => o.land <= dd && !settledBy[o.id]
+        && (o.land >= today || nextPays.some(p => p.id === o.id))).length;
+      return { target: g.target, toGo, periodsLeft: n, perPeriod: n ? U.spread(toGo, n)[0] : toGo };
+    }
     for (const g of places) {
       const amt = placeBalance(g), where = (g.keptIn || {}).acct;
       if (removedOn(g) !== null) {   // [P1, R1] a removed place's money waits "to place", held out of safe to spend
@@ -2745,7 +2769,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
       const paysSched = schedules.find(s => s.place === g.id);
       const nextOf = paysSched && items.find(o => o.sid === paysSched.id && !o.settled);
       const due = g.refill && nextOf ? dayStr(nextOf.due) : g.due || (nextOf ? dayStr(nextOf.due) : null);
-      res.places[g.id] = { kept: amt, due, account: where };
+      res.places[g.id] = Object.assign({ kept: amt, due, account: where }, goalPace(g, amt, due));
       (keptIn[where] = keptIn[where] || []).push({ id: g.id, name: g.name, amount: amt });
     }
 
@@ -2767,7 +2791,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
         const share = before.length && after.length ? { d: after[0].land - od, D: after[0].land - startDayOf(before[before.length - 1]) } : null;
         // [AS, AU1] of the amount of the period holding the opening, by the units rules
         const holding = before.length ? before[before.length - 1] : null;
-        const openAmount = (src, per) => { const a = periodAmount(src, null, occOn(null, od)); return holding && after.length ? perPeriod({ per, amount: a }, startDayOf(holding), after[0].land, holding.id) : a; };
+        const openAmount = (src, per) => { const a = periodAmount(src, holding ? startDayOf(holding) : null, occOn(null, od)); return holding && after.length ? perPeriod({ per, amount: a }, startDayOf(holding), after[0].land, holding.id) : a; };
         let leftOver = 0;
         for (const l of lineSrcs.filter(x => moneyAcct(lineAcct(x)) === acctId)) {
           const typed = (split.lines || {})[l.id], amount = openAmount(l, l.per);
@@ -3009,11 +3033,11 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     }
     for (const id in cards) {
       const k = cards[id];
-      res.cards[id] = { owedNow: k.owedNow, next: k.next, statements: k.statements.map(s => ({ closed: s.closed != null ? dayStr(s.closed) : undefined, amount: s.amount, payment: dayStr(s.land), paid: s.paid })), fillers: k.fillers };
+      res.cards[id] = { owedNow: k.owedNow, next: k.next, overdue: k.overdue, statements: k.statements.map(s => ({ closed: s.closed != null ? dayStr(s.closed) : undefined, amount: s.amount, payment: dayStr(s.land), paid: s.paid })), fillers: k.fillers };
       if (acct[k.payFrom] && cur(id) !== cur(k.payFrom)) res.warnings.push({ account: k.payFrom, card: id, code: 'card_other_currency', text: `${acct[id].name} (${cur(id)}) is paid from ${acct[k.payFrom].name} (${cur(k.payFrom)}): it is not taken off safe to spend until it is paid` });   // [H5]
     }
     for (const id in loans) {
-      res.owed[id] = { owedNow: loans[id].owedNow, next: loans[id].next };
+      res.owed[id] = { owedNow: loans[id].owedNow, next: loans[id].next, overdue: loans[id].overdue };
       const from = loans[id].payFrom;
       if (from && acct[from] && cur(id) !== cur(from)) res.warnings.push({ account: from, loan: id, code: 'loan_other_currency', text: `${acct[id].name} (${cur(id)}) is paid from ${acct[from].name} (${cur(from)}): it is not taken off safe to spend until it is paid` });   // [V2]
     }
@@ -3094,7 +3118,11 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
    `start` on a line is what it began the period with (the opening share in the period holding the opening); `spent` is
    what it began with less what is left (the check-in gap counted as spending [T2], refunds given back [O], fees [Q2]).
    opts: the look ahead's opts, and `from` (a day): leave out periods that ended before it.
-   Totals count only the home currency in force on the period's first day. Plain browser JavaScript. */
+   Totals count only the home currency in force on the period's first day. Plain browser JavaScript.
+   Which records a period lists: by date, never by `told` (section 9: changing the pay schedule moves no event, it only
+   regroups them; a receipt logged late belongs to the period its date is in, as the look ahead's lines count it).
+   O1 and AN4 decide which records a check's figure holds, not which period a record is in, so they do not move a
+   record between periods. `told` only limits what the app had heard of by the day asked, as in the look ahead. */
 (function (root) {
   'use strict';
   const node = typeof module === 'object' && module.exports;
@@ -3102,6 +3130,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
   const LA = node ? require('./lookahead.js') : E.lookahead;
   const I = node ? require('./ids.js') : E.ids;
   const L = node ? require('./ledger.js') : E.ledger;
+  const D0 = node ? require('./dates.js') : E.dates;
 
   function periods(book, asOf, opts) {
     opts = opts || {};
@@ -3109,7 +3138,10 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     if (!r.period) return { current: null, past: [] };
     const acct = {}; for (const a of book.accounts || []) if (a && !a.gone) acct[a.id] = a;
     const sched = {}; for (const s of book.schedules || []) if (s && !s.gone) sched[s.id] = s;
-    const evs = (book.events || []).filter(e => e && !e.gone && e.date && e.date <= asOf);
+    // what the app had heard of by then, as the look ahead counts it: dated and told by the day asked (the day before,
+    // at its start); a record belongs to the period its date falls in, whenever it was told [section 9]
+    const knownTo = opts.at === 'start of day' ? D0.dayStr(D0.dayNum(asOf) - 1) : asOf;
+    const evs = (book.events || []).filter(e => e && !e.gone && e.date && e.date <= knownTo && String(e.told || e.date).slice(0, 10) <= knownTo);
     const firstSched = e => { const o = (e.settles || [])[0]; return o ? (typeof o === 'string' ? I.scheduleOf(o) : o.s) : null; };
     function happened(start, end) {
       const home = L.homeOn(book, start);
@@ -3134,7 +3166,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
   }
   /* What the Plan tab shows of each schedule (pay, bills, transfers) on a day, worked out by the engine's calendars:
      scheduleView(book, asOf) -> { <schedule id>: { kind, amount (the usual amount in force on the day), rule (the rule
-       in force), next: { due, land, amount } or null (the first occurrence landing or due on or after the day),
+       in force), next: { due, land, amount } or null (the first occurrence landing or due on or after the day that no record dated by then settles),
        lastNamed: the latest due date a record names (a settle, an `amounts` key, a period start or end), or null,
        changeFrom: the first day a change may start [X8]: the day itself, or the day after lastNamed when that is later } } */
   function scheduleView(book, asOf) {
@@ -3142,18 +3174,18 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     const today = D.dayNum(asOf), out = {};
     const acct = {}; for (const a of book.accounts || []) if (a && !a.gone) acct[a.id] = a;
     const country = L.fieldValue((book.home || {}).country) || null;
-    const named = {};
+    const named = {}, done = new Set();
     const name = (sid, due) => { if (sid && due && (!named[sid] || due > named[sid])) named[sid] = due; };
     for (const e of book.events || []) {
       if (!e || e.gone) continue;
-      for (const o of e.settles || []) { const x = typeof o === 'string' ? I.occurrence(o) : { schedule: o.s, due: o.due }; if (x) name(x.schedule, x.due); }
+      for (const o of e.settles || []) { const x = typeof o === 'string' ? I.occurrence(o) : { schedule: o.s, due: o.due }; if (x) { name(x.schedule, x.due); if (!e.date || e.date <= asOf) done.add(x.schedule + "@" + x.due); } }
       const oc = I.periodOcc(e.id); if (oc) { const x = I.occurrence(oc); name(x.schedule, x.due); }
     }
     for (const s of book.schedules || []) {
       if (!s || s.gone) continue;
       for (const k of Object.keys(s.amounts || {})) if (S.keyLive(s.amounts, k)) name(s.id, k);
       const cal = S.calendar((acct[s.acct] && acct[s.acct].country) || country);
-      const occ = S.occurrences(s, cal, today, today + 400)[0] || null;
+      const occ = S.occurrences(s, cal, today, today + 400).find(o => !done.has(o.id)) || null;
       const rules = (s.rules || []).filter(x => x && !x.gone);
       let rule = null; rules.forEach((x, i) => { if (i === 0 || x.from == null || D.dayNum(x.from) <= today) rule = x.rule; });
       const last = named[s.id] || null, after = last ? D.dayNum(last) + 1 : -Infinity;
@@ -7327,14 +7359,13 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     const l = find(w, 'budgets', id), a = x.amount == null || x.amount === 0 ? x.amount : amountOk(x.amount, 'an amount'), p = period(w);
     const ch = {};
     if (x.name != null && x.name !== l.name) { ch.name = nameOk(x.name); sameName(A3.listOf(w.book, 'budgets'), ch.name, id); }
-    /* 'now' is a step from today (the next periods) and a once key for this one: the engine reads a step only from a
-       period start it has recorded, and the period holding the setup day has none */
+    /* 'now' is a step from this period's first day: it counts in this period and after [V, BF] */
     if (a == null) { if (!ch.name) bad('Nothing changed'); }
-    else if (x.when === 'once' || x.when === 'now') {
+    else if (x.when === 'once') {
       if (!p.startsWith) bad('This pay period has no pay to name it by yet. Change it from the next one');
       ch.once = Object.assign({}, l.once || {}, { [p.startsWith]: { amount: a } });
     }
-    if (a != null && (x.when === 'now' || x.when === 'next')) ch.steps = (l.steps || []).concat([{ from: w.today, amount: a }]);
+    if (a != null && (x.when === 'now' || x.when === 'next')) ch.steps = (l.steps || []).concat([{ from: x.when === 'now' ? p.start : w.today, amount: a }]);
     else if (a != null && x.when !== 'once') bad('Pick when the change starts');
     const r = w.edit('budgets', id, ch);
     if (ch.steps) stampNew(r, 'steps');
@@ -7358,12 +7389,8 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
       Object.assign(r.once[p.startsWith], { at: r.at, by: r.by });
       return s.id;
     }
-    const rec = { from: shares.length ? w.today : null, cur: home(w), per: { free: 'pay' }, free: a, goals: {} };
-    const p = shares.length && x.when === 'now' ? period(w) : null;   // 'now': this period too, as a once key (see changeLine)
-    if (p && p.startsWith) rec.once = { [p.startsWith]: { free: a } };
-    const id = w.add('shares', rec);
-    if (rec.once) { const r = find(w, 'shares', id); Object.assign(r.once[p.startsWith], { at: r.at, by: r.by }); }
-    return id;
+    const from = !shares.length ? null : x.when === 'now' ? period(w).start : w.today;   // 'now': from this period's first day [V]
+    return w.add('shares', { from, cur: home(w), per: { free: 'pay' }, free: a, goals: {} });
   }
 
   /* ---- bills ---- */
@@ -7401,6 +7428,22 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     if (v.lastNamed && last < v.lastNamed) bad('It can end on ' + v.lastNamed + ' at the earliest: that one is already paid or noted');
     w.edit('schedules', id, { ends: last });
     return s.id;
+  }
+
+  /* one occurrence changed: an `amounts` key on its due date (before any move), with its own at and by [B8, AE1];
+     only an occurrence still to come that no record names yet [X8] */
+  function changeOnce(w, id, x) {
+    const s = find(w, 'schedules', id), v = PE.scheduleView(w.book, w.today)[id], a = amountOk(x.amount, 'the amount');
+    if (!DAY.test(x.due || '')) bad('Pick which one');
+    if (v.lastNamed && x.due <= v.lastNamed) bad('That one is already paid or noted');
+    const D = node ? require('../../engine/dates.js') : root.BurrowEngine.dates, S = node ? require('../../engine/schedules.js') : root.BurrowEngine.schedules;
+    const acct = (w.book.accounts || []).find(y => y.id === s.acct) || {};
+    const cal = S.calendar(acct.country || G.fieldValue((w.book.home || {}).country) || null);
+    const occ = S.occurrences(s, cal, D.dayNum(x.due), D.dayNum(x.due)).find(o => D.dayStr(o.due) === x.due);
+    if (!occ) bad(x.due + ' is not a day ' + s.name + ' is due');
+    const r = w.edit('schedules', id, { amounts: Object.assign({}, s.amounts || {}, { [x.due]: { amount: a } }) });
+    Object.assign(r.amounts[x.due], { at: r.at, by: r.by });
+    return id;
   }
 
   /* ---- goals ---- */
@@ -7446,6 +7489,30 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     return id;
   }
 
+  /* money taken back out of a goal: a `move` out of it to Waiting [T7], never more than it holds; from its own
+     account, the money goes back to the bank too */
+  function takeOut(w, id, x) {
+    const g = find(w, 'places', id), a = amountOk(x.amount, 'an amount'), k = g.keptIn || {};
+    const held = (LA.lookahead(w.book, w.today).places[id] || {}).kept || 0;
+    if (a > held) bad(g.name + ' holds less than that');
+    w.add('events', { k: 'move', date: w.today, a, acct: k.acct || mainOf(w), place: id, src: { type: 'typed' } });
+    if (k.mode === 'ownAccount') w.add('events', { k: 'transfer', date: w.today, a, acct: k.acct, acct2: x.to || mainOf(w), src: { type: 'typed' } });
+    return id;
+  }
+
+  /* a paid-off loan closes: a final check of nothing on its closing day, and `closed` [SCHEMA 3, P6, R3]; one that
+     still owes is refused (its last payment is ticked at Check your bank first) */
+  function closeLoan(w, id) {
+    const a = find(w, 'accounts', id);
+    if (a.type !== 'loan') bad('Only a loan closes here');
+    if (a.closed) bad(a.name + ' is already closed');
+    const o = LA.lookahead(w.book, w.today).owed[id];
+    if (o && o.owedNow !== 0) bad(a.name + ' still owes money. Tick its last payment at Check your bank first');
+    w.add('events', { k: 'check', acct: id, date: w.today, a: 0 });
+    w.edit('accounts', id, { closed: w.today });
+    return id;
+  }
+
   /* ---- loans, and the days of a card (each owns its payment day [B5, E6]) ---- */
   function addLoan(w, x) {
     const name = nameOk(x.name), owed = amountOk(x.owed, 'what is owed'), pay = amountOk(x.amount, 'the usual payment'), d = dayOfMonth(x.payDay);
@@ -7468,7 +7535,7 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     return id;
   }
 
-  const api = { addLine, changeLine, endLine, setFree, addBill, changeBill, endBill, addGoal, changeGoal, setAside, addLoan, changeOwed };
+  const api = { addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, changeOwed, closeLoan };
   if (node) module.exports = api;
   else root.PLAN3W = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
@@ -7587,6 +7654,10 @@ function renderHome3() {
     }).join('');
     out.push(`<section class="a3-card" data-card="cards"><h2>${esc3(label3('owed'))} on your cards</h2><ul class="a3-rows">${rows}</ul></section>`);
   }
+  /* overdue card and loan payments: past their day and not ticked, never dropped from the page [F4, H8, BF2] (plan lane) */
+  const od = [].concat(...[['cards', r.cards], ['owed', r.owed || {}]].map(([k, m]) => Object.keys(m).map(id => (m[id].overdue || []).map(o =>
+    `<li data-fig="overdue" data-owed="${esc3(id)}" data-state="${esc3(o.state)}"><span>${esc3(E3.nameOf(id))}<br><span class="when">${overdueWords3(o, E3.curOf(id), yr, k + '.*.overdue.*.amount')}</span></span></li>`))));
+  if (od.length) out.push(`<section class="a3-card" data-card="overdue"><h2>Card and loan payments overdue</h2><ul class="a3-rows">${[].concat(...od).join('')}</ul></section>`);
   /* not seen yet, and later on */
   const late = r.notSeenYet.items;
   if (late.length) out.push(`<section class="a3-card" data-card="notseen"><h2>${esc3(label3('notSeenYet'))}</h2><p class="a3-sub">These were due and are not ticked off. Check your bank to tick them</p><ul class="a3-rows">${rowsHtml3(late, home, yr, 'notSeenYet.items')}</ul></section>`);
@@ -7916,6 +7987,10 @@ function plFig3(path, minor, cur) { return fig3(path, minor, cur || E3.home()); 
 function plRow3(attrs, left, right) {
   return `<li><button type="button" class="a3-rcrow" ${attrs}><span>${left}</span><span class="amt">${right}</span></button></li>`;
 }
+/* an overdue card or loan payment (the engine's `overdue`: past its day and not ticked [F4, H8, BF2]) */
+function overdueWords3(o, cur, yr, path) {
+  return `${fig3(path, o.amount, cur)} due ${esc3(day3(o.payment_date, yr))} ${o.state === 'late' ? 'is late' : 'has not been seen'}. Tick it at Check your bank when it has gone`;
+}
 function plAccounts3(kinds) { return ((E3.book && E3.book.accounts) || []).filter(a => plLive3(a) && kinds[a.type] && !a.closed); }
 
 function renderPlan3() {
@@ -7948,18 +8023,19 @@ function renderPlan3() {
   const scheds = (book.schedules || []).filter(s => plLive3(s) && view[s.id]);
   const nextWords = v => (v.next ? `next ${esc3(day3(v.next.land, yr))}` : v.ends ? `ended ${esc3(day3(v.ends, yr))}` : 'nothing coming');
   const ruleWords = v => (v.rule && v.rule.every === 'month' ? 'day ' + v.rule.days.join(' and ') + ' each month' : v.rule && v.rule.every === 'weeks' ? 'every ' + (v.rule.n === 1 ? 'week' : v.rule.n + ' weeks') : 'no fixed day');
-  const pays = scheds.filter(s => s.kind === 'income').map(s => `<li data-pay="${esc3(s.id)}"><span>${esc3(s.name)}<br><span class="when">${ruleWords(view[s.id])}, ${nextWords(view[s.id])}</span></span><span class="amt">${plFig3('schedules.*.amount', view[s.id].amount, s.cur)}</span></li>`);
-  const bills = scheds.filter(s => s.kind === 'bill').map(s => plRow3(`data-bill="${esc3(s.id)}"`, `${esc3(s.name)}<br><span class="when">${ruleWords(view[s.id])}, ${nextWords(view[s.id])}${view[s.id].ends && view[s.id].next ? ', last on ' + esc3(day3(view[s.id].ends, yr)) : ''}</span>`, plFig3('schedules.*.amount', view[s.id].amount, s.cur)));
+  const pays = scheds.filter(s => s.kind === 'income').map(s => plRow3(`data-pay="${esc3(s.id)}"`, `${esc3(s.name)}<br><span class="when">${ruleWords(view[s.id])}, ${nextWords(view[s.id])}</span>`, plFig3('schedules.*.next.amount', view[s.id].next ? view[s.id].next.amount : view[s.id].amount, s.cur)));
+  const bills = scheds.filter(s => s.kind === 'bill').map(s => plRow3(`data-bill="${esc3(s.id)}"`, `${esc3(s.name)}<br><span class="when">${ruleWords(view[s.id])}, ${nextWords(view[s.id])}${view[s.id].ends && view[s.id].next ? ', last on ' + esc3(day3(view[s.id].ends, yr)) : ''}</span>`, plFig3('schedules.*.next.amount', view[s.id].next ? view[s.id].next.amount : view[s.id].amount, s.cur)));
   out.push(`<section class="a3-card" data-card="plan-bills"><h2>Pay and bills</h2>
-    ${pays.length ? `<ul class="a3-rows">${pays.join('')}</ul>` : ''}
+    ${pays.length ? `<ul class="a3-rows a3-rclist">${pays.join('')}</ul>` : ''}
     ${bills.length ? `<ul class="a3-rows a3-rclist">${bills.join('')}</ul>` : '<p class="a3-sub">No bills yet</p>'}
     <div class="a3-actions"><button type="button" class="a3-btn" id="plAddBill">Add a bill</button></div></section>`);
   /* goals */
   const goals = (book.places || []).filter(g => plLive3(g) && g.kind === 'goal' && r.places[g.id]).map(g => {
     const kept = r.places[g.id].kept, where = g.keptIn && g.keptIn.mode === 'ownAccount' ? 'in ' + esc3(E3.nameOf(g.keptIn.acct)) : 'kept in your bank';
     const due = g.due ? `, ${esc3(label3('placeDue')).toLowerCase()} ${esc3(day3(g.due, yr))}` : '';
+    const pl = r.places[g.id], pace = pl.perPeriod && g.due ? `<br><span class="when" data-fig="goal-pace">about ${plFig3('places.*.perPeriod', pl.perPeriod, g.cur)} each pay to reach it by ${esc3(day3(g.due, yr))}</span>` : '';
     return `<li><button type="button" class="a3-rcrow a3-goal" data-goal="${esc3(g.id)}"><span>${esc3(g.name)}<br><span class="when">${where}${due}</span>
-      <meter min="0" max="${esc3(g.target)}" value="${esc3(kept)}" aria-label="${esc3(g.name)}: set aside so far"></meter></span>
+      <meter min="0" max="${esc3(g.target)}" value="${esc3(kept)}" aria-label="${esc3(g.name)}: set aside so far"></meter>${pace}</span>
       <span class="amt"><span data-fig="goal-kept">${plFig3('places.*.kept', kept, g.cur)}</span><br><span class="when">of ${plFig3('places.*.target', g.target, g.cur)}</span></span></button></li>`;
   });
   out.push(`<section class="a3-card" data-card="plan-goals"><h2>Goals</h2>${goals.length ? `<ul class="a3-rows a3-rclist">${goals.join('')}</ul>` : '<p class="a3-sub">No goals yet. A goal is money set aside for something, kept in your bank or in an account of its own</p>'}
@@ -7971,7 +8047,8 @@ function renderPlan3() {
     const days = a.type === 'card' ? `paid on day ${esc3(a.payDay)} from ${esc3(E3.nameOf(a.payFrom))}, ${a.cutDay == null ? 'close day not sure' : 'closes on day ' + esc3(a.cutDay)}`
       : `paid on day ${esc3(a.payDay)} from ${esc3(E3.nameOf(a.payFrom))}`;
     const nx = k.next && k.next.amount ? `<br><span class="when">${esc3(label3('nextPayment'))} ${plFig3(a.type === 'card' ? 'cards.*.next.amount' : 'owed.*.next.amount', k.next.amount, a.cur)} on ${esc3(day3(k.next.payment_date, yr))}</span>` : '';
-    return plRow3(`data-owed="${esc3(a.id)}"`, `${esc3(a.name)}<br><span class="when">${days}</span>${nx}`, `<span data-fig="owed-now">${plFig3(a.type === 'card' ? 'cards.*.owedNow' : 'owed.*.owedNow', k.owedNow, a.cur)}</span><br><span class="when">${esc3(label3('owed')).toLowerCase()}</span>`);
+    const od = (k.overdue || []).map(o => `<br><span class="a3-late" data-fig="overdue" data-state="${esc3(o.state)}">${overdueWords3(o, a.cur, yr, a.type === 'card' ? 'cards.*.overdue.*.amount' : 'owed.*.overdue.*.amount')}</span>`).join('');
+    return plRow3(`data-owed="${esc3(a.id)}"`, `${esc3(a.name)}<br><span class="when">${days}</span>${od}${nx}`, `<span data-fig="owed-now">${plFig3(a.type === 'card' ? 'cards.*.owedNow' : 'owed.*.owedNow', k.owedNow, a.cur)}</span><br><span class="when">${esc3(label3('owed')).toLowerCase()}</span>`);
   }).filter(Boolean);
   out.push(`<section class="a3-card" data-card="plan-owed"><h2>Cards and loans</h2>${owedRows.length ? `<ul class="a3-rows a3-rclist">${owedRows.join('')}</ul>` : '<p class="a3-sub">No cards or loans</p>'}
     <div class="a3-actions"><button type="button" class="a3-btn" id="plAddLoan">Add a loan</button></div></section>`);
@@ -7996,6 +8073,7 @@ function renderPlan3() {
   on('#plAddLoan', () => plLoanForm3());
   host.querySelectorAll('[data-line]').forEach(b => b.addEventListener('click', () => plLineForm3(b.dataset.line)));
   host.querySelectorAll('[data-bill]').forEach(b => b.addEventListener('click', () => plBillForm3(b.dataset.bill)));
+  host.querySelectorAll('[data-pay]').forEach(b => b.addEventListener('click', () => plBillForm3(b.dataset.pay)));
   host.querySelectorAll('[data-goal]').forEach(b => b.addEventListener('click', () => plGoalForm3(b.dataset.goal)));
   host.querySelectorAll('[data-owed]').forEach(b => b.addEventListener('click', () => plOwedForm3(b.dataset.owed)));
 }
@@ -8082,11 +8160,13 @@ function plBillForm3(id) {
   }
   const s = book.schedules.find(x => x.id === id), v0 = BurrowEngine.periods.scheduleView(book, E3.today())[id];
   const day = v0.rule && v0.rule.every === 'month' && v0.rule.days.length === 1 ? v0.rule.days[0] : null;
+  const pay = s.kind === 'income';
   plForm3(s.name, [{ key: 'name', label: 'Name', kind: 'text', value: s.name }, { key: 'amount', label: 'Amount', kind: 'amount', value: v0.amount },
     { key: 'day', label: 'Day of the month it is due', kind: 'day', value: day }, { key: 'from', label: 'Changes from', kind: 'date', value: v0.changeFrom, hint: 'Earlier ones stay as they were' }],
-  [{ label: 'Save', solid: true, step: v => ['changeBill', w => PLAN3W.changeBill(w, id, { name: v.name, amount: v.amount, day: v.day, from: v.from }), 'Bill changed'] },
-   { label: 'End this bill', step: v => ['endBill', w => PLAN3W.endBill(w, id, { last: v.from }), s.name + ' ends'] }],
-  `End this bill: nothing is due after the day in "Changes from"`);
+  [{ label: 'Save', solid: true, step: v => ['changeBill', w => PLAN3W.changeBill(w, id, { name: v.name, amount: v.amount, day: v.day, from: v.from }), pay ? 'Pay changed' : 'Bill changed'] }]
+    .concat(pay || !v0.next ? [] : [{ label: 'Change the next one only', step: v => ['changeOnce', w => PLAN3W.changeOnce(w, id, { due: v0.next.due, amount: v.amount }), s.name + ' on ' + day3(v0.next.land, 'any') + ' changed'] },
+      { label: 'End this bill', step: v => ['endBill', w => PLAN3W.endBill(w, id, { last: v.from }), s.name + ' ends'] }]),
+  pay ? 'A change starts from the day in "Changes from". Pay periods before it stay as they were' : `"Change the next one only" changes the amount of the one on ${esc3(day3(v0.next ? v0.next.land : v0.changeFrom, 'any'))}. End this bill: nothing is due after the day in "Changes from"`);
 }
 /* a goal; id null adds one */
 function plGoalForm3(id) {
@@ -8102,7 +8182,8 @@ function plGoalForm3(id) {
   plForm3(g.name, [{ key: 'amount', label: 'Set aside now', kind: 'amount', optional: true, hint: g.keptIn && g.keptIn.mode === 'ownAccount' ? 'It moves from your bank into ' + E3.nameOf(g.keptIn.acct) : 'It stays in your bank, kept apart from safe to spend' },
     { key: 'name', label: 'Name', kind: 'text', value: g.name }, { key: 'target', label: 'Goal amount', kind: 'amount', value: g.target }, { key: 'due', label: 'Target date', kind: 'date', value: g.due || '' }],
   [{ label: 'Set aside', solid: true, step: v => ['setAside', w => PLAN3W.setAside(w, id, { amount: v.amount }), 'Set aside for ' + g.name] },
-   { label: 'Save changes', step: v => ['changeGoal', w => PLAN3W.changeGoal(w, id, { name: v.name, target: v.target, due: v.due }), 'Goal changed'] }]);
+   { label: 'Save changes', step: v => ['changeGoal', w => PLAN3W.changeGoal(w, id, { name: v.name, target: v.target, due: v.due }), 'Goal changed'] },
+   { label: 'Take out', step: v => ['takeOut', w => PLAN3W.takeOut(w, id, { amount: v.amount }), 'Taken out of ' + g.name] }]);
 }
 /* a card's or a loan's days and payment */
 function plOwedForm3(id) {
@@ -8110,7 +8191,9 @@ function plOwedForm3(id) {
   const fields = [{ key: 'name', label: 'Name', kind: 'text', value: a.name }, { key: 'payDay', label: 'Day of the month it is paid', kind: 'day', value: a.payDay }];
   if (card) fields.push({ key: 'cutDay', label: 'Day the statement closes', kind: 'day', value: a.cutDay, hint: 'Leave it empty if you are not sure: then all that is owed is due on each payment day' });
   else fields.push({ key: 'amount', label: 'Usual payment', kind: 'amount', value: a.amount });
-  plForm3(a.name, fields, [{ label: 'Save', solid: true, step: v => ['changeOwed', w => PLAN3W.changeOwed(w, id, card ? { name: v.name, payDay: v.payDay, cutDay: v.cutDay } : { name: v.name, payDay: v.payDay, amount: v.amount }), a.name + ' changed'] }]);
+  plForm3(a.name, fields, [{ label: 'Save', solid: true, step: v => ['changeOwed', w => PLAN3W.changeOwed(w, id, card ? { name: v.name, payDay: v.payDay, cutDay: v.cutDay } : { name: v.name, payDay: v.payDay, amount: v.amount }), a.name + ' changed'] }]
+    .concat(card ? [] : [{ label: 'Close this loan', step: () => ['closeLoan', w => PLAN3W.closeLoan(w, id), a.name + ' closed'] }]),
+    card ? '' : 'A loan closes once it is paid off');
 }
 function plLoanForm3() {
   plForm3('Add a loan', [{ key: 'name', label: 'Name', kind: 'text', hint: 'Like Car loan' }, { key: 'owed', label: 'Still owed today', kind: 'amount' },

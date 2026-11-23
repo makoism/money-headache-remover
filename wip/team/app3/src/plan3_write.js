@@ -46,14 +46,13 @@
     const l = find(w, 'budgets', id), a = x.amount == null || x.amount === 0 ? x.amount : amountOk(x.amount, 'an amount'), p = period(w);
     const ch = {};
     if (x.name != null && x.name !== l.name) { ch.name = nameOk(x.name); sameName(A3.listOf(w.book, 'budgets'), ch.name, id); }
-    /* 'now' is a step from today (the next periods) and a once key for this one: the engine reads a step only from a
-       period start it has recorded, and the period holding the setup day has none */
+    /* 'now' is a step from this period's first day: it counts in this period and after [V, BF] */
     if (a == null) { if (!ch.name) bad('Nothing changed'); }
-    else if (x.when === 'once' || x.when === 'now') {
+    else if (x.when === 'once') {
       if (!p.startsWith) bad('This pay period has no pay to name it by yet. Change it from the next one');
       ch.once = Object.assign({}, l.once || {}, { [p.startsWith]: { amount: a } });
     }
-    if (a != null && (x.when === 'now' || x.when === 'next')) ch.steps = (l.steps || []).concat([{ from: w.today, amount: a }]);
+    if (a != null && (x.when === 'now' || x.when === 'next')) ch.steps = (l.steps || []).concat([{ from: x.when === 'now' ? p.start : w.today, amount: a }]);
     else if (a != null && x.when !== 'once') bad('Pick when the change starts');
     const r = w.edit('budgets', id, ch);
     if (ch.steps) stampNew(r, 'steps');
@@ -77,12 +76,8 @@
       Object.assign(r.once[p.startsWith], { at: r.at, by: r.by });
       return s.id;
     }
-    const rec = { from: shares.length ? w.today : null, cur: home(w), per: { free: 'pay' }, free: a, goals: {} };
-    const p = shares.length && x.when === 'now' ? period(w) : null;   // 'now': this period too, as a once key (see changeLine)
-    if (p && p.startsWith) rec.once = { [p.startsWith]: { free: a } };
-    const id = w.add('shares', rec);
-    if (rec.once) { const r = find(w, 'shares', id); Object.assign(r.once[p.startsWith], { at: r.at, by: r.by }); }
-    return id;
+    const from = !shares.length ? null : x.when === 'now' ? period(w).start : w.today;   // 'now': from this period's first day [V]
+    return w.add('shares', { from, cur: home(w), per: { free: 'pay' }, free: a, goals: {} });
   }
 
   /* ---- bills ---- */
@@ -120,6 +115,22 @@
     if (v.lastNamed && last < v.lastNamed) bad('It can end on ' + v.lastNamed + ' at the earliest: that one is already paid or noted');
     w.edit('schedules', id, { ends: last });
     return s.id;
+  }
+
+  /* one occurrence changed: an `amounts` key on its due date (before any move), with its own at and by [B8, AE1];
+     only an occurrence still to come that no record names yet [X8] */
+  function changeOnce(w, id, x) {
+    const s = find(w, 'schedules', id), v = PE.scheduleView(w.book, w.today)[id], a = amountOk(x.amount, 'the amount');
+    if (!DAY.test(x.due || '')) bad('Pick which one');
+    if (v.lastNamed && x.due <= v.lastNamed) bad('That one is already paid or noted');
+    const D = node ? require('../../engine/dates.js') : root.BurrowEngine.dates, S = node ? require('../../engine/schedules.js') : root.BurrowEngine.schedules;
+    const acct = (w.book.accounts || []).find(y => y.id === s.acct) || {};
+    const cal = S.calendar(acct.country || G.fieldValue((w.book.home || {}).country) || null);
+    const occ = S.occurrences(s, cal, D.dayNum(x.due), D.dayNum(x.due)).find(o => D.dayStr(o.due) === x.due);
+    if (!occ) bad(x.due + ' is not a day ' + s.name + ' is due');
+    const r = w.edit('schedules', id, { amounts: Object.assign({}, s.amounts || {}, { [x.due]: { amount: a } }) });
+    Object.assign(r.amounts[x.due], { at: r.at, by: r.by });
+    return id;
   }
 
   /* ---- goals ---- */
@@ -165,6 +176,30 @@
     return id;
   }
 
+  /* money taken back out of a goal: a `move` out of it to Waiting [T7], never more than it holds; from its own
+     account, the money goes back to the bank too */
+  function takeOut(w, id, x) {
+    const g = find(w, 'places', id), a = amountOk(x.amount, 'an amount'), k = g.keptIn || {};
+    const held = (LA.lookahead(w.book, w.today).places[id] || {}).kept || 0;
+    if (a > held) bad(g.name + ' holds less than that');
+    w.add('events', { k: 'move', date: w.today, a, acct: k.acct || mainOf(w), place: id, src: { type: 'typed' } });
+    if (k.mode === 'ownAccount') w.add('events', { k: 'transfer', date: w.today, a, acct: k.acct, acct2: x.to || mainOf(w), src: { type: 'typed' } });
+    return id;
+  }
+
+  /* a paid-off loan closes: a final check of nothing on its closing day, and `closed` [SCHEMA 3, P6, R3]; one that
+     still owes is refused (its last payment is ticked at Check your bank first) */
+  function closeLoan(w, id) {
+    const a = find(w, 'accounts', id);
+    if (a.type !== 'loan') bad('Only a loan closes here');
+    if (a.closed) bad(a.name + ' is already closed');
+    const o = LA.lookahead(w.book, w.today).owed[id];
+    if (o && o.owedNow !== 0) bad(a.name + ' still owes money. Tick its last payment at Check your bank first');
+    w.add('events', { k: 'check', acct: id, date: w.today, a: 0 });
+    w.edit('accounts', id, { closed: w.today });
+    return id;
+  }
+
   /* ---- loans, and the days of a card (each owns its payment day [B5, E6]) ---- */
   function addLoan(w, x) {
     const name = nameOk(x.name), owed = amountOk(x.owed, 'what is owed'), pay = amountOk(x.amount, 'the usual payment'), d = dayOfMonth(x.payDay);
@@ -187,7 +222,7 @@
     return id;
   }
 
-  const api = { addLine, changeLine, endLine, setFree, addBill, changeBill, endBill, addGoal, changeGoal, setAside, addLoan, changeOwed };
+  const api = { addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, changeOwed, closeLoan };
   if (node) module.exports = api;
   else root.PLAN3W = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

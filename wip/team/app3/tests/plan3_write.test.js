@@ -51,7 +51,8 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     eq(h.book.plan.budgets[0].steps.slice(-1).map(s => [s.from, s.amount, s.by]), [[DAY, 45000, 'p3wrtd']]);
     eq(view(h.book).period.lines[0].amount, 40000, 'this period keeps its amount');
     r = await h.go('changeLine', id, { amount: 38000, when: 'now' });
-    eq(h.book.plan.budgets[0].steps.slice(-1).map(s => [s.from, s.amount]), [[DAY, 38000]], 'the next periods');
+    eq(h.book.plan.budgets[0].steps.slice(-1).map(s => [s.from, s.amount]), [['2026-11-10', 38000]], 'one step from the period start (BF, the engine counts it in the setup period)');
+    eq(h.book.plan.budgets[0].once, undefined, 'no once key for a change from now');
     eq(view(h.book).period.lines[0].amount, 38000, 'this period follows');
     r = await h.go('changeLine', id, { amount: 50000, when: 'once' });
     const p = view(h.book).period;
@@ -80,6 +81,7 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     eq(view(h.book).period.free.amount, 60000);
     r = await h.go('setFree', { amount: 65000, when: 'now' });
     eq(view(h.book).period.free.amount, 65000);
+    eq([h.book.plan.shares.slice(-1)[0].from, h.book.plan.shares.slice(-1)[0].once], ['2026-11-10', undefined], 'a share from the period start, no once key');
     r = await h.go('setFree', { amount: 20000, when: 'once' }); ok(r.ok, JSON.stringify(r));
     eq(view(h.book).period.free.amount, 20000);
   });
@@ -160,6 +162,67 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     ok(view(h.book).cards[CARD_A], 'the card is read');
     r = await h.go('changeOwed', CARD_A, { cutDay: null }); ok(r.ok, JSON.stringify(r));
     eq(h.book.accounts.find(a => a.id === CARD_A).cutDay, undefined, 'not sure again');
+  });
+  await t('pay changed from a date: a new rule and step; the period ends before the new day; the period running stays as it started', async () => {
+    const h = setup(), MAIN = 'k7m2qa-f3n8p1x6wd-4', SIDE = 'k7m2qa-f3n8p1x6wd-5';
+    const p0 = view(h.book).period;
+    let r = await h.go('changeBill', MAIN, { day: 27, amount: 190000 }); ok(r.ok, JSON.stringify(r));
+    const s = h.book.schedules.find(x => x.id === MAIN);
+    eq(s.rules.map(x => [x.from, x.rule.days]), [[null, [10]], [DAY, [27]]]);
+    eq(s.steps.map(x => [x.from, x.amount]), [[null, 180000], [DAY, 190000]]);
+    eq(PE.scheduleView(h.book, DAY)[MAIN].next, { due: '2026-11-27', land: '2026-11-27', amount: 190000 });
+    const p1 = view(h.book).period;
+    eq([p1.start, p1.startsWith], [p0.start, p0.startsWith], 'the period running keeps its start');
+    eq(p1.end, '2026-11-26', 'it ends before the new pay day');
+    r = await h.go('changeBill', SIDE, { name: 'Main job' }); ok(!r.ok && /already one/.test(r.text), JSON.stringify(r));
+  });
+  await t('one bill changed once: an amounts key on its due date; the next one goes back to the usual amount', async () => {
+    const h = setup();
+    let r = await h.go('changeOnce', RENT, { due: '2026-11-27', amount: 80000 }); ok(r.ok, JSON.stringify(r));
+    const s = h.book.schedules.find(x => x.id === RENT);
+    eq([s.amounts['2026-11-27'].amount, typeof s.amounts['2026-11-27'].at, s.amounts['2026-11-27'].by], [80000, 'string', 'p3wrtd']);
+    eq(PE.scheduleView(h.book, DAY)[RENT].next.amount, 80000);
+    eq(PE.scheduleView(h.book, '2026-11-28')[RENT].next.amount, 72000);
+    r = await h.go('changeOnce', RENT, { due: '2026-12-26', amount: 1 }); ok(!r.ok && /not a day/.test(r.text), JSON.stringify(r));
+    r = await h.go('changeOnce', RENT, { due: '2026-10-27', amount: 1 }); ok(!r.ok, JSON.stringify(r));
+  });
+  await t('money taken back out of a goal: a move out of it; never more than it holds; from its own account back to the bank', async () => {
+    const h = setup();
+    await h.go('addGoal', { name: 'Trip', target: 150000 });
+    const g = h.book.places[0];
+    await h.go('setAside', g.id, { amount: 20000 });
+    const r0 = view(h.book);
+    let r = await h.go('takeOut', g.id, { amount: 5000 }); ok(r.ok, JSON.stringify(r));
+    const e = h.book.events.slice(-1)[0];
+    eq([e.k, e.a, e.place, e.place2, e.acct], ['move', 5000, g.id, undefined, BANK]);
+    const r1 = view(h.book);
+    eq(r1.places[g.id].kept, 15000);
+    eq(r1.accounts[BANK].headroom, r0.accounts[BANK].headroom + 5000);
+    r = await h.go('takeOut', g.id, { amount: 15001 }); ok(!r.ok && /holds/.test(r.text), JSON.stringify(r));
+    await h.go('addGoal', { name: 'House', target: 900000, mode: 'ownAccount' });
+    const hg = h.book.places[1];
+    await h.go('setAside', hg.id, { amount: 30000 });
+    const b0 = view(h.book).accounts[BANK].bank;
+    r = await h.go('takeOut', hg.id, { amount: 10000 }); ok(r.ok, JSON.stringify(r));
+    const v = view(h.book);
+    eq([v.places[hg.id].kept, v.accounts[hg.keptIn.acct].bank, v.accounts[BANK].bank], [20000, 20000, b0 + 10000]);
+  });
+  await t('a paid-off loan closes: a final check of nothing and its closing day; a loan still owing is refused', async () => {
+    const h = setup();
+    await h.go('addLoan', { name: 'Car loan', owed: 25000, amount: 25000, payDay: 27 });
+    const id = h.book.accounts.slice(-1)[0].id;
+    let r = await h.go('closeLoan', id); ok(!r.ok && /still owes/.test(r.text), JSON.stringify(r));
+    // the last payment, ticked on 27 Nov
+    DAY = '2026-11-27';
+    h.book.events.push({ id: 'set:' + id + '@2026-11-27', k: 'repay', acct: BANK, acct2: id, a: 25000, a2: 25000, date: '2026-11-27', settles: [{ s: id, due: '2026-11-27' }], told: '2026-11-27T09:00+09:00', at: '2026-11-27T09:00+09:00', by: 'p3wrtd' });
+    eq(view(h.book).owed[id].owedNow, 0);
+    r = await h.go('closeLoan', id); ok(r.ok, JSON.stringify(r));
+    const a = h.book.accounts.find(x => x.id === id), last = h.book.events.slice(-1)[0];
+    eq([a.closed, last.k, last.acct, last.a, last.date], [DAY, 'check', id, 0, DAY]);
+    const v = view(h.book);
+    ok(!v.dueBeforeNextPay.items.some(o => o.item.startsWith(id + '@')), 'nothing more is due');
+    ok(!v.warnings.some(w => w.code === 'reopened'), 'not reopened');
+    DAY = '2026-11-25';
   });
   await t('Undo of a plan step marks what it added gone; the period no longer shows it', async () => {
     const h = setup();

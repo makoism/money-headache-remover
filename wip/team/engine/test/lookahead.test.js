@@ -243,4 +243,47 @@ t('while a money question waits, the walk counts the safe side across the kept v
   b.keptVersions.forEach(k => { k.ask = false; });
   eq(run(b, '2026-12-02').accounts.bank.lowest, 240000);   // picked: what shows, 250,000 and 300,000
 });
+t("a step dated on the first day of the period holding the setup day counts in that period [T watch, V]", () => {
+  const b = base(x => {
+    delete x.events[0].split;
+    x.plan.budgets[0].steps.push({ from: '2026-11-25', amount: 60000 });
+  });
+  const p = run(b, '2026-12-02').period;
+  // the period runs 25 Nov to 24 Dec (30 days); set up 1 Dec, so Food's share is 24 of 30 days of 60,000
+  eq(p.lines.map(l => [l.id, l.amount, l.left]), [['food', 60000, 48000]]);
+});
+t('a goal: what is needed each period to reach its target by its date, from what is really set aside', () => {
+  const b = base(x => {
+    x.places = [{ id: 'trip', name: 'Trip', kind: 'goal', target: 100000, due: '2027-03-31', keptIn: { acct: 'bank', mode: 'inBank' } }];
+    x.events[0].split.places = { trip: 10000 };
+    x.events.push({ id: 'g1', k: 'move', place: 'waiting', place2: 'trip', a: 15000, date: '2026-12-02', told: '2026-12-02T12:00' + TZ });
+  });
+  const g = run(b, '2026-12-03').places.trip;
+  // 25,000 set aside, 75,000 to go; pays starting periods by 31 Mar: 25 Dec, 25 Jan, 25 Feb, 25 Mar (4): 18,750 each
+  eq([g.kept, g.target, g.toGo, g.periodsLeft, g.perPeriod], [25000, 100000, 75000, 4, 18750]);
+  // past its date, or with no pay left before it: all of what is to go, now
+  eq(run(b, '2027-03-27').places.trip.periodsLeft, 0);
+  eq(run(b, '2027-03-27').places.trip.perPeriod, 75000);
+});
+// [F4 for payments, H8, AU] a card or loan payment past its day and not ticked is late (inside the paying bank's posting
+// window) or not seen; it is never the "next payment" with a past date
+t('a card payment past its day and not ticked: late, then not seen, never the next payment', () => {
+  const b = cardBook(x => x.events.push({ id: 'sp', k: 'spend', acct: 'card', date: '2027-06-20', a: 81000, told: '2027-06-20T12:00' + TZ }));
+  const on = day => run(b, day).cards.card;
+  eq(on('2027-09-06').next.payment_date, '2027-09-07');   // coming
+  const late = on('2027-09-08');
+  ok(late.next === null || late.next.payment_date >= '2027-09-08');
+  eq(late.overdue.map(o => [o.item, o.amount, o.payment_date, o.state]), [['card@2027-09-07', 81000, '2027-09-07', 'late']]);
+  eq(on('2027-09-10').overdue.map(o => o.state), ['notSeen']);
+});
+t('a loan payment past its day and not ticked: late, never the next payment', () => {
+  const b = base(x => {
+    x.accounts.push({ id: 'loan', name: 'Loan', type: 'loan', cur: 'JPY', payDay: 27, shift: 'none', payFrom: 'bank', amount: 20000 });
+    x.events.push({ id: 'ol', k: 'open', acct: 'loan', date: '2026-12-01', a: 200000, told: '2026-12-01T10:00' + TZ, grp: 's' },
+      { id: 'cl', k: 'check', acct: 'loan', date: '2026-12-01', a: 200000, told: '2026-12-01T10:00' + TZ, grp: 's' });
+  });
+  const o = run(b, '2026-12-28').owed.loan;
+  eq(o.overdue.map(x => [x.item, x.payment_date, x.state]), [['loan@2026-12-27', '2026-12-27', 'late']]);
+  ok(o.next.payment_date > '2026-12-28');
+});
 done('lookahead');

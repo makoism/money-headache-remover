@@ -598,12 +598,15 @@
         else if (!carries && (!nextPoint || p.land > nextPoint.land)) walkItems.push({ land: p.land, amount: o.amount, future: true, label: c.name + ', ' + o.name + ' ' + short(o.land) });
       }
       if (nextPoint) walkItems.push({ land: nextPoint.land, amount: nextExp ? planned(rest + nextExp, nextPoint.due) : nextAmount, label: c.name + (notSure ? ', all owed' : ' still open, closes ' + short(nextPoint.closes)) });
-      const next = unpaid.length
-        ? { item: unpaid[0].id, amount: unpaid[0].asks, payment_date: dayStr(unpaid[0].land), statement: label || 'closed', closed_on: unpaid[0].closed != null ? dayStr(unpaid[0].closed) : undefined }
-        : nextPoint && { item: nextPoint.id, amount: nextAmount, payment_date: dayStr(nextPoint.land), statement: label || 'open', closes_on: nextPoint.closes != null ? dayStr(nextPoint.closes) : undefined };
+      // [F4, H8] a payment past its day and not ticked is overdue (late, then not seen), never the next one
+      const shown = p => ({ item: p.id, amount: p.asks, payment_date: dayStr(p.land), statement: label || 'closed', closed_on: p.closed != null ? dayStr(p.closed) : undefined });
+      const overdue = unpaid.filter(p => p.land < today).map(p => Object.assign(shown(p), { state: payState(p.land, payFrom) }));
+      const coming = unpaid.filter(p => p.land >= today);
+      const next = coming.length ? Object.assign(shown(coming[0]), { state: 'coming' })
+        : nextPoint ? { item: nextPoint.id, amount: nextAmount, payment_date: dayStr(nextPoint.land), statement: label || 'open', closes_on: nextPoint.closes != null ? dayStr(nextPoint.closes) : undefined, state: 'coming' } : null;
       const cardItems = unpaid.map(p => ({ id: p.id, due: p.due, land: p.land, amount: p.part, statement: label || 'closed' }));
       if (nextPoint) cardItems.push({ id: nextPoint.id, due: nextPoint.due, land: nextPoint.land, amount: nextAmount, statement: label || 'open' });
-      return { owedNow, statements: points, next, walkItems, cardItems, fillers, payFrom };
+      return { owedNow, statements: points, next, overdue, walkItems, cardItems, fillers, payFrom };
     }
 
     // ----- loans and pay-later [B5, E6, F19, H7, I2, Q3, AB3, AC5, AD7] -----
@@ -657,9 +660,15 @@
         if (past) unpaid += amt; else left -= amt;
         loanItems.push({ id: d.iid, sid: id, kind: 'loan', acct: payFrom, card: id, due: d.due, land: d.land, amount: amt, settled: false, name: a.name });
       }
-      return { owedNow, loanItems, payFrom, next: loanItems[0] ? { item: loanItems[0].id, amount: loanItems[0].amount, payment_date: dayStr(loanItems[0].land) } : null };
+      // [F4, H8] a payment past its day and not ticked is overdue (late, then not seen), never the next one
+      const shown = x => ({ item: x.id, amount: x.amount, payment_date: dayStr(x.land) });
+      const nx = loanItems.find(x => x.land >= today);
+      return { owedNow, loanItems, payFrom, next: nx ? Object.assign(shown(nx), { state: 'coming' }) : null,
+        overdue: loanItems.filter(x => x.land < today).map(x => Object.assign(shown(x), { state: payState(x.land, payFrom) })) };
     }
 
+    // [H8, F3, AU] a payment past its day: late inside the paying account's posting window, then not seen
+    const payState = (land, from) => (from && acct[from] && today <= calOf(from).addWorking(land, postingDays(from)) ? 'late' : 'notSeen');
     // ----- every account -----
     const banks = {}, cards = {}, loans = {};
     for (const id of Object.keys(acct)) {
@@ -725,7 +734,8 @@
       return { started, occ, start, end };
     }
     const nowAmount = (src, per) => {
-      const n = nowPeriod(), a = periodAmount(src, n.started, n.occ);
+      // the period's own first day, also for the period holding the setup day, which has no recorded start
+      const n = nowPeriod(), a = periodAmount(src, n.start, n.occ);
       return n.start === null ? a : perPeriod({ per, amount: a }, n.start, n.end, n.occ);
     };
     function freePeriodAmount() {
@@ -773,6 +783,19 @@
       const limit = placeBalance(g);
       while (total > limit && list.length) { const newest = list.pop(); gaveWay.add(newest.id); total -= newest.a; }
     }
+    // A goal with a target and a date: what is still to go from what is really set aside (a place below nothing holds
+    // nothing, AU2), and what each period needs to reach it: spread over the period-starting pays still to come on or
+    // before its date (a late pay still counted is one of them), the leftover minor units on the earliest, so the first
+    // is the most. No pay left before the date: all of it now. No fixed pay: periods are not known [B4].
+    function goalPace(g, amt, due) {
+      if (g.target == null || !due) return {};
+      const toGo = Math.max(0, g.target - Math.max(0, amt));
+      if (!periodStream) return { target: g.target, toGo, periodsLeft: null, perPeriod: null };
+      const dd = dayNum(due);
+      const n = dd < today ? 0 : occOf(periodStream, today, dd).filter(o => o.land <= dd && !settledBy[o.id]
+        && (o.land >= today || nextPays.some(p => p.id === o.id))).length;
+      return { target: g.target, toGo, periodsLeft: n, perPeriod: n ? U.spread(toGo, n)[0] : toGo };
+    }
     for (const g of places) {
       const amt = placeBalance(g), where = (g.keptIn || {}).acct;
       if (removedOn(g) !== null) {   // [P1, R1] a removed place's money waits "to place", held out of safe to spend
@@ -790,7 +813,7 @@
       const paysSched = schedules.find(s => s.place === g.id);
       const nextOf = paysSched && items.find(o => o.sid === paysSched.id && !o.settled);
       const due = g.refill && nextOf ? dayStr(nextOf.due) : g.due || (nextOf ? dayStr(nextOf.due) : null);
-      res.places[g.id] = { kept: amt, due, account: where };
+      res.places[g.id] = Object.assign({ kept: amt, due, account: where }, goalPace(g, amt, due));
       (keptIn[where] = keptIn[where] || []).push({ id: g.id, name: g.name, amount: amt });
     }
 
@@ -812,7 +835,7 @@
         const share = before.length && after.length ? { d: after[0].land - od, D: after[0].land - startDayOf(before[before.length - 1]) } : null;
         // [AS, AU1] of the amount of the period holding the opening, by the units rules
         const holding = before.length ? before[before.length - 1] : null;
-        const openAmount = (src, per) => { const a = periodAmount(src, null, occOn(null, od)); return holding && after.length ? perPeriod({ per, amount: a }, startDayOf(holding), after[0].land, holding.id) : a; };
+        const openAmount = (src, per) => { const a = periodAmount(src, holding ? startDayOf(holding) : null, occOn(null, od)); return holding && after.length ? perPeriod({ per, amount: a }, startDayOf(holding), after[0].land, holding.id) : a; };
         let leftOver = 0;
         for (const l of lineSrcs.filter(x => moneyAcct(lineAcct(x)) === acctId)) {
           const typed = (split.lines || {})[l.id], amount = openAmount(l, l.per);
@@ -1054,11 +1077,11 @@
     }
     for (const id in cards) {
       const k = cards[id];
-      res.cards[id] = { owedNow: k.owedNow, next: k.next, statements: k.statements.map(s => ({ closed: s.closed != null ? dayStr(s.closed) : undefined, amount: s.amount, payment: dayStr(s.land), paid: s.paid })), fillers: k.fillers };
+      res.cards[id] = { owedNow: k.owedNow, next: k.next, overdue: k.overdue, statements: k.statements.map(s => ({ closed: s.closed != null ? dayStr(s.closed) : undefined, amount: s.amount, payment: dayStr(s.land), paid: s.paid })), fillers: k.fillers };
       if (acct[k.payFrom] && cur(id) !== cur(k.payFrom)) res.warnings.push({ account: k.payFrom, card: id, code: 'card_other_currency', text: `${acct[id].name} (${cur(id)}) is paid from ${acct[k.payFrom].name} (${cur(k.payFrom)}): it is not taken off safe to spend until it is paid` });   // [H5]
     }
     for (const id in loans) {
-      res.owed[id] = { owedNow: loans[id].owedNow, next: loans[id].next };
+      res.owed[id] = { owedNow: loans[id].owedNow, next: loans[id].next, overdue: loans[id].overdue };
       const from = loans[id].payFrom;
       if (from && acct[from] && cur(id) !== cur(from)) res.warnings.push({ account: from, loan: id, code: 'loan_other_currency', text: `${acct[id].name} (${cur(id)}) is paid from ${acct[from].name} (${cur(from)}): it is not taken off safe to spend until it is paid` });   // [V2]
     }

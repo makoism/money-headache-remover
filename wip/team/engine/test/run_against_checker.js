@@ -56,7 +56,9 @@ function compare(sc, day) {
   if (om.join('|') !== rm.join('|') || !near(o.dueBeforeNextPay.total, M(r.dueBeforeNextPay.total)))
     diffs.push({ field: 'due_before_next_pay', onlyChecker: om.filter(x => !rm.includes(x)), onlyEngine: rm.filter(x => !om.includes(x)), checkerTotal: o.dueBeforeNextPay.total, engineTotal: M(r.dueBeforeNextPay.total) });
   for (const cid of Object.keys(o.cards)) {
-    const mc = o.cards[cid], rc0 = ((r.cards || {})[cid] || {}).next || {}, rc = Object.assign({}, rc0, { amount: M(rc0.amount) });
+    // [F4 for payments] the engine lists a payment past its day apart (`overdue`), never as `next`; the checker, older,
+    // gives it as its next payment, so the oldest overdue one is compared with it
+    const ec = (r.cards || {})[cid] || {}, mc = o.cards[cid], rc0 = (ec.overdue || [])[0] || ec.next || {}, rc = Object.assign({}, rc0, { amount: M(rc0.amount) });
     const f = ['amount', 'payment_date', 'statement', 'closed_on', 'closes_on'];
     if (f.some(k => !near(mc[k], rc[k]))) diffs.push({ field: 'card_due', account: cid, checker: mc, engine: f.reduce((a, k) => ((a[k] = rc[k]), a), {}) });
   }
