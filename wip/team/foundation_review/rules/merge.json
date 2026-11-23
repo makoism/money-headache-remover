@@ -24666,6 +24666,192 @@
       "decisions": [
         "AN7"
       ]
+    },
+    {
+      "id": "mg-287",
+      "question": "after_merge",
+      "title": "AN2 (grid E x D, bills): a rent day change made offline after the other device ticked the rent moves to the day after it, with a notice",
+      "input": {
+        "mine": {
+          "schedules": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-44",
+              "kind": "bill",
+              "name": "Rent",
+              "acct": "k7qzpa-m2xq7ab9zt-2",
+              "rules": [
+                {
+                  "from": "2026-11-01",
+                  "rule": {
+                    "every": "month",
+                    "days": [
+                      27
+                    ]
+                  },
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "phn001"
+                },
+                {
+                  "from": "2026-12-15",
+                  "rule": {
+                    "every": "month",
+                    "days": [
+                      5
+                    ]
+                  },
+                  "at": "2026-12-28T08:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "steps": [
+                {
+                  "from": "2026-11-01",
+                  "amount": 80000,
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "shift": "after",
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-12-28T08:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ],
+          "events": []
+        },
+        "theirs": {
+          "schedules": [
+            {
+              "id": "k7qzpa-m2xq7ab9zt-44",
+              "kind": "bill",
+              "name": "Rent",
+              "acct": "k7qzpa-m2xq7ab9zt-2",
+              "rules": [
+                {
+                  "from": "2026-11-01",
+                  "rule": {
+                    "every": "month",
+                    "days": [
+                      27
+                    ]
+                  },
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "steps": [
+                {
+                  "from": "2026-11-01",
+                  "amount": 80000,
+                  "at": "2026-11-01T09:00:00.000+09:00",
+                  "by": "phn001"
+                }
+              ],
+              "shift": "after",
+              "told": "2026-11-01T09:00:00.000+09:00",
+              "at": "2026-11-01T09:00:00.000+09:00",
+              "by": "phn001"
+            }
+          ],
+          "events": [
+            {
+              "id": "set:k7qzpa-m2xq7ab9zt-44@2026-12-27",
+              "k": "spend",
+              "sub": "bill",
+              "date": "2026-12-28",
+              "acct": "k7qzpa-m2xq7ab9zt-2",
+              "a": 80000,
+              "settles": [
+                {
+                  "s": "k7qzpa-m2xq7ab9zt-44",
+                  "due": "2026-12-27"
+                }
+              ],
+              "told": "2026-12-28T09:00:00.000+09:00",
+              "at": "2026-12-28T09:00:00.000+09:00",
+              "by": "dsk001"
+            }
+          ]
+        },
+        "now": "2026-12-28T10:00:00.000+09:00",
+        "by": "phn001",
+        "show": [
+          "schedules"
+        ]
+      },
+      "expected": {
+        "schedules": [
+          {
+            "id": "k7qzpa-m2xq7ab9zt-44",
+            "kind": "bill",
+            "name": "Rent",
+            "acct": "k7qzpa-m2xq7ab9zt-2",
+            "rules": [
+              {
+                "from": "2026-11-01",
+                "rule": {
+                  "every": "month",
+                  "days": [
+                    27
+                  ]
+                },
+                "at": "2026-11-01T09:00:00.000+09:00",
+                "by": "phn001"
+              },
+              {
+                "from": "2026-12-15",
+                "rule": {
+                  "every": "month",
+                  "days": [
+                    5
+                  ]
+                },
+                "at": "2026-12-28T10:00:00.000+09:00",
+                "by": "phn001",
+                "gone": "2026-12-28"
+              },
+              {
+                "from": "2026-12-28",
+                "rule": {
+                  "every": "month",
+                  "days": [
+                    5
+                  ]
+                },
+                "at": "2026-12-28T10:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "steps": [
+              {
+                "from": "2026-11-01",
+                "amount": 80000,
+                "at": "2026-11-01T09:00:00.000+09:00",
+                "by": "phn001"
+              }
+            ],
+            "shift": "after",
+            "told": "2026-11-01T09:00:00.000+09:00",
+            "at": "2026-12-28T10:00:00.000+09:00",
+            "by": "phn001"
+          }
+        ],
+        "notices": [
+          {
+            "schedule": "k7qzpa-m2xq7ab9zt-44",
+            "text": "This change now starts the day after what your other device had already settled. Check it.",
+            "was": "2026-12-15",
+            "from": "2026-12-28",
+            "latest": "k7qzpa-m2xq7ab9zt-44@2026-12-27"
+          }
+        ]
+      },
+      "why": "Rent of 80,000 on the 27th (moved later: Sun 27 Dec 2026 is paid Mon 28 Dec). Mon 28 Dec 09:00 the desktop ticks it (`set:<rent>@2026-12-27`). At 08:00 the phone, offline, entered the new flat's rent on the 5th \"from 15 Dec\": it had seen no December rent ticked, so X8 allowed it there. The merged copy names 27 Dec, which the new rule no longer makes. After the merge the change moves to start the day after the settled rent's due date, 28 Dec [AN2, X8, H2: named by its due date before the move]: the 15 Dec entry removed by its own `gone`, a 28 Dec entry written, both with the phone's `at` (10:00); the phone made the change, so it shows the notice. The next rent is Tue 5 Jan.",
+      "decisions": [
+        "AN2",
+        "X8",
+        "H2"
+      ]
     }
   ],
   "open": [

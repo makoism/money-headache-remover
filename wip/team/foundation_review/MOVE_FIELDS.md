@@ -1,4 +1,4 @@
-# Every saved field of every old build, and where the move puts it (23 Nov 2026, after Y, Z, AA, AB, AC, AD, AE, AF and AL)
+# Every saved field of every old build, and where the move puts it (23 Nov 2026, after Y, Z, AA, AB, AC, AD, AE, AF, AL and AN)
 
 Mako's money is in copies saved by older builds: 38.28 is live, 38.31 is the latest, and E1 asks for the 25.0 to 38.28 builds too. SCHEMA_V3 11.1 lists the 38.31 fields and their targets. This file lists the fields of every build that could be found, from each build's own load and clean-up code, with the target of each, or the reason it needs none. Decisions Y (the 28 questions mv-q1 to mv-q28), Z (the `mv:` kind names below, Z3, Z5, Z6) and AA (the next 13, mv-q29 to mv-q41) are folded in. The cases are in `rules/move.json` (81 cases, run by `node rules/run_rules.js move`), the reference is `rules/move_ref.js`, and the 8 questions AA leaves (mv-q42 to mv-q49) are in `rules/move.json` under `open` and in section 9. Every amount in the cases is made up.
 
@@ -109,7 +109,7 @@ Before Y and Z (kept for the record): 114, 123, 125, 129, 151 and 171 fields, of
 | `ui.accts` | accounts named by a statement import `[ { id, name, kind } ]` | 32.0 | accounts keeping their names; `wallet` an `ewallet` unless named as cash [Y18] | target | mv-08, mv-28, mv-60 |
 | `ui.sweep` | month-end answers by month | 34.0 | after the opening, `pe:<the salary occurrence that starts the period holding that month's last day>:free` [Y8, AA4]: bank to Waiting, next kept, the older `{ amt, id }` a move to that goal [AA3], or to Waiting as "to place" when the plan no longer has the goal [AC8], hide nothing; written only once that period has ended at the move, else in `pendingMove`, and the period's own question still comes, with it offered as the default, capped [AB2, AD3]; `src` names the field, so the period end caps it at what its place holds [AB watch] | target | mv-36, mv-52, mv-71, mv-72, mv-73, mv-89, mv-90; rules pe-60 to pe-66 |
 | `ui.keep, ui.keeps, ui.preSplit` | Undo copies | 38.31 | none needed: Undo is the `gone` marks now, no copy inside the saved data [D2] | none needed | mv-27 |
-| `ui.cats` | categories the statement reader was taught | 32.0 | `imports.cats`, each shop's category stored as a field value `{ v, at, by }` [AL4] | target | mv-28, mv-125 to mv-127 |
+| `ui.cats` | categories the statement reader was taught (and, in 38.31, its own guesses: one map) | 32.0 | `imports.cats`, each shop's category stored as a field value `{ v, src: 'person', at, by }` [AL4, AN7]; each key lowercased at the move into the shop-key form `k:<shop text trimmed, spaces collapsed, lowercased>` ("SEVEN ELEVEN" is `k:seven eleven`), so it is the key the reader and the person write after the move; `src: 'person'` because 38.31 cannot tell a guess from a correction (the safe side: a later guess never writes over it); nothing past 38.31's 400 is trimmed | target | mv-28, mv-125 to mv-127 |
 | `ui.minAuto` | the minimum the app filled in itself | 38.31 | none needed: it only decides that `cfg.minBank` is dropped (MAKO M1) | none needed | mv-10 |
 | `ui.main` | the place shown first | 25.0 | shared `ui.main` | target | mv-27 |
 | `ui.loans, subP, subO, subs, cardT, cardB` | calculator inputs | 25.0 | shared `ui` (every shared key stored as a field value `{ v, at, by }` [AL1]) | target | mv-27 |
@@ -172,7 +172,7 @@ Every record the move writes is `mv:<kind>:<the 38.31 id or key it came from>`, 
 
 A month-end answer is not an `mv:` record: it is the period-end record `pe:<occurrence>:free` (`pe:mv:pay:steps.a@2026-12-25:free`) [Y8, T1].
 
-## 8. Decisions Y, Z, AA, AB, AC, AD, AE, AF and AL, and their cases
+## 8. Decisions Y, Z, AA, AB, AC, AD, AE, AF, AL and AN, and their cases
 
 | Item | What the move does | Cases |
 |---|---|---|
@@ -251,10 +251,12 @@ A month-end answer is not an `mv:` record: it is the period-end record `pe:<occu
 | AL3 | `home.main: { acct, min }`: the moved main bank (`mv:acct:cfg`, or null with no bank figure) and its minimum, one value | mv-02, mv-09, mv-10, mv-24, mv-25, mv-37, mv-45, mv-58, mv-60, mv-61, mv-100 to mv-102, mv-114, mv-115, mv-123, mv-124 (re-worked), mv-125 |
 | AL4 | each `imports.cats` shop a field value | mv-125 to mv-127 |
 | AL5 | `plan.limits.ceiling` carries its currency and `per: 'month'`; `plan.limits` no longer has a `cur` of its own | mv-11 (re-worked), mv-125 to mv-127 |
+| AN3 | the moved main bank's own `minBank` is never set: its minimum is only in `home.main` (a copy with both is refused, rules ed-58) | mv-02, mv-09, mv-125 (unchanged) |
+| AN7 | `ui.cats` keys lowercased at the move into the shop-key form `k:<shop>` (trimmed, spaces collapsed, lowercased: "SEVEN ELEVEN" is `k:seven eleven`), the same form merge_ref.catKey makes for the reader and the person; each value `src: 'person'` (38.31 keeps guesses and corrections in one map: the safe side); an edit after the move writes its own `src`; nothing is trimmed | mv-28, mv-125 to mv-127 (re-worked) |
 
 ## 9. What AG leaves open
 
-After AL: `rules/move.json` holds no open question; the move needs nothing AL leaves open (127 cases pass, with realistic ids too). A moved `home` is `{ curs, main: { acct, min } }`; the readings above that name `home.minBank` now mean the minimum in `home.main` [AL3].
+After AN: `rules/move.json` holds no open question; the move needs nothing AN leaves open (127 cases pass, with realistic ids too; mv-28 and mv-125 to mv-127 re-worked for AN7's shop keys). After AL: the same. A moved `home` is `{ curs, main: { acct, min } }`; the readings above that name `home.minBank` now mean the minimum in `home.main` [AL3].
 
 AC answered mv-q42 to mv-q49, AD mv-q50 to mv-q54, AF mv-q55 and AG mv-q56 and mv-q57 (section 8). `rules/move.json` holds no open question. Readings taken while writing AG (to confirm; SCHEMA_V3 section 14 lists them): what a waiting entry writes keeps the entry's `at` unless a restore brought the entry back (its `at` newer than its `told`), then it takes the D4 clock (so mg-117 keeps its result); "seen" is the newest `at` in the copy and `lastSeen`; "more than usual" is more than the days a monthly rule names, or for every N weeks more than 52 / N / 12 rounded down (at least 1).
 
