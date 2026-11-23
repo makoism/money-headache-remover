@@ -96,3 +96,27 @@ Invented situations follow what the reviewer happens to think of. Passing tests 
 ### Addendum to lesson 3 (confirm_review_4, 23 Nov)
 The fourth confirming review found tests whose inputs had been changed so a rule would not trigger (mg-96 to mg-99, mg-109), instead of asking whether the rule was right. The rule then hid a real fault: anyone away from the app for more than a day had every later time stamped in the past. Warning sign: a test input adjusted to "avoid" a rule. When a rule gets in the way of a natural input, question the rule first.
 Second addendum (confirm_review_5, 23 Nov): every test named schedules and places with short made-up ids ("pay", "trip"); the app never makes ids like that, and with real ids the phantom-pay guard never fired. Test inputs must look like real data. A permanent check now reruns everything with realistic ids.
+
+---
+
+## Lesson 4: The spec spiral (found 23 Nov 2026, evening)
+
+### What happened
+After lesson 1, the team set out to make sure nothing fundamental could set us back. In one day that grew into 762 hand-worked asks, 812 rule cases, 49 decision sections (A to AW), eight confirming reviews, a two-device fuzz and three copies of the same rules (a reference model, the engine, an independent checker), most of it for lives and features after version one (couples, two currencies, merging phone and desktop). Mako still had nothing he could try. He asked why it was taking so long.
+
+### Why
+1. **"Nothing fundamental may set us back" was read as "every behaviour must be specified now".** Only the saved shape has to hold everything (that is what avoids a data move). Engine behaviour for later stages can be built later on the same shape.
+2. **Review rounds ran one after another through one session,** and each round was allowed to add scope. Every round found something, so there was never a point to stop.
+3. **The same rules lived in three places,** so every decision cost three edits and a round of checks.
+4. **Working software came last.** Nothing reached Mako to tell us what mattered.
+
+### What changed
+- Build in thin slices that reach Mako: his own shape end to end first, behind the switch, then widen.
+- One engine. The reference model is frozen as the spec, and one independent checker compares against the engine.
+- The saved shape holds every stage. Behaviour for stage 2 is labelled and left for later.
+- A review may add a test only for the slice being built. Anything else goes on a list.
+
+### Warning signs
+- A day of work with nothing new that Mako can open.
+- The same rule edited in more than two files.
+- A review round whose findings are mostly about a later stage.

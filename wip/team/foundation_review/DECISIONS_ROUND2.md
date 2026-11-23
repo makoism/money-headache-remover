@@ -403,3 +403,10 @@ AW5. A refused write retries from the copy it took as its base, saved with the j
 AW6. Questions the person cannot answer are not asked: a closing transfer is worked out again from the joined events; check-ins that differ only in their settled lists are joined; a record changed on two devices in different fields offers "keep both" (from the per-entry `at` and `by`) besides picking one; the shares question lets the person undo either placing.
 AW7. The shared list of kept versions is named `keptVersions` and is in SCHEMA 2.1; the IndexedDB store keeps the name `kept`. While a money question waits, the walk counts the safe side across the kept versions (as AR1).
 Watch: a restore that gives every record a new `at` asks about every item the other device changed since the last sync; acceptable in version one, noted for stage 2.
+
+
+## AX. The way of working from here (23 Nov evening JST, after Mako asked why it is so slow; LESSONS lesson 4)
+AX1. Thin slices. Slice 1 is Mako's own shape end to end behind the switch: setup asks what the bank shows today; Home shows bank today, safe to spend until the next pay and the period dates; Check your bank works; his saved 38.31 data moves across. It is tried on made-up numbers in his shape. Then come Plan and Receipts, then statements and the cloud copy, then the other lives.
+AX2. The engine (wip/team/engine) is the only implementation. ref/lookahead_ref.js is frozen as the spec. The checker compares against the engine.
+AX3. No new rule rounds until slice 1 runs. Stage 2 cases stay labelled and skipped. New findings go on a list unless slice 1 needs them.
+AX4. Helpers own whole areas on their own branches and commit there. The main session merges and runs the gates, and no longer writes every decision in turn.
