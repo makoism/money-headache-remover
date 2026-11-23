@@ -1,4 +1,4 @@
-# Every saved field of every old build, and where the move puts it (23 Nov 2026, after Y, Z, AA, AB, AC, AD, AE and AF)
+# Every saved field of every old build, and where the move puts it (23 Nov 2026, after Y, Z, AA, AB, AC, AD, AE, AF and AL)
 
 Mako's money is in copies saved by older builds: 38.28 is live, 38.31 is the latest, and E1 asks for the 25.0 to 38.28 builds too. SCHEMA_V3 11.1 lists the 38.31 fields and their targets. This file lists the fields of every build that could be found, from each build's own load and clean-up code, with the target of each, or the reason it needs none. Decisions Y (the 28 questions mv-q1 to mv-q28), Z (the `mv:` kind names below, Z3, Z5, Z6) and AA (the next 13, mv-q29 to mv-q41) are folded in. The cases are in `rules/move.json` (81 cases, run by `node rules/run_rules.js move`), the reference is `rules/move_ref.js`, and the 8 questions AA leaves (mv-q42 to mv-q49) are in `rules/move.json` under `open` and in section 9. Every amount in the cases is made up.
 
@@ -73,9 +73,9 @@ Before Y and Z (kept for the record): 114, 123, 125, 129, 151 and 171 fields, of
 | `cfg.bankAt` | the day bankStart was typed (a day, no time) | 38.31 | the check's date; told at the end of that day in the moving device's offset, or at the copy's last save when that is earlier [Y1] | target | mv-02, mv-47, mv-69 |
 | `cfg.bankNow` | the bank as typed on Home | 38.31 | a dated bank `check` [11.1, Y22] | target | mv-04, mv-05, mv-48 |
 | `cfg.bankNowAt` | the day bankNow was typed (a day, no time) | 38.31 | the check's date; told as bankAt [Y1] | target | mv-04, mv-47, mv-69 |
-| `cfg.minBank` | the lowest balance to keep | 25.0 | `home.minBank`: kept when `ui.minAuto` says it was typed (a different value) [AB, MAKO M1]; dropped when `ui.minAuto` says it was automatic, or with no `ui.minAuto` from a build before 20 Nov (a `rev` that is a count, or a last save before 20 Nov), and the minimum asked with the box empty [AD1]; with no `ui.minAuto` in a copy saved from 20 Nov on its origin cannot be told: asked, "Keep at least X in your bank?" showing the old figure, held marked `asked: true` until answered (`answers.minBank`, an amount or none) [AF1] | target | mv-09, mv-10, mv-45, mv-100 to mv-102, mv-114, mv-115 |
-| `cfg.ceiling` | most to spend in a month | 25.0 | `plan.limits.ceiling` | target | mv-11 |
-| `cfg.aims` | the split chosen in setup, shares of pay per jar | 25.0 | `plan.limits.aims` | target | mv-11 |
+| `cfg.minBank` | the lowest balance to keep | 25.0 | the minimum in `home.main` (`{ acct, min }`, beside the moved main bank, one field [AL3]): kept when `ui.minAuto` says it was typed (a different value) [AB, MAKO M1]; dropped when `ui.minAuto` says it was automatic, or with no `ui.minAuto` from a build before 20 Nov (a `rev` that is a count, or a last save before 20 Nov), and the minimum asked with the box empty [AD1]; with no `ui.minAuto` in a copy saved from 20 Nov on its origin cannot be told: asked, "Keep at least X in your bank?" showing the old figure, held marked `asked: true` until answered (`answers.minBank`, an amount or none) [AF1] | target | mv-09, mv-10, mv-45, mv-100 to mv-102, mv-114, mv-115, mv-125 |
+| `cfg.ceiling` | most to spend in a month | 25.0 | `plan.limits.ceiling`: `{ a, cur, per: 'month' }`, the amount with its currency and `per` [AL5]; stored as a field value [AL1] | target | mv-11, mv-125 to mv-127 |
+| `cfg.aims` | the split chosen in setup, shares of pay per jar | 25.0 | `plan.limits.aims` (shares, no currency); stored as a field value [AL1] | target | mv-11, mv-125 |
 | `cfg.planFrom` | the month the plan starts | 38.31 | none needed: periods come from pay; `frozen3831` only (read for a dated goal's set-aside, Y10) | none needed | mv-11 |
 | `cfg.loanLast, cfg.redirectLoan` | older copies: the loan line's last month and whether its money then goes to the Emergency fund | 25.0 | the loan's `ends` (the month's last day) and `redirect` [Y5, Y6]; the loan line's own end month and redirect win over them [AA8]; with an empty loan line, in the move summary with it [Y4] | target | mv-44, mv-50, mv-77 |
 | `cfg.moveMonth, cfg.carDue` | older copies: the move goal's month and the yearly cost's date | 25.0 | the goal's `due`, for a copy with no plan [Y5]; with a plan, none needed: a goal the plan lacks was removed and is never brought back [AA9] | target | mv-18, mv-51 |
@@ -109,11 +109,11 @@ Before Y and Z (kept for the record): 114, 123, 125, 129, 151 and 171 fields, of
 | `ui.accts` | accounts named by a statement import `[ { id, name, kind } ]` | 32.0 | accounts keeping their names; `wallet` an `ewallet` unless named as cash [Y18] | target | mv-08, mv-28, mv-60 |
 | `ui.sweep` | month-end answers by month | 34.0 | after the opening, `pe:<the salary occurrence that starts the period holding that month's last day>:free` [Y8, AA4]: bank to Waiting, next kept, the older `{ amt, id }` a move to that goal [AA3], or to Waiting as "to place" when the plan no longer has the goal [AC8], hide nothing; written only once that period has ended at the move, else in `pendingMove`, and the period's own question still comes, with it offered as the default, capped [AB2, AD3]; `src` names the field, so the period end caps it at what its place holds [AB watch] | target | mv-36, mv-52, mv-71, mv-72, mv-73, mv-89, mv-90; rules pe-60 to pe-66 |
 | `ui.keep, ui.keeps, ui.preSplit` | Undo copies | 38.31 | none needed: Undo is the `gone` marks now, no copy inside the saved data [D2] | none needed | mv-27 |
-| `ui.cats` | categories the statement reader was taught | 32.0 | `imports.cats` | target | mv-28 |
+| `ui.cats` | categories the statement reader was taught | 32.0 | `imports.cats`, each shop's category stored as a field value `{ v, at, by }` [AL4] | target | mv-28, mv-125 to mv-127 |
 | `ui.minAuto` | the minimum the app filled in itself | 38.31 | none needed: it only decides that `cfg.minBank` is dropped (MAKO M1) | none needed | mv-10 |
 | `ui.main` | the place shown first | 25.0 | shared `ui.main` | target | mv-27 |
-| `ui.loans, subP, subO, subs, cardT, cardB` | calculator inputs | 25.0 | shared `ui` | target | mv-27 |
-| `ui.done, setup, cleared, src, home, sb, bd, more, win` | screen answers | 25.0 | shared `ui` | target | mv-27 |
+| `ui.loans, subP, subO, subs, cardT, cardB` | calculator inputs | 25.0 | shared `ui` (every shared key stored as a field value `{ v, at, by }` [AL1]) | target | mv-27 |
+| `ui.done, setup, cleared, src, home, sb, bd, more, win` | screen answers | 25.0 | shared `ui` | target | mv-27, mv-125 to mv-127 |
 | `ui.askNums` | screen answer | 32.0 | shared `ui` | target | mv-27 |
 | `ui.limits, full, noDebts` | screen answers | 38.26 | shared `ui` | target | mv-27 |
 | `ui.mcOk` | month-end top-ups already answered | 38.31 | shared `ui` | target | mv-27 |
@@ -172,7 +172,7 @@ Every record the move writes is `mv:<kind>:<the 38.31 id or key it came from>`, 
 
 A month-end answer is not an `mv:` record: it is the period-end record `pe:<occurrence>:free` (`pe:mv:pay:steps.a@2026-12-25:free`) [Y8, T1].
 
-## 8. Decisions Y, Z, AA, AB, AC, AD, AE and AF, and their cases
+## 8. Decisions Y, Z, AA, AB, AC, AD, AE, AF and AL, and their cases
 
 | Item | What the move does | Cases |
 |---|---|---|
@@ -247,8 +247,14 @@ A month-end answer is not an `mv:` record: it is the period-end record `pe:<occu
 | AF1 | a minimum whose origin cannot be told is asked, showing the old figure | mv-09, mv-102, mv-114, mv-115 |
 | AG1 | every write made now uses the D4 clock: a waiting entry a restore brought back, answered again, writes strictly newer than the restore and wins | mv-117, mv-118; rules mg-120 |
 | AG2 | AE4's note for any month with more pays than usual (three every two weeks, five weekly); the list is `morePays` | mv-111 to mv-113, mv-119 to mv-121 |
+| AL1 | the stored move writes `home`, the shared `ui`, `plan.limits` and `imports.cats` as field values `{ v, at, by }`, each stamped with the copy's last save [AB1]; the move's own view (`move`) shows the plain values | mv-125 to mv-127; mv-123, mv-124 (re-worked) |
+| AL3 | `home.main: { acct, min }`: the moved main bank (`mv:acct:cfg`, or null with no bank figure) and its minimum, one value | mv-02, mv-09, mv-10, mv-24, mv-25, mv-37, mv-45, mv-58, mv-60, mv-61, mv-100 to mv-102, mv-114, mv-115, mv-123, mv-124 (re-worked), mv-125 |
+| AL4 | each `imports.cats` shop a field value | mv-125 to mv-127 |
+| AL5 | `plan.limits.ceiling` carries its currency and `per: 'month'`; `plan.limits` no longer has a `cur` of its own | mv-11 (re-worked), mv-125 to mv-127 |
 
 ## 9. What AG leaves open
+
+After AL: `rules/move.json` holds no open question; the move needs nothing AL leaves open (127 cases pass, with realistic ids too). A moved `home` is `{ curs, main: { acct, min } }`; the readings above that name `home.minBank` now mean the minimum in `home.main` [AL3].
 
 AC answered mv-q42 to mv-q49, AD mv-q50 to mv-q54, AF mv-q55 and AG mv-q56 and mv-q57 (section 8). `rules/move.json` holds no open question. Readings taken while writing AG (to confirm; SCHEMA_V3 section 14 lists them): what a waiting entry writes keeps the entry's `at` unless a restore brought the entry back (its `at` newer than its `told`), then it takes the D4 clock (so mg-117 keeps its result); "seen" is the newest `at` in the copy and `lastSeen`; "more than usual" is more than the days a monthly rule names, or for every N weeks more than 52 / N / 12 rounded down (at least 1).
 
