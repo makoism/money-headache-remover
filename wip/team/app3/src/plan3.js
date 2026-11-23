@@ -79,7 +79,19 @@ function drawPlan3() {
   /* [slice 6, B4] a pay with no fixed day and no amount: words, no figure */
   const payFig = (s, v) => (rowAmount(v) == null ? '<span class="when">comes when it comes</span>' : plFig3((v.outstanding || []).length ? 'schedules.*.outstanding.0.amount' : 'schedules.*.next.amount', rowAmount(v), s.cur));
   const pays = scheds.filter(s => s.kind === 'income').map(s => plRow3(`data-pay="${esc3(s.id)}"`, `${esc3(s.name)}<br><span class="when">${ruleWords(view[s.id])}${view[s.id].rule && view[s.id].rule.every === 'none' ? '' : ', ' + nextWords(view[s.id], s.cur)}</span>`, payFig(s, view[s.id])));
-  const bills = scheds.filter(s => s.kind === 'bill').map(s => plRow3(`data-bill="${esc3(s.id)}"`, `${esc3(s.name)}<br><span class="when">${ruleWords(view[s.id])}, ${nextWords(view[s.id], s.cur)}${view[s.id].ends && view[s.id].next ? ', last on ' + esc3(day3(view[s.id].ends, yr)) : ''}</span>`, plFig3((view[s.id].outstanding || []).length ? 'schedules.*.outstanding.0.amount' : 'schedules.*.next.amount', rowAmount(view[s.id]), s.cur)));
+  /* [slice 6] a cost that does not come every month: a nudge to set money aside ahead, from the engine (periods.aheadFor),
+     until a goal of the same name holds it */
+  let ahead = [];
+  try { ahead = BurrowEngine.periods.aheadFor(book, day); } catch (e) { ahead = []; }
+  const goalNames = new Set((book.places || []).filter(g => plLive3(g) && g.kind === 'goal').map(g => String(g.name).toLowerCase()));
+  const aheadOf = s => {
+    const a = ahead.find(x => x.schedule === s.id);
+    if (!a || goalNames.has(String(s.name).toLowerCase())) return '';
+    const f = fmt3(s.cur || home, [a.amount].concat(a.perPay == null ? [] : [a.perPay]));
+    const words = a.perPay == null ? `Set money aside ahead: ${f(a.amount)} by ${day3(a.due, yr)}` : `Set aside about ${f(a.perPay)} each pay to have ${f(a.amount)} ready by ${day3(a.due, yr)} (${a.pays === 1 ? '1 pay' : a.pays + ' pays'} before it)`;
+    return `<div class="a3-helprow" data-fig="ahead" data-sched="${esc3(s.id)}"><span class="when">${esc3(words)}</span><button type="button" class="a3-btn" data-ahead="${esc3(s.id)}">Make a goal for it</button></div>`;
+  };
+  const bills = scheds.filter(s => s.kind === 'bill').map(s => plRow3(`data-bill="${esc3(s.id)}"`, `${esc3(s.name)}<br><span class="when">${ruleWords(view[s.id])}, ${nextWords(view[s.id], s.cur)}${view[s.id].ends && view[s.id].next ? ', last on ' + esc3(day3(view[s.id].ends, yr)) : ''}</span>`, plFig3((view[s.id].outstanding || []).length ? 'schedules.*.outstanding.0.amount' : 'schedules.*.next.amount', rowAmount(view[s.id]), s.cur), aheadOf(s)));
   out.push(`<section class="a3-card" data-card="plan-bills"><h2>Pay and bills</h2>
     ${pays.length ? `<ul class="a3-rows a3-rclist">${pays.join('')}</ul>` : ''}
     ${bills.length ? `<ul class="a3-rows a3-rclist">${bills.join('')}</ul>` : '<p class="a3-sub">No bills yet</p>'}
@@ -133,6 +145,10 @@ function drawPlan3() {
   host.querySelectorAll('[data-bill]').forEach(b => b.addEventListener('click', () => plBillForm3(b.dataset.bill)));
   host.querySelectorAll('[data-pay]').forEach(b => b.addEventListener('click', () => plBillForm3(b.dataset.pay)));
   host.querySelectorAll('[data-goal]').forEach(b => b.addEventListener('click', () => plGoalForm3(b.dataset.goal)));
+  host.querySelectorAll('[data-ahead]').forEach(b => b.addEventListener('click', () => {
+    const a = BurrowEngine.periods.aheadFor(E3.book, E3.today()).find(x => x.schedule === b.dataset.ahead), s = E3.book.schedules.find(x => x.id === b.dataset.ahead);
+    plGoalForm3(null, a && s ? { name: s.name, target: a.amount, due: a.due } : null);
+  }));
   host.querySelectorAll('[data-owed]').forEach(b => b.addEventListener('click', () => plOwedForm3(b.dataset.owed)));
 }
 
@@ -254,11 +270,13 @@ function plBillForm3(id) {
   pay ? 'A change starts from the day in "Changes from". Pay periods before it stay as they were' : `"Change the next one only" changes the amount of the one on ${esc3(day3(v0.next ? v0.next.land : v0.changeFrom, 'any'))}. End this bill: nothing is due after the day in "Changes from"`);
 }
 /* a goal; id null adds one */
-function plGoalForm3(id) {
+function plGoalForm3(id, fill) {
   const book = E3.book;
   if (!id) {
-    plForm3('Add a goal', [{ key: 'name', label: 'Name', kind: 'text', hint: 'Like Trip or New laptop' }, { key: 'target', label: 'Goal amount', kind: 'amount' },
-      { key: 'due', label: 'Target date', kind: 'date', hint: 'Leave it empty for no date' },
+    /* [slice 6] from a yearly cost's nudge: filled in with its name, amount and day */
+    const f = fill || {};
+    plForm3('Add a goal', [{ key: 'name', label: 'Name', kind: 'text', hint: 'Like Trip or New laptop', value: f.name }, { key: 'target', label: 'Goal amount', kind: 'amount', value: f.target },
+      { key: 'due', label: 'Target date', kind: 'date', hint: 'Leave it empty for no date', value: f.due },
       { key: 'mode', label: 'Where the money is kept', kind: 'pick', value: 'inBank', options: [{ v: 'inBank', name: 'In my bank, set aside' }, { v: 'ownAccount', name: 'In an account of its own' }] }],
     [{ label: 'Add', solid: true, step: v => ['addGoal', w => PLAN3W.addGoal(w, { name: v.name, target: v.target, due: v.due || null, mode: v.mode }), 'Goal added'] }]);
     return;

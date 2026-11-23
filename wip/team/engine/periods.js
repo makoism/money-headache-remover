@@ -104,7 +104,40 @@
     }
     return out;
   }
-  const api = { periods, scheduleView };
+  /* [slice 6] Setting money aside ahead for a cost that does not come every month (once a year, set months, every few
+     months, once). aheadFor(book, asOf, opts3) -> [{ schedule, name, amount, due (its landing day), pays, perPay }],
+     by due day: each such bill's next one not yet settled, the pays that start a period from the day asked and land
+     before it (not settled), and its amount spread over them (units.spread: the leftover minor units on the earliest,
+     so perPay is the first and largest). A cost with no pay before it is due before next pay, and not listed. With no
+     fixed pay, pays and perPay are null. Nothing is saved; the screens word it. */
+  function aheadFor(book, asOf, opts3) {
+    const S = node ? require('./schedules.js') : E.schedules, D = node ? require('./dates.js') : E.dates, U = node ? require('./units.js') : E.units;
+    const today = D.dayNum(asOf), acct = {}; for (const a of book.accounts || []) if (a && !a.gone) acct[a.id] = a;
+    const country = L.fieldValue((book.home || {}).country) || null;
+    const calOf = s => S.calendar((acct[s.acct] && acct[s.acct].country) || country);
+    const r = LA.lookahead(book, asOf, Object.assign({}, opts3 || {}, { settled: true }));
+    const gone = new Set(r.settled);
+    const live = (book.schedules || []).filter(s => s && !s.gone);
+    const ruleOn = s => { let rule = null; (s.rules || []).filter(x => x && !x.gone).forEach((x, i) => { if (i === 0 || x.from == null || D.dayNum(x.from) <= today) rule = x.rule; }); return rule || {}; };
+    const stream = live.find(s => s.kind === 'income' && s.startsPeriod && ruleOn(s).every !== 'none');
+    const AHEAD = { year: 1, monthsList: 1, once: 1 };
+    const out = [];
+    for (const s of live.filter(x => x.kind === 'bill')) {
+      const rule = ruleOn(s);
+      if (!AHEAD[rule.every] && !(rule.every === 'months' && rule.n >= 2)) continue;
+      const next = S.occurrences(s, calOf(s), today, today + 400).find(o => o.land >= today && !gone.has(o.id) && o.amount);
+      if (!next) continue;
+      let pays = null, perPay = null;
+      if (stream) {
+        pays = S.occurrences(stream, calOf(stream), today, next.land).filter(o => o.land >= today && o.land < next.land && !gone.has(o.id)).length;
+        if (!pays) continue;
+        perPay = U.spread(next.amount, pays)[0];
+      }
+      out.push({ schedule: s.id, name: s.name, amount: next.amount, due: D.dayStr(next.land), pays, perPay });
+    }
+    return out.sort((a, b) => (a.due < b.due ? -1 : a.due > b.due ? 1 : 0));
+  }
+  const api = { periods, scheduleView, aheadFor };
   if (node) module.exports = api;
   else (root.BurrowEngine = root.BurrowEngine || {}).periods = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
