@@ -1359,4 +1359,4 @@ function whyText(parts, result, cur) {
   return terms.join(' ') + ' = ' + fmt(result, cur);
 }
 
-module.exports = { lookahead, dayNum, dayStr, minor, fmt, makeCalendar };
+module.exports = { lookahead, dayNum, dayStr, minor, fmt, makeCalendar, dueDays };   // [AP2] dueDays: the one occurrence code, read by the sync's X8 check

@@ -13,6 +13,13 @@ const MOVED = 'mv:[a-z]+:[A-Za-z0-9_.:-]+';
 const REF = '(?:' + ORDINARY + '|' + MOVED + '|[a-z0-9_]+)';
 const DATE = '\\d{4}-\\d{2}-\\d{2}';
 const OCC = REF + '@' + DATE;   // an occurrence, `<schedule>@<due>`
+// [AP3] An import line is named by what it is: `imp:<account>:<line id>`, the line id being the statement's own reference
+// (`ref:<reference>`, every character but letters, digits and `-._~` written as %XX) when it has one, else
+// `<date>:<amount>:<in|out>:<n>`, n counting the lines of that statement with the same date, amount and direction.
+// So the same statement read on two devices makes the same ids, and the sync joins them into one record [AQ2].
+const IMPORTED = 'imp:' + REF + ':(?:ref:[A-Za-z0-9%._~-]+|' + DATE + ':\\d+:(?:in|out):[1-9]\\d*)';
+// [AQ3] The version not picked when one record was changed on two devices: `kept:<record id or field path>`.
+const KEPT = 'kept:[^\\s].*';
 
 // An occurrence at the start of a name (`<schedule>@<due>`, or the rest of a `pe:` id after it): [schedule, due] or null.
 // The schedule is read whole, up to `@`, never by its start: `...-4@` is not `...-41@`.
@@ -22,4 +29,4 @@ function occurrence(name) {
   return m ? { schedule: m[1], due: m[2] } : null;
 }
 
-module.exports = { ORDINARY, MOVED, REF, DATE, OCC, occurrence };
+module.exports = { ORDINARY, MOVED, REF, DATE, OCC, IMPORTED, KEPT, occurrence };
