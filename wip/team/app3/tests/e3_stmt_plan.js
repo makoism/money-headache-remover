@@ -109,6 +109,9 @@ ck('a printed reference names the line, written %XX [AP3]', P.plan(book, [refd],
 
 /* ---- categories and setup hints ---- */
 const kc = P.catsToKeep(p, { [R.key('BOOKS')]: true }, TOLD);
+const noCat = P.plan(book, [R.cleanRead({ kind: 'card', rows: [{ date: '2026-12-02', text: 'NEW SHOP', amount: 900, dir: 'out', cat: 'play' }] }, 'n.csv', TODAY)], { today: TODAY, assign: [CB], cats: {} });
+ck('the reader\'s category is used when the book knows nothing of the shop', noCat.lines[0].cat === 'play');
+ck('the book\'s or the person\'s category wins over the reader\'s', P.plan(book, [R.cleanRead({ kind: 'card', rows: [{ date: '2026-12-02', text: 'NEW SHOP', amount: 900, dir: 'out', cat: 'play' }] }, 'n.csv', TODAY)], { today: TODAY, assign: [CB], cats: { [R.key('NEW SHOP')]: 'food' } }).lines[0].cat === 'food');
 ck('categories to remember, by shop, marked when the person chose them', kc['k:' + R.key('BOOKS')].src === 'person' && kc['k:' + R.key('RENT HOUSE')].v === 'rent');
 ck('known categories are read back from imports.cats', P.knownCats({ imports: { cats: kc } })[R.key('RENT HOUSE')] === 'rent');
 const full = R.cleanRead({ kind: 'bank', period: { from: '2026-10-01', to: '2026-11-30' }, closing_balance: 286000, rows: ['2026-10', '2026-11'].map(m => [

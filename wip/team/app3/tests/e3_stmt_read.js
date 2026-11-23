@@ -8,7 +8,7 @@ const fs = require('fs'), path = require('path'), { spawnSync } = require('child
 let bad = 0, n = 0;
 const ck = (name, ok, extra) => { n++; console.log((ok ? 'PASS ' : 'FAIL ') + name + (ok ? '' : ' ' + String(extra === undefined ? '' : extra).slice(0, 400))); if (!ok) bad++; };
 const OLD = path.join(__dirname, '../../stmt.js');
-const old = new Function(fs.readFileSync(OLD, 'utf8') + '\nreturn { stmtCleanRows, stmtNorm, stmtNumbers };')();
+const old = new Function(fs.readFileSync(OLD, 'utf8') + '\nreturn { stmtCleanRows, stmtNorm, stmtNumbers, STMT_CATS };')();
 const R = require('../src/stmt3_read.js');
 R.use(old);
 const TODAY = '2026-12-16';
@@ -17,9 +17,9 @@ const TODAY = '2026-12-16';
 const card = R.cleanRead({ account: 'Card A', kind: 'card', currency: 'JPY', period: { from: '2026-11-16', to: '2026-12-15' },
   statement: { close: '2026-12-15', due: '2027-01-12', total: '12,830円' },
   rows: [
-    { date: '2026-11-22', posted: '2026-11-24', text: 'CAFE MORI', amount: 450, dir: 'out' },
+    { date: '2026-11-22', posted: '2026-11-24', text: 'CAFE MORI', amount: 450, dir: 'out', cat: 'food' },
     { date: '令和8年12月1日', text: 'DRUG STORE', amount: '１，２８０', dir: 'out', ref: 'TX-0001' },
-    { date: 'R8.12.03', posted: 'R8.12.03', text: 'BOOKS', amount: 2100, dir: 'out' },
+    { date: 'R8.12.03', posted: 'R8.12.03', text: 'BOOKS', amount: 2100, dir: 'out', cat: 'books' },
     { date: '2026/12/05', text: 'REFUND BOOKS', amount: 2100, dir: 'in' },
     { date: 'yesterday', text: 'BROKEN', amount: 10, dir: 'out' },
     { date: '2026-12-06', text: 'NO DIRECTION', amount: 10, dir: 'sideways' }
@@ -28,6 +28,8 @@ ck('good rows kept, bad ones dropped alone', card.rows.length === 4 && card.drop
 ck('a posting date is kept beside the buy date', card.rows[0].d === '2026-11-22' && card.rows[0].posted === '2026-11-24', JSON.stringify(card.rows[0]));
 ck('an era date and full-width digits are read', card.rows[1].d === '2026-12-01' && card.rows[1].a === 1280, JSON.stringify(card.rows[1]));
 ck('a posting date equal to the buy date is not kept twice', card.rows[2].d === '2026-12-03' && card.rows[2].posted === undefined, JSON.stringify(card.rows[2]));
+ck('the reader\'s category is kept when it is one of the old reader\'s words, dropped when not', card.rows[0].cat === 'food' && card.rows[2].cat === undefined);
+ck('the schema offers those words', JSON.stringify(R.ROWS_SCHEMA.properties.rows.items.properties.cat.enum) === JSON.stringify(old.STMT_CATS));
 ck('the line\'s own reference is kept', card.rows[1].ref === 'TX-0001');
 ck('a slash date is read', card.rows[3].d === '2026-12-05' && card.rows[3].dir === 'in');
 ck('the card statement: close, due and total (with 円 and a comma)', JSON.stringify(card.statement) === JSON.stringify({ close: '2026-12-15', due: '2027-01-12', total: 12830 }), JSON.stringify(card.statement));

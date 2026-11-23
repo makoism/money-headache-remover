@@ -38,7 +38,8 @@ echo 'const $ = s => document.querySelector(s), $$ = s => [...document.querySele
 cat ../art.js ../pixel.js
 printf 'const TRY_BOOKS = { mako: '; cat fixtures/mako_madeup_book.json; echo '};'
 cat src/stmt3_read.js src/stmt3_plan.js
-cat src/money3.js src/e3.js src/act3.js src/home3.js src/checkin3.js src/receipts3.js src/setup3.js src/start3.js
+cat src/money3.js src/e3.js src/act3.js src/plan3_write.js src/home3.js src/checkin3.js src/receipts3.js src/setup3.js src/start3.js
+cat src/stmt3_ai.js src/stmt3.js   # statements lane
 echo '})();'
 echo '</script>'
 echo '</body>'

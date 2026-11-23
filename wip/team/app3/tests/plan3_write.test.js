@@ -1,0 +1,173 @@
+#!/usr/bin/env node
+/* The Plan tab's steps (app3/src/plan3_write.js) through act3, in node, on the made-up Mako book (no plan yet) on
+   Wed 25 Nov 2026 (period 10 Nov to 9 Dec). Each step writes plan records with ids, told, at, by and grp; a change is a
+   new entry from a date (its own at and by), never an edit of the past; the engine's figures follow. Amounts made up. */
+'use strict';
+const path = require('path'), fs = require('fs');
+const E = path.join(__dirname, '../../engine/');
+const L = require(E + 'lookahead.js'), I = require(E + 'ids.js'), PE = require(E + 'periods.js');
+const A3 = require('../src/act3.js'), W = require('../src/plan3_write.js');
+let DAY = '2026-11-25';
+let bad = 0, n = 0;
+const t = async (name, fn) => { n++; try { await fn(); console.log('PASS ' + name); } catch (e) { bad++; console.log('FAIL ' + name + ': ' + String(e && e.stack || e).split('\n').slice(0, 3).join(' ')); } };
+const eq = (a, b, what) => { if (JSON.stringify(a) !== JSON.stringify(b)) throw new Error((what || '') + ' got ' + JSON.stringify(a) + ' wanted ' + JSON.stringify(b)); };
+const ok = (v, what) => { if (!v) throw new Error(what || 'not true'); };
+const mako = () => JSON.parse(fs.readFileSync(path.join(__dirname, '../fixtures/mako_madeup_book.json'), 'utf8'));
+function setup(book) {
+  let b = book || mako();
+  const h = { get book() { return b; } };
+  h.A = A3.make({ book: () => b, put: async x => { b = x; return true; }, told: () => DAY + 'T12:00+09:00',
+    newId: I.idMaker('p3wrtd', Math.random), today: () => DAY, queue: { post: () => {} }, check: x => L.lookahead(x, DAY) });
+  h.go = (name, ...args) => h.A.run(name, w => W[name](w, ...args));
+  return h;
+}
+const view = b => L.lookahead(b, DAY);
+const BANK = 'k7m2qa-f3n8p1x6wd-1', CARD_A = 'k7m2qa-f3n8p1x6wd-2', RENT = 'k7m2qa-f3n8p1x6wd-6';
+const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq([r.told, r.by, r.grp], [DAY + 'T12:00+09:00', 'p3wrtd', step.id], 'told by grp'); ok(/[+-]\d\d:\d\d$/.test(r.at), 'at ' + r.at); };
+
+(async () => {
+  await t('a budget line: one record, per pay period, its first step with its own at and by; the period shows it, safe to spend makes room', async () => {
+    const h = setup(), r0 = view(h.book);
+    const r = await h.go('addLine', { name: ' Food ', amount: 40000 });
+    ok(r.ok, JSON.stringify(r));
+    const l = h.book.plan.budgets[0];
+    stamped(l, r.step);
+    eq([l.name, l.place, l.cur, l.per, l.from, l.steps.map(s => [s.from, s.amount, s.at, s.by])], ['Food', 'bills', 'JPY', 'pay', DAY, [[null, 40000, l.at, 'p3wrtd']]]);
+    const r1 = view(h.book);
+    // in the period holding the setup day (20 Nov) the line starts with its share by days left: 20 of 30 days [I4]
+    eq(r1.period.lines.map(x => [x.name, x.amount, x.left]), [['Food', 40000, 26666]]);
+    ok(r1.safeToSpend.headline < r0.safeToSpend.headline, 'safe to spend makes room for the line');
+    const again = await h.go('addLine', { name: 'food', amount: 100 });
+    ok(!again.ok && /already one/.test(again.text), JSON.stringify(again));
+    for (const x of [{ name: '', amount: 5 }, { name: 'Gym', amount: 0 }, { name: 'Gym', amount: 12.5 }, { name: 'Free to spend', amount: 5 }]) {
+      const z = await h.go('addLine', x); ok(!z.ok && z.why === 'bad', JSON.stringify(x) + ' ' + JSON.stringify(z));
+    }
+  });
+  await t('a line changed now, from the next period, or for this period only', async () => {
+    const h = setup(); await h.go('addLine', { name: 'Food', amount: 40000 });
+    const id = h.book.plan.budgets[0].id;
+    let r = await h.go('changeLine', id, { amount: 45000, when: 'next' });
+    ok(r.ok, JSON.stringify(r));
+    eq(h.book.plan.budgets[0].steps.slice(-1).map(s => [s.from, s.amount, s.by]), [[DAY, 45000, 'p3wrtd']]);
+    eq(view(h.book).period.lines[0].amount, 40000, 'this period keeps its amount');
+    r = await h.go('changeLine', id, { amount: 38000, when: 'now' });
+    eq(h.book.plan.budgets[0].steps.slice(-1).map(s => [s.from, s.amount]), [[DAY, 38000]], 'the next periods');
+    eq(view(h.book).period.lines[0].amount, 38000, 'this period follows');
+    r = await h.go('changeLine', id, { amount: 50000, when: 'once' });
+    const p = view(h.book).period;
+    eq(Object.keys(h.book.plan.budgets[0].once), [p.startsWith]);
+    eq([h.book.plan.budgets[0].once[p.startsWith].amount, typeof h.book.plan.budgets[0].once[p.startsWith].at], [50000, 'string']);
+    eq(p.lines[0].amount, 50000);
+    eq(h.book.plan.budgets[0].steps.length, 3, 'once adds no step');
+    const pd = PE.periods(h.book, DAY).current; eq(pd.lines[0].amount, 50000, 'periods() agrees');
+  });
+  await t('a line ended: kept with ends, nothing from the next period, this one keeps its amount', async () => {
+    const h = setup(); await h.go('addLine', { name: 'Food', amount: 40000 });
+    const id = h.book.plan.budgets[0].id;
+    const r = await h.go('endLine', id); ok(r.ok, JSON.stringify(r));
+    const l = h.book.plan.budgets[0];
+    eq([l.ends, l.gone, l.steps.slice(-1)[0].amount], [DAY, undefined, 0]);
+    eq(view(h.book).period.lines[0].amount, 40000);
+  });
+  await t('Free to spend: a share entry; a change from a date is a new entry; one period only is a once key', async () => {
+    const h = setup();
+    let r = await h.go('setFree', { amount: 60000 }); ok(r.ok, JSON.stringify(r));
+    const s = h.book.plan.shares[0]; stamped(s, r.step);
+    eq([s.from, s.free, s.per, s.cur], [null, 60000, { free: 'pay' }, 'JPY']);
+    eq(view(h.book).period.free.amount, 60000);
+    r = await h.go('setFree', { amount: 70000, when: 'next' });
+    eq(h.book.plan.shares.map(x => [x.from, x.free]), [[null, 60000], [DAY, 70000]]);
+    eq(view(h.book).period.free.amount, 60000);
+    r = await h.go('setFree', { amount: 65000, when: 'now' });
+    eq(view(h.book).period.free.amount, 65000);
+    r = await h.go('setFree', { amount: 20000, when: 'once' }); ok(r.ok, JSON.stringify(r));
+    eq(view(h.book).period.free.amount, 20000);
+  });
+  await t('a bill: a schedule from today, due on its day; its next one shows; due before next pay counts it', async () => {
+    const h = setup();
+    const r = await h.go('addBill', { name: 'Gym', amount: 8000, day: 1 }); ok(r.ok, JSON.stringify(r));
+    const s = h.book.schedules.slice(-1)[0]; stamped(s, r.step);
+    eq([s.kind, s.acct, s.from, s.rules[0].rule, s.steps[0].amount, typeof s.rules[0].at], ['bill', BANK, DAY, { every: 'month', days: [1] }, 8000, 'string']);
+    eq(PE.scheduleView(h.book, DAY)[s.id].next, { due: '2026-12-01', land: '2026-12-01', amount: 8000 });
+    ok(view(h.book).dueBeforeNextPay.items.some(o => o.item === s.id + '@2026-12-01'), 'due before next pay');
+  });
+  await t('a bill changed from a date: new step and rule entries; never on or before one already paid [X8]', async () => {
+    const h = setup();
+    // the rent of 27 Nov ticked as paid on 27 Nov
+    DAY = '2026-11-28';
+    const b = h.book; b.events.push({ id: 'set:' + RENT + '@2026-11-27', k: 'spend', acct: BANK, date: '2026-11-27', a: 72000, settles: [{ s: RENT, due: '2026-11-27' }], told: '2026-11-28T09:00+09:00', at: '2026-11-28T09:00+09:00', by: 'p3wrtd' });
+    let r = await h.go('changeBill', RENT, { amount: 75000, day: 25, from: '2026-11-27' });
+    ok(!r.ok && /2026-11-28 at the earliest/.test(r.text), JSON.stringify(r));
+    r = await h.go('changeBill', RENT, { amount: 75000, day: 25 }); ok(r.ok, JSON.stringify(r));
+    const s = h.book.schedules.find(x => x.id === RENT);
+    eq(s.steps.map(x => [x.from, x.amount]), [[null, 72000], ['2026-11-28', 75000]]);
+    eq(s.rules.map(x => [x.from, x.rule.days]), [[null, [27]], ['2026-11-28', [25]]]);
+    eq(PE.scheduleView(h.book, DAY)[RENT].next, { due: '2026-12-25', land: '2026-12-25', amount: 75000 });
+    r = await h.go('changeBill', RENT, { name: 'Flat' }); ok(r.ok, JSON.stringify(r));
+    eq(h.book.schedules.find(x => x.id === RENT).name, 'Flat');
+    r = await h.go('endBill', RENT, { last: '2026-11-20' }); ok(!r.ok && /earliest/.test(r.text), JSON.stringify(r));
+    r = await h.go('endBill', RENT, { last: '2026-12-31' }); ok(r.ok, JSON.stringify(r));
+    eq(PE.scheduleView(h.book, '2027-01-01')[RENT].next, null);
+    DAY = '2026-11-25';
+  });
+  await t('a goal kept in the bank: setting money aside is a move into it; the goal holds it and safe to spend is lower by it', async () => {
+    const h = setup();
+    let r = await h.go('addGoal', { name: 'Trip', target: 150000, due: '2027-08-01' }); ok(r.ok, JSON.stringify(r));
+    const g = h.book.places[0]; stamped(g, r.step);
+    eq([g.kind, g.target, g.due, g.keptIn], ['goal', 150000, '2027-08-01', { acct: BANK, mode: 'inBank' }]);
+    const r0 = view(h.book);
+    r = await h.go('setAside', g.id, { amount: 20000 }); ok(r.ok, JSON.stringify(r));
+    const e = h.book.events.slice(-1)[0];
+    eq([e.k, e.a, e.acct, e.place2, e.date], ['move', 20000, BANK, g.id, DAY]);
+    const r1 = view(h.book);
+    eq(r1.places[g.id].kept, 20000);
+    eq(r1.safeToSpend.headline, r0.safeToSpend.headline - 20000);
+    eq(r1.accounts[BANK].bank, r0.accounts[BANK].bank, 'the bank figure does not move');
+    r = await h.go('addGoal', { name: 'Old', target: 100, due: '2026-11-01' }); ok(!r.ok && /after today/.test(r.text), JSON.stringify(r));
+    r = await h.go('changeGoal', g.id, { target: 180000, due: '' }); ok(r.ok, JSON.stringify(r));
+    eq([h.book.places[0].target, h.book.places[0].due], [180000, undefined]);
+  });
+  await t('a goal in its own account: a new account opened with nothing; money moved there and set aside; that account is not spent from', async () => {
+    const h = setup();
+    let r = await h.go('addGoal', { name: 'House', target: 1000000, mode: 'ownAccount' }); ok(r.ok, JSON.stringify(r));
+    const g = h.book.places[0], acct = h.book.accounts.find(a => a.id === g.keptIn.acct);
+    eq([acct.name, acct.type, g.keptIn.mode], ['House account', 'bank', 'ownAccount']);
+    const opens = h.book.events.filter(e => e.acct === acct.id);
+    eq(opens.map(e => [e.k, e.a, e.date, e.grp]), [['open', 0, DAY, r.step.id], ['check', 0, DAY, r.step.id]]);
+    const r0 = view(h.book);
+    r = await h.go('setAside', g.id, { amount: 30000 }); ok(r.ok, JSON.stringify(r));
+    const r1 = view(h.book);
+    eq([r1.places[g.id].kept, r1.accounts[acct.id].bank, r1.accounts[acct.id].spendFrom], [30000, 30000, false]);
+    eq(r1.accounts[BANK].bank, r0.accounts[BANK].bank - 30000);
+    eq(r1.safeToSpend.headline, r0.safeToSpend.headline - 30000);
+  });
+  await t('a loan: an account that owns its payment day, opened with what is owed; its next payment is the usual amount [E6]', async () => {
+    const h = setup();
+    const r = await h.go('addLoan', { name: 'Car loan', owed: 900000, amount: 25000, payDay: 27 }); ok(r.ok, JSON.stringify(r));
+    const a = h.book.accounts.slice(-1)[0]; stamped(a, r.step);
+    eq([a.type, a.payDay, a.payFrom, a.amount], ['loan', 27, BANK, 25000]);
+    const v = view(h.book);
+    eq([v.owed[a.id].owedNow, v.owed[a.id].next.amount, v.owed[a.id].next.payment_date], [900000, 25000, '2026-11-27']);
+    ok(v.dueBeforeNextPay.items.some(o => o.item === a.id + '@2026-11-27'), 'due before next pay');
+    const c = await h.go('changeOwed', a.id, { amount: 30000 }); ok(c.ok, JSON.stringify(c));
+    eq(view(h.book).owed[a.id].next.amount, 30000);
+  });
+  await t('a card\'s payment day and close day change on its record; the engine still reads the book', async () => {
+    const h = setup();
+    let r = await h.go('changeOwed', CARD_A, { payDay: 12, cutDay: 25 }); ok(r.ok, JSON.stringify(r));
+    const c = h.book.accounts.find(a => a.id === CARD_A);
+    eq([c.payDay, c.cutDay], [12, 25]);
+    ok(view(h.book).cards[CARD_A], 'the card is read');
+    r = await h.go('changeOwed', CARD_A, { cutDay: null }); ok(r.ok, JSON.stringify(r));
+    eq(h.book.accounts.find(a => a.id === CARD_A).cutDay, undefined, 'not sure again');
+  });
+  await t('Undo of a plan step marks what it added gone; the period no longer shows it', async () => {
+    const h = setup();
+    const r = await h.go('addLine', { name: 'Food', amount: 40000 });
+    const u = await h.A.undo(r.step.id); ok(u.ok, JSON.stringify(u));
+    eq(typeof h.book.plan.budgets[0].gone, 'string');
+    eq(view(h.book).period.lines, []);
+  });
+  console.log(bad ? `plan3_write: ${bad} FAIL of ${n}` : `plan3_write: ALL PASS (${n})`);
+  process.exit(bad ? 1 : 0);
+})();

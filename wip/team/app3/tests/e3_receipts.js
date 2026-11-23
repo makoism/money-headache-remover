@@ -127,16 +127,10 @@ async function figsMatch(p, book, what) {
   await p.$eval('#rcSearch', e => { e.value = ''; e.dispatchEvent(new Event('input', { bubbles: true })); }); await T.w(200);
   const per = await p.$eval('[data-fig=rc-period]', e => [e.dataset.start, e.dataset.end, e.textContent]);
   ck('the list goes by the engine\'s period, named by its dates', per[0] === rv.period.start && per[1] === rv.period.end && per[2] === '10 Nov to 9 Dec', JSON.stringify(per));
-  const earlierOn = await p.$eval('#rcOlder', e => !e.disabled);
-  const prevStart = T.L.lookahead(bk, '2026-11-09').period;
-  ck('Earlier is offered only when the engine has an earlier period', earlierOn === !!(prevStart && prevStart.start && prevStart.start < rv.period.start), JSON.stringify(prevStart && prevStart.start));
-  if (earlierOn) {
-    await p.tap('#rcOlder'); await T.w(200);
-    const per2 = await p.$eval('[data-fig=rc-period]', e => [e.dataset.start, e.dataset.end]);
-    ck('the earlier period is the engine\'s, ending the day before', per2[0] === prevStart.start && per2[1] === '2026-11-09', JSON.stringify(per2));
-    ck('nothing was logged then', (await rows(p)).length === 0);
-    await p.tap('#rcNewer'); await T.w(200);
-  }
+  const P = require('../../engine/periods.js'), pp = P.periods(bk, DAY);
+  ck('Earlier is offered only when the engine has a period gone by (none before the setup day)', await p.$eval('#rcOlder', e => e.disabled) === (pp.past.length === 0), pp.past.length);
+  const sp = await p.$$eval('[data-fig=rc-spent] li', ls => ls.map(l => [...l.querySelectorAll('[data-amt]')].map(x => Number(x.dataset.amt))));
+  ck('each line\'s spent this period is the engine\'s (periods.js)', JSON.stringify(sp) === JSON.stringify([[pp.current.free.spent, pp.current.free.start]].concat(pp.current.lines.map(l => [l.spent, l.start]))), JSON.stringify(sp));
 
   /* refused input: says what to do, saves nothing */
   const n0 = (await saved(p)).events.length;
@@ -155,6 +149,35 @@ async function figsMatch(p, book, what) {
   ck('after a reload the list is the same (coffee, refund, move)', rs.length === 3, JSON.stringify(rs));
   await figsMatch(p, await saved(p), 'after a reload');
   ck('no page errors', errs.length === 0, errs.join(' | '));
+
+  /* a new period: the 10 Dec pays ticked at a check-in (engine/checkin.js, written here), shown as on 15 Dec */
+  {
+    const CI = require('../../engine/checkin.js'), I = require('../../engine/ids.js'), D2 = '2026-12-10', D3 = '2026-12-15';
+    const kb = await saved(p), r10 = T.L.lookahead(kb, D2), pays = r10.checkIn.toConfirm.filter(o => kb.schedules.some(s => s.kind === 'income' && s.id === I.scheduleOf(o.item)));
+    const out = CI.checkIn(kb, { day: D2, told: D2 + 'T20:00+09:00', newId: I.idMaker('t3rcpt', () => 0.6), figures: {}, ticked: pays.map(o => o.item),
+      expected: Object.fromEntries(pays.map(o => [o.item, o.amount])), lands: Object.fromEntries(pays.map(o => [o.item, o.lands])) });
+    const nb = CI.apply ? CI.apply(kb, out) : Object.assign({}, kb, { events: kb.events.concat(out.events), checkins: (kb.checkins || []).concat(out.checkins) });
+    const put2 = await p.evaluate(async bk => { const s = await BurrowStore.open(); await s.load(); const r = await s.save(bk, { full: true }); if (s.db) s.db.close(); return r; }, nb);
+    ck('the book with the check-in is kept through the store', put2 && put2.ok, JSON.stringify(put2));
+    await p.goto(T.URL0 + '?today=' + D3); await T.w(400);
+    await p.tap('[data-tab="receipts"]'); await T.w(200);
+    const q = P.periods(nb, D3);
+    const cur = await p.$eval('[data-fig=rc-period]', e => [e.dataset.start, e.dataset.end, e.textContent]);
+    ck('on 15 Dec the list shows the period the 10 Dec pay started', cur[0] === q.current.start && cur[0] === '2026-12-10' && cur[1] === q.current.end, JSON.stringify(cur));
+    ck('nothing logged in it yet', (await rows(p)).length === 0, JSON.stringify(await rows(p)));
+    ck('Earlier is offered', await p.$eval('#rcOlder', e => !e.disabled));
+    await p.tap('#rcOlder'); await T.w(200);
+    const old = await p.$eval('[data-fig=rc-period]', e => [e.dataset.start, e.dataset.end, e.textContent]);
+    ck('Earlier shows the engine\'s period gone by, 10 Nov to 9 Dec', old[0] === q.past[0].start && old[1] === q.past[0].end && old[2] === '10 Nov to 9 Dec', JSON.stringify(old));
+    ck('with what was logged in it (coffee, refund, move)', (await rows(p)).length === 3);
+    const sp2 = await p.$$eval('[data-fig=rc-spent] li', ls => ls.map(l => Number(l.querySelector('[data-amt]').dataset.amt)));
+    ck('its spent figures are the engine\'s for that period', JSON.stringify(sp2) === JSON.stringify([q.past[0].free.spent].concat(q.past[0].lines.map(l => l.spent))), JSON.stringify(sp2) + ' vs ' + JSON.stringify(q.past[0].free));
+    ck('Later goes back to the running period', await p.$eval('#rcNewer', e => !e.disabled) && !(await p.$eval('#rcOlder', e => !e.disabled)));
+    await T.shot(p, 'receipts_earlier_' + D3);
+    await p.tap('#rcNewer'); await T.w(200);
+    ck('and back', await p.$eval('[data-fig=rc-period]', e => e.dataset.start) === '2026-12-10');
+    ck('no page errors (15 Dec)', errs.length === 0, errs.join(' | '));
+  }
   await b.close();
 
   /* a narrow phone, and the try book: logging works and writes nothing */

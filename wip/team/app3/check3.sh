@@ -33,11 +33,13 @@ step "act3, the one write door (pure)"; run tests/e3_act_unit.js "e3_act_unit: A
 step "the cloud copy's core, two devices on a local fake vault"; run tests/cloud3.test.js "cloud3: ALL PASS"
 step "statements, the reading half (pure)"; run tests/e3_stmt_read.js "e3_stmt_read: ALL PASS"
 step "statements, the writing half (pure): lines, matching, records"; run tests/e3_stmt_plan.js "e3_stmt_plan: ALL PASS"
+step "the Plan tab's steps (pure)"; run tests/plan3_write.test.js "plan3_write: ALL PASS"
 step "no money maths in screens"; run tests/no_maths.js "NO MATHS PASS"
 [ "$(pgrep -fc check3.sh)" -le 1 ] && pkill -f chrome-linux64/chrome 2>/dev/null   # leftover test browsers, only when no other lane is checking (it killed their tests)
 step "the try book"; run tests/e3_try.js "e3_try: ALL PASS"
 step "Home, the new top"; run tests/e3_home.js "e3_home: ALL PASS"
 step "Check your bank"; run tests/e3_checkin.js "e3_checkin: ALL PASS"
+step "Add statements (the AI route, any AI, review, Add, duplicates once, the relay)"; run tests/e3_stmt.js "e3_stmt: ALL PASS"
 step "the period by its dates"; run tests/e3_period.js "e3_period: ALL PASS"
 step "Receipts"; run tests/e3_receipts.js "e3_receipts: ALL PASS"
 step "as a plain file: the first screen, the try book and its day box"; run tests/e3_file.js "e3_file: ALL PASS"
