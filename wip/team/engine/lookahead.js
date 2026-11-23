@@ -331,13 +331,16 @@
     for (const e of events) if (!e.gone && ((isImport(e) && e.unmatched) || e.settles.some(x => autoSched(I.scheduleOf(x))))) e.dayInside = true;
 
     // ----- periods [F8, F12, T1, T6] -----
-    const periodStream = schedules.find(s => s.kind === 'income' && s.startsPeriod && ((s.rules || []).find(r => !r.gone) || {}).rule && ((s.rules || []).find(r => !r.gone).rule.every !== 'none'));
+    // [slice 6b] the pay that starts periods, by the rule in force today: a pay changed to no fixed pay starts none from
+    // the change (by day from then, B4). A pay changed from no fixed pay to a day starts them once its first pay has
+    // started one (ticked, or a period started without it); until then the plan still runs by day.
+    const ruleToday = s => { let r = null; (s.rules || []).filter(x => x && !x.gone).forEach((x, i) => { if (i === 0 || x.from == null || dayNum(x.from) <= today) r = x.rule; }); return r; };
+    const wasNone = s => (((s.rules || []).find(x => x && !x.gone) || {}).rule || {}).every === 'none';
+    let periodStream = schedules.find(s => s.kind === 'income' && s.startsPeriod && ruleToday(s) && ruleToday(s).every !== 'none');
     const windowEnd = o => calOf(o.acct).addWorking(o.land, postingDays(o.acct));
     const stillExpected = o => isNotYet(o) && windowEnd(o) < openDay(o.acct);             // [Z2]
     const lateExpected = o => o.land < today && (today <= windowEnd(o) || stillExpected(o));   // [G3, H8]
-    const pays = periodStream ? items.filter(o => o.sid === periodStream.id) : [];
     const startsPeriod = e => e.k === 'in' && e.sub !== 'refund' && !!periodStream && e.settles.some(s => I.scheduleOf(s) === periodStream.id);
-    const nextPays = pays.filter(o => !o.settled && (o.land >= today || lateExpected(o)));
     // [BJ1] a pay due today left unticked at a check-in made today is not seen: it is not counted (BH1 over G4)
     const checkedOn = {};
     for (const e of all) if (e.e && !e.e.gone && e.e.k === 'check' && !e.e.stmt && e.e.date && dayNum(e.e.date) === today && !isOpeningCheck(e.e) && dayNum(e.e.told || e.e.date) <= knownTo) checkedOn[e.e.acct] = true;
@@ -348,12 +351,24 @@
       if (e.k === 'periodEnd') { const oc = I.periodOcc(e.id); if (oc) peEnd[oc] = Math.min(peEnd[oc] == null ? Infinity : peEnd[oc], e.day); }
     }
     const monthCache = {};   // each year's pays for the units rules, for this look ahead only
-    const periodStartDays = [], occByStart = {};   // [T1] each period is named by the occurrence of the pay that starts it
-    pays.slice().sort((x, y) => x.due - y.due).forEach((o, i, list) => {
-      const prev = list[i - 1], s = settledBy[o.id];
-      const d = psOf[o.id] != null ? psOf[o.id] : prev && peEnd[prev.id] != null ? peEnd[prev.id] + 1 : s && startsPeriod(s) ? s.day : null;
-      if (d !== null && d <= knownTo) { periodStartDays.push(d); occByStart[d] = o.id; }
-    });
+    let pays, nextPays, periodStartDays, occByStart;   // [T1] each period is named by the occurrence of the pay that starts it
+    const periodsOf = () => {
+      pays = periodStream ? items.filter(o => o.sid === periodStream.id) : [];
+      nextPays = pays.filter(o => !o.settled && (o.land >= today || lateExpected(o)));
+      periodStartDays = []; occByStart = {};
+      pays.slice().sort((x, y) => x.due - y.due).forEach((o, i, list) => {
+        const prev = list[i - 1], s = settledBy[o.id];
+        const d = psOf[o.id] != null ? psOf[o.id] : prev && peEnd[prev.id] != null ? peEnd[prev.id] + 1 : s && startsPeriod(s) ? s.day : null;
+        if (d !== null && d <= knownTo) { periodStartDays.push(d); occByStart[d] = o.id; }
+      });
+    };
+    periodsOf();
+    if (periodStream && wasNone(periodStream) && !periodStartDays.length) { periodStream = null; periodsOf(); }
+    // [slice 6b] a pay that started periods and has no fixed pay from a day: from that day the plan runs by day, and the
+    // lines and Free to spend count what was spent from that day, as with no fixed pay from setup (B4)
+    const noneSince = periodStream ? null : schedules.filter(s => s.kind === 'income' && s.startsPeriod && !wasNone(s) && (ruleToday(s) || {}).every === 'none')
+      .map(s => { let f = null; (s.rules || []).filter(x => x && !x.gone && x.from != null && dayNum(x.from) <= today).forEach(x => { f = x.rule.every === 'none' ? (f === null ? dayNum(x.from) : f) : null; }); return f; })
+      .filter(d => d !== null).sort((x, y) => y - x)[0];
 
     // ----- bank today per account [A1, B7, H1, I1, J3, O1, AN4] -----
     const delta = (e, id) => {
@@ -886,7 +901,7 @@
     function planNow(win) {
       if (!freeSrc && !lineSrcs.length) return {};
       const past = !!win && !win.now;
-      const lastPay = past ? win.start : periodStartDays.length ? Math.max(...periodStartDays) : null;
+      const lastPay = past ? win.start : periodStartDays.length ? Math.max(...periodStartDays) : noneSince != null ? noneSince : null;
       const upTo = past ? win.end : Infinity;
       const opening = {};
       function openingShares(acctId) {

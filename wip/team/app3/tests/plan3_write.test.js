@@ -278,6 +278,51 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     ok(r.ok, JSON.stringify(r));
     eq(h2.book.plan.budgets[0].steps.length, 1, 'the rhythm the same: lines not touched');
   });
+  /* [slice 6b] the pay that starts the period changed to two days a month, to no fixed pay, and back from no fixed pay.
+     The made-up Mako book on Wed 25 Nov: Main job on the 10th, the period 10 Nov to 9 Dec. Food 40,000 and Free to
+     spend 60,000 each pay. */
+  await t('[slice 6b] to two days a month and to no fixed pay: each line asked about, a month for no fixed pay, from the change day', async () => {
+    const h = setup(), MAIN = 'k7m2qa-f3n8p1x6wd-4';
+    await h.go('addLine', { name: 'Food', amount: 40000 }); await h.go('setFree', { amount: 60000 });
+    const food = h.book.plan.budgets[0].id;
+    // two days a month: the second day is asked for; then each line each pay, as every other rhythm change
+    let r = await h.go('changeBill', MAIN, { every: 'days', day: 10, from: DAY, lines: { [food]: 20000, free: 30000 } });
+    ok(!r.ok && r.text === 'Pick the second day it lands', JSON.stringify(r));
+    r = await h.go('changeBill', MAIN, { every: 'days', day: 10, day2: 'last', from: DAY });
+    ok(!r.ok && r.text === 'Your pay will land on two days each month. How much each pay from then for Food and Free to spend?', JSON.stringify(r));
+    const h2 = setup(); await h2.go('addLine', { name: 'Food', amount: 40000 }); await h2.go('setFree', { amount: 60000 });
+    r = await h2.go('changeBill', MAIN, { every: 'days', day: 10, day2: 'last', from: DAY, lines: { [h2.book.plan.budgets[0].id]: 20000, free: 30000 } }); ok(r.ok, JSON.stringify(r));
+    eq(h2.book.schedules.find(x => x.id === MAIN).rules.slice(-1).map(x => [x.from, x.rule]), [[DAY, { every: 'month', days: [10, 'last'] }]]);
+    eq(h2.book.plan.budgets[0].steps.map(x => [x.from, x.amount]), [[null, 40000], ['2026-11-10', 20000]], 'from the pay starting the period holding the change');
+    eq(view(h2.book).period.end, '2026-11-29', 'the period now ends before the pay on the last day (30 Nov)');
+    // to no fixed pay: asked as an amount a month
+    r = await h.go('changeBill', MAIN, { every: 'none', from: DAY });
+    ok(!r.ok && r.text === 'Your pay will have no fixed day. How much a month from then for Food and Free to spend?', JSON.stringify(r));
+    r = await h.go('changeBill', MAIN, { every: 'none', from: DAY, lines: { [food]: 40000, free: 60000 } }); ok(r.ok, JSON.stringify(r));
+    eq(h.book.schedules.find(x => x.id === MAIN).rules.slice(-1).map(x => [x.from, x.rule]), [[DAY, { every: 'none' }]]);
+    eq(h.book.plan.budgets[0].steps.length, 1, 'Food at the same amount: no new step');
+    eq(h.book.plan.shares.filter(x => !x.gone).map(x => [x.from, x.per, x.free]), [[DAY, { free: 'pay' }, 60000], [DAY, { free: 'month' }, 60000]], 'Free to spend a month from the change day');
+    eq(view(h.book).period, null, 'no pay periods from the change');
+  });
+  await t('[slice 6b] from no fixed pay to two days a month: starts with its first pay, asked each pay, a line a month becomes each pay', async () => {
+    const h = setup(), MAIN = 'k7m2qa-f3n8p1x6wd-4';
+    await h.go('changeBill', MAIN, { every: 'none', from: DAY });
+    let r = await h.go('addLine', { name: 'Food', amount: 40000 }); ok(r.ok, JSON.stringify(r));
+    eq(h.book.plan.budgets[0].per, 'month', 'with no fixed pay a line is a month');
+    await h.go('setFree', { amount: 60000 });
+    const food = h.book.plan.budgets[0].id;
+    DAY = '2026-12-01';
+    r = await h.go('changeBill', MAIN, { every: 'days', day: 15, day2: 'last', amount: 150000, from: '2026-12-01' });
+    ok(!r.ok && r.text === 'Your pay will land on two days each month. How much each pay from then for Food and Free to spend?', JSON.stringify(r));
+    r = await h.go('changeBill', MAIN, { every: 'days', day: 15, day2: 'last', amount: 150000, from: '2026-12-01', lines: { [food]: 20000, free: 30000 } });
+    ok(r.ok, JSON.stringify(r));
+    const s = h.book.schedules.find(x => x.id === MAIN);
+    eq([s.rules.slice(-1)[0].from, s.rules.slice(-1)[0].rule, s.steps.slice(-1).map(x => [x.from, x.amount])[0], s.startsPeriod], ['2026-12-15', { every: 'month', days: [15, 'last'] }, ['2026-12-15', 150000], true]);
+    eq([h.book.plan.budgets[0].per, h.book.plan.budgets[0].steps.slice(-1).map(x => [x.from, x.amount])[0]], ['pay', ['2026-12-15', 20000]]);
+    eq(h.book.plan.shares.filter(x => !x.gone).slice(-1).map(x => [x.from, x.per, x.free])[0], ['2026-12-15', { free: 'pay' }, 30000]);
+    eq(view(h.book).period, null, 'by the day until the first pay is ticked');
+    DAY = '2026-11-25';
+  });
   await t('one bill changed once: an amounts key on its due date; the next one goes back to the usual amount', async () => {
     const h = setup();
     let r = await h.go('changeOnce', RENT, { due: '2026-11-27', amount: 80000 }); ok(r.ok, JSON.stringify(r));

@@ -91,12 +91,23 @@ function make(label) {
     ck(`${what}: safe to spend ${safe}, ${Object.keys(banks).map(k => k + ' ' + banks[k]).join(', ')}`, ok, JSON.stringify(got));
     return got;
   }
+  /* the kept book, as the store holds it (as tests/e3_setup6.js reads it) */
+  const readBook = p => p.evaluate(() => new Promise(res => {
+    const rq = indexedDB.open('burrow3');
+    rq.onsuccess = () => {
+      const db = rq.result, tx = db.transaction(['book', 'events']), out = {};
+      tx.objectStore('book').get('book').onsuccess = e => { out.book = e.target.result; };
+      tx.objectStore('events').getAll().onsuccess = e => { out.events = e.target.result; };
+      tx.oncomplete = () => { db.close(); res(Object.assign({}, out.book, { events: out.events })); };
+    };
+    rq.onerror = () => res(null);
+  }));
   const finish = async () => {
     ck('no page errors', errs.length === 0, errs.join(' | '));
     for (const d of dirs) fs.rmSync(d, { recursive: true, force: true });
     console.log(bad ? `${label}: ${bad} FAIL of ${n}` : `${label}: ALL PASS (${n})`);
     process.exit(bad ? 1 : 0);
   };
-  return { ck, open, go, tab, typeIn, txt, selByText, log, checkin, home, sameAfterReload, finish, w };
+  return { ck, open, go, tab, typeIn, txt, selByText, log, checkin, home, sameAfterReload, readBook, finish, w };
 }
 module.exports = { make };

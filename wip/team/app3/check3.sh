@@ -72,6 +72,7 @@ step "walk 4 fixes (an outstanding pay's own amount on Plan, the typed note besi
 step "life C, no fixed pay (Kai, yen, Japan): setup 1 Dec to 2 Mar, hand-worked figures at every step (slice 6)"; run tests/e3_life_c.js "e3_life_c: ALL PASS"
 step "life A, every 2 weeks (Sam, dollars, weekends only): setup 7 Dec to 8 Mar, the pay changed to monthly, hand-worked figures at every step (slice 6)"; run tests/e3_life_a.js "e3_life_a: ALL PASS"
 step "life A given the next pay day: the period holding setup exists, Plan and Receipts show it, Free to spend 11 of 14 days (slice 6, qc-foundation blocker)"; run tests/e3_life_a2.js "e3_life_a2: ALL PASS"
+step "the pay form changes how often pay lands to and from two days a month and no fixed pay, each line proposed a month or each pay (slice 6b, BP3)"; run tests/e3_paychange.js "e3_paychange: ALL PASS"
 step "life B, the 15th and the last day, two banks and an e-wallet (Lia, pesos, the Philippines): setup 1 Dec to 1 Mar, the bank after the cards per bank, hand-worked figures at every step (slice 6)"; run tests/e3_life_b.js "e3_life_b: ALL PASS"
 step "the real-page walk, walk 4 run A: setup 24 Nov to 15 Feb, hand-worked figures at every step"; run tests/e3_walk.js "e3_walk: ALL PASS"
 step "the walk again in Tokyo at 04:40 (every figure the same after a reload at each check-in)"; TZ=Asia/Tokyo WALK_CLOCK=04:40 run tests/e3_walk.js "e3_walk: ALL PASS"

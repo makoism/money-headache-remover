@@ -201,4 +201,51 @@ t('perPayAcross: an amount each pay under one rhythm, the same money a year unde
   eq(perPayAcross(40000, w2, w2), 40000);
   eq(perPayAcross(40000, w2, { every: 'none' }), null);
 });
+
+// [slice 6b] the pay that starts periods changed to no fixed pay, and back. Made-up yen, Japan. Set up Tue 1 Dec 2026:
+// Bank 500,000, Pay 150,000 on the 15th and the last day (the working day before), Rent 80,000 on the 27th (the working
+// day after), Free to spend 50,000 each pay. The period holding setup: 30 Nov to 14 Dec. A spend of 3,000 on 5 Dec.
+// On Thu 10 Dec the pay changes to no fixed pay from 10 Dec, and Free to spend to 100,000 a month (50,000 x 24 / 12).
+// A spend of 4,000 on 12 Dec. On 12 Dec: no period; Free to spend counts from the change day, 100,000 - 4,000 = 96,000
+// (not the setup amount less every spend since setup). The walk, no money in: Bank 493,000; rent 28 Dec (27 Dec is a
+// Sunday) and 27 Jan 160,000; Free to spend by the day 13 Dec to 27 Jan (the horizon, rent's second): 100,000 x 12 / 365
+// = 3,287 a day, December's share 100,000 x 12 x 31 / 365 = 101,917, so 20 more on 31 Dec: 19 x 3,287 + 20 = 62,473,
+// January 27 x 3,287 = 88,749; together 151,222. 493,000 - 160,000 - 151,222 = 181,778; capped at 96,000.
+function sixB(pays) {
+  const I = require('../ids.js');
+  return buildBook({ day: '2026-12-01', told: '2026-12-01T09:00' + TZ, country: 'JP', currency: 'JPY', banks: [{ key: 'bank', name: 'Bank', amount: 500000 }],
+    pays, bills: [{ key: 'rent', name: 'Rent', from: 'bank', amount: 80000, day: 27, shift: 'after' }], free: 50000 }, { newId: I.idMaker('sixb2k') });
+}
+const at6 = d => ({ at: d + 'T09:00' + TZ, by: 'sixb2k', told: d + 'T09:00' + TZ });
+t('[slice 6b] pay on two days a month changed to no fixed pay mid-period: by day from the change, Free to spend from the change', () => {
+  const b = sixB([{ key: 'pay', name: 'Pay', bank: 'bank', amount: 150000, every: 'month', days: [15, 'last'], shift: 'before', startsPeriod: true }]), bank = b.ids.bank;
+  b.book.events.push(Object.assign({ id: 'sixb2k-aaaaaaaaaa-1', k: 'spend', acct: bank, a: 3000, date: '2026-12-05' }, at6('2026-12-05')));
+  eq(lookahead(b.book, '2026-12-10').period.start, '2026-11-30');
+  const pay = b.book.schedules.find(s => s.id === b.ids.pay);
+  pay.rules.push(Object.assign({ from: '2026-12-10', rule: { every: 'none' } }, at6('2026-12-10')));
+  b.book.plan.shares.push(Object.assign({ id: 'sixb2k-aaaaaaaaaa-2', from: '2026-12-10', cur: 'JPY', per: { free: 'month' }, free: 100000, goals: {} }, at6('2026-12-10')));
+  b.book.events.push(Object.assign({ id: 'sixb2k-aaaaaaaaaa-3', k: 'spend', acct: bank, a: 4000, date: '2026-12-12' }, at6('2026-12-12')));
+  const r = lookahead(b.book, '2026-12-12');
+  eq([r.period, r.daysToNextPay.days, r.horizon, r.accounts[bank].bank], [null, null, '2027-01-27', 493000]);
+  eq([r.safeToSpend.headline, r.safeToSpend.cappedByFreeToSpend], [96000, true]);
+  eq(r.safeToSpend.whyParts, [{ label: 'what your accounts can spare', amount: 181778 }, { label: 'more than Free to spend left this period', amount: -85778 }]);
+  ok(Number.isInteger(r.lastsAboutWeeks), 'lasts about N weeks: ' + r.lastsAboutWeeks);
+  // the period history before the change is not lost from the book: the day before the change still has its period
+  eq(lookahead(b.book, '2026-12-09').period.start, '2026-11-30');
+});
+t('[slice 6b] no fixed pay changed to two days a month: by day until the first pay is ticked, then its period', () => {
+  const { firstLanding } = require('../periods.js');
+  const b = sixB([{ key: 'pay', name: 'Client work', bank: 'bank', every: 'none' }]), bank = b.ids.bank;
+  const pay = b.book.schedules.find(s => s.id === b.ids.pay);
+  Object.assign(pay, { startsPeriod: true, shift: 'before' });
+  pay.rules.push(Object.assign({ from: '2026-12-15', rule: { every: 'month', days: [15, 'last'] } }, at6('2026-12-10')));
+  pay.steps.push(Object.assign({ from: '2026-12-15', amount: 150000 }, at6('2026-12-10')));
+  b.book.plan.shares.push(Object.assign({ id: 'sixb2k-aaaaaaaaaa-4', from: '2026-12-15', cur: 'JPY', per: { free: 'pay' }, free: 25000, goals: {} }, at6('2026-12-10')));
+  eq([firstLanding(b.book, pay.id, '2026-12-10'), firstLanding(b.book, pay.id, '2026-12-16'), firstLanding(b.book, 'nope', '2026-12-10')], ['2026-12-15', '2026-12-30', null]);
+  eq([lookahead(b.book, '2026-12-14').period, lookahead(b.book, '2026-12-15').period], [null, null], 'no period before the first pay is ticked');
+  b.book.events.push(Object.assign({ id: 'set:' + pay.id + '@2026-12-15', k: 'in', sub: 'pay', acct: bank, a: 150000, stream: pay.id, date: '2026-12-15', settles: [{ s: pay.id, due: '2026-12-15' }] }, at6('2026-12-15')));
+  const p = lookahead(b.book, '2026-12-16').period;
+  // 31 Dec is a bank-closed day in Japan: the pay lands Wed 30 Dec, so the period is 15 to 29 Dec
+  eq([p.start, p.end, p.free.amount, p.free.left], ['2026-12-15', '2026-12-29', 25000, 25000]);
+});
 done('periods.test.js');

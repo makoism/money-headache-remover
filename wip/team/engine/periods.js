@@ -149,6 +149,17 @@
     const before = S.occurrences(s, cal, n - 400, n).filter(o => o.land <= n);
     return before.length ? D.dayStr(before[before.length - 1].land) : null;
   }
+  /* [slice 6b] firstLanding(book, sid, day): the day the first pay lands on or after a day (YYYY-MM-DD), by the rules
+     as saved; null when none comes in the next 400 days */
+  function firstLanding(book, sid, day) {
+    const S = node ? require('./schedules.js') : E.schedules, D = node ? require('./dates.js') : E.dates;
+    const s = (book.schedules || []).find(x => x && !x.gone && x.id === sid);
+    if (!s) return null;
+    const a = (book.accounts || []).find(x => x && !x.gone && x.id === s.acct) || {};
+    const cal = S.calendar(a.country || L.fieldValue((book.home || {}).country) || null), n = D.dayNum(day);
+    const after = S.occurrences(s, cal, n - 7, n + 400).filter(o => o.land >= n).sort((x, y) => x.land - y.land);
+    return after.length ? D.dayStr(after[0].land) : null;
+  }
   /* [slice 6, qc-foundation 2] perPayAcross(amount, fromRule, toRule): an amount each pay under one rhythm, carried to
      another so the money a year is the same: amount x (pays a year before) / (pays a year after), rounded half up to
      the minor unit. Pays a year: a day each month 12 per day named, every n weeks 52 / n. Null when either rhythm has
@@ -160,7 +171,7 @@
     const num = amount * f[0] * t[1], den = f[1] * t[0];
     return Math.floor((2 * num + den) / (2 * den));
   }
-  const api = { periods, scheduleView, aheadFor, lastLanding, perPayAcross };
+  const api = { periods, scheduleView, aheadFor, lastLanding, firstLanding, perPayAcross };
   if (node) module.exports = api;
   else (root.BurrowEngine = root.BurrowEngine || {}).periods = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
