@@ -459,3 +459,9 @@ BE3. Backup and restore of the new shape (store/pack) stay in slice 4.
 BF1. Goal per period: toGo spread over the period-starting pays still to come on or before the date. A pay due today that is not settled yet counts. A late pay that is still expected counts. Leftover minor units go on the earliest pay. With no fixed pay, perPeriod is null until slice 6.
 BF2. Overdue card and loan payments are listed under `overdue`, with state late or notSeen. `next` is always today or later. Screens must show overdue items, so one never disappears.
 BF3. Past periods group records by date and list only records told by the day asked (O1).
+
+## BG. Where version one runs (Mako, 23 Nov night JST)
+Mako chose a private web address over a file. Opened as a file, Chrome on Android may not keep the saved data.
+BG1. Only app3 is published, under an unguessable path in public/ on the existing Cloudflare site. It goes up through a push to main that adds only those files, after the walk faults are fixed and the walk passes. The old app at the site's root is unchanged.
+BG2. Before publishing, check two things. The old app's service worker (scope /) must never answer for the app3 path. app3's sw3.js must be scoped to its own path. Then /api/ai works for statements and Ask from the same address.
+BG3. The cloud copy stays on one device until the server changes in app3/FOR_MAKO.md are approved.
