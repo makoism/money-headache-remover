@@ -8,8 +8,8 @@
 // seen yet, each card's and loan's next payment, the places' money, total, and
 // the check-in list and fillers.
 //
-// It follows DECISIONS_ROUND2.md sections A, B, F, G, H and I (I wins over
-// anything earlier, then H). Where a line below carries a tag like [H3] or [B9], that decision is
+// It follows DECISIONS_ROUND2.md sections A, B, F, G, H, I and J (J wins over
+// anything earlier, then I, then H). Where a line below carries a tag like [H3] or [B9], that decision is
 // the reason for it. Plain code, no dependencies, every amount in whole minor
 // units, every date a whole day number (D8). It is a reference for the engine
 // and for tests, never loaded by the app.
@@ -164,12 +164,15 @@ function lookahead(sc, asOf, opts = {}) {
   // `told` is when the app first heard of a record (a date, or a date and a time; null: never). It orders
   // records on the same day; with no time, records keep the order they are listed in. Every amount is
   // turned into minor units here: `a` in the currency of the side it leaves, `a2` of the side it reaches [H5].
-  // [I5] A record moved from 38.31 is told at its own time when it has one, else at the copy's last save;
-  // records on one day keep the old list order (the order in the file).
+  // [I5, J2] A record moved from 38.31 is told at its own time when it has one. With no time, a moved
+  // receipt is told at the start of its day (so one dated on or before the moved bank figure's day is
+  // inside that figure), and a moved bank figure at the copy's last save. At the same moment, moved
+  // receipts come before moved figures (see `inside`).
+  const isFigure = e => e.kind === 'check' || e.kind === 'card_check';
   const events = [];
   (sc.events || []).forEach((e, i) => {
     if (e.told === null) return;
-    const key = String(e.told || (e.moved ? e.own_time || sc.moved_copy.saved : e.date));
+    const key = String(e.told || (e.moved ? e.own_time || (isFigure(e) ? sc.moved_copy.saved : e.date) : e.date));
     if (dayNum(key) > knownTo || dayNum(e.date) > knownTo) return;
     const x = Object.assign({}, e, { day: dayNum(e.date), key, idx: i });
     const side = e.account || e.from;
@@ -238,15 +241,22 @@ function lookahead(sc, asOf, opts = {}) {
   };
   // [H1] Is event e already inside a check (or the opening) of account id? Events dated before the check's
   // day are; on its day, those the app heard of before it. A bank line with a posting date counts by that date.
-  // [I1] An "available" bank check already has pending debits off: every event dated on or before its day
-  // is inside it. A "current" check, and one that does not say, follows the H1 rule above.
+  // [I1, J3] An "available" bank check already has pending debits off: it holds every event dated before its
+  // day by the buy date (posted or not), and on its day those told before it. A spend told after it comes
+  // after it, whatever the check kind. A "current" check, and one that does not say, follows the H1 rule.
+  // [J2] At the same moment, a moved receipt comes before a moved figure.
   function inside(e, c, id) {
-    if (c.avail === 'available') return e.day <= c.day;
-    const d = e.posted && e.account === id && !isOwed(id) ? dayNum(e.posted) : e.day;
+    const d = c.avail !== 'available' && e.posted && e.account === id && !isOwed(id) ? dayNum(e.posted) : e.day;
     if (d !== c.day) return d < c.day;
-    return e.key < c.key || (e.key === c.key && e.idx < c.idx);
+    if (e.key !== c.key) return e.key < c.key;
+    if (e.moved && c.moved && !isFigure(e)) return true;
+    return e.idx < c.idx;
   }
-  const openingOf = id => ({ day: openDay(id), key: acct[id].opening.told || acct[id].opening.date + END_OF_DAY, idx: -1 });
+  // [J2] A moved bank figure with no time of its own is told at the copy's last save.
+  const openingOf = id => {
+    const op = acct[id].opening;
+    return { day: openDay(id), key: op.told || (op.moved ? sc.moved_copy.saved : op.date + END_OF_DAY), idx: -1, moved: !!op.moved };
+  };
   const byTime = (x, y) => x.day - y.day || (x.key < y.key ? -1 : x.key > y.key ? 1 : x.idx - y.idx);
   function bankInfo(id) {
     let base = Object.assign(openingOf(id), { amount: m(acct[id].opening.amount, id) });
@@ -262,7 +272,7 @@ function lookahead(sc, asOf, opts = {}) {
         - moves.filter(e => inside(e, base, id) && !inside(e, c, id)).reduce((t, e) => t + delta(e, id), 0);
       const amount = m(c.amount, id);
       fillers.push(makeFiller(id, c.day > base.day ? base.day + 1 : c.day, c.day, computed - amount));
-      base = { day: c.day, key: c.key, idx: c.idx, avail: c.avail, amount };
+      base = { day: c.day, key: c.key, idx: c.idx, avail: c.avail, moved: c.moved, amount };
     }
     const bank = base.amount + moves.filter(e => !inside(e, base, id)).reduce((t, e) => t + delta(e, id), 0);
     return { bank, asOfDay: base.day, fillers };
@@ -290,14 +300,17 @@ function lookahead(sc, asOf, opts = {}) {
   function cardInfo(id) {
     const c = acct[id], op = c.opening, pay = c.payment;
     const notSure = c.statement_close_day == null;   // [H4] close day "not sure"
-    const st = op.statement || null;
+    // [J5] The opening may hold several unpaid statements, oldest first, each with its amount, close date
+    // and payment day; or one last statement, paid or not, whose payment day comes from the card's rule.
+    const sts = op.statements || (op.statement ? [op.statement] : []);
+    const st = sts.length ? sts[sts.length - 1] : null;   // the latest close before the opening
     const payOf = due => ({ id: id + '@' + dayStr(due), due, land: cal.shift(due, pay.weekend_holiday) });
     const payAfterClose = cl => { const [y, mo] = ymOf(cl); return payOf(dayIn(y, mo + pay.months_after_close, pay.day)); };
     // What a payment is planned to be: in full, or for a card that carries a balance, its minimum plus any planned extra [H7].
     const planned = (amt, day) => c.carries ? Math.min(amt, minPay(pay.min_rule, amt, cur(id)) + extraOn(pay.extra_steps, day, cur(id))) : amt;
     // Lines by posting day. A posting day the app has not seen yet is unknown: the buy day is used [F18].
     const open = openingOf(id);
-    const carried0 = st && !st.paid ? m(st.amount, id) : 0;
+    const carried0 = sts.filter(x => !x.paid).reduce((t, x) => t + m(x.amount, id), 0);
     const lines = [{ day: openDay(id), amount: m(op.current, id) - carried0, what: 'opening' }];
     const payments = [];
     for (const e of live()) {
@@ -324,7 +337,11 @@ function lookahead(sc, asOf, opts = {}) {
     function statementsTo(last, upTo) {
       const list = [];
       if (notSure) return { list, open: 0 };
-      list.push(Object.assign(payAfterClose(sClose), { close: sClose, amount: m(st.amount, id), left: carried0, interest: 0, into: null }));
+      for (const x of sts) {   // [J5] each statement at the opening, with its own payment day when typed
+        const cl = dayNum(x.closed);
+        list.push(Object.assign(x.payment_day ? payOf(dayNum(x.payment_day)) : payAfterClose(cl),
+          { close: cl, amount: m(x.amount, id), left: x.paid ? 0 : m(x.amount, id), interest: 0, into: null, paidAtOpening: !!x.paid }));
+      }
       const evs = lines.map(l => ({ day: l.day, line: l.amount })).concat(payments.map(p => ({ day: p.day, pay: p.amount, settles: p.settles })))
         .sort((x, z) => x.day - z.day);
       let open = 0, i = 0;
@@ -361,8 +378,27 @@ function lookahead(sc, asOf, opts = {}) {
     // [H3, I2] Owed at the end of a day: what was carried at the opening, plus every line and the interest
     // added at each close by then, less every payment.
     const interestTo = day => statementsTo(day, day).list.reduce((t, b) => t + b.interest, 0);
-    const owedAt = day => carried0 + lines.filter(l => l.day <= day).reduce((t, l) => t + l.amount, 0)
-      - payments.filter(p => p.day <= day).reduce((t, p) => t + p.amount, 0) + (notSure ? 0 : interestTo(day));
+    const owedBare = day => carried0 + lines.filter(l => l.day <= day).reduce((t, l) => t + l.amount, 0)
+      - payments.filter(p => p.day <= day).reduce((t, p) => t + p.amount, 0);
+    // [J1] Close day not sure and the card carries a balance: interest on each payment day after the opening,
+    // added before that day's payment, on what was owed at the end of the day before (the interest added
+    // on earlier payment days included), x apr / 12, rounded half up [I2]. Which balance it is on when
+    // spending posts between payment days (all of it, or only what was left from the payment day before)
+    // is not decided (SCHEMA_V3 section 14); no ask depends on it.
+    const notSureDays = [];
+    if (notSure && c.carries && c.apr) {
+      const [y, mo] = ymOf(openDay(id));
+      for (let k = 0; k < 40; k++) {
+        const p = payOf(dayIn(y, mo + k, pay.day));
+        if (p.land > openDay(id) && p.due > openDay(id)) notSureDays.push(p.land);
+      }
+    }
+    const notSureInterestTo = day => {
+      let t = 0;
+      for (const d of notSureDays) { if (d > day) break; t += interestOn(owedBare(d - 1) + t, c.apr); }
+      return t;
+    };
+    const owedAt = day => owedBare(day) + (notSure ? notSureInterestTo(day) : interestTo(day));
     const stmtAmount = cl => { const b = statementsTo(cl, cl).list.find(x => x.close === cl); return b ? b.amount : owedAt(cl); };
     // A card check sets the statement it names and what is owed now; the gaps are its fillers [A3].
     const fillers = [];
@@ -390,7 +426,7 @@ function lookahead(sc, asOf, opts = {}) {
     if (!notSure) {
       const S = statementsTo(knownTo, knownTo);
       for (const b of S.list) points.push(Object.assign(b, { closed: b.close, basis: b.into ? b.leftAtFold : b.left,
-        paid: b.close === sClose ? (st.paid || !!settledBy[b.id]) : !!settledBy[b.id] }));
+        paid: b.paidAtOpening || !!settledBy[b.id] }));
       const nc = closes.find(cl => cl > knownTo);
       if (nc != null) nextPoint = Object.assign(payAfterClose(nc), { closes: nc });
     } else {
