@@ -41,6 +41,19 @@
   const fv = L.fieldValue;
   const occStr = o => (typeof o === 'string' ? o : o.s + '@' + o.due);
   const occList = v => [].concat(v || []).map(occStr);
+  // Two ids compared with every run of digits read as a number ('a-9' before 'a-10'); a record with no id comes first.
+  function idCmp(x, y) {
+    const a = String((x && x.id) || ''), b = String((y && y.id) || '');
+    if (a === b) return 0;
+    const ra = a.match(/\d+|\D+/g) || [], rb = b.match(/\d+|\D+/g) || [];
+    for (let i = 0; i < Math.min(ra.length, rb.length); i++) {
+      if (ra[i] === rb[i]) continue;
+      const na = /^\d/.test(ra[i]), nb = /^\d/.test(rb[i]);
+      if (na && nb && +ra[i] !== +rb[i]) return +ra[i] - +rb[i];
+      return ra[i] < rb[i] ? -1 : 1;
+    }
+    return ra.length - rb.length || (a < b ? -1 : 1);
+  }
 
   function lookahead(book, asOf, opts) {
     opts = opts || {};
@@ -75,7 +88,15 @@
     const minimumOf = id => (id === mainAcct ? (main.min && !mainMinOtherCur() ? main.min.a : 0) : acct[id].minBank ? acct[id].minBank.a : 0);
 
     // ----- the openings: one `open` and a `check` the same day, written together [B6, B7, H1] -----
-    const all = (book.events || []).map((e, i) => ({ e, i }));
+    // [QC numbers blocker 1] One order for the events, whatever order the book holds them in: the page holds them as
+    // written, the store hands them back sorted by id, and an id's session part is drawn at random on every open. So
+    // they are put in the order they were told (`told`, or the date), then by id with its counter read as a number
+    // (one session's records keep the order they were written). Every place that walks the list, or uses a record's
+    // place in it (`idx`), then gives the same answer before and after the page is reopened.
+    const toldKey = e => { const k = e ? keyOf(e.told || e.date) : NaN; return isNaN(k) ? -8.64e15 : k; };
+    const all = (book.events || []).map(e => ({ e, k: toldKey(e) }))
+      .sort((x, y) => (x.k < y.k ? -1 : x.k > y.k ? 1 : idCmp(x.e, y.e)))
+      .map((x, i) => ({ e: x.e, i }));
     const openEv = {}, openChecks = {};
     for (const { e, i } of all) if (e && !e.gone && e.k === 'open' && acct[e.acct] && !openEv[e.acct]) openEv[e.acct] = Object.assign({ idx: i }, e);
     const isOpeningCheck = e => { const o = openEv[e.acct]; return !!o && e.k === 'check' && e.date === o.date && e.grp != null && e.grp === o.grp; };
