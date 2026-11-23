@@ -8756,6 +8756,220 @@
    "decisions": [
     "AQ1"
    ]
+  },
+  {
+   "id": "sy-60",
+   "question": "sync",
+   "title": "AP6, R: a backup from before a check-in, restored on the phone: the check-in is removed on both devices",
+   "input": {
+    "base": {
+     "checkins": [
+      {
+       "id": "k7qzpa-m2xq7ab9zt-401",
+       "date": "2026-11-30",
+       "from": "2026-11-26",
+       "figures": [
+        {
+         "acct": "k7qzpa-m2xq7ab9zt-2",
+         "check": "k7qzpa-m2xq7ab9zt-402"
+        }
+       ],
+       "settled": [
+        "set:k7qzpa-m2xq7ab9zt-42@2026-11-27"
+       ],
+       "told": "2026-11-30T08:00:00.000+09:00",
+       "at": "2026-11-30T08:00:00.000+09:00",
+       "by": "k7qzpa"
+      }
+     ]
+    },
+    "mine": {
+     "checkins": [
+      {
+       "id": "k7qzpa-m2xq7ab9zt-401",
+       "date": "2026-11-30",
+       "from": "2026-11-26",
+       "figures": [
+        {
+         "acct": "k7qzpa-m2xq7ab9zt-2",
+         "check": "k7qzpa-m2xq7ab9zt-402"
+        }
+       ],
+       "settled": [
+        "set:k7qzpa-m2xq7ab9zt-42@2026-11-27"
+       ],
+       "told": "2026-11-30T08:00:00.000+09:00",
+       "at": "2026-12-03T09:00:00.000+09:00",
+       "by": "k7qzpa",
+       "gone": "2026-12-03",
+       "goneBy": "k7qzpa-m2xq7ab9zt-401"
+      }
+     ]
+    },
+    "theirs": {
+     "checkins": [
+      {
+       "id": "k7qzpa-m2xq7ab9zt-401",
+       "date": "2026-11-30",
+       "from": "2026-11-26",
+       "figures": [
+        {
+         "acct": "k7qzpa-m2xq7ab9zt-2",
+         "check": "k7qzpa-m2xq7ab9zt-402"
+        }
+       ],
+       "settled": [
+        "set:k7qzpa-m2xq7ab9zt-42@2026-11-27"
+       ],
+       "told": "2026-11-30T08:00:00.000+09:00",
+       "at": "2026-11-30T08:00:00.000+09:00",
+       "by": "k7qzpa"
+      }
+     ]
+    },
+    "show": [
+     "checkins",
+     "kept"
+    ]
+   },
+   "expected": {
+    "checkins": [
+     {
+      "id": "k7qzpa-m2xq7ab9zt-401",
+      "date": "2026-11-30",
+      "from": "2026-11-26",
+      "figures": [
+       {
+        "acct": "k7qzpa-m2xq7ab9zt-2",
+        "check": "k7qzpa-m2xq7ab9zt-402"
+       }
+      ],
+      "settled": [
+       "set:k7qzpa-m2xq7ab9zt-42@2026-11-27"
+      ],
+      "told": "2026-11-30T08:00:00.000+09:00",
+      "at": "2026-12-03T09:00:00.000+09:00",
+      "by": "k7qzpa",
+      "gone": "2026-12-03",
+      "goneBy": "k7qzpa-m2xq7ab9zt-401"
+     }
+    ]
+   },
+   "why": "The backup is older than the 30 Nov check-in, so the restore removes it (`gone`, the restore's new `at`) [AE5]. The desktop did not touch it since the last sync: the removal is taken, nothing asked; the check-in does not come back.",
+   "decisions": [
+    "AP6",
+    "AE5",
+    "AQ3"
+   ]
+  },
+  {
+   "id": "sy-61",
+   "question": "sync_device",
+   "title": "AP6, A: a desktop back after three weeks with its own check-in: both check-ins kept",
+   "input": {
+    "device": {
+     "copy": {
+      "rev": 3,
+      "checkins": [
+       {
+        "id": "w3hmxd-p4kd8wq2rn-401",
+        "date": "2026-11-30",
+        "from": "2026-11-26",
+        "figures": [
+         {
+          "acct": "k7qzpa-m2xq7ab9zt-2",
+          "check": "w3hmxd-p4kd8wq2rn-402"
+         }
+        ],
+        "settled": [],
+        "told": "2026-11-30T21:00:00.000+09:00",
+        "at": "2026-11-30T21:00:00.000+09:00",
+        "by": "w3hmxd"
+       }
+      ]
+     },
+     "base": {
+      "rev": 3,
+      "checkins": []
+     },
+     "baseRev": 3
+    },
+    "cloud": {
+     "rev": 9,
+     "copy": {
+      "rev": 9,
+      "checkins": [
+       {
+        "id": "k7qzpa-m2xq7ab9zt-401",
+        "date": "2026-11-30",
+        "from": "2026-11-26",
+        "figures": [
+         {
+          "acct": "k7qzpa-m2xq7ab9zt-2",
+          "check": "k7qzpa-m2xq7ab9zt-402"
+         }
+        ],
+        "settled": [
+         "set:k7qzpa-m2xq7ab9zt-42@2026-11-27"
+        ],
+        "told": "2026-11-30T08:00:00.000+09:00",
+        "at": "2026-11-30T08:00:00.000+09:00",
+        "by": "k7qzpa"
+       }
+      ]
+     }
+    },
+    "show": [
+     "checkins",
+     "kept"
+    ]
+   },
+   "expected": {
+    "merged": true,
+    "pushed": true,
+    "rev": 10,
+    "copy": {
+     "checkins": [
+      {
+       "id": "k7qzpa-m2xq7ab9zt-401",
+       "date": "2026-11-30",
+       "from": "2026-11-26",
+       "figures": [
+        {
+         "acct": "k7qzpa-m2xq7ab9zt-2",
+         "check": "k7qzpa-m2xq7ab9zt-402"
+        }
+       ],
+       "settled": [
+        "set:k7qzpa-m2xq7ab9zt-42@2026-11-27"
+       ],
+       "told": "2026-11-30T08:00:00.000+09:00",
+       "at": "2026-11-30T08:00:00.000+09:00",
+       "by": "k7qzpa"
+      },
+      {
+       "id": "w3hmxd-p4kd8wq2rn-401",
+       "date": "2026-11-30",
+       "from": "2026-11-26",
+       "figures": [
+        {
+         "acct": "k7qzpa-m2xq7ab9zt-2",
+         "check": "w3hmxd-p4kd8wq2rn-402"
+        }
+       ],
+       "settled": [],
+       "told": "2026-11-30T21:00:00.000+09:00",
+       "at": "2026-11-30T21:00:00.000+09:00",
+       "by": "w3hmxd"
+      }
+     ]
+    }
+   },
+   "why": "Behind (3 against 9): it takes 9, both check-ins join by id, revision 10 [AQ1, AP6].",
+   "decisions": [
+    "AP6",
+    "AQ1"
+   ]
   }
  ],
  "open": [

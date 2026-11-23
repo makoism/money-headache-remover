@@ -1,4 +1,4 @@
-# Coverage of the foundation (after decisions T to AO, 23 Nov 2026)
+# Coverage of the foundation (after decisions T to AQ, 23 Nov 2026)
 
 The coverage grid of final_review_3.md, updated (LESSONS lesson 3: count coverage, do not sample). Rows are kinds of record and the shapes they live in; columns are the situations that change a record's effect. Every applicable cell names the asks (scenarios/*.json, run by `node foundation_review/ref/run_scenarios.js`) or cases (rules/*.json, run by `node foundation_review/rules/run_rules.js`) that cover it. All of them pass: 725 of 725 asks, 736 of 736 cases, and the same again with every short made-up id rewritten to the ordinary form by the realistic-ids check (`foundation_review/realistic_ids.js`, which both runners run every time) (after AN: 39 cases added (rules mg-257 to mg-287, ed-56 to ed-63) and 9 re-worked (ed-17, ed-18 for AN3; mv-28, mv-125 to mv-127 for AN7's shop keys; the shop keys of the existing merge cases put in the `k:` form, no result changed), 6 asks re-worked by hand with new results (check_day_before cdb-01 to cdb-03, away_clock ac-01 to ac-03, AN4) and 6 re-worked with the same or new figures (moved_together mt-01 to mt-03, AN5; offset_travel ot-01 to ot-03, AN4, re-worded), the columns E x D and Z x D and the row `people`; see "Decision AN" at the end; after AM: 9 asks in 3 new scenario files, 6 asks re-worked by hand (offset_travel ot-01 to ot-03, away_clock ac-01 to ac-03, new results for AM3) and 4 cases added, no new row or column; see "Decision AM" at the end; after AL: 3 asks in a new scenario file, 47 cases added and 41 re-worked (the shared `ui`, `home` and the move's `home` in the field-value shape; 4 of them, mg-198, mg-206, mg-211 and mg-212, with a new result for AL3), the rows shared `ui`, `imports.cats` and `plan.limits` and the column V; see "Decision AL" at the end; after AK: 10 cases added and 17 re-worked (one of them only reworded), no new row or column: `home` now merges field by field; see "Decision AK" at the end; after AJ: 4 asks in 2 new scenario files, 45 cases added and 3 re-worked, the row `home` and 19 false covers fixed (the E column and the built-id D cells held only for short made-up ids; loan / pay-later D); see "Decision AJ" at the end; after AI: 9 cases added and 8 re-worked for the held value, no new row or column; see "Decision AI" at the end; after AH: 11 asks in 3 new scenario files, 8 asks moved to the AE1 shape, 60 cases added and 26 re-worked (12 of them only to name the receiving device's now, 5 only moved to the AE1 shape), the column A and two false covers fixed; see "Decision AH" at the end; after AG: 6 cases added and 3 re-worked, no new row or column; see "Decision AG" at the end; after AE and AF: 6 asks in a new scenario file, 31 cases added and 20 re-worked (3 of them only reworded), the row "keyed overrides" and the column R; see "Decisions AE and AF" at the end; after AB and AC: 20 asks in 4 new scenario files, 34 cases added and 15 re-worked, the columns L and B and the rows `pendingMove` and `frozen`; see "Decisions AB and AC" at the end; after AA: 3 asks in a new scenario file and 12 move cases; after W and X: 78 asks and 32 cases added, in 19 new scenario files, one ask in fee_place and a new rules file `rules/edits.json`; after Y and Z: 15 asks in 4 new scenario files, 11 rules cases and 24 move cases, and the move row; see "Decisions W and X" and "Decisions Y and Z" at the end). The move cases (`rules/move.json`) are counted in the 697.
 
@@ -12,8 +12,13 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 
 | | Cells |
 |---|---|
-| All cells (37 rows x 20 columns) | 740 |
-| Not applicable | 370 |
+| **After AP and AQ** (38 rows x 20 columns in the grid, and the 4 rows of the version one sync below) | |
+| New after confirm_review_8: the row `checkins` (AP6: 20 cells, 4 applicable, D, U, R and A; 16 not applicable) | 4 |
+| New after AQ: the version one sync rows (4 rows: 12 applicable cells, section "Version one sync" below) | 12 |
+| **Applicable after AQ** | **382** (382 of 382 covered and passing) |
+| The columns | **frozen at 20** (AQ7): see "Version one sync" below |
+| All cells before AP (37 rows x 20 columns) | 740 |
+| Not applicable | 371 |
 | Stage 2 (hand and Wallet mode, T7) | 3 |
 | **Applicable** | **367** |
 | New after confirm_review_7: the columns E x D and Z x D (72 cells on the old rows: 10 applicable, ED on income schedules, bill / transfer / auto schedules and keyed overrides, ZD on in / pay, refund, spend, transfer, repay, card and cash / e-wallet; 62 not applicable) | 10 |
@@ -114,6 +119,7 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 | `imports.cats` (one field value per shop) | - | - | - | - | - | n | n | - | - | - | n | - | - | n | - | n | n | n | - | - |
 | `plan.limits` (`ceiling` with `per`, `aims`) | - | - | - | - | - | n | n | - | - | - | n | - | - | n | - | n | n | n | - | - |
 | `people` (`mv:person:ui.name` when moved) | - | - | - | - | - | n | n | - | - | - | c | - | - | - | - | n | - | - | - | - |
+| `checkins` (AP6: its stretch and settled ids, no filler ids) | - | - | - | - | - | n | n | - | - | - | - | - | - | - | - | n | n | - | - | - |
 
 ## Every applicable cell and what covers it
 
@@ -541,6 +547,13 @@ Marks: **c** covered before this round; **n** newly covered (in the first ten co
 - M the move run on two devices (c): rules mv-27 (`ui.name` becomes `people[0]`, `mv:person:ui.name`), mv-67 (two devices moving the same copy make one person)
 - not applicable: C, O, W, P, X, E, S, Z, Y, T, L, B, A, V, ED, ZD (AN6 names D, U, R and M: no money rule reads `owner` yet, a person is typed, never imported, and holds no amount; a second move days later is the move row's own L cell)
 
+### `checkins` (a new row: confirm_review_8 found it missing, AP6)
+- D two devices (n): rules sy-47 (a check-in on each device, both kept), sy-48 (one check-in changed two ways: asked, both kept); the fuzz (check-ins on both devices, 5,000 seeds)
+- U undo/redo (n): rules sy-49 (a check-in undone on one device stands)
+- R restore (n): rules sy-60 (a check-in newer than the backup removed by the restore, on both devices)
+- A used again after days away (n): rules sy-61 (a desktop three weeks behind with its own check-in: both kept)
+- not applicable: C, O, W, P, X, E, S, Z, M, Y, T, L, B, V, ED, ZD (a check-in is the moment itself; its checks and settles are the check and `set:` rows; 38.31 has no check-in record to move)
+
 ### ordinary ids (AJ1): the E column and the built-id D cells (false covers confirm_review_5 found)
 Every test named schedules, places and accounts with short made-up ids, and the readers of built ids and occurrence names took only those, so every E cell and every built-id D cell held only for ids the app never makes. The realistic-ids check (`foundation_review/realistic_ids.js`) now runs every ask and case again with each short made-up id rewritten to the ordinary form, `<6 letters>-<10 chars>-<n>`, the same way within each file, inside built ids too; both runners run it every time, and a failure there fails the run. On top of it:
 - E, every applicable row (check, in / pay, spend, set: settle, period-end answer, income, bill, budget lines, card, move, keyed overrides): the realistic-ids run; X8 with ordinary ids: rules ed-35 to ed-39 (a settle, another schedule whose id begins the same, `pe:` and `ps:` with an ordinary place, a `once` key), x8_ordinary_ids x8o-01 (the look ahead's own check refuses), x8o-02 to x8o-04 (the offered day taken)
@@ -875,3 +888,45 @@ Run first, before any reference changed (the new and re-worked cases and asks, h
 | AO7: two 38.31 shop keys that become one keep the later and are listed in the move summary | rules mv-128 (`catsJoined`), mv-129 (none) | both |
 
 Questions AO does not answer (for Mako's run; SCHEMA_V3 section 14 has them with the readings to confirm, and `rules/*.json` lists each as an open question): (1) whether a waiting `once` amount counts on the safe side in the walk (ed-q-ao4); (2) whether an amount the moved change left waiting in `pendingMove` is removed and its original key made live again too (mg-q-ao1); (3) whether a check other than zero typed into a closed account on one device reopens it in the look ahead, or the check-in should not offer a closed account (mg-q-ao6).
+Questions AN does not answer (for Mako's run; SCHEMA_V3 section 14 has them with the readings to confirm, and `rules/*.json` lists each as an open question): (1) mg-271 leaves the bonus keyed on both 25 Dec and 10 Jan after the change moves (two bonuses counted); (2) which of two amounts moved onto an empty occurrence is its own (ed-60: the same month's); (3) whether a waiting bill amount should count on the safe side (mt-01 counts 70,000, 95,000 waits); (4) `once` keys moved onto a period with its own; (5) the minimum when another account with its own `minBank` becomes the main bank; (6) an event dated on the closing day, and a check figure, at AN6; (7) two 38.31 shop keys that become one key at the move.
+
+
+## Version one sync (AQ, 23 Nov 2026): the frozen columns and the sync rows
+
+**The columns are frozen** [AQ7]. The 20 columns above (C, O, W, P, X, D, U, E, S, Z, M, Y, T, L, B, R, A, V, ED, ZD) are the full set. They are frozen after one confirming review of AQ plus the fuzz: a new situation found after that goes in as a row, or as a case under these columns, or to Mako as a cause-level question; it never adds a column (efficiency_review_2: the grid gained 10 columns in six rounds, so "every applicable cell covered" had stopped being a stopping rule).
+
+**How the two-device columns read now.** The D, ED, ZD, M, L, R and A covers named in the grid above that are `rules/merge.json` cases marked `"stage": 2` cover the rich merge, which is the stage 2 spec (STAGE2_MERGE_LIST.md, 201 cases, all passing). In version one every record kind is joined by one rule (section 2.3 of SCHEMA_V3: by id, three-way on the last synced copy, an item changed two ways asked), so each row's version one D cover is that rule's cases plus the fuzz, which makes edits of the kinds listed and checks after every sync that every edit is present or asked, nothing doubled, symmetry, and the one-device checks:
+
+| Grid row (D applicable) | Version one cover |
+|---|---|
+| check | sy-36 (a second figure on the closing day), sy-60; fuzz `check` |
+| in / pay, set: settle | sy-08, sy-09 (the same pay ticked on both, one record or asked); fuzz `tick` |
+| spend | sy-07, sy-46; fuzz `typeSpend`, `editEvent`, `removeEvent` |
+| transfer | the one join rule (sy-07 to sy-09); fuzz `tick` on the transfer schedule, `close` |
+| repay, move between places, skip, periodStart, period-end answer, rm:, fee record | the one join rule (sy-07 to sy-10: a record by id, built ids one record); move between places also sy-41, sy-42 and fuzz `place`. No case of their own: the rule does not look at the kind |
+| closing | sy-33 to sy-38; fuzz `close` |
+| income schedules, bill / transfer / auto schedules, keyed overrides | sy-11 to sy-14, sy-22, sy-32; fuzz `changeRule`, `amountKey`, `renameOrStep` |
+| budget lines, goals / places | sy-54; fuzz `budget`, `goal` |
+| card, loan / pay-later, cash and e-wallet accounts | sy-39 (an account changed on both), sy-45 (a card's statement); fuzz `setMain`, `ownMin`, `importStatement` |
+| move, pending move, frozen text | sy-10 (a moved record written on both devices is one) |
+| home, shared `ui`, `imports.cats`, `plan.limits` | sy-15, sy-16, sy-52, sy-53, sy-57; fuzz `homeField`, `uiOrLimit`, `cat` |
+| people | sy-56; fuzz `person` |
+| checkins | sy-47, sy-48 (row above) |
+| ED (edited after settled, on two devices) | sy-23 to sy-32 (X8 after a sync for every rule kind, as questions) |
+| ZD (closed account, on two devices) | sy-33 to sy-38 |
+
+**The sync rows** (each a part of the version one sync, its applicable cells over the frozen columns; every other cell not applicable):
+
+| Row | D | U | E | S | Z | M | R | A |
+|---|---|---|---|---|---|---|---|---|
+| the revision, compare and swap (AQ1) | n | - | - | - | - | - | n | n |
+| records joined by id, import lines `imp:` (AQ2, AP3) | n | - | - | n | - | n | - | - |
+| one item changed two ways: asked, `kept:<id>` (AQ3) | n | n | - | - | - | - | n | - |
+| the one-device checks after a sync, as questions (AQ4, AP1, AP2, AP5) | n | - | n | - | n | - | - | - |
+
+- the revision: D sy-01 to sy-06, sy-59; R sy-54 (a restore written after the other device's edit); A sy-55, sy-61
+- joined by id: D sy-07, sy-08, sy-10, sy-45; S sy-43, sy-45, sy-46, sy-58 (the same statement on two devices, a CSV and a PDF of one month, a line matched to a typed coffee on one device: confirm_review_8 item 3, the missing S x D cell); M sy-10
+- one item changed two ways: D sy-12 to sy-16, sy-21, sy-48, sy-52, sy-53, sy-56, sy-57; U sy-14, sy-19, sy-20; R sy-54
+- the checks after a sync: D sy-39 to sy-42 (minimum, shares); E sy-23 to sy-32 (every rule kind, AP2); Z sy-33 to sy-38 (AP1)
+
+**The fuzz** (`node foundation_review/rules/fuzz_two_devices.js`, AQ6): 5,000 seeds, one to three rounds each, every round both devices editing offline and syncing through the revision. It is not counted as a cell cover on its own; it is the check that replaces hand review rounds for the D column.

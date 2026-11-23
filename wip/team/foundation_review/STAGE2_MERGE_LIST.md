@@ -1,6 +1,6 @@
 # The rich merge's cases, kept as the stage 2 spec (AQ5, for qc-regression to sign)
 
-Mako decided on 23 Nov (DECISIONS.md, "Phone and desktop in version one"; DECISIONS_ROUND2 AQ) that version one asks which to keep when the same plan or settings item changed on both devices, and that automatic field-by-field merging moves to stage 2. AQ5 keeps the rich merge rules (D4 to AP5 where they are about merging) for stage 2: their cases are labelled `"stage": 2` in `rules/merge.json`, keep passing against `rules/merge_ref.js`, and nothing is deleted or weakened. Version one's own sync is `rules/sync_v1.json` with `rules/sync_v1_ref.js` (57 cases) and `rules/fuzz_two_devices.js`.
+Mako decided on 23 Nov (DECISIONS.md, "Phone and desktop in version one"; DECISIONS_ROUND2 AQ) that version one asks which to keep when the same plan or settings item changed on both devices, and that automatic field-by-field merging moves to stage 2. AQ5 keeps the rich merge rules (D4 to AP5 where they are about merging) for stage 2: their cases are labelled `"stage": 2` in `rules/merge.json`, keep passing against `rules/merge_ref.js`, and nothing is deleted or weakened. Version one's own sync is `rules/sync_v1.json` with `rules/sync_v1_ref.js` (61 cases) and `rules/fuzz_two_devices.js`.
 
 ## How the line was drawn
 
