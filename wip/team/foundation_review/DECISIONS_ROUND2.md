@@ -514,3 +514,9 @@ BK4 (check-in gap rules):
 - With close days "not sure", on or after a card payment day, the app first asks "Was Card A's payment ¥Y?" before calling the gap spending.
 - A spend logged from the gap is dated on or before the check and marked as already inside its figure (the existing dayInside), so it is never counted twice.
 BK5. A card payment landing on the same day as pay N is part of X, with that pay counted first (the walk's order, Q14). The rule becomes: the last card payment on or before N's day. A pay after N is never included. With nothing owed on any card, no after-cards line is shown.
+
+## BM. Numbers final gate (24 Nov early JST)
+BM1. A line that goes over is paid from what the bank can spare, not from Free to spend. The words say so: "¥5,000 over Food. It comes out of what your bank can spare". The engine is unchanged.
+BM2. Warnings that the bank goes below zero or under the minimum come from the real-money walk: bank, pays, bills, card payments and moves, never goals or plan lines (as BK3). Goals kept in a bank only lower safe to spend. When goals hold more than the bank can spare, the warning says so ("Trip's money is ¥1 more than Main bank can spare on 5 Jan"), never "goes below zero". The set-aside limit is what the bank can spare through the next pay: the real-money walk's lowest point less what is already set aside. Setting aside past a goal's target asks first.
+BM3. Every part of a sum line is labelled with its own amount. A cap that takes everything says "all of it".
+BM4. Check your bank writes a card in credit the same way Home does ("in credit ¥3,000").
