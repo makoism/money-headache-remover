@@ -288,4 +288,22 @@ t('a loan payment past its day and not ticked: late, never the next payment', ()
   eq(o.overdue.map(x => [x.item, x.payment_date, x.state]), [['loan@2026-12-27', '2026-12-27', 'late']]);
   ok(o.next.payment_date > '2026-12-28');
 });
+t("a move into a goal's own account counts as set aside for that goal, once [BI5]", () => {
+  const b = base(x => {
+    x.accounts.push({ id: 'tripacct', name: 'Trip account', type: 'bank', cur: 'JPY' });
+    x.places = [{ id: 'trip', name: 'Trip', kind: 'goal', target: 100000, due: '2027-08-01', keptIn: { acct: 'tripacct', mode: 'ownAccount' } }];
+    const ev = (id, k, date, more) => Object.assign({ id, k, date, told: date + 'T12:00' + TZ }, more);
+    x.events.push(ev('ot', 'open', '2026-12-01', { acct: 'tripacct', a: 0, grp: 's' }), ev('ct', 'check', '2026-12-01', { acct: 'tripacct', a: 0, grp: 's' }),
+      // set aside on the goal: the transfer and its move, written together
+      ev('t1', 'transfer', '2026-12-02', { acct: 'bank', acct2: 'tripacct', a: 20000, a2: 20000, grp: 'g1' }), ev('m1', 'move', '2026-12-02', { place: 'waiting', place2: 'trip', a: 20000, grp: 'g1' }),
+      // a plain move of money into the trip account from Receipts
+      ev('t2', 'transfer', '2026-12-05', { acct: 'bank', acct2: 'tripacct', a: 5000, a2: 5000 }),
+      // money taken back out of it, with the move out of the place written together, and once without
+      ev('t3', 'transfer', '2026-12-06', { acct: 'tripacct', acct2: 'bank', a: 3000, a2: 3000, grp: 'g3' }), ev('m3', 'move', '2026-12-06', { place: 'trip', place2: 'waiting', a: 3000, grp: 'g3' }),
+      ev('t4', 'transfer', '2026-12-07', { acct: 'tripacct', acct2: 'bank', a: 1000, a2: 1000 }));
+  });
+  const r = run(b, '2026-12-08');
+  eq(r.accounts.tripacct.bank, 21000);
+  eq(r.places.trip.kept, 21000);   // 20,000 + 5,000 - 3,000 - 1,000, each counted once
+});
 done('lookahead');
