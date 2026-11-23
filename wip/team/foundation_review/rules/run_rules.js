@@ -16,9 +16,14 @@ const named = args.filter(a => !a.startsWith('--'));
 const specs = fs.readdirSync(__dirname).filter(f => f.endsWith('.json')).sort()
   .filter(f => !named.length || named.includes(f.replace(/\.json$/, '')));
 
-// Compare as text with keys sorted, so key order never matters.
+// Compare as text with keys sorted, so key order never matters. A list of records (every item an object with an
+// `id`) is compared in id order: the merge keeps records by id, and their order in a list means nothing [AJ1:
+// with ordinary ids, `dsk001-...` and `k7qzpa-...` sort apart from short made-up ids].
 function canon(x) {
-  if (Array.isArray(x)) return '[' + x.map(canon).join(',') + ']';
+  if (Array.isArray(x)) {
+    const byId = x.length > 1 && x.every(i => i && typeof i === 'object' && typeof i.id === 'string');
+    return '[' + (byId ? x.slice().sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0) : x).map(canon).join(',') + ']';
+  }
   if (x && typeof x === 'object') return '{' + Object.keys(x).sort().map(k => JSON.stringify(k) + ':' + canon(x[k])).join(',') + '}';
   return JSON.stringify(x);
 }
@@ -47,4 +52,8 @@ for (const file of specs) {
 }
 console.log('\n' + summary.join('\n'));
 console.log(fail ? `FAILED: ${fail} of ${pass + fail} cases failed` : `All ${pass} cases passed (${open} open questions listed, none tested)`);
-process.exit(fail ? 1 : 0);
+// [AJ1] The realistic-ids check runs every time: the same cases with every short made-up id in the ordinary form.
+// Its own last line says how that run went; either run failing fails this one.
+let realOk = true;
+if (!process.env.REALISTIC_IDS_INNER) { console.log(''); realOk = require('../realistic_ids.js').run(['rules']); }
+process.exit(fail || !realOk ? 1 : 0);

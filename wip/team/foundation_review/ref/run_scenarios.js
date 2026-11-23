@@ -95,4 +95,8 @@ for (const fp of files) {
   }
 }
 console.log(`\n${pass} passed, ${fail} failed, ${pass + fail} asks`);
-process.exit(fail ? 1 : 0);
+// [AJ1] The realistic-ids check runs every time: every ask again with every short made-up id in the ordinary form.
+// Its own last line says how that run went; either run failing fails this one.
+let realOk = true;
+if (!process.env.REALISTIC_IDS_INNER) { console.log(''); realOk = require('../realistic_ids.js').run(['scenarios']); }
+process.exit(fail || !realOk ? 1 : 0);
