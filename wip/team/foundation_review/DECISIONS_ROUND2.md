@@ -428,3 +428,8 @@ BA1. A check may carry `stale: true`. It is set only by the move on a bank figur
 BA2. move() returns `needs` (bankToday, cards, cardDays, billDay, cardLine), worked out from the records and never saved. app3 asks these questions after the move.
 BA3. The engine gets its own merge in slice 4 (cloud copy). Until then move.js takes the merge as an argument.
 BA4. While cro-09 is the only red mark (until AV1 is flipped), lanes may self-merge if they add no new failure.
+
+## BB. Merge gates and the screens pieces (23 Nov night JST)
+BB1. A lane that adds files only under engine/, store/, screens/ or app3/ is gated on its own tests and on the engine, scenario and rule runs. Those files cannot reach the old build. The old app's ./check.sh runs once on a quiet machine before anything reaches Mako, because tests/guard.js fails under load from parallel lanes (known since round 11).
+BB2. "Bank after the cards are paid" must name a per-bank figure. Slice 1 is safe because Mako has one bank and no savings account in the app. Slice 6 (the other lives) adds the per-bank figure to the engine.
+BB3. The names marked for Mako (screens/names.js) go into MAKO_RUN for his copy pass. They do not block slice 1, which uses the label already in use.
