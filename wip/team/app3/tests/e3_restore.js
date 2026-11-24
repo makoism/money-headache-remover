@@ -110,6 +110,22 @@ const homeFigs = async p => JSON.stringify((await T.figs(p)).filter(f => f.amt !
     await B.p.reload(); await T.w(300);
     ck('B takes it too', await until(async () => await homeFigs(B.p) === figs0), await homeFigs(B.p));
 
+    /* ---- kept copies are listed by moment, not by their id as text (each `at` carries its own offset) ---- */
+    {
+      await A.p.evaluate(async () => {
+        const db = await new Promise((ok, no) => { const q = indexedDB.open('burrow3'); q.onsuccess = () => ok(q.result); q.onerror = () => no(q.error); });
+        await new Promise((ok, no) => { const tx = db.transaction(['kept'], 'readwrite'), k = tx.objectStore('kept');
+          k.put({ id: 'copy:2030-01-01T10:00:00.000+09:00', why: 'Tokyo 10:00', at: '2030-01-01T10:00:00.000+09:00', copy: { events: [] } });
+          k.put({ id: 'copy:2030-01-01T02:00:00.000-05:00', why: 'New York 02:00 (16:00 in Tokyo)', at: '2030-01-01T02:00:00.000-05:00', copy: { events: [] } });
+          tx.oncomplete = ok; tx.onerror = () => no(tx.error); });
+        db.close();
+      });
+      await A.p.click('#a3SetGo'); await T.w(400);
+      const first = await A.p.$eval('[data-set=kept]', e => e.textContent);
+      ck('kept copies are listed newest first by moment, whatever the offset', /^New York 02:00/.test(first), first);
+      await A.p.click('#a3SetClose'); await T.w(200);
+    }
+
     const outside = A.requests.concat(B.requests).filter(r => !own(r));
     ck('every request went to the page\'s own address', outside.length === 0, outside.join(' '));
     const errs = A.errs.concat(B.errs).filter(e => !/Failed to load resource/.test(e));

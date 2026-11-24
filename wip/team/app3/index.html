@@ -7895,7 +7895,7 @@ const E3 = (() => {
     if (mode === 'try' || !store) return value === undefined ? null : false;
     try {
       if (key === 'copy') return await store.keepCopy(value.copy, value.why);
-      if (key === 'copies') return (await store.keptCopies()).sort((x, y) => (x.id < y.id ? 1 : -1));
+      if (key === 'copies') return (await store.keptCopies()).sort((x, y) => (Date.parse(y.at) || 0) - (Date.parse(x.at) || 0) || (x.id < y.id ? 1 : -1));   // by moment: each `at` carries its own offset
       if (key.startsWith('copy:')) return await store.keptCopy(key);
       const d = (await store.getDevice()) || {};
       if (value === undefined) return d[key] === undefined ? null : d[key];
