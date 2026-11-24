@@ -6,7 +6,8 @@
        21 Nov to 10 Dec (20 days), cut at the period start of 10 Dec: 19 days in the period before (850 x 19 / 20 = 807.5,
        808) and 1 day in this one (850 - 808 = 42). Receipts shows the 42 in this period and the 808 under Earlier, each
        named as found at the bank check of 10 Dec, on Free to spend, and not a button (it changes only at a check).
-   A2. Plan lines alone needing more than the bank can spare: Home says so, by how much, and what to do (worked below). */
+   A2. Plan lines alone needing more than the bank can spare: Home says so, by how much, and what to do (worked below).
+   C1. A second bank going below zero while the main one can spare it: Home says to move the money, how much and from where. */
 'use strict';
 const T = require('./lib3.js');
 const { ck } = T;
@@ -64,6 +65,22 @@ const rows = p => p.$$eval('#rcList li', es => es.map(e => ({ gap: e.dataset.gap
   ck('A2: never "until pay" as if the pay fixes it', !/Nothing's safe to spend until pay/.test(st2), st2);
   ck('A2: safe to spend is 0', (await p.$eval('[data-fig="safe"] [data-amt]', e => e.dataset.amt)) === '0');
   await T.shot(p, 'listfix_a2');
+
+  /* C1: the made-up book with a second bank, Bank B, ¥10,000 at setup on 20 Nov, and a Gym bill of 15,000 on the 15th
+     from it, with no pay into it. On 12 Dec: 10,000 - 15,000 = -5,000 on 15 Dec, and -20,000 after 15 Jan. Main bank
+     can spare 35,000 (as A2 before Food). Home warns that Bank B goes below zero and says where the money can come from:
+     "Move ¥20,000 from Main bank to Bank B by 15 Dec. Main bank can spare it" (the lowest it goes, by the first day under). */
+  const bkB = T.book(), B = 'k7m2qa-f3n8p1x6wd-81';
+  bkB.accounts.push({ id: B, name: 'Bank B', type: 'bank', cur: 'JPY', owner: null, minBank: null });
+  bkB.events.push({ id: 'k7m2qa-f3n8p1x6wd-82', k: 'open', acct: B, date: '2026-11-20', a: 10000, told: '2026-11-20T24:00', grp: 'setup' }, { id: 'k7m2qa-f3n8p1x6wd-83', k: 'check', acct: B, date: '2026-11-20', a: 10000, told: '2026-11-20T24:00', grp: 'setup' });
+  bkB.schedules.push({ id: 'k7m2qa-f3n8p1x6wd-84', kind: 'bill', name: 'Gym', acct: B, cur: 'JPY', shift: 'after', rules: [{ from: null, rule: { every: 'month', days: [15] } }], steps: [{ from: null, amount: 15000 }] });
+  await fresh(bkB);
+  await go('2026-12-12');
+  const warnC = await p.$$eval('#a3Home [data-warn]', es => es.map(e => e.textContent));
+  ck('C1: Home warns that Bank B goes ¥5,000 below zero on 15 Dec', warnC.some(x => x === 'Bank B goes ¥5,000 below zero on 15 Dec'), warnC.join(' | '));
+  const mv = await txt(p, '#a3Home [data-fig="move-from"]');
+  ck('C1: and says where from: Move ¥20,000 from Main bank to Bank B by 15 Dec. Main bank can spare it', mv === 'Move ¥20,000 from Main bank to Bank B by 15 Dec. Main bank can spare it', mv);
+  await T.shot(p, 'listfix_c1');
 
   const errs = [].concat(...errLists); ck('no page errors', errs.length === 0, errs.join(' | '));
   await b.close(); T.done('e3_listfix');

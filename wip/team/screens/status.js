@@ -77,6 +77,7 @@
     'next.move_money_in': W('Move money in before {day}'),
     'next.move_money_in_now': W('Move money in or spend less'),
     'next.plan_over': W('Lower a plan line, or move money in'),
+    'next.move_from': W('Move {amount} from {from} to {account} by {day}. {from} can spare it'),
     'next.answer': W('Answer the question'),
     'next.take_out_or_move_in': W('Take some out of a goal, or move money in'),
     'next.check_in_when_it_lands': W('Check in when it lands'),
@@ -115,7 +116,7 @@
       if (k === 'amount' || k === 'minimum') return fmt(v);
       if (k === 'day' || k === 'since' || k === 'until') return names.dayLabel(v);
       if (k === 'month') return names.monthLabel(v);
-      if (k === 'account' || k === 'card' || k === 'loan') return (ctx.names && ctx.names[v]) || 'an account';
+      if (k === 'account' || k === 'card' || k === 'loan' || k === 'from') return (ctx.names && ctx.names[v]) || 'an account';
       return String(v);
     });
   }
@@ -207,6 +208,24 @@
     if (WORDS['warn.' + w.code]) return fill('warn.' + w.code, { account: w.account }, ctx);
     return fill('warn.unknown', { account: w.account }, ctx);
   }
+  /* [LISTFIX C1] an account going under while another can spare the money: which one to move it from, how much (the
+     lowest it goes, its later low when there is one) and by which day. The account that can spare the most is named,
+     from the engine's real-money walk (accounts[].real.headroom, BM2), only when it can spare all of it; '' otherwise.
+     ctx: { currency, names, accounts (the engine's) } */
+  function moveText(w, ctx) {
+    ctx = ctx || {};
+    if (!w || w.code !== 'below_minimum') return '';
+    const accounts = ctx.accounts || {}, own = accounts[w.account] || {};
+    const amount = w.later && w.later.amount > (w.amount != null ? w.amount : w.short) ? w.later.amount : w.amount != null ? w.amount : w.short;
+    let best = null;
+    for (const id of Object.keys(accounts)) {
+      const a = accounts[id];
+      if (id === w.account || !a.spendFrom || a.currency !== own.currency || !a.real || a.real.headroom < amount) continue;
+      if (!best || a.real.headroom > accounts[best].real.headroom) best = id;
+    }
+    if (!best) return '';
+    return fill('next.move_from', { amount, from: best, account: w.account, day: w.day, currency: own.currency || ctx.currency }, ctx);
+  }
   /* one "later on" entry in words: the month it goes below zero, as "Mar 2027" */
   function laterText(l, ctx) { return fill('warn.later_on', { account: l.account, month: l.day }, ctx || {}); }
   /* [B1] a below-minimum warning's lower point after its first day under, in words with its own day; '' when none */
@@ -234,5 +253,5 @@
     return deepFreeze(s);
   }
 
-  return { statusOf, warningText, laterText, laterLowText, WORDS, STALE_DAYS };
+  return { statusOf, warningText, laterText, laterLowText, moveText, WORDS, STALE_DAYS };
 });
