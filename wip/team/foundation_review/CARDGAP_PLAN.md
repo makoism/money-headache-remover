@@ -37,5 +37,10 @@ Paid every two weeks or weekly: a stretch can cross two or three period starts; 
 4. A step in the real-page walk (tests/e3_walk.js): a card check that crosses a pay day, hand-worked.
 Then check3 full, a fresh qc-numbers and qc-foundation on the branch.
 
+## Second fix on this branch: two pays that both start periods (failing test 201cba8)
+The engine picks the period pay with `schedules.find` (lookahead.js:346), so the order of the list decides; swapping two marked pays moved the period start from 10 Nov to 25 Oct and safe to spend from 32,000 to 1,935 (engine/test/two_pays_order.test.js). SCHEMA_V3 2.3: a list's order means nothing.
+The rule (coordinator, 24 Nov): **the pay marked most recently starts the period**, by its record's clock `at`, then its id. Nothing is saved differently. Later, outside this branch: the controls endPay slice clears the mark on an ended pay, and where two live pays are both marked the screen says which one the period follows so the person can change it.
+Slice 5: the pick by `at` then id in one place (every reader of the period pay goes through it), the test green in both list orders and with equal clocks.
+
 ## Not in this plan
-Two pays that both start periods being picked by list order (lookahead.js:346): its own failing test and fix, next on this branch. The end-of-period build: it waits for this.
+The end-of-period build: it waits for this. Three new values for Home's two figures (asked by MAIN 16, TWO_FIGURES_PLAN F1): their own short plan and review, straight after this branch is green.
