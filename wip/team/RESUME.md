@@ -20,6 +20,12 @@ Written 2026-11-18 on branch `wip-38.31`. Read this whole file before touching a
   - no cut-off text and no tap target under 44 at 320, 390 and 1300
   - every M line named by a test, a brief or a scope file
   - a wording lint
+- **Coordinator agreed (12:20 JST), queue:**
+  - M24 and M46: the end-of-period question, as a screen card plus an assistant action. It comes after controls slice 1, and goes through qc-foundation first.
+  - M21: a WebKit run, if the container allows one.
+  - M62: kept as a rule, plus the wording lint.
+  - Already in lane/install: M33 (manifest), M28 (test), M22 (Receipts reads "Money went out" and "Money came in").
+  - Keep foundation_review/M_COVERAGE.md current. The coordinator checks it every hour.
 - **Running:**
   - setupfix and ai-panel: they conflict on setup3.js; merge setupfix first, then ai-panel by one hand
   - invite
