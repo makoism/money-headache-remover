@@ -8,7 +8,7 @@ function totalWords3(r, yr) {
   const home = E3.home();
   const by = { typed: 'typed by you', convert: 'from your own conversion' };
   const parts = x.parts.map(t => {
-    const pair = t.inverse ? `1 ${home} = ${t.rate} ${t.currency}` : `1 ${t.currency} = ${t.rate} ${home}`;
+    const pair = `1 ${t.currency} = ${t.shown} ${home}`;   // [S6] the engine's rate in this direction, rounded for display only
     return `<li data-fig="totalpart" data-acct="${esc3(t.account)}">${esc3(E3.nameOf(t.account))} ${money3(t.amount, t.currency)} at ${esc3(pair)} from ${esc3(day3(t.rateFrom, yr))}, ${esc3(by[t.src] || by.typed)}${t.old ? ', over 30 days old' : ''}: ${fig3('total.inHome.parts.*.converted', t.converted, home)}</li>`;
   }).join('');
   const missing = x.missing.map(m => `<p class="a3-warn" data-fig="totalmissing" data-acct="${esc3(m.account)}">${esc3(E3.nameOf(m.account))} ${money3(m.amount, m.currency)} is not counted: no rate yet. Type one in Settings, Rates</p>`).join('');

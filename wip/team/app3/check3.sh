@@ -82,6 +82,7 @@ step "the walk again in Tokyo at 04:40 (every figure the same after a reload at 
 step "the walk again in Tokyo at 23:30 (every figure the same after a reload at each check-in)"; TZ=Asia/Tokyo WALK_CLOCK=23:30 run tests/e3_walk.js "e3_walk: ALL PASS"
 step "stage 2 S1: if no more pay came, your money lasts about N weeks (Mako's shape, setup 24 Nov to pay day 10 Dec, hand-worked at each step)"; run tests/e3_runway.js "e3_runway: ALL PASS"
 step "stage 2 S5: an account in another currency, a rate typed with its day, the Total in yen on Home (2.4 walk to 24 Nov, 1 Dec, an old rate)"; run tests/e3_rates.js "e3_rates: ALL PASS"
+step "stage 2 S6: the rate from your own conversion, Moved between yen and dollars asks what arrived (2.4 walk from 1 Dec, exact ratio)"; run tests/e3_convert.js "e3_convert: ALL PASS"
 step "guard (idle CPU, long tasks, outside requests, errors)"; run tests/guard3.js "guard3: ALL PASS"
 step "offline load"; run tests/offline.js "offline: ALL PASS"
 step "the private publish (a made-up path, a copy of public/ served by the worker's rules)"; run tests/e3_publish.js "e3_publish: ALL PASS"

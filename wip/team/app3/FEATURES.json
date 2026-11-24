@@ -2,6 +2,7 @@
  "slice": 1,
  "note": "DECISIONS_ROUND2 AZ5: passes is flipped to true only when the test is green in ./check3.sh. check3.sh fails if a feature marked passing has a red test.",
  "features": [
+  { "name": "Stage 2 S6: Moved between two currencies on Receipts asks what arrived; that conversion is the rate in force from its day (exact, shown rounded), \"from your own conversion\", until a rate typed later takes over", "test": "tests/e3_convert.js", "passes": true },
   { "name": "Stage 2 S5: setup opens an account in another currency; Settings, Rates keeps a rate typed with its day; Home's Total, about, in the home currency with each rate, its day and who gave it, an old one marked and an account with no rate named", "test": "tests/e3_rates.js", "passes": true },
   { "name": "Stage 2 S1: Home says \"If no more pay came, your money lasts about N weeks\" with a ? and the sum behind it: every pay left out, the plan by the day, the first day under the minimum, the account that runs out first named; the same after a reload", "test": "tests/e3_runway.js", "passes": true },
   { "name": "The pay form changes how often pay lands to and from two days a month and no fixed pay (slice 6b): each line and Free to spend proposed as the same money a year, a month with no fixed pay; from no fixed pay the rule starts with its first pay", "test": "tests/e3_paychange.js", "passes": true },

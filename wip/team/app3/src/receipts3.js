@@ -106,7 +106,7 @@ function rcFormHtml3() {
   if (m === 'moved') {
     const toList = fromList.filter(o => o.v !== fromSel);
     fields = `<div class="a3-field"><label for="rcFrom">From</label><select class="a3-in a3-sel" id="rcFrom">${rcOptions3(fromList, fromSel)}</select></div>
-      <div class="a3-field"><label for="rcTo">To</label><select class="a3-in a3-sel" id="rcTo">${rcOptions3(toList, pick(e ? e.acct2 : null, toList, null))}</select></div>`;
+      <div class="a3-field"><label for="rcTo">To</label><select class="a3-in a3-sel" id="rcTo">${rcOptions3(toList, pick(e ? e.acct2 : null, toList, null))}</select></div>${rcArrivedHtml3(e)}`;
   } else if (m === 'in') {
     fields = `<div class="a3-field"><label for="rcAcct">Came into</label><select class="a3-in a3-sel" id="rcAcct">${rcOptions3(fromList, fromSel)}</select></div>`;
   } else {
@@ -135,7 +135,7 @@ function rcDraft3() {
   const a = typed3($('#rcAmt').value, E3.curOf(acct));
   if (a === null) return { bad: 'Type the amount, like 1200' };
   const x = { date: $('#rcDate').value, a, note: $('#rcNote').value };
-  if (m === 'moved') return Object.assign(x, { from: acct, to: $('#rcTo').value });
+  if (m === 'moved') { const y = rcArrived3(acct, $('#rcTo').value); return y.bad ? y : Object.assign(x, { from: acct, to: $('#rcTo').value }, y); }   // [S6] what arrived, in another currency
   x.acct = acct;
   if (m === 'in') return x;
   const f = $('#rcFor').value;
@@ -145,7 +145,7 @@ function rcDraft3() {
 /* the edit's fields from a draft: a moved record names its accounts acct and acct2 */
 function rcFields3(x) {
   const f = { date: x.date, a: x.a, note: x.note };
-  if (RC3.mode === 'moved') return Object.assign(f, { acct: x.from, acct2: x.to });
+  if (RC3.mode === 'moved') return Object.assign(f, { acct: x.from, acct2: x.to }, x.a2 != null ? { a2: x.a2 } : {});
   f.acct = x.acct;
   if (RC3.mode === 'in') return f;
   if (x.place) f.place = x.place; else if (x.line) f.line = x.line; else { f.line = null; f.place = null; }
@@ -176,6 +176,7 @@ function rcWire3() {
   amt.addEventListener('keydown', e => { if (e.key === 'Enter') rcSave3(); });
   amt.addEventListener('input', rcAskOff3);
   if ($('#rcRemove')) $('#rcRemove').addEventListener('click', rcRemove3);
+  rcArrivedWire3();   // [stage 2 S6] what arrived, in another currency (receipts3_convert.js)
   if ($('#rcCancel')) $('#rcCancel').addEventListener('click', () => { RC3.edit = null; RC3.mode = 'spend'; renderRc3(); });
   rcPreview3();
 }

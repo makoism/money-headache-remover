@@ -1555,22 +1555,38 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
   // [L units q9] A saved amount that is not whole is kept as it is and flagged, never rounded on load.
   const loadAmount = a => ({ a, flag: !Number.isInteger(a) });
 
+  // A rate as a ratio of two whole numbers p / k: a decimal string ('150.25') or [S6] an exact ratio ('15000000/99000',
+  // worked out from a conversion each time, never saved). Anything else, or zero, is refused.
+  function ratio(rate) {
+    const s = typeof rate === 'string' ? rate.trim() : '';
+    const f = /^(\d+)\/(\d+)$/.exec(s), m = /^(\d+)(?:\.(\d+))?$/.exec(s);
+    const out = f ? { p: BigInt(f[1]), k: BigInt(f[2]) } : m ? { p: BigInt(m[1] + (m[2] || '')), k: 10n ** BigInt((m[2] || '').length) } : null;
+    if (!out || out.p === 0n || out.k === 0n) throw new Error('not a rate: ' + rate);
+    return out;
+  }
+  // [S6, correction 2] A rate rounded for display only, half up: 2 places from 1 up, else 4 significant digits
+  // ('0.006600'); `inverse` shows it the other way round (1 / rate).
+  function shownRate(rate, inverse) {
+    let { p: N, k: D } = ratio(rate);
+    if (inverse) [N, D] = [D, N];
+    let d = 2;
+    if (N < D) { let z = 0; while (N * 10n ** BigInt(z + 1) < D) z++; d = z + 4; }
+    const scaled = (2n * N * 10n ** BigInt(d) + D) / (2n * D), s = scaled.toString().padStart(d + 1, '0');
+    return s.slice(0, -d) + '.' + s.slice(-d);
+  }
   // [stage 2 S5, STAGE2_PLAN correction 2] An amount in whole minor units of `from` at a rate (a decimal string, kept at
   // full precision: 1 `from` is `rate` `to`), as whole minor units of `to`; `inverse` reads the rate the other way (1 `to`
   // is `rate` `from`). Whole-number maths with each currency's exponent, rounded half up (half away from zero below zero).
   function convert(n, from, to, rate, inverse) {
     if (from === to) return n;
-    const m = /^(\d+)(?:\.(\d+))?$/.exec(typeof rate === 'string' ? rate.trim() : '');
-    if (!m) throw new Error('not a rate: ' + rate);
-    const p = BigInt(m[1] + (m[2] || '')), k = 10n ** BigInt((m[2] || '').length);
-    if (p === 0n) throw new Error('not a rate: ' + rate);
+    const { p, k } = ratio(rate);
     const neg = n < 0, a = BigInt(Math.abs(n)), dt = 10n ** BigInt(decimals(to)), df = 10n ** BigInt(decimals(from));
     const num = inverse ? a * k * dt : a * p * dt, den = inverse ? p * df : k * df;
     const out = Number((2n * num + den) / (2n * den));
     return neg ? -out : out;
   }
 
-  const api = { DECIMALS, known, decimals, toMinor, minorOf, fmt, interestOn, spread, loadAmount, convert };
+  const api = { DECIMALS, known, decimals, toMinor, minorOf, fmt, interestOn, spread, loadAmount, convert, shownRate };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else (root.BurrowEngine = root.BurrowEngine || {}).units = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
@@ -1873,13 +1889,24 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
   // [stage 2 S5, STAGE2_PLAN corrections 2, 3, 2'] The rate in force for `cur` into `to` on a day (YYYY-MM-DD): of the
   // live `rates` records for the pair in either direction with `from` on or before the day, the latest by `from`, then
   // `at`, then id. `inverse` is true when that record runs the other way (1 `to` is `rate` `cur`). Null when none.
+  // [S6] A conversion (`convert`, or a `transfer` or `repay` between two currencies, both amounts above zero) is a rate
+  // too, worked out from the event each time as an exact ratio: 1 <what left> is a2 x 10^(its exponent) / (a x 10^(the
+  // other's)) <what arrived>, dated by the event, `src: 'convert'`. `shown` is the rate in the asked direction, rounded
+  // for display only (units.shownRate).
   function rateOn(book, cur, to, day) {
+    const U = typeof module === 'object' && module.exports ? require('./units.js') : root.BurrowEngine.units;
     const pair = r => live(r) && typeof r.from === 'string' && r.from <= day && ((r.cur === cur && r.to === to) || (r.cur === to && r.to === cur));
     const s = v => String(v == null ? '' : v);
-    const list = ((book && book.rates) || []).filter(pair).sort((p, q) => (p.from !== q.from ? (p.from < q.from ? -1 : 1)
+    const acc = {}; for (const a of (book && book.accounts) || []) if (live(a) && a.id) acc[a.id] = a;
+    const fromEvents = ((book && book.events) || []).filter(e => live(e) && (e.k === 'convert' || e.k === 'transfer' || e.k === 'repay')
+      && acc[e.acct] && acc[e.acct2] && acc[e.acct].cur !== acc[e.acct2].cur && Number.isInteger(e.a) && Number.isInteger(e.a2) && e.a > 0 && e.a2 > 0)
+      .map(e => { const x = acc[e.acct].cur, y = acc[e.acct2].cur;
+        return { id: e.id, from: e.date, at: e.at, cur: x, to: y, src: 'convert',
+          rate: (BigInt(e.a2) * 10n ** BigInt(U.decimals(x))) + '/' + (BigInt(e.a) * 10n ** BigInt(U.decimals(y))) }; });
+    const list = ((book && book.rates) || []).concat(fromEvents).filter(pair).sort((p, q) => (p.from !== q.from ? (p.from < q.from ? -1 : 1)
       : s(p.at) !== s(q.at) ? (s(p.at) < s(q.at) ? -1 : 1) : s(p.id) < s(q.id) ? -1 : s(p.id) > s(q.id) ? 1 : 0));
     const r = list.pop();
-    return r ? { id: r.id, from: r.from, rate: r.rate, inverse: r.cur !== cur, src: r.src || 'typed' } : null;
+    return r ? { id: r.id, from: r.from, rate: r.rate, inverse: r.cur !== cur, src: r.src || 'typed', shown: U.shownRate(r.rate, r.cur !== cur) } : null;
   }
   function ctx(book, day) {
     const by = Object.create(null);
@@ -3467,7 +3494,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
         const a = res.accounts[id], rt = L.rateOn(book, a.currency, home, asOf);
         if (!rt) { missing.push({ account: id, currency: a.currency, amount: a.bank }); continue; }
         parts.push({ account: id, currency: a.currency, amount: a.bank, converted: U.convert(a.bank, a.currency, home, rt.rate, rt.inverse),
-          rate: rt.rate, inverse: rt.inverse, rateFrom: rt.from, src: rt.src, old: today - dayNum(rt.from) > 30 });
+          rate: rt.rate, inverse: rt.inverse, shown: rt.shown, rateFrom: rt.from, src: rt.src, old: today - dayNum(rt.from) > 30 });
       }
       res.total.inHome = { amount: parts.reduce((t, x) => t + x.converted, homeTotal), parts, missing };
     }
@@ -8099,6 +8126,7 @@ const E3 = (() => {
       account(book, e.acct, OWN, 'the money left');
       account(book, e.acct2, OWN, 'the money went to');
       if (e.acct === e.acct2) bad('Pick two different accounts');
+      if (e.a2 != null && (!Number.isInteger(e.a2) || !(e.a2 > 0))) bad('Type what arrived, above zero');
     } else if (e.k === 'in' && !e.sub) account(book, e.acct, OWN, 'the money came into');
     else account(book, e.acct, SPEND_FROM, e.k === 'in' ? 'the money came back to' : 'it was paid from');
     if (e.line != null && e.place != null) bad('Pick a line or a place, not both');
@@ -8208,6 +8236,7 @@ const E3 = (() => {
     },
     moveMoney: (w, x) => {
       const e = { k: 'transfer', date: x.date, a: x.a, acct: x.from, acct2: x.to, note: noteOf(x.note), src: typed() };
+      if (x.a2 != null) e.a2 = x.a2;   // [stage 2 S6] what arrived in another currency (SCHEMA_V3 6.2)
       if (e.note === undefined) delete e.note;
       checkEvent(w.book, e, w.today);
       return w.add('events', e);
@@ -8952,7 +8981,7 @@ function totalWords3(r, yr) {
   const home = E3.home();
   const by = { typed: 'typed by you', convert: 'from your own conversion' };
   const parts = x.parts.map(t => {
-    const pair = t.inverse ? `1 ${home} = ${t.rate} ${t.currency}` : `1 ${t.currency} = ${t.rate} ${home}`;
+    const pair = `1 ${t.currency} = ${t.shown} ${home}`;   // [S6] the engine's rate in this direction, rounded for display only
     return `<li data-fig="totalpart" data-acct="${esc3(t.account)}">${esc3(E3.nameOf(t.account))} ${money3(t.amount, t.currency)} at ${esc3(pair)} from ${esc3(day3(t.rateFrom, yr))}, ${esc3(by[t.src] || by.typed)}${t.old ? ', over 30 days old' : ''}: ${fig3('total.inHome.parts.*.converted', t.converted, home)}</li>`;
   }).join('');
   const missing = x.missing.map(m => `<p class="a3-warn" data-fig="totalmissing" data-acct="${esc3(m.account)}">${esc3(E3.nameOf(m.account))} ${money3(m.amount, m.currency)} is not counted: no rate yet. Type one in Settings, Rates</p>`).join('');
@@ -9226,7 +9255,7 @@ function rcFormHtml3() {
   if (m === 'moved') {
     const toList = fromList.filter(o => o.v !== fromSel);
     fields = `<div class="a3-field"><label for="rcFrom">From</label><select class="a3-in a3-sel" id="rcFrom">${rcOptions3(fromList, fromSel)}</select></div>
-      <div class="a3-field"><label for="rcTo">To</label><select class="a3-in a3-sel" id="rcTo">${rcOptions3(toList, pick(e ? e.acct2 : null, toList, null))}</select></div>`;
+      <div class="a3-field"><label for="rcTo">To</label><select class="a3-in a3-sel" id="rcTo">${rcOptions3(toList, pick(e ? e.acct2 : null, toList, null))}</select></div>${rcArrivedHtml3(e)}`;
   } else if (m === 'in') {
     fields = `<div class="a3-field"><label for="rcAcct">Came into</label><select class="a3-in a3-sel" id="rcAcct">${rcOptions3(fromList, fromSel)}</select></div>`;
   } else {
@@ -9255,7 +9284,7 @@ function rcDraft3() {
   const a = typed3($('#rcAmt').value, E3.curOf(acct));
   if (a === null) return { bad: 'Type the amount, like 1200' };
   const x = { date: $('#rcDate').value, a, note: $('#rcNote').value };
-  if (m === 'moved') return Object.assign(x, { from: acct, to: $('#rcTo').value });
+  if (m === 'moved') { const y = rcArrived3(acct, $('#rcTo').value); return y.bad ? y : Object.assign(x, { from: acct, to: $('#rcTo').value }, y); }   // [S6] what arrived, in another currency
   x.acct = acct;
   if (m === 'in') return x;
   const f = $('#rcFor').value;
@@ -9265,7 +9294,7 @@ function rcDraft3() {
 /* the edit's fields from a draft: a moved record names its accounts acct and acct2 */
 function rcFields3(x) {
   const f = { date: x.date, a: x.a, note: x.note };
-  if (RC3.mode === 'moved') return Object.assign(f, { acct: x.from, acct2: x.to });
+  if (RC3.mode === 'moved') return Object.assign(f, { acct: x.from, acct2: x.to }, x.a2 != null ? { a2: x.a2 } : {});
   f.acct = x.acct;
   if (RC3.mode === 'in') return f;
   if (x.place) f.place = x.place; else if (x.line) f.line = x.line; else { f.line = null; f.place = null; }
@@ -9296,6 +9325,7 @@ function rcWire3() {
   amt.addEventListener('keydown', e => { if (e.key === 'Enter') rcSave3(); });
   amt.addEventListener('input', rcAskOff3);
   if ($('#rcRemove')) $('#rcRemove').addEventListener('click', rcRemove3);
+  rcArrivedWire3();   // [stage 2 S6] what arrived, in another currency (receipts3_convert.js)
   if ($('#rcCancel')) $('#rcCancel').addEventListener('click', () => { RC3.edit = null; RC3.mode = 'spend'; renderRc3(); });
   rcPreview3();
 }
@@ -9424,6 +9454,35 @@ if (ACT3) ACT3.onChange((step, opts) => {
   try { renderHome3(); } catch (e) { /* Home draws itself next time */ }
   renderRc3();
 });
+/* ---------- Receipts: money moved into another currency (stage 2 S6, STAGE2_PLAN 2.4 step 2) ----------
+   When "Moved" goes between two accounts in different currencies, the form also asks what arrived, in the To
+   account's currency. The record is the move with `a2` (what arrived, SCHEMA_V3 6.2), and the engine reads the rate
+   from it (ledger.rateOn, "from your own conversion"). Joined in receipts3.js by the field, the draft and the wiring.
+   Words are drafts for Mako's copy pass (FOR_MAKO.md). */
+function rcArrivedHtml3(e) {
+  const v = e && e.a2 != null ? SM.toInput(e.a2, E3.curOf(e.acct2)) : '';
+  return `<div class="a3-field" data-q="arrived" hidden><label for="rcAmt2" id="rcAmt2L">What arrived</label><input class="a3-in" data-amount type="text" inputmode="decimal" autocomplete="off" id="rcAmt2" value="${esc3(v)}"></div>`;
+}
+/* the field shows only when From and To are in different currencies, named by the To account's currency */
+function rcArrivedShow3() {
+  const f = document.querySelector('#rcForm [data-q=arrived]');
+  if (!f || !$('#rcFrom') || !$('#rcTo')) return;
+  const to = $('#rcTo').value, two = E3.curOf($('#rcFrom').value) !== E3.curOf(to);
+  f.hidden = !two;
+  $('#rcAmt2L').textContent = `What arrived in ${E3.nameOf(to)}, in ${E3.curOf(to)}`;
+}
+function rcArrivedWire3() {
+  if (!$('#rcAmt2')) return;
+  BurrowScreens.inputs.bind($('#rcAmt2'), { kind: 'amount', get code() { return E3.curOf($('#rcTo').value); }, optional: true });
+  $('#rcTo').addEventListener('change', rcArrivedShow3);
+  rcArrivedShow3();
+}
+/* { a2 } for a move between two currencies, {} for one currency, or { bad: words } */
+function rcArrived3(from, to) {
+  if (E3.curOf(from) === E3.curOf(to)) return {};
+  const a2 = typed3($('#rcAmt2').value, E3.curOf(to));
+  return a2 === null || a2 === 0 ? { bad: `Type what arrived in ${E3.nameOf(to)}, in ${E3.curOf(to)}` } : { a2 };
+}
 /* ---------- Plan (the plan lane; old app: ui1.js to ui3.js, ui7.js, rebuilt on the new engine, pay to pay) ----------
    This pay period by its dates with each budget line and Free to spend (what it started with and what is left), bills
    with their days (add, change from a date, end), goals kept in the bank or in their own account (set money aside,

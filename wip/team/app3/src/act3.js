@@ -67,6 +67,7 @@
       account(book, e.acct, OWN, 'the money left');
       account(book, e.acct2, OWN, 'the money went to');
       if (e.acct === e.acct2) bad('Pick two different accounts');
+      if (e.a2 != null && (!Number.isInteger(e.a2) || !(e.a2 > 0))) bad('Type what arrived, above zero');
     } else if (e.k === 'in' && !e.sub) account(book, e.acct, OWN, 'the money came into');
     else account(book, e.acct, SPEND_FROM, e.k === 'in' ? 'the money came back to' : 'it was paid from');
     if (e.line != null && e.place != null) bad('Pick a line or a place, not both');
@@ -176,6 +177,7 @@
     },
     moveMoney: (w, x) => {
       const e = { k: 'transfer', date: x.date, a: x.a, acct: x.from, acct2: x.to, note: noteOf(x.note), src: typed() };
+      if (x.a2 != null) e.a2 = x.a2;   // [stage 2 S6] what arrived in another currency (SCHEMA_V3 6.2)
       if (e.note === undefined) delete e.note;
       checkEvent(w.book, e, w.today);
       return w.add('events', e);

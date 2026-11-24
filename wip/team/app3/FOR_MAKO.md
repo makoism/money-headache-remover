@@ -135,4 +135,5 @@ One help piece serves every "?", so changing a line there changes it everywhere.
 - Home, a new "Total, about, in JPY" card, only when an account is in another currency: "¥436,250", then "Dollar account $1,000.00 at 1 USD = 150.25 JPY from 24 Nov, typed by you: ¥150,250". With no rate yet: "Dollar account $1,000.00 is not counted: no rate yet. Type one in Settings, Rates". After 30 days: ", over 30 days old".
 - Settings, a new "Rates" card: "1 USD is how many JPY", a From day (today by default), "Keep this rate", and the rates typed, latest first. Nothing is fetched from the internet.
 - Safe to spend still never counts money in another currency (that is a later slice, S9).
+- (S6) Receipts, Moved between a yen and a dollar account also asks "What arrived in Dollar account, in USD". That move is then the rate, "from your own conversion", shown rounded (151.52) and used exactly; a rate typed later takes over, and on the same day the one entered last wins. A typed 152 shows as 152.00.
 - Question: should a rate also be typed the other way ("1 JPY is 0.0066 USD")? The engine reads either; the screen asks one way only.
