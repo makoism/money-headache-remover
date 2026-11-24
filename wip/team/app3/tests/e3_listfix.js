@@ -8,6 +8,7 @@
        named as found at the bank check of 10 Dec, on Free to spend, and not a button (it changes only at a check).
    A2. Plan lines alone needing more than the bank can spare: Home says so, by how much, and what to do (worked below).
    C1. A second bank going below zero while the main one can spare it: Home says to move the money, how much and from where.
+   A2b, C1b and A1b: the three cases qc-foundation found (the day named, money set aside, gaps that are not spending).
    B1. A gap saved while the card question shows: the Undo bar still says it counts as spending.
    B2. Right after setup, Home says why safe to spend is small: Free to spend counts its share for the days left.
    B3. The cap step in the sum under safe to spend says it is held back, and why.
@@ -56,8 +57,9 @@ const rows = p => p.$$eval('#rcList li', es => es.map(e => ({ gap: e.dataset.gap
   /* A2: a fresh copy of the made-up book on 12 Dec: safe to spend 35,000 until pay on 12 Jan. The 10 Dec pay is not
      ticked, so the period holding setup (20 Nov) still runs, and Food of 100,000 each pay period, added on Plan, counts
      its share from the setup day (I4): 100,000 x 20 / 30 = 66,666. The plan needs 66,666 - 35,000 = 31,666 more than
-     the bank can spare. The bank itself never goes under, so Home says the plan
-     is the cause, with the amount, and what to do; never "It turns safe once your pay is in". */
+     the bank can spare. The bank itself never goes under, so Home says the plan is the cause, with the amount, the
+     day the plan's walk first runs short (28 Dec, the bills of 28 Dec: 35,000 is left before them and 84,600 goes out,
+     with Food's 66,666 held), and what to do; never "It turns safe once your pay is in", never "before pay on". */
   await fresh();
   await go('2026-12-12');
   await p.tap('[data-tab="plan"]'); await T.w(300);
@@ -66,11 +68,21 @@ const rows = p => p.$$eval('#rcList li', es => es.map(e => ({ gap: e.dataset.gap
   await p.click('[data-plbtn="0"]'); await T.w(400);
   await p.tap('[data-tab="home"]'); await T.w(300);
   const st2 = await p.$eval('[data-card="status"]', e => e.textContent.replace(/\s+/g, ' ').trim());
-  ck('A2: Home says the plan lines need ¥31,666 more than the bank can spare before pay on 12 Jan', /Your plan lines need ¥31,666 more than your bank can spare before pay on 12 Jan/.test(st2), st2);
+  ck('A2: Home says the plan lines need ¥31,666 more than the bank can spare, short from 28 Dec', /Your plan lines need ¥31,666 more than your bank can spare\. It runs short from 28 Dec/.test(st2) && !/before pay on/.test(st2), st2);
   ck('A2: and what to do: Lower a plan line, or move money in', /Lower a plan line, or move money in/.test(st2), st2);
   ck('A2: never "until pay" as if the pay fixes it', !/Nothing's safe to spend until pay/.test(st2), st2);
   ck('A2: safe to spend is 0', (await p.$eval('[data-fig="safe"] [data-amt]', e => e.dataset.amt)) === '0');
   await T.shot(p, 'listfix_a2');
+
+  /* A2, second case (qc-foundation): Free to spend of 300,000 each pay period from 21 Nov, on 25 Nov. In the period
+     holding setup it counts 300,000 x 20 / 30 = 200,000; the bank can spare 201,400 (real walk), so before the 10 Dec pay
+     the plan fits. It runs short only on 28 Dec, after the next pay, when the next period's 300,000 is held as well:
+     85,000 short then. Home names that day, never "before pay on 10 Dec". */
+  { const bk2 = T.book();
+    bk2.plan.shares.push({ id: 'k7m2qa-f3n8p1x6wd-95', from: '2026-11-21', cur: 'JPY', per: { free: 'pay' }, free: 300000, goals: {}, at: '2026-11-21T20:00+09:00', by: 'k7m2qa', told: '2026-11-21T20:00+09:00' });
+    await fresh(bk2); await go('2026-11-25');
+    const st3 = await p.$eval('[data-card="status"]', e => e.textContent.replace(/\s+/g, ' ').trim());
+    ck('A2b: the plan lines need ¥85,000 more, short from 28 Dec, never before pay on 10 Dec', /Your plan lines need ¥85,000 more than your bank can spare\. It runs short from 28 Dec/.test(st3) && !/before pay on 10 Dec/.test(st3), st3); }
 
   /* C1: the made-up book with a second bank, Bank B, ¥10,000 at setup on 20 Nov, and a Gym bill of 15,000 on the 15th
      from it, with no pay into it. On 12 Dec: 10,000 - 15,000 = -5,000 on 15 Dec, and -20,000 after 15 Jan. Main bank
@@ -87,6 +99,8 @@ const rows = p => p.$$eval('#rcList li', es => es.map(e => ({ gap: e.dataset.gap
   const mv = await txt(p, '#a3Home [data-fig="move-from"]');
   ck('C1: and says where from: Move ¥20,000 from Main bank to Bank B by 15 Dec. Main bank can spare it', mv === 'Move ¥20,000 from Main bank to Bank B by 15 Dec. Main bank can spare it', mv);
   await T.shot(p, 'listfix_c1');
+
+
 
   /* B1: the same check as A1 on a fresh device, saved while "Was Card A's payment ¥54,000?" is still showing: the gap
      is counted as spending all the same (the engine's filler, 850), so the Undo bar says "It counts as spending" too. */
