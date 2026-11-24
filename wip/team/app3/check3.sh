@@ -59,6 +59,8 @@ page|tests/e3_stmt_once.js|e3_stmt_once: ALL PASS||300|each record once after a 
 page|tests/e3_period.js|e3_period: ALL PASS||300|the period by its dates
 page|tests/e3_receipts.js|e3_receipts: ALL PASS||300|Receipts
 page|tests/e3_listfix.js|e3_listfix: ALL PASS||300|the LISTFIX fixes on the page (app3/LISTFIX.md): gaps in Receipts and the rest
+page|tests/e3_doors.js|e3_doors: ALL PASS||300|Receipts' two doors at 320 (M22): Money went out and Money came in, Refund and Moved under them, one of each door saved
+page|tests/e3_moved1.js|e3_moved1: ALL PASS||300|Moved with one account of your own says a second account is needed, no empty To list and no Save (K18)
 page|tests/e3_moneyin.js|e3_moneyin: ALL PASS||300|Receipts: Money in, a client payment or a gift (slice 6)
 page|tests/e3_amounts.js|e3_amounts: ALL PASS||300|every amount box: a tap, click or Tab, or a form's own focus, selects, so typing replaces (screens/inputs.js)
 page|tests/e3_bigspend.js|e3_bigspend: ALL PASS||300|a spend larger than what its account holds asks first, new or changed (north star F5)
@@ -71,6 +73,7 @@ page|tests/e3_first.js|e3_first: ALL PASS||300|the ways out of the first screen 
 page|tests/e3_file.js|e3_file: ALL PASS||300|as a plain file:the first screen, the try book and its day box
 page|tests/e3_setup.js|e3_setup: ALL PASS||300|setup3
 page|tests/e3_setupfix.js|e3_setupfix: ALL PASS||300|setup fixes from Mako's first run: pay after tax, rows removed, empty amounts, each section saved with Undo, today's pay landed, a reload half way
+page|tests/e3_onepay.js|e3_onepay: ALL PASS||300|two incomes on the 10th entered as one pay (M28): setup 20 Nov, 9 Dec, Check your bank on 10 Dec, hand-worked next pay, period and safe to spend
 page|tests/e3_setup6.js|e3_setup6: ALL PASS||300|setup for the other lives: the country chosen, more accounts, pay rhythms, a second income on its own day, cards and bills from their account, once a year (slice 6)
 page|tests/e3_income2.js|e3_income2: ALL PASS||300|a second income every n weeks (stepped back to a day on or before setup) or on two days a month (slice 6b)
 page|tests/e3_weeks3.js|e3_weeks3: ALL PASS||300|pay every 3 weeks in setup and the pay form (slice 6b)
@@ -87,6 +90,7 @@ page|tests/e3_walk.js|e3_walk: ALL PASS|TZ=Asia/Tokyo WALK_CLOCK=04:40|600|the w
 page|tests/e3_walk.js|e3_walk: ALL PASS|TZ=Asia/Tokyo WALK_CLOCK=23:30|600|the walk again in Tokyo at 23:30 (every figure the same after a reload at each check-in)
 alone|tests/guard3.js|guard3: ALL PASS||300|guard (idle CPU, long tasks, outside requests, errors)
 page|tests/offline.js|offline: ALL PASS||300|offline load
+page|tests/e3_install.js|e3_install: ALL PASS||300|installed to the home screen (M33): the manifest beside the page, its icons, start_url in the page's own folder, kept by the worker, Chrome's installability check
 page|tests/e3_publish.js|e3_publish: ALL PASS||300|the private publish (a made-up path, a copy of public/ served by the worker's rules)
 page|tests/e3_tabs.js|e3_tabs: ALL PASS||300|two tabs on one device
 page|tests/e3_backup.js|e3_backup: ALL PASS||300|Settings and the backup file
@@ -111,17 +115,18 @@ page_tests_for() {   # page_tests_for <changed path, relative to app3/>
     tests/*.js)               basename "$1" .js ;;
     src/home3.js)             echo e3_home e3_ns e3_homeplan e3_warnwords e3_cardline e3_bankparts e3_names e3_payday ;;
     src/checkin3.js)          echo e3_checkin e3_checkgap e3_cardfig e3_reload e3_bankparts e3_payday ;;
-    src/receipts3.js)         echo e3_receipts e3_listfix e3_moneyin e3_bigspend e3_stmt_once e3_period e3_names ;;
+    src/receipts3.js)         echo e3_receipts e3_listfix e3_moneyin e3_bigspend e3_stmt_once e3_period e3_names e3_doors e3_moved1 ;;
     src/plan3.js|src/plan3_write.js) echo e3_plan e3_rhythms e3_lineshare e3_homeplan e3_paychange e3_names ;;
-    src/setup3.js)            echo e3_setup e3_setupfix e3_setup6 e3_income2 e3_weeks3 e3_first ;;
+    src/setup3.js)            echo e3_setup e3_setupfix e3_setup6 e3_income2 e3_weeks3 e3_first e3_onepay ;;
     src/start3.js)            echo e3_first e3_file e3_try ;;
     src/stmt3*.js)            echo e3_stmt e3_stmt_once e3_walk4 e3_invite ;;
     src/ask3*.js)             echo e3_ask e3_invite ;;
     src/backup3.js|src/settings3.js) echo e3_backup e3_tabs ;;
-    src/sw3.js|src/settings3_sw.js|sw3.js) echo e3_sw offline ;;
+    src/sw3.js|src/settings3_sw.js|sw3.js) echo e3_sw offline e3_install ;;
     src/cloud3*.js)           echo e3_cloud ;;
     src/remind3*.js)          echo e3_remind ;;
-    publish3.sh)              echo e3_publish ;;
+    publish3.sh)              echo e3_publish e3_install ;;
+    manifest3.webmanifest|make_icons3.js|icon3-*.png) echo e3_install ;;
   esac
 }
 

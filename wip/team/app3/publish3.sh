@@ -1,7 +1,8 @@
 #!/bin/bash
 # Puts the built app3 into the site's public/ folder under a private path (DECISIONS_ROUND2 BG1, BG2).
 #   ./publish3.sh <path>        for example  ./publish3.sh n/<long random letters and digits>
-# It builds app3, then writes exactly two files: public/<path>/index.html and public/<path>/sw3.js. Nothing else in
+# It builds app3, then writes exactly five files into public/<path>/: index.html, sw3.js, and what Chrome reads to
+# install it to the home screen (M33): manifest3.webmanifest, icon3-192.png and icon3-512.png. Nothing else in
 # public/ is touched; the old app at the root stays as it is. It deploys nothing: the files go up only when Mako pushes
 # to main. Never commit the real path anywhere but in that push.
 # - The path: lowercase letters, digits, - and _, at least two parts, the last one at least 16 characters (so nobody
@@ -28,4 +29,5 @@ OUT="$PUB/$P"
 mkdir -p "$OUT"
 sed 's|<meta charset="utf-8">|<meta charset="utf-8">\n<meta name="robots" content="noindex, nofollow">\n<meta name="referrer" content="no-referrer">|' index.html > "$OUT/index.html"
 cp sw3.js "$OUT/sw3.js"
+cp manifest3.webmanifest icon3-192.png icon3-512.png "$OUT/"
 echo "published app3 to $OUT ($(wc -c < "$OUT/index.html") bytes, worker $(grep -o "burrow3-[0-9a-f]*" "$OUT/sw3.js"))"
