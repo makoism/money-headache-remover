@@ -70,6 +70,7 @@ page|tests/e3_names.js|e3_names: ALL PASS||300|one figure, one name on Home, Rec
 page|tests/e3_first.js|e3_first: ALL PASS||300|the ways out of the first screen and the made-up numbers
 page|tests/e3_file.js|e3_file: ALL PASS||300|as a plain file:the first screen, the try book and its day box
 page|tests/e3_setup.js|e3_setup: ALL PASS||300|setup3
+page|tests/e3_setupfix.js|e3_setupfix: ALL PASS||300|setup fixes from Mako's first run: pay after tax, rows removed, empty amounts, each section saved with Undo, today's pay landed, a reload half way
 page|tests/e3_setup6.js|e3_setup6: ALL PASS||300|setup for the other lives: the country chosen, more accounts, pay rhythms, a second income on its own day, cards and bills from their account, once a year (slice 6)
 page|tests/e3_income2.js|e3_income2: ALL PASS||300|a second income every n weeks (stepped back to a day on or before setup) or on two days a month (slice 6b)
 page|tests/e3_weeks3.js|e3_weeks3: ALL PASS||300|pay every 3 weeks in setup and the pay form (slice 6b)
@@ -97,7 +98,7 @@ page|tests/e3_sw.js|e3_sw: ALL PASS||300|the service worker (precache, offline, 
 EOF
 )
 # The slowest first, so the pool ends together (CHECK3.md has the times these come from). Unlisted tests follow.
-SLOW="e3_walk e3_life_b e3_life_d e3_life_a e3_life_c e3_paychange e3_life_a2 e3_reload run_all e3_stmt e3_setup6 e3_receipts e3_listfix e3_plan e3_amounts"
+SLOW="e3_walk e3_life_b e3_life_d e3_life_a e3_life_c e3_paychange e3_life_a2 e3_reload run_all e3_stmt e3_setup6 e3_setupfix e3_receipts e3_listfix e3_plan e3_amounts"
 
 # --- quick: which page tests go with a change (a src file, a test file, or anything the page is built from)
 page_tests_for() {   # page_tests_for <changed path, relative to app3/>
@@ -112,7 +113,7 @@ page_tests_for() {   # page_tests_for <changed path, relative to app3/>
     src/checkin3.js)          echo e3_checkin e3_checkgap e3_cardfig e3_reload e3_bankparts e3_payday ;;
     src/receipts3.js)         echo e3_receipts e3_listfix e3_moneyin e3_bigspend e3_stmt_once e3_period e3_names ;;
     src/plan3.js|src/plan3_write.js) echo e3_plan e3_rhythms e3_lineshare e3_homeplan e3_paychange e3_names ;;
-    src/setup3.js)            echo e3_setup e3_setup6 e3_income2 e3_weeks3 e3_first ;;
+    src/setup3.js)            echo e3_setup e3_setupfix e3_setup6 e3_income2 e3_weeks3 e3_first ;;
     src/start3.js)            echo e3_first e3_file e3_try ;;
     src/stmt3*.js)            echo e3_stmt e3_stmt_once e3_walk4 e3_invite ;;
     src/ask3*.js)             echo e3_ask e3_invite ;;

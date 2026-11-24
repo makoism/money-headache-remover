@@ -16,8 +16,9 @@ You approved all five and they went live on 24 Nov, so the cloud copy can be on 
 - Have your bank app open. Your card apps help too.
 
 **Setup (about 5 minutes)**
+Each part has its own **Save**. Press it as you go: "Saved" shows beside it, with Undo in the band at the top. You can stop half way and come back; what you saved is still there. **See my money** at the end puts it together. If you come back on a later day, your bank, cards and bills ask to be checked again, because their figures are of the day you typed them.
 1. **What does your bank show today?** Type the number your bank app shows right now. Don't adjust it.
-2. **Pay:** the 10th, the amount, and the second income on the same day. Choose what happens when the 10th is a weekend or holiday (the working day before, for most Japanese salaries).
+2. **Pay:** the 10th, and the amount that lands in your bank (after tax: the take-home figure on your payslip), and the second income on the same day. Choose what happens when the 10th is a weekend or holiday (the working day before, for most Japanese salaries).
 3. **Cards:** for each card, what is on it now, the payment day (10th and 11th), and the close day. Leave the close day as "not sure" if you don't know it. The app then counts everything on the card as due on the next payment day, which is the safe side.
 4. **Bills:** each with its amount and due day. For any bill due since your last pay, it asks "Has it gone out of your bank yet?". Look at your bank app before you answer.
 5. **Keep at least:** leave it blank for none, or type the lowest your bank should ever go.
@@ -76,6 +77,7 @@ limits, with what would remove each one. app3 works without any of them.
 - Privacy words for statements and Ask.
 
 ## Draft words from the screen fixes (for your copy pass)
+- Setup (24 Nov, your first run): pay reads "How much lands in your bank each pay day, after tax?" with "Your payslip's take-home figure, not the amount before tax". Everyday spending reads "About how much do you spend each pay period on food, transport and small things?" with "Money you spend without planning each item. For example groceries, lunches, coffee, train fares and small shopping. Not your bills or card payments: those come below". Each part's button reads "Save", the last one "See my money". For your run: is "Save" under each part clear, or should it name the part ("Save your pay")?
 - First screen: "I already use the burrow on another device" opens Settings with the line "Type the cloud code from your other device, or restore a backup file you saved there".
 - Receipts: the card over Free to spend left and Safe to spend was headed "Left to spend now", a third name for those figures. It now reads "Where you stand". The rows keep the names from screens/names.js.
 - Receipts, under the list: "Tap a spend to change it" (refunds and money moved open the same way).

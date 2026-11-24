@@ -43,6 +43,7 @@
           Bank B 210,000, GCash 1,550,000. Horizon 15 Apr: Bank B 210,000 - 150,000 (10 Mar) - 150,000 (12 Apr) =
           -90,000. Safe 7,600,000 + 1,550,000 - 90,000 = 9,060,000. */
 'use strict';
+const { finishSetup: finishSetup3 } = require('./setup_sections.js');   // setup is saved one section at a time (item 14)
 const L = require('./lives3.js').make('e3_life_b');
 const { ck, go, typeIn, log, checkin, home, w } = L;
 const after = p => p.$$eval('#a3Home [data-fig=aftercards]', es => es.map(e => e.querySelector('span').firstChild.textContent.replace(/[⁠\s]+/g, ' ').trim() + ' = ' + e.querySelector('[data-amt]').dataset.amt));
@@ -76,7 +77,7 @@ const banks = (a, b, g) => Object.assign({}, A, { 'Bank A': a, 'Bank B': b, GCas
   await w(200);
   const asked = await p.$$eval('#a3Setup [data-q=takenOut]:not([hidden]) label', ls => ls.map(l => l.textContent));
   ck('setup asks about the rent of 1 Dec only', asked.join(' | ') === 'Did the Rent of 1 Dec leave your bank?', asked.join(' | '));
-  await p.click('#a3SetupSave'); await w(700);
+  await finishSetup3(p); await w(700);
   await home(p, '1 Dec after setup', 2130000, banks(1800000, 600000, 150000));
   ck('1 Dec: the period is 27 Nov to 14 Dec', (await p.$eval('[data-fig=period]', e => e.textContent).catch(() => '')) === '27 Nov to 14 Dec');
   let ac = await after(p);

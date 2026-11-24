@@ -153,3 +153,9 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
 .a3-helprow { flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .a3-helprow .burrow-help-text { flex: 1 1 100%; margin: 0; }
 .a3-word { margin-bottom: 14px; }   /* the code word box above the question or the files (stmt3_ai.js) */
+/* [item 14] setup: each section's Save with its state beside it; the message band (Saved, Undo) stays in sight under
+   the tabs while setup is open, and a box focused for an answer is not hidden under it */
+.a3-secsave { align-items: center; }
+.a3-secsave [data-saved] { margin: 0; }
+.a3-setup-open .a3-msg { position: sticky; top: calc(var(--btn-h) + 17px); z-index: 2; background: var(--bg); padding: 4px 0; }
+html:has(.a3-setup-open) { scroll-padding-top: 150px; }

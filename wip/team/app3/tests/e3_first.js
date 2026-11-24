@@ -22,7 +22,7 @@ async function fresh(url) {
     ck('the try band offers to set up with your own numbers', /Set up with my own numbers/.test(await p.$eval('#a3Try', e => e.textContent)));
     await p.tap('[data-tab="receipts"]'); await T.w(200);
     await p.tap('#a3TryOut'); await T.w(500);
-    ck('setup opens', await shows(p, '#a3Setup') && /Save and see my money/.test(await p.$eval('#a3Setup', e => e.textContent)));
+    ck('setup opens', await shows(p, '#a3Setup') && /See my money/.test(await p.$eval('#a3Setup', e => e.textContent)));
     ck('the band is gone', !(await shows(p, '#a3Try')));
     ck('no panel shows under setup', !(await shows(p, '#a3Home')) && !(await shows(p, '#a3Rc')) && !(await shows(p, '#a3Plan')));
     ck('nothing of the try book is written', (await kept(p)) === null);
