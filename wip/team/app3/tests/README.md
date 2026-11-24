@@ -20,5 +20,6 @@ await d.close();
 - `invite: 'word'` makes the made-up relay ask for that code word.
 - `url` goes to a served address (from `Q.serve()`) instead of reloading the page.
 - `tell(page, words)` types into the panel, sends, and waits for the answer.
+- On a phone the panel's sheet can close after an answer. To tap a card's button, open it first (focus `#a3ChatIn`), or use `d.p.$eval('[data-chatok]', e => e.click())`.
 
 The test that uses it is `e3_fakeai_page.js`.

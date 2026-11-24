@@ -12669,6 +12669,8 @@ const CHAT3 = { state: null, busy: false, open: false, route: null, anon: null, 
 const CHAT3_WORDS = {
   privacy: 'What you type, today\'s figures with the names of your accounts, bills and income, and the setup answers so far go to Claude, the AI made by Anthropic, through this page\'s own server. Your notes, shops and single spends are not sent unless you type them. The chat stays on this device.',
   off: 'The assistant is off right now. You can still finish everything:',
+  /* why a change card asks first (M6): the core's card.ask; its card.why is the AI's own words, not shown here */
+  ask: { delete: 'This takes something away. Do it?', large: 'This is more than safe to spend. Do it?', guess: 'You didn\'t type this amount, it\'s the AI\'s guess. Is it right?' },
   upload: 'The whole file goes to the AI, with your name, address, employer and account number. On a payslip, crop out your My Number.',
   noFiles: 'Reading files in the chat comes next. For now, type the figures, or add statements on Receipts.',
   welcome: ['Hi, I\'ll set up your Burrow with you. I ask a few questions, about 10 minutes. You can type, and I\'ll say where to find each figure. What you tell me stays on this phone until you say fill it in.',
@@ -12755,7 +12757,7 @@ function chat3Card(t) {
   const c = t.card || {}, id = esc3(t.id);
   if (c.kind === 'change') {
     const foot = c.status === 'done' ? `<p class="a3-sub" data-chat="status">Done</p><div class="a3-actions"><button type="button" class="a3-btn" data-chatundo="${id}">Undo</button></div>`
-      : c.status === 'ask' ? `<p class="a3-sub" data-chat="status">${esc3(c.why || (c.ask === 'delete' ? 'This takes something away. Do it?' : 'This is more than safe to spend. Do it?'))}</p><div class="a3-actions"><button type="button" class="a3-btn solid" data-chatok="${id}">Do it</button><button type="button" class="a3-btn" data-chatnot="${id}">Not now</button></div>`
+      : c.status === 'ask' ? `<p class="a3-sub" data-chat="status" data-ask="${esc3(c.ask || '')}">${esc3(CHAT3_WORDS.ask[c.ask] || CHAT3_WORDS.ask.large)}</p><div class="a3-actions"><button type="button" class="a3-btn solid" data-chatok="${id}">Do it</button><button type="button" class="a3-btn" data-chatnot="${id}">Not now</button></div>`
       : `<p class="a3-sub" data-chat="status">${esc3(c.status === 'undone' ? 'Taken back' : c.status === 'not now' ? 'Not done' : 'Not done: ' + (c.why || 'the app refused it'))}</p>`;
     return `<div class="a3-card a3-chat-card" data-card="chat-change" data-turn="${id}" data-status="${esc3(c.status)}"><h3>${c.status === 'ask' ? 'A change to check' : 'Changed'}</h3>
       <ul class="a3-chat-lines">${(c.lines || []).map(l => `<li>${esc3(l)}</li>`).join('')}</ul>${chat3Figs(c.rows)}${foot}</div>`;
