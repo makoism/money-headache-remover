@@ -37,6 +37,15 @@ async function gate({ request, env, params }) {
   return { id, token, row };
 }
 
+/* [change 2] the newest shape this server takes (store/pack.js pageV: 3). Raised by the VAULT_MAX_V variable, no code change. */
+const MAX_V = env => num(env.VAULT_MAX_V, 3);
+function shapeRefusal(e, env) {
+  if (e.fmt !== 'gz1' || e.enc !== 'aes-gcm' || typeof e.data !== 'string') return fail(422, 'unknown_format', 'This copy is not in a format this server takes.');
+  if (typeof e.v !== 'number' || !isFinite(e.v)) return fail(422, 'unknown_format', 'This copy has no shape number.');
+  if (e.v > MAX_V(env)) return fail(422, 'newer_shape', 'This copy is from a newer version than this server knows.');
+  return null;
+}
+
 export async function onRequestGet(ctx) {
   const g = await gate(ctx); if (g.err) return g.err;
   if (!g.row) return fail(404, 'not_found', 'No cloud copy with this code.');
@@ -51,6 +60,11 @@ export async function onRequestPut(ctx) {
   if (typeof b.iv !== 'string' || !/^[A-Za-z0-9+/=]{12,32}$/.test(b.iv)) return fail(400, 'invalid_request', 'Bad iv.');
   const rev = Math.floor(+b.rev); if (!(rev > 0) || rev > 1e14) return fail(400, 'invalid_request', 'Bad rev.');
   const now = Date.now(), db = ctx.env.DB, today = dayKey();
+  /* [change 2] an app3 copy is read before anything is stored: an unknown format, a copy that is not encrypted, or a newer
+     shape is refused; over an app3 copy, a blob that is not an envelope at all is refused too */
+  const incoming = envelopeOf(b.blob);
+  if (incoming) { const no = shapeRefusal(incoming, ctx.env); if (no) return no; }
+  else if (g.row && envelopeOf(g.row.blob)) return fail(422, 'unknown_format', 'This copy is not in a format this server takes.');
   if (!g.row) {
     await db.prepare('INSERT INTO vault (id, token_hash, blob, iv, rev, updated_at, created_at, size, writes_day, writes) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?6, ?7, ?8, 1)')
       .bind(g.id, await sha256hex(g.token), b.blob, b.iv, rev, now, b.blob.length, today).run();

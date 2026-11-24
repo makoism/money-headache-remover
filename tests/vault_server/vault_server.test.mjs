@@ -112,5 +112,29 @@ function todayDb() {
   ck('C6 and it is the copy kept', r.status === 200 && r.j.rev === 2, r);
 }
 
+// ---------------- D. change 2: a copy in an unknown format or a newer shape is refused ----------------
+{
+  const { env, id, token } = fresh();
+  let r = await call(env, 'PUT', id, token, Object.assign(envBlob({ fmt: 'gz2' }), { rev: 1 }));
+  ck('D1 fmt not gz1: 422 unknown_format', r.status === 422 && r.j.error.code === 'unknown_format', r);
+  r = await call(env, 'PUT', id, token, Object.assign(envBlob({ v: 4 }), { rev: 1 }));
+  ck('D2 v newer than the server knows (3): 422 newer_shape', r.status === 422 && r.j.error.code === 'newer_shape', r);
+  r = await call(env, 'PUT', id, token, Object.assign(envBlob({ v: 'x' }), { rev: 1 }));
+  ck('D3 v that is not a number: 422 unknown_format', r.status === 422 && r.j.error.code === 'unknown_format', r);
+  r = await call(env, 'PUT', id, token, Object.assign(envBlob({ enc: undefined }), { rev: 1 }));
+  ck('D4 an envelope that is not encrypted is refused: never plain numbers on the server', r.status === 422 && r.j.error.code === 'unknown_format', r);
+  r = await call(env, 'GET', id, token);
+  ck('D5 nothing was stored by the refused writes', r.status === 404, r);
+  r = await call(env, 'PUT', id, token, Object.assign(envBlob({ v: 2 }), { rev: 1 }));
+  ck('D6 an older v is taken', r.status === 200, r);
+  r = await call(env, 'PUT', id, token, { blob: oldBlob(), iv: ivOf(), rev: 2, base: 1 });
+  ck('D7 a blob that is not an envelope over an app3 copy: 422 unknown_format', r.status === 422 && r.j.error.code === 'unknown_format', r);
+  r = await call(env, 'PUT', id, token, Object.assign(envBlob({ v: 4 }), { rev: 2, base: 1 }));
+  ck('D8 a newer shape over an app3 copy: 422, and the copy stays', r.status === 422 && (await call(env, 'GET', id, token)).j.rev === 1, r);
+  const env4 = envOf(env.DB, { VAULT_MAX_V: '4' });
+  r = await call(env4, 'PUT', id, token, Object.assign(envBlob({ v: 4 }), { rev: 2, base: 1 }));
+  ck('D9 VAULT_MAX_V raises the newest shape taken, with no code change', r.status === 200, r);
+}
+
 console.log(bad ? `vault_server: ${bad} FAIL of ${n}` : `vault_server: ALL PASS (${n})`);
 process.exit(bad ? 1 : 0);
