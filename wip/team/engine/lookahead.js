@@ -1197,7 +1197,8 @@
         checked: banks[id].checked, loggedIn: banks[id].loggedIn, loggedOut: banks[id].loggedOut,
         currency: a.cur, minimum, lowest: w.lowest, lowestDay: dayStr(w.lowestDay), headroom: w.headroom,
         spendFrom: isClosed ? false : a.spendFrom != null ? a.spendFrom : !!SPEND_TYPES[a.type] && a.cur === home && !backsGoal(id),
-        why: whyText(w.why, w.headroom, a.cur), whyParts: w.why.map(p => ({ label: p.label, amount: p.amount })), fillers: banks[id].fillers };   // [S4] the parts, for screens/money.js sumLine
+        why: whyText(w.why, w.headroom, a.cur), whyParts: w.why.map(p => ({ label: p.label, amount: p.amount })),
+        fillers: banks[id].fillers.map(f => (heldGain(id, f) ? Object.assign({}, f, { held: true }) : f)) };   // [X4] a held gain is named, so a screen listing gaps leaves it out (LISTFIX A1)   // [S4] the parts, for screens/money.js sumLine
       if (w.todayParts) { r.todayParts = w.todayParts; r.todayEnd = w.todayParts.reduce((t, x) => t + x.amount, w.start); }
       // [BM2] the real-money walk: its lowest point, and its sum for the screens (the "Short by" headline is its total)
       r.real = { lowest: rw.lowest, lowestDay: dayStr(rw.lowestDay), headroom: rw.headroom, whyParts: rw.why.map(p => ({ label: p.label, amount: p.amount })) };

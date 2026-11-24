@@ -3193,7 +3193,8 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
         checked: banks[id].checked, loggedIn: banks[id].loggedIn, loggedOut: banks[id].loggedOut,
         currency: a.cur, minimum, lowest: w.lowest, lowestDay: dayStr(w.lowestDay), headroom: w.headroom,
         spendFrom: isClosed ? false : a.spendFrom != null ? a.spendFrom : !!SPEND_TYPES[a.type] && a.cur === home && !backsGoal(id),
-        why: whyText(w.why, w.headroom, a.cur), whyParts: w.why.map(p => ({ label: p.label, amount: p.amount })), fillers: banks[id].fillers };   // [S4] the parts, for screens/money.js sumLine
+        why: whyText(w.why, w.headroom, a.cur), whyParts: w.why.map(p => ({ label: p.label, amount: p.amount })),
+        fillers: banks[id].fillers.map(f => (heldGain(id, f) ? Object.assign({}, f, { held: true }) : f)) };   // [X4] a held gain is named, so a screen listing gaps leaves it out (LISTFIX A1)   // [S4] the parts, for screens/money.js sumLine
       if (w.todayParts) { r.todayParts = w.todayParts; r.todayEnd = w.todayParts.reduce((t, x) => t + x.amount, w.start); }
       // [BM2] the real-money walk: its lowest point, and its sum for the screens (the "Short by" headline is its total)
       r.real = { lowest: rw.lowest, lowestDay: dayStr(rw.lowestDay), headroom: rw.headroom, whyParts: rw.why.map(p => ({ label: p.label, amount: p.amount })) };
@@ -4457,7 +4458,9 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
      ctx.staleDays a bank figure older than this asks for a check-in (7 until Mako says otherwise)
 
    One state, in this order (the first that is true wins, the rest go in `also` so they can sit under it):
-     sample > empty > short > warning > set_aside > question > late > check > zero > no_free > ok
+     sample > empty > short > warning > set_aside > plan_over > question > late > check > zero > no_free > ok
+   plan_over [LISTFIX A2]: the real money is fine (no short, no warning) but the plan lines need more than the accounts
+   can spare, so nothing is safe to spend; it says so and by how much, never "it turns safe once your pay is in"
    no_free [north star F1]: a pay period with neither Free to spend nor a budget line, so safe to spend leaves nothing
    for food and everyday things; Home asks for it in place of "Fine for now" and links to Plan's Set Free to spend
    Plain browser JavaScript. In a page it is BurrowScreens.status (load money.js and names.js first). */
@@ -4470,7 +4473,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
   'use strict';
 
   const STALE_DAYS = 7;   // for Mako: how old a bank figure may get before the status asks for a check-in
-  const LEVEL = { sample: 'wait', empty: 'wait', short: 'bad', warning: 'bad', set_aside: 'bad', question: 'wait', late: 'wait', check: 'wait', zero: 'wait', no_free: 'wait', ok: 'good' };
+  const LEVEL = { sample: 'wait', empty: 'wait', short: 'bad', warning: 'bad', set_aside: 'bad', plan_over: 'bad', question: 'wait', late: 'wait', check: 'wait', zero: 'wait', no_free: 'wait', ok: 'good' };
   /* engine warning codes (lookahead_ref.js): which change the state, which are notes under it */
   const WARNING_STATE = { below_minimum: 'warning', set_aside_over: 'set_aside', check_again: 'question', gain_to_ask: 'question', minimum_other_currency: 'question' };
   const NOTE_ONLY = ['card_other_currency', 'loan_other_currency', 'income_other_currency', 'spend_other_currency', 'reopened'];
@@ -4483,6 +4486,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     'state.short': W('Not safe to spend'),
     'state.warning': W('Under a minimum'),
     'state.set_aside': W('Set aside more than you can spare'),
+    'state.plan_over': W('Your plan needs more than you have'),
     'state.question': W('A question for you'),
     'state.late': W('Pay not in yet'),
     'state.check': W('Time to check in'),
@@ -4500,6 +4504,8 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     'reason.below_minimum': W('{account} goes {amount} under its minimum on {day}'),
     'reason.below_zero': W('{account} goes {amount} below zero on {day}'),
     'reason.set_aside_over': W('{who} is {amount} more than {account} can spare on {day}'),
+    'reason.plan_over': W('Your plan lines need {amount} more than your bank can spare before pay on {until}'),
+    'reason.plan_over_no_pay': W('Your plan lines need {amount} more than your bank can spare'),
     'reason.gain_to_ask': W('{account} has more in it than the app expected'),
     'reason.check_again': W('Check {account} again'),
     'reason.minimum_other_currency': W('What\'s the minimum for {account} in its own currency'),
@@ -4518,6 +4524,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     'next.check_in': W('Check your bank'),
     'next.move_money_in': W('Move money in before {day}'),
     'next.move_money_in_now': W('Move money in or spend less'),
+    'next.plan_over': W('Lower a plan line, or move money in'),
     'next.answer': W('Answer the question'),
     'next.take_out_or_move_in': W('Take some out of a goal, or move money in'),
     'next.check_in_when_it_lands': W('Check in when it lands'),
@@ -4565,6 +4572,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     if (r.code === 'short' && r.short) return r.until ? (r.short.minimum ? 'reason.short_before_min' : 'reason.short_before') : r.short.minimum ? 'reason.short_from_min' : 'reason.short_from';
     if (r.code === 'short') return r.day ? 'reason.short_on' : 'reason.short';
     if (r.code === 'to_confirm') return r.count === 1 ? 'reason.to_confirm_one' : 'reason.to_confirm_many';
+    if (r.code === 'plan_over') return r.until ? 'reason.plan_over' : 'reason.plan_over_no_pay';
     if (r.code === 'nothing_safe') return r.until ? 'reason.nothing_safe' : 'reason.nothing_safe_no_pay';
     if (r.code === 'safe') return r.until ? 'reason.safe' : 'reason.safe_no_pay';
     return 'reason.' + r.code;
@@ -4597,6 +4605,10 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
       const known = WARNING_STATE[w.code];
       out.push({ state: known || 'question', reason: known ? { code: w.code, account: w.account } : { code: 'unknown_warning', warning: w.code, account: w.account }, next: { code: 'answer' }, note: w.code });
     }
+    /* [LISTFIX A2] the plan lines alone need more than the accounts can spare: the bank itself does not go under (no
+       short, no below-zero warning) and no goal holds too much, so the shortfall is the plan's */
+    if (stp.shortfall > 0 && !stp.short && !below.length && !warnings.some(w => w.code === 'set_aside_over'))
+      out.push({ state: 'plan_over', reason: { code: 'plan_over', amount: stp.shortfall, currency: ctx.currency, until }, next: { code: 'plan_over' }, note: 'plan_over' });
     const paySeen = (r.notSeenYet && r.notSeenYet.items || []).find(i => i.direction === 'in');
     if (pay.late || paySeen) out.push({ state: 'late', reason: { code: 'pay_late', since: pay.late ? pay.next_pay : paySeen.lands }, next: { code: 'check_in_when_it_lands' }, note: 'pay_late' });
     const toConfirm = (r.checkIn && r.checkIn.toConfirm) || [];
@@ -8714,7 +8726,7 @@ function drawHome3() {
   /* the one status; on a sample screen the yellow band already says these are made-up numbers, so no second card */
   const names = {}; for (const id of ids.concat(Object.keys(r.cards), Object.keys(r.owed || {}))) names[id] = E3.nameOf(id);
   const st = BurrowScreens.status.statusOf(r, { currency: home, origin, names });
-  if (origin !== 'sample') out.push(`<section class="a3-card a3-status" data-card="status" data-level="${esc3(st.level)}">${helpHead3(`<h2>${esc3(st.text.state)}</h2>`, 'status')}<p class="a3-sub">${esc3(st.text.reason)}</p>${st.state === 'no_free' ? `<div class="a3-actions"><button type="button" class="a3-btn solid" id="a3FreeGo">${esc3(st.text.next)}</button></div>` : ''}</section>`);
+  if (origin !== 'sample') out.push(`<section class="a3-card a3-status" data-card="status" data-level="${esc3(st.level)}">${helpHead3(`<h2>${esc3(st.text.state)}</h2>`, 'status')}<p class="a3-sub">${esc3(st.text.reason)}</p>${st.state === 'plan_over' ? `<p class="a3-next" data-fig="status-next">${esc3(st.text.next)}</p>` : ''}${st.state === 'no_free' ? `<div class="a3-actions"><button type="button" class="a3-btn solid" id="a3FreeGo">${esc3(st.text.next)}</button></div>` : ''}</section>`);
   /* bank today, one figure per account, with its age */
   for (const id of ids) {
     const a = r.accounts[id];
@@ -9234,6 +9246,25 @@ function rcHeld3() {
   try { for (const h of E3.view(E3.today()).heldByCheck || []) out[h.id] = h.check; } catch (e) { /* no figures: nothing to say */ }
   return out;
 }
+/* [LISTFIX A1, T2] a gap found at Check your bank is spending: the engine's fillers (each account's, cut at the period
+   starts, and each card's), listed in the period each part counts in, so the list and the spent figure agree. A gain
+   held for its question counts nowhere and is left out. Not a button: a gap changes only at a check. */
+function rcGaps3(per) {
+  let r; try { r = E3.view(E3.today()); } catch (e) { return []; }
+  const inPer = d => !per || !per.start || !per.end || (d >= per.start && d <= per.end), out = [];
+  const onWhat = place => (!place || place === 'free' ? { line: 'free' } : ((E3.book.plan || {}).budgets || []).some(l => l.id === place) ? { line: place } : { place });
+  for (const id of Object.keys(r.accounts || {})) for (const f of r.accounts[id].fillers || []) {
+    if (f.held) continue;
+    for (const pt of f.parts || []) if (pt.amount && inPer(pt.from)) out.push({ acct: id, check: f.to, from: pt.from, to: pt.to, amount: pt.amount, on: onWhat(f.place) });
+  }
+  for (const id of Object.keys(r.cards || {})) for (const f of r.cards[id].fillers || []) if (f.amount && inPer(f.day)) out.push({ acct: id, check: f.day, from: f.day, to: f.day, amount: f.amount, on: { line: 'free' } });
+  return out;
+}
+function rcGapLi3(g, yr) {
+  const when = g.from === g.to ? day3(g.to, yr) : `${day3(g.from, yr)} to ${day3(g.to, yr)}`;
+  const what = g.amount > 0 ? 'more went out than you logged' : 'less went out than you logged, so it comes off your spending';
+  return `<li data-gap="${esc3(g.acct)}" data-check="${esc3(g.check)}"><span>Found at your bank check on ${esc3(day3(g.check, yr))}<br><span class="when">${esc3(when)}, ${esc3(E3.nameOf(g.acct))}, ${esc3(what)}, on ${esc3(rcForName3(g.on))}</span></span><span class="amt">${money3(g.amount, E3.curOf(g.acct))}</span></li>`;
+}
 function rcList3() {
   const host = $('#rcList'); if (!host) return;
   const held = rcHeld3();
@@ -9245,10 +9276,14 @@ function rcList3() {
   const head = q ? `<p class="a3-sub" data-fig="rc-period" data-search="1">Searching everything</p>`
     : per && per.start && per.end ? `<div class="a3-pernav"><button type="button" class="a3-btn" id="rcOlder"${per.older ? '' : ' disabled'}>Earlier</button><p class="a3-mid a3-per" data-fig="rc-period" data-start="${esc3(per.start)}" data-end="${esc3(per.end)}">${esc3(period3(per))}</p><button type="button" class="a3-btn" id="rcNewer"${per.newer ? '' : ' disabled'}>Later</button></div>${rcSpent3(per)}`
     : `<p class="a3-sub" data-fig="rc-period">Everything</p>`;
-  const li = rows.map(e => `<li data-rc="${esc3(e.id)}" data-k="${esc3(e.k)}"><button type="button" class="a3-rcrow" aria-label="Change ${esc3(rcWhat3(e))}, ${esc3(money3(e.a, E3.curOf(e.acct)))}"><span>${esc3(rcWhat3(e))}<br><span class="when">${esc3(day3(e.date, yr))}, ${esc3(E3.nameOf(e.acct))}${rcNote3(e) ? ', ' + esc3(rcNote3(e)) : ''}${held[e.id] ? `<br><span data-fig="rc-held">already in your bank figure of ${esc3(day3(held[e.id], yr))}</span>` : ''}</span></span><span class="amt${e.k === 'in' ? ' a3-in-amt' : ''}">${e.k === 'in' ? 'back ' : ''}${money3(e.a, E3.curOf(e.acct))}</span></button></li>`).join('');
+  const gaps = q ? [] : rcGaps3(per && per.start && per.end ? per : null);
+  const items = rows.map(e => ({ date: e.date, e })).concat(gaps.map(g => ({ date: g.to, g })))
+    .sort((x, y) => (x.date !== y.date ? (x.date < y.date ? 1 : -1) : 0));
+  const rcLi3 = e => `<li data-rc="${esc3(e.id)}" data-k="${esc3(e.k)}"><button type="button" class="a3-rcrow" aria-label="Change ${esc3(rcWhat3(e))}, ${esc3(money3(e.a, E3.curOf(e.acct)))}"><span>${esc3(rcWhat3(e))}<br><span class="when">${esc3(day3(e.date, yr))}, ${esc3(E3.nameOf(e.acct))}${rcNote3(e) ? ', ' + esc3(rcNote3(e)) : ''}${held[e.id] ? `<br><span data-fig="rc-held">already in your bank figure of ${esc3(day3(held[e.id], yr))}</span>` : ''}</span></span><span class="amt${e.k === 'in' ? ' a3-in-amt' : ''}">${e.k === 'in' ? 'back ' : ''}${money3(e.a, E3.curOf(e.acct))}</span></button></li>`;
+  const li = items.map(x => (x.g ? rcGapLi3(x.g, yr) : rcLi3(x.e))).join('');
   host.innerHTML = `<h2>What you logged</h2>
     <div class="a3-field"><label for="rcSearch">Search</label><input class="a3-in a3-text" type="search" id="rcSearch" autocomplete="off" value="${esc3(RC3.search)}" placeholder="A note, a line, an amount"></div>
-    ${head}${rows.length ? `<ul class="a3-rows a3-rclist">${li}</ul><p class="a3-sub" data-hint="rc-tap">Tap a spend to change it</p>` : `<p class="a3-sub">${q ? 'Nothing matches' : 'Nothing logged in this stretch'}</p>`}`;
+    ${head}${items.length ? `<ul class="a3-rows a3-rclist">${li}</ul>${rows.length ? '<p class="a3-sub" data-hint="rc-tap">Tap a spend to change it</p>' : ''}` : `<p class="a3-sub">${q ? 'Nothing matches' : 'Nothing logged in this stretch'}</p>`}`;
   const s = $('#rcSearch');
   s.addEventListener('input', () => { RC3.search = s.value; rcList3(); const n = $('#rcSearch'); n.focus(); n.setSelectionRange(n.value.length, n.value.length); });
   if ($('#rcOlder')) $('#rcOlder').addEventListener('click', () => { RC3.at = per.older; rcList3(); });
