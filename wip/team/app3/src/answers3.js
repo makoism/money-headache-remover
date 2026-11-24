@@ -193,7 +193,7 @@
       day2: p.day2 != null ? p.day2 : null, start: p.start || null, acct: acctKey(ans, p.bank) });
     return {
       bankName: b0.name, bank: b0.amount, cur: ans.currency || CUR_OF[ans.country] || 'JPY', country: ans.country || 'XX',
-      payToday: b0.payToday ? (b0.payToday.landed ? 'yes' : 'no') : null,
+      payToday: (ans.banks.find(b => b.payToday) || {}).payToday ? (ans.banks.find(b => b.payToday).payToday.landed ? 'yes' : 'no') : null,
       accts: ans.banks.slice(1).map(b => ({ name: b.name, amount: b.amount, type: b.type || 'bank' })),
       pay: Object.assign(payOf(p0), { shift: p0.every === 'none' ? 'before' : p0.shift || 'before' }),
       pays: pays.slice(1).map(payOf),
@@ -213,7 +213,8 @@
       if (ev === 'month') return { every: 'month', day: src.day };
       if (ev === 'days') return { every: 'days', day: src.day, day2: src.day2 };
       if (ev === 'none') return { every: 'none' };
-      return { every: 'weeks', n: Number(String(ev).slice(5)), start: src.start || day };
+      /* [qc-foundation WATCH] a blank day of one pay is asked for, never turned into today (as setup3) */
+      return { every: 'weeks', n: Number(String(ev).slice(5)), start: src.start || fail('Type the day of one pay, the last one or the next one') };
     };
     const p0 = f.pay;
     const pays = [Object.assign({ name: p0.name || 'Pay', amount: p0.amount }, rhythm(p0, p0), p0.every === 'none' ? {} : { shift: p0.shift || 'before' }, p0.acct && p0.acct !== 'bank1' ? { bank: nameOf(p0.acct) } : {})]
@@ -226,7 +227,11 @@
     const q = questions(ans, { day });
     ans.bills.forEach((b, i) => { const days = q.asked[keyOf('bills', b.name)]; if (days) b.out = { out: f.bills[i].takenOut !== 'no', days }; });
     ans.cards.forEach((c, i) => { const g = q.statements[keyOf('cards', c.name)]; if (g) c.statement = { a: f.cards[i].statement == null ? 'not sure' : f.cards[i].statement, closed: g.closed }; });
-    if (q.payToday && f.payToday) banks[0].payToday = { landed: f.payToday === 'yes', day };
+    /* [qc-foundation WATCH] the answer goes on every bank a pay lands in today */
+    if (q.payToday && f.payToday) {
+      const input = toBuild(ans, { day, told: day + 'T00:00:00.000Z' }, true), r = B.buildBook(input, { newId: IDS.idMaker('draft0') });
+      for (const p of payToday(r, input, day)) banks[input.banks.findIndex(x => x.key === p.bank)].payToday = { landed: f.payToday === 'yes', day };
+    }
     return ans;
   }
 

@@ -151,5 +151,22 @@ t('wrong answers are refused with words, never guessed', () => {
   let msg = ''; try { A.toBuild(m, { day: DAY, told: TOLD }); } catch (e) { msg = e.message; }
   eq(msg, 'Pay lands in Nope bank, which is not one of your accounts');
 });
+t('fromForm: a blank day of one pay is refused, never turned into today; the pay-today answer goes on every bank a pay lands in today (qc-foundation WATCH)', () => {
+  const f = A.toForm({ country: 'JP', banks: [{ name: 'Main bank', amount: 100000, on: DAY }, { name: 'Second', amount: 5000, on: DAY }],
+    pays: [{ name: 'Pay', amount: 20000, every: 'weeks', n: 2, start: '2026-11-20' }], cards: [], bills: [], free: null, min: null });
+  f.pay.start = null;
+  let msg = ''; try { A.fromForm(f, { day: DAY }); } catch (e) { msg = e.message; }
+  eq(msg, 'Type the day of one pay, the last one or the next one');
+  f.pays = [{ name: 'Side', amount: 9000, every: 'weeks1', start: '', acct: 'acct2' }]; f.pay.start = '2026-11-20';
+  msg = ''; try { A.fromForm(f, { day: DAY }); } catch (e) { msg = e.message; }
+  eq(msg, 'Type the day of one pay, the last one or the next one');
+  /* both banks get a pay on 24 Nov: the answer sits on each */
+  const g = A.toForm({ country: 'JP', banks: [{ name: 'Main bank', amount: 100000, on: DAY }, { name: 'Second', amount: 5000, on: DAY }],
+    pays: [{ name: 'Pay', amount: 20000, every: 'month', day: 24 }, { name: 'Side', amount: 9000, every: 'month', day: 24, bank: 'Second' }], cards: [], bills: [], free: null, min: null });
+  g.payToday = 'no';
+  const back = A.fromForm(g, { day: DAY });
+  eq(back.banks.map(b => b.payToday), [{ landed: false, day: DAY }, { landed: false, day: DAY }]);
+  eq(A.need(back, { day: DAY }), []);
+});
 console.log(bad ? `answers3: ${bad} of ${n} FAILED` : `answers3: ALL PASS (${n})`);
 process.exit(bad ? 1 : 0);
