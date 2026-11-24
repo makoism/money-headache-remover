@@ -28,6 +28,10 @@ export const num = (v, def) => { const n = parseInt(v, 10); return isFinite(n) &
 export const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS usage (day TEXT NOT NULL, k TEXT NOT NULL, calls INTEGER NOT NULL DEFAULT 0, tokens INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (day, k))`,
   `CREATE TABLE IF NOT EXISTS vault (id TEXT PRIMARY KEY, token_hash TEXT NOT NULL, blob TEXT NOT NULL, iv TEXT NOT NULL, rev INTEGER NOT NULL, updated_at INTEGER NOT NULL, created_at INTEGER NOT NULL, prev_blob TEXT, prev_iv TEXT, prev_rev INTEGER, size INTEGER NOT NULL DEFAULT 0, writes_day TEXT, writes INTEGER NOT NULL DEFAULT 0)`,
+  /* the last 10 earlier versions of each cloud copy, dated (updated_at: when that version was written; NULL for the one
+     carried over from vault.prev_blob, whose date was never kept) */
+  `CREATE TABLE IF NOT EXISTS vault_versions (id TEXT NOT NULL, rev INTEGER NOT NULL, blob TEXT NOT NULL, iv TEXT NOT NULL, size INTEGER NOT NULL DEFAULT 0, updated_at INTEGER)`,
+  `CREATE INDEX IF NOT EXISTS vault_versions_id ON vault_versions (id, rev)`,
 ];
 const schemaReady = new WeakMap();
 export async function ensureSchema(db) {

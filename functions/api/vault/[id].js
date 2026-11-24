@@ -2,10 +2,12 @@
    The encrypted cloud copy of one person's numbers.
    The page encrypts everything before it leaves the browser (AES-GCM with a key made from the person's recovery code);
    this server sees only ciphertext. The id and the write token are also made from the code, so the code is the only key.
-   One record per id, plus the previous version as a safety net. Nobody here can read a record, the owner included. */
+   One record per id, plus its last 10 earlier versions with their dates (vault_versions), so a bad copy can be undone.
+   Nobody here can read a record, the owner included. */
 import { json, fail, preflight, dayKey, minuteKey, clientIp, num, ensureSchema, bump, sha256hex, timingSafeEqual } from '../../_lib.js';
 
 const ID_RE = /^[a-f0-9]{32,64}$/, TOKEN_RE = /^[a-f0-9]{32,128}$/;
+const KEEP = 10;   /* [change 3] earlier versions kept per copy */
 const MAX_BLOB = 3_000_000; /* characters of base64, about 2.2 MB: hundreds of times a normal plan */
 
 /* Two kinds of copy share this table. The old app (ui42.js) sends AES-GCM ciphertext in base64, which never reads as JSON.
@@ -49,7 +51,20 @@ function shapeRefusal(e, env) {
 export async function onRequestGet(ctx) {
   const g = await gate(ctx); if (g.err) return g.err;
   if (!g.row) return fail(404, 'not_found', 'No cloud copy with this code.');
-  const r = g.row, prev = ctx.request.url.indexOf('prev=1') >= 0 && r.prev_blob ? { blob: r.prev_blob, iv: r.prev_iv, rev: r.prev_rev } : undefined;
+  const q = new URL(ctx.request.url).searchParams, db = ctx.env.DB, r = g.row;
+  /* [change 3] ?versions=1 lists the earlier versions kept, newest first; ?rev=N reads one of them (or the current one) */
+  if (q.get('versions') === '1') {
+    const vs = await db.prepare('SELECT rev, updated_at, size FROM vault_versions WHERE id = ?1 ORDER BY rowid DESC').bind(g.id).all();
+    return json({ rev: r.rev, updated: r.updated_at, versions: (vs.results || []).map(v => ({ rev: v.rev, updated: v.updated_at, size: v.size })) });
+  }
+  if (q.has('rev')) {
+    const want = Math.floor(+q.get('rev'));
+    if (want === r.rev) return json({ blob: r.blob, iv: r.iv, rev: r.rev, updated: r.updated_at });
+    const v = await db.prepare('SELECT blob, iv, rev, updated_at FROM vault_versions WHERE id = ?1 AND rev = ?2 ORDER BY rowid DESC LIMIT 1').bind(g.id, want).first();
+    if (!v) return fail(404, 'not_found', 'That version is not kept.');
+    return json({ blob: v.blob, iv: v.iv, rev: v.rev, updated: v.updated_at });
+  }
+  const prev = q.get('prev') === '1' && r.prev_blob ? { blob: r.prev_blob, iv: r.prev_iv, rev: r.prev_rev } : undefined;
   return json({ blob: r.blob, iv: r.iv, rev: r.rev, updated: r.updated_at, created: r.created_at, size: r.size, hasPrev: !!r.prev_blob, prev });
 }
 
@@ -82,13 +97,29 @@ export async function onRequestPut(ctx) {
   if (!force && (rev <= r.rev || (base > 0 && base !== r.rev))) return fail(409, 'conflict', 'The server has a newer copy.', { rev: r.rev, updated: r.updated_at });
   const writes = r.writes_day === today ? r.writes + 1 : 1;
   if (writes > num(ctx.env.VAULT_WRITES_PER_DAY, 400)) return fail(429, 'rate_limited', 'Too many saves today for this vault.');
-  await db.prepare('UPDATE vault SET blob = ?2, iv = ?3, rev = ?4, updated_at = ?5, prev_blob = ?6, prev_iv = ?7, prev_rev = ?8, size = ?9, writes_day = ?10, writes = ?11 WHERE id = ?1')
-    .bind(g.id, b.blob, b.iv, rev, now, r.blob, r.iv, r.rev, b.blob.length, today, writes).run();
+  /* [change 3] one transaction: the copy being replaced joins its earlier versions (on the first write after this change,
+     the previous version already stored in prev_blob joins them first), the new copy is stored, and only the last 10 stay.
+     Every step holds only while the row is still the one read above (same rev and date), so two writes at once cannot
+     both pass the base check: the second changes nothing and is told to take the latest. prev_blob is kept up to date
+     for the old app (?prev=1). */
+  const same = 'EXISTS (SELECT 1 FROM vault WHERE id = ?1 AND rev = ?2 AND updated_at = ?3)';
+  const out = await db.batch([
+    db.prepare(`INSERT INTO vault_versions (id, rev, blob, iv, size, updated_at) SELECT id, prev_rev, prev_blob, prev_iv, length(prev_blob), NULL FROM vault
+      WHERE id = ?1 AND prev_blob IS NOT NULL AND prev_iv IS NOT NULL AND prev_rev IS NOT NULL AND ${same} AND NOT EXISTS (SELECT 1 FROM vault_versions WHERE id = ?1)`).bind(g.id, r.rev, r.updated_at),
+    db.prepare(`INSERT INTO vault_versions (id, rev, blob, iv, size, updated_at) SELECT ?1, ?2, ?4, ?5, ?6, ?3 WHERE ${same}`).bind(g.id, r.rev, r.updated_at, r.blob, r.iv, r.blob.length),
+    db.prepare('UPDATE vault SET blob = ?4, iv = ?5, rev = ?6, updated_at = ?7, prev_blob = ?8, prev_iv = ?9, prev_rev = ?2, size = ?10, writes_day = ?11, writes = ?12 WHERE id = ?1 AND rev = ?2 AND updated_at = ?3 RETURNING rev')
+      .bind(g.id, r.rev, r.updated_at, b.blob, b.iv, rev, now, r.blob, r.iv, b.blob.length, today, writes),
+    db.prepare(`DELETE FROM vault_versions WHERE id = ?1 AND rowid NOT IN (SELECT rowid FROM vault_versions WHERE id = ?1 ORDER BY rowid DESC LIMIT ${KEEP})`).bind(g.id),
+  ]);
+  if (!(out[2] && out[2].results && out[2].results.length)) return fail(409, 'conflict', 'The server has a newer copy.', { rev: r.rev, updated: r.updated_at });
   return json({ rev, updated: now, created: false });
 }
 
 export async function onRequestDelete(ctx) {
   const g = await gate(ctx); if (g.err) return g.err;
-  if (g.row) await ctx.env.DB.prepare('DELETE FROM vault WHERE id = ?1').bind(g.id).run();
+  if (g.row) await ctx.env.DB.batch([   /* [change 3] its earlier versions go with it */
+    ctx.env.DB.prepare('DELETE FROM vault WHERE id = ?1').bind(g.id),
+    ctx.env.DB.prepare('DELETE FROM vault_versions WHERE id = ?1').bind(g.id),
+  ]);
   return json({ deleted: !!g.row });
 }

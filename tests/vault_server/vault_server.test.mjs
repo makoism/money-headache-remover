@@ -136,5 +136,66 @@ function todayDb() {
   ck('D9 VAULT_MAX_V raises the newest shape taken, with no code change', r.status === 200, r);
 }
 
+// ---------------- E. change 3: the last 10 dated versions, and reading one ----------------
+import { SCHEMA } from '../../functions/_lib.js';
+{
+  const { db, env, id, token } = fresh();
+  const sent = [];
+  for (let i = 1; i <= 13; i++) {
+    const b = Object.assign(envBlob(), { rev: i }, i > 1 ? { base: i - 1 } : {});
+    const r = await call(env, 'PUT', id, token, b); sent.push(Object.assign({ updated: r.j.updated }, b));
+  }
+  let r = await call(env, 'GET', id, token, null, '?versions=1');
+  const vs = r.j.versions || [];
+  ck('E1 ?versions=1 lists the 10 earlier versions, newest first, each with its rev, date and size', r.status === 200 && vs.length === 10 && vs.map(v => v.rev).join() === '12,11,10,9,8,7,6,5,4,3' && vs.every(v => typeof v.updated === 'number' && v.size > 0), r.j);
+  ck('E2 each version carries the date it was written', vs[0].updated === sent[11].updated && vs[9].updated === sent[2].updated, [vs[0], sent[11].updated]);
+  r = await call(env, 'GET', id, token, null, '?rev=5');
+  ck('E3 ?rev=5 reads that version: blob, iv, rev, updated', r.status === 200 && r.j.blob === sent[4].blob && r.j.iv === sent[4].iv && r.j.rev === 5 && r.j.updated === sent[4].updated, r.j);
+  r = await call(env, 'GET', id, token, null, '?rev=2');
+  ck('E4 an 11th earlier version is no longer kept: 404', r.status === 404 && r.j.error.code === 'not_found', r);
+  r = await call(env, 'GET', id, token, null, '?rev=13');
+  ck('E5 ?rev= the current one gives the current copy', r.status === 200 && r.j.blob === sent[12].blob, r.j);
+  r = await call(env, 'GET', id, token);
+  ck('E6 a plain GET still gives exactly the keys the old app reads', r.status === 200 && r.j.rev === 13 && JSON.stringify(Object.keys(r.j).sort()) === JSON.stringify(['blob', 'created', 'hasPrev', 'iv', 'rev', 'size', 'updated']), Object.keys(r.j));
+  r = await call(env, 'GET', id, hex(32), null, '?versions=1');
+  ck('E7 a wrong token cannot list versions: 403', r.status === 403, r);
+  r = await call(env, 'GET', id, hex(32), null, '?rev=5');
+  ck('E8 nor read one: 403', r.status === 403, r);
+  r = await call(env, 'DELETE', id, token);
+  const left = db.raw.prepare('SELECT COUNT(*) c FROM vault_versions WHERE id = ?').get(id).c;
+  ck('E9 deleting the cloud copy deletes its versions too', r.j.deleted === true && left === 0, left);
+}
+{
+  const t = todayDb();
+  const before = t.db.raw.prepare('PRAGMA table_info(vault)').all().map(c => c.name).join();
+  let r = await call(t.env, 'PUT', t.id, t.token, { blob: oldBlob(), iv: ivOf(), rev: 1763000001000 });
+  r = await call(t.env, 'GET', t.id, t.token, null, '?versions=1');
+  const vs = r.j.versions || [];
+  ck('E10 on today\'s database the first write keeps both the copy it replaced and the previous one already stored', r.status === 200 && vs.length === 2 && vs[0].rev === 1763000000000 && vs[0].updated === 1763000000500 && vs[1].rev === 1762900000000 && vs[1].updated === null, vs);
+  r = await call(t.env, 'GET', t.id, t.token, null, '?rev=1762900000000');
+  ck('E11 and the previous one reads back', r.status === 200 && r.j.blob === t.pblob && r.j.iv === t.piv, r.j);
+  ck('E12 the vault table\'s columns are as they were (no column added, changed or dropped)', t.db.raw.prepare('PRAGMA table_info(vault)').all().map(c => c.name).join() === before);
+  const count = () => ['vault', 'vault_versions', 'usage'].map(tb => t.db.raw.prepare('SELECT COUNT(*) c FROM ' + tb).get().c).join();
+  const c0 = count();
+  await t.db.batch(SCHEMA.map(s => t.db.prepare(s))); await t.db.batch(SCHEMA.map(s => t.db.prepare(s)));
+  ck('E13 the schema statements run again on a live database change nothing', count() === c0, [c0, count()]);
+  ck('E14 every schema statement only creates if missing: nothing is dropped, altered or deleted', SCHEMA.every(s => /^CREATE (TABLE|INDEX) IF NOT EXISTS /.test(s) && !/\b(DROP|ALTER|DELETE|UPDATE)\b/i.test(s)));
+  r = await call(t.env, 'GET', t.id, t.token, null, '?versions=1');
+  ck('E15 an old-app copy GET with ?prev=1 still answers as before', (await call(t.env, 'GET', t.id, t.token, null, '?prev=1')).j.prev.rev === 1763000000000);
+}
+{
+  /* two writes at once: another device's write lands between this write's read and its store */
+  const { db, env, id, token } = fresh();
+  await call(env, 'PUT', id, token, Object.assign(envBlob(), { rev: 1 }));
+  const other = envBlob();
+  const sneaky = Object.assign(Object.create(db), { batch: async list => {
+    if (list.length === 4) db.raw.prepare('UPDATE vault SET blob = ?, rev = 2, updated_at = updated_at + 1 WHERE id = ?').run(other.blob, id);
+    return db.batch(list);
+  } });
+  const r = await call(envOf(sneaky), 'PUT', id, token, Object.assign(envBlob(), { rev: 2, base: 1 }));
+  const g = await call(env, 'GET', id, token, null, '?versions=1');
+  ck('E16 a write that lost the race is refused 409 and changes nothing (no version added, the other write kept)', r.status === 409 && (await call(env, 'GET', id, token)).j.blob === other.blob && g.j.versions.length === 0, [r, g.j]);
+}
+
 console.log(bad ? `vault_server: ${bad} FAIL of ${n}` : `vault_server: ALL PASS (${n})`);
 process.exit(bad ? 1 : 0);
