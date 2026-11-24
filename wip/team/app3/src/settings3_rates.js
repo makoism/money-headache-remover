@@ -12,7 +12,8 @@ function ratesCard3() {
   const curs = rateCurs3(), home = E3.home();
   if (!curs.length) return '';
   const yr = E3.today().slice(0, 4);
-  const list = ((E3.book.rates || []).filter(x => x && !x.gone)).slice()
+  /* [confirming review, F3] a saved list that is not a list, or a record that is not one, is left out (Home names it) */
+  const list = (Array.isArray(E3.book.rates) ? E3.book.rates : []).filter(x => x && typeof x === 'object' && !x.gone && typeof x.rate === 'string').slice()
     .sort((x, y) => (x.from !== y.from ? (x.from < y.from ? 1 : -1) : String(x.at) < String(y.at) ? 1 : -1))
     .map(x => `<li data-set="rate">1 ${esc3(x.cur)} = ${esc3(x.rate)} ${esc3(x.to)} from ${esc3(day3(x.from, yr))}</li>`).join('');
   return `<div class="a3-card" data-card="rates"><h2>Rates</h2>

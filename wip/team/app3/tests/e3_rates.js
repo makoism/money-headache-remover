@@ -71,6 +71,17 @@ async function total(p, what, amount, part) {
   await p.click('[data-tab=home]'); await w(200);
   const rl = await textOf(p, '#a3Home [data-fig=runway]');
   ck('the runway line says money in other currencies is left out', !!rl && /^If no more pay came, Main bank lasts/.test(rl) && /Money in other currencies is left out/.test(rl), rl);
+  /* [confirming review, F3] a broken rates list in the saved copy: Home still draws its Total, Settings still opens */
+  for (const v of [[null], {}, 'x']) {
+    const saved = await p.evaluate(async rv => { const s = await BurrowStore.open(); const b = (await s.load()).copy; b.rates = rv; const r = await s.save(b, { full: true }); if (s.db) s.db.close(); return r.ok; }, v);
+    ck(`rates ${JSON.stringify(v)} written into the saved copy`, saved === true, saved);
+    await p.reload(); await w(500);
+    const tot = await figOf(p, '#a3Home [data-fig=totalhome]');
+    ck(`rates ${JSON.stringify(v)}: Home still draws, the dollars named as not counted`, tot === 286000 && !!(await p.$('#a3Home [data-fig=totalmissing]')), tot);
+    await p.click('#a3SetGo'); await w(300);
+    ck(`rates ${JSON.stringify(v)}: Settings still opens with Rates`, !!(await p.$('#a3RateSave')));
+    await p.click('#a3SetClose'); await w(200);
+  }
   await c.close();
   const secs = Math.round((Date.now() - t0) / 1000);
   ck(`the walk took ${secs} s (limit 180)`, secs < 180);
