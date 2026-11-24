@@ -8809,6 +8809,16 @@ function drawHome3() {
     /* [LISTFIX B3] the step the cap takes off, said as what it is: held back, because Free to spend has only so much left */
     : i > 0 && !all ? Object.assign({}, x, { label: `held back: Free to spend has only ${money3(r.safeToSpend.headline, home)} left this period` }) : x));
   const capLine = r.safeToSpend.whyParts ? `<p class="a3-sum" data-fig="cap">${esc3(sum3(capParts, r.safeToSpend.headline, home))}</p>${freeShare3(r, home)}` : '';
+  /* [C2] when Free to spend left caps the headline, one plain line right under the figure says why it is what it is, with
+     the engine's two figures (what the accounts can spare, whyParts[0], and the headline): cause, then the figure, joined as one thought (VOICE B13) */
+  const capSay = (() => {
+    const s = r.safeToSpend, w = s.whyParts;
+    if (!s.cappedByFreeToSpend || !w || !w.length || !(w[0].amount > 0)) return '';   // nothing to spare: the short line says it
+    const f = fmt3(home, [w[0].amount, s.headline]);
+    const words = s.headline === 0 ? `Your accounts can spare ${f(w[0].amount)}, but your Free to spend is used up this period, so nothing is safe to spend`
+      : `Your accounts can spare ${f(w[0].amount)}, but only ${f(s.headline)} of your Free to spend is left this period, so ${f(s.headline)} is safe to spend`;
+    return `<p class="a3-next" data-fig="capsay">${esc3(words)}</p>`;
+  })();
   /* [C3] when short, the short line's own sum is the one sum for that account: the same sum is never printed twice */
   const shortId = r.safeToSpend.short && r.accounts[r.safeToSpend.short.account] && r.accounts[r.safeToSpend.short.account].real ? r.safeToSpend.short.account : null;
   const sums = `${ids.filter(id => r.accounts[id].spendFrom && id !== shortId).map(id => `<p class="a3-sum" data-fig="why">${esc3(whyWords3(r.accounts[id]))}</p>${todayWords3(r.accounts[id], id)}`).join('')}${capLine}`;
@@ -8827,7 +8837,7 @@ function drawHome3() {
     + (w.later ? `<p class="a3-warn" data-warn="later_low">${esc3(BurrowScreens.status.laterLowText(w, wctx))}</p>` : '')
     + (BurrowScreens.status.moveText(w, wctx) ? `<p class="a3-next" data-fig="move-from">${esc3(BurrowScreens.status.moveText(w, wctx))}</p>` : '')).join('');
   out.push(`<section class="a3-card" data-card="safe">${helpHead3(`<h2>${esc3(label3('safeToSpend'))}${until}</h2>`, 'safeToSpend')}
-    <p class="a3-big" data-fig="safe">${fig3('safeToSpend.headline', r.safeToSpend.headline, home)}</p>${short}${sums}${lastsWords3(r)}${warns}</section>`);
+    <p class="a3-big" data-fig="safe">${fig3('safeToSpend.headline', r.safeToSpend.headline, home)}</p>${capSay}${short}${sums}${lastsWords3(r)}${warns}</section>`);
   /* the period by its dates, and the next pay */
   const p = r.period;
   const per = p && p.start && p.end ? `<p class="a3-mid" data-fig="period" data-start="${esc3(p.start)}" data-end="${esc3(p.end)}">${esc3(period3(p))}</p>` : '';
@@ -9124,7 +9134,7 @@ function rcWhat3(e) {
 function rcFigs3(book) {
   try {
     const r = book === E3.book ? E3.view(E3.today()) : BurrowEngine.lookahead.lookahead(book, E3.today());
-    return { free: r.period && r.period.free ? r.period.free.left : null, safe: r.safeToSpend.headline, period: r.period };
+    return { free: r.period && r.period.free ? r.period.free.left : null, safe: r.safeToSpend.headline, period: r.period, capped: !!r.safeToSpend.cappedByFreeToSpend };
   } catch (e) { return null; }
 }
 /* [NS-FIX 4] a spend on a line that leaves the line over (the engine's `over` on the book the draft would make): the same
@@ -9290,9 +9300,15 @@ async function rcSave3(sure) {
   }
   rcAskOff3();
   const before = rcFigs3(E3.book);
-  let ov = null, onCard = null;
-  try { const dry = RC3.edit ? ACT3.dry('edit', RC3.edit.id, rcFields3(x)) : ACT3.dry(RC_KIND3[RC3.mode], x); ov = rcOver3(rcFigs3(dry), x); onCard = rcCardWords3(dry, x); } catch (e) { ov = null; }
-  const said = [rcWords3(x), onCard, ov].filter(Boolean).join('. ');
+  let ov = null, onCard = null, both = null;
+  try {
+    const dry = RC3.edit ? ACT3.dry('edit', RC3.edit.id, rcFields3(x)) : ACT3.dry(RC_KIND3[RC3.mode], x), df = rcFigs3(dry);
+    ov = rcOver3(df, x); onCard = rcCardWords3(dry, x);
+    /* [C2] a spend on Free to spend while Free to spend left caps safe to spend (the engine, on the book with the spend):
+       the bar says it lowers both, and why */
+    both = RC3.mode === 'spend' && x.line === 'free' && df && df.capped ? 'Safe to spend goes down with it, it\'s what\'s left of your Free to spend' : null;
+  } catch (e) { ov = null; }
+  const said = [rcWords3(x), onCard, ov, both].filter(Boolean).join('. ');
   const r = RC3.edit ? await ACT3.edit(RC3.edit.id, rcFields3(x), { undo: said }) : await ACT3[RC_KIND3[RC3.mode]](x, { undo: said });
   if (!r.ok) { $('#rcErr').textContent = r.text; return; }   // the form may have been drawn again meanwhile (another tab)
   RC3.last = before;

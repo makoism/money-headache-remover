@@ -146,11 +146,13 @@ async function warns(bk, day) {
     bk.events.push({ id: 's6sp', k: 'spend', acct, date: '2026-11-26', a: 70000, told: '2026-11-26T12:00+09:00' });
     const r = T.L.lookahead(bk, '2026-11-27'), over = r.safeToSpend.freeOver;
     ck('F: the engine says Free to spend is over', over > 0 && r.period.free.left === -over, JSON.stringify(r.safeToSpend));
-    const { cap, errs } = await warns(bk, '2026-11-27');
+    const { cap, errs, all } = await warns(bk, '2026-11-27');
     ck('F: the sum on Home names the overspend', cap && cap.includes(`over this period) = ¥0`), cap);
     /* [BM3] each part names its own amount: the cap takes all of what the accounts can spare, so it says "all of it" */
     const spare = r.safeToSpend.whyParts[0].amount.toLocaleString('en');
     ck('F: BM3 the cap part says all of it, beside its own amount', cap === `¥${spare} (what your accounts can spare) \u2212 ¥${spare} (all of it: Free to spend is ¥${over.toLocaleString('en')} over this period) = ¥0`, cap);
+    /* [C2] Free to spend is over, so it caps safe to spend at nothing: one plain line says so, with the engine's figure */
+    ck('F: C2 Home says why nothing is safe to spend, in one line', all.replace(/\u2060/g, '').includes(`Your accounts can spare ¥${spare}, but your Free to spend is used up this period, so nothing is safe to spend`), (all.replace(/\u2060/g, '').match(/Your accounts can spare.{0,120}/) || [])[0]);
     ck('F: no page errors', errs.length === 0, errs.join(' | '));
   }
   /* J. [BM2, numbers QC finding 2] Set up Thu 10 Dec with Main bank 359,000 (the pay of the 10th in), Pay 200,000 on the
