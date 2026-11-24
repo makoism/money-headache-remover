@@ -15,6 +15,8 @@ Then read `wip/team/LESSONS.md` (Mako, 2026-11-23: "keep this as reference ... t
 
 ## Other standing rules
 
+- One chat (Mako, 2026-11-24, DECISIONS new foundation 10): never ask Mako anything directly or wait for him in your own chat. Send every question, approval request and result to the coordinator session ("Burrow coordinator ... (talk to this one)") with send_message. For a push to main, prepare the exact commit and send its hash to the coordinator, who asks Mako and does the push after his yes.
+
 - Mako is in Japan (JST, UTC+9). Give times in Japan time.
 - Every update starts with two rough percentages (first version ready for him, everything checked; and including the art and the 3D world) and what is being worked on.
 - Plain words, no em dashes. No real figures in the repo. Nothing deploys and nothing is pushed to `main` without Mako.
