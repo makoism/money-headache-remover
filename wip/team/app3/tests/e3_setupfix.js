@@ -360,5 +360,35 @@ async function openSetup(day) {
     }
     await c.close();
   }
+  /* 7: an account taken out of setup never moves a bill, a card or a pay onto another account (setup3 reads its boxes
+     through answers3, which names accounts by their place; a row keeps its own key when one before it is removed) */
+  {
+    const { c, p } = await openSetup('2026-11-24');
+    await typeIn(p, '#s3Bank', '300000'); await typeIn(p, '#s3PayAmt', '250000'); await p.selectOption('#s3PayDay', '25');
+    await p.click('#s3AddAcct'); await w(120);
+    await typeIn(p, '[data-row=acct2] [data-f=name]', 'Coin jar'); await typeIn(p, '[data-row=acct2] [data-f=amount]', '900'); await p.selectOption('[data-row=acct2] [data-f=type]', 'cash');
+    await p.click('#s3AddAcct'); await w(120);
+    await typeIn(p, '[data-row=acct3] [data-f=name]', 'Second bank'); await typeIn(p, '[data-row=acct3] [data-f=amount]', '41000'); await p.selectOption('[data-row=acct3] [data-f=type]', 'bank');
+    await p.click('#s3AddBill'); await w(120);
+    await typeIn(p, '[data-row=bill1] [data-f=name]', 'Gym'); await typeIn(p, '[data-row=bill1] [data-f=amount]', '4800'); await p.selectOption('[data-row=bill1] [data-f=day]', '28');
+    await p.selectOption('[data-row=bill1] [data-f=from]', 'acct3');
+    await p.click('#s3AddCard'); await w(120);
+    await typeIn(p, '[data-row=card1] [data-f=name]', 'Everyday card'); await typeIn(p, '[data-row=card1] [data-f=owed]', '12000');
+    await p.selectOption('[data-row=card1] [data-f=payFrom]', 'acct3');
+    await p.click('[data-row=acct2] [data-remove]'); await w(250);
+    ck('account removed: the bill and the card still say Second bank', (await val(p, '[data-row=bill1] [data-f=from]')) === 'acct3' && (await val(p, '[data-row=card1] [data-f=payFrom]')) === 'acct3' && !(await p.$('[data-row=acct2]')));
+    const err = await saveSections(p);
+    await p.click('#a3SetupSave'); await w(700);
+    const bk = (await device(p)).book;
+    const acct = id => (((bk || {}).accounts || []).find(a => a.id === id) || {}).name;
+    const names = ((bk || {}).accounts || []).map(a => a.name);
+    const bill = ((bk || {}).schedules || []).find(s => s.kind === 'bill' && s.name === 'Gym');
+    const card = ((bk || {}).accounts || []).find(a => a.name === 'Everyday card');
+    const field = x => (x && typeof x === 'object' && 'v' in x ? x.v : x);   // a stamped field or a plain one
+    ck('account removed: the book is kept, with Second bank and no Coin jar', !err && !!bk && names.includes('Second bank') && !names.includes('Coin jar'), err || JSON.stringify(names));
+    ck('account removed: the Gym bill leaves from Second bank', !!bill && acct(bill.acct) === 'Second bank', bill && acct(bill.acct));
+    ck('account removed: the card is paid from Second bank', !!card && acct(field(card.payFrom)) === 'Second bank', JSON.stringify(card && card.payFrom));
+    await c.close();
+  }
   await L.finish();
 })().catch(e => { console.log('FAIL crashed ' + e.stack); process.exit(1); });
