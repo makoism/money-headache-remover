@@ -8651,13 +8651,14 @@ function ageWords3(days) {
   return 'checked ' + days + ' days ago';
 }
 /* [QC F4] the line under bank today: its age while it is the check itself; once something is logged after the check,
-   both parts from the engine (the check and its day, what was logged out and in since), so a figure that moved never
-   says "checked today". One way of writing cents for the sentence (money.js formatter). */
+   the parts from the engine (the check and its day, what was logged out and in since), so a figure that moved never
+   says "checked today". [C13, M51] The parts are written as the sum that ends with the big figure above (the engine's
+   bank), in the way Home writes its other sums, so it never reads as two figures for the bank. One way of writing
+   cents for the line (money.js formatter); the signs are written, nothing is worked out here. */
 function bankParts3(a, yr) {
   if (!a.loggedIn && !a.loggedOut) return `${ageWords3(a.ageDays)}, on ${esc3(day3(a.asOf, yr))}`;
-  const f = fmt3(a.currency, [a.checked, a.loggedOut, a.loggedIn]);
-  const moved = [a.loggedOut ? `${f(a.loggedOut)} out` : '', a.loggedIn ? `${f(a.loggedIn)} in` : ''].filter(Boolean).join(' and ');
-  return `${f(a.checked)} checked ${esc3(day3(a.asOf, yr))}, ${moved} logged since`;
+  const f = fmt3(a.currency, [a.checked, a.loggedOut, a.loggedIn, a.bank]);
+  return esc3(`${f(a.checked)} (checked ${day3(a.asOf, yr)})${a.loggedOut ? ` ${SM.MINUS} ${f(a.loggedOut)} (out, logged since)` : ''}${a.loggedIn ? ` + ${f(a.loggedIn)} (in, logged since)` : ''} = ${f(a.bank)}`);
 }
 function dueWords3(n) {
   if (n === 0) return 'today';
