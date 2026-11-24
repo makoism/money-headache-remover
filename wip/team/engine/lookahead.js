@@ -1130,9 +1130,13 @@
     function runwayPlanned(id) {
       const srcs = lineSrcs.filter(l => moneyAcct(lineAcct(l)) === id).map(l => ({ src: l, name: l.name, perOn: () => l.per }));
       if (freeSrc && moneyAcct(lineAcct(freeSrc)) === id) srcs.push({ src: freeSrc, name: 'Free to spend', perOn: d => freePerOn(d) });
-      const list = [];
+      // [qc-foundation on S1, fix 3] spending counts from the day after the account's last check, not from today: days
+      // away with nothing logged still count. The days up to today are one part, less what was logged out of the account
+      // since that check (never below nothing), taken today.
+      const list = [], from = Math.min(today, banks[id] ? banks[id].asOfDay : today);
+      let stretch = 0;
       for (const { src, name, perOn } of srcs) {
-        for (let d = today + 1; d <= today + LATER_ON_DAYS; d++) {
+        for (let d = from + 1; d <= today + LATER_ON_DAYS; d++) {
           const amount = stepIn(src.steps, d), per = perOn(d);
           if (!amount) continue;
           let want;
@@ -1145,8 +1149,13 @@
             const yearly = amount * perYear(per, y), perDay = Math.floor(yearly / yearDays);
             want = perDay + (d === dayIn(y, mo, 'last') ? Math.floor(yearly * monthDays / yearDays) - perDay * monthDays : 0);
           }
-          if (want) list.push({ land: d, amount: want, label: name, group: name });
+          if (want && d <= today) stretch += want;
+          else if (want) list.push({ land: d, amount: want, label: name, group: name });
         }
+      }
+      if (from < today && srcs.length) {
+        const left = Math.max(0, stretch - (banks[id] ? banks[id].loggedOut : 0));
+        list.push({ land: today, amount: left, label: `Your plan since your last check (${short(from + 1)} to today), less what you logged` });
       }
       return list;
     }
@@ -1156,6 +1165,11 @@
     // lines. Below zero and under the minimum are judged on it; the full walk (goals and plan lines off) is what can be spared.
     // [stage 2 S1] `runway`: as if no more pay came: no pay at all (a transfer in from your own account is not pay and
     // stays), goals kept in it still off, no "left this period", and the plan by the day (runwayPlanned).
+    // [qc-foundation on S1, fix 1] In the runway a transfer out moves only what the account still holds then (never below
+    // zero), and a transfer in counts what its account moved, from that account's own runway walk (its pay left out,
+    // its own transfers in not counted, so two accounts never lean on each other). `runway === 'noIn'` is that walk.
+    const movedBy = {};
+    const movedFrom = src => (movedBy[src] = movedBy[src] || (banks[src] ? walk(src, today + LATER_ON_DAYS, 0, false, 'noIn').moved : null));
     function walk(id, end, minimum, real, runway) {
       const start = banks[id].bank;
       const why = [{ label: acct[id].name + ' today', amount: start }];
@@ -1175,9 +1189,14 @@
         if ((o.kind === 'bill' || o.kind === 'transfer' || o.kind === 'auto' || o.kind === 'loan') && o.acct === id && o.land <= end) {
           const fromIt = o.place && placeLeft[o.place] ? Math.min(placeLeft[o.place], o.amount) : 0;   // [H7] the place's money first
           if (fromIt) placeLeft[o.place] -= fromIt;
-          steps.push({ day: Math.max(o.land, today), order: 1, amount: -(o.amount - fromIt), label: o.name + ' ' + short(o.land) + (o.land < today ? ', late' : ''), fromPlace: fromIt ? { place: o.place, amount: fromIt } : undefined });
+          steps.push({ day: Math.max(o.land, today), order: 1, amount: -(o.amount - fromIt), label: o.name + ' ' + short(o.land) + (o.land < today ? ', late' : ''), fromPlace: fromIt ? { place: o.place, amount: fromIt } : undefined,
+            xfer: runway && o.kind === 'transfer' && o.to && acct[o.to] ? o.id : undefined });
         }
-        if (o.kind === 'transfer' && o.to === id && o.land >= today && o.land <= end) steps.push({ day: o.land, order: 0, amount: o.amount2 != null ? o.amount2 : o.amount, label: o.name + ' in ' + short(o.land) });
+        if (o.kind === 'transfer' && o.to === id && o.land >= today && o.land <= end && runway !== 'noIn') {
+          const full = o.amount2 != null ? o.amount2 : o.amount, mv = runway ? movedFrom(o.acct) : null;
+          const got = !mv || mv[o.id] == null ? full : mv[o.id] === o.amount ? full : Math.floor(mv[o.id] * full / o.amount);
+          steps.push({ day: o.land, order: 0, amount: got, label: o.name + ' in ' + short(o.land) });
+        }
       }
       for (const cid in cards) {
         if (cards[cid].payFrom !== id || cur(cid) !== cur(id)) continue;   // [H5] another currency: warned below
@@ -1203,7 +1222,9 @@
       // [B1, QC numbers] the first day the bank ends under its minimum (or zero) and how far under then, and the first
       // pay that brings money in after that day: the shortfall is named by that day, never by a lower point later
       let firstUnder = bal < minimum ? { day: today, amount: minimum - bal } : null, payAfter = null;
+      const moved = {};
       for (let i = 0; i < steps.length; i++) {
+        if (steps[i].xfer) { const m = Math.min(-steps[i].amount, Math.max(0, bal)); steps[i].amount = -m; moved[steps[i].xfer] = m + (steps[i].fromPlace ? steps[i].fromPlace.amount : 0); }   // [fix 1]
         bal += steps[i].amount;
         if (firstUnder && payAfter === null && steps[i].pay && steps[i].amount > 0 && steps[i].day > firstUnder.day) payAfter = steps[i].day;
         if (steps[i + 1] && steps[i + 1].day === steps[i].day) continue;   // the end of a day
@@ -1221,7 +1242,7 @@
       // [slice 6, G4] the lowest point is the start of today, yet today brings money in and takes some out: those steps
       // are not in the sum, so they are given apart, in the walk's order (the pay first), for the screen to show
       const todayParts = lowAt === 0 && steps.some(x => x.day === today && x.pay) ? steps.filter(x => x.day === today && x.order !== 2).map(x => ({ label: x.label, amount: x.amount })) : null;   // real money only: never plan lines
-      return { lowest: low, lowestDay: lowDay, headroom: low - minimum, why, head, firstBelowZero, belowBal, firstUnder, payAfter, payAfterLow: payAfterLow == null ? null : payAfterLow, start, steps, todayParts };
+      return { lowest: low, lowestDay: lowDay, headroom: low - minimum, why, head, moved, firstBelowZero, belowBal, firstUnder, payAfter, payAfterLow: payAfterLow == null ? null : payAfterLow, start, steps, todayParts };
     }
 
     const backsGoal = id => places.some(g => g.keptIn && g.keptIn.acct === id && g.keptIn.mode === 'ownAccount' && removedOn(g) === null);
@@ -1349,7 +1370,8 @@
         }
         for (const g of Object.keys(groups).sort()) parts.push({ label: g + ', ' + groups[g].n + (groups[g].n === 1 ? ' day' : ' days'), amount: groups[g].amount });
         parts.push({ label: 'minimum', amount: minimum ? -minimum : 0 });
-        per[id] = { day: dayStr(f.day), days: f.day - today, weeks: Math.floor((f.day - today) / 7), more: false, minimum, parts, total: parts.reduce((t, p) => t + p.amount, 0) };
+        // [fix 4] the whole days covered: under on day N covers N - 1 days
+        per[id] = { day: dayStr(f.day), days: f.day - today, weeks: Math.floor(Math.max(0, f.day - today - 1) / 7), more: false, minimum, parts, total: parts.reduce((t, p) => t + p.amount, 0) };
       }
       const hasPlan = ids.some(id => lineSrcs.some(l => moneyAcct(lineAcct(l)) === id) || (freeSrc && moneyAcct(lineAcct(freeSrc)) === id));
       const first = ids.slice().sort((x, y) => (per[x].day === per[y].day ? 0 : per[x].day === null ? 1 : per[y].day === null ? -1 : per[x].day < per[y].day ? -1 : 1))[0];

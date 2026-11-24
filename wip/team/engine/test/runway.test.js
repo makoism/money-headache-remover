@@ -60,9 +60,8 @@ t('the same weeks on later days of the period: what was spent this period is not
   const r = rw(book, '2026-11-25');
   ok(!r.parts.some(p => /left this period/.test(p.label)), JSON.stringify(r.parts));
   eq(total(r.parts), r.total);
-  // 25 Nov: still 300,000; 26 and 27 Nov 4,800, rent: 205,200 at the end of 27 Nov, one day more than from 24 Nov:
-  // under on 15 Jan, 51 days, 7 weeks
-  eq([r.day, r.days, r.weeks], ['2027-01-15', 51, 7]);
+  // 25 Nov, nothing logged since the 24 Nov check: the plan counts from 25 Nov (fix 3), so the same 14 Jan, 50 days
+  eq([r.day, r.days, r.weeks], ['2027-01-14', 50, 7]);
 });
 // The same book in nine orders gives the same runway (LESSONS lesson 4 addendum).
 t('the same book in nine orders of its events gives the same runway', () => {
@@ -90,7 +89,7 @@ t('a transfer in from your own savings is not income: it is kept (under on 27 Ja
 t('several accounts: the one that runs out first is named', () => {
   const { book, ids } = make({ banks: [{ key: 'w', name: 'E-wallet', type: 'ewallet', amount: 4000 }], bills: [{ key: 'ph', name: 'Phone', from: 'w', amount: 5000, day: 1, shift: 'none' }] });
   const r = rw(book);
-  eq([r.account, r.several, r.day, r.days, r.weeks], [ids.w, true, '2026-12-01', 7, 1]);
+  eq([r.account, r.several, r.day, r.days, r.weeks], [ids.w, true, '2026-12-01', 7, 0]);   // under on day 7: 6 days covered, less than a week
   eq(r.accounts[ids.b].day, '2027-01-14');
   eq(r.parts.map(p => p.amount), [4000, -5000, 0]);
 });
@@ -126,10 +125,10 @@ t('goal set-asides per pay are left out, and no place (the emergency one too) ca
 // 25 to 30 Nov 6 x 2,136 + 29 = 12,845, rent: 197,155 at the end of November. December 66,246 and rent: 40,909.
 // January: 40,909 - 18 x 2,219 = 967 at the end of 18 Jan, under on 19 Jan: 56 days, 8 weeks.
 // (Read as a month, 30,000 x 12 / 365 = 986 a day, it would last months longer: version one's mistake.)
-t('pay every two weeks: a per-pay Free to spend uses the pays in each year (26, then 27): under on 19 Jan, 56 days, 8 weeks', () => {
+t('pay every two weeks: a per-pay Free to spend uses the pays in each year (26, then 27): under on 19 Jan, 56 days, 7 weeks', () => {
   const { book } = make({ free: 30000, pay: { key: 'p', name: 'Main job', bank: 'b', amount: 120000, every: 'weeks', n: 2, start: '2026-11-20', shift: 'before', startsPeriod: true } });
   const r = rw(book);
-  eq([r.day, r.days, r.weeks], ['2027-01-19', 56, 8]);
+  eq([r.day, r.days, r.weeks], ['2027-01-19', 56, 7]);   // 55 whole days covered
   eq(r.parts.find(p => /Free to spend/.test(p.label)).amount, -(12845 + 66246 + 19 * 2219));
   eq(total(r.parts), r.total);
 });
@@ -146,5 +145,66 @@ t('no Free to spend and no lines: no runway (nothing says how fast the money goe
   const { book } = make();
   book.plan.shares = [];
   eq(rw(book), null);
+});
+// ----- the end-of-slice review (qc-foundation on 743be85): four fixes -----
+// [fix 4] weeks count the whole days covered: under on day N covers N - 1 days, so weeks = floor((N - 1) / 7).
+t('weeks are whole days covered: under on day 7 is 0 weeks, day 8 is 1 week, day 0 (under today) is 0', () => {
+  const { book } = make({ banks: [{ key: 'w', name: 'E-wallet', type: 'ewallet', amount: 4000 }], bills: [{ key: 'ph', name: 'Phone', from: 'w', amount: 5000, day: 2, shift: 'none' }] });
+  const r = rw(book);
+  eq([r.day, r.days, r.weeks], ['2026-12-02', 8, 1]);
+  const { book: b2 } = make({ banks: [{ key: 'w', name: 'E-wallet', type: 'ewallet', amount: -100 }] });
+  const r2 = rw(b2);
+  eq([r2.day, r2.days, r2.weeks], ['2026-11-24', 0, 0]);
+});
+// [fix 1] A transfer in counts only up to what the account it comes from still holds, walked with its pay left out.
+// Main bank 100,000 (main, Free to spend 73,000 a pay: 2,400 a day); Salary bank 20,000; pay 250,000 on the 25th into
+// Salary (left out); 200,000 moves Salary -> Main on the 26th; rent 90,000 on the 27th from Main.
+// Salary holds 20,000 on the 26th, so 20,000 moves (Salary ends at 0, never under zero).
+// Main: 25 and 26 Nov 4,800 and 20,000 in: 115,200; 27 Nov 2,400 and rent: 22,800; 28 Nov to 6 Dec 9 days 21,600: 1,200;
+// 7 Dec under: 13 days, 1 week. Before the fix the whole 200,000 counted (a year or more on Main).
+function salaryBook() {
+  const r = B.buildBook({ day: DAY, told: TOLD, currency: 'JPY', country: 'JP',
+    banks: [{ key: 'b', name: 'Main bank', amount: 100000 }, { key: 'sal', name: 'Salary bank', amount: 20000 }],
+    pays: [{ key: 'p', name: 'Main job', bank: 'sal', amount: 250000, day: 25, shift: 'none', startsPeriod: true }],
+    bills: [{ key: 'rent', name: 'Rent', from: 'b', amount: 90000, day: 27, shift: 'none' }], free: 73000 }, { newId: I.idMaker('rw7k3q') });
+  r.book.schedules.push({ id: 'rw7k3q-tr1', kind: 'transfer', name: 'To Main bank', acct: r.ids.sal, acct2: r.ids.b, cur: 'JPY', shift: 'none',
+    rules: [{ from: null, rule: { every: 'month', days: [26] } }], steps: [{ from: null, amount: 200000 }], told: TOLD, at: TOLD, by: 'rw7k3q' });
+  return r;
+}
+t('a transfer in counts only what the account it comes from still holds (pay left out): 20,000 of 200,000, under on 7 Dec', () => {
+  const { book, ids } = salaryBook();
+  const r = rw(book);
+  eq([r.account, r.day, r.days, r.weeks], [ids.b, '2026-12-07', 13, 1]);
+  ok(r.parts.some(p => p.amount === 20000 && /To Main bank/.test(p.label)), JSON.stringify(r.parts));
+  eq(r.accounts[ids.sal].day, null);   // Salary ends at 0: never under zero
+  eq(total(r.parts), r.total);
+});
+t('a savings top-up has the same cap: savings 30,000 moving 50,000 on 1 Dec counts 30,000', () => {
+  const { book, ids } = make({ banks: [{ key: 's', name: 'Savings', amount: 30000 }] });
+  book.accounts.find(a => a.id === ids.s).spendFrom = false;
+  book.schedules.push({ id: 'rw7k3q-tr2', kind: 'transfer', name: 'To bank', acct: ids.s, acct2: ids.b, cur: 'JPY', shift: 'none',
+    rules: [{ from: null, rule: { every: 'once', date: '2026-12-01' } }], steps: [{ from: null, amount: 50000 }], told: TOLD, at: TOLD, by: 'rw7k3q' });
+  const r = rw(book);
+  ok(r.parts.some(p => p.amount === 30000), JSON.stringify(r.parts));
+  // 0 at the end of 13 Jan becomes 30,000: 12 more days, 0 at the end of 25 Jan, under on 26 Jan: 63 days
+  eq([r.day, r.days, r.weeks], ['2027-01-26', 63, 8]);
+});
+// [fix 3] Spending is counted from the last check, not from today: days away with nothing logged still count, less
+// what was logged from the account since. Set up 24 Nov, opened again on 15 Dec with nothing logged: the plan from
+// 25 Nov, so the same 14 Jan (and no pay counted: the 10 Dec pay is left out).
+t('days away with nothing logged still count: on 15 Dec with no check since 24 Nov, still under on 14 Jan', () => {
+  const r = rw(make().book, '2026-12-15');
+  eq([r.day, r.days], ['2027-01-14', 30]);
+  eq(total(r.parts), r.total);
+  ok(r.parts.some(p => /since your last check/.test(p.label) && p.amount === -50400), JSON.stringify(r.parts));   // 25 Nov to 15 Dec, 21 days
+});
+t('what was logged since the check comes off that stretch, never below nothing: 26 Nov after a 3,000 spend', () => {
+  const { book, ids } = make();
+  book.events.push({ id: 'rw7k3q-sp1', k: 'spend', date: '2026-11-26', a: 3000, acct: ids.b, line: 'free', told: '2026-11-26T12:00:00+09:00', at: '2026-11-26T12:00:00+09:00', by: 'rw7k3q', src: { type: 'typed' } });
+  const r = rw(book, '2026-11-26');
+  // the stretch 25 and 26 Nov is 4,800, less 3,000 logged: 1,800. Bank 297,000 - 1,800 = 295,200, as 300,000 - 4,800:
+  // the same 14 Jan
+  ok(r.parts.some(p => /since your last check/.test(p.label) && p.amount === -1800), JSON.stringify(r.parts));
+  eq(r.day, '2027-01-14');
 });
 done(path.basename(__filename));
