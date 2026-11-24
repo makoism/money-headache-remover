@@ -254,6 +254,14 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     ok(/^Nothing changed/.test(await one({ steps: [{ do: 'card_figure', account: 'A1', amount: 1 }] })));
     ok(/^Nothing changed/.test(await one({ steps: [{ do: 'landed', ref: 'B9' }] })));
   });
+  await t('a yearly bill by chat: "car insurance 12,000 every March 15th" is added once a year (qc-foundation confirm)', async () => {
+    const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
+    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'add_bill', name: 'Car insurance', amount: 12000, every: 'year', month: 3, day: 15 }] })]), say('Added.')]);
+    const r = await K.turn(state, 'car insurance 12,000 every March 15th', hp.deps(f));
+    const c = r.shown.find(x => x.who === 'card').card;
+    eq([c.status, c.lines], ['done', ['Add Car insurance: ¥12,000 once a year on 15 March, from Main bank']]);
+    eq(hp.book.schedules.find(x => x.name === 'Car insurance').rules[0].rule, { every: 'year', date: '03-15' });
+  });
   /* the fill's Undo (BV2): the book goes, the draft stays; once anything else was written, "start over" */
   await t('Undo of the fill after something else was written becomes "start over"; startOver discards and keeps the draft', async () => {
     const fillId = S2.turns.find(x => x.who === 'card' && x.card.kind === 'fill').id;

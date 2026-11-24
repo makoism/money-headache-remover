@@ -507,6 +507,20 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     const r = await h.go('changeBill', SIDE, { every: 'month', day: 25, amount: 70000 }); ok(r.ok, JSON.stringify(r));
     eq([!!h.book.schedules.find(s => s.id === SIDE).startsPeriod, !!h.book.schedules.find(s => s.id === MAIN).startsPeriod], [true, false]);
   });
+  await t('addBill takes how often: a yearly 12,000 counts once a year, every 3 months 4 times; a day the month lacks is refused (qc-foundation confirm, yearly bills)', async () => {
+    const S = require(E + 'schedules.js'), D = require(E + 'dates.js'), cal = S.calendar('JP');
+    const count = (b, name) => { const s = b.schedules.find(x => x.name === name); return S.occurrences(s, cal, D.dayNum('2026-11-25'), D.dayNum('2027-11-24')).length; };
+    const h = setup();
+    let r = await h.go('addBill', { name: 'Insurance', amount: 12000, every: 'year', month: 3, day: 15 }); ok(r.ok, JSON.stringify(r));
+    const s = h.book.schedules.find(x => x.name === 'Insurance');
+    eq(s.rules.map(x => [x.from, x.rule]), [[null, { every: 'year', date: '03-15' }]]);
+    eq(count(h.book, 'Insurance'), 1, 'once a year');
+    r = await h.go('addBill', { name: 'Water', amount: 6000, every: 'months', n: 3, start: '2026-12-05' }); ok(r.ok, JSON.stringify(r));
+    eq(count(h.book, 'Water'), 4);
+    r = await h.go('addBill', { name: 'Gym', amount: 8000, day: 1 }); ok(r.ok);
+    eq(count(h.book, 'Gym'), 12, 'a day each month as before');
+    r = await h.go('addBill', { name: 'Bad', amount: 1, every: 'year', month: 2, day: 30 }); ok(!r.ok && r.why === 'bad', JSON.stringify(r));
+  });
   console.log(bad ? `plan3_write: ${bad} FAIL of ${n}` : `plan3_write: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })();

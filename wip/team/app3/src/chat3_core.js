@@ -161,7 +161,7 @@ AFTER SETUP. When a pay, bill or card payment the app expects has come in or gon
     { name: 'draft_set', description: 'Save one setup section into the draft, its whole value. Nothing reaches the app until fill_book. Sections: country "JP"|"PH"|"XX"; banks [{name, amount, type?, confirmed?}] (first is where pay lands; confirmed true when the person gave the figure again today); pays [{name, amount, every: month|days|weeks|none, day?, day2?, n?, start?, shift?: before|after, bank?, afterTax, same?}]; cards [{name, owed, payDay, closeDay: day|"last"|"not sure", shift?, payFrom?, confirmed?}]; bills [{name, amount, day, every?: month|year, month?, from?}]; asked [{name, out: true|false}]; statements [{name, amount|"not sure"}]; payToday {landed: true|false}; free amount|null; min amount|null.',
       input_schema: { type: 'object', properties: { section: { type: 'string', enum: SECTIONS }, value: { description: 'The section\'s whole value.' } }, required: ['section', 'value'] } },
     { name: 'fill_book', description: 'Turn the draft into the person\'s Burrow. Only when they said to fill it in. Refused while NEEDED is not empty.', input_schema: { type: 'object', properties: {} } },
-    { name: 'change', description: 'Make up to ' + MAX_STEPS + ' changes, each a named step: ' + DO.join(', ') + '. landed {ref: the P, B or card A ref, amount? only if it was different, date? the day it landed}; bank_figure and card_figure {account, amount}. Fields: amount, account (A ref), from and to (A refs), line (L ref), goal (G ref), ref (the record: S, B, P, L or G ref), date (YYYY-MM-DD, today or before), note, name, day, day2, every (month|days|weeks1..4|none), start, when (now|next|once), target, due, owed, payDay, closeDay, type (bank|cash|ewallet), moved (true|false).',
+    { name: 'change', description: 'Make up to ' + MAX_STEPS + ' changes, each a named step: ' + DO.join(', ') + '. landed {ref: the P, B or card A ref, amount? only if it was different, date? the day it landed}; bank_figure and card_figure {account, amount}. Fields: amount, account (A ref), every (add_bill: month|year|months, with month 1..12 for a year, n and start for months), from and to (A refs), line (L ref), goal (G ref), ref (the record: S, B, P, L or G ref), date (YYYY-MM-DD, today or before), note, name, day, day2, every (month|days|weeks1..4|none), start, when (now|next|once), target, due, owed, payDay, closeDay, type (bank|cash|ewallet), moved (true|false).',
       input_schema: { type: 'object', properties: { steps: { type: 'array', items: { type: 'object', properties: { do: { type: 'string', enum: DO }, amount: num }, required: ['do'] } } }, required: ['steps'] } },
   ];
 
@@ -477,9 +477,14 @@ AFTER SETUP. When a pay, bill or card payment the app expects has come in or gon
       return { kind: 'endBill', args: [id, {}], text: `End ${schName(id)} from today`, del: true };
     }
     if (what === 'add_bill') {
-      const x = amt(a.amount), acct = acctOr(a.account);
-      if (!x || !dayOk(a.day) || !acct || !a.name) return { bad: 'a bill I could not read' };
-      return { kind: 'addBill', args: [{ name: clean(a.name, 60), amount: x, day: a.day, acct }], text: `Add ${clean(a.name, 60)}: ${m(x)} on day ${a.day} each month, from ${nm(acct)}`, amount: x };
+      const x = amt(a.amount), acct = acctOr(a.account), every = a.every || 'month';
+      if (!x || !acct || !a.name || !['month', 'year', 'months'].includes(every) || (every !== 'months' && !dayOk(a.day))) return { bad: 'a bill I could not read' };
+      const args = { name: clean(a.name, 60), amount: x, day: a.day, acct, every };
+      if (every === 'year') args.month = a.month;
+      if (every === 'months') { args.n = a.n; args.start = a.start; }
+      const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      const when = every === 'year' ? `once a year on ${a.day} ${MONTHS[Number(a.month) - 1] || '?'}` : every === 'months' ? `every ${a.n} months from ${DAY.test(a.start || '') ? day1(a.start) : '?'}` : `on day ${a.day} each month`;
+      return { kind: 'addBill', args: [args], text: `Add ${args.name}: ${m(x)} ${when}, from ${nm(acct)}`, amount: x };
     }
     if (what === 'change_bill') {
       const id = ref(a.ref, 'BP'); if (!id) return { bad: 'a change to a bill or pay I do not know' };

@@ -96,12 +96,31 @@
   }
 
   /* ---- bills ---- */
+  /* [qc-foundation confirm, yearly bills] x.every: 'month' (default, `day`), 'year' (`month` 1 to 12 and `day`, or `date`
+     'MM-DD'), 'months' (every `n` months from `start`, the day of one), as build_book writes them */
+  const DAYS_IN = { 1: 31, 2: 29, 3: 31, 4: 30, 5: 31, 6: 30, 7: 31, 8: 31, 9: 30, 10: 31, 11: 30, 12: 31 };
+  function billRule(x) {
+    const every = x.every || 'month';
+    if (every === 'month') return { every: 'month', days: [dayOfMonth(x.day)] };
+    if (every === 'year') {
+      const m = x.date ? Number(String(x.date).slice(0, 2)) : Number(x.month), d = x.date ? Number(String(x.date).slice(3)) : x.day;
+      if (!(Number.isInteger(m) && m >= 1 && m <= 12)) bad('Pick the month it is due');
+      if (!(Number.isInteger(d) && d >= 1 && d <= DAYS_IN[m])) bad('Pick a day that month has');
+      return { every: 'year', date: String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0') };
+    }
+    if (every === 'months') {
+      if (!(Number.isInteger(x.n) && x.n >= 1 && x.n <= 24)) bad('Every how many months?');
+      if (!DAY.test(x.start || '')) bad('Pick the day of one of them');
+      return { every: 'months', n: x.n, from: x.start };
+    }
+    return bad('Pick how often it is due');
+  }
   function addBill(w, x) {
-    const name = nameOk(x.name), a = amountOk(x.amount, 'the amount'), d = dayOfMonth(x.day), acct = x.acct || mainOf(w);
+    const name = nameOk(x.name), a = amountOk(x.amount, 'the amount'), rule = billRule(x), acct = x.acct || mainOf(w);
     if (!(w.book.accounts || []).some(y => live(y) && y.id === acct)) bad('Pick the account it is paid from');
     sameName(A3.listOf(w.book, 'schedules').filter(s => s.kind === 'bill'), name);
     const id = w.add('schedules', { kind: 'bill', name, acct, cur: home(w), shift: x.shift || 'after', from: x.from || w.today,
-      rules: [{ from: null, rule: { every: 'month', days: [d] } }], steps: [{ from: null, amount: a }] });
+      rules: [{ from: null, rule }], steps: [{ from: null, amount: a }] });
     const r = find(w, 'schedules', id); stampNew(r, 'rules'); stampNew(r, 'steps');
     return id;
   }
