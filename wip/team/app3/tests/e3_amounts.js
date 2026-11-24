@@ -63,6 +63,20 @@ async function walk(p, where, root) {
     }
   }
   ck(where + `: tap, click and Tab into each of ${amounts.length} amount boxes, then typing, gives only the typed digits`, bad.length === 0, bad.join(' | '));
+  /* the same amount typed the ways people type it (a comma, a space, full-width digits, the yen sign) is read as the
+     same value by every box: on leaving, the box holds the plain digits and no error (coordinator, 24 Nov; M60) */
+  const odd = [];
+  for (const x of amounts) {
+    const sel = `[data-walk="${x.w}"]`;
+    for (const typed of ['4,321', '4 321', '\uFF14\uFF0C\uFF13\uFF12\uFF11', '\u00A54,321']) {
+      await p.click(sel); await T.w(20);
+      await p.$eval(sel, (e, t) => { e.value = t; e.dispatchEvent(new Event('input', { bubbles: true })); }, typed);
+      await leave(p); await T.w(20);
+      const st = await p.$eval(sel, e => ({ v: e.value, bad: e.getAttribute('aria-invalid') }));
+      if (st.v !== DIGITS || st.bad) odd.push(`${x.name} typed ${typed}: ${st.v}${st.bad ? ' (error)' : ''}`);
+    }
+  }
+  ck(where + `: each of ${amounts.length} amount boxes reads 4,321, "4 321", full-width digits and a yen sign as 4321`, odd.length === 0, odd.join(' | '));
 }
 /* a box the form put in focus by itself: selected, and the first click still selects */
 async function fromCode(p, where, typed) {
