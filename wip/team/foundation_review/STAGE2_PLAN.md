@@ -138,3 +138,9 @@ Why this order: S1 helps Mako's own shape this week and needs nothing new. S2 to
    - The by-day walk uses the step in force for each line, never this period's `once` override.
    - Each line is converted from its own `per` by the units rule: a per-pay amount uses the pay's pays per year. Test it with pay every two weeks as well as Mako's shape.
    - Goal set-asides per pay stop when pay stops, so they are left out of the runway.
+1''. **Rules for the people map (narrow review, PASS):**
+   - **The total is the ceiling.** `free` is the household ceiling and the only figure that limits spending. A writer that writes `people` also writes `free` as the sum of the live people, in the same edit. If a reader finds the two unequal, `free` is the ceiling: it says the split is out of date and asks. It never rescales the parts silently.
+   - **No map means no split** from that `from`. A later build never carries an earlier map forward on its own; it asks the couple to split again.
+   - **One-period overrides** for a person live at `once[k].people`, in the same shape.
+   - **Syncing:** in version one, an entry is kept whole, and a clash between two devices is asked about. Merging key by key comes in stage 2.
+   - **Watch:** Free to spend uses a single account (`shares[0].acct`). Each person spending from their own e-wallet comes later.

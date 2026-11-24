@@ -551,3 +551,4 @@ The five corrections at the end of STAGE2_PLAN.md are accepted. The most importa
 
 ## BT. Second plan review (24 Nov morning JST)
 The corrections 1prime, 2prime and 5prime at the end of STAGE2_PLAN.md are accepted. Each person's Free to spend is a people map inside the plan.shares entry, and the entry keeps the household total. The rate in force is the latest in either direction. The S1 walk uses steps converted by each line's per, and leaves out goal set-asides.
+BT2. The people-map rules (1'' in STAGE2_PLAN.md) passed a narrow qc-foundation review. Lane A and the merge of S1 may go ahead.
