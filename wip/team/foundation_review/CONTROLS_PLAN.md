@@ -238,6 +238,21 @@ qc-foundation FAILed this plan (qc_reports/2026-11-24_controls_plan/qc-foundatio
 - **Yen is the default (M34).** Someone who typed peso amounts under yen fixes it with Start again in v1 (slice 12: the book kept whole, setup refilled except amounts). A real currency change, a dated `home.curs` entry, is stage 2. A rescaling relabel rewrites every amount and stays out of v1.
 - **sync.js `kind` and `type`:** BZ4 above.
 
+### BZ2 part: rows from the controls back-test (qc_reports/2026-11-24_backtest_live_build/SORTED.md, K4 to K23)
+
+Each row is a door the table above lacked. Each goes into controls3.js with its slice, `todo` until built. K29, K34, K35, K37, K18 and K32 are handled in other lanes.
+
+| Row | What is missing | The door | Slice |
+|---|---|---|---|
+| K4 | A card's or a pay's weekend rule cannot be changed later | `changeOwed` and `changeBill` take `shift` (the card form and the pay form get the weekend box); assistant `change_card`, `change_bill` take it too. A pay's rule change is a dated entry like its other changes, so past landings stay | 6 (card), 7 (pay) |
+| K5 | No loan in setup | A loan row in the setup screens (name, still owed, usual payment, day), writing what `addLoan` writes; the setup chat's `add_loan` | 12 |
+| K6 | A loan's "Still owed" cannot be changed | A "Still owed today" box in the loan's form, written as a `check` on the loan (as a card's figure is), with Undo; assistant `change_loan` | 6 |
+| K7 | A loan paid off early cannot be closed (closeLoan refuses while anything is owed) | "Pay it off now" for a loan as for a card (a `repay` from its paying account, dated today, only if the person really paid it), then the close at zero; `closeLoan` folds into `closeAccount`; assistant `close_loan` | 6 |
+| K12 | The screens' End this bill, End this line and Receipts Remove do not ask first (M6) | One shared confirm for every screen delete or end, saying what is lost and what stays ("Its history stays" or "It was never used"), the same words the assistant's confirm uses; then the step and its Undo bar. e3_controls checks every `end` and `remove` door asks first | 1 (the shared confirm, in the table's door walk) |
+| K13 | No budget line or goal in the setup screens | A line row and a goal row in the setup screens, writing what `addLine` and `addGoal` write, each section saved on its own with Undo (M16); the setup chat already has `add_line` and `add_goal` (ai-core) | 12 |
+| K16 | The assistant cannot change a spend or a refund | Assistant `change_spend` over act3 `edit` (amount, day, account, line or place, note), with the confirm when larger than safe to spend | 8 |
+| K23 | Reminders have no row, no Undo, and are not kept across a reload | A `reminders` act3 list (add, change, remove through act3, Undo from the journal, BZ1). Today they are not saved on purpose; M14 ("Undo everywhere") overrides that. A new list in the saved shape: added only, old books read as having none (a migration test) | 10 |
+
 ### What this changes above
 
 - Section 1 F-A is replaced by BZ1. Section 3: "Undo after a reload: refused (F-A)" now reads "undone from the journal"; for End the pay that starts the periods, "Periods before it are unchanged" holds by BZ2; Remove a statement import follows A; Change a past check's figure follows B; Remove a check-in follows C.
