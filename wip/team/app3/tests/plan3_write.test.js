@@ -419,7 +419,7 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     s = h.book.schedules.slice(-1)[0];
     eq(s.rules[0].rule, { every: 'weeks', n: 2, from: '2026-11-19' });
   });
-  await t('addPay: the first fixed pay in a book with none does what changeBill does: it starts the period, lines asked each pay', async () => {
+  await t('addPay: the first fixed pay in a book with none starts the period, lines asked each pay from its first pay (as changeBill does)', async () => {
     const h = setup(), b = h.book;
     b.schedules = b.schedules.filter(x => x.kind !== 'income');
     ok((await h.go('setFree', { amount: 40000, when: 'now' })).ok);
@@ -430,9 +430,9 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     ok(r.ok, JSON.stringify(r));
     const s = h.book.schedules.find(x => x.name === 'Pay');
     eq([!!s.startsPeriod, s.shift], [true, 'before']);
-    /* as changeBill from no fixed pay: the day and the amount start with its first pay (10 Dec); the plan runs by the
-       day until then */
-    eq([s.rules.slice(-1)[0].from, s.rules.slice(-1)[0].rule, s.steps.slice(-1)[0].from, s.steps.slice(-1)[0].amount], ['2026-12-10', { every: 'month', days: [10] }, '2026-12-10', 240000]);
+    eq([s.rules.map(x => [x.from, x.rule]), s.steps.map(x => [x.from, x.amount])], [[[null, { every: 'month', days: [10] }]], [[null, 240000]]]);
+    eq(h.book.plan.shares.filter(x => !x.gone).slice(-1)[0].from, '2026-12-10', 'Free to spend each pay from its first pay');
+    eq(view(h.book).daysToNextPay.next_pay, '2026-12-10');
     eq(h.book.plan.shares.filter(x => !x.gone).slice(-1)[0].per, { free: 'pay' });
   });
   await t('addAccount: new money opens with its amount and a check, both today; a card or a loan is refused', async () => {
@@ -478,6 +478,34 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     /* Undo takes all of it back */
     const h3 = setup(), r3 = await h3.go('addAccount', { name: 'Savings', type: 'bank', amount: 50000, moved: true, date: '2026-11-22' });
     ok((await h3.A.undo(r3.step.id)).ok); eq(view(h3.book).accounts[BANK].bank, 286000);
+  });
+  await t('the pay that starts periods moves to the pay with a fixed day: the old pay changed to no fixed pay, then addPay Job 300,000 on the 25th; periods run from the 25th (qc-foundation F4, BY)', async () => {
+    const h = setup(), MAIN = h.book.schedules.find(s => s.name === 'Main job').id, SIDE = h.book.schedules.find(s => s.name === 'Side job').id;
+    let r = await h.go('changeBill', SIDE, { every: 'none' }); ok(r.ok, JSON.stringify(r));
+    r = await h.go('changeBill', MAIN, { every: 'none' }); ok(r.ok, JSON.stringify(r));
+    eq(view(h.book).period, null, 'no fixed pay: no periods');
+    r = await h.go('addPay', { name: 'Job', amount: 300000, every: 'month', day: 25 }); ok(r.ok, JSON.stringify(r));
+    const job = h.book.schedules.find(s => s.name === 'Job');
+    eq([!!job.startsPeriod, !!h.book.schedules.find(s => s.id === MAIN).startsPeriod], [true, false], 'the flag moved');
+    eq([job.from, job.rules.map(x => [x.from, x.rule])], ['2026-11-25', [[null, { every: 'month', days: [25] }]]]);
+    eq(view(h.book).daysToNextPay.next_pay, '2026-11-25', 'the Job pay is the next pay');
+    /* ticked at a check-in: it starts the period from the 25th */
+    const CK = require(E + 'checkin.js'), occ = job.id + '@2026-11-25';
+    const out = CK.checkIn(h.book, { day: DAY, told: DAY + 'T13:00+09:00', newId: I.idMaker('p3wrck', Math.random), ticked: [occ], expected: { [occ]: 300000 }, lands: { [occ]: DAY } });
+    ok((await h.A.addRecords('Check your bank', out)).ok);
+    const p = L.lookahead(h.book, '2026-11-26').period;
+    eq([p.start, p.end], ['2026-11-25', '2026-12-24']);
+    ok((await h.A.undo(h.A.steps().slice(-1)[0].id)).ok);
+    /* Undo puts the flag back where it was */
+    ok((await h.A.undo(r.step.id)).ok);
+    eq(!!h.book.schedules.find(s => s.id === MAIN).startsPeriod, true);
+  });
+  await t('changeBill from no fixed pay back to a day takes the flag when the pay holding it has no fixed day now (qc-foundation F4)', async () => {
+    const h = setup(), MAIN = h.book.schedules.find(s => s.name === 'Main job').id, SIDE = h.book.schedules.find(s => s.name === 'Side job').id;
+    ok((await h.go('changeBill', SIDE, { every: 'none' })).ok);
+    ok((await h.go('changeBill', MAIN, { every: 'none' })).ok);
+    const r = await h.go('changeBill', SIDE, { every: 'month', day: 25, amount: 70000 }); ok(r.ok, JSON.stringify(r));
+    eq([!!h.book.schedules.find(s => s.id === SIDE).startsPeriod, !!h.book.schedules.find(s => s.id === MAIN).startsPeriod], [true, false]);
   });
   console.log(bad ? `plan3_write: ${bad} FAIL of ${n}` : `plan3_write: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
