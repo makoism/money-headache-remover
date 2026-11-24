@@ -4,6 +4,8 @@ Written 2026-11-18 on branch `wip-38.31`. Read this whole file before touching a
 
 ## 0. Handoff (latest first)
 
+**2026-11-24 09:50 JST, standing rule (Mako, DECISIONS new foundation item 10):** never ask Mako anything in a build chat. Every question, approval and result goes to the coordinator (send_message to session_01BFpKEWtR1vrLMuizJWTGpk), who asks him and relays his words. One known limit: this session's safety check refused a push to main on relayed approval. It went through only after Mako answered in this chat. The coordinator has been told.
+
 **2026-11-24 09:45 JST, MAIN 15: non-stop again (Mako asked why it stopped).**
 - **Republish candidate:** wip-38.31 at f279c86, with the other lives plus slices 6 and 6b. Gates are green: check3 ALL GOOD, engine 18 runs, scenarios exit 0, rules 817.
 - **To update the live link when Mako says so:** run publish3.sh with the SAME private path. The path is in the scratchpad file app3_path.txt, or ask Mako for his link. Then push only those two files to main, with his OK in chat.
