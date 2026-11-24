@@ -166,3 +166,20 @@ Words in every slice go to qc-voice; Mako's copy pass at his next run.
 
 **Also.** The relay's prefix keeps it to the app and the person's money. If the AI is down mid-setup, the draft is kept and
 the screens' setup opens with the same answers filled in.
+
+## Corrections after the qc-foundation plan review (24 Nov, DECISIONS_ROUND2 BV; these override the text above)
+1. **One shared answers-to-book function** (`answers3.js`). setup3, the chat draft and the "Use any AI" paste all use it. It fills every field the person never sees: weekend rules (pay 'before', bill 'after'), which pay starts the period, the setup day, told, currency and keys. The AI never sets day, told, currency, keys or startsPeriod. It also puts saved answers back into setup3's form, for when the AI is down. The test "same answers, same book" compares the saved records, not only the figures.
+2. **Undoing the fill** throws away the whole book store, the reverse of E3.start. It is not an act3 step. Once anything else has been written, Undo becomes "Start over", which asks first.
+3. **Each bank and card figure in the draft keeps the day it was given.** If the fill happens on a later day, fillBook asks for today's figures again.
+4. **fillBook is refused until every bill in build_book's `asked` has an explicit answer**, and every card in `askedStatements` has its statement figure.
+5. **Actions:**
+   - changePay is the existing changeBill (plan3_write.js:123-190). Do not build a second writer.
+   - addPay uses build_book's rhythm rules and setup3's rule for which pay starts the period. When a first fixed pay is added, it does what changeBill does.
+   - addAccount takes name, type (bank, cash, e-wallet or wallet), today's amount and an optional minimum. It writes one opening record and one check together. It refuses cards and loans, and asks whether the money is new or moved from the main bank.
+   - addBill gets build_book's rhythms before the AI is given it.
+6. **Privacy:**
+   - The `list` tool sends amounts and dates only.
+   - Before an upload: "The whole file goes to the AI, with your name, address, employer and account number. On a payslip, crop out your My Number."
+   - "See what is sent" says that account, bill and income names are sent.
+   - The device id is kept on the device (BU3).
+7. **Question 9 asks whether the side job is the same amount each time.** If not, it is saved as a pay with no fixed day.

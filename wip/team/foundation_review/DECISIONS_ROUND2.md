@@ -566,3 +566,13 @@ BU3. Relay, before real use, on a main-relay branch with Mako's yes:
 - prompt caching on the system prompt and tools
 BU4. One scripted real-AI walk (about $0.50 a run) replays the setup answers and checks the end figure 201,400. It is not a gate.
 BU5. Running cost, estimated at Sonnet prices: about $0.60 per setup, about $10 to $17 a month for daily use. To Mako: a spend limit in the Anthropic console.
+
+## BV. AI-first plan review (24 Nov late morning JST)
+The seven corrections at the end of AI_FIRST_PLAN.md are accepted:
+- one shared answers-to-book function
+- undoing the fill throws away the store
+- figures in the draft keep their day
+- fill refused until the asked answers are given
+- actions specified, with changePay as the existing changeBill
+- privacy lines
+- the side job question
