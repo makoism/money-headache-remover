@@ -352,7 +352,59 @@
     return id;
   }
 
-  const api = { linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan };
+  /* ---- a pay and an account added after setup (AI_FIRST_PLAN corrections BV5, BV2.11, BV2.12) ---- */
+  /* x: { name, amount, every: 'month' | 'days' | 'weeks1'..'weeks4' | 'none', day, day2, start, shift?, acct?, lines? }.
+     From today, as addBill [BV2.11]; the rhythm as build_book writes it (every n weeks stepped back to on or before
+     today). No fixed day: no amount needed, never starts the period [B4]. The first pay with a fixed day in a book with
+     none is added with no fixed day and then changed to its day through changeBill, so it starts the period from its
+     first pay and each line and Free to spend is asked about as an amount each pay, as changeBill does [BV5]. */
+  function addPay(w, x) {
+    const name = nameOk(x.name), acct = x.acct || mainOf(w);
+    if (!EVERY[x.every]) bad('Pick how often it lands');
+    if (!(w.book.accounts || []).some(y => live(y) && y.id === acct && y.type !== 'card' && y.type !== 'loan')) bad('Pick the account it lands in');
+    sameName(A3.listOf(w.book, 'schedules').filter(s => s.kind === 'income'), name);
+    const none = x.every === 'none';
+    if (!none && (x.amount == null || x.amount === 0)) bad(PAY_NEEDS_AMOUNT);
+    const amount = x.amount == null ? null : amountOk(x.amount, 'the amount');
+    const first = !none && !A3.listOf(w.book, 'schedules').some(s => live(s) && s.kind === 'income' && s.startsPeriod);
+    const shift = none ? 'none' : x.shift || 'before';
+    let rule = { every: 'none' };
+    if (!none && !first) {
+      if (x.every === 'month') rule = { every: 'month', days: [dayOfMonth(x.day)] };
+      else if (x.every === 'days') { if (x.day2 == null || x.day2 === '') bad('Pick the second day it lands'); const d1 = dayOrLast(x.day), d2 = dayOrLast(x.day2); rule = { every: 'month', days: d1 === d2 ? [d1] : [d1, d2] }; }
+      else { if (!DAY.test(x.start || '')) bad('Pick the day of one pay, the last one or the next one'); const n = Number(x.every.slice(5)); rule = { every: 'weeks', n, from: BUILD.weeksAnchor(x.start, w.today, n) }; }
+    }
+    const id = w.add('schedules', { kind: 'income', name, acct, cur: home(w), shift: first ? 'none' : shift, from: w.today,
+      rules: [{ from: null, rule }], steps: [{ from: null, amount: first ? null : amount }] });
+    const r = find(w, 'schedules', id); stampNew(r, 'rules'); stampNew(r, 'steps');
+    if (first) changeBill(w, id, { every: x.every, day: x.day, day2: x.day2, start: x.start, amount, from: w.today, lines: x.lines });
+    if (first && x.shift && x.shift !== 'before') w.edit('schedules', id, { shift: x.shift });
+    return id;
+  }
+  /* x: { name, type: 'bank' | 'cash' | 'ewallet' | 'wallet', amount, min?, moved: true | false, date? }. New money opens
+     with its amount and a check of it today. Money moved from the main bank: the account opens at 0 and is checked at 0,
+     then one transfer from the main bank on the day it was moved, as addGoal and setAside do [BV2.12]; never both. */
+  const OWN_KINDS = { bank: 1, cash: 1, ewallet: 1, wallet: 1 };
+  function addAccount(w, x) {
+    const name = nameOk(x.name), type = x.type || 'bank';
+    if (!OWN_KINDS[type]) bad(type === 'card' ? 'Add a card with Add a card' : type === 'loan' ? 'Add a loan with Add a loan' : 'Pick a bank, cash, an e-wallet or a wallet');
+    if (!(Number.isInteger(x.amount) && x.amount >= 0)) bad('Type what it holds today, zero or more');
+    const main = mainOf(w);
+    if (x.moved !== true && x.moved !== false) bad('Is this new money, or moved from ' + nameOf(w, main) + '?');
+    sameName(w.book.accounts || [], name);
+    const date = x.date || w.today;
+    if (!DAY.test(date) || date > w.today) bad('Pick the day it was moved, today or before');
+    const rec = { name, type, cur: home(w), owner: null };
+    if (x.min != null && x.min !== '') rec.minBank = { a: amountOk(x.min, 'the amount to keep'), cur: home(w) };
+    const id = w.add('accounts', rec);
+    const open = x.moved ? 0 : x.amount;
+    w.add('events', { k: 'open', acct: id, date: w.today, a: open });
+    w.add('events', { k: 'check', acct: id, date: w.today, a: open });
+    if (x.moved && x.amount > 0) w.add('events', { k: 'transfer', date, a: x.amount, acct: main, acct2: id, src: { type: 'typed' } });
+    return id;
+  }
+
+  const api = { addPay, addAccount, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan };
   if (node) module.exports = api;
   else root.PLAN3W = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
