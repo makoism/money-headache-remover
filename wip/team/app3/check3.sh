@@ -71,6 +71,7 @@ step "one figure, one name on Home, Receipts and Plan (labels from screens/names
 step "the ways out of the first screen and the made-up numbers"; run tests/e3_first.js "e3_first: ALL PASS"
 step "as a plain file:the first screen, the try book and its day box"; run tests/e3_file.js "e3_file: ALL PASS"
 step "setup3"; run tests/e3_setup.js "e3_setup: ALL PASS"
+step "setup on a day the pay lands asks whether it is already in the bank figure (BV2.13; setup3 through answers3)"; run tests/e3_paytoday.js "e3_paytoday: ALL PASS"
 step "setup for the other lives: the country chosen, more accounts, pay rhythms, a second income on its own day, cards and bills from their account, once a year (slice 6)"; run tests/e3_setup6.js "e3_setup6: ALL PASS"
 step "a second income every n weeks (stepped back to a day on or before setup) or on two days a month (slice 6b)"; run tests/e3_income2.js "e3_income2: ALL PASS"
 step "pay every 3 weeks in setup and the pay form (slice 6b)"; run tests/e3_weeks3.js "e3_weeks3: ALL PASS"
