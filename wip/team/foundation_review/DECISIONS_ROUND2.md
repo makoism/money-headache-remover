@@ -545,3 +545,6 @@ BR3. The plan review judges only the three shape gaps (rates, me, owner on plan 
 BR4. For Mako to decide (rule changes): qc-foundation at the end of a slice only when it changes the engine or the saved shape, with screen-only slices gated by their walk; and the quick check level after each commit, with the full check3 before a merge. Until he answers, the current rules stand.
 
 BR5. Mako approved both BR4 changes ("yes these are both good", DECISIONS new foundation item 11). qc-foundation now runs at the end of a slice only when the slice changes the engine or the saved shape; it still runs on every plan before building. Quick checks run after each commit, and the full check3 before each merge. Pushes to main are prepared as a commit on a branch, and the coordinator pushes it after Mako says yes (item 10).
+
+## BS. Stage 2 plan review (24 Nov morning JST)
+The five corrections at the end of STAGE2_PLAN.md are accepted. The most important is no `owner` on plan.shares, which keeps version one pages reading the same data correctly. The other four cover rates kept at full precision, rate tie-breaks and `gone`, `me` as the device's view choice, and the S1 rules.

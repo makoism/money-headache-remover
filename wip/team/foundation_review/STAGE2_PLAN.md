@@ -118,3 +118,15 @@ Why this order: S1 helps Mako's own shape this week and needs nothing new. S2 to
 - Lasts about N weeks: should goal money in the bank count? Default: no, and the line names it.
 - Couples: shared money shown in full in each person's view, or split? Default: in full, marked shared.
 - Rates: typed by you, or taken from your own conversions? Default: your latest conversion, and you can type over it.
+
+## Corrections after the qc-foundation plan review (24 Nov, DECISIONS_ROUND2 BS; these override the text above)
+1. **No `owner` on `plan.shares`.** It stays the household timeline. A version one page reads it as one timeline, so owned entries would replace each other. Each person's own Free to spend is held as a budget line (`plan.budgets`, `place: 'free'`, `owner`), which old engines add up correctly for the household. `owner` on budget lines stays as planned.
+2. **Rates keep full precision.** A rate taken from a conversion is saved as the exact ratio (a decimal string, at least 6 significant digits), or worked out from the conversion event each time. It is rounded only for display. Convert with each currency's minor-unit exponent (engine/units.js). Say which direction a rate is read in; the inverse is used when only that one exists.
+3. **`rates` records** carry `gone` like every other list. Two rates for the same day are settled by latest `from`, then `at`, then id.
+4. **`me` is the device's current view choice** ("Everyone / Aki / Ben"), never who owns the phone. It is device only and never synced.
+5. **S1 rules:**
+   - Period mode turns off both the "lines left this period" at the start and the per-pay plan lines, and uses only the by-day loop. A test checks that the same book with and without the pay on the 10th gives the same weeks.
+   - The headline uses the first day under the minimum, not the first day below zero.
+   - Transfers in from your own accounts are not income.
+   - With several accounts, the line names the account that runs out first. Adding the accounts together comes in a later slice.
+   - No runway figure is shown on an emergency goal.
