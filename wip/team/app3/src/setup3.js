@@ -401,11 +401,18 @@ const secName3 = sec => (SEC3.find(([s]) => s === sec) || [sec, sec])[1];
 const secEl3 = sec => $(`#a3Setup [data-sec="${sec}"]`);
 const saveBar3 = sec => `<div class="a3-actions a3-secsave"><button type="button" class="a3-btn" data-save="${sec}" aria-label="Save ${secName3(sec)}">Save</button><p class="a3-sub" data-saved="${sec}" role="status"></p></div>`;
 /* what a section holds: its added rows (by key, in order) and every box's value (by id) */
+/* an amount box is kept and compared by its VALUE, never its text: "182,400", "182 400" and full-width digits are the
+   one amount 182400, whether or not the box has been left yet (a phone's tap on Save does not always leave the box).
+   The one reader is the shared input's own (screens/inputs.js commit). Text it cannot read is kept as typed */
+function amountText3(x) {
+  const r = BurrowScreens.inputs.commit(x.value, { code: $('#s3Cur').value, optional: true, allowMinus: bankBox3(x) });
+  return r.ok ? r.value : x.value;
+}
 function snap3(sec) {
   const el = secEl3(sec);
   const rows = $$(`#a3Setup [data-sec="${sec}"] [data-row]`).map(r => r.dataset.row).filter(k => k !== 'pay1');
   const v = {};
-  el.querySelectorAll('input[id], select[id]').forEach(x => { v[x.id] = x.value; });
+  el.querySelectorAll('input[id], select[id]').forEach(x => { v[x.id] = x.hasAttribute('data-money') ? amountText3(x) : x.value; });
   return { rows, v };
 }
 const same3 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
