@@ -18,3 +18,4 @@ Known fault, not scope: spending on a card that was not logged, found when the c
 M53 M17          Setup one question at a time, and the assistant answering during setup: the setup chat on lane/ai-core and lane/ai-panel, merged next (with M1, M2).
 M56              A new word for "Everyday spending": waits for Mako (not settled 6). Home's one figure for it becomes two named figures (not settled 8): planned, engine part with LANE B.
 M57              Money as a place that feels like home: the art step, with Mako (M58).
+Known fault, not scope: with the cloud copy on two devices, if a device cannot save during a sync (storage full) or a send to the cloud is refused and the retry fails, that device can later put its old copy over the cloud: a spend the other device changed or removed goes back to how it was, on both, with no question (M61, M20). Added spends are never lost. Rare; the same on the live build. The fix is the next thing built (MAIN 16), with qc-data-safety.
