@@ -130,3 +130,11 @@ Why this order: S1 helps Mako's own shape this week and needs nothing new. S2 to
    - Transfers in from your own accounts are not income.
    - With several accounts, the line names the account that runs out first. Adding the accounts together comes in a later slice.
    - No runway figure is shown on an emergency goal.
+
+## Corrections, second review (24 Nov, BT; these override correction 1 and add to 2 and 5)
+1'. **Each person's Free to spend lives inside the `plan.shares` entry** as a map, `people: { <person id>: { free, at, by, gone } }`. The entry's own `free` stays the household total, and the entry has no `owner`. A version one page then reads the right household ceiling. The map merges key by key (AH5), and the version one sync keeps it. Not as budget lines: a budget line is money set aside, never a ceiling, and `place: 'free'` already means something else.
+2'. **The rate in force for a pair** is the latest by `from` in either direction, inverted when needed. Ties break on `from`, then `at`, then id.
+5'. **S1, which amounts count.**
+   - The by-day walk uses the step in force for each line, never this period's `once` override.
+   - Each line is converted from its own `per` by the units rule: a per-pay amount uses the pay's pays per year. Test it with pay every two weeks as well as Mako's shape.
+   - Goal set-asides per pay stop when pay stops, so they are left out of the runway.
