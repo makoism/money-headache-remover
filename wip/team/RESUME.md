@@ -4,6 +4,13 @@ Written 2026-11-18 on branch `wip-38.31`. Read this whole file before touching a
 
 ## 0. Handoff (latest first)
 
+**2026-11-24 23:05 JST, MAIN 16.** The limit stopped everything again from about 20:30 to 22:50 JST. Keep to two or three agents at a time.
+- **Candidate 2 main commit: ba17a838 on branch republish-c2bea7d** (origin/main plus the 5 files under the private path, from wip-38.31 c2bea7d). Sent to the coordinator. qc-novice and qc-north-star FAIL on scope lines only; qc-controls is running again; qc-layout-touch was cut off and still has to run (resume agent or start fresh). Everything left out is in qc_reports/2026-11-24_candidate2/scope.txt.
+- **Cloud slice (M67 and the base saved ahead of its book, a data fault on the live build):** plan passed qc-foundation at version 3 with five build conditions (foundation_review/SYNC_PULL_PLAN.md on lane/next; DECISIONS_ROUND2 CS). A helper builds it on lane/cloudtake, data-safety rule first. Then check3 full and qc-data-safety. The coordinator confirms the live server's daily write limit with Mako before it ships.
+- **Two figures on Home:** version 2 of the plan is on lane/next (one headline, the money with no job under it). It waits for LANE B's three engine values (res.canSpare, res.everyday, res.noJob on lane/twofig-engine), then a fresh qc-foundation, then the build on lane/homefix.
+- **LANE B holds engine/lookahead.js:** card gap (lane/cardgap), the three values, then the bank after the cards with three cards (M40). lane/restore is in review there.
+- **AI join:** lane/ai-merge, a helper, resumed.
+
 **2026-11-24 18:55 JST, MAIN 16 (Fable), state.** Read wip/team/MAKO_SAYS.md first. Report to Coordinator 11 (session_01BFpKEXW1AERpCVxch4xuXD). LANE B is session_01BFpKEZBRWqdY7tLMMx4sDU.
 - **Lost time:** every session was stopped by the 5-hour usage limit from about 14:40 to 17:50 JST.
 - **Candidate 2:** wip-38.31 at c2bea7d = 9c65e8d + lane/blockers fd3e020 + two setup fixes. check3 full ALL GOOD.
