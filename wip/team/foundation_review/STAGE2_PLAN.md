@@ -144,3 +144,17 @@ Why this order: S1 helps Mako's own shape this week and needs nothing new. S2 to
    - **One-period overrides** for a person live at `once[k].people`, in the same shape.
    - **Syncing:** in version one, an entry is kept whole, and a clash between two devices is asked about. Merging key by key comes in stage 2.
    - **Watch:** Free to spend uses a single account (`shares[0].acct`). Each person spending from their own e-wallet comes later.
+
+## Mako says lines (MAKO_SAYS.md, added 24 Nov by the controls lane)
+- **Serves:**
+  - M23: pay-later (2.3 instalments) and accounts in another currency (2.4).
+  - M20 and M67: phone and desktop (2.6, the rich merge).
+  - M7: "money lasts about N weeks" (2.1), so nothing is unknown for no fixed pay.
+- **Touches:**
+  - M34: yen stays the default; a second currency never converts history.
+  - M40: card interest and the minimum payment (2.2).
+  - M45: conversions and instalment parts are counted once.
+  - M48: cents per currency.
+  - M61 and M69: no saved-data move (`v: 3`).
+  - M10: stage 2 stays out of version one's first screen.
+- **Not in any M line:** couples (2.5) is not something Mako has asked for in MAKO_SAYS. It stays behind every version one line.
