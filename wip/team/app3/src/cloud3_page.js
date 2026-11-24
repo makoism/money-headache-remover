@@ -4,7 +4,8 @@
    background or closing the tab) and after a change at most every 90 seconds, and Send now sends at once. Each sync is
    CLOUD3.syncOnce (fetch, join with the engine's sync against this device's base, write with the revision it is based
    on). The same record changed on two devices, and any one-device check that fails after the join, waits as a question in
-   Settings; the version not picked stays kept (keptVersions) so it can come back.
+   Settings; the version not picked stays kept (keptVersions) so it can come back. A cloud copy deleted on another device
+   (the vault's 410) turns it off here with its own words (gone), until it is turned on again with a new code.
    This device's cloud state is device-only (SCHEMA_V3 2.2: code, base, baseRev, when last sent, when it fell behind),
    kept beside the book (E3.rec 'cloud'), never in the copy that is sent or in a backup.
    Where the vault is: the page's own address when it is served (the site), else the site's address (RELAY3, from
@@ -41,6 +42,7 @@ const WHY3 = {
   key: 'The cloud copy could not be opened with this code.',
   damaged: 'The cloud copy could not be read. Nothing here was changed.',
   fmt: 'The cloud copy is not one this version can read. Update the app. Nothing here was changed.',
+  deleted: 'The cloud copy was deleted on another device. This device keeps its money. Turn the cloud copy on again with a new code to share it.',
 };
 const when3 = ms => { const d = new Date(ms); return d.toDateString() === new Date().toDateString() ? d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : d.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); };
 
@@ -56,6 +58,12 @@ async function syncNow3(opts) {
     const keys = await CLOUD3.keysFor(st.code);
     const r = await CLOUD3.syncOnce({ api: cloudApi3(), pack: BurrowPack, S: BurrowEngine.sync, keys, device: { base: st.base, baseRev: st.baseRev }, copy: snap, keepalive: !!opts.leaving });
     C3.lastSync = Date.now();
+    if (!r.ok && r.why === 'deleted') {   // 410: deleted on another device; this device stops until it is turned on again
+      C3.why = null; C3.dirty = false;
+      await putCloud3({ on: false, gone: Date.now() });
+      if (!SET3.open) msg3(WHY3.deleted);
+      return r;
+    }
     if (!r.ok) {
       C3.why = r.why;
       await putCloud3(Object.assign({}, st, { base: r.device.base, baseRev: r.device.baseRev, failAt: st.failAt || Date.now() }));
@@ -126,7 +134,7 @@ async function paintCloud3() {
     return;
   }
   if (!st.on) {
-    state.textContent = 'Off. Your money is on this device only. A cloud copy is locked with a code only you have, and keeps your phone and computer the same.';
+    state.textContent = st.gone ? WHY3.deleted : 'Off. Your money is on this device only. A cloud copy is locked with a code only you have, and keeps your phone and computer the same.';
     body.innerHTML = `<div class="a3-actions">${E3.book ? '<button type="button" class="a3-btn solid" id="a3CloudOn">Keep a copy in the cloud</button>' : ''}
         <button type="button" class="a3-btn" id="a3CloudHave">I have a code</button></div><div id="a3CloudForm"></div>`;
     if ($('#a3CloudOn')) $('#a3CloudOn').addEventListener('click', turnOn3);
@@ -190,7 +198,7 @@ async function useCode3(sure) {
 }
 function offAsk3() {
   $('#a3CloudForm').innerHTML = `<p class="a3-warn" data-cloud="offask">Stop here: this device stops sending and taking changes. The cloud copy stays for your other devices, and your code still opens it.<br>
-      Delete it: the cloud copy is removed and your code opens nothing after that. A device that still has it turned on sends it up again, so turn it off there too.<br>
+      Delete it: the cloud copy is removed and your code opens nothing after that. Another device that still has it on stops sending, and says so.<br>
       Either way, the money on this device stays, but nothing keeps it if this device is lost. Save a backup file first if you are not sure.</p>
     <div class="a3-actions"><button type="button" class="a3-btn" id="a3CloudStop">Stop here</button>
       <button type="button" class="a3-btn" id="a3CloudDel">Delete the cloud copy</button>

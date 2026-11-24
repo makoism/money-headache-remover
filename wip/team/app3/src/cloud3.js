@@ -70,8 +70,9 @@
     }
     return { get: k => req(k, 'GET'), put: (k, b, keepalive) => req(k, 'PUT', b, keepalive), del: k => req(k, 'DELETE') };
   }
-  const WHY = { net: 'net', code: 'code', busy: 'busy', server: 'server' };
-  const failOf = st => (st === 0 ? WHY.net : st === 403 ? WHY.code : st === 429 ? WHY.busy : WHY.server);
+  // 410: the cloud copy was deleted on another device; it stays gone until a fresh turn-on (a new code), so the device stops
+  const WHY = { net: 'net', code: 'code', busy: 'busy', server: 'server', deleted: 'deleted' };
+  const failOf = st => (st === 0 ? WHY.net : st === 403 ? WHY.code : st === 410 ? WHY.deleted : st === 429 ? WHY.busy : WHY.server);
 
   // ---------- one sync [AQ1, AW2, AW5] ----------
   // the store's own marks on a saved book (its revision and save time, store/idb.js meta) are never part of the shared copy [BD2]
