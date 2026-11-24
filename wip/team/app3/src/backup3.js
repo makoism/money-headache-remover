@@ -6,7 +6,14 @@
    Restoring: the file is read directly (never through a text box) by pack.readFile. A copy saved by a newer version is
    refused [D6]; a backup from the old app is refused too, since version one starts empty and does not move old data [BE2];
    anything else that is not this app's backup is refused with a plain sentence. The copy on this device is kept whole first
-   [D2], then replaced. Device-only state (SCHEMA_V3 2.2) is never in a backup. No sums here. */
+   [D2], then replaced. Device-only state (SCHEMA_V3 2.2) is never in a backup. No sums here.
+   A restore means "this is my money now" (FOR_MAKO "Open: a restore while the cloud copy is on"). restamp() makes the copy
+   that is saved: every record it brings back, and every setting with its own change time, gets one new `at` (later than
+   any `at` in either copy, store/clock.js) and this device's `by`, so it wins the cloud copy's three-way join on the next
+   sync [BD4: every edit moves `at`]; `told` stays. A record in the copy it replaces (or in the copy last synced) that the
+   restored copy lacks is marked gone, the same way, since in the join a side that lacks a record never changed it. The
+   kept versions of both stay (AQ3). Put it back goes through the same restamp. Plain values with no change time are left
+   as they are: the join takes them from the device that changed them. */
 (function (root) {
   'use strict';
   const ROUNDS = 150000, MIN_CODE = 6;
@@ -57,7 +64,43 @@
     const copy = Object.assign({}, r.copy); delete copy.rev;   // the cloud copy's revision is never a backup's [BD2]
     return { ok: true, copy, kind: r.kind };
   }
-  const api = { WORDS, ROUNDS, MIN_CODE, codeOk, make, read, fileName };
+  /* restamp(restored, over, { now, by, day, also }): the copy to save for a restore over `over` (this device's copy, or
+     null), with `also` more copies whose records count as here (the copy last synced with the cloud). Changes neither. */
+  const isMap = x => !!x && typeof x === 'object' && !Array.isArray(x);
+  const isRecords = l => Array.isArray(l) && l.every(r => isMap(r) && typeof r.id === 'string');
+  const C = x => JSON.parse(JSON.stringify(x));
+  function restamp(restored, over, opts) {
+    opts = opts || {};
+    const Ck = root.BurrowClock, overs = [over].concat(opts.also || []).filter(isMap);
+    const clock = Ck.makeClock();
+    clock.see(restored); overs.forEach(o => clock.see(o));
+    const at = clock.stamp(opts.now || Ck.nowIso()), by = opts.by, gone = opts.day || true;
+    const mark = r => Object.assign(C(r), { at, by });
+    function walk(r, os, top) {
+      const out = {};
+      const keys = new Set(Object.keys(r).concat(...os.map(o => Object.keys(o).filter(k => isRecords(o[k])))));
+      for (const k of keys) {
+        const x = r[k];
+        if (top && ['keptVersions', 'rev', 'at', 'v'].includes(k)) { if (x !== undefined) out[k] = C(x); continue; }
+        if ((x === undefined || isRecords(x)) && os.some(o => isRecords(o[k]))) {
+          const list = (x || []).map(mark), have = new Set(list.map(e => e.id));
+          for (const o of os) for (const e of isRecords(o[k]) ? o[k] : []) if (!have.has(e.id)) { have.add(e.id); list.push(Object.assign(mark(e), { gone: e.gone || gone })); }
+          out[k] = list;
+        } else if (isRecords(x)) out[k] = x.map(mark);
+        else if (isMap(x) && typeof x.at === 'string') out[k] = mark(x);
+        else if (isMap(x)) out[k] = walk(x, os.map(o => o[k]).filter(isMap), false);
+        else out[k] = C(x);
+      }
+      return out;
+    }
+    const out = walk(restored, overs, true);
+    const kept = new Map();
+    for (const c of overs.slice(0, 1).concat([restored])) for (const k of c.keptVersions || []) if (k && !kept.has(k.id)) kept.set(k.id, C(k));
+    if (kept.size) out.keptVersions = [...kept.values()].sort((a, b) => (a.id < b.id ? -1 : 1));
+    else delete out.keptVersions;
+    return out;
+  }
+  const api = { WORDS, ROUNDS, MIN_CODE, codeOk, make, read, fileName, restamp };
   root.BACKUP3 = api;
   if (typeof module === 'object' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

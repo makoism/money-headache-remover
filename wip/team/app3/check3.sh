@@ -37,6 +37,7 @@ step "statements, the reading half (pure)"; run tests/e3_stmt_read.js "e3_stmt_r
 step "statements, the writing half (pure): lines, matching, records"; run tests/e3_stmt_plan.js "e3_stmt_plan: ALL PASS"
 step "the Plan tab's steps (pure)"; run tests/plan3_write.test.js "plan3_write: ALL PASS"
 step "the backup file's core"; run tests/backup3.test.js "backup3: ALL PASS"
+step "a restore while the cloud copy is on: restamped so it sticks, two devices on the fake vault, Put it back reaches both"; run tests/restore3.test.js "restore3: ALL PASS"
 step "Ask, the pure half (the summary sent, the reply checked, steps through act3, Undo)"; run tests/ask3_core.test.js "ask3_core: ALL PASS"
 step "reminders, the pure half (days from the engine's calendar, the calendar file, Google and Outlook links)"; run tests/remind3.test.js "remind3: ALL PASS"
 step "no money maths in screens"; run tests/no_maths.js "NO MATHS PASS"
