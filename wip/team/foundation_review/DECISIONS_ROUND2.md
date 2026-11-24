@@ -576,3 +576,6 @@ The seven corrections at the end of AI_FIRST_PLAN.md are accepted:
 - actions specified, with changePay as the existing changeBill
 - privacy lines
 - the side job question
+
+## BW. How the assistant changes money (Mako, 24 Nov 11:30 JST, "full steam ahead")
+The assistant makes the change, shows what changed, and Undo is one tap. A confirm step comes first only for deleting something, or for any change larger than the safe-to-spend figure. This is marked for his run. The setup chat follows the 15-step draft. It asks how many banks (one is fine for now), and he can ask anything about the app at any point. The site's AI and invite word were live from 11:30 JST.
