@@ -88,6 +88,10 @@
      K.fillCheck(draft, today, mode) -> { ok: true, answers } | { ok: false, need: [words] }   BV4, BV3, BV2.8, BV2.9
      K.handle(state, call, deps) -> { result: words for the AI, shown: [turns] }   one tool call (used by turn)
      K.sentText(state, message, deps) -> what "See what is sent" shows: the same text the request carries
+     K.copyPrompt(state, today) -> text   "Use any AI" when the site's AI is off (AI_FIRST_PLAN 4): the questions,
+         the answer shape and the draft so far, to copy into any AI chat
+     K.pasteBack(state, text, deps) -> { state, shown, ok, text? }   that AI's reply pasted back, through the same
+         draft checks (all of it or none); then K.fillNow as usual
    Plain browser JavaScript. */
 (function (root) {
   'use strict';
@@ -683,11 +687,61 @@ AFTER SETUP. When the person says they spent, got or moved money, or asks to cha
     return { state, shown, ok: true, text: `Safe to spend ${SM.format(figs.safe, cur)}, ${state.draft.banks[0].name} ${SM.format(figs.bank, cur)}.` };
   }
 
+  /* ---- "Use any AI" (AI_FIRST_PLAN 4): the same questions as one request to copy into any AI chat, and its answer
+     pasted back through the same draft checks. Nothing about the book is in it: only the draft so far. ---- */
+  function copyPrompt(state, today) {
+    const d = state.draft || emptyDraft(), card = draftCard(d, today);
+    return `Help me set up a money app called The Burrow. Ask me these questions one at a time, in order, and skip what is already answered below. When we are done, give me one JSON object with only the sections I answered.
+
+QUESTIONS
+${GUIDE.slice(2, 14).map(g => '- ' + g.ask).join('\n')}
+
+ANSWER SHAPE (amounts are plain numbers, no symbol; days of the month are numbers)
+{"country": "JP" | "PH" | "XX",
+ "banks": [{"name": "Main bank", "amount": 0}],
+ "pays": [{"name": "Pay", "amount": 0, "every": "month" | "days" | "weeks" | "none", "day": 25, "shift": "before" | "after", "afterTax": true, "same": true}],
+ "cards": [{"name": "Card", "owed": 0, "payDay": 10, "closeDay": "not sure", "shift": "after"}],
+ "bills": [{"name": "Rent", "amount": 0, "day": 27}],
+ "asked": [{"name": "Phone", "out": true}],
+ "statements": [{"name": "Card", "amount": "not sure"}],
+ "free": null, "min": null}
+A pay is what lands in the bank after tax (afterTax true). A second income says whether it is the same amount each time (same). Never fill in a minimum I did not give.
+
+SO FAR (today is ${SN.dayLabel(today, true)})
+${card.sections.map(s => s.title + ': ' + (s.lines.length ? s.lines.join('; ') : 'not asked yet')).join('\n')}
+${card.need.length && state.draft ? 'STILL NEEDED: ' + card.need.join(' ') : ''}`.trim();
+  }
+  function loose(text) {
+    const t = String(text || '').trim(), tries = [t];
+    const fence = /```(?:json)?\s*([\s\S]*?)```/.exec(t); if (fence) tries.push(fence[1]);
+    const a = t.indexOf('{'), b = t.lastIndexOf('}'); if (a >= 0 && b > a) tries.push(t.slice(a, b + 1));
+    for (const x of tries) { try { const v = JSON.parse(x); if (v && typeof v === 'object' && !Array.isArray(v)) return v; } catch (e) { /* the next way */ } }
+    return null;
+  }
+  function pasteBack(state0, text, deps) {
+    const state = clone(state0), shown = [], today = deps.today();
+    const v = loose(text);
+    if (!v) return { state: state0, shown, ok: false, text: 'That has no answers I can read. Paste the whole reply' };
+    let d = state.draft;
+    const done = [];
+    for (const sec of SECTIONS) {
+      if (!(sec in v)) continue;
+      const r = draftSet(d, sec, v[sec], today);
+      if (!r.ok) return { state: state0, shown, ok: false, text: TITLES[sec] + ': ' + r.text };
+      d = r.draft; done.push(TITLES[sec]);
+    }
+    if (!done.length) return { state: state0, shown, ok: false, text: 'That has no answers I can read. Paste the whole reply' };
+    state.draft = d;
+    addTurn(state, { who: 'note', text: 'Saved: ' + done.join(', '), at: deps.told() }, shown);
+    return { state, shown, ok: true };
+  }
+
   const api = {
     ROUNDS, TURNS, KEEP, MAX_TOKENS, MAX_STEPS, TIER: 'default', EFFORT: 'low', GUIDE, TOOLS, SYSTEM,
     fresh: () => ({ v: 1, turns: [], draft: null, fill: null, seq: 0 }),
     turn, confirm, notNow, undo, startOver, draftEdit,
     fillNow: (s, deps) => fillNow(s, deps),
+    copyPrompt, pasteBack,
     request, read, figures, draftCard: (d, today) => draftCard(d, today), fillCheck, sentText,
     handle: async (state0, call, deps) => { const state = clone(state0), shown = []; const result = await handle(state, call, deps, shown, ''); return { state, shown, result }; },
   };

@@ -270,6 +270,26 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     ok(/Left out: more than 6 at a time/.test(await one({ steps: seven })), 'seven steps');
     eq((await K.handle(K.fresh(), { id: 'y', name: 'figures', input: {} }, d8)).result, 'There is no tool called figures');
   });
+  await t('"Use any AI" when the site\'s AI is off: the same questions as one request to copy, the reply pasted back through the same draft checks, then the fill (AI_FIRST_PLAN 4)', async () => {
+    const h9 = page('2026-11-24'), d9 = h9.deps(FAKE.make([]));
+    const text = K.copyPrompt(K.fresh(), h9.day);
+    ok(/before or after tax/.test(text) && /How many banks/.test(text) && /"pays"/.test(text) && /afterTax/.test(text), 'the questions and the answer shape');
+    ok(!/[a-z0-9]{6}-[a-z0-9]{10}-\d/.test(text), 'no ids');
+    const reply = 'Here you go:\n```json\n' + JSON.stringify({ country: 'JP', banks: MAKO.banks, pays: MAKO.pays, cards: MAKO.cards, bills: MAKO.bills, free: null, min: null }) + '\n```';
+    let r = K.pasteBack(K.fresh(), reply, d9);
+    ok(r.ok, r.text);
+    eq(r.state.draft.banks[0], { name: 'Main bank', amount: 286000, on: '2026-11-24' });
+    eq(K.draftCard(r.state.draft, h9.day).need, ['Has Phone, due 20 Nov, come out of Main bank already?']);
+    /* the asked answers come next, in a second paste (the copy prompt names them once the bills are in) */
+    ok(/Has Phone, due 20 Nov, come out of Main bank already\?/.test(K.copyPrompt(r.state, h9.day)), 'the second request asks it');
+    r = K.pasteBack(r.state, '{"asked":[{"name":"Phone","out":true}]}', d9);
+    ok(r.ok, r.text);
+    const f = await K.fillNow(r.state, d9);
+    ok(f.ok, f.text); eq(safe(h9), 201400);
+    const badPaste = K.pasteBack(K.fresh(), '{"pays":[{"name":"Pay","amount":300000,"every":"month","day":10}]}', d9);
+    ok(!badPaste.ok && /before or after tax/.test(badPaste.text), badPaste.text);
+    ok(!K.pasteBack(K.fresh(), 'sorry, I cannot help', d9).ok);
+  });
   console.log(bad ? `chat3_core: ${bad} of ${n} FAILED` : `chat3_core: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })();
