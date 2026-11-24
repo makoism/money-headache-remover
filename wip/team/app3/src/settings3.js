@@ -10,14 +10,14 @@
 const SET3 = { open: false, restore: null, was: null };
 const setMsg3 = (text, bad) => { const el = $('#a3SetMsg'); if (el) { el.textContent = text || ''; el.classList.toggle('a3-bad', !!bad); el.hidden = !text; } };
 /* a whole copy kept before a replace, in the store's own kept store [D2]; gives its id, or null when it could not be kept */
-async function keepCopy3(why) {
+async function keepCopy3(why, pin) {
   if (!E3.book) return null;
-  return (await E3.rec('copy', { copy: JSON.parse(JSON.stringify(E3.book)), why })) || null;
+  return (await E3.rec('copy', Object.assign({ copy: JSON.parse(JSON.stringify(E3.book)), why }, pin ? { pin: true } : {}))) || null;
 }
 /* replace this device's book; the old one is kept first when there is one. Gives true when saved. */
-async function replaceBook3(next, why) {
+async function replaceBook3(next, why, pin) {
   const had = !!E3.book;
-  if (had && !(await keepCopy3(why))) return false;
+  if (had && !(await keepCopy3(why, pin))) return false;
   const ok = await E3.replace(next);
   if (ok && !had && typeof BurrowPersist === 'object') BurrowPersist.afterSetup().catch(() => {});   // the first book on this device [D7]
   if (ok) renderHome3();
@@ -27,10 +27,13 @@ async function replaceBook3(next, why) {
    replace, the copy here kept first */
 const OTHERS3 = 'This replaces what is on your other devices too after the next send.';
 async function cloudOn3() { return typeof cloudState3 === 'function' && E3.mode !== 'try' && !!(await cloudState3()).on; }
-async function restoreBook3(copy, why) {
+/* A restore (not Put it back) with no pinned copy yet pins the copy it keeps: the money from before the first restore
+   stays, past the store's newest 5, until the person drops it */
+async function restoreBook3(copy, why, opts) {
   const st = typeof cloudState3 === 'function' ? await cloudState3() : null;
   const next = BACKUP3.restamp(copy, E3.book, { by: String(E3.newId()).split('-')[0], day: E3.today(), also: st && st.on && st.base ? [st.base] : [] });
-  return replaceBook3(next, why);
+  const pin = !(opts && opts.back) && !((await E3.rec('copies')) || []).some(c => c.pin);
+  return replaceBook3(next, why, pin);
 }
 /* setup calls this once it has saved the first book [D7] */
 function afterSetup3() { return typeof BurrowPersist === 'object' ? BurrowPersist.afterSetup() : Promise.resolve(null); }
@@ -145,20 +148,32 @@ async function readBackup3(file, code) {
   });
   $('#a3BkNo').addEventListener('click', () => { SET3.restore = null; ask.innerHTML = ''; });
 }
+/* every kept whole copy, newest first, each with its time and its own Put it back; the pinned one (from before the
+   first restore) also offers Drop it (draft words, FOR_MAKO copy pass) */
 async function paintKept3() {
   const el = $('#a3BkKept'); if (!el) return;
   const list = (await E3.rec('copies')) || [], others = (await cloudOn3()) ? ' ' + OTHERS3 : '';
   if (!SET3.open) return;
-  const last = list[0];
-  el.innerHTML = last ? `<p class="a3-sub" data-set="kept">${esc3(last.why)}, ${esc3(day3(last.at.slice(0, 10), E3.today().slice(0, 4)))} ${esc3(last.at.slice(11, 16))}: the money that was here is kept.${others}</p>
-      <div class="a3-actions"><button type="button" class="a3-btn" id="a3BkBack">Put it back</button></div>` : '';
-  if (last) $('#a3BkBack').addEventListener('click', async () => {
-    const k = await E3.rec(last.id);
-    if (!k || !k.copy) { setMsg3('That kept copy is gone. Nothing changed.', true); return; }
-    const ok = await restoreBook3(k.copy, 'Before a kept copy was put back');
-    setMsg3(ok ? 'Put back. The money that was here a moment ago is kept too.' : 'This could not be saved on this device. Nothing changed.', !ok);
-    paintKept3();
-  });
+  if (!list.length) { el.innerHTML = ''; return; }
+  el.innerHTML = `<p class="a3-sub" data-set="keptnote">The money that was here before each restore is kept. Put it back brings that money back.${others}</p>
+    <ul class="a3-rows">${list.map((c, i) => `<li data-kept="${esc3(c.id)}"${c.pin ? ' data-pin="1"' : ''}><span data-set="kept">${esc3(c.why)}, ${esc3(day3(c.at.slice(0, 10), E3.today().slice(0, 4)))} ${esc3(c.at.slice(11, 16))}${c.pin ? '. Kept until you drop it' : ''}</span>
+      <button type="button" class="a3-btn" data-back${i === 0 ? ' id="a3BkBack"' : ''}>Put it back</button>${c.pin ? '<button type="button" class="a3-btn" data-drop>Drop it</button>' : ''}</li>`).join('')}</ul>`;
+  for (const li of el.querySelectorAll('[data-kept]')) {
+    const id = li.dataset.kept;
+    li.querySelector('[data-back]').addEventListener('click', async () => {
+      const k = await E3.rec(id);
+      if (!k || !k.copy) { setMsg3('That kept copy is gone. Nothing changed.', true); return; }
+      const ok = await restoreBook3(k.copy, 'Before a kept copy was put back', { back: true });
+      setMsg3(ok ? 'Put back. The money that was here a moment ago is kept too.' : 'This could not be saved on this device. Nothing changed.', !ok);
+      paintKept3();
+    });
+    const drop = li.querySelector('[data-drop]');
+    if (drop) drop.addEventListener('click', async () => {
+      const ok = await E3.rec('drop', id);
+      setMsg3(ok ? 'Dropped that kept copy.' : 'That kept copy could not be dropped. Nothing changed.', !ok);
+      paintKept3();
+    });
+  }
 }
 /* the header's Settings button and Escape, without touching the start file */
 document.addEventListener('click', e => { if (e.target.closest && e.target.closest('#a3SetGo')) openSet3(); });

@@ -80,7 +80,7 @@ const homeFigs = async p => JSON.stringify((await T.figs(p)).filter(f => f.amt !
 
     /* ---- Put it back on A: the same words, and B follows ---- */
     await A.p.click('#a3SetGo'); await T.w(300);
-    ck('Put it back says the other devices follow too', (await A.p.$eval('[data-set=kept]', e => e.textContent)).includes(OTHERS));
+    ck('Put it back says the other devices follow too', (await A.p.$eval('#a3BkKept', e => e.textContent)).includes(OTHERS));
     await A.p.click('#a3BkBack'); await T.w(500);
     ck('put back', /Put back/.test(await A.p.$eval('#a3SetMsg', e => e.textContent)));
     const r2 = rev();
@@ -125,6 +125,27 @@ const homeFigs = async p => JSON.stringify((await T.figs(p)).filter(f => f.amt !
       ck('kept copies are listed newest first by moment, whatever the offset', /^New York 02:00/.test(first), first);
       await A.p.click('#a3SetClose'); await T.w(200);
     }
+
+    /* ---- many restores: every kept copy is listed with its own Put it back and time, and the copy from before the
+       first restore stays (pinned) until the person drops it, past the store's 5 ---- */
+    await A.p.click('#a3SetGo'); await T.w(300);
+    for (let i = 0; i < 6; i++) {
+      await A.p.$eval('#a3BkFile', e => { e.value = ''; }); await (await A.p.$('#a3BkFile')).uploadFile(backupFile); await A.p.waitForSelector('#a3BkGo', { timeout: 8000 });
+      await A.p.click('#a3BkGo'); await until(async () => /Restored/.test(await A.p.$eval('#a3SetMsg', e => e.textContent)));
+      await A.p.$eval('#a3SetMsg', e => { e.textContent = ''; }); await T.w(150);
+    }
+    const rows = await A.p.$$eval('[data-kept]', ls => ls.map(l => ({ pin: l.dataset.pin === '1', text: l.textContent, back: !!l.querySelector('[data-back]') })));
+    ck('every kept copy is listed, each with its own Put it back and time', rows.length >= 6 && rows.every(r => r.back && /\d\d:\d\d/.test(r.text)), JSON.stringify(rows).slice(0, 400));
+    ck('the copy from before the first restore is still there, pinned, after six more restores', rows.filter(r => r.pin).length === 1 && /Before a backup was restored/.test(rows.find(r => r.pin).text), JSON.stringify(rows.filter(r => r.pin)));
+    await A.p.click('[data-kept][data-pin="1"] [data-back]');
+    ck('its Put it back brings back the money from before the first restore', await until(async () => /Put back/.test(await A.p.$eval('#a3SetMsg', e => e.textContent))));
+    await A.p.click('#a3SetClose'); await T.w(300);
+    ck('A shows the figures from before the first restore', await homeFigs(A.p) === figs1, await homeFigs(A.p));
+    await A.p.click('#a3SetGo'); await T.w(300);
+    ck('it stays pinned after it was put back, until dropped', !!(await A.p.$('[data-kept][data-pin="1"] [data-drop]')));
+    await A.p.click('[data-kept][data-pin="1"] [data-drop]');
+    ck('Drop it removes it from the list', await until(async () => !(await A.p.$('[data-kept][data-pin="1"]'))));
+    await A.p.click('#a3SetClose'); await T.w(200);
 
     const outside = A.requests.concat(B.requests).filter(r => !own(r));
     ck('every request went to the page\'s own address', outside.length === 0, outside.join(' '));
