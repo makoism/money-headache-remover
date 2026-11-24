@@ -124,8 +124,9 @@ One help piece serves every "?", so changing a line there changes it everywhere.
 - Pay day in two steps reads "Today: ¥286,000 (Main bank today) + ¥180,000 (Main job 10 Dec) ... = ¥472,000 at the end of the day. Safe to spend counts on this pay coming in today".
 
 ## Stage 2 S1: "If no more pay came" (lane/s2b, 24 Nov JST): words and defaults for your run
-- Home, under safe to spend: "If no more pay came, your money lasts about 7 weeks". With a minimum: ", keeping your minimum". With several accounts: ". Main bank runs out first". Under it, the sum: "Main bank would run out on 14 Jan: ¥300,000 (Main bank today) − ¥90,000 (Rent 27 Nov) − ... = −¥2,400".
-- The "?": "How long your money lasts if no more pay came: what your bank holds today, less your bills, card payments and your plan, day by day. Goal money kept in the bank is not counted. Money moved in from your own savings is."
+- Home, under safe to spend: "If no more pay came, Main bank lasts about 7 weeks" (the account is named until accounts are added together; with several: ", the first of your accounts to run out"; with a minimum: ", keeping your minimum"). Under it, the sum: "Main bank would run out on 14 Jan: ¥300,000 (Main bank today) − ¥90,000 (Rent 27 Nov) − ... = −¥2,400". Weeks count whole days covered: running out on day 7 is "less than a week".
+- Days away count: with no check since 30 Nov, on 9 Dec the sum has "Your plan since your last check (1 Dec to today), less what you logged".
+- The "?": "How long this account lasts if no more pay came: what it holds, less your bills, card payments and your plan, day by day from your last check. Goal money kept in it is not counted. Money moved in from your other accounts counts only up to what they still hold."
 - Defaults used until you say: goal money kept in the bank is left out (named in the sum); goal set-asides each pay are left out (they stop when pay stops); the line shows only once Free to spend or a line is set.
 - With no fixed pay, Home already says "Lasts about N weeks at this rate", so this line is not shown there (one figure for one thing). That older line counts to below zero, not to your minimum: should it change to the minimum too?
 - Accounts are not added together yet: the line names the account that runs out first (a later slice adds them).

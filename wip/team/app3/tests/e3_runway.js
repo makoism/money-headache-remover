@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-/* Stage 2 slice S1 (STAGE2_PLAN 2.1, corrections 5 and 5'): "If no more pay came, your money lasts about N weeks" on
+/* Stage 2 slice S1 (STAGE2_PLAN 2.1, corrections 5 and 5', the qc-foundation fixes: the account named, weeks of whole
+   days covered (under on day N covers N - 1), the plan from the last check less what was logged since): "If no more pay came, your money lasts about N weeks" on
    Home, walked through the real page from setup on Tue 24 Nov 2026 to pay day on Thu 10 Dec. Mako's shape with made-up
    yen: pay on the 10th, a card paid in full on the 10th (close day not sure), rent on the 27th (the working day after),
    Free to spend 73,000 a pay, no minimum. An e-wallet with 10,000 and nothing on it, so there are two accounts and the
@@ -10,11 +11,14 @@
           31,200 and Card A 54,000 on 10 Dec: 117,600. 11 to 27 Dec 17 days 40,800: 76,800. 28 Dec 2,400 and rent 90,000:
           -15,600, below zero on 28 Dec, 34 days: about 4 weeks. Sum: 300,000 - 90,000 - 54,000 - 90,000 - 81,600 (34
           days) = -15,600. The e-wallet never goes below zero.
-   26 Nov a spend of 20,000 from Main bank: 280,000. 27 Nov 2,400 and rent: 187,600. 13 days and the card: 102,400. 17
+   26 Nov a spend of 20,000 from Main bank: 280,000. The plan since the 24 Nov check, 25 and 26 Nov 4,800, less the 20,000
+          logged: nothing more. 27 Nov 2,400 and rent: 187,600. 13 days and the card: 102,400. 17
           days: 61,600. 28 Dec: -30,800, 32 days: 4 weeks. Sum: 280,000 - 90,000 - 54,000 - 90,000 - 76,800 (32 days) =
           -30,800 (what was spent this period is not taken again).
    30 Nov check-in: rent ticked, Main bank shows 188,000, E-wallet 10,000. 1 to 10 Dec 24,000 and the card: 110,000. 17
-          days: 69,200. 28 Dec: -23,200, 28 days: 4 weeks. Sum: 188,000 - 54,000 - 90,000 - 67,200 (28 days) = -23,200.
+          days: 69,200. 28 Dec: -23,200, 28 days: 27 whole days covered, 3 weeks. Sum: 188,000 - 54,000 - 90,000 - 67,200 (28 days) = -23,200.
+   9 Dec  opened with nothing logged since the 30 Nov check: the plan 1 to 9 Dec, 21,600, still counts (fix 3): 188,000 -
+          21,600 - 54,000 - 90,000 - 45,600 (10 to 28 Dec, 19 days) = -23,200, the same 28 Dec: 19 days, 2 weeks.
    10 Dec pay day check-in: Main job 250,000 and Card A 54,000 ticked, Main bank shows 360,000. 11 to 27 Dec 40,800:
           319,200. 28 Dec 2,400 and rent: 226,800. 29 to 31 Dec 7,200: 219,600. 1 to 26 Jan 62,400: 157,200. 27 Jan (a
           Wednesday) 2,400 and rent: 64,800. 28 to 31 Jan 9,600: 55,200. 1 to 23 Feb 55,200: 0 at the end of 23 Feb, below
@@ -28,7 +32,7 @@ const why = p => p.$eval('#a3Home [data-fig=runwaywhy]', e => e.textContent.repl
 async function runway(p, what, weeks, sum) {
   await p.click('[data-tab=home]'); await w(200);
   const l = await line(p), s = await why(p);
-  ck(`${what}: "If no more pay came, your money lasts about ${weeks} weeks", Main bank named`, l === `If no more pay came, your money lasts about ${weeks} weeks. Main bank runs out first`, l);
+  ck(`${what}: "If no more pay came, Main bank lasts about ${weeks} weeks", the first to run out`, l === `If no more pay came, Main bank lasts about ${weeks} weeks, the first of your accounts to run out`, l);
   ck(`${what}: the sum behind it`, s === sum, s);
   const wk = await p.$eval('#a3Home [data-fig=runway]', e => e.dataset.weeks).catch(() => null);
   ck(`${what}: the line sits in the safe to spend card, weeks ${weeks}`, wk === String(weeks) && !!(await p.$('#a3Home [data-card=safe] [data-fig=runway]')), wk);
@@ -55,11 +59,14 @@ async function runway(p, what, weeks, sum) {
   await go(p, '2026-11-26'); await log(p, 20000, 'Main bank', { note: 'groceries' });
   await runway(p, '26 Nov after a spend', 4, 'Main bank would run out on 28 Dec: ¥280,000 (Main bank today) − ¥90,000 (Rent 27 Nov) − ¥54,000 (Card A, all owed, paid 10 Dec) − ¥90,000 (Rent 28 Dec) − ¥76,800 (Free to spend, 32 days) = − ¥30,800');
   await go(p, '2026-11-30'); await checkin(p, { 'Main bank': 188000, 'E-wallet': 10000 });
-  await runway(p, '30 Nov after a check-in', 4, 'Main bank would run out on 28 Dec: ¥188,000 (Main bank today) − ¥54,000 (Card A, all owed, paid 10 Dec) − ¥90,000 (Rent 28 Dec) − ¥67,200 (Free to spend, 28 days) = − ¥23,200');
+  await runway(p, '30 Nov after a check-in', 3, 'Main bank would run out on 28 Dec: ¥188,000 (Main bank today) − ¥54,000 (Card A, all owed, paid 10 Dec) − ¥90,000 (Rent 28 Dec) − ¥67,200 (Free to spend, 28 days) = − ¥23,200');
+  /* 9 Dec, opened with nothing logged and no check since 30 Nov: the days away still count (the same 28 Dec) */
+  await go(p, '2026-12-09');
+  await runway(p, '9 Dec, nothing logged since the 30 Nov check', 2, 'Main bank would run out on 28 Dec: ¥188,000 (Main bank today) − ¥21,600 (Your plan since your last check 1 Dec to today, less what you logged) − ¥54,000 (Card A, all owed, paid 10 Dec) − ¥90,000 (Rent 28 Dec) − ¥45,600 (Free to spend, 19 days) = − ¥23,200');
   await go(p, '2026-12-10'); await checkin(p, { 'Main bank': 360000, 'E-wallet': 10000 }, { 'Card A': 54000 });
   await runway(p, '10 Dec after the pay day check-in', 10, 'Main bank would run out on 24 Feb 2027: ¥360,000 (Main bank today) − ¥90,000 (Rent 28 Dec) − ¥90,000 (Rent 27 Jan) − ¥182,400 (Free to spend, 76 days) = − ¥2,400');
   const help = await p.$eval('#a3Home [data-helptext=runway]', e => e.textContent).catch(() => null);
-  ck('the "?" beside it explains it', !!help && /no more pay/.test(help), help);
+  ck('the "?" beside it explains it', !!help && /no more pay/.test(help) && /only up to what they still hold/.test(help), help);
   await c.close();
   const secs = Math.round((Date.now() - t0) / 1000);
   ck(`the walk took ${secs} s (limit 180)`, secs < 180);

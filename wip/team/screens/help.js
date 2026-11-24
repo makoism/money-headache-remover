@@ -21,8 +21,8 @@
     periodMoved: ['Your pay is due on {due}, but that day is a weekend or a holiday, so it lands on {landed}. The pay period moves with it.'],
     lineShare: ['This line started partway through the pay period, so only the part for the days left counts now.',
       'The full amount counts from your next pay.'],
-    runway: ['How long your money lasts if no more pay came: what your bank holds today, less your bills, card payments and your plan, day by day.',
-      'Goal money kept in the bank is not counted. Money moved in from your own savings is.'],
+    runway: ['How long this account lasts if no more pay came: what it holds, less your bills, card payments and your plan, day by day from your last check.',
+      'Goal money kept in it is not counted. Money moved in from your other accounts counts only up to what they still hold.'],
   };
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   function words(key, ctx) {
