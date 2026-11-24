@@ -22,4 +22,4 @@ Then read `wip/team/LESSONS.md` (Mako, 2026-11-23: "keep this as reference ... t
 - Mako is in Japan (JST, UTC+9). Give times in Japan time.
 - Every update starts with two rough percentages (first version ready for him, everything checked; and including the art and the 3D world) and what is being worked on.
 - Plain words, no em dashes. No real figures in the repo. Nothing deploys and nothing is pushed to `main` without Mako.
-- Test first, one item per commit, `./check.sh` after each. Kill leftover test browsers first: `pkill -f chrome-linux64/chrome`.
+- Test first, one item per commit, then the check for the new app: `wip/team/app3/check3.sh` (quick level after each small change, full before each merge). It cleans up its own test browsers. Never `pkill` browsers: that kills every other lane's and reviewer's tests at once.
