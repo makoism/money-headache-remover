@@ -9,11 +9,12 @@
      MODEL_DEFAULT       default claude-sonnet-5-5     (the assistant)
      MODEL_COMPLEX       default claude-sonnet-5-5
      DAILY_TOKEN_CAP     default 3000000  tokens a day across everyone (in + out); the relay stops at the cap
-     USER_DAILY_CALLS    default 150      calls a day for one browser
+     USER_DAILY_CALLS    default 150      calls a day for one caller: the invite code when INVITE_CODES is set (the owner's whole
+                                          household shares one count), else the page's device id (`device`), else the client IP
      IP_PER_MINUTE       default 30
      INVITE_CODES        optional "word1, word2": when set, a call must carry a matching invite
      ANTHROPIC_BASE_URL  default https://api.anthropic.com (tests point it at a stub) */
-import { json, fail, preflight, dayKey, minuteKey, clientIp, num, ensureSchema, bump, readUsage, inviteOk } from '../_lib.js';
+import { json, fail, preflight, dayKey, minuteKey, clientIp, num, ensureSchema, bump, readUsage, inviteOk, sha256hex } from '../_lib.js';
 
 const TIERS = { quick: 'MODEL_QUICK', default: 'MODEL_DEFAULT', complex: 'MODEL_COMPLEX' };
 const MODEL_DEF = { quick: 'claude-haiku-5-5', default: 'claude-sonnet-5-5', complex: 'claude-sonnet-5-5' };
@@ -34,13 +35,14 @@ export async function onRequestPost({ request, env }) {
   if (!inviteOk(env, body.invite)) return fail(401, 'invite_required', 'This page needs the code word from its owner.');
 
   const db = env.DB || null, ip = clientIp(request), day = dayKey();
+  const who = await callerKey(env, body, ip);
   try {
     if (db) {
       await ensureSchema(db);
       const perMin = await bump(db, `m:${ip}:${minuteKey()}`, 1, 0, day);
       if (perMin.calls > num(env.IP_PER_MINUTE, 30)) return fail(429, 'rate_limited', 'Too many requests. Wait a minute.');
-      const user = await readUsage(db, `u:${body.anon}`, day);
-      if (user.calls >= num(env.USER_DAILY_CALLS, 150)) return fail(429, 'rate_limited', 'Daily limit for this browser reached. Try again tomorrow.');
+      const user = await readUsage(db, who.k, day);
+      if (user.calls >= num(env.USER_DAILY_CALLS, 150)) return fail(429, 'rate_limited', `Daily limit for ${who.name} reached. Try again tomorrow.`);
       const all = await readUsage(db, 'all', day);
       if (all.tokens >= num(env.DAILY_TOKEN_CAP, 3000000)) return fail(429, 'rate_limited', 'The page\'s daily AI budget is used up. Try again tomorrow.');
     }
@@ -73,7 +75,7 @@ export async function onRequestPost({ request, env }) {
     if (up.status === 413) return fail(413, 'prompt_too_large', 'Too much text, or too many pages or images.');
     return fail(502, 'upstream_error', 'Claude answered with an error.' + (up.status >= 500 ? '' : ' ' + msg.slice(0, 200)));
   }
-  const count = (inTok, outTok) => { if (!db) return Promise.resolve(); const t = (inTok || 0) + (outTok || 0); return Promise.all([bump(db, `u:${body.anon}`, 1, t, day), bump(db, 'all', 1, t, day)]).catch(() => {}); };
+  const count = (inTok, outTok) => { if (!db) return Promise.resolve(); const t = (inTok || 0) + (outTok || 0); return Promise.all([bump(db, who.k, 1, t, day), bump(db, 'all', 1, t, day)]).catch(() => {}); };
 
   if (!stream) {
     let data; try { data = await up.json(); } catch (e) { return fail(502, 'upstream_error', 'Unreadable answer.'); }
@@ -107,13 +109,22 @@ export async function onRequestPost({ request, env }) {
   up.body.pipeTo(out.writable).catch(() => {});
   return new Response(out.readable, { status: 200, headers: Object.assign({ 'content-type': 'text/event-stream; charset=utf-8', 'cache-control': 'no-store', 'x-accel-buffering': 'no' }, corsHeaders()) });
 }
+/* whose count a call goes on (USER_DAILY_CALLS). Never the page's `anon`: that is drawn fresh on each page open, so it
+   would reset the count. The code word is stored only as a hash. */
+async function callerKey(env, body, ip) {
+  const coded = String(env.INVITE_CODES || '').split(',').some(s => s.trim());
+  if (coded) return { k: 'u:i:' + (await sha256hex(String(body.invite || '').trim().toLowerCase())).slice(0, 32), name: 'this code word' };
+  if (typeof body.device === 'string') return { k: 'u:d:' + body.device.toLowerCase(), name: 'this device' };
+  return { k: 'u:ip:' + ip, name: 'this connection' };
+}
 const corsHeaders = () => ({ 'access-control-allow-origin': '*', 'access-control-allow-headers': 'content-type, x-app' });
 
 /* every field the page sends is checked; anything odd is refused with a reason */
 function validate(b) {
   if (!b || typeof b !== 'object') return 'Body must be an object.';
   if (b.v !== 1) return 'Unknown protocol version.';
-  if (typeof b.anon !== 'string' || !/^[A-Za-z0-9_-]{8,64}$/.test(b.anon)) return 'anon id missing.';
+  if (b.anon !== undefined && (typeof b.anon !== 'string' || !/^[A-Za-z0-9_-]{8,64}$/.test(b.anon))) return 'anon id missing.';
+  if (b.device !== undefined && (typeof b.device !== 'string' || !/^[0-9a-fA-F]{16,64}$/.test(b.device))) return 'Bad device id: 16 to 64 hex characters.';
   if (b.tier !== undefined && !TIERS[b.tier]) return 'Unknown tier.';
   if (b.system !== undefined && (typeof b.system !== 'string' || b.system.length > 80000)) return 'system too long.';
   if (!Array.isArray(b.messages) || !b.messages.length || b.messages.length > MAX_MSGS) return 'messages must be a non-empty list.';
