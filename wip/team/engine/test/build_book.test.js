@@ -183,6 +183,11 @@ t('no fixed pay: saved with the rule none and no amount, never starting the peri
   assert.throws(() => B.buildBook(kai({ pays: [{ key: 'work', name: 'Client work', bank: 'bank', every: 'none', startsPeriod: true }] }), { newId }), /no fixed day/);
   assert.throws(() => B.buildBook(kai({ pays: [{ key: 'work', name: 'Client work', bank: 'bank', day: 25 }] }), { newId }), /whole/);
 });
+// [BQ4] Free to spend saved with no fixed pay is an amount a month; with a pay that starts the period, each pay
+t('[BQ4] Free to spend with no fixed pay is saved a month', () => {
+  eq(B.buildBook(kai({ free: 60000 }), { newId }).book.plan.shares[0].per, { free: 'month' });
+  eq(B.buildBook(kai({ free: 60000, pays: [{ key: 'pay', name: 'Pay', bank: 'bank', amount: 250000, day: 25, startsPeriod: true }] }), { newId }).book.plan.shares[0].per, { free: 'pay' });
+});
 t('a bill once a year (month and day) and one every few months from a date (start: the day of one; a bill names its account by from)', () => {
   const r = B.buildBook(kai({ bills: [{ key: 'car', name: 'Car tax', from: 'bank', amount: 34500, every: 'year', date: '05-31', shift: 'after' },
     { key: 'water', name: 'Water', from: 'bank', amount: 6200, every: 'months', n: 2, start: '2026-12-15', shift: 'after' }] }), { newId });

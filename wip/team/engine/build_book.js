@@ -175,7 +175,8 @@
     }
     if (ans.free != null) {
       if (ans.free < 0) throw new Error('what goes on everyday things cannot be below zero');
-      book.plan.shares.push(stamp({ id: newId(), from: day, cur, per: { free: 'pay' }, free: whole(ans.free, 'what goes on everyday things'), goals: {} }));
+      // [BQ4] with no pay that starts the period (no fixed pay) it is an amount a month
+      book.plan.shares.push(stamp({ id: newId(), from: day, cur, per: { free: (ans.pays || []).some(p => p.startsPeriod) ? 'pay' : 'month' }, free: whole(ans.free, 'what goes on everyday things'), goals: {} }));
     }
     return { book, ids, asked, askedStatements };
   }
