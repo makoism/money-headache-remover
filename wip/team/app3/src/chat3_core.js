@@ -485,7 +485,7 @@ AFTER SETUP. When the person says they spent, got or moved money, or asks to cha
     }
     if (what === 'add_account') {
       const x = amt(a.amount, null, true); if (x == null || !a.name) return { bad: 'an account I could not read' };
-      return { kind: 'addAccount', args: [{ name: clean(a.name, 60), type: a.type || 'bank', amount: x, moved: a.moved }], text: `Add ${clean(a.name, 60)} with ${m(x)}${a.moved ? ' moved from ' + nm(mainAcct) : ''}`, amount: x, figs: [x] };
+      return { kind: 'addAccount', args: [Object.assign({ name: clean(a.name, 60), type: a.type || 'bank', amount: x, moved: a.moved }, a.date ? { date: a.date } : {})], text: `Add ${clean(a.name, 60)} with ${m(x)}${a.moved ? ' moved from ' + nm(mainAcct) : ''}`, amount: x, figs: [x] };
     }
     return { bad: what ? 'a change I can\'t make (' + what.slice(0, 30) + ')' : 'a change I could not read' };
   }

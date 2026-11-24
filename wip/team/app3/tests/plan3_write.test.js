@@ -447,18 +447,37 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     eq(view(h.book).accounts[a.id].bank, 12000);
     for (const type of ['card', 'loan', 'paylater']) { const z = await h.go('addAccount', { name: 'X ' + type, type, amount: 1, moved: false }); ok(!z.ok, type); }
   });
-  await t('addAccount: money moved from the main bank opens at 0, checks at 0, then one move from the main bank on its day (BV2.12)', async () => {
+  await t('addAccount: the question names the day of the main bank\'s last figure; money moved before it is not taken off again (qc-foundation F3a)', async () => {
     const h = setup(), b0 = view(h.book).accounts[BANK].bank;
+    eq(b0, 286000);
     const ask = await h.go('addAccount', { name: 'Savings', type: 'bank', amount: 50000 });
-    ok(!ask.ok && /new money, or moved from Main bank/.test(ask.text), JSON.stringify(ask));
-    const r = await h.go('addAccount', { name: 'Savings', type: 'bank', amount: 50000, moved: true, min: 10000 });
+    ok(!ask.ok && ask.text === 'Is this new money, or moved from Main bank since 20 Nov?', JSON.stringify(ask));
+    /* "not moved since 20 Nov": it opens with its amount; Main bank's figure of 20 Nov already left it out */
+    const r = await h.go('addAccount', { name: 'Savings', type: 'bank', amount: 50000, moved: false });
+    ok(r.ok, JSON.stringify(r));
+    const a = h.book.accounts.slice(-1)[0], v = view(h.book);
+    eq([v.accounts[a.id].bank, v.accounts[BANK].bank], [50000, 286000]);
+  });
+  await t('addAccount: money moved since the main bank\'s last figure opens at 0 at the end of the day before the move, then one move on its day; no money lost; a day before that figure is refused (qc-foundation F3b, F3c, BV2.12)', async () => {
+    const h = setup();
+    const early = await h.go('addAccount', { name: 'Savings', type: 'bank', amount: 50000, moved: true, date: '2026-11-19' });
+    ok(!early.ok && /before Main bank's figure of 20 Nov/.test(early.text), JSON.stringify(early));
+    const r = await h.go('addAccount', { name: 'Savings', type: 'bank', amount: 50000, moved: true, date: '2026-11-22', min: 10000 });
     ok(r.ok, JSON.stringify(r));
     const a = h.book.accounts.slice(-1)[0];
     eq(a.minBank, { a: 10000, cur: 'JPY' });
     eq(h.book.events.filter(e => e.acct === a.id || e.acct2 === a.id).map(e => [e.k, e.acct === a.id ? 'it' : e.acct === BANK ? 'main' : e.acct, e.acct2 === a.id ? 'it' : e.acct2, e.date, e.a]),
-      [['open', 'it', undefined, DAY, 0], ['check', 'it', undefined, DAY, 0], ['transfer', 'main', 'it', DAY, 50000]]);
+      [['open', 'it', undefined, '2026-11-21', 0], ['check', 'it', undefined, '2026-11-21', 0], ['transfer', 'main', 'it', '2026-11-22', 50000]]);
     const v = view(h.book);
-    eq([v.accounts[a.id].bank, v.accounts[BANK].bank], [50000, b0 - 50000]);
+    eq([v.accounts[a.id].bank, v.accounts[BANK].bank], [50000, 236000], 'the 50,000 moved, none lost');
+    /* moved today: the same */
+    const h2 = setup();
+    ok((await h2.go('addAccount', { name: 'Savings', type: 'bank', amount: 50000, moved: true })).ok);
+    const a2 = h2.book.accounts.slice(-1)[0], v2 = view(h2.book);
+    eq([v2.accounts[a2.id].bank, v2.accounts[BANK].bank], [50000, 236000], 'moved today');
+    /* Undo takes all of it back */
+    const h3 = setup(), r3 = await h3.go('addAccount', { name: 'Savings', type: 'bank', amount: 50000, moved: true, date: '2026-11-22' });
+    ok((await h3.A.undo(r3.step.id)).ok); eq(view(h3.book).accounts[BANK].bank, 286000);
   });
   console.log(bad ? `plan3_write: ${bad} FAIL of ${n}` : `plan3_write: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);

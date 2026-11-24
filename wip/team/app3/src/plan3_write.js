@@ -22,7 +22,7 @@
   const bad = text => { throw new A3.Bad(text); };
   const BUILD = node ? require('../../engine/build_book.js') : root.BurrowEngine.build;
   const PAY_NEEDS_AMOUNT = BUILD.PAY_NEEDS_AMOUNT;
-  const SC = Object.assign({}, node ? require('../../engine/schedules.js') : root.BurrowEngine.schedules, { dayNum: (node ? require('../../engine/dates.js') : root.BurrowEngine.dates).dayNum });
+  const SC = Object.assign({}, node ? require('../../engine/schedules.js') : root.BurrowEngine.schedules, { dayNum: (node ? require('../../engine/dates.js') : root.BurrowEngine.dates).dayNum, dayStr: (node ? require('../../engine/dates.js') : root.BurrowEngine.dates).dayStr });
   const live = x => x && !x.gone;
   const DAY = /^\d{4}-\d{2}-\d{2}$/;
   const amountOk = (a, what) => { if (!Number.isInteger(a) || !(a > 0)) bad('Type ' + what + ' above zero'); return a; };
@@ -381,25 +381,35 @@
     if (first && x.shift && x.shift !== 'before') w.edit('schedules', id, { shift: x.shift });
     return id;
   }
-  /* x: { name, type: 'bank' | 'cash' | 'ewallet' | 'wallet', amount, min?, moved: true | false, date? }. New money opens
-     with its amount and a check of it today. Money moved from the main bank: the account opens at 0 and is checked at 0,
-     then one transfer from the main bank on the day it was moved, as addGoal and setAside do [BV2.12]; never both. */
+  /* x: { name, type: 'bank' | 'cash' | 'ewallet' | 'wallet', amount, min?, moved: true | false, date? }. `moved` answers
+     "Is this new money, or moved from <main bank> since <the day of its last figure>?" [qc-foundation F3a]. Not moved
+     since then (new money, or moved before that figure, which already left it out): the account opens with its amount
+     and a check of it today, nothing taken off the main bank. Moved since then: the account opens at 0 and is checked at 0
+     at the end of the day before the move, then one transfer from the main bank on the move day, as addGoal and setAside do [BV2.12,
+     F3c]; never both. A move day before the main bank's last figure is refused [F3b]. */
+  const SN3 = node ? require('../../screens/names.js') : root.BurrowScreens.names;
   const OWN_KINDS = { bank: 1, cash: 1, ewallet: 1, wallet: 1 };
   function addAccount(w, x) {
     const name = nameOk(x.name), type = x.type || 'bank';
     if (!OWN_KINDS[type]) bad(type === 'card' ? 'Add a card with Add a card' : type === 'loan' ? 'Add a loan with Add a loan' : 'Pick a bank, cash, an e-wallet or a wallet');
     if (!(Number.isInteger(x.amount) && x.amount >= 0)) bad('Type what it holds today, zero or more');
     const main = mainOf(w);
-    if (x.moved !== true && x.moved !== false) bad('Is this new money, or moved from ' + nameOf(w, main) + '?');
+    /* the main bank's last figure typed (its own check, never a statement's) */
+    const last = (w.book.events || []).filter(e => live(e) && e.k === 'check' && !e.stmt && e.acct === main && e.date <= w.today).map(e => e.date).sort().pop() || w.today;
+    const since = SN3.dayLabel(last, last.slice(0, 4) !== w.today.slice(0, 4));
+    if (x.moved !== true && x.moved !== false) bad('Is this new money, or moved from ' + nameOf(w, main) + ' since ' + since + '?');
     sameName(w.book.accounts || [], name);
-    const date = x.date || w.today;
+    const date = x.moved ? x.date || w.today : w.today;
     if (!DAY.test(date) || date > w.today) bad('Pick the day it was moved, today or before');
+    if (x.moved && date < last) bad('That day is before ' + nameOf(w, main) + "'s figure of " + since + ', which already left it out. Add it as not moved since then');
     const rec = { name, type, cur: home(w), owner: null };
     if (x.min != null && x.min !== '') rec.minBank = { a: amountOk(x.min, 'the amount to keep'), cur: home(w) };
     const id = w.add('accounts', rec);
-    const open = x.moved ? 0 : x.amount;
-    w.add('events', { k: 'open', acct: id, date: w.today, a: open });
-    w.add('events', { k: 'check', acct: id, date: w.today, a: open });
+    /* moved: it opens with 0 at the end of the day before the move, so the move (told now, on its own day) comes after
+       the opening whatever day it was; an opening dated the move day and told later would already hold it [AN4] */
+    const openDay = x.moved ? SC.dayStr(SC.dayNum(date) - 1) : date;
+    w.add('events', { k: 'open', acct: id, date: openDay, a: x.moved ? 0 : x.amount });
+    w.add('events', { k: 'check', acct: id, date: openDay, a: x.moved ? 0 : x.amount });
     if (x.moved && x.amount > 0) w.add('events', { k: 'transfer', date, a: x.amount, acct: main, acct2: id, src: { type: 'typed' } });
     return id;
   }
