@@ -18,6 +18,7 @@
    - The same figures as the made-up try book, which has the two incomes (180,000 and 60,000) on the same day: entering
      them as one number changes nothing on Home. */
 'use strict';
+const { finishSetup } = require('./setup_sections.js');   // setup is saved one section at a time (M16, item 14)
 const T = require('./lib3.js'), { ck } = T;
 const fs = require('fs'), os = require('os');
 const typeIn = async (p, sel, v) => { await p.click(sel, { clickCount: 3 }); await p.keyboard.press('Backspace'); await p.type(sel, String(v)); };
@@ -43,7 +44,9 @@ const home = async p => { const f = await T.figs(p); return { one: k => f.filter
     await typeIn(p, r + '[data-f=name]', name); await typeIn(p, r + '[data-f=amount]', amt); await p.select(r + '[data-f=day]', day);
   }
   ck('only one pay row in setup', (await p.$$('[data-row^=pay]')).length <= 1);
-  await p.click('#a3SetupSave'); await T.w(700);
+  /* each section's own Save, in order, then See my money: the way a person does it now. The figures are unchanged */
+  const secErr = await finishSetup(p); await T.w(700);
+  ck('every section saved on its own, then See my money', secErr === '', secErr);
   ck('saved', await p.$eval('#a3Setup', e => e.hidden), await p.$eval('#a3SetupErr', e => e.textContent).catch(() => ''));
 
   /* the same figures as the try book (two incomes on the 10th) on that day, from the engine */
