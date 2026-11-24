@@ -38,7 +38,9 @@ const DAYS = ['2026-11-23', '2026-12-09', '2026-12-10', '2026-12-11', '2026-12-1
     { const ac = one('aftercards'), want = r.bankAfterCards || {}, accts = Object.keys(want);
       ck(day + ' the bank after the cards are paid, once per bank, the engine\'s, in the cards box', ac.length === accts.length && accts.every((id, i) => ac[i].amt === want[id].amount && ac[i].card === 'cards'), JSON.stringify(ac) + ' vs ' + JSON.stringify(want));
       for (const [i, id] of accts.entries()) {
-        const x = want[id], head = `After your cards are paid on ${SN0.dayList(x.cardDays, x.cardDays.some(d => d.slice(0, 4) !== day.slice(0, 4)))}: Main bank`;
+        /* [C10] a card day that is today is written "today" (an overdue payment is taken today) */
+        const x = want[id], rest = x.cardDays.filter(d => d !== day), wy = x.cardDays.some(d => d.slice(0, 4) !== day.slice(0, 4));
+        const head = `After your cards are paid ${rest.length === x.cardDays.length ? 'on ' + SN0.dayList(x.cardDays, wy) : 'today' + (rest.length ? ' and on ' + SN0.dayList(rest, wy) : '')}: Main bank`;
         const t = ac[i] ? ac[i].text : '';
         ck(day + ' it names its day, the pay in it, close days not sure, and says it is not safe to spend', t.startsWith(head) && /not safe to spend/.test(t) && (!x.pays.length || t.includes('Your pay on')) && (!x.ifAllTaken || t.includes('It counts everything on the cards now, as their close days are not sure')) && (!x.paysNotCounted.length || /is not counted/.test(t)), t);
       } }
