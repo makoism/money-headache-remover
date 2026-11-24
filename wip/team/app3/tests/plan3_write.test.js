@@ -396,6 +396,70 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     eq(typeof h.book.plan.budgets[0].gone, 'string');
     eq(view(h.book).period.lines, []);
   });
+  /* ---- slice 4 actions the assistant needs early (AI_FIRST_PLAN corrections BV5, BV2.11, BV2.12) ---- */
+  await t('addPay: a second income from today on its own day; the pay that starts the period stays the same', async () => {
+    const h = setup(), r0 = view(h.book);
+    const r = await h.go('addPay', { name: 'Tutoring', amount: 30000, every: 'month', day: 1 });
+    ok(r.ok, JSON.stringify(r));
+    const s = h.book.schedules.slice(-1)[0];
+    stamped(s, r.step);
+    eq([s.kind, s.name, s.acct, s.cur, s.shift, s.from, !!s.startsPeriod, s.rules.map(x => [x.from, x.rule]), s.steps.map(x => [x.from, x.amount])],
+      ['income', 'Tutoring', BANK, 'JPY', 'before', DAY, false, [[null, { every: 'month', days: [1] }]], [[null, 30000]]]);
+    const r1 = view(h.book);
+    eq(r1.period.start, r0.period.start); eq(r1.daysToNextPay.next_pay, r0.daysToNextPay.next_pay);
+    const again = await h.go('addPay', { name: 'tutoring', amount: 1, every: 'month', day: 2 }); ok(!again.ok && /already one/.test(again.text), JSON.stringify(again));
+    const zero = await h.go('addPay', { name: 'Gig', amount: 0, every: 'month', day: 2 }); ok(!zero.ok && zero.text === 'A pay needs an amount. If it comes when it comes, pick No fixed pay', JSON.stringify(zero));
+  });
+  await t('addPay: no fixed day needs no amount and never starts the period; every 2 weeks steps back to a day on or before today', async () => {
+    const h = setup();
+    ok((await h.go('addPay', { name: 'Gigs', every: 'none' })).ok);
+    let s = h.book.schedules.slice(-1)[0];
+    eq([s.shift, s.rules[0].rule, s.steps[0].amount, !!s.startsPeriod], ['none', { every: 'none' }, null, false]);
+    ok((await h.go('addPay', { name: 'Shifts', amount: 9000, every: 'weeks2', start: '2026-12-03' })).ok);
+    s = h.book.schedules.slice(-1)[0];
+    eq(s.rules[0].rule, { every: 'weeks', n: 2, from: '2026-11-19' });
+  });
+  await t('addPay: the first fixed pay in a book with none does what changeBill does: it starts the period, lines asked each pay', async () => {
+    const h = setup(), b = h.book;
+    b.schedules = b.schedules.filter(x => x.kind !== 'income');
+    ok((await h.go('setFree', { amount: 40000, when: 'now' })).ok);
+    eq(view(h.book).period, null, 'no pay periods yet');
+    const ask = await h.go('addPay', { name: 'Pay', amount: 240000, every: 'month', day: 10 });
+    ok(!ask.ok && /How much each pay from then for Free to spend/.test(ask.text), JSON.stringify(ask));
+    const r = await h.go('addPay', { name: 'Pay', amount: 240000, every: 'month', day: 10, lines: { free: 40000 } });
+    ok(r.ok, JSON.stringify(r));
+    const s = h.book.schedules.find(x => x.name === 'Pay');
+    eq([!!s.startsPeriod, s.shift], [true, 'before']);
+    /* as changeBill from no fixed pay: the day and the amount start with its first pay (10 Dec); the plan runs by the
+       day until then */
+    eq([s.rules.slice(-1)[0].from, s.rules.slice(-1)[0].rule, s.steps.slice(-1)[0].from, s.steps.slice(-1)[0].amount], ['2026-12-10', { every: 'month', days: [10] }, '2026-12-10', 240000]);
+    eq(h.book.plan.shares.filter(x => !x.gone).slice(-1)[0].per, { free: 'pay' });
+  });
+  await t('addAccount: new money opens with its amount and a check, both today; a card or a loan is refused', async () => {
+    const h = setup();
+    const r = await h.go('addAccount', { name: 'Cash', type: 'cash', amount: 12000, moved: false });
+    ok(r.ok, JSON.stringify(r));
+    const a = h.book.accounts.slice(-1)[0], ev = h.book.events.filter(e => e.acct === a.id);
+    stamped(a, r.step);
+    eq([a.name, a.type, a.cur, a.owner], ['Cash', 'cash', 'JPY', null]);
+    eq(ev.map(e => [e.k, e.date, e.a]), [['open', DAY, 12000], ['check', DAY, 12000]]);
+    eq(h.book.events.filter(e => e.k === 'transfer'), [], 'nothing moved');
+    eq(view(h.book).accounts[a.id].bank, 12000);
+    for (const type of ['card', 'loan', 'paylater']) { const z = await h.go('addAccount', { name: 'X ' + type, type, amount: 1, moved: false }); ok(!z.ok, type); }
+  });
+  await t('addAccount: money moved from the main bank opens at 0, checks at 0, then one move from the main bank on its day (BV2.12)', async () => {
+    const h = setup(), b0 = view(h.book).accounts[BANK].bank;
+    const ask = await h.go('addAccount', { name: 'Savings', type: 'bank', amount: 50000 });
+    ok(!ask.ok && /new money, or moved from Main bank/.test(ask.text), JSON.stringify(ask));
+    const r = await h.go('addAccount', { name: 'Savings', type: 'bank', amount: 50000, moved: true, min: 10000 });
+    ok(r.ok, JSON.stringify(r));
+    const a = h.book.accounts.slice(-1)[0];
+    eq(a.minBank, { a: 10000, cur: 'JPY' });
+    eq(h.book.events.filter(e => e.acct === a.id || e.acct2 === a.id).map(e => [e.k, e.acct === a.id ? 'it' : e.acct === BANK ? 'main' : e.acct, e.acct2 === a.id ? 'it' : e.acct2, e.date, e.a]),
+      [['open', 'it', undefined, DAY, 0], ['check', 'it', undefined, DAY, 0], ['transfer', 'main', 'it', DAY, 50000]]);
+    const v = view(h.book);
+    eq([v.accounts[a.id].bank, v.accounts[BANK].bank], [50000, b0 - 50000]);
+  });
   console.log(bad ? `plan3_write: ${bad} FAIL of ${n}` : `plan3_write: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })();
