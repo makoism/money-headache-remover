@@ -174,7 +174,16 @@ async function openSetup(day) {
     ck('Undo takes back that save: the pay is 180,000 again, as saved', (await val(p, '#s3PayAmt')) === '180000' && (await stateOf(p, 'pay')) === 'saved', await val(p, '#s3PayAmt'));
     let d = await device(p);
     ck('the draft on this device holds the pay as 180,000', d && d.device && d.device.setup && d.device.setup.sections.pay.v.s3PayAmt === '180000', JSON.stringify(d && d.device));
+    ck('and nothing typed is held for the pay: the 190,000 taken back is not kept as typed', d && d.device && d.device.setup && !(d.device.setup.typed || {}).pay, JSON.stringify(d && d.device && d.device.setup && d.device.setup.typed));
     ck('a partly done setup is a draft, not a book: nothing is kept as a book yet', d && !d.book, JSON.stringify(d && d.book));
+    /* the same again with the typed-keeping timer already run before Undo, and one still waiting when Undo is pressed */
+    for (const [wait, how] of [[600, 'after the typed 190,000 was kept'], [0, 'pressed at once']]) {
+      await typeIn(p, '#s3PayAmt', '190000'); await saveSec(p, 'pay'); await w(wait);
+      await p.click('#a3Msg button'); await w(700);
+      d = await device(p);
+      const su = d && d.device && d.device.setup;
+      ck(`Undo ${how}: the draft holds the pay as 180,000 saved, nothing typed`, su && su.sections.pay.v.s3PayAmt === '180000' && !(su.typed || {}).pay && (await val(p, '#s3PayAmt')) === '180000' && (await stateOf(p, 'pay')) === 'saved', JSON.stringify(su));
+    }
     await p.click('#s3AddBill'); await w(100);
     await typeIn(p, '[data-row=bill1] [data-f=name]', 'Rent'); await typeIn(p, '[data-row=bill1] [data-f=amount]', '72000');
     await p.click('#a3SetupSave'); await w(300);
@@ -226,6 +235,21 @@ async function openSetup(day) {
     await w(800);
     const d2 = await device(p);
     ck('C1: the draft is cleared, nothing typed left behind', d2 && d2.book && !(d2.device && d2.device.setup), JSON.stringify(d2 && d2.device));
+    await c.close();
+  }
+  /* 5d (M16, M61): Undo of a Save pressed on Home after Back takes back that Save only: what was typed in another
+     section and not saved stays in the draft */
+  {
+    const { c, p } = await openSetup('2026-11-24');
+    await typeIn(p, '#s3Bank', '286000'); await saveSec(p, 'bank');
+    await p.click('#s3AddBill'); await w(100); await typeIn(p, '[data-row=bill1] [data-f=name]', 'Rent');
+    await typeIn(p, '#s3PayAmt', '180000'); await p.selectOption('#s3PayDay', '10'); await saveSec(p, 'pay');
+    await w(600);
+    await p.click('#a3SetupX'); await w(300);
+    ck('5d: Back closes setup with Undo for the pay still offered', await p.$eval('#a3Setup', e => e.hidden) && (await band(p)).undo, JSON.stringify(await band(p)));
+    await p.click('#a3Msg button'); await w(400);
+    const d = await device(p), su = d && d.device && d.device.setup;
+    ck('5d: Undo on Home takes back the pay Save and keeps the bill typed', su && !su.sections.pay && !!su.sections.bank && !(su.typed || {}).pay && su.typed && su.typed.bills && su.typed.bills.v && Object.values(su.typed.bills.v).includes('Rent'), JSON.stringify(su));
     await c.close();
   }
   /* 5b: a draft left on one day and picked up on a later day. The bank, an account, a card's amount on it now and which

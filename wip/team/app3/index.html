@@ -10213,14 +10213,17 @@ function put3(sec, snap) {
    typed: { <sec>: snapshot } }, or nothing. [SORTED C1] `typed` keeps what is typed in a section not saved yet, as it is
    typed, so Back, closing the tab or a reload never loses it; it is never counted: the section still says Not saved yet
    and See my money still asks for its Save */
-function typedNow3(sections) {
+function typedNow3(sections, skip) {
   const out = {};
   if (!setup3 || !setup3.base) return out;
-  for (const [sec] of SEC3) { const now = snap3(sec), was = sections[sec] || setup3.base[sec]; if (!same3(now, was)) out[sec] = now; }
+  for (const [sec] of SEC3) { if (sec === skip) continue; const now = snap3(sec), was = sections[sec] || setup3.base[sec]; if (!same3(now, was)) out[sec] = now; }
   return out;
 }
-const keepDraft3 = (sections, days) => {
-  const typed = typedNow3(sections);
+/* skip: a section about to be put back as `sections` holds it (Undo), so what its boxes show now is not kept as typed */
+/* kept: with setup closed there are no boxes to read, so the typed sections already in the draft are carried over */
+const keepDraft3 = (sections, days, skip, kept) => {
+  const typed = setup3 && setup3.base ? typedNow3(sections, skip) : Object.assign({}, kept);
+  if (skip) delete typed[skip];
   return E3.rec('setup', Object.keys(sections).length || Object.keys(typed).length ? { v: 1, sections, days, typed } : null);
 };
 /* what is typed is kept a moment after the typing stops, and at once on Back */
@@ -10253,8 +10256,15 @@ async function undoSec3(sec, before, beforeDay, now) {
   if (!same3(saved[sec] || null, now)) { MSG3.post({ kind: 'toast', key: 'act3', text: 'Something changed it since. Undo that change first' }); return; }
   const sections = Object.assign({}, saved), days = Object.assign({}, savedDays);
   if (before) { sections[sec] = before; days[sec] = beforeDay; } else { delete sections[sec]; delete days[sec]; }
-  if ((await keepDraft3(sections, days)) !== true) { MSG3.post({ kind: 'toast', key: 'act3', text: 'This could not be saved on this device. Nothing changed' }); return; }
-  if (open && setup3) { setup3.saved = sections; setup3.days = days; put3(sec, before || setup3.base[sec]); }
+  /* The draft is written as the section will be after Undo: what its boxes show now (the save being taken back) is not
+     kept as typed, or a reload would bring the undone amount back. busy holds off the typed-keeping timer until the
+     section is put back, or its write, made from the save being undone, would land after this one and win */
+  const me = open ? setup3 : null;
+  if (me) me.busy = true;
+  const ok = await keepDraft3(sections, days, sec, open ? null : kept.typed);
+  if (me) me.busy = false;
+  if (ok !== true) { MSG3.post({ kind: 'toast', key: 'act3', text: 'This could not be saved on this device. Nothing changed' }); return; }
+  if (me && setup3 === me) { setup3.saved = sections; setup3.days = days; put3(sec, before || setup3.base[sec]); }
   MSG3.post({ kind: 'toast', key: 'act3', text: 'Undone' });
 }
 /* opening setup again: every saved section comes back, in order (the accounts first: the others choose from them) */
