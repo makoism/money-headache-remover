@@ -2,6 +2,8 @@
 
 Read `wip/team/RESUME.md` section 0 (top entry) and section 7 before doing anything else.
 
+Then read `wip/team/MAKO_SAYS.md` in full (Mako, 2026-11-24: "anything I send you here, if it doesn't trickle down into every part of what we're doing, then there's no point"). It is everything Mako has said the app must be and do. The coordinator owns it and nobody else edits it. Read it again whenever the coordinator says it changed, and answer the coordinator with what the change means for your work. Every plan names the lines it serves. Every brief you write for a helper or a reviewer starts with "read wip/team/MAKO_SAYS.md first". If you hear Mako's words from anywhere else, send them to the coordinator.
+
 Then read `wip/team/LESSONS.md` (Mako, 2026-11-23: "keep this as reference ... to help ensure that this never happens again"). Before any plan or build step, check it against the warning signs there, and run the qc-foundation agent on the plan before building.
 
 ## Never stop and wait (Mako, 2026-11-21, "make sure this doesn't happen again. ever")
