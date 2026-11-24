@@ -2,6 +2,7 @@
  "slice": 1,
  "note": "DECISIONS_ROUND2 AZ5: passes is flipped to true only when the test is green in ./check3.sh. check3.sh fails if a feature marked passing has a red test.",
  "features": [
+  { "name": "Installed to the home screen (M33: Android, Chrome): manifest3.webmanifest beside the page, The Burrow, standalone, start_url and scope relative to the page's own folder so any private path works, icons 192 and 512 any and maskable, kept by the worker, no installability errors in Chrome", "test": "tests/e3_install.js", "passes": true },
   { "name": "The pay form changes how often pay lands to and from two days a month and no fixed pay (slice 6b): each line and Free to spend proposed as the same money a year, a month with no fixed pay; from no fixed pay the rule starts with its first pay", "test": "tests/e3_paychange.js", "passes": true },
   { "name": "Life D (slice 6b): paid on two days a month, changed to no fixed pay mid-period; by the day from the change, Free to spend counted from the change, how long the money lasts; hand-worked figures and a reload at every check-in", "test": "tests/e3_life_d.js", "passes": true },
   { "name": "A second income in setup can land every 1, 2 or 4 weeks (the day of one stepped back, BP1) or on two days a month (slice 6b)", "test": "tests/e3_income2.js", "passes": true },

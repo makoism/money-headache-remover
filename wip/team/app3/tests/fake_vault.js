@@ -95,6 +95,9 @@ function serve(vault, pageHtml, opts) {
     if (q.method === 'OPTIONS') { r.writeHead(204, cors); r.end(); return; }
     if (u.pathname === '/' || u.pathname === '/index.html') { r.writeHead(200, { 'content-type': 'text/html', 'cache-control': 'no-store' }); r.end(typeof pageHtml === 'function' ? pageHtml() : pageHtml); return; }
     if (u.pathname === '/sw3.js') { r.writeHead(200, { 'content-type': 'text/javascript', 'cache-control': 'no-store' }); r.end(typeof opts.sw === 'function' ? opts.sw() : require('fs').readFileSync(require('path').join(__dirname, '../sw3.js'))); return; }
+    if (/^\/(manifest3\.webmanifest|icon3-(192|512)\.png)$/.test(u.pathname)) {   // what installing to the home screen reads, beside the page as publish3.sh writes it (M33)
+      r.writeHead(200, { 'content-type': u.pathname.endsWith('.png') ? 'image/png' : 'application/manifest+json' }); r.end(require('fs').readFileSync(require('path').join(__dirname, '..', u.pathname.slice(1)))); return;
+    }
     if (u.pathname === '/api/health') { r.writeHead(200, Object.assign({ 'content-type': 'application/json' }, cors)); r.end(JSON.stringify({ ok: true, ai: false, vault: true, invite: false, version: 'test' })); return; }
     const m = /^\/api\/vault\/([^/]+)$/.exec(u.pathname);
     if (!m) { r.writeHead(404); r.end(); return; }

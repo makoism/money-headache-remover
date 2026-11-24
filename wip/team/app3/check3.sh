@@ -86,6 +86,7 @@ page|tests/e3_walk.js|e3_walk: ALL PASS|TZ=Asia/Tokyo WALK_CLOCK=04:40|600|the w
 page|tests/e3_walk.js|e3_walk: ALL PASS|TZ=Asia/Tokyo WALK_CLOCK=23:30|600|the walk again in Tokyo at 23:30 (every figure the same after a reload at each check-in)
 alone|tests/guard3.js|guard3: ALL PASS||300|guard (idle CPU, long tasks, outside requests, errors)
 page|tests/offline.js|offline: ALL PASS||300|offline load
+page|tests/e3_install.js|e3_install: ALL PASS||300|installed to the home screen (M33): the manifest beside the page, its icons, start_url in the page's own folder, kept by the worker, Chrome's installability check
 page|tests/e3_publish.js|e3_publish: ALL PASS||300|the private publish (a made-up path, a copy of public/ served by the worker's rules)
 page|tests/e3_tabs.js|e3_tabs: ALL PASS||300|two tabs on one device
 page|tests/e3_backup.js|e3_backup: ALL PASS||300|Settings and the backup file
@@ -116,10 +117,11 @@ page_tests_for() {   # page_tests_for <changed path, relative to app3/>
     src/stmt3*.js)            echo e3_stmt e3_stmt_once e3_walk4 ;;
     src/ask3*.js)             echo e3_ask ;;
     src/backup3.js|src/settings3.js) echo e3_backup e3_tabs ;;
-    src/sw3.js|src/settings3_sw.js|sw3.js) echo e3_sw offline ;;
+    src/sw3.js|src/settings3_sw.js|sw3.js) echo e3_sw offline e3_install ;;
     src/cloud3*.js)           echo e3_cloud ;;
     src/remind3*.js)          echo e3_remind ;;
-    publish3.sh)              echo e3_publish ;;
+    publish3.sh)              echo e3_publish e3_install ;;
+    manifest3.webmanifest|make_icons3.js|icon3-*.png) echo e3_install ;;
   esac
 }
 

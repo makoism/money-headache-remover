@@ -16,7 +16,10 @@ const { makeVault, serve } = require('./fake_vault.js');
   // a server that does not answer the page (but still answers the worker's own file)
   const handlers = s.srv.listeners('request');
   s.srv.removeAllListeners('request');
-  s.srv.on('request', (q, r) => { if (hang && !q.url.startsWith('/sw3.js') && !q.url.startsWith('/api/')) return; handlers.forEach(h => h(q, r)); });
+  // what it holds is answered when it answers again (the page's manifest and icon asks too, M33): held forever, they would
+  // fill Chrome's six connections to the server and the next build's worker could never fetch its files
+  const held = [];
+  s.srv.on('request', (q, r) => { if (hang && !q.url.startsWith('/sw3.js') && !q.url.startsWith('/api/')) { held.push([q, r]); return; } handlers.forEach(h => h(q, r)); });
   const URL = `http://127.0.0.1:${s.port}/?try=mako&today=2026-12-10`;
   const { b, p, errs } = await T.open({ profile: fs.mkdtempSync(path.join(os.tmpdir(), 'a3sw-')) });
   try {
@@ -40,7 +43,7 @@ const { makeVault, serve } = require('./fake_vault.js');
     await p.goto(URL, { waitUntil: 'load', timeout: 15000 }).catch(() => {});
     const took = Date.now() - t0;
     ck(`with no answer, it opens from the kept copy in about 3 seconds (${took} ms)`, took < 6000 && /Safe to spend/.test(await p.$eval('#a3Home', e => e.textContent)));
-    hang = false;
+    hang = false; held.splice(0).forEach(([q, r]) => handlers.forEach(h => h(q, r)));
     // a new build
     html = html1.replace('<title>', '<title>build two: ');
     sw = sw1.replace(/burrow3-[0-9a-f]{12}/, 'burrow3-bbbbbbbbbbbb');

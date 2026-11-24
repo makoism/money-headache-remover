@@ -18,6 +18,9 @@ cat <<'HEAD'
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>the burrow (new engine, try)</title>
 <link rel="icon" href="data:,">
+<meta name="theme-color" content="#0c1a15">
+<script id="a3install">/* installing to the home screen (M33): the manifest and icon beside the page, only when it is served (a page opened as a plain file cannot read them) */
+if (/^https?:$/.test(location.protocol)) document.head.insertAdjacentHTML('beforeend', '<link rel="manifest" href="manifest3.webmanifest"><link rel="apple-touch-icon" href="icon3-192.png">');</script>
 <style>
 HEAD
 # the tokens: from the first :root block to the line before "* { box-sizing", both palettes included
@@ -53,4 +56,5 @@ echo '</html>'
 } > "$OUT.tmp.$$"; mv "$OUT.tmp.$$" "$OUT"   # in one step: a test reading the page while another builds never sees half a file
 wc -c "$OUT"
 # the service worker beside it (D6, backup lane): its cache is named by this build, so a new build is a new worker
+node make_icons3.js   # the home screen icons beside the page, named in manifest3.webmanifest (M33)
 sed "s/@@BUILD@@/$(sha1sum "$OUT" | cut -c1-12)/" src/sw3.js > sw3.js.tmp.$$; mv sw3.js.tmp.$$ sw3.js
