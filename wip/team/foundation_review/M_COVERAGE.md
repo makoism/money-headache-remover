@@ -36,7 +36,7 @@ For anything not met, the row says where it is queued: AI_FIRST_PLAN, STAGE2_PLA
 | M15 Remove a bill; an empty amount never traps | MET IN LANE | setupfix 64eb561 and 313ce7d (e3_setupfix). After setup: End this bill (e3_plan) |
 | M16 Each setup section saves on its own, with "saved" | MET IN LANE | setupfix 88d541b (e3_setupfix, tests/setup_sections.js) |
 | M17 Ask anything, any time | MET IN LANE | ai-core `explain` tool and guide (chat3_core.test); ai-panel e3_chat |
-| M18 A question mark wherever needed | MET | screens/help.js; e3_ns ("the help marks") |
+| M18 A question mark wherever needed | PARTLY | "?" only on three Home cards (home3.js:141, 174, 181) and one Plan row (plan3.js:61). Queue: lane/homefix after the candidate, "?" on setup, Plan, Receipts and Settings (SORTED C6) |
 | M19 Save and get it back on another device, every step explained | MET (steps in lane) | Backup file (e3_backup), cloud copy (e3_cloud, cloud3.test.js). Every restore listed and explained: lane/restore (e3_restore, restore3.test.js). The step words go to Mako's copy pass (FOR_MAKO) |
 | M20 Both devices changed one item: asks which to keep, the other kept for Undo | MET | cloud3_page.js "choose which to keep" (e3_cloud); engine/test/sync.test.js |
 | M21 iPhone or Android, same build | PARTLY | One web page for both. check3 runs Chromium only, with no Safari (WebKit) run. **NO QUEUE** for a WebKit check |
@@ -75,7 +75,7 @@ For anything not met, the row says where it is queued: AI_FIRST_PLAN, STAGE2_PLA
 | M44 One dataset from real transaction dates | MET | engine/test/run_all.js, reload_order.test.js |
 | M45 No coin counted twice | MET | e3_stmt_once, engine/test/match.test.js, count_once.test.js |
 | M46 Unspent planned money never drops out silently | NOT MET | The same gap as M24: no period-end question is asked. **NO QUEUE** |
-| M47 Below zero: plain amber line, never red | MET | e3_warnwords; app3.css `.a3-warn` and `.a3-late` use `--warn` |
+| M47 Below zero: plain amber line, never red | NOT MET | the late-pay short line uses a3-bad, red (home3.js:166). Queue: lane/homefix (SORTED C3) |
 | M48 Cents where the currency has them; yen whole | MET | screens/money.js (screens/test/run_all.sh); BL4 one cents rule per screen (money3.js `screen3`); e3_amounts |
 | M49 Percents add to 100; a goal never full early | MET | app3 shows no percents; goals show the exact amount of the target (home3.js goals, e3_homeplan) |
 | M50 The first pay or bill entry becomes the usual amount | MET | Schedules keep `steps` from setup; a change is a new step (plan3_write.test, e3_paychange) |
