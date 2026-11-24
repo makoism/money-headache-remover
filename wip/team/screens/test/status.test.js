@@ -113,7 +113,16 @@ test('notes only (another currency, a reopened account) sit under the state and 
 });
 
 test('pay late: the day it was due, and check in once it lands', () => {
-  const s = status.statusOf(engine('late_pay', '2027-01-09'), Object.assign({}, YEN, { currency: scen('late_pay').currency }));
+  /* [N26] in this made-up life the last bank check is over 14 days old on 9 Jan, so "Check your bank" leads and the late
+     pay sits under it; with a check from yesterday the late pay itself leads */
+  const r = clone(engine('late_pay', '2027-01-09')), ctx = Object.assign({}, YEN, { currency: scen('late_pay').currency });
+  const old = status.statusOf(r, ctx);
+  assert.ok(Object.keys(r.accounts).some(id => r.accounts[id].ageDays > 14), 'the last check is old');
+  assert.strictEqual(old.state, 'check');
+  assert.strictEqual(old.reason.code, 'old_figure');
+  assert.ok(old.also.includes('pay_late'), 'the late pay sits under the check');
+  for (const id in r.accounts) r.accounts[id].ageDays = 1;
+  const s = status.statusOf(r, ctx);
   assert.strictEqual(s.state, 'late');
   assert.strictEqual(s.reason.since, '2027-01-08');
   assert.strictEqual(s.next.code, 'check_in_when_it_lands');
@@ -126,6 +135,20 @@ test('things to tick off since the last check-in', () => {
   assert.strictEqual(s.state, 'check');
   assert.deepStrictEqual(s.reason, { code: 'to_confirm', count: 1, since: '2026-11-20' });
   assert.strictEqual(s.text.reason, '1 thing to tick off since 20 Nov');
+});
+
+test('a bank check over 14 days old leads, above a pay that is not in yet [N26]', () => {
+  const r = clone(engine('mako_shape', '2026-11-25'));
+  r.daysToNextPay = Object.assign({}, r.daysToNextPay, { late: true });
+  r.accounts.bank.ageDays = 14;
+  assert.strictEqual(status.statusOf(r, YEN).state, 'late', 'at 14 days the late pay still leads');
+  r.accounts.bank.ageDays = 15;
+  const s = status.statusOf(r, YEN);
+  assert.strictEqual(s.state, 'check');
+  assert.strictEqual(s.reason.code, 'old_figure');
+  assert.strictEqual(s.text.state, 'Check your bank');
+  assert.strictEqual(s.text.reason, 'Your bank figure is from 20 Nov');
+  assert.ok(s.also.includes('pay_late'), 'the late pay sits under it');
 });
 
 test('an old bank figure asks for a check-in (after staleDays, 7 unless set)', () => {

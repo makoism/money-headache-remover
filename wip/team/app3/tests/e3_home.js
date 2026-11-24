@@ -103,6 +103,22 @@ const DAYS = ['2026-11-23', '2026-12-09', '2026-12-10', '2026-12-11', '2026-12-1
     ck('C11: no page errors', o.errs.length === 0, o.errs.join(' | '));
     await o.b.close();
   }
+  /* [N26] three weeks since the last bank check: Home leads with "Check your bank", above "Pay not in yet". The made-up
+     book kept as the person's own (so the status card shows), seen 12 Dec: last checked 20 Nov, the 10 Dec pay not seen. */
+  {
+    const prof = require('fs').mkdtempSync(require('os').tmpdir() + '/a3prof-');
+    const o = await T.open({ profile: prof });
+    await o.p.goto(T.URL0 + '?today=2026-12-12'); await T.w(300);
+    await o.p.evaluate(async bk0 => { const s = await BurrowStore.open(); await s.save(bk0, { full: true }); s.db && s.db.close(); }, bk);
+    await o.p.reload(); await T.w(500);
+    const r = T.L.lookahead(bk, '2026-12-12');
+    const st = await o.p.$eval('[data-card=status]', e => ({ head: e.querySelector('h2').textContent, text: e.textContent })).catch(() => null);
+    ck('N26: the engine: checked 22 days ago, and the pay not seen', r.accounts[bank].ageDays === 22 && r.period.nextPay.state === 'notSeen', r.accounts[bank].ageDays + ' ' + r.period.nextPay.state);
+    ck('N26: Home leads with Check your bank and the day of the last check, not "Pay not in yet"', st && st.head === 'Check your bank' && /Your bank figure is from 20 Nov/.test(st.text), JSON.stringify(st));
+    ck('N26: the status card is the first card on Home', await o.p.$eval('#a3Home [data-card]', e => e.dataset.card) === 'status');
+    ck('N26: no page errors', o.errs.length === 0, o.errs.join(' | '));
+    await o.b.close();
+  }
   const old = await T.readOld(p);
   ck('the old app\'s copy is byte for byte the same', old.ls === T.OLD_TEXT && old.idb === T.OLD_IDB, JSON.stringify(old).slice(0, 200));
   ck('no page errors', errs.length === 0, errs.join(' | '));
