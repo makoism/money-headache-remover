@@ -8704,6 +8704,15 @@ function safeUntil3(r, yr) {
   if (n.days === 0 && r.safeToSpend.until) return ` until next pay on ${esc3(day3(r.safeToSpend.until, yr))}${r.safeToSpend.notCounting ? ', not counting today\'s pay (not in at your check today)' : ''}`;
   return ` until next pay on ${d}`;
 }
+/* [LISTFIX B2, I4, BP2] right after setup, Free to spend counts only its share for the days left in the period, and it
+   caps safe to spend: Home says why the figure is small, with the full amount and when it counts (the engine's counts
+   and amount, as Plan's "Why only part?") */
+function freeShare3(r, home) {
+  const f = r.period && r.period.free;
+  if (!r.safeToSpend.cappedByFreeToSpend || !f || f.counts == null || !(f.counts < f.amount)) return '';
+  const fm = fmt3(home, [f.counts, f.amount]);
+  return `<div class="a3-helprow" data-fig="freeshare"><span class="a3-sub">Free to spend counts ${esc3(fm(f.counts))} of ${esc3(fm(f.amount))} this pay period, because you started partway through it. The full ${esc3(fm(f.amount))} counts from your next pay</span>${HELP3.button('lineShare')}${HELP3.text('lineShare')}</div>`;
+}
 /* [slice 6, B4] with no fixed pay: how long the money lasts at this rate (the engine's lastsAboutWeeks, from bills and the
    plan by the day; it looks a year ahead) */
 function lastsWords3(r) {
@@ -8761,7 +8770,7 @@ function drawHome3() {
   const all = r.safeToSpend.headline === 0 ? 'all of it: ' : '';
   const capParts = (r.safeToSpend.whyParts || []).map((x, i) => (x.over ? Object.assign({}, x, { label: `${all}Free to spend is ${money3(x.over, home)} over this period` })
     : i > 0 && all && r.period && r.period.free && r.period.free.left === 0 ? Object.assign({}, x, { label: `${all}Free to spend is used up this period` }) : x));
-  const capLine = r.safeToSpend.whyParts ? `<p class="a3-sum" data-fig="cap">${esc3(sum3(capParts, r.safeToSpend.headline, home))}</p>` : '';
+  const capLine = r.safeToSpend.whyParts ? `<p class="a3-sum" data-fig="cap">${esc3(sum3(capParts, r.safeToSpend.headline, home))}</p>${freeShare3(r, home)}` : '';
   const sums = `${ids.filter(id => r.accounts[id].spendFrom).map(id => `<p class="a3-sum" data-fig="why">${esc3(whyWords3(r.accounts[id]))}</p>${todayWords3(r.accounts[id], id)}`).join('')}${capLine}`;
   /* [BL3] short: the sum's own total, before the pay after its lowest point (only when one brings money), and the first
      day the bank goes under beside it */

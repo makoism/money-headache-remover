@@ -8,7 +8,8 @@
        named as found at the bank check of 10 Dec, on Free to spend, and not a button (it changes only at a check).
    A2. Plan lines alone needing more than the bank can spare: Home says so, by how much, and what to do (worked below).
    C1. A second bank going below zero while the main one can spare it: Home says to move the money, how much and from where.
-   B1. A gap saved while the card question shows: the Undo bar still says it counts as spending. */
+   B1. A gap saved while the card question shows: the Undo bar still says it counts as spending.
+   B2. Right after setup, Home says why safe to spend is small: Free to spend counts its share for the days left. */
 'use strict';
 const T = require('./lib3.js');
 const { ck } = T;
@@ -95,6 +96,23 @@ const rows = p => p.$$eval('#rcList li', es => es.map(e => ({ gap: e.dataset.gap
   ck('B1: the Undo bar says ¥850 more left your bank than you logged. It counts as spending', barB1.includes('¥850 more left your bank than you logged. It counts as spending'), barB1);
   const gapB1 = await p.evaluate(async () => { const s = await BurrowStore.open(); const r = await s.load(); s.close(); return r.copy; }).then(c => T.L.lookahead(c, '2026-12-10').accounts[bank].fillers.slice(-1)[0].amount);
   ck('B1: and the engine counts the 850', gapB1 === 850, gapB1);
+
+  /* B2: the made-up book on 25 Nov, set up on 20 Nov in the period 10 Nov to 9 Dec. Free to spend of 60,000 each pay,
+     set on Plan, counts 20 of 30 days now: 60,000 x 20 / 30 = 40,000, and it caps safe to spend at 40,000. Home says
+     why: "Free to spend counts ¥40,000 of ¥60,000 this pay period, because you started partway through it. The full
+     ¥60,000 counts from your next pay", with the same "?" as Plan's "Why only part?". */
+  await fresh(bk);
+  await go('2026-11-25');
+  await p.tap('[data-tab="plan"]'); await T.w(300);
+  await p.click('#plSetFree'); await T.w(200);
+  await p.evaluate(() => { const e = document.getElementById('pl-amount'); e.focus(); e.value = '60000'; e.dispatchEvent(new Event('input', { bubbles: true })); e.blur(); });
+  await p.click('[data-plbtn="0"]'); await T.w(400);
+  await p.tap('[data-tab="home"]'); await T.w(300);
+  ck('B2: safe to spend is 40,000 (Free to spend left caps it)', (await p.$eval('[data-fig="safe"] [data-amt]', e => e.dataset.amt)) === '40000');
+  const sh = await p.$eval('#a3Home [data-fig="freeshare"]', e => e.textContent.replace(/\s+/g, ' ').trim()).catch(() => '');
+  ck('B2: Home says why: Free to spend counts ¥40,000 of ¥60,000 this pay period, because you started partway through it', sh.startsWith('Free to spend counts ¥40,000 of ¥60,000 this pay period, because you started partway through it. The full ¥60,000 counts from your next pay'), sh);
+  ck('B2: with the "?" of Plan\'s "Why only part?"', !!(await p.$('#a3Home [data-fig="freeshare"] .burrow-help[data-help=lineShare]')));
+  await T.shot(p, 'listfix_b2');
 
   const errs = [].concat(...errLists); ck('no page errors', errs.length === 0, errs.join(' | '));
   await b.close(); T.done('e3_listfix');
