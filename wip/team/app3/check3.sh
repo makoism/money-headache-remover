@@ -92,6 +92,7 @@ step "Settings and the backup file"; run tests/e3_backup.js "e3_backup: ALL PASS
 step "Ask on the page (recorded replies: the viewer's Claude and the relay)"; run tests/e3_ask.js "e3_ask: ALL PASS"
 step "Reminders on the page (check-ins and bills, the calendar file, Google and Outlook, nothing sent)"; run tests/e3_remind.js "e3_remind: ALL PASS"
 step "the cloud copy, two devices through the page (local fake vault)"; run tests/e3_cloud.js "e3_cloud: ALL PASS"
+step "a backup restored with the cloud copy on reaches the other device, and so does Put it back (local fake vault)"; run tests/e3_restore.js "e3_restore: ALL PASS"
 step "the service worker (precache, offline, 3 s timeout, a new build)"; run tests/e3_sw.js "e3_sw: ALL PASS"
 
 step "walk/ holds only its README and the kept walks v1 to v4 (the gate is tests/e3_walk.js)"

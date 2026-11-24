@@ -3,7 +3,10 @@
    cloud copy (src/cloud3_page.js adds its own card when it is in the page). Nothing here works out money.
    A try book shows the currency only: nothing about it is saved, backed up or sent.
    Restoring keeps the copy on this device whole first (E3.rec('copy'), the store's kept store), so Put it back can
-   bring it back. */
+   bring it back. A restore and Put it back save the copy BACKUP3.restamp makes (every record brought back with a new
+   `at` and this device's `by`, what it lacks marked gone), so with the cloud copy on it wins the join on the next send
+   and reaches the other devices; before either, the person is told so (FOR_MAKO "Open: a restore while the cloud copy
+   is on"). */
 const SET3 = { open: false, restore: null, was: null };
 const setMsg3 = (text, bad) => { const el = $('#a3SetMsg'); if (el) { el.textContent = text || ''; el.classList.toggle('a3-bad', !!bad); el.hidden = !text; } };
 /* a whole copy kept before a replace, in the store's own kept store [D2]; gives its id, or null when it could not be kept */
@@ -19,6 +22,15 @@ async function replaceBook3(next, why) {
   if (ok && !had && typeof BurrowPersist === 'object') BurrowPersist.afterSetup().catch(() => {});   // the first book on this device [D7]
   if (ok) renderHome3();
   return ok;
+}
+/* a restore or Put it back: restamped over this device's copy and the copy last synced with the cloud, then saved as one
+   replace, the copy here kept first */
+const OTHERS3 = 'This replaces what is on your other devices too after the next send.';
+async function cloudOn3() { return typeof cloudState3 === 'function' && E3.mode !== 'try' && !!(await cloudState3()).on; }
+async function restoreBook3(copy, why) {
+  const st = typeof cloudState3 === 'function' ? await cloudState3() : null;
+  const next = BACKUP3.restamp(copy, E3.book, { by: String(E3.newId()).split('-')[0], day: E3.today(), also: st && st.on && st.base ? [st.base] : [] });
+  return replaceBook3(next, why);
 }
 /* setup calls this once it has saved the first book [D7] */
 function afterSetup3() { return typeof BurrowPersist === 'object' ? BurrowPersist.afterSetup() : Promise.resolve(null); }
@@ -121,11 +133,11 @@ async function readBackup3(file, code) {
   }
   if (!r.ok) { ask.innerHTML = ''; setMsg3(r.words, true); return; }
   SET3.restore = r.copy;
-  const n = (r.copy.events || []).filter(e => e && !e.gone).length;
-  ask.innerHTML = `<p class="a3-warn" data-set="restoreask">${E3.book ? 'This replaces the money on this device with the backup. What is here now is kept, and Put it back brings it back.' : 'This puts the money from the backup on this device.'} The backup holds ${n} record${n === 1 ? '' : 's'}.</p>
+  const n = (r.copy.events || []).filter(e => e && !e.gone).length, others = (await cloudOn3()) && E3.book ? ' ' + OTHERS3 : '';
+  ask.innerHTML = `<p class="a3-warn" data-set="restoreask">${E3.book ? 'This replaces the money on this device with the backup. What is here now is kept, and Put it back brings it back.' : 'This puts the money from the backup on this device.'} The backup holds ${n} record${n === 1 ? '' : 's'}.${others}</p>
     <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3BkGo">Restore it</button><button type="button" class="a3-btn" id="a3BkNo">Cancel</button></div>`;
   $('#a3BkGo').addEventListener('click', async () => {
-    const ok = await replaceBook3(SET3.restore, 'Before a backup was restored');
+    const ok = await restoreBook3(SET3.restore, 'Before a backup was restored');
     SET3.restore = null; ask.innerHTML = '';
     setMsg3(ok ? 'Restored from the backup file.' : 'This could not be saved on this device. Nothing changed.', !ok);
     paintKept3();
@@ -135,15 +147,15 @@ async function readBackup3(file, code) {
 }
 async function paintKept3() {
   const el = $('#a3BkKept'); if (!el) return;
-  const list = (await E3.rec('copies')) || [];
+  const list = (await E3.rec('copies')) || [], others = (await cloudOn3()) ? ' ' + OTHERS3 : '';
   if (!SET3.open) return;
   const last = list[0];
-  el.innerHTML = last ? `<p class="a3-sub" data-set="kept">${esc3(last.why)}, ${esc3(day3(last.at.slice(0, 10), E3.today().slice(0, 4)))} ${esc3(last.at.slice(11, 16))}: the money that was here is kept.</p>
+  el.innerHTML = last ? `<p class="a3-sub" data-set="kept">${esc3(last.why)}, ${esc3(day3(last.at.slice(0, 10), E3.today().slice(0, 4)))} ${esc3(last.at.slice(11, 16))}: the money that was here is kept.${others}</p>
       <div class="a3-actions"><button type="button" class="a3-btn" id="a3BkBack">Put it back</button></div>` : '';
   if (last) $('#a3BkBack').addEventListener('click', async () => {
     const k = await E3.rec(last.id);
     if (!k || !k.copy) { setMsg3('That kept copy is gone. Nothing changed.', true); return; }
-    const ok = await replaceBook3(k.copy, 'Before a kept copy was put back');
+    const ok = await restoreBook3(k.copy, 'Before a kept copy was put back');
     setMsg3(ok ? 'Put back. The money that was here a moment ago is kept too.' : 'This could not be saved on this device. Nothing changed.', !ok);
     paintKept3();
   });

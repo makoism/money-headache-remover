@@ -10014,7 +10014,14 @@ async function saveSetup3() {
    Restoring: the file is read directly (never through a text box) by pack.readFile. A copy saved by a newer version is
    refused [D6]; a backup from the old app is refused too, since version one starts empty and does not move old data [BE2];
    anything else that is not this app's backup is refused with a plain sentence. The copy on this device is kept whole first
-   [D2], then replaced. Device-only state (SCHEMA_V3 2.2) is never in a backup. No sums here. */
+   [D2], then replaced. Device-only state (SCHEMA_V3 2.2) is never in a backup. No sums here.
+   A restore means "this is my money now" (FOR_MAKO "Open: a restore while the cloud copy is on"). restamp() makes the copy
+   that is saved: every record it brings back, and every setting with its own change time, gets one new `at` (later than
+   any `at` in either copy, store/clock.js) and this device's `by`, so it wins the cloud copy's three-way join on the next
+   sync [BD4: every edit moves `at`]; `told` stays. A record in the copy it replaces (or in the copy last synced) that the
+   restored copy lacks is marked gone, the same way, since in the join a side that lacks a record never changed it. The
+   kept versions of both stay (AQ3). Put it back goes through the same restamp. Plain values with no change time are left
+   as they are: the join takes them from the device that changed them. */
 (function (root) {
   'use strict';
   const ROUNDS = 150000, MIN_CODE = 6;
@@ -10065,7 +10072,43 @@ async function saveSetup3() {
     const copy = Object.assign({}, r.copy); delete copy.rev;   // the cloud copy's revision is never a backup's [BD2]
     return { ok: true, copy, kind: r.kind };
   }
-  const api = { WORDS, ROUNDS, MIN_CODE, codeOk, make, read, fileName };
+  /* restamp(restored, over, { now, by, day, also }): the copy to save for a restore over `over` (this device's copy, or
+     null), with `also` more copies whose records count as here (the copy last synced with the cloud). Changes neither. */
+  const isMap = x => !!x && typeof x === 'object' && !Array.isArray(x);
+  const isRecords = l => Array.isArray(l) && l.every(r => isMap(r) && typeof r.id === 'string');
+  const C = x => JSON.parse(JSON.stringify(x));
+  function restamp(restored, over, opts) {
+    opts = opts || {};
+    const Ck = root.BurrowClock, overs = [over].concat(opts.also || []).filter(isMap);
+    const clock = Ck.makeClock();
+    clock.see(restored); overs.forEach(o => clock.see(o));
+    const at = clock.stamp(opts.now || Ck.nowIso()), by = opts.by, gone = opts.day || true;
+    const mark = r => Object.assign(C(r), { at, by });
+    function walk(r, os, top) {
+      const out = {};
+      const keys = new Set(Object.keys(r).concat(...os.map(o => Object.keys(o).filter(k => isRecords(o[k])))));
+      for (const k of keys) {
+        const x = r[k];
+        if (top && ['keptVersions', 'rev', 'at', 'v'].includes(k)) { if (x !== undefined) out[k] = C(x); continue; }
+        if ((x === undefined || isRecords(x)) && os.some(o => isRecords(o[k]))) {
+          const list = (x || []).map(mark), have = new Set(list.map(e => e.id));
+          for (const o of os) for (const e of isRecords(o[k]) ? o[k] : []) if (!have.has(e.id)) { have.add(e.id); list.push(Object.assign(mark(e), { gone: e.gone || gone })); }
+          out[k] = list;
+        } else if (isRecords(x)) out[k] = x.map(mark);
+        else if (isMap(x) && typeof x.at === 'string') out[k] = mark(x);
+        else if (isMap(x)) out[k] = walk(x, os.map(o => o[k]).filter(isMap), false);
+        else out[k] = C(x);
+      }
+      return out;
+    }
+    const out = walk(restored, overs, true);
+    const kept = new Map();
+    for (const c of overs.slice(0, 1).concat([restored])) for (const k of c.keptVersions || []) if (k && !kept.has(k.id)) kept.set(k.id, C(k));
+    if (kept.size) out.keptVersions = [...kept.values()].sort((a, b) => (a.id < b.id ? -1 : 1));
+    else delete out.keptVersions;
+    return out;
+  }
+  const api = { WORDS, ROUNDS, MIN_CODE, codeOk, make, read, fileName, restamp };
   root.BACKUP3 = api;
   if (typeof module === 'object' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -10473,7 +10516,10 @@ async function answer3(q, pick) {
    cloud copy (src/cloud3_page.js adds its own card when it is in the page). Nothing here works out money.
    A try book shows the currency only: nothing about it is saved, backed up or sent.
    Restoring keeps the copy on this device whole first (E3.rec('copy'), the store's kept store), so Put it back can
-   bring it back. */
+   bring it back. A restore and Put it back save the copy BACKUP3.restamp makes (every record brought back with a new
+   `at` and this device's `by`, what it lacks marked gone), so with the cloud copy on it wins the join on the next send
+   and reaches the other devices; before either, the person is told so (FOR_MAKO "Open: a restore while the cloud copy
+   is on"). */
 const SET3 = { open: false, restore: null, was: null };
 const setMsg3 = (text, bad) => { const el = $('#a3SetMsg'); if (el) { el.textContent = text || ''; el.classList.toggle('a3-bad', !!bad); el.hidden = !text; } };
 /* a whole copy kept before a replace, in the store's own kept store [D2]; gives its id, or null when it could not be kept */
@@ -10489,6 +10535,15 @@ async function replaceBook3(next, why) {
   if (ok && !had && typeof BurrowPersist === 'object') BurrowPersist.afterSetup().catch(() => {});   // the first book on this device [D7]
   if (ok) renderHome3();
   return ok;
+}
+/* a restore or Put it back: restamped over this device's copy and the copy last synced with the cloud, then saved as one
+   replace, the copy here kept first */
+const OTHERS3 = 'This replaces what is on your other devices too after the next send.';
+async function cloudOn3() { return typeof cloudState3 === 'function' && E3.mode !== 'try' && !!(await cloudState3()).on; }
+async function restoreBook3(copy, why) {
+  const st = typeof cloudState3 === 'function' ? await cloudState3() : null;
+  const next = BACKUP3.restamp(copy, E3.book, { by: String(E3.newId()).split('-')[0], day: E3.today(), also: st && st.on && st.base ? [st.base] : [] });
+  return replaceBook3(next, why);
 }
 /* setup calls this once it has saved the first book [D7] */
 function afterSetup3() { return typeof BurrowPersist === 'object' ? BurrowPersist.afterSetup() : Promise.resolve(null); }
@@ -10591,11 +10646,11 @@ async function readBackup3(file, code) {
   }
   if (!r.ok) { ask.innerHTML = ''; setMsg3(r.words, true); return; }
   SET3.restore = r.copy;
-  const n = (r.copy.events || []).filter(e => e && !e.gone).length;
-  ask.innerHTML = `<p class="a3-warn" data-set="restoreask">${E3.book ? 'This replaces the money on this device with the backup. What is here now is kept, and Put it back brings it back.' : 'This puts the money from the backup on this device.'} The backup holds ${n} record${n === 1 ? '' : 's'}.</p>
+  const n = (r.copy.events || []).filter(e => e && !e.gone).length, others = (await cloudOn3()) && E3.book ? ' ' + OTHERS3 : '';
+  ask.innerHTML = `<p class="a3-warn" data-set="restoreask">${E3.book ? 'This replaces the money on this device with the backup. What is here now is kept, and Put it back brings it back.' : 'This puts the money from the backup on this device.'} The backup holds ${n} record${n === 1 ? '' : 's'}.${others}</p>
     <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3BkGo">Restore it</button><button type="button" class="a3-btn" id="a3BkNo">Cancel</button></div>`;
   $('#a3BkGo').addEventListener('click', async () => {
-    const ok = await replaceBook3(SET3.restore, 'Before a backup was restored');
+    const ok = await restoreBook3(SET3.restore, 'Before a backup was restored');
     SET3.restore = null; ask.innerHTML = '';
     setMsg3(ok ? 'Restored from the backup file.' : 'This could not be saved on this device. Nothing changed.', !ok);
     paintKept3();
@@ -10605,15 +10660,15 @@ async function readBackup3(file, code) {
 }
 async function paintKept3() {
   const el = $('#a3BkKept'); if (!el) return;
-  const list = (await E3.rec('copies')) || [];
+  const list = (await E3.rec('copies')) || [], others = (await cloudOn3()) ? ' ' + OTHERS3 : '';
   if (!SET3.open) return;
   const last = list[0];
-  el.innerHTML = last ? `<p class="a3-sub" data-set="kept">${esc3(last.why)}, ${esc3(day3(last.at.slice(0, 10), E3.today().slice(0, 4)))} ${esc3(last.at.slice(11, 16))}: the money that was here is kept.</p>
+  el.innerHTML = last ? `<p class="a3-sub" data-set="kept">${esc3(last.why)}, ${esc3(day3(last.at.slice(0, 10), E3.today().slice(0, 4)))} ${esc3(last.at.slice(11, 16))}: the money that was here is kept.${others}</p>
       <div class="a3-actions"><button type="button" class="a3-btn" id="a3BkBack">Put it back</button></div>` : '';
   if (last) $('#a3BkBack').addEventListener('click', async () => {
     const k = await E3.rec(last.id);
     if (!k || !k.copy) { setMsg3('That kept copy is gone. Nothing changed.', true); return; }
-    const ok = await replaceBook3(k.copy, 'Before a kept copy was put back');
+    const ok = await restoreBook3(k.copy, 'Before a kept copy was put back');
     setMsg3(ok ? 'Put back. The money that was here a moment ago is kept too.' : 'This could not be saved on this device. Nothing changed.', !ok);
     paintKept3();
   });

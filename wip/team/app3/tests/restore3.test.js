@@ -108,6 +108,15 @@ const shown = c => S.canon(Object.assign(Object.fromEntries(LISTS.map(k => [k, (
   A = await sync(A);
   ck('both devices end on the same copy', S.canon(A.copy) === S.canon(Bd.copy));
 
+  // B changes a record and adds one before A has seen them; A restores and sends: B's change is asked, both kept; B's new record stays
+  Object.assign(Bd.copy.schedules.find(s => s.id === s1), { name: 'Side work (B, unseen)', at: '2026-12-07T11:00:00.000+09:00', by: 'phn002' });
+  Bd.copy.events.push({ id: 'phn002-dddddddddd-1', k: 'spend', acct: BOOK.accounts[0].id, date: '2026-12-07', a: 120, told: '2026-12-07T11:00:00.000+09:00', at: '2026-12-07T11:00:00.000+09:00', by: 'phn002' });
+  Bd = await sync(Bd);
+  A = await sync({ copy: Bk.restamp(backup, A.copy, { now: '2026-12-07T11:05:00.000+09:00', by: 'dsk001', day: '2026-12-07', also: [A.dev.base] }), dev: A.dev });
+  const k1 = (A.copy.keptVersions || []).find(k => k.of === s1);
+  ck('a change B made that A had not seen is asked, with both versions kept', !!k1 && k1.ask && k1.versions.some(v => v.name === 'Side work (B, unseen)') && A.copy.schedules.find(s => s.id === s1).name === BOOK.schedules[1].name, JSON.stringify(k1));
+  ck('a record B added that A had not seen stays', !!A.copy.events.find(e => e.id === 'phn002-dddddddddd-1' && !e.gone));
+
   console.log(bad ? `restore3: ${bad} FAIL of ${n}` : `restore3: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })().catch(e => { console.log('FAIL crashed ' + e.stack); process.exit(1); });
