@@ -4,7 +4,8 @@
    app makes from the same code); a second device with nothing takes the copy and sends nothing back; edits to different
    records on two devices join; the same record changed on both is asked and both versions are kept in keptVersions; a
    write based on an old revision is refused by the vault and joined again (AW5); a newer shape in the cloud is refused
-   and nothing changes; a wrong code is said; a device with its own copy and no base asks which whole copy to keep (AW2). */
+   and nothing changes; a wrong code is said; a device with its own copy and no base asks which whole copy to keep (AW2); a copy deleted on another
+   device (410) is said as deleted and nothing is sent. */
 'use strict';
 const path = require('path');
 globalThis.window = globalThis;   // pack.js and guard.js are browser files
@@ -138,6 +139,25 @@ const canon = x => S.canon(x);
     const k = (r.copy.keptVersions || []).find(x => x.id === 'kept:copy');
     ck('a device with its own copy and no base asks which whole copy to keep [AW2]', r.ok && r.firstJoin && r.questions.some(q => q.q === 'which' && q.of === 'copy') && k && k.versions.length === 2, JSON.stringify(r.questions));
     ck('meanwhile the cloud\'s copy shows', r.copy.schedules[0].name === A.copy.schedules[0].name);
+  }
+
+  // ---- the cloud copy deleted on another device: said as such, never a server error, nothing sent [410] ----
+  {
+    const v3 = makeVault(), api3 = C.client({ fetch: v3.fetch, base: () => 'http://vault.test' });
+    let ra = await C.syncOnce({ api: api3, pack, S, keys, device: {}, copy: clone(BOOK) });
+    const putsBefore = v3.log.filter(x => x.method === 'PUT').length;
+    await api3.del(keys);
+    const mine = clone(ra.copy); mine.schedules[0].name = 'Changed after the delete';
+    r = await C.syncOnce({ api: api3, pack, S, keys, device: ra.device, copy: mine });
+    ck('a copy deleted on another device is said as deleted (410), not a server error', !r.ok && r.why === 'deleted', JSON.stringify(r).slice(0, 200));
+    ck('nothing is sent after the delete, and the copy here stays', v3.log.filter(x => x.method === 'PUT').length === putsBefore && !v3.rows.size && r.copy.schedules[0].name === 'Changed after the delete');
+    // deleted between the read and the write: the write's 410 is said the same way
+    const v4 = makeVault(), api4 = C.client({ fetch: v4.fetch, base: () => 'http://vault.test' });
+    ra = await C.syncOnce({ api: api4, pack, S, keys, device: {}, copy: clone(BOOK) });
+    const mine2 = clone(ra.copy); mine2.schedules[0].name = 'Changed here';
+    const apiGone = { get: k => api4.get(k), del: k => api4.del(k), put: async (k, b) => { await api4.del(k); return api4.put(k, b); } };
+    r = await C.syncOnce({ api: apiGone, pack, S, keys, device: ra.device, copy: mine2 });
+    ck('a write refused because the copy was just deleted is said as deleted too', !r.ok && r.why === 'deleted' && !v4.rows.size, JSON.stringify(r).slice(0, 200));
   }
 
   console.log(bad ? `cloud3: ${bad} FAIL of ${n}` : `cloud3: ALL PASS (${n})`);

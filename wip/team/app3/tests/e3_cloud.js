@@ -4,7 +4,8 @@
    A turns it on: a code is shown once, and after "I saved the code" the copy is sent (only ciphertext). B, with nothing,
    types the code and gets the same book. A checks the bank; leaving the app sends it; B takes it on opening. The same
    schedule renamed on both: B is asked which to keep, picks A's, and A gets it; the other version stays kept. A turns
-   it off and deletes the cloud copy, after being told what that means. A vault that refuses says so and keeps the money
+   it off and deletes the cloud copy, after being told what that means; B, still on, says the copy was deleted on another
+   device and stops sending. A vault that refuses says so and keeps the money
    here. Every request goes to the page's own address. */
 'use strict';
 const T = require('./lib3.js'), { ck } = T;
@@ -107,6 +108,18 @@ const until = async (f, ms) => { for (let i = 0; i < (ms || 8000) / 100; i++) { 
     await A.p.click('#a3CloudDel');
     ck('the cloud copy is deleted and A is off', await until(async () => vault.rows.size === 0 && /^Off\./.test(await state(A.p))));
     ck('A\'s money stays', (await stored(A.p)).schedules.find(x => x.id === sid).name === 'Main job (desk)');
+
+
+    /* ---- B still has it on: the deleted copy is said in its own words, B stops sending, its money stays [410] ---- */
+    const putsB = vault.log.filter(x => x.method === 'PUT').length;
+    await B.p.reload(); await T.w(300);
+    await B.p.click('#a3SetGo');
+    ck('B says the cloud copy was deleted on another device, not a server error', await until(async () => /deleted on another device\. This device keeps its money\. Turn the cloud copy on again with a new code to share it\./.test(await state(B.p))), await state(B.p));
+    ck('B offers to turn it on again', !!(await B.p.$('#a3CloudOn')) && !(await B.p.$('#a3CloudNow')));
+    await rename(B.p, sid, 'Main job (after the delete)', '2026-12-10T11:00:00.000+09:00', 'phn002');
+    await B.p.reload(); await T.w(1500);
+    ck('B sends nothing after the delete, and nothing comes back on the server', vault.log.filter(x => x.method === 'PUT').length === putsB && vault.rows.size === 0);
+    ck('B keeps its money', (await stored(B.p)).schedules.find(x => x.id === sid).name === 'Main job (after the delete)');
 
     const outside = A.requests.concat(B.requests).filter(r => !own(r));
     ck('every request went to the page\'s own address', outside.length === 0, outside.join(' '));
