@@ -25,7 +25,9 @@ function plNoPay3(book, day) {
   const S = BurrowEngine.schedules, n = BurrowEngine.dates.dayNum(day);
   const lines = ((book.plan || {}).budgets || []).filter(l => plLive3(l) && !(l.ends && l.ends <= day)).map(l => ({ l, a: S.stepOn(l, n) })).filter(x => x.a)
     .map(({ l, a }) => plRow3(`data-line="${esc3(l.id)}"`, `${esc3(l.name)}<br><span class="when">Comes off by the day</span>`, `<span data-fig="line-amount">${plFig3('plan.budgets.*.steps', a)}</span> <span class="when">a month</span>`));
-  const fr = ((book.plan || {}).shares || []).filter(s => plLive3(s) && s.free != null && (!s.from || s.from <= day)).pop();
+  /* [BQ2] the entry in force: by `from`, ties broken by `at` */
+  const fr = ((book.plan || {}).shares || []).filter(s => plLive3(s) && s.free != null && (!s.from || s.from <= day))
+    .sort((p, q) => ((p.from || '') < (q.from || '') ? -1 : (p.from || '') > (q.from || '') ? 1 : (p.at || '') < (q.at || '') ? -1 : (p.at || '') > (q.at || '') ? 1 : 0)).pop();
   const free = fr && fr.free ? plRow3('data-line="free"', `${esc3(label3('freeToSpendLeft'))}<br><span class="when">Comes off by the day</span>`, `<span data-fig="free-amount">${plFig3('plan.shares.*.free', fr.free)}</span> <span class="when">a month</span>`) : '';
   return `<section class="a3-card" data-card="plan-period"><h2>Your plan, with no fixed pay</h2>
     <p class="a3-sub">With no pay day there are no pay periods. Each line is an amount a month, taken off by the day, and safe to spend leaves room for it</p>

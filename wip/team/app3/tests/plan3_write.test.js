@@ -323,6 +323,16 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     eq(view(h.book).period, null, 'by the day until the first pay is ticked');
     DAY = '2026-11-25';
   });
+  /* [BQ2] Free to spend set on 25 Nov (its entry from 25 Nov); the pay changed the same day to two days a month: the
+     period holding the change started 10 Nov, but the new entry is written from 25 Nov, the newest entry's day, so from
+     the next period it is the one in force (an entry from 10 Nov would lose to the one from 25 Nov for good). */
+  await t('[slice 6b, BQ2] a rhythm change writes its entry from the later of the period start and the newest entry', async () => {
+    const h = setup(), MAIN = 'k7m2qa-f3n8p1x6wd-4';
+    await h.go('setFree', { amount: 60000 });
+    const r = await h.go('changeBill', MAIN, { every: 'days', day: 10, day2: 'last', from: DAY, lines: { free: 30000 } }); ok(r.ok, JSON.stringify(r));
+    eq(h.book.plan.shares.filter(x => !x.gone).map(x => [x.from, x.free]), [[DAY, 60000], [DAY, 30000]]);
+    eq(W.linesEachMonth({ book: h.book, today: '2026-12-01' }).map(l => [l.key, l.amount]), [['free', 30000]], 'the newest entry of that day is in force (by from, then at)');
+  });
   await t('[slice 6b] every 3 weeks: the day of one stepped back, the lines asked about', async () => {
     const h = setup(), MAIN = 'k7m2qa-f3n8p1x6wd-4';
     await h.go('addLine', { name: 'Food', amount: 40000 });

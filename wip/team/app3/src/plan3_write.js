@@ -172,6 +172,10 @@
     /* the new amounts start with the pay period that holds the change day: from the last pay landing on or before it;
        [slice 6b] to no fixed pay, from the change day; from no fixed pay, from its first pay */
     const lineFrom = toNone || fromNone ? from : perPay.length ? PE.lastLanding(w.book, id, from) || from : from;
+    /* [BQ2] never before the newest entry it has: the later of that day and the newest entry's `from` (an entry from an
+       earlier day would lose to it, the one in force being chosen by `from`) */
+    const newest = list => list.filter(e => live(e) && e.from != null).map(e => e.from).sort().pop() || null;
+    const fromFor = l => { const n = l.key === 'free' ? newest(A3.listOf(w.book, 'shares').filter(e => e.free != null)) : newest((l.rec && l.rec.steps) || []); return n && n > lineFrom ? n : lineFrom; };
     for (const l of perPay) {
       const a = x.lines[l.key];
       /* [slice 6b] a line a month becomes a line each pay (with no fixed pay its past is by the day, which does not read `per`) */
@@ -180,8 +184,8 @@
       const freeKind = l.key === 'free' && (toNone || fromNone);
       if (a === l.amount && !perFlip && !freeKind) continue;
       amountOk(a, `the amount ${toNone ? 'a month' : 'each pay'} for ${l.name}`);
-      if (l.key === 'free') w.add('shares', { from: lineFrom, cur: home(w), per: { free: toNone ? 'month' : 'pay' }, free: a, goals: {} });
-      else { const e = w.edit('budgets', l.key, Object.assign({ steps: (l.rec.steps || []).concat([{ from: lineFrom, amount: a }]) }, perFlip ? { per: 'pay' } : {})); stampNew(e, 'steps'); }
+      if (l.key === 'free') w.add('shares', { from: fromFor(l), cur: home(w), per: { free: toNone ? 'month' : 'pay' }, free: a, goals: {} });
+      else { const e = w.edit('budgets', l.key, Object.assign({ steps: (l.rec.steps || []).concat([{ from: fromFor(l), amount: a }]) }, perFlip ? { per: 'pay' } : {})); stampNew(e, 'steps'); }
     }
     return id;
   }
@@ -199,7 +203,9 @@
     const n = SC.dayNum(w.today);
     const out = A3.listOf(w.book, 'budgets').filter(l => live(l) && l.per !== 'week' && !(l.ends && l.ends <= w.today))
       .map(l => ({ key: l.id, name: l.name, amount: SC.stepOn(l, n), rec: l })).filter(l => l.amount);
-    const fr = A3.listOf(w.book, 'shares').filter(x => live(x) && x.free != null && (!x.from || x.from <= w.today)).pop();
+    /* [BQ2] the entry in force: by `from`, ties broken by `at` */
+    const fr = A3.listOf(w.book, 'shares').filter(x => live(x) && x.free != null && (!x.from || x.from <= w.today))
+      .sort((p, q) => ((p.from || '') < (q.from || '') ? -1 : (p.from || '') > (q.from || '') ? 1 : (p.at || '') < (q.at || '') ? -1 : (p.at || '') > (q.at || '') ? 1 : 0)).pop();
     if (fr && fr.free) out.push({ key: 'free', name: 'Free to spend', amount: fr.free });
     return out;
   }

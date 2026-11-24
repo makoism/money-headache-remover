@@ -130,14 +130,15 @@
   // The usual amount on a due day: the `steps` entry in force on it [H2].
   function stepOn(sch, due) {
     let a = null;
-    liveEntries(sch.steps).map((x, i) => ({ f: entryFrom(x, i), a: x.amount })).sort((p, q) => p.f - q.f).forEach(x => { if (x.f <= due) a = x.a; });
+    // [BQ2] by `from`, ties broken by `at`
+    liveEntries(sch.steps).map((x, i) => ({ f: entryFrom(x, i), at: x.at || '', a: x.amount })).sort((p, q) => p.f - q.f || (p.at < q.at ? -1 : p.at > q.at ? 1 : 0)).forEach(x => { if (x.f <= due) a = x.a; });
     return a;
   }
 
   // Every occurrence of schedule `sch` landing or due from day `from` to day `to`, sorted by landing day:
   // { id, sid, due, land, amount, key }. `cal` is the calendar of the schedule's account.
   function occurrences(sch, cal, from, to, opts) {
-    const rules = liveEntries(sch.rules).map((x, i) => ({ f: entryFrom(x, i), rule: x.rule || {} })).sort((p, q) => p.f - q.f);
+    const rules = liveEntries(sch.rules).map((x, i) => ({ f: entryFrom(x, i), at: x.at || '', rule: x.rule || {} })).sort((p, q) => p.f - q.f || (p.at < q.at ? -1 : p.at > q.at ? 1 : 0));
     const first = sch.from ? dayNum(sch.from) : -Infinity;
     const ends = sch.ends ? dayNum(sch.ends) : Infinity;
     const count = sch.count || null;
@@ -167,7 +168,7 @@
   // in that year (by the unshifted due date) from its `from`; the first rule counts the whole year by its rhythm.
   // Returns { byDue: { <due day>: { rule, pay, pays, months } } }.
   function yearPays(sch, cal, y) {
-    const rules = liveEntries(sch.rules).map((x, i) => ({ f: entryFrom(x, i), rule: x.rule || {} })).sort((p, q) => p.f - q.f);
+    const rules = liveEntries(sch.rules).map((x, i) => ({ f: entryFrom(x, i), at: x.at || '', rule: x.rule || {} })).sort((p, q) => p.f - q.f || (p.at < q.at ? -1 : p.at > q.at ? 1 : 0));
     const y0 = dayIn(y, 1, 1), y1 = dayIn(y, 12, 31);
     const ruleOn = d => { let k = 0; rules.forEach((p, i) => { if (p.f <= d) k = i; }); return k; };
     const months = rules.map(() => 0);
