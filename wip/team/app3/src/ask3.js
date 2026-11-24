@@ -65,15 +65,10 @@ function ask3Anon() {
   return (ASK3.anon = s);
 }
 async function ask3Relay(base, rq) {
-  const body = { v: 1, anon: ask3Anon(), invite: '', tier: 'default', max_tokens: 2000, effort: 'low',
+  const body = { v: 1, anon: ask3Anon(), tier: 'default', max_tokens: 2000, effort: 'low',
     tools: [{ name: rq.name, description: rq.description, input_schema: rq.schema }], tool_choice: { type: 'auto' },
     messages: [{ role: 'user', content: [{ type: 'text', text: rq.prompt + `\n\nAnswer by calling the ${rq.name} tool once.` }] }] };
-  let r;
-  try { r = await fetch(base + '/api/ai', { method: 'POST', headers: { 'content-type': 'application/json', 'x-app': 'mhr2000' }, body: JSON.stringify(body) }); }
-  catch (e) { throw new Error('no connection. Check the internet and try again'); }
-  if (r.status === 429) throw new Error('too many questions right now, try again in a minute');
-  if (!r.ok) throw new Error('the AI did not answer (' + r.status + ')');
-  const res = await r.json();
+  const res = await STMT3_AI.post(base, body, 'too many questions right now, try again in a minute');   // the one place a relay call is sent, with the code word
   const use = (res.content || []).find(b => b.type === 'tool_use' && b.name === rq.name);
   if (use && use.input && typeof use.input === 'object') return use.input;
   const text = (res.content || []).filter(b => b.type === 'text').map(b => b.text).join('').trim();

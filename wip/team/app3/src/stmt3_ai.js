@@ -5,30 +5,63 @@
      2. the viewer's own Claude (window.claude.use('sample')), inside the Claude viewer.
    Nothing is sent until the person taps Read, and only the files they chose. No key is kept on the device: the relay's
    anonymous id is drawn once per page open. PDFs go only through the relay (the viewer's Claude takes pictures alone).
-   A file that is not a picture or a PDF is read here as text (UTF-8, else Shift_JIS, else EUC-JP) and sent as text. */
+   A file that is not a picture or a PDF is read here as text (UTF-8, else Shift_JIS, else EUC-JP) and sent as text.
+   The code word (the relay's INVITE_CODES): when /api/health says invite, the word the person types is kept on this
+   device only (localStorage burrow3.invite, a small device thing [D1]), never in the book, a backup or the cloud copy,
+   and sent nowhere but the relay's own `invite` field. Every relay call, Ask's too, goes through post() here. */
 const STMT3_AI = (() => {
   const IMG = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
   const PDF_MAX = 6000000, TEXT_MAX = 240000;
   const isPdf = f => f.type === 'application/pdf' || /\.pdf$/i.test(f.name || '');
   const isImg = f => IMG.includes(f.type);
   const anon = (() => { const abc = 'abcdefghijklmnopqrstuvwxyz0123456789'; let s = ''; for (const b of crypto.getRandomValues(new Uint8Array(16))) s += abc[b % 36]; return s; })();
-  let route = null;
+  let route = null, healthGot = null;
+  /* ---- the code word, kept on this device only ---- */
+  const WORD_KEY = 'burrow3.invite', WORD_BAD = 'The code word didn\'t match. Type it again';
+  let wordMem = null;   // when localStorage is blocked, the word lasts for this page only
+  function word() { if (wordMem !== null) return wordMem; try { return localStorage.getItem(WORD_KEY) || ''; } catch (e) { return ''; } }
+  function setWord(w) {
+    const v = String(w || '').trim();
+    try { if (v) localStorage.setItem(WORD_KEY, v); else localStorage.removeItem(WORD_KEY); wordMem = null; } catch (e) { wordMem = v; }
+    return v;
+  }
   function relayBase() {
     const named = typeof window.STMT3_RELAY === 'string' ? window.STMT3_RELAY : '';
     if (named) return named.replace(/\/$/, '');
     return /^https?:$/.test(location.protocol) ? location.origin : '';
   }
+  /* what the site's relay offers ({ ai, invite }), or null when there is none; asked once per page open */
+  async function health() {
+    if (healthGot) return healthGot;
+    const base = relayBase(); if (!base) return null;
+    try {
+      const r = await fetch(base + '/api/health', { cache: 'no-store' });
+      const h = r.ok ? await r.json() : null;
+      if (h && typeof h === 'object') healthGot = h;
+      return h;
+    } catch (e) { return null; }   // no relay here
+  }
+  /* true when the relay asks for a code word and none is kept on this device (only the relay is asked, never the viewer's Claude) */
+  async function needWord() { const h = await health(); return !!(h && h.ai && h.invite) && !word(); }
+  /* the one place a relay call is sent: the kept word in `invite`; plain words for each way it can fail.
+     busy: the words for too many calls. A 401 invite_required forgets the word and throws an Error with .word = true. */
+  async function post(base, body, busy) {
+    let r;
+    try { r = await fetch(base + '/api/ai', { method: 'POST', headers: { 'content-type': 'application/json', 'x-app': 'mhr2000' }, body: JSON.stringify(Object.assign({}, body, { invite: word() })) }); }
+    catch (e) { throw new Error('no connection. Check the internet and try again'); }
+    if (r.status === 401) {
+      const j = await r.json().catch(() => null);
+      if (j && j.error && j.error.code === 'invite_required') { setWord(''); const e = new Error(WORD_BAD); e.word = true; throw e; }
+    }
+    if (r.status === 429) throw new Error(busy || 'too many requests right now, try again in a minute');
+    if (!r.ok) throw new Error('the AI did not answer (' + r.status + ')');
+    return r.json();
+  }
   /* which way the AI can be reached from this copy: { how: 'relay' | 'claude', fn } or { how: null, why } */
   async function connect() {
     if (route && route.how) return route;
-    const base = relayBase();
-    if (base) {
-      try {
-        const r = await fetch(base + '/api/health', { cache: 'no-store' });
-        const h = r.ok ? await r.json() : null;
-        if (h && h.ai) return (route = { how: 'relay', base });
-      } catch (e) { /* no relay here */ }
-    }
+    const base = relayBase(), h = await health();
+    if (h && h.ai) return (route = { how: 'relay', base, invite: !!h.invite });
     try {
       const c = window.claude;
       if (c && typeof c.use === 'function') { const fn = await c.use('sample'); if (typeof fn === 'function') return (route = { how: 'claude', fn }); }
@@ -42,15 +75,10 @@ const STMT3_AI = (() => {
   async function viaRelay(base, prompt, file, text) {
     const content = [{ type: 'text', text: `${prompt}${text !== null ? `\n\nTHE FILE (${file.name})\n${text}` : ''}` + `\n\nAnswer by calling the ${NAME} tool once, with every field filled in. No words outside the tool call.` }];
     if (text === null) content.push({ type: isPdf(file) ? 'document' : 'image', source: { type: 'base64', media_type: isPdf(file) ? 'application/pdf' : file.type, data: await dataOf(file) } });
-    const body = { v: 1, anon, invite: '', tier: 'default', max_tokens: 24000, effort: 'low',
+    const body = { v: 1, anon, tier: 'default', max_tokens: 24000, effort: 'low',
       tools: [{ name: NAME, description: 'The transaction rows of one statement file.', input_schema: STMT3R.ROWS_SCHEMA }], tool_choice: { type: 'auto' },
       messages: [{ role: 'user', content }] };
-    let r;
-    try { r = await fetch(base + '/api/ai', { method: 'POST', headers: { 'content-type': 'application/json', 'x-app': 'mhr2000' }, body: JSON.stringify(body) }); }
-    catch (e) { throw new Error('no connection. Check the internet and try again'); }
-    if (r.status === 429) throw new Error('too many requests right now, try again in a minute');
-    if (!r.ok) throw new Error('the AI did not answer (' + r.status + ')');
-    const res = await r.json();
+    const res = await post(base, body);
     const use = (res.content || []).find(b => b.type === 'tool_use' && b.name === NAME);
     if (res.stop_reason === 'max_tokens') throw new Error('too long for one read. Split it or use fewer pages');
     if (use && use.input && typeof use.input === 'object') return use.input;
@@ -76,5 +104,5 @@ const STMT3_AI = (() => {
     const raw = r.how === 'relay' ? await viaRelay(r.base, prompt, file, text) : await viaClaude(r.fn, prompt, file, text);
     return STMT3R.cleanRead(raw, file.name, today);
   }
-  return { connect, readFile, reset: () => { route = null; } };
+  return { connect, readFile, post, needWord, word, setWord, WORD_BAD, reset: () => { route = null; healthGot = null; } };
 })();
