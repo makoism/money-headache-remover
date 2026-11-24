@@ -1136,8 +1136,16 @@ function lookahead(sc, asOf, opts = {}) {
       const sa = splitAt(lineId), moved = sa && sa.id !== acctId;
       const atOpening = moved ? m(lineId === 'free' ? sa.opening.split.free : sa.opening.split.lines[lineId], sa.id)
         : lineId === 'free' ? openingShares(acctId).free : openingShares(acctId).lines[lineId];
-      const fromOpening = lastPay === null || lastPay <= openDay(moved ? sa.id : acctId);
-      const start = fromOpening ? (atOpening != null ? atOpening : amount) : amount;
+      // [BQ3] With no fixed pay (no period) a line and Free to spend start again each calendar month: this month's
+      // amount less what was spent this month; in the month of setup it counts from the setup day, its share by days
+      // left (I4): amount x days from that day to the month's end, both counted, over the month's days, rounded down.
+      // A weekly line is not shared.
+      const byDay = !periodStream, [ty, tm] = ymOf(today), mStart = dayIn(ty, tm, 1), mEnd = dayIn(ty, tm, 'last');
+      const lp = byDay ? Math.max(mStart, openDay(moved ? sa.id : acctId)) : lastPay;
+      const per = lineId === 'free' ? (sc.plan.free || {}).per : ((sc.plan.lines || []).find(x => x.id === lineId) || {}).per;
+      const fromOpening = !byDay && (lastPay === null || lastPay <= openDay(moved ? sa.id : acctId));
+      const start = byDay ? (amount == null || per === 'week' || lp <= mStart ? amount : Math.floor(amount * (mEnd - lp + 1) / (mEnd - mStart + 1)))
+        : fromOpening ? (atOpening != null ? atOpening : amount) : amount;
       // [O4] Spent so far counts the line's spends on every account (food bought on the card too), each outside
       // its own account's opening. [O watch: refund] A refund the person gave back to the line (it names the
       // line) gives back to it; a refund that names no line does not.
@@ -1145,7 +1153,7 @@ function lookahead(sc, asOf, opts = {}) {
       // apart with a warning until stage 2.
       // [AU] In a life with a plan, a spend with no line (and no place, no schedule it settles) counts against Free to spend.
       const noLine = e => lineId === 'free' && e.kind === 'spend' && !e.line && !fromPlace(e) && ![].concat(e.settles || []).length;
-      const inLine = e => (e.line === lineId || noLine(e)) && e.account && !inside(e, openingOf(e.account), e.account) && (fromOpening || e.day >= lastPay);
+      const inLine = e => (e.line === lineId || noLine(e)) && e.account && !inside(e, openingOf(e.account), e.account) && (fromOpening || e.day >= lp);
       const counts = e => inLine(e) && cur(e.account) === cur(acctId);
       for (const e of live().filter(x => x.kind === 'spend' && !isFeeRecord(x) && inLine(x) && cur(x.account) !== cur(acctId)))
         res.warnings.push({ account: e.account, code: 'spend_other_currency', line: lineId, event: e.id,
@@ -1159,11 +1167,11 @@ function lookahead(sc, asOf, opts = {}) {
       for (const bid in banks) {
         if (acct[bid].kind === 'investment' || cur(bid) !== cur(acctId)) continue;
         for (const f of banks[bid].fillers) if ((f.place || 'free') === lineId && !heldGain(bid, f))   // [X4] a held gain places nothing
-          for (const pt of f.parts) if (fromOpening || dayNum(pt.from) >= lastPay) filled += pt.amount;
+          for (const pt of f.parts) if (fromOpening || dayNum(pt.from) >= lp) filled += pt.amount;
       }
       if (lineId === 'free') for (const cid in cards) {
         if (cur(cid) !== cur(acctId)) continue;
-        for (const f of cards[cid].fillers) if (fromOpening || dayNum(f.day) >= lastPay) filled += f.amount;
+        for (const f of cards[cid].fillers) if (fromOpening || dayNum(f.day) >= lp) filled += f.amount;
       }
       const spent = live().filter(e => e.kind === 'spend' && !isFeeRecord(e) && counts(e)).reduce((t, e) => t + e.a, 0)
         - live().filter(e => e.kind === 'refund' && counts(e)).reduce((t, e) => t + e.a, 0) + filled;
@@ -1171,7 +1179,7 @@ function lookahead(sc, asOf, opts = {}) {
       // [Q2] A two-sided record in one currency where less arrived than left: the difference is a fee, a spend
       // from the sending account on the line `fees`, in Free to spend unless its fee record names another place
       // (a goal), which then pays it [S5].
-      const inPeriod = (e, id) => !inside(e, openingOf(id), id) && (fromOpening || e.day >= lastPay);
+      const inPeriod = (e, id) => !inside(e, openingOf(id), id) && (fromOpening || e.day >= lp);
       const elsewhere = new Set(live().filter(f => isFee(f) && f.goal).map(f => f.of));
       const fees = live().filter(e => TWO_SIDED[e.kind] && acct[e.from] && acct[reachOf(e)] && cur(e.from) === cur(reachOf(e)) && cur(e.from) === cur(acctId) && e.a > e.a2 && inPeriod(e, e.from) && !elsewhere.has(e.id))
         .reduce((t, e) => t + e.a - e.a2, 0);

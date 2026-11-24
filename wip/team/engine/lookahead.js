@@ -332,10 +332,16 @@
 
     // ----- periods [F8, F12, T1, T6] -----
     // [slice 6b] the pay that starts periods, by the rule in force today: a pay changed to no fixed pay starts none from
-    // the change (by day from then, B4). A pay changed from no fixed pay to a day starts them once its first pay has
-    // started one (ticked, or a period started without it); until then the plan still runs by day.
-    const ruleToday = s => { let r = null; (s.rules || []).filter(x => x && !x.gone).forEach((x, i) => { if (i === 0 || x.from == null || dayNum(x.from) <= today) r = x.rule; }); return r; };
-    const wasNone = s => (((s.rules || []).find(x => x && !x.gone) || {}).rule || {}).every === 'none';
+    // the change (by day from then, B4). [BQ1] A change to no fixed pay ends the period running the day before it, and a
+    // period started before it never carries past it: after a change back, the plan runs by day until the first new pay
+    // starts a period (ticked, or a period started without it). [BQ4] Rules are read by `from` (ties by `at`), never by
+    // the order they were saved.
+    const rulesByFrom = s => (s.rules || []).filter(x => x && !x.gone).map((x, i) => ({ f: i === 0 || x.from == null ? -Infinity : dayNum(x.from), at: x.at || '', rule: x.rule || {} }))
+      .sort((p, q) => p.f - q.f || (p.at < q.at ? -1 : p.at > q.at ? 1 : 0));
+    const ruleToday = s => { let r = null; for (const x of rulesByFrom(s)) if (x.f <= today) r = x.rule; return r; };
+    const wasNone = s => ((rulesByFrom(s)[0] || {}).rule || {}).every === 'none';
+    // the days (up to today) on which a pay changed from a fixed day to no fixed pay
+    const noneDays = s => { const l = rulesByFrom(s), out = []; l.forEach((x, k) => { if (k && x.f <= today && x.rule.every === 'none' && l[k - 1].rule.every !== 'none') out.push(x.f); }); return out; };
     let periodStream = schedules.find(s => s.kind === 'income' && s.startsPeriod && ruleToday(s) && ruleToday(s).every !== 'none');
     const windowEnd = o => calOf(o.acct).addWorking(o.land, postingDays(o.acct));
     const stillExpected = o => isNotYet(o) && windowEnd(o) < openDay(o.acct);             // [Z2]
@@ -351,24 +357,26 @@
       if (e.k === 'periodEnd') { const oc = I.periodOcc(e.id); if (oc) peEnd[oc] = Math.min(peEnd[oc] == null ? Infinity : peEnd[oc], e.day); }
     }
     const monthCache = {};   // each year's pays for the units rules, for this look ahead only
-    let pays, nextPays, periodStartDays, occByStart;   // [T1] each period is named by the occurrence of the pay that starts it
-    const periodsOf = () => {
+    let pays, nextPays, periodStartDays, occByStart, allStartDays = [], allOccByStart = {};   // [T1] each period is named by the occurrence of the pay that starts it
+    const periodsOf = cut => {
       pays = periodStream ? items.filter(o => o.sid === periodStream.id) : [];
       nextPays = pays.filter(o => !o.settled && (o.land >= today || lateExpected(o)));
-      periodStartDays = []; occByStart = {};
+      periodStartDays = []; occByStart = {}; allStartDays = []; allOccByStart = {};
       pays.slice().sort((x, y) => x.due - y.due).forEach((o, i, list) => {
         const prev = list[i - 1], s = settledBy[o.id];
         const d = psOf[o.id] != null ? psOf[o.id] : prev && peEnd[prev.id] != null ? peEnd[prev.id] + 1 : s && startsPeriod(s) ? s.day : null;
-        if (d !== null && d <= knownTo) { periodStartDays.push(d); occByStart[d] = o.id; }
+        if (d === null || d > knownTo) return;
+        allStartDays.push(d); allOccByStart[d] = o.id;
+        if (cut == null || d >= cut) { periodStartDays.push(d); occByStart[d] = o.id; }   // [BQ1]
       });
     };
-    periodsOf();
-    if (periodStream && wasNone(periodStream) && !periodStartDays.length) { periodStream = null; periodsOf(); }
-    // [slice 6b] a pay that started periods and has no fixed pay from a day: from that day the plan runs by day, and the
-    // lines and Free to spend count what was spent from that day, as with no fixed pay from setup (B4)
-    const noneSince = periodStream ? null : schedules.filter(s => s.kind === 'income' && s.startsPeriod && !wasNone(s) && (ruleToday(s) || {}).every === 'none')
-      .map(s => { let f = null; (s.rules || []).filter(x => x && !x.gone && x.from != null && dayNum(x.from) <= today).forEach(x => { f = x.rule.every === 'none' ? (f === null ? dayNum(x.from) : f) : null; }); return f; })
-      .filter(d => d !== null).sort((x, y) => y - x)[0];
+    const streamCuts = periodStream ? noneDays(periodStream) : [];
+    const cut = streamCuts.length ? streamCuts[streamCuts.length - 1] : null;
+    periodsOf(cut);
+    if (periodStream && (wasNone(periodStream) || cut !== null) && !periodStartDays.length) { periodStream = null; periodsOf(null); }
+    // [slice 6b, BQ1] with no period: from the last change to no fixed pay (if any) the plan runs by day, and the lines and
+    // Free to spend count from that day, as with no fixed pay from setup (B4)
+    const noneSince = periodStream ? null : schedules.filter(s => s.kind === 'income' && s.startsPeriod).map(s => noneDays(s).pop()).filter(d => d != null).sort((x, y) => y - x)[0];
 
     // ----- bank today per account [A1, B7, H1, I1, J3, O1, AN4] -----
     const delta = (e, id) => {
@@ -753,15 +761,20 @@
     // [BJ2] an amount set for the first time carries the day it was set: the period it was set in has it, a period
     // that ended before that day has none (null); nothing before it changes
     const stepAmount = (steps, start) => {
-      const list = (steps || []).filter(x => !x.gone).map(x => ({ f: x.from == null ? -Infinity : dayNum(x.from), a: x.amount })).sort((p, q) => p.f - q.f);
+      // [BQ2] the entry in force by `from`, ties broken by `at`
+      const list = (steps || []).filter(x => !x.gone).map(x => ({ f: x.from == null ? -Infinity : dayNum(x.from), at: x.at || '', a: x.amount })).sort((p, q) => p.f - q.f || (p.at < q.at ? -1 : p.at > q.at ? 1 : 0));
       if (!list.length) return null;
       const nextStart = start == null ? Infinity : Math.min(Infinity, ...pays.map(startDayOf).filter(d => d > start));
       let a = list[0].f === -Infinity || start == null || list[0].f < nextStart ? list[0].a : null;
       for (const x of list) if (x.f === -Infinity || (start != null && x.f <= start)) a = x.a;
       return a;
     };
-    const freeSrc = shares.length ? { id: 'free', acct: shares[0].acct, per: (shares[0].per || {}).free || 'month',
-      steps: shares.map(x => ({ from: x.from == null ? null : x.from, amount: x.free })) } : null;
+    // [slice 6b, BQ4] Free to spend's `per` is the one of the entry in force on a day (by `from`, ties by `at`): a change
+    // of how often pay lands writes a new entry with its own `per` (a month with no fixed pay, each pay with a pay day)
+    const sharesByFrom = shares.map(x => ({ f: x.from == null ? -Infinity : dayNum(x.from), at: x.at || '', per: (x.per || {}).free || 'month' })).sort((p, q) => p.f - q.f || (p.at < q.at ? -1 : p.at > q.at ? 1 : 0));
+    const freePerOn = d => { let r = sharesByFrom.length ? sharesByFrom[0].per : 'month'; for (const x of sharesByFrom) if (x.f <= d) r = x.per; return r; };
+    const freeSrc = shares.length ? { id: 'free', acct: shares[0].acct, per: freePerOn(today),
+      steps: shares.map(x => ({ from: x.from == null ? null : x.from, amount: x.free, at: x.at })) } : null;
     const lineSrcs = budgets.map(l => ({ id: l.id, name: l.name, acct: l.acct, per: l.per, steps: l.steps, once: [l.once], field: 'amount', from: l.from || null }));
     if (freeSrc) Object.assign(freeSrc, { once: shares.map(x => x.once), field: 'free' });
     // [B8, T1, AE1] A period's amount: a live `once` key named by the occurrence of the pay that starts it, else the step in
@@ -902,7 +915,16 @@
       if (!freeSrc && !lineSrcs.length) return {};
       const past = !!win && !win.now;
       const lastPay = past ? win.start : periodStartDays.length ? Math.max(...periodStartDays) : noneSince != null ? noneSince : null;
+      // [BQ3] with no fixed pay (no period): each line and Free to spend starts again each calendar month, this month's
+      // amount less what was spent this month; in the month of setup (or of the change to no fixed pay) it counts from
+      // that day, its share by days left (I4): amount x days from that day to the month's end, both counted, over the
+      // month's days, rounded down. A weekly line is not shared.
+      const byDay = !past && !periodStream;
+      const [ty, tm] = ymOf(today), mStart = dayIn(ty, tm, 1), mEnd = dayIn(ty, tm, 'last');
+      const countFrom = id => Math.max(mStart, noneSince != null ? noneSince : openEv[id] ? openDay(id) : firstOpenDay);
+      const monthShare = (a, per, id) => (a == null || per === 'week' || countFrom(id) <= mStart ? a : Math.floor(a * (mEnd - countFrom(id) + 1) / (mEnd - mStart + 1)));
       const upTo = past ? win.end : Infinity;
+      const fPer = freeSrc ? freePerOn(past ? win.start : today) : null;   // [BQ4]
       const opening = {};
       function openingShares(acctId) {
         if (opening[acctId]) return opening[acctId];
@@ -923,7 +945,7 @@
           else out.lines[l.id] = amount;
         }
         if (freeSrc && moneyAcct(lineAcct(freeSrc)) === acctId) {
-          const amount = openAmount(freeSrc, freeSrc.per);
+          const amount = openAmount(freeSrc, fPer);
           out.free = split.free != null ? split.free : amount == null ? null : share ? Math.floor((amount * share.d + leftOver) / share.D) : amount;   // [J4]
         }
         return (opening[acctId] = out);
@@ -937,9 +959,11 @@
         const sa = splitAt(lineId), moved = sa && sa !== acctId;
         const atOpening = moved ? (lineId === 'free' ? openEv[sa].split.free : openEv[sa].split.lines[lineId])
           : lineId === 'free' ? openingShares(acctId).free : openingShares(acctId).lines[lineId];
-        const fromOpening = lastPay === null || lastPay <= openDay(moved ? sa : acctId);
-        const start = fromOpening ? (atOpening != null ? atOpening : amount) : amount;
-        const inLine = e => lineOfSpend(e) === lineId && e.account && openEv[e.account] && !inside(e, openingOf(e.account), e.account) && (fromOpening || e.day >= lastPay) && e.day <= upTo;
+        const lp = byDay ? countFrom(moved ? sa : acctId) : lastPay;   // [BQ3]
+        const fromOpening = !byDay && (lastPay === null || lastPay <= openDay(moved ? sa : acctId));
+        const perOf = lineId === 'free' ? fPer : (lineSrcs.find(x => x.id === lineId) || {}).per;
+        const start = byDay ? monthShare(amount, perOf, moved ? sa : acctId) : fromOpening ? (atOpening != null ? atOpening : amount) : amount;
+        const inLine = e => lineOfSpend(e) === lineId && e.account && openEv[e.account] && !inside(e, openingOf(e.account), e.account) && (fromOpening || e.day >= lp) && e.day <= upTo;
         const counts = e => inLine(e) && cur(e.account) === cur(acctId);   // [T5] only spends in the line's own currency
         if (!past) for (const e of live().filter(x => x.k === 'spend' && !isFeeRecord(x) && inLine(x) && cur(x.account) !== cur(acctId)))
           res.warnings.push({ account: e.account, code: 'spend_other_currency', line: lineId, event: e.id,
@@ -948,16 +972,16 @@
         for (const bid in banks) {
           if (acct[bid].type === 'investment' || cur(bid) !== cur(acctId)) continue;
           for (const f of banks[bid].fillers) if ((f.place || 'free') === lineId && !heldGain(bid, f))
-            for (const pt of f.parts) if ((fromOpening || dayNum(pt.from) >= lastPay) && dayNum(pt.from) <= upTo) filled += pt.amount;
+            for (const pt of f.parts) if ((fromOpening || dayNum(pt.from) >= lp) && dayNum(pt.from) <= upTo) filled += pt.amount;
         }
         if (lineId === 'free') for (const cid in cards) {
           if (cur(cid) !== cur(acctId)) continue;
-          for (const f of cards[cid].fillers) if ((fromOpening || dayNum(f.day) >= lastPay) && dayNum(f.day) <= upTo) filled += f.amount;
+          for (const f of cards[cid].fillers) if ((fromOpening || dayNum(f.day) >= lp) && dayNum(f.day) <= upTo) filled += f.amount;
         }
         const spent = live().filter(e => e.k === 'spend' && !isFeeRecord(e) && counts(e)).reduce((t, e) => t + e.a, 0)
           - live().filter(e => e.k === 'in' && e.sub === 'refund' && counts(e)).reduce((t, e) => t + e.a, 0) + filled;   // [O] a refund given back to its line
         if (lineId !== 'free') { partsOf[lineId] = { start, spent }; return win ? { start, left: start - spent } : start - spent; }
-        const inPeriod = (e, id) => openEv[id] && !inside(e, openingOf(id), id) && (fromOpening || e.day >= lastPay) && e.day <= upTo;
+        const inPeriod = (e, id) => openEv[id] && !inside(e, openingOf(id), id) && (fromOpening || e.day >= lp) && e.day <= upTo;
         // [Q2, S5] a fee in one currency comes out of Free to spend unless its fee record names another place
         const elsewhere = new Set(live().filter(f => isFee(f) && f.place).map(f => f.of));
         const fees = live().filter(e => TWO_SIDED[e.k] && acct[e.from] && acct[e.to] && cur(e.from) === cur(e.to) && cur(e.from) === cur(acctId) && e.a > e.a2 && inPeriod(e, e.from) && !elsewhere.has(e.id))
@@ -968,11 +992,11 @@
         return win ? { start, left: start - spent - fees + placed + adjusted } : start - spent - fees + placed + adjusted;
       };
       const amountOf = (src, per) => (past ? perPeriod({ per, amount: periodAmount(src, win.start, win.occ) }, win.start, win.next, win.occ)
-        : periodStream ? nowAmount(src, per) : periodAmount(src, lastPay, occOn(lastPay, today)));
+        : periodStream ? nowAmount(src, per) : periodAmount(src, countFrom(moneyAcct(lineAcct(src))), null));
       // [BJ2] a line or Free to spend with no amount in this period (set later) is not in it
       const lines = lineSrcs.map(l => { const id = moneyAcct(lineAcct(l)), a = amountOf(l, l.per); if (a == null) return null; const left = leftOf(l.id, id, a), pt = partsOf[l.id]; return { name: l.name, acct: id, per: l.per, amount: a, left, counts: pt.start, spent: pt.spent, src: l }; }).filter(Boolean);
-      const fid = freeSrc && moneyAcct(lineAcct(freeSrc)), fa = freeSrc && amountOf(freeSrc, freeSrc.per);
-      const free = freeSrc && fa != null ? { name: 'Free to spend', acct: fid, per: freeSrc.per, amount: fa, left: leftOf('free', fid, fa), src: freeSrc } : null;
+      const fid = freeSrc && moneyAcct(lineAcct(freeSrc)), fa = freeSrc && amountOf(freeSrc, fPer);
+      const free = freeSrc && fa != null ? { name: 'Free to spend', acct: fid, per: fPer, amount: fa, left: leftOf('free', fid, fa), src: freeSrc } : null;
       if (free) free.counts = partsOf.free.start;
       return { lines, free };
     }
@@ -1004,13 +1028,15 @@
     // [periods.js] opts.periods: every period gone by, oldest first, each counted only from what is dated inside it, with
     // everything heard of by the day asked (a spend logged late, a check-in on pay day whose stretch reaches back)
     if (opts.periods && periodStream) {
-      const starts = periodStartDays.slice().sort((x, z) => x - z), occAt = Object.assign({}, occByStart);
+      const starts = allStartDays.slice().sort((x, z) => x - z), occAt = Object.assign({}, allOccByStart);
       // [AU7] the period holding the opening starts by its pay (inside the opening, so never ticked)
       const held = firstOpenDay > -Infinity ? pays.find(o => o.id === occOn(null, firstOpenDay)) : null;
       if (held && starts.length && startDayOf(held) < starts[0]) { starts.unshift(startDayOf(held)); occAt[startDayOf(held)] = held.id; }
       res.periods = [];
       for (let i = 0; i + 1 < starts.length; i++) {
-        const win = { start: starts[i], end: starts[i + 1] - 1, occ: occAt[starts[i]], next: starts[i + 1] };
+        // [BQ1] a period running when the pay changed to no fixed pay ends the day before that change
+        const stop = Math.min(starts[i + 1], ...streamCuts.filter(d => d > starts[i]));
+        const win = { start: starts[i], end: stop - 1, occ: occAt[starts[i]], next: stop };
         if (win.end < win.start) continue;
         const pl = planNow(win), out = x => ({ amount: x.amount, start: x.left.start, spent: x.left.start - x.left.left, left: x.left.left });
         res.periods.push({ start: dayStr(win.start), end: dayStr(win.end), startsWith: win.occ,

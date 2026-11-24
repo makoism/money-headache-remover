@@ -118,7 +118,9 @@
     const r = LA.lookahead(book, asOf, Object.assign({}, opts3 || {}, { settled: true }));
     const gone = new Set(r.settled);
     const live = (book.schedules || []).filter(s => s && !s.gone);
-    const ruleOn = s => { let rule = null; (s.rules || []).filter(x => x && !x.gone).forEach((x, i) => { if (i === 0 || x.from == null || D.dayNum(x.from) <= today) rule = x.rule; }); return rule || {}; };
+    // [BQ4] the rule in force by `from` (ties by `at`), never by the order saved
+    const ruleOn = s => { let rule = null; (s.rules || []).filter(x => x && !x.gone).map((x, i) => ({ f: i === 0 || x.from == null ? -Infinity : D.dayNum(x.from), at: x.at || '', rule: x.rule }))
+      .sort((p, q) => p.f - q.f || (p.at < q.at ? -1 : p.at > q.at ? 1 : 0)).forEach(x => { if (x.f <= today) rule = x.rule; }); return rule || {}; };
     const stream = live.find(s => s.kind === 'income' && s.startsPeriod && ruleOn(s).every !== 'none');
     const AHEAD = { year: 1, monthsList: 1, once: 1 };
     const out = [];

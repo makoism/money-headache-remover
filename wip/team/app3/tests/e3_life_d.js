@@ -17,27 +17,29 @@
    10 Dec the pay changes to no fixed pay from 10 Dec. The form proposes each line as the same money a year, a month:
           Food $200 twice a month is $400 a month; Free to spend $500 twice a month is $1,000 a month (BP3; whole dollars
           are written without cents on that screen, BL4).
-          From now: no pay period, each line comes off by the day (B4), and Free to spend counts what is spent from the
-          change day: 100,000 left. By the day: Food 40,000 x 12 / 365 = 1,315 a day, a 31-day month's share 40,767, so
+          From now: no pay period, each line comes off by the day (B4), and Free to spend starts again each calendar
+          month (BQ3); in December it counts from the change day, its share by days left: 100,000 x 22 / 31 = 70,967
+          (10 to 31 Dec, rounded down). By the day: Food 40,000 x 12 / 365 = 1,315 a day, a 31-day month's share 40,767, so
           2 more on its last day; Free to spend 3,287 a day, a 31-day month 101,917, so 20 more on its last day.
           The walk runs to its horizon: 45 days, or the second coming one of each bill if later. 10 Dec + 45 = 24 Jan;
           rent's second is Mon 1 Feb: horizon 1 Feb. Bills: phone 21 Dec 5,000, rent 1 Jan 120,000, phone 20 Jan
           5,000, rent 1 Feb 120,000 = 250,000. Food 11 to 31 Dec 21 x 1,315 + 2 = 27,617, January 40,767, 1 Feb 1,315 =
           69,699; Free to spend 21 x 3,287 + 20 = 69,047, 101,917, 3,287 = 174,251; together 243,950.
-          543,000 - 250,000 - 243,950 = 49,050, under Free to spend left: safe to spend 49,050.
-   12 Dec spend $25.00 on Free to spend: Checking 540,500; Free to spend left 97,500. Horizon 1 Feb. By the day 13 Dec
+          543,000 - 250,000 - 243,950 = 49,050, under Free to spend left (70,967): safe to spend 49,050.
+   12 Dec spend $25.00 on Free to spend: Checking 540,500; Free to spend left 70,967 - 2,500 = 68,467. Horizon 1 Feb. By the day 13 Dec
           to 1 Feb: Food 19 x 1,315 + 2 + 40,767 + 1,315 = 67,069; Free 19 x 3,287 + 20 + 101,917 + 3,287 = 167,677;
           together 234,746. 540,500 - 250,000 - 234,746 = 55,754: safe 55,754.
    15 Dec check-in (no pay is expected now): Checking shows $5,405.00. Horizon 1 Feb. By the day 16 Dec to 1 Feb:
           Food 16 x 1,315 + 2 + 40,767 + 1,315 = 63,124; Free 16 x 3,287 + 20 + 101,917 + 3,287 = 157,816; together
-          220,940. 540,500 - 250,000 - 220,940 = 69,560: safe 69,560.
+          220,940. 540,500 - 250,000 - 220,940 = 69,560, over Free to spend left: safe 68,467.
    18 Dec money in: a client payment $900.00 to Checking: 630,500. Horizon 1 Feb. By the day 19 Dec to 1 Feb: Food 13 x
           1,315 + 2 + 40,767 + 1,315 = 59,179; Free 13 x 3,287 + 20 + 101,917 + 3,287 = 147,955; together 207,134.
-          630,500 - 250,000 - 207,134 = 173,366, over Free to spend left: safe 97,500.
+          630,500 - 250,000 - 207,134 = 173,366, over Free to spend left: safe 68,467.
    22 Dec check-in: phone (21 Dec) ticked; Checking shows $6,255.00 (630,500 - 5,000). 22 Dec + 45 = 5 Feb; phone's
           second is Mon 22 Feb: horizon 22 Feb. Bills: rent 1 Jan, phone 20 Jan, rent 1 Feb, phone 22 Feb = 250,000.
           By the day 23 Dec to 22 Feb: Food 9 x 1,315 + 2 + 40,767 + 22 x 1,315 = 81,534; Free 9 x 3,287 + 20 + 101,917
-          + 22 x 3,287 = 203,834; together 285,368. 625,500 - 250,000 - 285,368 = 90,132: safe 90,132.
+          + 22 x 3,287 = 203,834; together 285,368. 625,500 - 250,000 - 285,368 = 90,132, over Free to spend left:
+          safe 68,467.
           Lasts about: from 625,500, 4,602 a day (22 more on a 31-day month's last day; February's shares 36,821 and
           92,054): end of December 584,060; January - 120,000 - 142,684 - 5,000 = 316,376; February - 120,000 - 128,875
           - 5,000 = 62,501; 1 Mar rent 120,000: below zero on 1 Mar, 69 days away: 9 weeks.
@@ -45,8 +47,8 @@
    4 Jan  check-in: rent (1 Jan) ticked; Checking shows $6,255.00 (745,500 - 120,000). 4 Jan + 45 = 18 Feb; rent's
           second is Mon 1 Mar: horizon 1 Mar. Bills: phone 20 Jan, rent 1 Feb, phone 22 Feb, rent 1 Mar = 250,000. By
           the day 5 Jan to 1 Mar: Food 27 x 1,315 + 2 + 36,821 + 1,315 = 73,643; Free 27 x 3,287 + 20 + 92,054 + 3,287
-          = 184,110; together 257,753. 625,500 - 250,000 - 257,753 = 117,747, over Free to spend left (97,500, counted
-          from the change day): safe 97,500. */
+          = 184,110; together 257,753. 625,500 - 250,000 - 257,753 = 117,747, over Free to spend left, which starts
+          again in January (BQ3): 100,000, nothing spent on it yet: safe 100,000. */
 'use strict';
 const L = require('./lives3.js').make('e3_life_d');
 const { ck, go, tab, typeIn, log, checkin, home, w } = L;
@@ -99,17 +101,17 @@ const num = v => Number(String(v).replace(/[^\d.]/g, ''));
   await go(p, '2026-12-15');
   const list15 = await checkin(p, { Checking: '5405' });
   ck('15 Dec check-in: no pay is asked about', !list15.some(t => /Pay/.test(t)), list15.join(' | '));
-  await home(p, '15 Dec after the check', 69560, { Checking: 540500 });
+  await home(p, '15 Dec after the check', 68467, { Checking: 540500 });
   await go(p, '2026-12-18'); await log(p, 900, 'Checking', { mode: 'in', note: 'client' });
-  await home(p, '18 Dec after $900.00 in', 97500, { Checking: 630500 });
+  await home(p, '18 Dec after $900.00 in', 68467, { Checking: 630500 });
   await go(p, '2026-12-22');
   await checkin(p, { Checking: '6255' });
-  await home(p, '22 Dec after the check, phone ticked', 90132, { Checking: 625500 });
+  await home(p, '22 Dec after the check, phone ticked', 68467, { Checking: 625500 });
   ck('22 Dec Home: lasts about 9 weeks', /Lasts about 9 weeks at this rate/.test(await L.txt(p, '#a3Home')), await L.txt(p, '#a3Home'));
   await go(p, '2027-01-02'); await log(p, 1200, 'Checking', { mode: 'in', note: 'client' });
   await go(p, '2027-01-04');
   await checkin(p, { Checking: '6255' });
-  await home(p, '4 Jan after the check, rent ticked', 97500, { Checking: 625500 });
+  await home(p, '4 Jan after the check, rent ticked', 100000, { Checking: 625500 });
   await c.close();
   await L.finish();
 })().catch(e => { console.log('FAIL crashed ' + e.stack); process.exit(1); });
