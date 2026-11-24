@@ -34,8 +34,14 @@
   // for display only (units.shownRate).
   // [second review, F3] a saved rate must be a decimal string above zero ('150.25'); any other is skipped by rateOn
   // and listed by badRates ({ id, rate }), never thrown
-  const goodRate = r => typeof r.rate === 'string' && /^\d+(\.\d+)?$/.test(r.rate) && /[1-9]/.test(r.rate);
-  const badRates = book => ((book && book.rates) || []).filter(r => live(r) && !goodRate(r)).map(r => ({ id: r.id, rate: r.rate }));
+  // [confirming review] `rates` that is not a list counts as empty; a record must be an object with a dated `from` too.
+  // A null or non-object record is listed as bad ({ id: null, rate: null }).
+  const rateList = book => (book && Array.isArray(book.rates) ? book.rates : []);
+  const isRec = r => !!r && typeof r === 'object' && !Array.isArray(r);
+  const goodRate = r => isRec(r) && typeof r.rate === 'string' && /^\d+(\.\d+)?$/.test(r.rate) && /[1-9]/.test(r.rate)
+    && typeof r.from === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.from);
+  const badRates = book => rateList(book).filter(r => !isRec(r) || (!r.gone && !goodRate(r)))
+    .map(r => (isRec(r) ? { id: r.id == null ? null : r.id, rate: r.rate === undefined ? null : r.rate } : { id: null, rate: null }));
   function rateOn(book, cur, to, day) {
     const U = typeof module === 'object' && module.exports ? require('./units.js') : root.BurrowEngine.units;
     const pair = r => live(r) && typeof r.from === 'string' && r.from <= day && ((r.cur === cur && r.to === to) || (r.cur === to && r.to === cur));
@@ -47,7 +53,7 @@
         return { id: e.id, from: e.date, at: e.at, cur: x, to: y, src: 'convert',
           rate: (BigInt(e.a2) * 10n ** BigInt(U.decimals(x))) + '/' + (BigInt(e.a) * 10n ** BigInt(U.decimals(y))) }; });
     const when = r => { const k = Date.parse(r.at); return isNaN(k) ? -8.64e15 : k; };   // `at` as a moment, its offset read
-    const list = ((book && book.rates) || []).filter(goodRate).concat(fromEvents).filter(pair).sort((p, q) => (p.from !== q.from ? (p.from < q.from ? -1 : 1)
+    const list = rateList(book).filter(goodRate).concat(fromEvents).filter(pair).sort((p, q) => (p.from !== q.from ? (p.from < q.from ? -1 : 1)
       : when(p) !== when(q) ? when(p) - when(q) : s(p.id) < s(q.id) ? -1 : s(p.id) > s(q.id) ? 1 : 0));
     const r = list.pop();
     return r ? { id: r.id, from: r.from, rate: r.rate, inverse: r.cur !== cur, src: r.src || 'typed', shown: U.shownRate(r.rate, r.cur !== cur) } : null;

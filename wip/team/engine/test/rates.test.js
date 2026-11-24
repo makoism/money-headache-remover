@@ -141,4 +141,23 @@ t('a broken rate is skipped and named, never thrown: 150.25 as a number, "150,25
   const x = lookahead(book, '2026-11-26').total.inHome;
   eq([x.amount, x.parts[0].rate, x.bad.length], [436250, '150.25', 1]);   // the good one still in force
 });
+// [confirming review, F3] nothing in `rates` can stop the look ahead: a list that is not a list counts as empty; a
+// null or non-object record, a record with no rate and a good rate with no `from` are listed in `bad`.
+t('rates that are not a list, null records, no rate, no from: never thrown, listed in bad', () => {
+  for (const v of [{}, 'x', 5, null]) {
+    const { book } = walkBook(); book.rates = v;
+    const x = lookahead(book, '2026-11-24').total.inHome;
+    eq([x.amount, x.missing.length, x.bad], [286000, 1, []]);
+  }
+  const cases = [[null, { id: null, rate: null }], ['junk', { id: null, rate: null }], [{}, { id: null, rate: null }],
+    [rate('rt5m2x-8', '2026-11-24', 'USD', 'JPY', '150'), null], [Object.assign(rate('rt5m2x-7', '2026-11-24', 'USD', 'JPY', '150'), { from: undefined }), { id: 'rt5m2x-7', rate: '150' }],
+    [rate('rt5m2x-6', '2026-11-24', 'USD', 'JPY', { n: 1 }), { id: 'rt5m2x-6', rate: { n: 1 } }], [rate('rt5m2x-5', '2026-11-24', 'USD', 'JPY', ['150']), { id: 'rt5m2x-5', rate: ['150'] }],
+    [rate('rt5m2x-4', '2026-11-24', 'USD', 'JPY', '0.000'), { id: 'rt5m2x-4', rate: '0.000' }]];
+  for (const [rec, bad] of cases) {
+    const { book } = walkBook(); book.rates = [rec];
+    const x = lookahead(book, '2026-11-24', { runway: true }).total.inHome;
+    if (bad) eq([x.amount, x.bad], [286000, [bad]]);
+    else eq([x.amount, x.bad], [436000, []]);
+  }
+});
 done(path.basename(__filename));
