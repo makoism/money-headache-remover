@@ -186,6 +186,57 @@ async function say(p, text) { await p.$eval('#a3ChatIn', (e, v) => { e.value = v
     ck('the right word: sent in invite and answered', p.__sent.length === 2 && p.__sent[1].body.invite === 'acorn' && JSON.stringify(await turns(p)) === '["hello","Heard: hello"]', JSON.stringify(await turns(p)));
     all.push(...errs); await b.close();
   }
+  /* ---- 10: the phone's back button on the open panel (K34, the shared piece src/back3.js), and the Undo bar (K37) ---- */
+  {
+    const { b, p, errs } = await T.open({ profile: fs.mkdtempSync(os.tmpdir() + '/a3chat4-') });
+    const depth = () => p.evaluate(() => (history.state && history.state.a3) || 0);
+    const back = async () => { await p.evaluate(() => { setTimeout(() => history.back(), 0); }); await T.w(450); };
+    const isOpen = () => p.$eval('#a3Chat', e => e.hasAttribute('data-open')).catch(() => null);
+    await p.goto('about:blank');
+    await p.goto(T.URL0 + '?today=' + DAY); await T.w(500);
+    await p.evaluate(fake);
+    await p.evaluate(async a => { const { E3 } = BurrowApp3; await E3.fill(BurrowEngine.build.buildBook(Object.assign({}, a, { told: E3.told() }), { newId: E3.newId }).book); BurrowApp3.chat.redraw(); }, MAKO);
+    await T.w(300);
+    ck('the bar closed holds no history entry', (await isOpen()) === false && (await depth()) === 0, await depth());
+    /* an Undo bar from before the panel opens: a spend logged through the one write door */
+    await p.evaluate(async () => { const { E3, ACT3 } = BurrowApp3; await ACT3.logSpend({ date: E3.today(), a: 500, acct: E3.book.accounts[0].id, line: 'free' }); });
+    await p.click('[data-tab=receipts]'); await T.w(200);
+    await p.focus('#a3ChatIn'); await T.w(300);
+    ck('the open panel holds one history entry', (await isOpen()) === true && (await depth()) === 1, await depth());
+    await p.$eval('#a3ChatIn', e => { e.value = 'half a thought'; });
+    await back();
+    ck('back closes the panel', (await isOpen()) === false);
+    ck('the app is still there, on the tab it was on, with what was typed in the box', /index\.html/.test(await p.url()) && await shows(p, '#a3Rc') && (await p.$eval('#a3ChatIn', e => e.value)) === 'half a thought', await p.url());
+    ck('no entry left behind', (await depth()) === 0, await depth());
+    await p.focus('#a3ChatSend'); await p.focus('#a3ChatIn'); await T.w(300);
+    ck('it opens again', (await isOpen()) === true && (await depth()) === 1, await depth());
+    await p.click('#a3ChatClose'); await T.w(450);
+    ck('its own Close takes its entry with it', (await isOpen()) === false && (await depth()) === 0, await depth());
+    /* a sheet opened from the page while the panel is open is the one on top: back closes it first, then the panel */
+    await p.click('[data-tab=home]'); await T.w(150);
+    await p.focus('#a3ChatSend'); await p.focus('#a3ChatIn'); await T.w(300);
+    await p.$eval('#a3SetGo', e => e.click()); await T.w(350);
+    ck('Settings over the open panel: two entries', await shows(p, '#a3Set') && (await isOpen()) === true && (await depth()) === 2, await depth());
+    await back();
+    ck('back closes Settings first, the panel stays open', !(await shows(p, '#a3Set')) && (await isOpen()) === true && (await depth()) === 1, await depth());
+    await back();
+    ck('then back closes the panel, and the app stays', (await isOpen()) === false && /index\.html/.test(await p.url()) && (await depth()) === 0, await depth());
+    /* [K37] the Undo bar is in the page above the panel, never over it: with the panel open it still shows, whole, above */
+    await p.evaluate(async () => { const { E3, ACT3 } = BurrowApp3; await ACT3.logSpend({ date: E3.today(), a: 700, acct: E3.book.accounts[0].id, line: 'free' }); });
+    await T.w(300);
+    await p.focus('#a3ChatSend'); await p.focus('#a3ChatIn'); await T.w(300);
+    const over = await p.evaluate(() => { const m = document.querySelector('#a3Msg .burrow-msg'), c = document.querySelector('#a3Chat').getBoundingClientRect(); if (!m) return { none: true }; const r = m.getBoundingClientRect(); return { msgBottom: r.bottom, msgTop: r.top, chatTop: c.top, undo: !!m.querySelector('button') }; });
+    ck('an Undo bar from before the panel opened is still there and not under or over the panel', !over.none && over.undo && over.msgBottom <= over.chatTop && over.msgTop >= 0, JSON.stringify(over));
+    await p.click('#a3ChatClose'); await T.w(450);
+    await back();
+    ck('nothing open: back leaves the app, as before', (await p.url()) === 'about:blank', await p.url());
+    /* at 1280 the panel is a column that is always there: typing in it holds no entry */
+    await p.goto(T.URL0 + '?today=' + DAY); await T.w(500);
+    await p.setViewport({ width: 1280, height: 800 }); await T.w(200);
+    await p.focus('#a3ChatIn'); await T.w(300);
+    ck('at 1280 the column holds no history entry', (await depth()) === 0, await depth());
+    all.push(...errs); await b.close();
+  }
   const bad = all.filter(e => !/status of (500|401)/.test(e));   // the relay made to fail on purpose
   ck('no page errors', !bad.length, bad.join(' | '));
   T.done('e3_chat');

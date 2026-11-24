@@ -10,6 +10,7 @@
    3. One message at a time [K37]: an Undo bar from before never sits over a layer opened after it. It is held back
       while the layer shows and comes back when the layer closes, if its time is not up.
    A new sheet needs a row in LAYERS (tests/e3_back.js counts the page's sheets against its own list).
+   The assistant panel (chat3.js) has its row too: tests/e3_chat.js part 10 walks it.
    No money here: `held` and `skip` are lists of markers, so nothing is counted with sums. */
 const BACK3 = (() => {
   const shownEl = sel => { const el = $(sel); return el && !el.closest('[hidden]') ? el : null; };
@@ -24,6 +25,10 @@ const BACK3 = (() => {
     sheet('check', '#a3Check', () => closeCheck3(), true),
     sheet('plan-form', '#a3Plan [data-card=plan-form]', () => plClose3(), true),
     { key: 'rc-edit', root: () => (shownEl('#rcCancel') ? $('#rcForm') : null), close: () => $('#rcCancel').click() },
+    /* the assistant panel (chat3.js), open as a sheet on a phone: under every sheet and form above, which open over
+       it. On a wide screen it is a column that is always there, so it is no layer. The message band is in the page
+       above it, never over it, so it holds no Undo bar back (beside) */
+    { key: 'chat', root: () => { const el = shownEl('#a3Chat[data-open]'); return el && !matchMedia('(min-width: 1000px)').matches ? el : null; }, close: () => $('#a3ChatClose').click(), beside: true },
   ];
   const open = () => LAYERS.filter(l => l.root());
   const held = [], skip = [];
@@ -68,7 +73,7 @@ const BACK3 = (() => {
        inside a layer shows there, and the held one shows again when the layer closes, if its time is not up */
     for (const l of on) { const d = domOf(l); if (!drawn.has(d)) drawn.set(d, { mark: MSG3.mark(), isNew: true }); }
     let top = null;
-    for (const l of on) { const m = drawn.get(domOf(l)).mark; if (top === null || m > top) top = m; }
+    for (const l of on) { if (l.beside) continue; const m = drawn.get(domOf(l)).mark; if (top === null || m > top) top = m; }
     MSG3.cover('undo', top);
     for (const l of fresh) {
       const d = drawn.get(domOf(l));
@@ -107,6 +112,9 @@ const BACK3 = (() => {
     document.addEventListener('change', typedIn, true);
     if (typeof ACT3 === 'object' && ACT3) ACT3.onChange(forget);
     new MutationObserver(sync).observe($('#a3'), { subtree: true, childList: true, attributes: true, attributeFilter: ['hidden'] });
+    /* the assistant panel sits beside #a3: open or closed is its data-open, and the width decides sheet or column */
+    if ($('#a3Chat')) new MutationObserver(sync).observe($('#a3Chat'), { attributes: true, attributeFilter: ['hidden', 'data-open'] });
+    matchMedia('(min-width: 1000px)').addEventListener('change', sync);
     sync();
   }
   return { start, open: () => open().map(l => l.key), forget };
