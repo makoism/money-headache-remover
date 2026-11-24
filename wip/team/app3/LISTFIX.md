@@ -73,3 +73,21 @@ Only (a), (b) and (c) are fixed in this lane, in that order, test first, one com
 Every item there was built in slice 6 and 6b, each with its page test in check3 (e3_setup6, e3_moneyin, e3_rhythms,
 e3_paychange, e3_payday, e3_life_a to e3_life_d, e3_income2, e3_weeks3). Before the build, each was (c): a person whose
 life has that shape could not set up or keep going. Nothing in it is open, except what the slice 6 notes above say.
+
+## Done (lane/listfix, 24 Nov JST), each with its page test in tests/e3_listfix.js
+
+| # | Commit | What changed |
+|---|---|---|
+| A1 | LISTFIX A1 | Receipts lists each gap found at a check, in the period each part counts in, as a row that is not a button. A held gain is left out. |
+| A2 | LISTFIX A2 | Home's status says "Your plan lines need ¥X more than your bank can spare before pay on D", and "Lower a plan line, or move money in" (screens/status.js, state plan_over). |
+| C1 | LISTFIX C1 | Under a bank's below-zero warning: "Move ¥X from Main bank to Bank B by D. Main bank can spare it" (screens/status.js moveText), only when another account can spare all of it. |
+| B1 | LISTFIX B1 | The Undo bar after a check always says a gap counts as spending. |
+| B2 | LISTFIX B2 | Home says "Free to spend counts ¥X of ¥Y this pay period, because you started partway through it", with Plan's "?". |
+| B3 | LISTFIX B3 | The cap step reads "(held back: Free to spend has only ¥X left this period)". |
+| B4 | LISTFIX B4 | "It counts everything on the cards now, as their close days are not sure" and "Bills due by then are taken off". |
+| B5 | LISTFIX B5 | "Use this code" on a device with its own numbers says what happens first; "Not now" changes nothing. |
+| B6 | LISTFIX B6 | A spend logged on a card: "It goes on Card A and leaves your bank when the card is paid on D". |
+| B7 | none | Checked: with no fixed pay and no plan lines or Free to spend, the engine gives no "Lasts about" figure and Home shows none; with Free to spend set it counts that too, not bills only. Covered by e3_life_c. No fault found. |
+| B8 | (A1) | A past period's gap is now a row in that period's Receipts, so the overspend shows where it came from. |
+
+The new words are drafts like every other line, for Mako's copy pass.
