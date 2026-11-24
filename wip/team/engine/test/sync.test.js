@@ -55,6 +55,34 @@ t('every case of sync_v1.json was asked (66 when written)', () => ok(cases >= 66
   delete require.cache[fuzzPath];
 }
 
+// [BZ1] the saved Undo journal: joined by id, never a question, the latest 200 kept, old copies with none read as before
+{
+  const at = n => `2026-11-24T1${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}:00.000+09:00`;
+  const step = (n, by, extra) => Object.assign({ id: by + '-s' + String(n).padStart(4, '0'), label: 'logSpend', moment: at(n), day: '2026-11-24', by, added: [], edited: [], removed: [], revived: [] }, extra || {});
+  const book = j => Object.assign({ rev: 3, accounts: [], events: [] }, j ? { journal: j } : {});
+  t('[BZ1] two journals join by id with no question; an undone entry wins over the same entry not undone', () => {
+    const a = step(1, 'k7m2qa'), b = step(2, 'p4r9zz'), c = step(3, 'k7m2qa');
+    const base = book([a]), mine = book([Object.assign({}, a, { undone: 'k7m2qa-u1' }), c]), theirs = book([a, b]);
+    const out = S.sync(base, mine, theirs);
+    eq(out.journal.map(x => x.id), [a.id, b.id, c.id]);
+    eq(out.journal[0].undone, 'k7m2qa-u1');
+    eq(out.keptVersions, undefined);
+    eq(S.afterSync(out).questions, []);
+  });
+  t('[BZ1] the joined journal keeps the latest 200 steps, so pruned steps do not come back from the base', () => {
+    const all = Array.from({ length: 230 }, (_, i) => step(i, 'k7m2qa'));
+    const out = S.sync(book(all.slice(0, 210)), book(all.slice(30, 230)), book(all.slice(5, 210)));
+    eq(out.journal.length, 200);
+    eq(out.journal[0].id, all[30].id);
+  });
+  t('[BZ1 migration] a copy with no journal joins with one that has it, and two copies with none stay with none', () => {
+    const a = step(1, 'k7m2qa');
+    eq(S.sync(book(), book([a]), book()).journal.map(x => x.id), [a.id]);
+    eq(S.sync(book(), book(), book([a])).journal.map(x => x.id), [a.id]);
+    eq('journal' in S.sync(book(), book(), book()), false);
+  });
+}
+
 // 3. it runs in a page
 t('sync.js loads in a page after dates, units, ids and schedules (no require, no Buffer)', () => {
   const ctx = { TextEncoder, console };

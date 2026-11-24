@@ -233,6 +233,7 @@
     for (const k of new Set(Object.keys(m).concat(Object.keys(t)))) {
       if (top && k === 'keptVersions') continue;
       const x = m[k], y = t[k], z = b[k], p = path ? path + '.' + k : k;
+      if (top && k === 'journal') { out[k] = joinJournal(x, y); continue; }
       if (top && (k === 'rev' || k === 'v') && (typeof x === 'number' || typeof y === 'number')) out[k] = Math.max(...[x, y].filter(n => typeof n === 'number'));
       else if (top && k === 'at' && (typeof x === 'string' || typeof y === 'string')) out[k] = newest(x, y);   // when the copy was saved
       else if (Array.isArray(x) || Array.isArray(y)) out[k] = isRecords(x, y, z) ? records(p, z, x, y, conflicts) : item(p, path, z, x, y, false, conflicts);
@@ -241,6 +242,22 @@
       else out[k] = plain(z, x, y);
     }
     return out;
+  }
+  // [BZ1] The Undo journal (app3/src/act3.js): one entry per step a device made. Joined by id from both copies, never a
+  // question; the same entry on both: the one marked undone (then the one with more records moved since); the latest
+  // JOURNAL_KEEP by moment, so a step dropped on both sides is not brought back by the base.
+  const JOURNAL_KEEP = 200;
+  function joinJournal(x, y) {
+    const by = new Map();
+    for (const j of [].concat(Array.isArray(x) ? x : [], Array.isArray(y) ? y : [])) {
+      if (!isMap(j) || typeof j.id !== 'string') continue;
+      const had = by.get(j.id);
+      if (!had) { by.set(j.id, j); continue; }
+      const score = e => (e.undone ? 2e9 : 0) + Object.keys(e.moved || {}).length;
+      if (score(j) > score(had) || (score(j) === score(had) && canon(j) > canon(had))) by.set(j.id, j);
+    }
+    const mMs = j => { const v = ms(j.moment); return isNaN(v) ? -Infinity : v; };
+    return [...by.values()].sort((a, b) => mMs(a) - mMs(b) || (a.id < b.id ? -1 : 1)).slice(-JOURNAL_KEEP).map(C);
   }
   function sync(base, mine, theirs) {
     const conflicts = [];
