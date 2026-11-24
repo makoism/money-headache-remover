@@ -106,7 +106,7 @@ const typeIn = async (p, sel, v) => { await p.click(sel, { clickCount: 3 }); awa
     await q.goto(T.URL0 + '?today=2026-11-05'); await T.w(400);
     await q.click('#a3SetupGo'); await T.w(300);
     const lab = await q.$eval('label[for=s3Free]', e => e.textContent).catch(() => '');
-    ck(tag + ': setup asks about everyday spending', lab === 'About how much do you spend on food and everyday things each pay period?', lab);
+    ck(tag + ': setup asks about everyday spending', lab === 'About how much do you spend each pay period on food, transport and small things?', lab);
     await typeIn(q, '#s3Bank', '320000'); await typeIn(q, '#s3PayAmt', '250000'); await q.select('#s3PayDay', '25'); await q.select('#s3PayShift', 'before');
     if (free) await typeIn(q, '#s3Free', free);
     await q.click('#a3SetupSave'); await T.w(700);
