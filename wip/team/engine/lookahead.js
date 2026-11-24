@@ -694,7 +694,9 @@
         : nextPoint ? { item: nextPoint.id, amount: nextAmount, payment_date: dayStr(nextPoint.land), statement: label || 'open', closes_on: nextPoint.closes != null ? dayStr(nextPoint.closes) : undefined, state: 'coming' } : null;
       const cardItems = unpaid.map(p => ({ id: p.id, due: p.due, land: p.land, amount: p.part, statement: label || 'closed' }));
       if (nextPoint) cardItems.push({ id: nextPoint.id, due: nextPoint.due, land: nextPoint.land, amount: nextAmount, statement: label || 'open' });
-      return { owedNow, statements: points, next, overdue, walkItems, cardItems, fillers, payFrom };
+      // [BK6] this card's payment days after one day and up to another (one a month on its pay day, after the weekend rule)
+      const landsBetween = (from, to) => { const out = [], [y0, m0] = ymOf(from); for (let k = 0; ; k++) { const p = payOf(dayIn(y0, m0 + k, c.payDay)); if (p.land > to) break; if (p.land > from) out.push(p.land); if (k > 36) break; } return out; };
+      return { owedNow, statements: points, next, overdue, walkItems, cardItems, fillers, payFrom, landsBetween };
     }
 
     // ----- loans and pay-later [B5, E6, F19, H7, I2, Q3, AB3, AC5, AD7] -----
@@ -1368,23 +1370,29 @@
       money_out: late.filter(o => isOut(o) && !o.otherCur).reduce((t, o) => t + o.amount, 0) };
     res.mayStillPost = past.filter(o => today <= windowEnd(o) || stillExpected(o)).map(o => Object.assign(itemOut(o), today <= windowEnd(o) ? { postsBy: dayStr(windowEnd(o)) } : { stillExpected: true }));
 
-    // ----- each bank after its cards are paid [NORTH_STAR, BK1, BK3; refines BB2] -----
-    // Per bank, dated, from the walk's own steps. D1 is the earliest unpaid card payment from the bank (an overdue one
-    // is taken today); N is the first counted pay landing after D1; the day is the last card payment on or after D1 and
-    // on or before N's day (BK5: the pay counted first, the walk's order). It starts from the bank today, adds the counted pays and takes off bills, moves, loan parts and card
-    // payments up to that day; never plan lines, never goals (money set aside in the bank stays in it and is named).
-    // A late or not seen pay is not counted (BH1) and is named; close days "not sure" are named (all on the card is
-    // taken); the lowest end of day below zero before the day is given as a dip.
+    // ----- each bank after its cards are paid [NORTH_STAR, BK1, BK6 (24 Nov, replaces the day rule of BK3 and BK5)] -----
+    // Per bank, dated, from the walk's own steps. One next unpaid payment for each card paid from the bank (an overdue
+    // one is taken today); the day is the latest of those days. It starts from the bank today, adds the counted pays
+    // landing on or before that day (a pay on the day itself first, the walk's order) and takes off bills, moves, loan
+    // parts and every card payment the walk holds up to that day; never plan lines, never goals (money set aside in
+    // the bank stays in it and is named). The walk for this figure runs to that latest day even when it is past the
+    // horizon. A card payment day inside the stretch that has no amount yet (a card's payment after its next one) is
+    // named in laterCardDays, never silently left out. A late or not seen pay is not counted (BH1) and is named; close
+    // days "not sure" are named (all on the card is taken); the lowest end of day below zero before the day is a dip.
     res.bankAfterCards = {};
     for (const id in banks) {
       if (!res.accounts[id]) continue;
-      const w = walk(id, horizon, 0), real = w.steps.filter(x => x.order !== 2);
+      const mine = Object.keys(cards).filter(c => cards[c].payFrom === id && cur(c) === cur(id));
+      const firstLands = mine.map(c => cards[c].walkItems.filter(x => x.amount).map(x => Math.max(x.land, today))).filter(l => l.length).map(l => Math.min(...l));
+      if (!firstLands.length) continue;
+      const w = walk(id, Math.max(horizon, ...firstLands), 0), real = w.steps.filter(x => x.order !== 2);
       const cardSteps = real.filter(x => x.card && x.amount < 0);
       if (!cardSteps.length) continue;
-      const d1 = Math.min(...cardSteps.map(x => x.day));
-      const n = real.find(x => x.pay && x.amount > 0 && x.day > d1);
-      const inStretch = cardSteps.filter(x => x.day >= d1 && (!n || x.day <= n.day));   // [BK5] on N's own day too, the pay first
-      const last = Math.max(...inStretch.map(x => x.day));
+      const firstOf = {}; for (const x of cardSteps) if (firstOf[x.card] == null || x.day < firstOf[x.card]) firstOf[x.card] = x.day;
+      const last = Math.max(...Object.values(firstOf));
+      const inStretch = cardSteps.filter(x => x.day <= last);
+      const laterCardDays = [];
+      for (const c of mine) if (firstOf[c] != null) for (const d of cards[c].landsBetween(firstOf[c], last)) if (!cardSteps.some(x => x.card === c && x.day === d)) laterCardDays.push({ card: c, day: dayStr(d) });
       let bal = w.start, dip = null;
       const upTo = real.filter(x => x.day <= last);
       for (let i = 0; i < upTo.length; i++) {
@@ -1400,7 +1408,7 @@
         cardDays: [...new Set(inStretch.map(x => x.day))].sort((x, z) => x - z).map(dayStr), cards: cardIds,
         pays: [...new Set(upTo.filter(x => x.pay).map(x => x.day))].map(dayStr), billsTaken: upTo.filter(x => !x.card && !x.pay && x.amount < 0).length,
         paysNotCounted: notCounted.map(o => ({ item: o.id, due: dayStr(o.land) })), ifAllTaken: cardIds.some(c => cards[c].cardItems.some(x => x.statement === 'all owed')),
-        setAside, dip };
+        setAside, dip, laterCardDays };
     }
 
     // ----- total [F10, F11, O6] -----
