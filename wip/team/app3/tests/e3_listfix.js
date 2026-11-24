@@ -12,7 +12,8 @@
    B2. Right after setup, Home says why safe to spend is small: Free to spend counts its share for the days left.
    B3. The cap step in the sum under safe to spend says it is held back, and why.
    B4. The bank after the cards in whole sentences, naming that bills due by then are taken off.
-   B5. A cloud code used on a device with its own numbers says what happens first, and changes nothing until asked. */
+   B5. A cloud code used on a device with its own numbers says what happens first, and changes nothing until asked.
+   B6. A spend logged on a card says when it leaves the bank. */
 'use strict';
 const T = require('./lib3.js');
 const { ck } = T;
@@ -175,6 +176,23 @@ const rows = p => p.$$eval('#rcList li', es => es.map(e => ({ gap: e.dataset.gap
       await A.b.close(); await B.b.close(); await srv.close();
     }
   }
+
+  /* B6: the made-up book on 25 Nov. ¥1,200 logged on Card A: its close day is not sure, so everything on it is paid on
+     its next payment day, 10 Dec. The Undo bar says when it leaves the bank, so a safe to spend that does not drop (or
+     rises) has its reason: "Logged ¥1,200 on Free to spend. It goes on Card A and leaves your bank when the card is paid
+     on 10 Dec". A spend from the bank says nothing more ("Logged ¥500 on Free to spend"). */
+  await fresh(bk);
+  await go('2026-11-25');
+  await p.tap('[data-tab="receipts"]'); await T.w(300);
+  const pickAcct = name => p.evaluate(n => { const s = document.getElementById('rcAcct'); const o = [...s.options].find(x => x.textContent.trim() === n); s.value = o.value; s.dispatchEvent(new Event('change', { bubbles: true })); }, name);
+  await pickAcct('Card A'); await T.w(100);
+  await p.tap('#rcAmt'); await p.keyboard.type('1200'); await p.click('#rcSave'); await T.w(500);
+  const barB6 = await p.evaluate(() => (document.querySelector('#a3Msg .burrow-msg span') || {}).textContent || '');
+  ck('B6: on a card, the Undo bar says when it leaves the bank', barB6 === 'Logged ¥1,200 on Free to spend. It goes on Card A and leaves your bank when the card is paid on 10 Dec', barB6);
+  await pickAcct('Main bank'); await T.w(100);
+  await p.tap('#rcAmt'); await p.keyboard.type('500'); await p.click('#rcSave'); await T.w(500);
+  const barB6b = await p.evaluate(() => (document.querySelector('#a3Msg .burrow-msg span') || {}).textContent || '');
+  ck('B6: from the bank, nothing more', barB6b === 'Logged ¥500 on Free to spend', barB6b);
 
   const errs = [].concat(...errLists); ck('no page errors', errs.length === 0, errs.join(' | '));
   await b.close(); T.done('e3_listfix');
