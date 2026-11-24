@@ -225,7 +225,7 @@ async function home(p, label, safe, bank) {
   await q.setInputFiles('#a3BkFile', bkFile); await w(600);
   await q.fill('#a3BkOpen', 'abc12345'); await q.click('#a3BkOpenGo'); await w(1500);
   await q.click('#a3BkGo'); await w(600); await q.click('#a3SetClose'); await w(200);
-  ck('the backup restored on a fresh device shows the same Home', (await txt(q, '#a3Home')) === before);
+  ck('the backup restored on a fresh device shows the same Home', (await txt(q, '#a3Home')) === before, (a => { let i = 0; while (i < a.length && a[i] === before[i]) i++; return a.slice(Math.max(0, i - 150), i + 250) + ' ||| VS ||| ' + before.slice(Math.max(0, i - 150), i + 250); })(await txt(q, '#a3Home')));
   await c2.close();
   c = await ctx(dir); p = c.pages()[0] || await c.newPage();
   /* s7b: a move to the Trip account, money taken out of the goal, a refund */

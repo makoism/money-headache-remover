@@ -78,7 +78,8 @@ const shown = c => S.canon(Object.assign(Object.fromEntries(LISTS.map(k => [k, (
     const restored = { v: 3, events: [{ id: 'e1', amt: 5, at: '2027-11-24T10:00:00.000+09:00', told: '2027-11-24T10:00:00.000+09:00', by: 'x' }, { id: 'e2', amt: 7, at: '2026-01-01T00:00:00.000+09:00', by: 'x' }] };
     const over = { v: 3, events: [{ id: 'e3', amt: 9, at: '2026-11-20T00:00:00.000+09:00', by: 'a' }] };
     const out = Bk.restamp(restored, over, { by: 'a', now: NOW, day: '2026-11-24' });
-    ck('a backup with a record a year ahead, restored today, stamps nothing in 2027', !JSON.stringify(out).includes('2027-') && notAhead(out, NOW), JSON.stringify(out));
+    ck('a backup with a record a year ahead, restored today, stamps nothing in 2027', out.events.every(e => !String(e.at).startsWith('2027') && !e.held && Date.parse(e.at) <= Date.parse(NOW) + DAYMS), JSON.stringify(out));
+    ck('its `told` is kept as written (the figures read the order of `told`)', out.events.find(e => e.id === 'e1').told === '2027-11-24T10:00:00.000+09:00');
     const ahead = Bk.restamp(restored, { v: 3, events: [{ id: 'e3', at: '2028-01-01T00:00:00.000+09:00' }] }, { by: 'a', now: NOW });
     ck('nor does a copy here that already holds a time far ahead', !/202[78]-/.test(JSON.stringify(ahead.events.map(e => e.at))), JSON.stringify(ahead.events));
   }

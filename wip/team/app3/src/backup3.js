@@ -10,7 +10,7 @@
    A restore means "this is my money now" (FOR_MAKO "Open: a restore while the cloud copy is on"). restamp() makes the copy
    that is saved: every record it brings back, and every setting with its own change time, gets one new `at` (later than
    any `at` in either copy, store/clock.js) and this device's `by`, so it wins the cloud copy's three-way join on the next
-   sync [BD4: every edit moves `at`]; `told` stays. Both copies are held against this device's now first (store/clock.js
+   sync [BD4: every edit moves `at`]; `told` stays. The clock sees both copies held against this device's now (store/clock.js
    holdArriving), so a time far ahead in a file never stamps anything ahead of today. A record in the copy it replaces (or in the copy last synced) that the
    restored copy lacks is marked gone, the same way, since in the join a side that lacks a record never changed it. The
    kept versions of both stay (AQ3). Put it back goes through the same restamp. A section the restored copy lacks
@@ -77,11 +77,12 @@
     const Ck = root.BurrowClock, now = opts.now || Ck.nowIso();
     // [M4, AI1] a copy from outside (a file, an earlier cloud version) and what is here are held against this device's
     // now first, so a time far ahead in either never moves the new `at` past today
-    const held = (x, mine) => Ck.holdArriving(x, mine || null, now).copy;
-    const overs = [over].concat(opts.also || []).filter(isMap).map(o => held(o));
-    restored = held(restored, overs[0]);
+    // The held copies are only seen by the clock: what is saved keeps the restored content as it is, `told` included,
+    // since the order of `told` is what the figures read (a check, then what was logged since).
+    const held = x => Ck.holdArriving(x, null, now).copy;
+    const overs = [over].concat(opts.also || []).filter(isMap);
     const clock = Ck.makeClock();
-    clock.see(restored); overs.forEach(o => clock.see(o));
+    clock.see(held(restored)); overs.forEach(o => clock.see(held(o)));
     const at = clock.stamp(now), by = opts.by, gone = opts.day || true;
     const mark = r => { const o = Object.assign(C(r), { at, by }); delete o.held; return o; };   // a new `at`: no held mark to keep
     function walk(r, os, top) {
