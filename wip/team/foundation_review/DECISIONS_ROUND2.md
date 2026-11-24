@@ -582,3 +582,9 @@ The assistant makes the change, shows what changed, and Undo is one tap. A confi
 BV2. The five extra rules from the confirming review (items 8 to 13 in AI_FIRST_PLAN.md) are accepted, along with the pay-day question. The end-of-slice review checks them. There is no further plan round (BN, lesson 4).
 
 BX. Order of merges (24 Nov midday JST): lane/s2b (stage 2: runway, rates, conversions) merges into wip-38.31 only after the republish candidate for Mako is cut. The candidate is setupfix, invite, listfix2, cloudwords and the pay patterns, so stage 2 does not ride along to his link before it is checked.
+
+## CS. The cloud copy's timing and its base (team rules, 24 Nov evening JST; coordinator 11 agreed; plan foundation_review/SYNC_PULL_PLAN.md)
+CS1. This replaces the timing in D5 ("pushes on leaving and at most every 1 to 2 minutes"). The first change is sent at once. A burst is sent again 5 seconds after its last change. Never more than one send every 10 seconds. A guard stops sends for the day at 1,200 (the server allows 1,500 per copy) and Settings says so. Leaving and "Send now" still send.
+CS2. The device takes the cloud copy by itself: when the page comes into view, and every 60 seconds while it is in view, asking only for the revision and fetching the copy only when the revision differs or a change is waiting.
+CS3. The base (`base`, `baseRev`) is saved only together with the book that holds it. If the book is not replaced, for any reason, the base does not move. (M61, M20: found by qc-foundation; two paths on the live build broke this.)
+CS4. A statement review, setup, Check your bank, a Plan form and a receipt being changed hold a take back; the take is thrown away and done again when they close. The assistant, Reminders and Settings do not hold it back.
