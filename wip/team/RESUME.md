@@ -14,6 +14,15 @@ Written 2026-11-18 on branch `wip-38.31`. Read this whole file before touching a
   - **restore** (lane/restore): the data-safety FAIL fixes.
   - **s2b** (87965d5): done. It merges after the candidate (BX).
   - **The back-test sort:** the three live-build reports go into qc_reports/2026-11-24_backtest_live_build/SORTED.md.
+- **lane/homefix** (on Fable): SORTED C3, C10, C11, C13, C8, C2, C9, S23, C5 and N26.
+- **Queue after the candidate**, from qc_reports/2026-11-24_backtest_live_build/SORTED.md:
+  - C4: the chat log keeps the left-out note
+  - C7: send the open screen and Keep at least
+  - A12, A24, A25: plain refusal words
+  - A17: reminders, backup and cloud by asking (CONTROLS rows)
+  - C6: "?" on every screen (M18)
+  - N25: setup hints
+  - N12, S3, S27: a picture on Home, with Mako and the art
 - **Candidate:** wip-38.31 plus setupfix plus install. Then full check3, then qc-controls and qc-north-star, then the main commit for public/n/<path>/ only, with the NOT BUILT list for scope.txt.
 
 **2026-11-24 12:15 JST, MAIN 15:** report to Coordinator 11 (session_01BFpKEXW1AERpCVxch4xuXD). Read wip/team/MAKO_SAYS.md first. Every brief for a helper starts with that line.
