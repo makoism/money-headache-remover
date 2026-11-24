@@ -4,6 +4,27 @@ Plan only. No app code is changed by this file. It goes to qc-foundation before 
 
 **What the owner asked for, in his words.** DECISIONS new foundation 17 (Mako, 24 Nov about 11:45 JST): "it's crazy that you can't remove banks, add banks ... People need to be able to add different things, remove different things." Facts for the briefs: the assistant is the main way in, and every kind of thing a person has can be added, changed and removed, with Undo. Item 12: the assistant "changes them through the same named actions as the screens, so every change shows what changed and can be undone". Item 14: "Undo everywhere", bills must be removable, one save for setup is wrong. Item 15 and BW: change then Undo, with a confirm first only for a delete or a change larger than safe to spend.
 
+**Mako says lines (MAKO_SAYS.md).**
+- **Serves:**
+  - M13: every kind can be added, changed and removed, after setup too.
+  - M14: Undo everywhere.
+  - M15: remove a bill; an empty amount never traps.
+  - M16: setup sections save on their own (through lane/setupfix).
+  - M6: change, show, one-tap Undo; confirm only for deletes and big changes.
+  - M3: the assistant has full control, through the same named actions.
+  - M23: several accounts, with cards, e-wallets and cash.
+- **Touches:**
+  - M1 and M17: every door also reaches the assistant.
+  - M5: the screens stay the place to see and check.
+  - M20: a close or a remove made on two devices goes through the which-to-keep question; a closed account reopens at a merge (AN6).
+  - M34: currency stays fixed; Start again instead.
+  - M38: ending the pay that starts the periods.
+  - M42: Keep at least changed later, never set for the person.
+  - M43: a goal's money and its own account on removal.
+  - M45 and M46: a removed goal's money is never dropped or counted twice.
+  - M61 and M69: nothing is deleted, only `gone` marks.
+- **Not served here:** M24 (the period-end question). M_COVERAGE.md lists it as in no queue.
+
 **The main way in** (LESSONS lesson 5): the person says it to the assistant ("I closed my old e-wallet", "remove the trip goal"). The assistant calls a named action. The screens have the same named action behind a button, so the person can see and check. One named action per control, two doors to it.
 
 **Read for this plan:** CLAUDE.md, LESSONS.md, DECISIONS_ROUND2 BU to BY, SCHEMA_V3 sections 0, 3, 4 and 5 (close never delete, the closing rules P6, R3, R4, T watch, Q7, a place removed with money in it, O6 home currency), and the code on wip-38.31 at e557e36 (same app code as 6528d2d; only check3 and build3 changed since), lane/setupfix at 0905731 (local, not pushed; the worktree agent-ae677ae9ec4601481 is clean at the same commit), lane/ai-core local at ddbb3cb (three commits ahead of origin/lane/ai-core fb0023e: bde36f9 F4, 401353a F3, ddbb3cb), origin/lane/ai-panel at 7a975fb.
