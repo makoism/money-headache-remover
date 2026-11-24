@@ -78,6 +78,11 @@ page|tests/e3_setupfix.js|e3_setupfix: ALL PASS||300|setup fixes from Mako's fir
 page|tests/e3_overdrawn.js|e3_overdrawn: ALL PASS||300|a bank below zero typed at setup and at Check your bank, the amber line on Home, a reload (M47)
 page|tests/e3_back.js|e3_back: ALL PASS||300|the phone's back button on every sheet, form and setup: it closes the top one, the app stays, typing is kept (K34, K35)
 page|tests/e3_undobar.js|e3_undobar: ALL PASS||300|the Undo bar never sits over a sheet or form opened after it, and is back when that closes in time (K37)
+page|tests/e3_paytoday.js|e3_paytoday: ALL PASS||300|setup on a day the pay lands asks whether it is already in the bank figure (BV2.13; setup3 through answers3)
+page|tests/e3_fakeai_page.js|e3_fakeai_page: ALL PASS||300|reviewers' way to the assistant: openWithFakeAI on a plain copy (fake_ai_page.js)
+page|tests/e3_chatwalk.js|e3_chatwalk: ALL PASS||600|the setup chat walked through the real page with the fake model: Mako's shape to safe to spend 201,400 and Main bank 286,000 on 24 Nov, Undo the fill, a reload, one spend by chat and its Undo (AI first, slice 1 gate)
+page|tests/e3_chat.js|e3_chat: ALL PASS||300|the assistant panel: the welcome as the first screen, the ways when the AI is off, the relay, cards with Undo and asking first, the bar and the column
+page|tests/e3_fillundo.js|e3_fillundo: ALL PASS||300|the setup chat's fill and its Undo: two tabs, the cloud copy held back while it can be undone (BV2.9)
 page|tests/e3_onepay.js|e3_onepay: ALL PASS||300|two incomes on the 10th entered as one pay (M28): setup 20 Nov, 9 Dec, Check your bank on 10 Dec, hand-worked next pay, period and safe to spend
 page|tests/e3_setup6.js|e3_setup6: ALL PASS||300|setup for the other lives: the country chosen, more accounts, pay rhythms, a second income on its own day, cards and bills from their account, once a year (slice 6)
 page|tests/e3_income2.js|e3_income2: ALL PASS||300|a second income every n weeks (stepped back to a day on or before setup) or on two days a month (slice 6b)
@@ -117,16 +122,18 @@ page_tests_for() {   # page_tests_for <changed path, relative to app3/>
     tests/lives3.js)          echo e3_life_a e3_life_a2 e3_life_b e3_life_c e3_life_d ;;
     tests/e3_act_book.js)     echo e3_home e3_checkin ;;
     tests/fake_vault.js)      echo e3_cloud e3_listfix ;;
-    tests/setup_sections.js)  echo e3_setup e3_setupfix e3_setup6 e3_income2 e3_weeks3 e3_walk2 ;;   # a helper (setup saved section by section), not a test
+    tests/setup_sections.js)  echo e3_setup e3_setupfix e3_setup6 e3_income2 e3_weeks3 e3_walk2 e3_paytoday e3_chatwalk e3_chat ;;   # a helper (setup saved section by section), not a test
+    tests/fake_ai.js|tests/fake_ai_page.js) echo e3_fakeai_page e3_chatwalk e3_chat ;;   # helpers (the fake model, and it behind a made-up relay), not tests
     tests/*.js)               basename "$1" .js ;;
     src/home3.js)             echo e3_home e3_ns e3_homeplan e3_warnwords e3_cardline e3_bankparts e3_names e3_payday ;;
     src/checkin3.js)          echo e3_checkin e3_checkgap e3_cardfig e3_reload e3_bankparts e3_payday e3_overdrawn ;;
     src/receipts3.js)         echo e3_receipts e3_listfix e3_moneyin e3_bigspend e3_stmt_once e3_period e3_names e3_doors e3_moved1 ;;
     src/plan3.js|src/plan3_write.js) echo e3_plan e3_rhythms e3_lineshare e3_homeplan e3_paychange e3_names ;;
-    src/setup3.js)            echo e3_setup e3_setupfix e3_setup6 e3_income2 e3_weeks3 e3_first e3_onepay e3_overdrawn ;;
-    src/start3.js)            echo e3_first e3_file e3_try ;;
+    src/setup3.js|src/answers3.js) echo e3_setup e3_setupfix e3_setup6 e3_income2 e3_weeks3 e3_first e3_onepay e3_overdrawn e3_paytoday e3_chatwalk e3_chat ;;
+    src/chat3*.js)            echo e3_chat e3_chatwalk e3_fakeai_page e3_fillundo e3_invite e3_back ;;
+    src/start3.js)            echo e3_first e3_file e3_try e3_chat ;;
     src/back3.js)             echo e3_back e3_undobar e3_checkin e3_plan e3_receipts e3_setupfix e3_stmt e3_ask e3_remind e3_backup e3_tabs ;;
-    src/stmt3*.js)            echo e3_stmt e3_stmt_once e3_walk4 e3_invite ;;
+    src/stmt3*.js)            echo e3_stmt e3_stmt_once e3_walk4 e3_invite e3_chat ;;
     src/ask3*.js)             echo e3_ask e3_invite ;;
     src/backup3.js|src/settings3.js) echo e3_backup e3_tabs ;;
     src/sw3.js|src/settings3_sw.js|sw3.js) echo e3_sw offline e3_install ;;

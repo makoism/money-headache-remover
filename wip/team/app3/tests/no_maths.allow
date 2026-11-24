@@ -15,4 +15,5 @@ backup3.js :: i + 0x8000 :: bytes turned into base64 in chunks; not money
 cloud3_page.js :: Math.max(CLOUD_SOON3, C3.lastSync + CLOUD_EVERY3 - Date.now()) :: when the next cloud send may go (D5 timing); a clock, not money
 ask3.js :: abc[b % abc.length] :: a random letter of the relay's anonymous id; not money
 e3.js :: Date.now() + (sec === '01' ? 1 : 0) :: a check-in's check told one millisecond after its records; a clock, not money
+chat3.js :: abc[b % abc.length] :: a random letter of the assistant's device id (BU3); not money
 plan3_write.js :: SC.dayNum(date) - 1 :: a moved account opens the day before its move (qc-foundation F3); a day, not money

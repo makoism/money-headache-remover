@@ -237,99 +237,78 @@ function clearErr3(el) {
 /* Back: setup closes; every saved section stays in the draft on this device */
 function closeSetup3() { if (setup3 && setup3.base) { clearTimeout(setup3.typedT); keepDraft3(setup3.saved, setup3.days); } endSetup3(); renderHome3(); }
 function endSetup3() { if (setup3) clearTimeout(setup3.typedT); $('#a3Setup').hidden = true; $('#a3Setup').innerHTML = ''; setup3 = null; $('#a3Home').hidden = false; $('#a3').classList.remove('a3-setup-open'); }
-/* the answers as build_book takes them. strict: a missing amount is asked for next to its box, which is focused
-   (throws 'asked'); else it counts as 0, for a draft book that only says which bills were due since the last pay.
-   sec (a setup section): only the boxes in it are asked for; the others count as 0 */
-function answers3(strict, sec) {
+/* [BV1] the boxes as plain values: setup3's form shape in answers3.js (ANSWERS3, the one answers-to-book function the
+   chat and "Use any AI" use too). strict: a missing or wrong amount is asked for next to its box, which is focused
+   (throws 'asked'); a box not typed and not asked for is null, for the questions the day asks.
+   sec (a setup section): only the boxes in it are asked for */
+function form3(strict, sec) {
   const cur = $('#s3Cur').value;
   const asks = el => strict && (!sec || sec.contains(el));
   const ask = (el, words) => { fieldErr3(el, words); el.focus(); throw new Error('asked'); };
-  const need = (el, words) => { const v = bankBox3(el) ? typedBank3(el.value, cur) : typed3(el.value, cur); if (v !== null) return v; if (!asks(el)) return 0; return ask(el, words); };
+  /* [M47] a bank's own box reads a minus (bankBox3) */
+  const amount = (el, words) => { const v = bankBox3(el) ? typedBank3(el.value, cur) : typed3(el.value, cur); if (v !== null) return v; return asks(el) ? ask(el, words) : null; };
+  const maybe = (el, words) => (el.value.trim() ? amount(el, words) : null);
   const text = (el, dflt) => (el.value || '').trim() || dflt;
+  const dayOf = v => (v === 'last' ? 'last' : Number(v));
   const bankName = text($('#s3BankName'), 'Main bank');
-  const min = $('#s3Min').value.trim() ? need($('#s3Min'), 'Type the amount to keep at least, or leave it blank') : null;
-  const ans = {
-    day: E3.today(), told: E3.told(), currency: cur, country: $('#s3Country').value,
-    banks: [{ key: 'bank1', name: bankName, amount: need($('#s3Bank'), `Type what ${bankName} shows today`), main: true, min }],
-    pays: [], cards: [], bills: [],
-    /* [north star F1, BJ2] Free to spend, the first plan amount, from the setup day; blank: not said (Home asks) */
-    free: $('#s3Free').value.trim() ? need($('#s3Free'), 'Type about how much goes on everyday things, or leave it blank') : null,
-  };
-  /* [slice 6] the other accounts: a second bank, cash, an e-wallet, each with what it holds today */
+  /* [M1] the minimum: blank is none */
+  const min = maybe($('#s3Min'), 'Type the amount to keep at least, or leave it blank');
+  const f = { bankName, cur, country: $('#s3Country').value, bank: amount($('#s3Bank'), `Type what ${bankName} shows today`), accts: [], pays: [], cards: [], bills: [], min };
+  /* [north star F1, BJ2] Free to spend, the first plan amount, from the setup day; blank: not said (Home asks) */
+  f.free = maybe($('#s3Free'), 'Type about how much goes on everyday things, or leave it blank');
+  /* [slice 6] the other accounts: a second bank, cash, an e-wallet, each with what it holds today. ANSWERS3 names them
+     by their place (the main bank, then acct2, acct3, ...); a row here keeps its own key when another is taken out,
+     so each row's key is turned into its place */
+  const place = { bank1: 'bank1' }, seats = ['bank1'];
   $$('#a3Setup [data-row^=acct]').forEach(row => {
-    const name = text(row.querySelector('[data-f=name]'), KIND_NAME3[row.querySelector('[data-f=type]').value]);
-    ans.banks.push({ key: row.dataset.row, name, type: row.querySelector('[data-f=type]').value, amount: need(row.querySelector('[data-f=amount]'), `Type what ${name} holds today, or 0`) });
+    const type = row.querySelector('[data-f=type]').value, name = text(row.querySelector('[data-f=name]'), KIND_NAME3[type]);
+    place[row.dataset.row] = 'acct' + seats.push(row.dataset.row);   // how many accounts so far, this one counted: acct2, acct3, ...
+    f.accts.push({ name, type, amount: amount(row.querySelector('[data-f=amount]'), `Type what ${name} holds today, or 0`) });
   });
   /* the account a select names; a hidden one (only one account to choose) is the main bank */
-  const acctOf = sel => (sel && !sel.closest('[data-q=acct]').hidden && sel.value) || 'bank1';
-  /* the first pay's rhythm: a day each month, two days, every n weeks from the day of one, or no fixed pay */
-  const every = $('#s3PayEvery').value, shift = $('#s3PayShift').value, day = Number($('#s3PayDay').value);
-  /* [slice 6b] one rhythm from the answers, for the pay and for a second income: every n weeks from the day of one
-     (build_book steps it back to on or before the setup day, BP1) */
-  const rhythmOf = (ev, d, d2v, startBox) => {
-    const d2 = d2v === 'last' ? 'last' : Number(d2v);
-    if (ev === 'month') return { every: 'month', day: d };
-    if (ev === 'days') return { every: 'month', days: d === d2 ? [d] : [d, d2] };
-    if (ev === 'none') return { every: 'none' };
-    const start = startBox.value;
-    if (!start && asks(startBox)) ask(startBox, 'Type the day of one pay, the last one or the next one');
-    /* a draft with no day of one yet: today stands in, marked, so it is never taken as a pay landing today */
-    return Object.assign({ every: 'weeks', n: Number(ev.slice(5)), start: start || ans.day }, start ? {} : { noStart: true });
-  };
-  const rhythm = rhythmOf(every, day, $('#s3PayDay2').value, $('#s3PayStart'));
+  const acctOf = sel => place[(sel && !sel.closest('[data-q=acct]').hidden && sel.value) || 'bank1'] || 'bank1';
+  /* [slice 6b] every n weeks: the day of one pay (build_book steps it back to on or before the setup day, BP1) */
+  const startOf = (ev, box) => { if (!ev.startsWith('weeks')) return null; if (box.value) return box.value; return asks(box) ? ask(box, 'Type the day of one pay, the last one or the next one') : null; };
+  const every = $('#s3PayEvery').value, start = startOf(every, $('#s3PayStart'));
   $$('#a3Setup [data-row^=pay]').forEach((row, i) => {
     const name = text(row.querySelector('[data-f=name]'), i ? 'Second income' : 'Pay');
-    const ev = i ? row.querySelector('[data-f=every]').value : null;
-    const r = !i || ev === 'same' ? rhythm : rhythmOf(ev, Number(row.querySelector('[data-f=day]').value), row.querySelector('[data-f=day2]').value, row.querySelector('[data-f=start]'));
-    const box = row.querySelector('[data-f=amount]'), bank = acctOf(i ? row.querySelector('[data-f=acct]') : $('#s3PayAcct'));
+    const ev = i ? row.querySelector('[data-f=every]').value : every, r = ev === 'same' ? every : ev;
+    const st = !i || ev === 'same' ? start : startOf(ev, row.querySelector('[data-f=start]'));
+    const box = row.querySelector('[data-f=amount]');
     /* no fixed pay: the amount may be blank (it comes when it comes) */
-    if (r.every === 'none' && !box.value.trim()) { ans.pays.push(Object.assign({ key: row.dataset.row, name, bank, shift: 'none' }, r)); return; }
-    /* [BL1] a pay of 0 is refused with build_book's own words; a draft counts a pay not typed yet as some amount */
-    const amount = need(box, `Type how much ${name} is`);
-    if (amount === 0 && asks(box)) ask(box, BurrowEngine.build.PAY_NEEDS_AMOUNT);
-    ans.pays.push(Object.assign({ key: row.dataset.row, name, bank, amount: amount || 1, shift: r.every === 'none' ? 'none' : shift }, r));
+    const amt = r === 'none' && !box.value.trim() ? null : amount(box, `Type how much ${name} is`);
+    /* [BL1] a pay of 0 is refused with build_book's own words */
+    if (amt === 0 && asks(box)) ask(box, BurrowEngine.build.PAY_NEEDS_AMOUNT);
+    if (!i) f.pay = { name, amount: amt, every, day: Number($('#s3PayDay').value), day2: dayOf($('#s3PayDay2').value), start: st, shift: $('#s3PayShift').value, acct: acctOf($('#s3PayAcct')) };
+    else f.pays.push({ name, amount: amt, every: ev, day: Number(row.querySelector('[data-f=day]').value), day2: dayOf(row.querySelector('[data-f=day2]').value), start: st, acct: acctOf(row.querySelector('[data-f=acct]')) });
   });
-  /* the first pay with a fixed day starts the pay period */
-  const first = ans.pays.find(x => x.every !== 'none');
-  if (first) first.startsPeriod = true;
   $$('#a3Setup [data-row^=card]').forEach(row => {
     const name = text(row.querySelector('[data-f=name]'), 'Card'), cd = row.querySelector('[data-f=closeDay]').value;
-    const owed = need(row.querySelector('[data-f=owed]'), `Type what is on ${name} now, or 0`);
+    const owed = amount(row.querySelector('[data-f=owed]'), `Type what is on ${name} now, or 0`);
     /* [BL6] asked only between the close and its payment day (askTaken3 shows it); blank: all of it was on that statement */
     const q = row.querySelector('[data-q=stmt]'), st = row.querySelector('[data-f=statement]');
-    const statement = strict && q && !q.hidden ? (st.value.trim() ? need(st, `Type how much of ${name} was on the statement, or leave it blank`) : owed) : undefined;
-    ans.cards.push({ key: row.dataset.row, name, owed,
-      payDay: Number(row.querySelector('[data-f=payDay]').value), closeDay: cd === 'not sure' || cd === 'last' ? cd : Number(cd),
-      payFrom: acctOf(row.querySelector('[data-f=payFrom]')), shift: row.querySelector('[data-f=shift]').value, ...(statement !== undefined ? { statement } : {}) });
+    f.cards.push({ name, owed, payDay: Number(row.querySelector('[data-f=payDay]').value), closeDay: cd === 'not sure' || cd === 'last' ? cd : Number(cd),
+      payFrom: acctOf(row.querySelector('[data-f=payFrom]')), shift: row.querySelector('[data-f=shift]').value,
+      statement: q && !q.hidden ? maybe(st, `Type how much of ${name} was on the statement, or leave it blank`) : null });
   });
   $$('#a3Setup [data-row^=bill]').forEach(row => {
-    const name = text(row.querySelector('[data-f=name]'), 'Bill');
-    const q = row.querySelector('[data-q=takenOut]'), d = Number(row.querySelector('[data-f=day]').value);
-    /* once a year: its month and day ('MM-DD'); a day the month does not have is refused by build_book with words */
-    const yearly = row.querySelector('[data-f=every]').value === 'year';
-    const when = yearly ? { every: 'year', date: row.querySelector('[data-f=month]').value + '-' + row.querySelector('[data-f=day]').value.padStart(2, '0') } : { day: d };
+    const name = text(row.querySelector('[data-f=name]'), 'Bill'), q = row.querySelector('[data-q=takenOut]');
     /* [K32] a bill of 0 is refused with Plan's own words (plan3_write amountOk), as Plan refuses it */
-    const box = row.querySelector('[data-f=amount]'), amount = need(box, `Type the amount of ${name}`);
-    if (amount === 0 && asks(box)) ask(box, 'Type the amount above zero');
-    ans.bills.push(Object.assign({ key: row.dataset.row, name, from: acctOf(row.querySelector('[data-f=from]')), amount, shift: 'after' }, when,
-      q && !q.hidden && row.querySelector('[data-f=takenOut]').value === 'no' ? { takenOut: false } : {}));
+    const box = row.querySelector('[data-f=amount]'), amt = amount(box, `Type the amount of ${name}`);
+    if (amt === 0 && asks(box)) ask(box, 'Type the amount above zero');
+    /* once a year: its month and day; a day the month does not have is refused by build_book with words */
+    f.bills.push({ name, amount: amt, every: row.querySelector('[data-f=every]').value, month: row.querySelector('[data-f=month]').value,
+      day: Number(row.querySelector('[data-f=day]').value), from: acctOf(row.querySelector('[data-f=from]')),
+      takenOut: q && !q.hidden ? row.querySelector('[data-f=takenOut]').value : 'yes' });
   });
   /* [BV2.13] on a day the pay lands: has it already landed in that figure? asked, never assumed (askTaken3 shows it);
-     last, so every other answer is asked first. Same words and shape as lane/ai-panel */
+     last, so every other answer is asked first */
   const pt = $('#a3Setup [data-q=payToday]'), ptBox = $('#s3PayToday');
-  ans.payToday = pt && !pt.hidden ? (ptBox.value || (asks(ptBox) ? ask(ptBox, 'Say whether today\'s pay is already in that figure') : null)) : null;
-  return ans;
+  f.payToday = pt && !pt.hidden ? (ptBox.value || (asks(ptBox) ? ask(ptBox, 'Say whether today\'s pay is already in that figure') : null)) : null;
+  return f;
 }
-/* [BV2.13] the fixed pays landing on the setup day, by the engine's own calendar: [{ bank key, occurrence id }] */
-function payToday3(built, ans) {
-  const S = BurrowEngine.schedules, D = BurrowEngine.dates, cal = S.calendar(ans.country || 'XX'), d0 = D.dayNum(ans.day), out = [];
-  for (const p of ans.pays) {
-    if (p.every === 'none' || p.noStart) continue;
-    const sch = built.book.schedules.find(x => x.id === built.ids[p.key]);
-    for (const o of S.occurrences(sch, cal, D.addMonths(d0, -1), D.addMonths(d0, 1))) if (o.land === d0) out.push({ bank: p.bank, id: o.id });
-  }
-  return out;
-}
+/* the answers (ANSWERS3's shape), from the boxes */
+const answers3 = strict => ANSWERS3.fromForm(form3(strict), { day: E3.today() });
 /* [slice 6] the form follows the answers: the boxes each rhythm needs, and an account choice only when there is more
    than one account of the kind it takes (banks only for a card). Options keep what was picked. */
 function shape3() {
@@ -360,29 +339,26 @@ function shape3() {
    names the bill and its own day: "Did the Rent of 27 Oct leave your bank?" */
 function askTaken3() {
   if (!setup3) return;
-  let asked = {}, stmts = {}, today = false;
-  try {
-    const a = answers3(false), d = BurrowEngine.build.buildBook(a, { newId: BurrowEngine.ids.idMaker('draft0') });
-    asked = d.asked || {}; stmts = d.askedStatements || {}; today = payToday3(d, a).length > 0;
-  } catch (e) { asked = {}; }
+  let q = { asked: {}, statements: {}, payToday: false };
+  try { q = ANSWERS3.questions(answers3(false), { day: E3.today(), currency: $('#s3Cur').value }); } catch (e) { /* not yet a whole set of answers */ }
+  const yr = (E3.today() || '').slice(0, 4), key = (sec, row, dflt) => ANSWERS3.keyOf(sec, (row.querySelector('[data-f=name]').value || '').trim() || dflt);
   /* [BV2.13] the pay lands today: is it in the figure typed? */
-  $('#a3Setup [data-q=payToday]').hidden = !today;
-  const yr = (E3.today() || '').slice(0, 4);
+  $('#a3Setup [data-q=payToday]').hidden = !q.payToday;
   /* [BL6] a card set up after its close and before that statement's payment day: how much was on that statement */
   $$('#a3Setup [data-row^=card]').forEach(row => {
-    const q = row.querySelector('[data-q=stmt]'), g = stmts[row.dataset.row];
-    q.hidden = !g;
+    const el = row.querySelector('[data-q=stmt]'), g = q.statements[key('cards', row, 'Card')];
+    el.hidden = !g;
     if (!g) return;
-    q.querySelector('label').textContent = `How much of it was on the statement that closed on ${day3(g.closed, yr)}?`;
-    q.querySelector('[data-hint=stmt]').textContent = `That part comes out on ${day3(g.payment, yr)}, the rest with a later payment. Leave it blank if you are not sure: then all of it comes out on ${day3(g.payment, yr)}`;
+    el.querySelector('label').textContent = `How much of it was on the statement that closed on ${day3(g.closed, yr)}?`;
+    el.querySelector('[data-hint=stmt]').textContent = `That part comes out on ${day3(g.payment, yr)}, the rest with a later payment. Leave it blank if you are not sure: then all of it comes out on ${day3(g.payment, yr)}`;
   });
   $$('#a3Setup [data-row^=bill]').forEach(row => {
-    const q = row.querySelector('[data-q=takenOut]'), days = asked[row.dataset.row];
-    q.hidden = !days;
+    const el = row.querySelector('[data-q=takenOut]'), days = q.asked[key('bills', row, 'Bill')];
+    el.hidden = !days;
     if (!days) return;
     const name = row.querySelector('[data-f=name]').value.trim() || 'bill';
     const when = days.map(d => day3(d, yr)), list = when.length > 1 ? when.slice(0, -1).join(', ') + ' and ' + when.slice(-1)[0] : when[0];
-    q.querySelector('label').textContent = `Did the ${name} of ${list} leave your bank?`;
+    el.querySelector('label').textContent = `Did the ${name} of ${list} leave your bank?`;
   });
 }
 /* ---------- [item 14] each section saved on its own ----------
@@ -473,7 +449,7 @@ async function saveSec3(sec) {
   const el = secEl3(sec);
   $('#a3SetupErr').textContent = '';
   el.querySelectorAll('[data-err-for]').forEach(p => clearErr3(document.getElementById(p.dataset.errFor)));
-  try { askTaken3(); answers3(true, el); } catch (e) { if (e.message === 'asked') return; throw e; }
+  try { askTaken3(); form3(true, el); } catch (e) { if (e.message === 'asked') return; throw e; }
   const before = setup3.saved[sec] || null, beforeDay = setup3.days[sec] || null, now = snap3(sec);
   const sections = Object.assign({}, setup3.saved, { [sec]: now }), days = Object.assign({}, setup3.days, { [sec]: E3.today() });
   setup3.busy = true;
@@ -528,19 +504,11 @@ async function saveSetup3() {
     return;
   }
   let ans;
-  try { ans = answers3(true); } catch (e) { if (e.message === 'asked') return; throw e; }
+  try { ans = answers3(true); } catch (e) { if (e.message !== 'asked') err.textContent = e.message; return; }
   askTaken3();
-  try { ans = answers3(true); } catch (e) { if (e.message === 'asked') return; throw e; }
+  try { ans = answers3(true); } catch (e) { if (e.message !== 'asked') err.textContent = e.message; return; }
   let built;
-  try { built = BurrowEngine.build.buildBook(ans, { newId: E3.newId }); } catch (e) { err.textContent = e.message; return; }
-  /* [BV2.13] a pay landing today that is not in today's figure yet stays to come: named in its account's opening check
-     (the notYet the engine reads, as build_book does for a bill not out yet) */
-  if (ans.payToday === 'no') {
-    for (const x of payToday3(built, ans)) {
-      const check = built.book.events.find(e => e.k === 'check' && e.acct === built.ids[x.bank]);
-      if (check) check.notYet = (check.notYet || []).concat([x.id]);
-    }
-  }
+  try { built = ANSWERS3.build(ans, { day: E3.today(), told: E3.told(), newId: E3.newId, currency: $('#s3Cur').value }); } catch (e) { err.textContent = e.message; return; }
   const ok = await E3.start(built.book);
   if (!ok) { err.textContent = 'This could not be saved on this device. Nothing changed'; return; }
   await E3.rec('setup', null);

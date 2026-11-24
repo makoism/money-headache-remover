@@ -110,6 +110,11 @@
           this.had = false; this.rev = 0; this.bookJson = null;
           return { copy: null, device, empty: true, readOnly: readOnly(), rev: 0 };
         }
+        /* [AI_FIRST_PLAN 2, 9] a book thrown away by discard(): empty, at the mark's rev, so a new setup saves on it */
+        if (got.meta && got.meta.gone && !got.book) {
+          this.had = false; this.rev = got.meta.rev; this.bookJson = null;
+          return { copy: null, device, empty: true, readOnly: readOnly(), rev: got.meta.rev };
+        }
         const meta = got.meta || { v: got.book.v, rev: 0 };
         mayWrite(meta.v);
         const book = got.book || {};
@@ -213,6 +218,8 @@
       tx.objectStore('kept').getAll(IDBKeyRange.bound(KEPT_LO, KEPT_HI)).onsuccess = e => { got.kept = e.target.result; };
       await done(tx);
       if (!got.meta) return { events: [], keptVersions: [], book: null, rev: 0, cleared: this.had };
+      /* thrown away by discard() in another tab: said as gone; this page's rev is left, so its saves stay refused */
+      if (got.meta.gone && !got.book) return { events: [], keptVersions: [], book: null, rev: got.meta.rev, cleared: this.had, gone: true };
       mayWrite(got.meta.v);
       const diff = (f, list) => list.filter(r => !this.atOf[f].has(r.id) || this.atOf[f].get(r.id) !== r.at);
       const out = { events: diff('events', got.events), keptVersions: diff('keptVersions', got.kept), book: null, rev: got.meta.rev };
@@ -221,6 +228,32 @@
       this.remember('events', out.events); this.remember('keptVersions', out.keptVersions);
       this.rev = got.meta.rev; this.had = true;
       return out;
+    }
+
+    // [AI_FIRST_PLAN corrections 2 and 9] Undo of the setup chat's fill: the book, its details and its records go; the
+    // device record and the kept whole copies stay. The meta stays as a mark ({ gone: true } with a new rev), so another
+    // tab's next save is refused as 'behind' instead of writing the whole book back. Refused as 'behind' itself when
+    // another tab saved since this page last read. { ok } or { ok: false, why }.
+    discard() {
+      return this.run(async () => {
+        if (readOnly()) return { ok: false, why: 'read-only' };
+        const tx = await this.tx(['book', 'events', 'kept'], 'readwrite');
+        let why = null, rev = this.rev;
+        tx.objectStore('book').get('meta').onsuccess = e => {
+          const meta = e.target.result;
+          if (meta && meta.rev !== this.rev) { why = 'behind'; tx.abort(); return; }
+          rev = Math.max(Date.now(), this.rev + 1);
+          tx.objectStore('book').delete('book');
+          tx.objectStore('events').clear();
+          tx.objectStore('kept').delete(IDBKeyRange.bound(KEPT_LO, KEPT_HI));
+          tx.objectStore('book').put({ v: pageV(), rev, at: nowIso(), gone: true }, 'meta');
+        };
+        try { await done(tx); } catch (e) { return { ok: false, why: why || 'error' }; }
+        this.atOf.events.clear(); this.atOf.keptVersions.clear();
+        this.rev = rev; this.had = false; this.bookJson = null;
+        if (G()) G().tabs.post({ type: 'saved', rev, events: null, kept: null, book: true });
+        return { ok: true, rev };
+      });
     }
 
     // A whole copy kept before a big replace (backup restore, cloud load), as its own record [D2]. Only the newest

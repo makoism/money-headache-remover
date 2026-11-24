@@ -59,6 +59,7 @@ const E3 = (() => {
       readOnly = !!r.readOnly;
       if (!r.empty && r.copy) { book = r.copy; mode = 'kept'; }
       store.onOther(ch => { if (joinIn(ch)) shown(); });   // another tab saved: take it in and draw it
+      hold = !!(mode === 'kept' && r.device && r.device.fillHold);
     } catch (e) { store = null; }
   }
   /* ---- two tabs on one device (store/idb.js onOther and catchUp) ----
@@ -67,6 +68,7 @@ const E3 = (() => {
   const OTHER = 'Changed in another tab. Shown again, try again';
   function joinIn(ch) {
     if (!ch || !book || mode !== 'kept') return false;
+    if (ch.gone) { book = null; mode = 'none'; hold = false; return true; }   // the fill was undone in another tab
     if (!ch.book && !(ch.events || []).length && !(ch.keptVersions || []).length) return false;
     const byId = (mine, theirs) => { const m = new Map((mine || []).map(r => [r.id, r])); for (const r of theirs || []) m.set(r.id, r); return [...m.values()]; };
     const rest = ch.book || BurrowStore.bookOf(book);
@@ -162,8 +164,39 @@ const E3 = (() => {
     book = theirs; shown();
     return { ok: false, why: 'other', text: OTHER };
   }
+  /* ---- the setup chat's fill and its Undo (AI_FIRST_PLAN corrections 2 and 9, BV2.9) ----
+     fill(newBook): only when this device keeps no book (mode 'none'); the book is kept and marked in the device record as
+       a fill that can still be undone, and the cloud copy is held back while it is.
+     discard(): the fill's Undo, only while that mark is there: the store drops the book, its details and its records
+       (store/idb.js discard: the device record and the kept copies stay; another tab is refused, not written over).
+     release(): something else was written, so the fill can no longer be undone: the mark goes and the cloud copy may send. */
+  let hold = false;
+  async function fill(newBook) {
+    if (mode !== 'none') return false;
+    if (!(await start(newBook))) return false;
+    hold = true;
+    await rec('fillHold', true);
+    return true;
+  }
+  async function discard() {
+    if (mode !== 'kept' || !hold || !store) return false;
+    const r = await store.discard();
+    if (!r.ok) return false;
+    const d = (await store.getDevice()) || {};
+    delete d.fillHold;
+    try { await store.putDevice(d); } catch (e) { /* the mark goes with the next fill */ }
+    book = null; mode = 'none'; hold = false;
+    return true;
+  }
+  async function release() {
+    if (!hold) return false;
+    hold = false;
+    await rec('fillHold', null);
+    savedFns.forEach(f => { try { f(book); } catch (e) { /* a listener's own fault */ } });   // the cloud copy may send now
+    return true;
+  }
   /* is a the day before b (two YYYY-MM-DD days) */
   const dayBefore = (a, b) => BurrowEngine.dates.dayNum(b) - BurrowEngine.dates.dayNum(a) === 1;
-  return { today, setToday, useTry, leaveTry, start, told, dayBefore, newId, load, view, nameOf, occName, lastCheckOf, curOf, home, put, replace, rec, onSaved: f => savedFns.push(f),
+  return { today, setToday, useTry, leaveTry, start, fill, discard, release, held: () => hold, told, dayBefore, newId, load, view, nameOf, occName, lastCheckOf, curOf, home, put, replace, rec, onSaved: f => savedFns.push(f),
     get book() { return book; }, get mode() { return mode; } };
 })();

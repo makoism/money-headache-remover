@@ -51,6 +51,7 @@ async function syncNow3(opts) {
   opts = opts || {};
   const st = await cloudState3();
   if (!st.on || E3.mode === 'try') return null;
+  if (E3.held && E3.held()) { C3.dirty = true; return null; }   // [BV2.9] the setup chat's fill can still be undone: nothing leaves yet
   if (C3.busy) { C3.again = true; return null; }
   C3.busy = true; clearTimeout(C3.timer);
   const snap = E3.book;

@@ -1422,6 +1422,42 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
 .a3-rows li.a3-hashelp > .a3-rcrow { flex: 1 1 100%; }
 .a3-helprow { flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .a3-helprow .burrow-help-text { flex: 1 1 100%; margin: 0; }
+/* the assistant (chat3.js, AI first): a bar at the foot of a phone that opens to a sheet over the lower part, a column
+   on the right on a wide screen, and the whole first screen before setup (the welcome, inside #a3Home) */
+.a3-chat { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; background: var(--bg); border-top: 1px solid var(--hair); padding: 8px 16px calc(8px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 8px; }
+.a3-chat[data-open] { height: 62vh; height: 62dvh; box-shadow: 0 -8px 24px rgba(0,0,0,.25); }
+.a3-chat:not([data-open]) .a3-chat-body, .a3-chat:not([data-open]) .a3-chat-head { display: none; }
+.a3-chat-body { flex: 1 1 auto; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 10px; }
+.a3-chat-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.a3-chat-head h2 { margin: 0; font-size: var(--t-cap); color: var(--ink2); font-weight: 600; }
+.a3-chat-row { display: flex; gap: 8px; align-items: flex-end; }
+.a3-chat-row .a3-in { flex: 1 1 auto; min-width: 0; width: auto; min-height: 44px; padding: 10px 14px; text-align: left; resize: none; }
+.a3-chat-row .a3-btn { flex: none; }
+.a3-chat-log { display: flex; flex-direction: column; gap: 10px; }
+.a3-chat-log:empty { display: none; }
+.a3-chat-card { align-self: stretch; }
+.a3-chat-card h3 { margin: 0 0 4px; font-size: var(--t-sm); }
+.a3-chat-saved { align-self: flex-start; margin: 0; font-size: var(--t-cap); color: var(--ink2); }
+.a3-chat-ways { display: flex; flex-wrap: wrap; gap: 8px; }
+.a3-chat-copy { width: 100%; min-height: 120px; text-align: left; font-size: var(--t-cap); }
+.a3-welcome .a3-chat-log { margin-top: 12px; }
+.a3-vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.a3-chat-lines { margin: 4px 0 0; padding-left: 18px; font-size: var(--t-sm); }
+.a3-chat-figs li { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; }
+/* below the wide screen the page is a column: the page scrolls on its own above the bar, so the bar never sits on top of
+   anything (as the message band, screens/messages.js BAND_CSS) */
+@media (max-width: 999px) {
+  body.a3-has-chat { height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+  body.a3-has-chat .a3 { flex: 1 1 auto; min-height: 0; overflow-y: auto; scroll-padding-top: 72px; width: 100%; max-width: none; margin: 0; padding: 16px max(16px, calc((100% - 608px) / 2)) 24px; }
+  body.a3-has-chat .a3-chat { position: static; flex: none; }
+}
+@media (min-width: 1000px) {
+  .a3-chat { left: auto; top: 0; width: 360px; border-top: 0; border-left: 1px solid var(--hair); height: 100vh; height: 100dvh; padding: 16px; }
+  .a3-chat[data-open] { height: 100vh; height: 100dvh; box-shadow: none; }
+  .a3-chat:not([data-open]) .a3-chat-body, .a3-chat:not([data-open]) .a3-chat-head { display: flex; }
+  body.a3-has-chat { padding-right: 360px; }
+}
+.a3-chat-check { color: var(--warn); font-size: var(--t-cap); }
 .a3-word { margin-bottom: 14px; }   /* the code word box above the question or the files (stmt3_ai.js) */
 /* [item 14] setup: each section's Save with its state beside it; the message band (Saved, Undo) stays in sight under
    the tabs while setup is open, and a box focused for an answer is not hidden under it */
@@ -1450,6 +1486,7 @@ html:has(.a3-setup-open) { scroll-padding-top: 150px; }
   <section class="a3-sheet" id="a3Rem" role="dialog" aria-modal="true" aria-labelledby="a3RemT" hidden></section>
   <section class="a3-sheet" id="a3Check" role="dialog" aria-modal="true" aria-labelledby="a3CheckT" hidden></section>
 </main>
+<aside class="a3-chat" id="a3Chat" aria-label="The assistant" hidden></aside>
 <script>
 /* The Burrow engine: days and moments (SCHEMA_V3 section 0, decisions D8, H1, X9, AN4, T watch).
    Every date is a whole day number (days since 1 Jan 1970), worked out from 'YYYY-MM-DD' by arithmetic: no
@@ -5484,6 +5521,11 @@ html:has(.a3-setup-open) { scroll-padding-top: 150px; }
           this.had = false; this.rev = 0; this.bookJson = null;
           return { copy: null, device, empty: true, readOnly: readOnly(), rev: 0 };
         }
+        /* [AI_FIRST_PLAN 2, 9] a book thrown away by discard(): empty, at the mark's rev, so a new setup saves on it */
+        if (got.meta && got.meta.gone && !got.book) {
+          this.had = false; this.rev = got.meta.rev; this.bookJson = null;
+          return { copy: null, device, empty: true, readOnly: readOnly(), rev: got.meta.rev };
+        }
         const meta = got.meta || { v: got.book.v, rev: 0 };
         mayWrite(meta.v);
         const book = got.book || {};
@@ -5587,6 +5629,8 @@ html:has(.a3-setup-open) { scroll-padding-top: 150px; }
       tx.objectStore('kept').getAll(IDBKeyRange.bound(KEPT_LO, KEPT_HI)).onsuccess = e => { got.kept = e.target.result; };
       await done(tx);
       if (!got.meta) return { events: [], keptVersions: [], book: null, rev: 0, cleared: this.had };
+      /* thrown away by discard() in another tab: said as gone; this page's rev is left, so its saves stay refused */
+      if (got.meta.gone && !got.book) return { events: [], keptVersions: [], book: null, rev: got.meta.rev, cleared: this.had, gone: true };
       mayWrite(got.meta.v);
       const diff = (f, list) => list.filter(r => !this.atOf[f].has(r.id) || this.atOf[f].get(r.id) !== r.at);
       const out = { events: diff('events', got.events), keptVersions: diff('keptVersions', got.kept), book: null, rev: got.meta.rev };
@@ -5595,6 +5639,32 @@ html:has(.a3-setup-open) { scroll-padding-top: 150px; }
       this.remember('events', out.events); this.remember('keptVersions', out.keptVersions);
       this.rev = got.meta.rev; this.had = true;
       return out;
+    }
+
+    // [AI_FIRST_PLAN corrections 2 and 9] Undo of the setup chat's fill: the book, its details and its records go; the
+    // device record and the kept whole copies stay. The meta stays as a mark ({ gone: true } with a new rev), so another
+    // tab's next save is refused as 'behind' instead of writing the whole book back. Refused as 'behind' itself when
+    // another tab saved since this page last read. { ok } or { ok: false, why }.
+    discard() {
+      return this.run(async () => {
+        if (readOnly()) return { ok: false, why: 'read-only' };
+        const tx = await this.tx(['book', 'events', 'kept'], 'readwrite');
+        let why = null, rev = this.rev;
+        tx.objectStore('book').get('meta').onsuccess = e => {
+          const meta = e.target.result;
+          if (meta && meta.rev !== this.rev) { why = 'behind'; tx.abort(); return; }
+          rev = Math.max(Date.now(), this.rev + 1);
+          tx.objectStore('book').delete('book');
+          tx.objectStore('events').clear();
+          tx.objectStore('kept').delete(IDBKeyRange.bound(KEPT_LO, KEPT_HI));
+          tx.objectStore('book').put({ v: pageV(), rev, at: nowIso(), gone: true }, 'meta');
+        };
+        try { await done(tx); } catch (e) { return { ok: false, why: why || 'error' }; }
+        this.atOf.events.clear(); this.atOf.keptVersions.clear();
+        this.rev = rev; this.had = false; this.bookJson = null;
+        if (G()) G().tabs.post({ type: 'saved', rev, events: null, kept: null, book: true });
+        return { ok: true, rev };
+      });
     }
 
     // A whole copy kept before a big replace (backup restore, cloud load), as its own record [D2]. Only the newest
@@ -8132,6 +8202,7 @@ const E3 = (() => {
       readOnly = !!r.readOnly;
       if (!r.empty && r.copy) { book = r.copy; mode = 'kept'; }
       store.onOther(ch => { if (joinIn(ch)) shown(); });   // another tab saved: take it in and draw it
+      hold = !!(mode === 'kept' && r.device && r.device.fillHold);
     } catch (e) { store = null; }
   }
   /* ---- two tabs on one device (store/idb.js onOther and catchUp) ----
@@ -8140,6 +8211,7 @@ const E3 = (() => {
   const OTHER = 'Changed in another tab. Shown again, try again';
   function joinIn(ch) {
     if (!ch || !book || mode !== 'kept') return false;
+    if (ch.gone) { book = null; mode = 'none'; hold = false; return true; }   // the fill was undone in another tab
     if (!ch.book && !(ch.events || []).length && !(ch.keptVersions || []).length) return false;
     const byId = (mine, theirs) => { const m = new Map((mine || []).map(r => [r.id, r])); for (const r of theirs || []) m.set(r.id, r); return [...m.values()]; };
     const rest = ch.book || BurrowStore.bookOf(book);
@@ -8235,9 +8307,40 @@ const E3 = (() => {
     book = theirs; shown();
     return { ok: false, why: 'other', text: OTHER };
   }
+  /* ---- the setup chat's fill and its Undo (AI_FIRST_PLAN corrections 2 and 9, BV2.9) ----
+     fill(newBook): only when this device keeps no book (mode 'none'); the book is kept and marked in the device record as
+       a fill that can still be undone, and the cloud copy is held back while it is.
+     discard(): the fill's Undo, only while that mark is there: the store drops the book, its details and its records
+       (store/idb.js discard: the device record and the kept copies stay; another tab is refused, not written over).
+     release(): something else was written, so the fill can no longer be undone: the mark goes and the cloud copy may send. */
+  let hold = false;
+  async function fill(newBook) {
+    if (mode !== 'none') return false;
+    if (!(await start(newBook))) return false;
+    hold = true;
+    await rec('fillHold', true);
+    return true;
+  }
+  async function discard() {
+    if (mode !== 'kept' || !hold || !store) return false;
+    const r = await store.discard();
+    if (!r.ok) return false;
+    const d = (await store.getDevice()) || {};
+    delete d.fillHold;
+    try { await store.putDevice(d); } catch (e) { /* the mark goes with the next fill */ }
+    book = null; mode = 'none'; hold = false;
+    return true;
+  }
+  async function release() {
+    if (!hold) return false;
+    hold = false;
+    await rec('fillHold', null);
+    savedFns.forEach(f => { try { f(book); } catch (e) { /* a listener's own fault */ } });   // the cloud copy may send now
+    return true;
+  }
   /* is a the day before b (two YYYY-MM-DD days) */
   const dayBefore = (a, b) => BurrowEngine.dates.dayNum(b) - BurrowEngine.dates.dayNum(a) === 1;
-  return { today, setToday, useTry, leaveTry, start, told, dayBefore, newId, load, view, nameOf, occName, lastCheckOf, curOf, home, put, replace, rec, onSaved: f => savedFns.push(f),
+  return { today, setToday, useTry, leaveTry, start, fill, discard, release, held: () => hold, told, dayBefore, newId, load, view, nameOf, occName, lastCheckOf, curOf, home, put, replace, rec, onSaved: f => savedFns.push(f),
     get book() { return book; }, get mode() { return mode; } };
 })();
 /* ---------- act3: the one door for every write in app3 (SCHEMA_V3 section 0; DECISIONS_ROUND2 H6, D2, BD4) ----------
@@ -9148,10 +9251,12 @@ function drawHome3() {
   const host = $('#a3Home');
   if (!E3.book) {
     host.removeAttribute('data-origin');
-    host.innerHTML = `<section class="a3-card" data-card="first"><h2>Welcome to the burrow</h2><p class="a3-sub">Put in what your bank shows today, your pay, your cards and your bills. Or look around first with made-up numbers shaped like a real month</p>
+    /* [AI first, new foundation 12] before setup the assistant is the whole first screen (chat3.js), with the same ways in */
+    if (typeof renderWelcome3 === 'function' && typeof CHAT3C === 'object') renderWelcome3(host);
+    else host.innerHTML = `<section class="a3-card" data-card="first"><h2>Welcome to the burrow</h2><p class="a3-sub">Put in what your bank shows today, your pay, your cards and your bills. Or look around first with made-up numbers shaped like a real month</p>
       <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3SetupGo">Set up with your own numbers</button><button type="button" class="a3-btn" id="a3TryGo">See it with made-up numbers first</button><button type="button" class="a3-btn" id="a3OtherGo">I already use the burrow on another device</button></div></section>`;
     $('#a3SetupGo').addEventListener('click', openSetup3);
-    $('#a3TryGo').addEventListener('click', () => { E3.useTry('mako'); tryBand3(); renderHome3(); });
+    $('#a3TryGo').addEventListener('click', () => { E3.useTry('mako'); tryBand3(); renderHome3(); if (typeof renderChat3 === 'function') renderChat3(); });
     $('#a3OtherGo').addEventListener('click', fromOther3);
     return;
   }
@@ -10417,99 +10522,78 @@ function clearErr3(el) {
 /* Back: setup closes; every saved section stays in the draft on this device */
 function closeSetup3() { if (setup3 && setup3.base) { clearTimeout(setup3.typedT); keepDraft3(setup3.saved, setup3.days); } endSetup3(); renderHome3(); }
 function endSetup3() { if (setup3) clearTimeout(setup3.typedT); $('#a3Setup').hidden = true; $('#a3Setup').innerHTML = ''; setup3 = null; $('#a3Home').hidden = false; $('#a3').classList.remove('a3-setup-open'); }
-/* the answers as build_book takes them. strict: a missing amount is asked for next to its box, which is focused
-   (throws 'asked'); else it counts as 0, for a draft book that only says which bills were due since the last pay.
-   sec (a setup section): only the boxes in it are asked for; the others count as 0 */
-function answers3(strict, sec) {
+/* [BV1] the boxes as plain values: setup3's form shape in answers3.js (ANSWERS3, the one answers-to-book function the
+   chat and "Use any AI" use too). strict: a missing or wrong amount is asked for next to its box, which is focused
+   (throws 'asked'); a box not typed and not asked for is null, for the questions the day asks.
+   sec (a setup section): only the boxes in it are asked for */
+function form3(strict, sec) {
   const cur = $('#s3Cur').value;
   const asks = el => strict && (!sec || sec.contains(el));
   const ask = (el, words) => { fieldErr3(el, words); el.focus(); throw new Error('asked'); };
-  const need = (el, words) => { const v = bankBox3(el) ? typedBank3(el.value, cur) : typed3(el.value, cur); if (v !== null) return v; if (!asks(el)) return 0; return ask(el, words); };
+  /* [M47] a bank's own box reads a minus (bankBox3) */
+  const amount = (el, words) => { const v = bankBox3(el) ? typedBank3(el.value, cur) : typed3(el.value, cur); if (v !== null) return v; return asks(el) ? ask(el, words) : null; };
+  const maybe = (el, words) => (el.value.trim() ? amount(el, words) : null);
   const text = (el, dflt) => (el.value || '').trim() || dflt;
+  const dayOf = v => (v === 'last' ? 'last' : Number(v));
   const bankName = text($('#s3BankName'), 'Main bank');
-  const min = $('#s3Min').value.trim() ? need($('#s3Min'), 'Type the amount to keep at least, or leave it blank') : null;
-  const ans = {
-    day: E3.today(), told: E3.told(), currency: cur, country: $('#s3Country').value,
-    banks: [{ key: 'bank1', name: bankName, amount: need($('#s3Bank'), `Type what ${bankName} shows today`), main: true, min }],
-    pays: [], cards: [], bills: [],
-    /* [north star F1, BJ2] Free to spend, the first plan amount, from the setup day; blank: not said (Home asks) */
-    free: $('#s3Free').value.trim() ? need($('#s3Free'), 'Type about how much goes on everyday things, or leave it blank') : null,
-  };
-  /* [slice 6] the other accounts: a second bank, cash, an e-wallet, each with what it holds today */
+  /* [M1] the minimum: blank is none */
+  const min = maybe($('#s3Min'), 'Type the amount to keep at least, or leave it blank');
+  const f = { bankName, cur, country: $('#s3Country').value, bank: amount($('#s3Bank'), `Type what ${bankName} shows today`), accts: [], pays: [], cards: [], bills: [], min };
+  /* [north star F1, BJ2] Free to spend, the first plan amount, from the setup day; blank: not said (Home asks) */
+  f.free = maybe($('#s3Free'), 'Type about how much goes on everyday things, or leave it blank');
+  /* [slice 6] the other accounts: a second bank, cash, an e-wallet, each with what it holds today. ANSWERS3 names them
+     by their place (the main bank, then acct2, acct3, ...); a row here keeps its own key when another is taken out,
+     so each row's key is turned into its place */
+  const place = { bank1: 'bank1' }, seats = ['bank1'];
   $$('#a3Setup [data-row^=acct]').forEach(row => {
-    const name = text(row.querySelector('[data-f=name]'), KIND_NAME3[row.querySelector('[data-f=type]').value]);
-    ans.banks.push({ key: row.dataset.row, name, type: row.querySelector('[data-f=type]').value, amount: need(row.querySelector('[data-f=amount]'), `Type what ${name} holds today, or 0`) });
+    const type = row.querySelector('[data-f=type]').value, name = text(row.querySelector('[data-f=name]'), KIND_NAME3[type]);
+    place[row.dataset.row] = 'acct' + seats.push(row.dataset.row);   // how many accounts so far, this one counted: acct2, acct3, ...
+    f.accts.push({ name, type, amount: amount(row.querySelector('[data-f=amount]'), `Type what ${name} holds today, or 0`) });
   });
   /* the account a select names; a hidden one (only one account to choose) is the main bank */
-  const acctOf = sel => (sel && !sel.closest('[data-q=acct]').hidden && sel.value) || 'bank1';
-  /* the first pay's rhythm: a day each month, two days, every n weeks from the day of one, or no fixed pay */
-  const every = $('#s3PayEvery').value, shift = $('#s3PayShift').value, day = Number($('#s3PayDay').value);
-  /* [slice 6b] one rhythm from the answers, for the pay and for a second income: every n weeks from the day of one
-     (build_book steps it back to on or before the setup day, BP1) */
-  const rhythmOf = (ev, d, d2v, startBox) => {
-    const d2 = d2v === 'last' ? 'last' : Number(d2v);
-    if (ev === 'month') return { every: 'month', day: d };
-    if (ev === 'days') return { every: 'month', days: d === d2 ? [d] : [d, d2] };
-    if (ev === 'none') return { every: 'none' };
-    const start = startBox.value;
-    if (!start && asks(startBox)) ask(startBox, 'Type the day of one pay, the last one or the next one');
-    /* a draft with no day of one yet: today stands in, marked, so it is never taken as a pay landing today */
-    return Object.assign({ every: 'weeks', n: Number(ev.slice(5)), start: start || ans.day }, start ? {} : { noStart: true });
-  };
-  const rhythm = rhythmOf(every, day, $('#s3PayDay2').value, $('#s3PayStart'));
+  const acctOf = sel => place[(sel && !sel.closest('[data-q=acct]').hidden && sel.value) || 'bank1'] || 'bank1';
+  /* [slice 6b] every n weeks: the day of one pay (build_book steps it back to on or before the setup day, BP1) */
+  const startOf = (ev, box) => { if (!ev.startsWith('weeks')) return null; if (box.value) return box.value; return asks(box) ? ask(box, 'Type the day of one pay, the last one or the next one') : null; };
+  const every = $('#s3PayEvery').value, start = startOf(every, $('#s3PayStart'));
   $$('#a3Setup [data-row^=pay]').forEach((row, i) => {
     const name = text(row.querySelector('[data-f=name]'), i ? 'Second income' : 'Pay');
-    const ev = i ? row.querySelector('[data-f=every]').value : null;
-    const r = !i || ev === 'same' ? rhythm : rhythmOf(ev, Number(row.querySelector('[data-f=day]').value), row.querySelector('[data-f=day2]').value, row.querySelector('[data-f=start]'));
-    const box = row.querySelector('[data-f=amount]'), bank = acctOf(i ? row.querySelector('[data-f=acct]') : $('#s3PayAcct'));
+    const ev = i ? row.querySelector('[data-f=every]').value : every, r = ev === 'same' ? every : ev;
+    const st = !i || ev === 'same' ? start : startOf(ev, row.querySelector('[data-f=start]'));
+    const box = row.querySelector('[data-f=amount]');
     /* no fixed pay: the amount may be blank (it comes when it comes) */
-    if (r.every === 'none' && !box.value.trim()) { ans.pays.push(Object.assign({ key: row.dataset.row, name, bank, shift: 'none' }, r)); return; }
-    /* [BL1] a pay of 0 is refused with build_book's own words; a draft counts a pay not typed yet as some amount */
-    const amount = need(box, `Type how much ${name} is`);
-    if (amount === 0 && asks(box)) ask(box, BurrowEngine.build.PAY_NEEDS_AMOUNT);
-    ans.pays.push(Object.assign({ key: row.dataset.row, name, bank, amount: amount || 1, shift: r.every === 'none' ? 'none' : shift }, r));
+    const amt = r === 'none' && !box.value.trim() ? null : amount(box, `Type how much ${name} is`);
+    /* [BL1] a pay of 0 is refused with build_book's own words */
+    if (amt === 0 && asks(box)) ask(box, BurrowEngine.build.PAY_NEEDS_AMOUNT);
+    if (!i) f.pay = { name, amount: amt, every, day: Number($('#s3PayDay').value), day2: dayOf($('#s3PayDay2').value), start: st, shift: $('#s3PayShift').value, acct: acctOf($('#s3PayAcct')) };
+    else f.pays.push({ name, amount: amt, every: ev, day: Number(row.querySelector('[data-f=day]').value), day2: dayOf(row.querySelector('[data-f=day2]').value), start: st, acct: acctOf(row.querySelector('[data-f=acct]')) });
   });
-  /* the first pay with a fixed day starts the pay period */
-  const first = ans.pays.find(x => x.every !== 'none');
-  if (first) first.startsPeriod = true;
   $$('#a3Setup [data-row^=card]').forEach(row => {
     const name = text(row.querySelector('[data-f=name]'), 'Card'), cd = row.querySelector('[data-f=closeDay]').value;
-    const owed = need(row.querySelector('[data-f=owed]'), `Type what is on ${name} now, or 0`);
+    const owed = amount(row.querySelector('[data-f=owed]'), `Type what is on ${name} now, or 0`);
     /* [BL6] asked only between the close and its payment day (askTaken3 shows it); blank: all of it was on that statement */
     const q = row.querySelector('[data-q=stmt]'), st = row.querySelector('[data-f=statement]');
-    const statement = strict && q && !q.hidden ? (st.value.trim() ? need(st, `Type how much of ${name} was on the statement, or leave it blank`) : owed) : undefined;
-    ans.cards.push({ key: row.dataset.row, name, owed,
-      payDay: Number(row.querySelector('[data-f=payDay]').value), closeDay: cd === 'not sure' || cd === 'last' ? cd : Number(cd),
-      payFrom: acctOf(row.querySelector('[data-f=payFrom]')), shift: row.querySelector('[data-f=shift]').value, ...(statement !== undefined ? { statement } : {}) });
+    f.cards.push({ name, owed, payDay: Number(row.querySelector('[data-f=payDay]').value), closeDay: cd === 'not sure' || cd === 'last' ? cd : Number(cd),
+      payFrom: acctOf(row.querySelector('[data-f=payFrom]')), shift: row.querySelector('[data-f=shift]').value,
+      statement: q && !q.hidden ? maybe(st, `Type how much of ${name} was on the statement, or leave it blank`) : null });
   });
   $$('#a3Setup [data-row^=bill]').forEach(row => {
-    const name = text(row.querySelector('[data-f=name]'), 'Bill');
-    const q = row.querySelector('[data-q=takenOut]'), d = Number(row.querySelector('[data-f=day]').value);
-    /* once a year: its month and day ('MM-DD'); a day the month does not have is refused by build_book with words */
-    const yearly = row.querySelector('[data-f=every]').value === 'year';
-    const when = yearly ? { every: 'year', date: row.querySelector('[data-f=month]').value + '-' + row.querySelector('[data-f=day]').value.padStart(2, '0') } : { day: d };
+    const name = text(row.querySelector('[data-f=name]'), 'Bill'), q = row.querySelector('[data-q=takenOut]');
     /* [K32] a bill of 0 is refused with Plan's own words (plan3_write amountOk), as Plan refuses it */
-    const box = row.querySelector('[data-f=amount]'), amount = need(box, `Type the amount of ${name}`);
-    if (amount === 0 && asks(box)) ask(box, 'Type the amount above zero');
-    ans.bills.push(Object.assign({ key: row.dataset.row, name, from: acctOf(row.querySelector('[data-f=from]')), amount, shift: 'after' }, when,
-      q && !q.hidden && row.querySelector('[data-f=takenOut]').value === 'no' ? { takenOut: false } : {}));
+    const box = row.querySelector('[data-f=amount]'), amt = amount(box, `Type the amount of ${name}`);
+    if (amt === 0 && asks(box)) ask(box, 'Type the amount above zero');
+    /* once a year: its month and day; a day the month does not have is refused by build_book with words */
+    f.bills.push({ name, amount: amt, every: row.querySelector('[data-f=every]').value, month: row.querySelector('[data-f=month]').value,
+      day: Number(row.querySelector('[data-f=day]').value), from: acctOf(row.querySelector('[data-f=from]')),
+      takenOut: q && !q.hidden ? row.querySelector('[data-f=takenOut]').value : 'yes' });
   });
   /* [BV2.13] on a day the pay lands: has it already landed in that figure? asked, never assumed (askTaken3 shows it);
-     last, so every other answer is asked first. Same words and shape as lane/ai-panel */
+     last, so every other answer is asked first */
   const pt = $('#a3Setup [data-q=payToday]'), ptBox = $('#s3PayToday');
-  ans.payToday = pt && !pt.hidden ? (ptBox.value || (asks(ptBox) ? ask(ptBox, 'Say whether today\'s pay is already in that figure') : null)) : null;
-  return ans;
+  f.payToday = pt && !pt.hidden ? (ptBox.value || (asks(ptBox) ? ask(ptBox, 'Say whether today\'s pay is already in that figure') : null)) : null;
+  return f;
 }
-/* [BV2.13] the fixed pays landing on the setup day, by the engine's own calendar: [{ bank key, occurrence id }] */
-function payToday3(built, ans) {
-  const S = BurrowEngine.schedules, D = BurrowEngine.dates, cal = S.calendar(ans.country || 'XX'), d0 = D.dayNum(ans.day), out = [];
-  for (const p of ans.pays) {
-    if (p.every === 'none' || p.noStart) continue;
-    const sch = built.book.schedules.find(x => x.id === built.ids[p.key]);
-    for (const o of S.occurrences(sch, cal, D.addMonths(d0, -1), D.addMonths(d0, 1))) if (o.land === d0) out.push({ bank: p.bank, id: o.id });
-  }
-  return out;
-}
+/* the answers (ANSWERS3's shape), from the boxes */
+const answers3 = strict => ANSWERS3.fromForm(form3(strict), { day: E3.today() });
 /* [slice 6] the form follows the answers: the boxes each rhythm needs, and an account choice only when there is more
    than one account of the kind it takes (banks only for a card). Options keep what was picked. */
 function shape3() {
@@ -10540,29 +10624,26 @@ function shape3() {
    names the bill and its own day: "Did the Rent of 27 Oct leave your bank?" */
 function askTaken3() {
   if (!setup3) return;
-  let asked = {}, stmts = {}, today = false;
-  try {
-    const a = answers3(false), d = BurrowEngine.build.buildBook(a, { newId: BurrowEngine.ids.idMaker('draft0') });
-    asked = d.asked || {}; stmts = d.askedStatements || {}; today = payToday3(d, a).length > 0;
-  } catch (e) { asked = {}; }
+  let q = { asked: {}, statements: {}, payToday: false };
+  try { q = ANSWERS3.questions(answers3(false), { day: E3.today(), currency: $('#s3Cur').value }); } catch (e) { /* not yet a whole set of answers */ }
+  const yr = (E3.today() || '').slice(0, 4), key = (sec, row, dflt) => ANSWERS3.keyOf(sec, (row.querySelector('[data-f=name]').value || '').trim() || dflt);
   /* [BV2.13] the pay lands today: is it in the figure typed? */
-  $('#a3Setup [data-q=payToday]').hidden = !today;
-  const yr = (E3.today() || '').slice(0, 4);
+  $('#a3Setup [data-q=payToday]').hidden = !q.payToday;
   /* [BL6] a card set up after its close and before that statement's payment day: how much was on that statement */
   $$('#a3Setup [data-row^=card]').forEach(row => {
-    const q = row.querySelector('[data-q=stmt]'), g = stmts[row.dataset.row];
-    q.hidden = !g;
+    const el = row.querySelector('[data-q=stmt]'), g = q.statements[key('cards', row, 'Card')];
+    el.hidden = !g;
     if (!g) return;
-    q.querySelector('label').textContent = `How much of it was on the statement that closed on ${day3(g.closed, yr)}?`;
-    q.querySelector('[data-hint=stmt]').textContent = `That part comes out on ${day3(g.payment, yr)}, the rest with a later payment. Leave it blank if you are not sure: then all of it comes out on ${day3(g.payment, yr)}`;
+    el.querySelector('label').textContent = `How much of it was on the statement that closed on ${day3(g.closed, yr)}?`;
+    el.querySelector('[data-hint=stmt]').textContent = `That part comes out on ${day3(g.payment, yr)}, the rest with a later payment. Leave it blank if you are not sure: then all of it comes out on ${day3(g.payment, yr)}`;
   });
   $$('#a3Setup [data-row^=bill]').forEach(row => {
-    const q = row.querySelector('[data-q=takenOut]'), days = asked[row.dataset.row];
-    q.hidden = !days;
+    const el = row.querySelector('[data-q=takenOut]'), days = q.asked[key('bills', row, 'Bill')];
+    el.hidden = !days;
     if (!days) return;
     const name = row.querySelector('[data-f=name]').value.trim() || 'bill';
     const when = days.map(d => day3(d, yr)), list = when.length > 1 ? when.slice(0, -1).join(', ') + ' and ' + when.slice(-1)[0] : when[0];
-    q.querySelector('label').textContent = `Did the ${name} of ${list} leave your bank?`;
+    el.querySelector('label').textContent = `Did the ${name} of ${list} leave your bank?`;
   });
 }
 /* ---------- [item 14] each section saved on its own ----------
@@ -10653,7 +10734,7 @@ async function saveSec3(sec) {
   const el = secEl3(sec);
   $('#a3SetupErr').textContent = '';
   el.querySelectorAll('[data-err-for]').forEach(p => clearErr3(document.getElementById(p.dataset.errFor)));
-  try { askTaken3(); answers3(true, el); } catch (e) { if (e.message === 'asked') return; throw e; }
+  try { askTaken3(); form3(true, el); } catch (e) { if (e.message === 'asked') return; throw e; }
   const before = setup3.saved[sec] || null, beforeDay = setup3.days[sec] || null, now = snap3(sec);
   const sections = Object.assign({}, setup3.saved, { [sec]: now }), days = Object.assign({}, setup3.days, { [sec]: E3.today() });
   setup3.busy = true;
@@ -10708,19 +10789,11 @@ async function saveSetup3() {
     return;
   }
   let ans;
-  try { ans = answers3(true); } catch (e) { if (e.message === 'asked') return; throw e; }
+  try { ans = answers3(true); } catch (e) { if (e.message !== 'asked') err.textContent = e.message; return; }
   askTaken3();
-  try { ans = answers3(true); } catch (e) { if (e.message === 'asked') return; throw e; }
+  try { ans = answers3(true); } catch (e) { if (e.message !== 'asked') err.textContent = e.message; return; }
   let built;
-  try { built = BurrowEngine.build.buildBook(ans, { newId: E3.newId }); } catch (e) { err.textContent = e.message; return; }
-  /* [BV2.13] a pay landing today that is not in today's figure yet stays to come: named in its account's opening check
-     (the notYet the engine reads, as build_book does for a bill not out yet) */
-  if (ans.payToday === 'no') {
-    for (const x of payToday3(built, ans)) {
-      const check = built.book.events.find(e => e.k === 'check' && e.acct === built.ids[x.bank]);
-      if (check) check.notYet = (check.notYet || []).concat([x.id]);
-    }
-  }
+  try { built = ANSWERS3.build(ans, { day: E3.today(), told: E3.told(), newId: E3.newId, currency: $('#s3Cur').value }); } catch (e) { err.textContent = e.message; return; }
   const ok = await E3.start(built.book);
   if (!ok) { err.textContent = 'This could not be saved on this device. Nothing changed'; return; }
   await E3.rec('setup', null);
@@ -10967,6 +11040,7 @@ async function syncNow3(opts) {
   opts = opts || {};
   const st = await cloudState3();
   if (!st.on || E3.mode === 'try') return null;
+  if (E3.held && E3.held()) { C3.dirty = true; return null; }   // [BV2.9] the setup chat's fill can still be undone: nothing leaves yet
   if (C3.busy) { C3.again = true; return null; }
   C3.busy = true; clearTimeout(C3.timer);
   const snap = E3.book;
@@ -11409,6 +11483,8 @@ if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
   });
 }
 /* ---------- start ---------- */
+/* for the page tests: the book's door, read from outside the page's closure (the page never reads it) */
+root3.BurrowApp3 = { E3, ACT3 };
 /* the one tab switch: a button with data-tab="<name>" shows the panel with data-panel="<name>" and hides every other
    panel. A sheet open over Home (Check your bank) closes first, so its close cannot bring Home back beside the new tab. */
 function showTab3(name) {
@@ -11444,6 +11520,7 @@ async function leaveTry3() {
   const t = $('#a3Try'); t.hidden = true; t.innerHTML = '';
   await E3.leaveTry();
   renderHome3();
+  if (typeof renderChat3 === 'function') renderChat3();
   if (!E3.book) openSetup3();
 }
 (async () => {
@@ -11455,10 +11532,12 @@ async function leaveTry3() {
   /* [item 14] a setup left half way: back into it, with what was saved (src/setup3.js, the draft) */
   if (!E3.book && E3.mode === 'none' && await E3.rec('setup')) openSetup3();
   document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; if (!$('#a3Check').hidden) closeCheck3(); });
-  if (typeof startCloud3 === 'function') startCloud3();   // the cloud copy, when on: taken on opening (backup lane)
+  if (typeof startCloud3 === 'function') startCloud3();
+  if (typeof startChat3 === 'function') startChat3();   // the assistant panel (AI first)   // the cloud copy, when on: taken on opening (backup lane)
   /* another tab saved (E3 joined it in): draw it again; a receipt being typed keeps what was typed */
   addEventListener('burrow3:other', () => {
     renderHome3();
+    if (typeof renderChat3 === 'function') renderChat3();
     if (typeof renderRc3 === 'function') { const k = rcKeep3(); renderRc3(); rcPut3(k); }
     if (typeof renderPlan3 === 'function') renderPlan3();
   });
@@ -11797,7 +11876,7 @@ function stmt3Review() {
 }
 /* the review drawn again after a change, keeping which shops are open and where it was scrolled */
 function stmt3Again() {
-  const open = [...document.querySelectorAll('[data-rowsof]')].filter(u => !u.hidden).map(u => u.dataset.rowsof), y = scrollY;
+  const open = [...document.querySelectorAll('[data-rowsof]')].filter(u => !u.hidden).map(u => u.dataset.rowsof), y = ($('#a3') || {}).scrollTop || scrollY;   // the page may scroll inside #a3 (chat3.js)
   stmt3Review();
   for (const k of open) { const u = document.querySelector(`[data-rowsof="${CSS.escape(k)}"]`); if (u) { u.hidden = false; document.querySelector(`[data-mx="${CSS.escape(k)}"]`).setAttribute('aria-expanded', 'true'); } }
   scrollTo(0, y);
@@ -13012,6 +13091,346 @@ ${card.need.length && state.draft ? 'STILL NEEDED: ' + card.need.join(' ') : ''}
   if (node) module.exports = api;
   else root.CHAT3C = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
+/* ---------- the assistant panel (DECISIONS new foundation 12 to 14; DECISIONS_ROUND2 BU, BV, BW; AI_FIRST_PLAN 1 to 4) ----------
+   One panel, always on screen: a bar at the foot of a phone ("Ask or tell me something") that opens to a sheet over the
+   lower part, a column on the right on a wide screen, and, before setup, the whole first screen (the welcome, drawn into
+   #a3Home). The conversation itself is chat3_core.js (CHAT3C, lane A): this file only places its turns and cards, keeps
+   the chat on this device (IndexedDB `burrow3chat`, never in the book, the cloud copy or a backup), and gives the core
+   what it needs (deps): the relay, the day, E3's book, ACT3, E3.fill and E3.discard.
+   Each change the assistant makes is a card with what changed, the engine's figures before and after, and one-tap Undo;
+   a delete or a change larger than safe to spend asks first (BW). The fill card has Undo while nothing else is written,
+   then Start over, which asks first (BV2.9). When the site's AI is off or the relay fails, two ways always finish setup:
+   "Set up on the screens" (setup3, filled from the draft) and "Use any AI" (copy the questions, paste the answer back).
+   This file chooses, writes and places; it never adds, takes away or rounds. Words are drafts for Mako's copy pass. */
+const CHAT3 = { state: null, busy: false, open: false, route: null, anon: null, db: null, off: null, any: false };
+const CHAT3_WORDS = {
+  privacy: 'What you type, today\'s figures with the names of your accounts, bills and income, and the setup answers so far go to Claude, the AI made by Anthropic, through this page\'s own server. Your notes, shops and single spends are not sent unless you type them. The chat stays on this device.',
+  off: 'The assistant is off right now. You can still finish everything:',
+  /* why a change card asks first (M6): the core's card.ask; its card.why is the AI's own words, not shown here */
+  ask: { delete: 'This takes something away. Do it?', large: 'This is more than safe to spend. Do it?', guess: 'You didn\'t type this amount, it\'s the AI\'s guess. Is it right?' },
+  upload: 'The whole file goes to the AI, with your name, address, employer and account number. On a payslip, crop out your My Number.',
+  noFiles: 'Reading files in the chat comes next. For now, type the figures, or add statements on Receipts.',
+  welcome: ['Hi, I\'ll set up your Burrow with you. I ask a few questions, about 10 minutes. You can type, and I\'ll say where to find each figure. What you tell me stays on this phone until you say fill it in.',
+    'You tell me what\'s in your bank today, what comes in and what goes out and when. From that the app works out what\'s safe to spend until your next pay. Everything I fill in shows on the screens so you can check it.'],
+  startOver: 'Start over? Your money on this device goes and the setup answers stay, so you can fill it in again. Anything you logged since is lost.',
+};
+
+/* below the wide screen the page scrolls inside #a3, above the bar (app3.css): every screen's scrollTo moves it too.
+   A function declaration, so it stands for the window's scrollTo in every file of this page. */
+function scrollTo(x, y) { window.scrollTo(x, y); const m = document.getElementById('a3'); if (m) m.scrollTop = y; }
+
+/* ---- the chat kept on this device: its own IndexedDB, never the book's ---- */
+function chat3Db() {
+  if (CHAT3.db) return Promise.resolve(CHAT3.db);
+  return new Promise(res => {
+    let q;
+    try { q = indexedDB.open('burrow3chat', 1); } catch (e) { res(null); return; }
+    q.onupgradeneeded = () => q.result.createObjectStore('chat');
+    q.onsuccess = () => { CHAT3.db = q.result; res(CHAT3.db); };
+    q.onerror = () => res(null);
+  });
+}
+async function chat3Get(key) {
+  const db = await chat3Db(); if (!db) return null;
+  return new Promise(res => { const g = db.transaction('chat').objectStore('chat').get(key); g.onsuccess = () => res(g.result || null); g.onerror = () => res(null); });
+}
+async function chat3Put(key, v) {
+  if (E3.mode === 'try') return false;   // a try book keeps nothing, the chat about it neither
+  const db = await chat3Db(); if (!db) return false;
+  return new Promise(res => { const tx = db.transaction('chat', 'readwrite'); tx.objectStore('chat').put(v, key); tx.oncomplete = () => res(true); tx.onerror = () => res(false); });
+}
+/* the device id the relay counts by (BU3): drawn once, kept on this device */
+async function chat3Anon() {
+  if (CHAT3.anon) return CHAT3.anon;
+  let a = await chat3Get('anon');
+  if (!a) {
+    const abc = 'abcdefghijklmnopqrstuvwxyz0123456789'; a = '';
+    for (const b of crypto.getRandomValues(new Uint8Array(20))) a += abc[b % abc.length];
+    await chat3Put('anon', a);
+  }
+  return (CHAT3.anon = a);
+}
+const chat3Save = () => chat3Put('state', CHAT3.state);
+/* the code word: kept on this device by STMT3_AI (stmt3_ai.js), its box shown here when the relay asks for one */
+const chat3Invite = () => STMT3_AI.word();
+function chat3Word(bad) {
+  const slot = $('#a3ChatWord'); if (!slot) return;
+  STMT3_AI.wordBox(slot, bad, () => { const q = $('#a3ChatIn'); if (q) q.focus(); });
+  const w = $('#a3WordIn'); if (w) w.focus();
+}
+
+/* ---- the relay: the core's body as is, one round ---- */
+async function chat3Send(body) {
+  const r0 = CHAT3.route;
+  if (!r0 || r0.how !== 'relay') throw new Error('the assistant can\'t be reached from this copy of the page');
+  try { return await STMT3_AI.post(r0.base, body, 'the daily limit is reached, or too many messages at once. Try again later, or use the screens'); }   // the one place a relay call is sent, with the code word
+  catch (e) { if (e && e.word) CHAT3.word = e.message; throw e; }
+}
+function chat3Deps() {
+  return {
+    send: chat3Send, today: () => E3.today(), told: () => E3.told(), newId: () => E3.newId(),
+    book: () => E3.book, mode: () => E3.mode, door: E3.book ? ACT3 : null,
+    start: b => E3.fill(b), discard: () => E3.discard(),
+    anon: CHAT3.anon || '', invite: chat3Invite(),
+  };
+}
+/* is the site's AI there (/api/health says ai: true)? Asked once a page open; never from a plain file with no relay */
+async function chat3Route() {
+  if (CHAT3.route) return CHAT3.route;
+  try { CHAT3.route = await STMT3_AI.connect(); } catch (e) { CHAT3.route = { how: null }; }
+  CHAT3.off = CHAT3.route.how !== 'relay';
+  return CHAT3.route;
+}
+
+/* ---- drawing ---- */
+const chat3Full = () => !E3.book;   // before setup the panel is the first screen
+function chat3Figs(rows) {
+  const cur = E3.book ? E3.home() : 'JPY';
+  if (!rows || !rows.length) return '';
+  return `<ul class="a3-rows a3-chat-figs"><li class="a3-ask-head"><span></span><span>Before</span><span>After</span></li>${rows.map(r => `<li><span>${esc3(r.label)}</span>`
+    + `<span class="amt">${r.before == null ? '' : fig3('ask.before', r.before, cur)}</span><span class="amt">${r.after == null ? '' : fig3('ask.after', r.after, cur)}</span></li>`).join('')}</ul>`;
+}
+function chat3Card(t) {
+  const c = t.card || {}, id = esc3(t.id);
+  if (c.kind === 'change') {
+    const foot = c.status === 'done' ? `<p class="a3-sub" data-chat="status">Done</p><div class="a3-actions"><button type="button" class="a3-btn" data-chatundo="${id}">Undo</button></div>`
+      : c.status === 'ask' ? `<p class="a3-sub" data-chat="status" data-ask="${esc3(c.ask || '')}">${esc3(CHAT3_WORDS.ask[c.ask] || CHAT3_WORDS.ask.large)}</p><div class="a3-actions"><button type="button" class="a3-btn solid" data-chatok="${id}">Do it</button><button type="button" class="a3-btn" data-chatnot="${id}">Not now</button></div>`
+      : `<p class="a3-sub" data-chat="status">${esc3(c.status === 'undone' ? 'Taken back' : c.status === 'not now' ? 'Not done' : 'Not done: ' + (c.why || 'the app refused it'))}</p>`;
+    return `<div class="a3-card a3-chat-card" data-card="chat-change" data-turn="${id}" data-status="${esc3(c.status)}"><h3>${c.status === 'ask' ? 'A change to check' : 'Changed'}</h3>
+      <ul class="a3-chat-lines">${(c.lines || []).map(l => `<li>${esc3(l)}</li>`).join('')}</ul>${chat3Figs(c.rows)}${foot}</div>`;
+  }
+  if (c.kind === 'draft') {
+    return `<div class="a3-card a3-chat-card" data-card="chat-draft" data-turn="${id}"><h3>Your answers so far</h3>
+      ${(c.sections || []).map(s => `<div data-section="${esc3(s.key)}"><p class="a3-acct">${esc3(s.title)}</p><ul class="a3-chat-lines">${(s.lines || []).map(l => `<li>${esc3(l)}</li>`).join('')}</ul></div>`).join('')}
+      ${(c.need || []).length ? `<p class="a3-sub" data-chat="need">Still needed: ${esc3(c.need.join('; '))}</p>` : ''}
+      ${c.ready && !E3.book ? `<div class="a3-actions"><button type="button" class="a3-btn solid" data-chatfill="${id}">Fill in my Burrow</button></div>` : ''}</div>`;
+  }
+  if (c.kind === 'fill') {
+    const f = c.figures || {}, cur = E3.book ? E3.home() : 'JPY';
+    const figs = f.safe != null ? `<ul class="a3-rows"><li><span>${esc3(label3('safeToSpend'))}</span><span class="amt">${fig3('safeToSpend.headline', f.safe, cur)}</span></li>${f.bank != null ? `<li><span>${esc3(label3('bankToday'))}</span><span class="amt">${fig3('accounts.*.bank', f.bank, cur)}</span></li>` : ''}</ul>` : '';
+    const foot = c.status === 'done' ? `<div class="a3-actions"><button type="button" class="a3-btn" data-chatundo="${id}">${E3.held() ? 'Undo' : 'Start over'}</button></div>`
+      : `<p class="a3-sub" data-chat="status">${c.status === 'undone' ? 'Taken back. Your answers are kept' : 'Started over. Your answers are kept'}</p>`;
+    return `<div class="a3-card a3-chat-card" data-card="chat-fill" data-turn="${id}" data-status="${esc3(c.status)}"><h3>Filled in</h3>${figs}${foot}</div>`;
+  }
+  return '';
+}
+function chat3Turn(t) {
+  if (t.who === 'person') return `<p class="a3-ask-me" data-turn="${esc3(t.id)}">${esc3(t.text)}</p>`;
+  /* [AI_FIRST_PLAN 7] an amount the AI wrote that is in nothing it was given: marked for checking against the screens */
+  if (t.who === 'ai') return `<p class="a3-ask-ai" data-turn="${esc3(t.id)}">${esc3(t.text)}${(t.check || []).length ? `<span class="a3-chat-check" data-chat="check"><br>Check this: ${esc3(t.check.join(', '))} is the AI's own figure, not the app's. The screens have the app's figures</span>` : ''}</p>`;
+  if (t.who === 'note') return `<p class="a3-chat-saved" data-turn="${esc3(t.id)}" role="status">${esc3(t.text)}</p>`;
+  if (t.who === 'card') return chat3Card(t);
+  return '';
+}
+/* the parts every form of the panel shares: the log, the box, the privacy line and "See what is sent", the ways when off */
+function chat3Inner() {
+  const st = CHAT3.state || CHAT3C.fresh();
+  const welcome = chat3Full() && !st.turns.length ? CHAT3_WORDS.welcome.map(w => `<p class="a3-ask-ai">${esc3(w)}</p>`).join('') : '';
+  const off = CHAT3.off ? `<div class="a3-card" data-card="chat-off"><p class="a3-sub">${esc3(CHAT3_WORDS.off)}</p><div class="a3-chat-ways">
+      ${chat3Full() ? '<button type="button" class="a3-btn" id="a3ChatScreens">Set up on the screens</button>' : ''}
+      <button type="button" class="a3-btn" id="a3ChatAny">Use any AI</button></div><div id="a3ChatAnyBox"></div></div>` : '';
+  const lastCard = st.turns.filter(t => t.who === 'card' && t.card && t.card.kind === 'draft').pop();
+  const live = !E3.book && st.draft && (!lastCard || JSON.stringify(lastCard.card) !== JSON.stringify(CHAT3C.draftCard(st.draft, E3.today())))
+    ? chat3Card({ id: 'live', who: 'card', card: CHAT3C.draftCard(st.draft, E3.today()) }) : '';
+  return `<div class="a3-chat-log" id="a3ChatLog" aria-live="polite">${welcome}${st.turns.map(chat3Turn).join('')}${live}</div>${off}
+    <div id="a3ChatWord"></div>
+    <div class="a3-chat-row"><label class="a3-vh" for="a3ChatIn">Ask or tell me something</label>
+      <textarea class="a3-in a3-text" id="a3ChatIn" rows="1" maxlength="1000" placeholder="Ask or tell me something"></textarea>
+      <button type="button" class="a3-btn solid" id="a3ChatSend">Send</button></div>
+    <div class="a3-chat-ways"><button type="button" class="a3-link" id="a3ChatFile">Send a file</button></div><div id="a3ChatFileBox"></div>
+    <p class="a3-sub" data-privacy="chat">${esc3(CHAT3_WORDS.privacy)}</p>
+    <details class="a3-ask-sent"><summary>See what is sent</summary><pre id="a3ChatSent"></pre></details>`;
+}
+/* the panel itself: on Home before setup it is the welcome card; after setup the bar or the column */
+function renderChat3() {
+  const aside = $('#a3Chat');
+  if (!aside) return;
+  if (chat3Full() || E3.mode === 'try') { aside.hidden = true; aside.innerHTML = ''; document.body.classList.remove('a3-has-chat'); return; }
+  aside.hidden = false; document.body.classList.add('a3-has-chat');
+  const keep = $('#a3ChatIn') && $('#a3ChatIn').closest('#a3Chat') ? $('#a3ChatIn').value : '';
+  aside.innerHTML = `<div class="a3-chat-head"><h2>The assistant</h2><button type="button" class="a3-link" id="a3ChatClose">Close</button></div>
+    <div class="a3-chat-body">${chat3Inner()}</div>`;
+  if (CHAT3.open) aside.setAttribute('data-open', ''); else aside.removeAttribute('data-open');
+  /* closed on a phone: only the box shows, as the bar; a tap on it opens the sheet */
+  const row = aside.querySelector('.a3-chat-row'); aside.appendChild(row);
+  $('#a3ChatIn').value = keep;
+  chat3Wire(aside);
+}
+/* before setup: the whole first screen, with the ways in that were there before */
+function renderWelcome3(host) {
+  host.innerHTML = `<section class="a3-card a3-welcome" data-card="first"><h2>Welcome to the burrow</h2>${chat3Inner()}
+    <div class="a3-actions"><button type="button" class="a3-btn" id="a3SetupGo">Set up on the screens instead</button><button type="button" class="a3-btn" id="a3TryGo">See it with made-up numbers first</button><button type="button" class="a3-btn" id="a3OtherGo">I already use the burrow on another device</button></div></section>`;
+  chat3Wire(host);
+}
+function chat3Wire(host) {
+  const log = host.querySelector('#a3ChatLog');
+  if (log) { const body = log.closest('.a3-chat-body'); if (body) body.scrollTop = body.scrollHeight; }
+  const box = host.querySelector('#a3ChatIn');
+  box.addEventListener('focus', () => { if (!chat3Full() && !CHAT3.open) { CHAT3.open = true; $('#a3Chat').setAttribute('data-open', ''); chat3SentNow(); } });
+  box.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); chat3Go(); } });
+  host.querySelector('#a3ChatSend').addEventListener('click', () => chat3Go());
+  const close = host.querySelector('#a3ChatClose');
+  if (close) close.addEventListener('click', () => { CHAT3.open = false; $('#a3Chat').removeAttribute('data-open'); });
+  host.querySelector('#a3ChatFile').addEventListener('click', chat3FileNotice);
+  host.querySelectorAll('[data-chatundo]').forEach(b => b.addEventListener('click', () => chat3Undo(b.dataset.chatundo)));
+  host.querySelectorAll('[data-chatok]').forEach(b => b.addEventListener('click', () => chat3Act(() => CHAT3C.confirm(CHAT3.state, b.dataset.chatok, chat3Deps()))));
+  host.querySelectorAll('[data-chatnot]').forEach(b => b.addEventListener('click', () => chat3Act(() => CHAT3C.notNow(CHAT3.state, b.dataset.chatnot))));
+  host.querySelectorAll('[data-chatfill]').forEach(b => b.addEventListener('click', () => chat3Act(() => CHAT3C.fillNow(CHAT3.state, chat3Deps()))));
+  const scr = host.querySelector('#a3ChatScreens'); if (scr) scr.addEventListener('click', chat3Screens);
+  const any = host.querySelector('#a3ChatAny'); if (any) any.addEventListener('click', chat3Any);
+  if (CHAT3.any) chat3Any();
+  host.querySelector('details.a3-ask-sent').addEventListener('toggle', chat3SentNow);
+}
+function chat3SentNow() {
+  const pre = $('#a3ChatSent'); if (!pre || !CHAT3.state) return;
+  try { pre.textContent = CHAT3C.sentText(CHAT3.state, ($('#a3ChatIn') || {}).value || '', chat3Deps()); } catch (e) { pre.textContent = ''; }
+}
+/* every redraw after the chat changed: the panel, and Home (a fill or a change shows there at once) */
+function chat3Redraw() {
+  if (E3.book && $('#a3Home').querySelector('.a3-welcome')) renderHome3();
+  else if (!E3.book) renderHome3();
+  else { renderChat3(); if (!$('#a3Home').hidden) renderHome3(); }
+  if (E3.book) renderChat3();
+}
+
+/* ---- what the person does ---- */
+async function chat3Go() {
+  const box = $('#a3ChatIn'), q = (box.value || '').trim();
+  if (CHAT3.busy) return;
+  if (!q) { box.focus(); return; }
+  await chat3Route();
+  /* the relay asks for a code word and none is kept: its box first, the message stays in the box */
+  if (!CHAT3.off && await STMT3_AI.needWord()) { chat3Word('Type the code word first, then send again'); return; }
+  CHAT3.busy = true; $('#a3ChatSend').disabled = true;
+  await chat3Anon();
+  box.value = '';
+  const log = $('#a3ChatLog');
+  log.insertAdjacentHTML('beforeend', `<p class="a3-ask-me">${esc3(q)}</p><p class="a3-ask-ai a3-ask-wait" id="a3ChatWait">Working</p>`);
+  let res = null;
+  if (CHAT3.off) {
+    res = { state: CHAT3.state, shown: [], stop: 'error', error: 'the assistant is off right now' };
+  } else {
+    try { res = await CHAT3C.turn(CHAT3.state, q, chat3Deps()); } catch (e) { res = { state: CHAT3.state, shown: [], stop: 'error', error: String((e && e.message) || e) }; }
+  }
+  CHAT3.state = res.state || CHAT3.state;
+  if (CHAT3.word) {   // the word did not match: nothing of this message is kept; its box again, the message back in the box
+    const added = new Set((res.shown || []).map(t => t.id));
+    CHAT3.state = Object.assign({}, CHAT3.state, { turns: CHAT3.state.turns.filter(t => !added.has(t.id)) });
+  }
+  await chat3Save();
+  CHAT3.busy = false;
+  if (CHAT3.word) {
+    const bad = CHAT3.word; CHAT3.word = null;
+    chat3Redraw(); const b = $('#a3ChatIn'); if (b) b.value = q; chat3Word(bad); return;
+  }
+  if (res.stop === 'error') {
+    CHAT3.off = true;   // the ways that always finish show beside the words
+    chat3Redraw();
+    if (!res.shown.length) {   // nothing was kept by the core (the AI is off here): the message goes back in the box
+      const b = $('#a3ChatIn'); if (b) b.value = q;
+      const l = $('#a3ChatLog'); if (l) l.insertAdjacentHTML('beforeend', `<p class="a3-ask-ai a3-bad" data-chat="error">That didn't go through: ${esc3(res.error || 'no answer')}. Your message is back in the box</p>`);
+    }
+    return;
+  }
+  chat3Redraw();
+}
+async function chat3Act(fn) {
+  if (CHAT3.busy) return;
+  CHAT3.busy = true;
+  let r;
+  try { r = await fn(); } catch (e) { r = { ok: false, text: String((e && e.message) || e) }; }
+  CHAT3.busy = false;
+  if (r && r.state) CHAT3.state = r.state;
+  await chat3Save();
+  if (r && r.ok === false && r.text) msg3(r.text);
+  chat3Redraw();
+  return r;
+}
+/* Undo on a card; for the fill once something else was written it is Start over, asked first */
+async function chat3Undo(turnId) {
+  const t = (CHAT3.state.turns || []).find(x => x.id === turnId);
+  const isFill = t && t.card && t.card.kind === 'fill';
+  if (isFill && !E3.held()) {
+    if (!confirm(CHAT3_WORDS.startOver)) return;
+    const r = await chat3Act(() => CHAT3C.startOver(CHAT3.state, chat3Deps()));
+    if (r && r.ok !== false) MSG3.post({ kind: 'toast', key: 'chat3', text: 'Started over' });
+    return;
+  }
+  const r = await chat3Act(() => CHAT3C.undo(CHAT3.state, turnId, chat3Deps()));
+  if (r && r.ok !== false) MSG3.post({ kind: 'toast', key: 'chat3', text: 'Undone' });
+}
+/* before a file: what the whole file carries (BV6) */
+function chat3FileNotice() {
+  const box = $('#a3ChatFileBox'); if (!box) return;
+  box.innerHTML = `<div class="a3-card" data-card="chat-upload"><p class="a3-sub" data-privacy="upload">${esc3(CHAT3_WORDS.upload)}</p>
+    <div class="a3-actions"><label class="a3-btn a3-file">Choose the file<input type="file" accept=".csv,.tsv,.txt,.pdf,image/*" id="a3ChatPick"></label><button type="button" class="a3-btn" id="a3ChatFileX">Not now</button></div><p class="a3-sub" id="a3ChatFileSay"></p></div>`;
+  $('#a3ChatFileX').addEventListener('click', () => { box.innerHTML = ''; });
+  $('#a3ChatPick').addEventListener('change', () => { $('#a3ChatFileSay').textContent = CHAT3_WORDS.noFiles; });
+}
+/* "Set up on the screens": setup3, filled from the draft (ANSWERS3.toForm, the one shared answers function); the boxes
+   are setup3's own, filled as a person would, so its Save is the same */
+async function chat3Screens() {
+  /* setup3 first puts back what was saved or typed on the screens before (lane/setupfix, its own draft). When it
+     holds something, that stays as it is: the chat's answers are never typed over it, or added to it a second time */
+  await openSetup3();
+  if (!$('#a3SetupBack') || !$('#a3SetupBack').hidden) return;
+  const d = CHAT3.state && CHAT3.state.draft;
+  if (!d || !(d.banks || []).length || typeof ANSWERS3 !== 'object') return;
+  try { chat3FormFill(ANSWERS3.toForm(d)); } catch (e) { /* the form stays as it was: every box can still be typed */ }
+}
+function chat3FormFill(f) {
+  const cur = f.cur || 'JPY';
+  const amt = (el, v) => { if (el && v != null) el.value = SM.toInput(v, cur); };
+  const val = (el, v) => { if (el && v != null) { el.value = String(v); el.dispatchEvent(new Event('change', { bubbles: true })); } };
+  const txt = (el, v) => { if (el && v != null) el.value = v; };
+  const last = sel => $$(sel).pop();
+  val($('#s3Cur'), cur); val($('#s3Country'), f.country);
+  txt($('#s3BankName'), f.bankName); amt($('#s3Bank'), f.bank);
+  for (const a of f.accts || []) { $('#s3AddAcct').click(); const row = last('#a3Setup [data-row^=acct]'); txt(row.querySelector('[data-f=name]'), a.name); amt(row.querySelector('[data-f=amount]'), a.amount); val(row.querySelector('[data-f=type]'), a.type); }
+  const p = f.pay || {};
+  txt($('#s3PayName'), p.name); amt($('#s3PayAmt'), p.amount); val($('#s3PayEvery'), p.every); val($('#s3PayDay'), p.day); val($('#s3PayDay2'), p.day2);
+  txt($('#s3PayStart'), p.start); val($('#s3PayShift'), p.shift); val($('#s3PayAcct'), p.acct);
+  for (const x of f.pays || []) { $('#s3AddPay').click(); const row = last('#a3Setup [data-row^=pay]'); txt(row.querySelector('[data-f=name]'), x.name); amt(row.querySelector('[data-f=amount]'), x.amount); val(row.querySelector('[data-f=every]'), x.every); val(row.querySelector('[data-f=day]'), x.day); val(row.querySelector('[data-f=day2]'), x.day2); txt(row.querySelector('[data-f=start]'), x.start); val(row.querySelector('[data-f=acct]'), x.acct); }
+  for (const c of f.cards || []) { $('#s3AddCard').click(); const row = last('#a3Setup [data-row^=card]'); txt(row.querySelector('[data-f=name]'), c.name); amt(row.querySelector('[data-f=owed]'), c.owed); val(row.querySelector('[data-f=payDay]'), c.payDay); val(row.querySelector('[data-f=closeDay]'), c.closeDay); val(row.querySelector('[data-f=payFrom]'), c.payFrom); val(row.querySelector('[data-f=shift]'), c.shift); amt(row.querySelector('[data-f=statement]'), c.statement); }
+  for (const b of f.bills || []) { $('#s3AddBill').click(); const row = last('#a3Setup [data-row^=bill]'); txt(row.querySelector('[data-f=name]'), b.name); amt(row.querySelector('[data-f=amount]'), b.amount); val(row.querySelector('[data-f=every]'), b.every); val(row.querySelector('[data-f=month]'), b.month); val(row.querySelector('[data-f=day]'), b.day); val(row.querySelector('[data-f=from]'), b.from); }
+  amt($('#s3Free'), f.free); amt($('#s3Min'), f.min);
+  /* the questions the day asks (bills already out, a statement), from the boxes just filled, then their answers */
+  $('#a3Setup').dispatchEvent(new Event('change', { bubbles: true }));
+  (f.bills || []).forEach((b, i) => val($$('#a3Setup [data-row^=bill]')[i].querySelector('[data-f=takenOut]'), b.takenOut));
+  if (f.payToday && $('#s3PayToday')) val($('#s3PayToday'), f.payToday);   // setup3's own question (lane/setupfix), when it has it
+}
+/* "Use any AI": the core's questions and answer shape as one request to copy (CHAT3C.copyPrompt); the answer pasted
+   back goes through the same draft checks (CHAT3C.pasteBack), then the same draft card and Fill */
+function chat3Any() {
+  CHAT3.any = true;
+  const box = $('#a3ChatAnyBox'); if (!box) return;
+  box.innerHTML = `<p class="a3-sub">Copy this, send it to any AI chat, answer its questions there, then paste its whole last answer below</p>
+    <textarea class="a3-in a3-text a3-chat-copy" id="a3ChatAnyAsk" readonly aria-label="The request for the AI">${esc3(CHAT3C.copyPrompt(CHAT3.state, E3.today()))}</textarea>
+    <div class="a3-actions"><button type="button" class="a3-btn" id="a3ChatAnyCopy">Copy the request</button></div>
+    <div class="a3-field"><label for="a3ChatAnyPaste">The AI's answer</label><textarea class="a3-in a3-text a3-chat-copy" id="a3ChatAnyPaste"></textarea></div>
+    <p class="a3-err" id="a3ChatAnyErr" role="alert"></p>
+    <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3ChatAnyCheck">Check the answer</button></div>`;
+  $('#a3ChatAnyCopy').addEventListener('click', () => { const t = $('#a3ChatAnyAsk'); t.select(); try { navigator.clipboard.writeText(t.value).then(() => msg3('Copied'), () => msg3('Select the request and copy it')); } catch (e) { msg3('Select the request and copy it'); } });
+  $('#a3ChatAnyCheck').addEventListener('click', chat3AnyCheck);
+}
+async function chat3AnyCheck() {
+  const r = CHAT3C.pasteBack(CHAT3.state, $('#a3ChatAnyPaste').value, chat3Deps());
+  if (!r.ok) { $('#a3ChatAnyErr').textContent = r.text; return; }
+  CHAT3.state = r.state; CHAT3.any = false;
+  await chat3Save();
+  chat3Redraw();
+}
+
+/* ---- start: the chat kept on this device, then the panel ---- */
+async function startChat3() {
+  const kept = E3.mode === 'try' ? null : await chat3Get('state');
+  CHAT3.state = kept && kept.v === 1 ? kept : CHAT3C.fresh();
+  await chat3Route();
+  /* anything written through act3 after the fill means the fill can no longer be undone: the cloud copy may send */
+  if (ACT3 && typeof ACT3.onChange === 'function') ACT3.onChange(() => { if (E3.held()) E3.release().then(() => renderChat3()); });
+  if (!E3.book) renderHome3(); else renderChat3();
+}
+root3.BurrowApp3.chat = { CHAT3, redraw: chat3Redraw, save: chat3Save };   // for the page tests (start3.js)
 /* ---------- remind3: reminders in the phone's own calendar, the pure half (the old app's model.js helpers, ported) ----------
    Check-in reminders on the day after each pay lands and in the middle of each pay period, and bill reminders a chosen
    number of days before each bill leaves the bank. The days are the engine's own (engine/schedules.js occurrences on the
