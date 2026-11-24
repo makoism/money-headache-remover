@@ -235,7 +235,10 @@ test('a shortfall with no real money short (goals or plan lines) is never the "s
   r.warnings = r.warnings.filter(w => w.code !== 'set_aside_over');
   const s = status.statusOf(r, YEN);
   assert.notStrictEqual(s.state, 'short');
-  assert.strictEqual(s.state, 'zero');
+  /* [LISTFIX A2] with no goal over and the bank not under, the shortfall is the plan's: said, with its amount */
+  assert.strictEqual(s.state, 'plan_over');
+  assert.ok(/^Your plan lines need .+ more than your bank can spare/.test(s.text.reason), s.text.reason);
+  assert.strictEqual(s.text.next, 'Lower a plan line, or move money in');
 });
 
 run('status.js');

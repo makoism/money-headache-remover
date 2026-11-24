@@ -10,7 +10,9 @@
      ctx.staleDays a bank figure older than this asks for a check-in (7 until Mako says otherwise)
 
    One state, in this order (the first that is true wins, the rest go in `also` so they can sit under it):
-     sample > empty > short > warning > set_aside > question > late > check > zero > no_free > ok
+     sample > empty > short > warning > set_aside > plan_over > question > late > check > zero > no_free > ok
+   plan_over [LISTFIX A2]: the real money is fine (no short, no warning) but the plan lines need more than the accounts
+   can spare, so nothing is safe to spend; it says so and by how much, never "it turns safe once your pay is in"
    no_free [north star F1]: a pay period with neither Free to spend nor a budget line, so safe to spend leaves nothing
    for food and everyday things; Home asks for it in place of "Fine for now" and links to Plan's Set Free to spend
    Plain browser JavaScript. In a page it is BurrowScreens.status (load money.js and names.js first). */
@@ -23,7 +25,7 @@
   'use strict';
 
   const STALE_DAYS = 7;   // for Mako: how old a bank figure may get before the status asks for a check-in
-  const LEVEL = { sample: 'wait', empty: 'wait', short: 'bad', warning: 'bad', set_aside: 'bad', question: 'wait', late: 'wait', check: 'wait', zero: 'wait', no_free: 'wait', ok: 'good' };
+  const LEVEL = { sample: 'wait', empty: 'wait', short: 'bad', warning: 'bad', set_aside: 'bad', plan_over: 'bad', question: 'wait', late: 'wait', check: 'wait', zero: 'wait', no_free: 'wait', ok: 'good' };
   /* engine warning codes (lookahead_ref.js): which change the state, which are notes under it */
   const WARNING_STATE = { below_minimum: 'warning', set_aside_over: 'set_aside', check_again: 'question', gain_to_ask: 'question', minimum_other_currency: 'question' };
   const NOTE_ONLY = ['card_other_currency', 'loan_other_currency', 'income_other_currency', 'spend_other_currency', 'reopened'];
@@ -36,6 +38,7 @@
     'state.short': W('Not safe to spend'),
     'state.warning': W('Under a minimum'),
     'state.set_aside': W('Set aside more than you can spare'),
+    'state.plan_over': W('Your plan needs more than you have'),
     'state.question': W('A question for you'),
     'state.late': W('Pay not in yet'),
     'state.check': W('Time to check in'),
@@ -53,6 +56,8 @@
     'reason.below_minimum': W('{account} goes {amount} under its minimum on {day}'),
     'reason.below_zero': W('{account} goes {amount} below zero on {day}'),
     'reason.set_aside_over': W('{who} is {amount} more than {account} can spare on {day}'),
+    'reason.plan_over': W('Your plan lines need {amount} more than your bank can spare before pay on {until}'),
+    'reason.plan_over_no_pay': W('Your plan lines need {amount} more than your bank can spare'),
     'reason.gain_to_ask': W('{account} has more in it than the app expected'),
     'reason.check_again': W('Check {account} again'),
     'reason.minimum_other_currency': W('What\'s the minimum for {account} in its own currency'),
@@ -71,6 +76,8 @@
     'next.check_in': W('Check your bank'),
     'next.move_money_in': W('Move money in before {day}'),
     'next.move_money_in_now': W('Move money in or spend less'),
+    'next.plan_over': W('Lower a plan line, or move money in'),
+    'next.move_from': W('Move {amount} from {from} to {account} by {day}. {from} can spare it'),
     'next.answer': W('Answer the question'),
     'next.take_out_or_move_in': W('Take some out of a goal, or move money in'),
     'next.check_in_when_it_lands': W('Check in when it lands'),
@@ -109,7 +116,7 @@
       if (k === 'amount' || k === 'minimum') return fmt(v);
       if (k === 'day' || k === 'since' || k === 'until') return names.dayLabel(v);
       if (k === 'month') return names.monthLabel(v);
-      if (k === 'account' || k === 'card' || k === 'loan') return (ctx.names && ctx.names[v]) || 'an account';
+      if (k === 'account' || k === 'card' || k === 'loan' || k === 'from') return (ctx.names && ctx.names[v]) || 'an account';
       return String(v);
     });
   }
@@ -118,6 +125,7 @@
     if (r.code === 'short' && r.short) return r.until ? (r.short.minimum ? 'reason.short_before_min' : 'reason.short_before') : r.short.minimum ? 'reason.short_from_min' : 'reason.short_from';
     if (r.code === 'short') return r.day ? 'reason.short_on' : 'reason.short';
     if (r.code === 'to_confirm') return r.count === 1 ? 'reason.to_confirm_one' : 'reason.to_confirm_many';
+    if (r.code === 'plan_over') return r.until ? 'reason.plan_over' : 'reason.plan_over_no_pay';
     if (r.code === 'nothing_safe') return r.until ? 'reason.nothing_safe' : 'reason.nothing_safe_no_pay';
     if (r.code === 'safe') return r.until ? 'reason.safe' : 'reason.safe_no_pay';
     return 'reason.' + r.code;
@@ -150,6 +158,10 @@
       const known = WARNING_STATE[w.code];
       out.push({ state: known || 'question', reason: known ? { code: w.code, account: w.account } : { code: 'unknown_warning', warning: w.code, account: w.account }, next: { code: 'answer' }, note: w.code });
     }
+    /* [LISTFIX A2] the plan lines alone need more than the accounts can spare: the bank itself does not go under (no
+       short, no below-zero warning) and no goal holds too much, so the shortfall is the plan's */
+    if (stp.shortfall > 0 && !stp.short && !below.length && !warnings.some(w => w.code === 'set_aside_over'))
+      out.push({ state: 'plan_over', reason: { code: 'plan_over', amount: stp.shortfall, currency: ctx.currency, until }, next: { code: 'plan_over' }, note: 'plan_over' });
     const paySeen = (r.notSeenYet && r.notSeenYet.items || []).find(i => i.direction === 'in');
     if (pay.late || paySeen) out.push({ state: 'late', reason: { code: 'pay_late', since: pay.late ? pay.next_pay : paySeen.lands }, next: { code: 'check_in_when_it_lands' }, note: 'pay_late' });
     const toConfirm = (r.checkIn && r.checkIn.toConfirm) || [];
@@ -196,6 +208,24 @@
     if (WORDS['warn.' + w.code]) return fill('warn.' + w.code, { account: w.account }, ctx);
     return fill('warn.unknown', { account: w.account }, ctx);
   }
+  /* [LISTFIX C1] an account going under while another can spare the money: which one to move it from, how much (the
+     lowest it goes, its later low when there is one) and by which day. The account that can spare the most is named,
+     from the engine's real-money walk (accounts[].real.headroom, BM2), only when it can spare all of it; '' otherwise.
+     ctx: { currency, names, accounts (the engine's) } */
+  function moveText(w, ctx) {
+    ctx = ctx || {};
+    if (!w || w.code !== 'below_minimum') return '';
+    const accounts = ctx.accounts || {}, own = accounts[w.account] || {};
+    const amount = w.later && w.later.amount > (w.amount != null ? w.amount : w.short) ? w.later.amount : w.amount != null ? w.amount : w.short;
+    let best = null;
+    for (const id of Object.keys(accounts)) {
+      const a = accounts[id];
+      if (id === w.account || !a.spendFrom || a.currency !== own.currency || !a.real || a.real.headroom < amount) continue;
+      if (!best || a.real.headroom > accounts[best].real.headroom) best = id;
+    }
+    if (!best) return '';
+    return fill('next.move_from', { amount, from: best, account: w.account, day: w.day, currency: own.currency || ctx.currency }, ctx);
+  }
   /* one "later on" entry in words: the month it goes below zero, as "Mar 2027" */
   function laterText(l, ctx) { return fill('warn.later_on', { account: l.account, month: l.day }, ctx || {}); }
   /* [B1] a below-minimum warning's lower point after its first day under, in words with its own day; '' when none */
@@ -223,5 +253,5 @@
     return deepFreeze(s);
   }
 
-  return { statusOf, warningText, laterText, laterLowText, WORDS, STALE_DAYS };
+  return { statusOf, warningText, laterText, laterLowText, moveText, WORDS, STALE_DAYS };
 });

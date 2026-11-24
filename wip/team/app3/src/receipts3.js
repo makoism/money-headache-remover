@@ -68,6 +68,19 @@ function rcFigs3(book) {
 }
 /* [NS-FIX 4] a spend on a line that leaves the line over (the engine's `over` on the book the draft would make): the same
    words as Plan, "¥1,076 over Food. It comes out of what your bank can spare" (BM1); null otherwise */
+/* [LISTFIX B6] a new spend on a card leaves the bank only when the card is paid, so safe to spend may not drop, or may
+   even rise: the words say when, from the engine's statements on the book with the spend (the first unpaid one it is in:
+   no close day, or closing on or after the spend's day; with the close day not sure, the next payment) */
+function rcCardWords3(book, x) {
+  if (RC3.edit || RC3.mode !== 'spend' || !x || !x.acct) return null;
+  const a = ((E3.book && E3.book.accounts) || []).find(y => y.id === x.acct);
+  if (!a || a.type !== 'card') return null;
+  let r; try { r = BurrowEngine.lookahead.lookahead(book, E3.today()); } catch (e) { return null; }
+  /* close day not sure: everything on it is paid on its next payment day (the engine's next, "all owed") */
+  const k = r.cards[x.acct] || {};
+  const st = k.next && k.next.statement === 'all owed' ? { payment: k.next.payment_date } : (k.statements || []).find(s => !s.paid && s.payment && (!s.closed || s.closed >= x.date));
+  return st ? `It goes on ${E3.nameOf(x.acct)} and leaves your bank when the card is paid on ${day3(st.payment, E3.today().slice(0, 4))}` : null;
+}
 function rcOver3(f, x) {
   if (!f || !f.period || !x || !x.line || x.line === 'free' || RC3.mode !== 'spend') return null;
   const l = (f.period.lines || []).find(y => y.id === x.line && y.over > 0);
@@ -216,9 +229,9 @@ async function rcSave3(sure) {
   }
   rcAskOff3();
   const before = rcFigs3(E3.book);
-  let ov = null;
-  try { ov = rcOver3(rcFigs3(RC3.edit ? ACT3.dry('edit', RC3.edit.id, rcFields3(x)) : ACT3.dry(RC_KIND3[RC3.mode], x)), x); } catch (e) { ov = null; }
-  const said = [rcWords3(x), ov].filter(Boolean).join('. ');
+  let ov = null, onCard = null;
+  try { const dry = RC3.edit ? ACT3.dry('edit', RC3.edit.id, rcFields3(x)) : ACT3.dry(RC_KIND3[RC3.mode], x); ov = rcOver3(rcFigs3(dry), x); onCard = rcCardWords3(dry, x); } catch (e) { ov = null; }
+  const said = [rcWords3(x), onCard, ov].filter(Boolean).join('. ');
   const r = RC3.edit ? await ACT3.edit(RC3.edit.id, rcFields3(x), { undo: said }) : await ACT3[RC_KIND3[RC3.mode]](x, { undo: said });
   if (!r.ok) { $('#rcErr').textContent = r.text; return; }   // the form may have been drawn again meanwhile (another tab)
   RC3.last = before;
@@ -268,6 +281,25 @@ function rcHeld3() {
   try { for (const h of E3.view(E3.today()).heldByCheck || []) out[h.id] = h.check; } catch (e) { /* no figures: nothing to say */ }
   return out;
 }
+/* [LISTFIX A1, T2] a gap found at Check your bank is spending: the engine's fillers (each account's, cut at the period
+   starts, and each card's), listed in the period each part counts in, so the list and the spent figure agree. A gain
+   held for its question counts nowhere and is left out. Not a button: a gap changes only at a check. */
+function rcGaps3(per) {
+  let r; try { r = E3.view(E3.today()); } catch (e) { return []; }
+  const inPer = d => !per || !per.start || !per.end || (d >= per.start && d <= per.end), out = [];
+  const onWhat = place => (!place || place === 'free' ? { line: 'free' } : ((E3.book.plan || {}).budgets || []).some(l => l.id === place) ? { line: place } : { place });
+  for (const id of Object.keys(r.accounts || {})) for (const f of r.accounts[id].fillers || []) {
+    if (f.held) continue;
+    for (const pt of f.parts || []) if (pt.amount && inPer(pt.from)) out.push({ acct: id, check: f.to, from: pt.from, to: pt.to, amount: pt.amount, on: onWhat(f.place) });
+  }
+  for (const id of Object.keys(r.cards || {})) for (const f of r.cards[id].fillers || []) if (f.amount && inPer(f.day)) out.push({ acct: id, check: f.day, from: f.day, to: f.day, amount: f.amount, on: { line: 'free' } });
+  return out;
+}
+function rcGapLi3(g, yr) {
+  const when = g.from === g.to ? day3(g.to, yr) : `${day3(g.from, yr)} to ${day3(g.to, yr)}`;
+  const what = g.amount > 0 ? 'more went out than you logged' : 'less went out than you logged, so it comes off your spending';
+  return `<li data-gap="${esc3(g.acct)}" data-check="${esc3(g.check)}"><span>Found at your bank check on ${esc3(day3(g.check, yr))}<br><span class="when">${esc3(when)}, ${esc3(E3.nameOf(g.acct))}, ${esc3(what)}, on ${esc3(rcForName3(g.on))}</span></span><span class="amt">${money3(g.amount, E3.curOf(g.acct))}</span></li>`;
+}
 function rcList3() {
   const host = $('#rcList'); if (!host) return;
   const held = rcHeld3();
@@ -279,10 +311,14 @@ function rcList3() {
   const head = q ? `<p class="a3-sub" data-fig="rc-period" data-search="1">Searching everything</p>`
     : per && per.start && per.end ? `<div class="a3-pernav"><button type="button" class="a3-btn" id="rcOlder"${per.older ? '' : ' disabled'}>Earlier</button><p class="a3-mid a3-per" data-fig="rc-period" data-start="${esc3(per.start)}" data-end="${esc3(per.end)}">${esc3(period3(per))}</p><button type="button" class="a3-btn" id="rcNewer"${per.newer ? '' : ' disabled'}>Later</button></div>${rcSpent3(per)}`
     : `<p class="a3-sub" data-fig="rc-period">Everything</p>`;
-  const li = rows.map(e => `<li data-rc="${esc3(e.id)}" data-k="${esc3(e.k)}"><button type="button" class="a3-rcrow" aria-label="Change ${esc3(rcWhat3(e))}, ${esc3(money3(e.a, E3.curOf(e.acct)))}"><span>${esc3(rcWhat3(e))}<br><span class="when">${esc3(day3(e.date, yr))}, ${esc3(E3.nameOf(e.acct))}${rcNote3(e) ? ', ' + esc3(rcNote3(e)) : ''}${held[e.id] ? `<br><span data-fig="rc-held">already in your bank figure of ${esc3(day3(held[e.id], yr))}</span>` : ''}</span></span><span class="amt${e.k === 'in' ? ' a3-in-amt' : ''}">${e.k === 'in' ? 'back ' : ''}${money3(e.a, E3.curOf(e.acct))}</span></button></li>`).join('');
+  const gaps = q ? [] : rcGaps3(per && per.start && per.end ? per : null);
+  const items = rows.map(e => ({ date: e.date, e })).concat(gaps.map(g => ({ date: g.to, g })))
+    .sort((x, y) => (x.date !== y.date ? (x.date < y.date ? 1 : -1) : 0));
+  const rcLi3 = e => `<li data-rc="${esc3(e.id)}" data-k="${esc3(e.k)}"><button type="button" class="a3-rcrow" aria-label="Change ${esc3(rcWhat3(e))}, ${esc3(money3(e.a, E3.curOf(e.acct)))}"><span>${esc3(rcWhat3(e))}<br><span class="when">${esc3(day3(e.date, yr))}, ${esc3(E3.nameOf(e.acct))}${rcNote3(e) ? ', ' + esc3(rcNote3(e)) : ''}${held[e.id] ? `<br><span data-fig="rc-held">already in your bank figure of ${esc3(day3(held[e.id], yr))}</span>` : ''}</span></span><span class="amt${e.k === 'in' ? ' a3-in-amt' : ''}">${e.k === 'in' ? 'back ' : ''}${money3(e.a, E3.curOf(e.acct))}</span></button></li>`;
+  const li = items.map(x => (x.g ? rcGapLi3(x.g, yr) : rcLi3(x.e))).join('');
   host.innerHTML = `<h2>What you logged</h2>
     <div class="a3-field"><label for="rcSearch">Search</label><input class="a3-in a3-text" type="search" id="rcSearch" autocomplete="off" value="${esc3(RC3.search)}" placeholder="A note, a line, an amount"></div>
-    ${head}${rows.length ? `<ul class="a3-rows a3-rclist">${li}</ul><p class="a3-sub" data-hint="rc-tap">Tap a spend to change it</p>` : `<p class="a3-sub">${q ? 'Nothing matches' : 'Nothing logged in this stretch'}</p>`}`;
+    ${head}${items.length ? `<ul class="a3-rows a3-rclist">${li}</ul>${rows.length ? '<p class="a3-sub" data-hint="rc-tap">Tap a spend to change it</p>' : ''}` : `<p class="a3-sub">${q ? 'Nothing matches' : 'Nothing logged in this stretch'}</p>`}`;
   const s = $('#rcSearch');
   s.addEventListener('input', () => { RC3.search = s.value; rcList3(); const n = $('#rcSearch'); n.focus(); n.setSelectionRange(n.value.length, n.value.length); });
   if ($('#rcOlder')) $('#rcOlder').addEventListener('click', () => { RC3.at = per.older; rcList3(); });

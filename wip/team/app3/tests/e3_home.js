@@ -40,7 +40,7 @@ const DAYS = ['2026-11-23', '2026-12-09', '2026-12-10', '2026-12-11', '2026-12-1
       for (const [i, id] of accts.entries()) {
         const x = want[id], head = `After your cards are paid on ${SN0.dayList(x.cardDays, x.cardDays.some(d => d.slice(0, 4) !== day.slice(0, 4)))}: Main bank`;
         const t = ac[i] ? ac[i].text : '';
-        ck(day + ' it names its day, the pay in it, close days not sure, and says it is not safe to spend', t.startsWith(head) && /not safe to spend/.test(t) && (!x.pays.length || t.includes('Your pay on')) && (!x.ifAllTaken || t.includes('If everything on the cards now is taken')) && (!x.paysNotCounted.length || /is not counted/.test(t)), t);
+        ck(day + ' it names its day, the pay in it, close days not sure, and says it is not safe to spend', t.startsWith(head) && /not safe to spend/.test(t) && (!x.pays.length || t.includes('Your pay on')) && (!x.ifAllTaken || t.includes('It counts everything on the cards now, as their close days are not sure')) && (!x.paysNotCounted.length || /is not counted/.test(t)), t);
       } }
     if (day === '2026-11-23') {
       const lines = await p.$$eval('[data-cardid] .when', es => es.map(e => e.textContent));

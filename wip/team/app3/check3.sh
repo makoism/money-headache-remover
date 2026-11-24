@@ -57,6 +57,7 @@ step "Add statements (the AI route, any AI, review, Add, duplicates once, the re
 step "each record once after a statement (BI2): Receipts"; run tests/e3_stmt_once.js "e3_stmt_once: ALL PASS"
 step "the period by its dates"; run tests/e3_period.js "e3_period: ALL PASS"
 step "Receipts"; run tests/e3_receipts.js "e3_receipts: ALL PASS"
+step "the LISTFIX fixes on the page (app3/LISTFIX.md): gaps in Receipts and the rest"; run tests/e3_listfix.js "e3_listfix: ALL PASS"
 step "Receipts: Money in, a client payment or a gift (slice 6)"; run tests/e3_moneyin.js "e3_moneyin: ALL PASS"
 step "every amount box: a tap, click or Tab, or a form's own focus, selects, so typing replaces (screens/inputs.js)"; run tests/e3_amounts.js "e3_amounts: ALL PASS"
 step "a spend larger than what its account holds asks first, new or changed (north star F5)"; run tests/e3_bigspend.js "e3_bigspend: ALL PASS"

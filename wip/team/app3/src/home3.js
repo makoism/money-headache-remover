@@ -66,7 +66,8 @@ function afterCards3(r, yr) {
     const x = m[id], f = fmt3(x.currency, [x.amount].concat(x.setAside.map(g => g.amount), x.dip ? [x.dip.amount] : []));
     const notIn = [...new Set(x.paysNotCounted.map(p => p.due))];
     const notes = [x.pays.length ? `Your pay on ${days(x.pays)} is in it` : '', notIn.length ? `The pay due ${days(notIn)} is not counted, it has not come in` : '',
-      x.ifAllTaken ? 'If everything on the cards now is taken' : '', ...x.setAside.map(g => `${esc3(f(g.amount))} of it is set aside for ${esc3(g.name)}`),
+      /* [LISTFIX B4] whole sentences: what the figure assumes for the cards, and that bills due by then are taken off */
+      x.ifAllTaken ? 'It counts everything on the cards now, as their close days are not sure' : '', x.billsTaken ? 'Bills due by then are taken off' : '', ...x.setAside.map(g => `${esc3(f(g.amount))} of it is set aside for ${esc3(g.name)}`),
       'This is the bank, not safe to spend'].filter(Boolean).join('. ');
     const dip = x.dip ? `<br><span class="a3-late" data-fig="aftercards-dip">Before then it goes ${esc3(f(x.dip.amount))} below zero on ${esc3(day3(x.dip.day, yr))}</span>` : '';
     return `<li data-fig="aftercards" data-acct="${esc3(id)}" data-day="${esc3(x.day)}"><span>${esc3(label3('bankAfterCards'))} on ${days(x.cardDays)}: ${esc3(E3.nameOf(id))}<br><span class="when">${notes}</span>${dip}</span><span class="amt">${fig3('bankAfterCards.*.amount', x.amount, x.currency)}</span></li>`;
@@ -86,6 +87,15 @@ function safeUntil3(r, yr) {
   /* [S1] on its day the pay is counted (G4), so safe to spend runs to the pay after it: the engine's safeToSpend.until */
   if (n.days === 0 && r.safeToSpend.until) return ` until next pay on ${esc3(day3(r.safeToSpend.until, yr))}${r.safeToSpend.notCounting ? ', not counting today\'s pay (not in at your check today)' : ''}`;
   return ` until next pay on ${d}`;
+}
+/* [LISTFIX B2, I4, BP2] right after setup, Free to spend counts only its share for the days left in the period, and it
+   caps safe to spend: Home says why the figure is small, with the full amount and when it counts (the engine's counts
+   and amount, as Plan's "Why only part?") */
+function freeShare3(r, home) {
+  const f = r.period && r.period.free;
+  if (!r.safeToSpend.cappedByFreeToSpend || !f || f.counts == null || !(f.counts < f.amount)) return '';
+  const fm = fmt3(home, [f.counts, f.amount]);
+  return `<div class="a3-helprow" data-fig="freeshare"><span class="a3-sub">Free to spend counts ${esc3(fm(f.counts))} of ${esc3(fm(f.amount))} this pay period, because you started partway through it. The full ${esc3(fm(f.amount))} counts from your next pay</span>${HELP3.button('lineShare')}${HELP3.text('lineShare')}</div>`;
 }
 /* [slice 6, B4] with no fixed pay: how long the money lasts at this rate (the engine's lastsAboutWeeks, from bills and the
    plan by the day; it looks a year ahead) */
@@ -128,7 +138,7 @@ function drawHome3() {
   /* the one status; on a sample screen the yellow band already says these are made-up numbers, so no second card */
   const names = {}; for (const id of ids.concat(Object.keys(r.cards), Object.keys(r.owed || {}))) names[id] = E3.nameOf(id);
   const st = BurrowScreens.status.statusOf(r, { currency: home, origin, names });
-  if (origin !== 'sample') out.push(`<section class="a3-card a3-status" data-card="status" data-level="${esc3(st.level)}">${helpHead3(`<h2>${esc3(st.text.state)}</h2>`, 'status')}<p class="a3-sub">${esc3(st.text.reason)}</p>${st.state === 'no_free' ? `<div class="a3-actions"><button type="button" class="a3-btn solid" id="a3FreeGo">${esc3(st.text.next)}</button></div>` : ''}</section>`);
+  if (origin !== 'sample') out.push(`<section class="a3-card a3-status" data-card="status" data-level="${esc3(st.level)}">${helpHead3(`<h2>${esc3(st.text.state)}</h2>`, 'status')}<p class="a3-sub">${esc3(st.text.reason)}</p>${st.state === 'plan_over' ? `<p class="a3-next" data-fig="status-next">${esc3(st.text.next)}</p>` : ''}${st.state === 'no_free' ? `<div class="a3-actions"><button type="button" class="a3-btn solid" id="a3FreeGo">${esc3(st.text.next)}</button></div>` : ''}</section>`);
   /* bank today, one figure per account, with its age */
   for (const id of ids) {
     const a = r.accounts[id];
@@ -143,8 +153,10 @@ function drawHome3() {
   /* [BM3] each part names its own amount: a cap that takes everything (the headline is 0) says "all of it" */
   const all = r.safeToSpend.headline === 0 ? 'all of it: ' : '';
   const capParts = (r.safeToSpend.whyParts || []).map((x, i) => (x.over ? Object.assign({}, x, { label: `${all}Free to spend is ${money3(x.over, home)} over this period` })
-    : i > 0 && all && r.period && r.period.free && r.period.free.left === 0 ? Object.assign({}, x, { label: `${all}Free to spend is used up this period` }) : x));
-  const capLine = r.safeToSpend.whyParts ? `<p class="a3-sum" data-fig="cap">${esc3(sum3(capParts, r.safeToSpend.headline, home))}</p>` : '';
+    : i > 0 && all && r.period && r.period.free && r.period.free.left === 0 ? Object.assign({}, x, { label: `${all}Free to spend is used up this period` })
+    /* [LISTFIX B3] the step the cap takes off, said as what it is: held back, because Free to spend has only so much left */
+    : i > 0 && !all ? Object.assign({}, x, { label: `held back: Free to spend has only ${money3(r.safeToSpend.headline, home)} left this period` }) : x));
+  const capLine = r.safeToSpend.whyParts ? `<p class="a3-sum" data-fig="cap">${esc3(sum3(capParts, r.safeToSpend.headline, home))}</p>${freeShare3(r, home)}` : '';
   const sums = `${ids.filter(id => r.accounts[id].spendFrom).map(id => `<p class="a3-sum" data-fig="why">${esc3(whyWords3(r.accounts[id]))}</p>${todayWords3(r.accounts[id], id)}`).join('')}${capLine}`;
   /* [BL3] short: the sum's own total, before the pay after its lowest point (only when one brings money), and the first
      day the bank goes under beside it */
@@ -157,7 +169,8 @@ function drawHome3() {
      a lower point after the first day under is its own "Later on" line with its own day [B1] */
   const wctx = { currency: home, names, accounts: r.accounts };
   const warns = (r.warnings || []).map(w => `<p class="a3-warn" data-warn="${esc3(w.code)}">${esc3(BurrowScreens.status.warningText(w, wctx))}</p>`
-    + (w.later ? `<p class="a3-warn" data-warn="later_low">${esc3(BurrowScreens.status.laterLowText(w, wctx))}</p>` : '')).join('');
+    + (w.later ? `<p class="a3-warn" data-warn="later_low">${esc3(BurrowScreens.status.laterLowText(w, wctx))}</p>` : '')
+    + (BurrowScreens.status.moveText(w, wctx) ? `<p class="a3-next" data-fig="move-from">${esc3(BurrowScreens.status.moveText(w, wctx))}</p>` : '')).join('');
   out.push(`<section class="a3-card" data-card="safe">${helpHead3(`<h2>${esc3(label3('safeToSpend'))}${until}</h2>`, 'safeToSpend')}
     <p class="a3-big" data-fig="safe">${fig3('safeToSpend.headline', r.safeToSpend.headline, home)}</p>${short}${sums}${lastsWords3(r)}${warns}</section>`);
   /* the period by its dates, and the next pay */
