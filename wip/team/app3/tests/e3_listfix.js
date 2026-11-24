@@ -10,7 +10,8 @@
    C1. A second bank going below zero while the main one can spare it: Home says to move the money, how much and from where.
    B1. A gap saved while the card question shows: the Undo bar still says it counts as spending.
    B2. Right after setup, Home says why safe to spend is small: Free to spend counts its share for the days left.
-   B3. The cap step in the sum under safe to spend says it is held back, and why. */
+   B3. The cap step in the sum under safe to spend says it is held back, and why.
+   B4. The bank after the cards in whole sentences, naming that bills due by then are taken off. */
 'use strict';
 const T = require('./lib3.js');
 const { ck } = T;
@@ -119,6 +120,15 @@ const rows = p => p.$$eval('#rcList li', es => es.map(e => ({ gap: e.dataset.gap
      to spend has only ¥40,000 left this period) = ¥40,000", never "(more than Free to spend left this period)". */
   const cap = await p.$eval('#a3Home [data-fig="cap"]', e => e.textContent.trim()).catch(() => '');
   ck('B3: the cap step reads (held back: Free to spend has only ¥40,000 left this period) = ¥40,000', /\(held back: Free to spend has only ¥40,000 left this period\) = ¥40,000$/.test(cap) && !/more than Free to spend/.test(cap), cap);
+
+  /* B4: the same Home, the bank after the cards. Both cards' close days are not sure and bills fall due before card B
+     is paid on 11 Dec (Rent, Power and Internet of 26 and 27 Nov), so the line says so in whole sentences: "It counts
+     everything on the cards now, as their close days are not sure" and "Bills due by then are taken off", never the
+     half sentence "If everything on the cards now is taken". */
+  const ac = await p.$eval('#a3Home [data-fig="aftercards"]', e => e.textContent.replace(/\s+/g, ' ').trim()).catch(() => '');
+  ck('B4: the bank after the cards says it counts everything on the cards now, as their close days are not sure', ac.includes('It counts everything on the cards now, as their close days are not sure'), ac);
+  ck('B4: and that bills due by then are taken off', ac.includes('Bills due by then are taken off'), ac);
+  ck('B4: never the half sentence', !ac.includes('If everything on the cards now is taken'), ac);
 
   const errs = [].concat(...errLists); ck('no page errors', errs.length === 0, errs.join(' | '));
   await b.close(); T.done('e3_listfix');

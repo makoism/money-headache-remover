@@ -8683,7 +8683,8 @@ function afterCards3(r, yr) {
     const x = m[id], f = fmt3(x.currency, [x.amount].concat(x.setAside.map(g => g.amount), x.dip ? [x.dip.amount] : []));
     const notIn = [...new Set(x.paysNotCounted.map(p => p.due))];
     const notes = [x.pays.length ? `Your pay on ${days(x.pays)} is in it` : '', notIn.length ? `The pay due ${days(notIn)} is not counted, it has not come in` : '',
-      x.ifAllTaken ? 'If everything on the cards now is taken' : '', ...x.setAside.map(g => `${esc3(f(g.amount))} of it is set aside for ${esc3(g.name)}`),
+      /* [LISTFIX B4] whole sentences: what the figure assumes for the cards, and that bills due by then are taken off */
+      x.ifAllTaken ? 'It counts everything on the cards now, as their close days are not sure' : '', x.billsTaken ? 'Bills due by then are taken off' : '', ...x.setAside.map(g => `${esc3(f(g.amount))} of it is set aside for ${esc3(g.name)}`),
       'This is the bank, not safe to spend'].filter(Boolean).join('. ');
     const dip = x.dip ? `<br><span class="a3-late" data-fig="aftercards-dip">Before then it goes ${esc3(f(x.dip.amount))} below zero on ${esc3(day3(x.dip.day, yr))}</span>` : '';
     return `<li data-fig="aftercards" data-acct="${esc3(id)}" data-day="${esc3(x.day)}"><span>${esc3(label3('bankAfterCards'))} on ${days(x.cardDays)}: ${esc3(E3.nameOf(id))}<br><span class="when">${notes}</span>${dip}</span><span class="amt">${fig3('bankAfterCards.*.amount', x.amount, x.currency)}</span></li>`;
