@@ -83,6 +83,26 @@ t('every case of sync_v1.json was asked (66 when written)', () => ok(cases >= 66
   });
 }
 
+// [BZ4, qc-foundation WATCH] accounts keep their kind in `type` (SCHEMA_V3), never `kind`
+{
+  const CARD = 'k7m2qa-f3n8p1x6wd-2', T = d => d + 'T20:00:00.000+09:00';
+  const acc = { id: CARD, name: 'Card A', type: 'card', cur: 'JPY', at: T('2026-11-20'), by: 'k7m2qa', told: T('2026-11-20') };
+  t('[BZ4] a card\'s match window at a sync is 7 working days: an imported line 3 working days after a typed spend replaces it', () => {
+    const base = { rev: 3, accounts: [acc], events: [] };
+    const mine = { rev: 3, accounts: [acc], events: [{ id: 'k7m2qa-abcdefghij-1', k: 'spend', acct: CARD, a: 4200, date: '2026-12-01', told: T('2026-12-01'), at: T('2026-12-01'), by: 'k7m2qa' }] };
+    const theirs = { rev: 3, accounts: [acc], events: [{ id: 'imp:' + CARD + ':ref:A1', k: 'spend', acct: CARD, a: 4200, date: '2026-12-04', told: T('2026-12-06'), at: T('2026-12-06'), by: 'p4r9zz' }] };
+    const out = S.sync(base, mine, theirs);
+    const typed = out.events.find(e => e.id === 'k7m2qa-abcdefghij-1');
+    eq([!!typed.gone, typed.goneBy], [true, 'imp:' + CARD + ':ref:A1']);
+  });
+  t('[BZ4] a closed card\'s figure at its close has the owed sign: owed 10,000, then a 2,000 spend, is 12,000 owed', () => {
+    const a = Object.assign({}, acc, { closed: '2026-12-05' });
+    const evs = [{ id: 'k7m2qa-abcdefghij-2', k: 'check', acct: CARD, a: 10000, date: '2026-12-01', told: T('2026-12-01') },
+      { id: 'k7m2qa-abcdefghij-3', k: 'spend', acct: CARD, a: 2000, date: '2026-12-03', told: T('2026-12-03') }];
+    eq(S.figureAtClose(a, evs), 12000);
+  });
+}
+
 // 3. it runs in a page
 t('sync.js loads in a page after dates, units, ids, schedules and ledger (no require, no Buffer)', () => {
   const ctx = { TextEncoder, console };

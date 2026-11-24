@@ -304,7 +304,7 @@
     const ids = c => new Set(((c || {}).events || []).map(e => e.id));
     const Mi = ids(mine), Ti = ids(theirs);
     const accts = new Map((out.accounts || []).map(a => [a.id, a]));
-    const win = id => { const a = accts.get(id) || {}; return a.postingDays != null ? a.postingDays : a.kind === 'card' ? 7 : 1; };
+    const win = id => { const a = accts.get(id) || {}; return a.postingDays != null ? a.postingDays : a.type === 'card' ? 7 : 1; };   // [BZ4] an account's kind is its `type`
     const fits = (t, a) => (t.est ? Math.abs(a - t.a) * 10 <= Math.max(a, t.a) : a === t.a);
     const imps = evs.filter(e => !e.gone && isImp(e) && dirOf(e) && e.acct2 == null && typeof e.date === 'string')
       .sort((x, y) => (x.date < y.date ? -1 : x.date > y.date ? 1 : x.id < y.id ? -1 : 1));
@@ -440,7 +440,7 @@
   const OWED = { card: 1, loan: 1, paylater: 1 };
   const names = (e, id) => [e.acct, e.acct2, e.card].includes(id);
   function delta(e, a) {
-    const sign = OWED[a.kind] ? -1 : 1, amt = Number(e.a) || 0;
+    const sign = OWED[a.type] ? -1 : 1, amt = Number(e.a) || 0;   // [BZ4] `type`, never `kind`
     let d = 0;
     if (e.k === 'in' || e.k === 'refund') { if (e.acct === a.id) d += amt; }
     else if (e.k === 'spend') { if (e.acct === a.id) d -= amt; }
