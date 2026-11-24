@@ -177,6 +177,31 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     eq([c.status, c.ask, c.lines], ['ask', 'guess', ['Log ¥1,500 on Free to spend from Main bank, today (my guess)']]);
   });
 
+  await t('a new pay, new money, a goal or a card with a figure nobody typed asks first (qc-foundation F2)', async () => {
+    const cases = [
+      ['I have some cash in my wallet', { do: 'add_account', name: 'Wallet', type: 'cash', amount: 30000, moved: false }],
+      ['I started tutoring', { do: 'add_pay', name: 'Tutoring', amount: 40000, every: 'month', day: 1 }],
+      ['I got a new card', { do: 'add_card', name: 'Card C', owed: 0, payDay: 5 }],
+      ['I want to save for a trip', { do: 'add_goal', name: 'Trip', target: 100000 }],
+    ];
+    for (const [words, step] of cases) {
+      const before = JSON.stringify(h.book);
+      const f = FAKE.make([say('', [call('change', { steps: [step] })]), say('Is that right?')]);
+      const r = await K.turn(S2, words, Object.assign(h.deps(f), { door: deps.door }));
+      const c = r.shown.find(x => x.who === 'card').card;
+      eq([c.status, c.ask], ['ask', 'guess'], words);
+      ok(/\(my guess\)$/.test(c.lines[0]), c.lines[0]);
+      eq(JSON.stringify(h.book), before, words + ': nothing changed');
+    }
+    /* typed: made at once; a new pay counts toward "larger than safe to spend" */
+    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'add_pay', name: 'Tutoring', amount: 40000, every: 'month', day: 1 }] })]), say('Added.')]);
+    const r = await K.turn(S2, 'I started tutoring, 40,000 on the 1st', Object.assign(h.deps(f), { door: deps.door }));
+    eq(r.shown.find(x => x.who === 'card').card.status, 'done');
+    await K.undo(r.state, r.shown.find(x => x.who === 'card').id, { door: deps.door, told: deps.told, book: () => h.book });
+    const f2 = FAKE.make([say('', [call('change', { steps: [{ do: 'add_account', name: 'Gift', type: 'cash', amount: 500000, moved: false }] })]), say('Tap OK.')]);
+    const r2 = await K.turn(S2, 'I was given 500,000 in cash', Object.assign(h.deps(f2), { door: deps.door }));
+    eq([r2.shown.find(x => x.who === 'card').card.status, r2.shown.find(x => x.who === 'card').card.ask], ['ask', 'large']);
+  });
   /* the fill's Undo (BV2): the book goes, the draft stays; once anything else was written, "start over" */
   await t('Undo of the fill after something else was written becomes "start over"; startOver discards and keeps the draft', async () => {
     const fillId = S2.turns.find(x => x.who === 'card' && x.card.kind === 'fill').id;

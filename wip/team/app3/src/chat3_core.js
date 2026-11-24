@@ -460,13 +460,13 @@ AFTER SETUP. When the person says they spent, got or moved money, or asks to cha
       const id = ref(a.ref, 'BP'); if (!id) return { bad: 'a change to a bill or pay I do not know' };
       const ch = {}; if (a.amount != null) { ch.amount = amt(a.amount); if (!ch.amount) return { bad: 'an amount I could not read' }; }
       if (a.day != null) ch.day = a.day; if (a.every) { ch.every = a.every; ch.day2 = a.day2; ch.start = a.start; } if (a.name) ch.name = clean(a.name, 60);
-      return { kind: 'changeBill', args: [id, ch], text: `${schName(id)}: ` + [ch.amount ? m(ch.amount) : '', ch.day ? 'on day ' + ch.day : '', ch.every ? ch.every : '', ch.name ? 'called ' + ch.name : ''].filter(Boolean).join(', ') + ' from its next one', amount: ch.amount || 0, ref: a.ref };
+      return { kind: 'changeBill', args: [id, ch], text: `${schName(id)}: ` + [ch.amount ? m(ch.amount) : '', ch.day ? 'on day ' + ch.day : '', ch.every ? ch.every : '', ch.name ? 'called ' + ch.name : ''].filter(Boolean).join(', ') + ' from its next one', amount: ch.amount || 0, figs: ch.amount ? [ch.amount] : [], ref: a.ref };
     }
     if (what === 'add_pay') {
       const x = a.amount == null ? null : amt(a.amount), acct = acctOr(a.account);
       if (!a.name || !a.every || (a.amount != null && !x)) return { bad: 'a pay I could not read' };
       const args = { name: clean(a.name, 60), amount: x, every: a.every, day: a.day, day2: a.day2, start: a.start, acct };
-      return { kind: 'addPay', args: [args], text: `Add ${args.name}: ${x ? m(x) : 'no fixed amount'}, ${a.every === 'none' ? 'no fixed day' : a.every === 'month' ? 'on day ' + a.day + ' each month' : a.every}`, amount: 0 };
+      return { kind: 'addPay', args: [args], text: `Add ${args.name}: ${x ? m(x) : 'no fixed amount'}, ${a.every === 'none' ? 'no fixed day' : a.every === 'month' ? 'on day ' + a.day + ' each month' : a.every}`, amount: x || 0, figs: x ? [x] : [] };
     }
     if (what === 'add_line') { const x = amt(a.amount); if (!x || !a.name) return { bad: 'a line I could not read' }; return { kind: 'addLine', args: [{ name: clean(a.name, 60), amount: x }], text: `Add a line, ${clean(a.name, 60)}: ${m(x)} each pay period`, amount: x }; }
     if (what === 'change_line') {
@@ -474,18 +474,18 @@ AFTER SETUP. When the person says they spent, got or moved money, or asks to cha
       return { kind: 'changeLine', args: [id, { amount: x, when: when(a.when) }], text: `${lineName(id)}: ${m(x)} each pay period`, amount: x, ref: a.ref || a.line };
     }
     if (what === 'set_free') { const x = amt(a.amount, null, true); if (x == null) return { bad: 'Free to spend I could not read' }; return { kind: 'setFree', args: [{ amount: x, when: when(a.when) }], text: `Free to spend: ${m(x)} each pay period`, amount: x }; }
-    if (what === 'add_goal') { const x = amt(a.target != null ? a.target : a.amount); if (!x || !a.name) return { bad: 'a goal I could not read' }; return { kind: 'addGoal', args: [{ name: clean(a.name, 60), target: x, due: a.due || undefined }], text: `Add a goal, ${clean(a.name, 60)}: ${m(x)}${a.due ? ' by ' + day1(a.due) : ''}`, amount: 0 }; }
+    if (what === 'add_goal') { const x = amt(a.target != null ? a.target : a.amount); if (!x || !a.name) return { bad: 'a goal I could not read' }; return { kind: 'addGoal', args: [{ name: clean(a.name, 60), target: x, due: a.due || undefined }], text: `Add a goal, ${clean(a.name, 60)}: ${m(x)}${a.due ? ' by ' + day1(a.due) : ''}`, amount: 0, figs: [x] }; }
     if (what === 'set_aside') {
       const id = ref(a.goal || a.ref, 'G'), x = amt(a.amount); if (!id || !x) return { bad: 'money for a goal I could not read' };
       return { kind: 'setAside', args: [id, { amount: x }], text: `Set aside ${m(x)} for ${((book.places || []).find(g => g.id === id) || {}).name}, today`, amount: x, ref: a.goal || a.ref };
     }
     if (what === 'add_card') {
       const x = amt(a.owed != null ? a.owed : a.amount, null, true); if (x == null || !a.name || !dayOk(a.payDay)) return { bad: 'a card I could not read' };
-      return { kind: 'addCard', args: [{ name: clean(a.name, 60), owed: x, payDay: a.payDay, cutDay: a.closeDay }], text: `Add ${clean(a.name, 60)}: ${m(x)} on it now, paid on day ${a.payDay}`, amount: 0 };
+      return { kind: 'addCard', args: [{ name: clean(a.name, 60), owed: x, payDay: a.payDay, cutDay: a.closeDay }], text: `Add ${clean(a.name, 60)}: ${m(x)} on it now, paid on day ${a.payDay}`, amount: x, figs: [x] };
     }
     if (what === 'add_account') {
       const x = amt(a.amount, null, true); if (x == null || !a.name) return { bad: 'an account I could not read' };
-      return { kind: 'addAccount', args: [{ name: clean(a.name, 60), type: a.type || 'bank', amount: x, moved: a.moved }], text: `Add ${clean(a.name, 60)} with ${m(x)}${a.moved ? ' moved from ' + nm(mainAcct) : ''}`, amount: a.moved ? x : 0 };
+      return { kind: 'addAccount', args: [Object.assign({ name: clean(a.name, 60), type: a.type || 'bank', amount: x, moved: a.moved }, a.date ? { date: a.date } : {})], text: `Add ${clean(a.name, 60)} with ${m(x)}${a.moved ? ' moved from ' + nm(mainAcct) : ''}`, amount: x, figs: [x] };
     }
     return { bad: what ? 'a change I can\'t make (' + what.slice(0, 30) + ')' : 'a change I could not read' };
   }
@@ -558,10 +558,13 @@ AFTER SETUP. When the person says they spent, got or moved money, or asks to cha
       /* [BW] a delete, or a change larger than safe to spend, asks first; [AI_FIRST_PLAN 7] an amount the person did not
          type is a guess and asks first too */
       const safe = LA.lookahead(book, today).safeToSpend.headline;
+      /* [qc-foundation F2] the size is the step's real figure: a new pay and new money count too */
       const big = plan.some(s => s.amount && s.amount > safe), del = plan.some(s => s.del);
       const typed = String(said || '').normalize('NFKC').replace(/[,，]/g, '');
       const plain = a => SM.format(a, G.homeOn(book, today)).replace(/[^\d.]/g, '').replace(/\.0+$/, '');
-      const guess = plan.filter(s => s.amount && !new RegExp('(^|[^\\d.])' + plain(s.amount) + '(?![\\d])').test(typed));
+      /* every figure in a step (an amount, a target, what is owed, even 0) must be one the person typed */
+      const figsOf = s => (s.figs || (s.amount ? [s.amount] : []));
+      const guess = plan.filter(s => figsOf(s).some(f => !new RegExp('(^|[^\\d.])' + plain(f) + '(?![\\d])').test(typed)));
       const card = { kind: 'change', status: 'ask', lines: plan.map(s => s.text + (guess.includes(s) ? ' (my guess)' : '')), rows: [], plan, dropped };
       if (del || big || guess.length) {
         card.ask = del ? 'delete' : big ? 'large' : 'guess';
