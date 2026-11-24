@@ -68,7 +68,7 @@ const noStamp = s => s.replace(/DTSTAMP:\d{8}T\d{6}Z/g, 'DTSTAMP:x');
   ck('and Home is back after', await p.$eval('#a3Home', e => !e.hidden) && await p.$eval('.a3-tabs', e => !e.hidden));
   await p.click('#a3RemGo'); await T.w(200);
   await p.setViewport({ width: 320, height: 700, isMobile: true, hasTouch: true }); await T.w(200);
-  ck('no sideways scroll at 320', await p.evaluate(() => document.documentElement.scrollWidth <= 320), await p.evaluate(() => document.documentElement.scrollWidth));
+  ck('no sideways scroll at 320', await p.evaluate(() => Math.max(document.documentElement.scrollWidth, document.getElementById('a3').scrollWidth) <= 320), await p.evaluate(() => Math.max(document.documentElement.scrollWidth, document.getElementById('a3').scrollWidth)));
   await T.shot(p, 'remind');
   ck('no page errors', errs.length === 0, errs.join(' | '));
   await b.close();

@@ -195,7 +195,7 @@ async function figsMatch(p, book, what) {
   ({ b, p, errs } = await T.open({ w: 320, h: 700 }));
   await p.goto(T.URL0 + '?try=mako&today=2026-12-10'); await T.w(400);
   await p.tap('[data-tab="receipts"]'); await T.w(200);
-  const wide = await p.evaluate(() => document.documentElement.scrollWidth);
+  const wide = await p.evaluate(() => Math.max(document.documentElement.scrollWidth, document.getElementById('a3').scrollWidth));
   ck('at 320 wide nothing runs off the side', wide <= 320, wide);
   await type(p, '#rcAmt', '900'); await p.tap('#rcSave'); await T.w(300);
   ck('the try book logs in memory', (await rows(p)).length === 1);

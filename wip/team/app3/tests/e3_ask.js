@@ -109,7 +109,7 @@ async function ask(p, q) { await p.$eval('#a3AskIn', (e, v) => { e.value = v; },
   ck('a change the app does not do is left out and said, with nothing to apply', /Left out/.test(await p.$eval('[data-ask="dropped"]', e => e.textContent)) && (await p.$$eval('[data-card="ask-change"]', c => !c[c.length - 1].querySelector('[data-ask="apply"]'))));
   ck('no page errors', errs.length === 0, errs.join(' | '));
   await p.setViewport({ width: 320, height: 700, isMobile: true, hasTouch: true }); await T.w(200);
-  ck('no sideways scroll at 320', await p.evaluate(() => document.documentElement.scrollWidth <= 320), await p.evaluate(() => document.documentElement.scrollWidth));
+  ck('no sideways scroll at 320', await p.evaluate(() => Math.max(document.documentElement.scrollWidth, document.getElementById('a3').scrollWidth) <= 320), await p.evaluate(() => Math.max(document.documentElement.scrollWidth, document.getElementById('a3').scrollWidth)));
   await T.shot(p, 'ask_card');
   await b.close();
 

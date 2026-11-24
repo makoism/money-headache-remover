@@ -346,7 +346,7 @@ async function openSetup(day) {
   {
     const { c, p } = await openSetup('2026-11-24');
     await typeIn(p, '#s3Bank', '300000'); await typeIn(p, '#s3PayAmt', '250000'); await p.selectOption('#s3PayDay', '25');
-    const top = sel => p.$eval(sel, e => Math.round(e.getBoundingClientRect().top + scrollY));
+    const top = sel => p.$eval(sel, e => Math.round(e.getBoundingClientRect().top + scrollY + document.getElementById('a3').scrollTop));
     for (const [kind, add, f, typed] of [['bill', '#s3AddBill', 'name', 'Gym and swimming'], ['bill', '#s3AddBill', 'amount', '4800'], ['card', '#s3AddCard', 'owed', '52000'], ['card', '#s3AddCard', 'name', 'Everyday card'], ['pay', '#s3AddPay', 'amount', '30000']]) {
       await p.click(add); await w(150);
       const row = kind === 'pay' ? '[data-row=pay2]' : `[data-row^=${kind}]`, rm = row + ' [data-remove]';

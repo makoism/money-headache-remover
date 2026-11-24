@@ -61,7 +61,7 @@ const DAYS = ['2026-11-23', '2026-12-09', '2026-12-10', '2026-12-11', '2026-12-1
   /* the phone width: no sideways scroll at 320 */
   await p.setViewport({ width: 320, height: 700, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
   await p.goto(T.URL0 + '?try=mako&today=2026-12-10'); await T.w(300);
-  ck('no sideways scroll at 320 px', await p.evaluate(() => document.documentElement.scrollWidth <= 320), await p.evaluate(() => document.documentElement.scrollWidth));
+  ck('no sideways scroll at 320 px', await p.evaluate(() => Math.max(document.documentElement.scrollWidth, document.getElementById('a3').scrollWidth) <= 320), await p.evaluate(() => Math.max(document.documentElement.scrollWidth, document.getElementById('a3').scrollWidth)));
   /* every label beside a figure is the name table's name for that figure */
   const SN = require('../../screens/names.js');
   const shown = await p.evaluate(() => [['[data-card=safe] h2', 'safeToSpend.headline'], ['[data-card=due] h2', 'dueBeforeNextPay.total'], ['[data-card=period] h2', 'period.start']].map(([s, f]) => ({ label: document.querySelector(s) ? document.querySelector(s).textContent : '', figure: f })));
