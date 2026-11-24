@@ -7,6 +7,8 @@ ENGINE="dates.js units.js ids.js schedules.js ledger.js lookahead.js periods.js 
 SCREENS="money.js names.js status.js inputs.js provenance.js messages.js help.js"
 STORE="clock.js guard.js idb.js persist.js"
 OUT=index.html
+set -e   # a part that cannot be read (a full disk, a missing file) stops the build before it replaces the page
+trap 'rm -f "$OUT.tmp.$$" sw3.js.tmp.$$' EXIT
 {
 cat <<'HEAD'
 <!DOCTYPE html>
