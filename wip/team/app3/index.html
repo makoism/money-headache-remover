@@ -10025,8 +10025,10 @@ async function saveSetup3() {
    sync [BD4: every edit moves `at`]; `told` stays. Both copies are held against this device's now first (store/clock.js
    holdArriving), so a time far ahead in a file never stamps anything ahead of today. A record in the copy it replaces (or in the copy last synced) that the
    restored copy lacks is marked gone, the same way, since in the join a side that lacks a record never changed it. The
-   kept versions of both stay (AQ3). Put it back goes through the same restamp. Plain values with no change time are left
-   as they are: the join takes them from the device that changed them. */
+   kept versions of both stay (AQ3). Put it back goes through the same restamp. A section the restored copy lacks
+   altogether has its records here marked gone too, and a setting written { v } with no change time is stamped like one
+   that has one. The one known limit: a plain value or a list with no ids (home.curs) has no change time to carry, so
+   the join takes it from the device that changed it, and when both changed it, the larger as text (AN1). */
 (function (root) {
   'use strict';
   const ROUNDS = 150000, MIN_CODE = 6;
@@ -10096,7 +10098,8 @@ async function saveSetup3() {
     const mark = r => { const o = Object.assign(C(r), { at, by }); delete o.held; return o; };   // a new `at`: no held mark to keep
     function walk(r, os, top) {
       const out = {};
-      const keys = new Set(Object.keys(r).concat(...os.map(o => Object.keys(o).filter(k => isRecords(o[k])))));
+      // a section here that the restored copy lacks (no `plan`, say) is walked too, so its records are marked gone
+      const keys = new Set(Object.keys(r).concat(...os.map(o => Object.keys(o).filter(k => isRecords(o[k]) || (isMap(o[k]) && !(top && k === 'keptVersions'))))));
       for (const k of keys) {
         const x = r[k];
         if (top && ['keptVersions', 'rev', 'at', 'v'].includes(k)) { if (x !== undefined) out[k] = C(x); continue; }
@@ -10105,8 +10108,9 @@ async function saveSetup3() {
           for (const o of os) for (const e of isRecords(o[k]) ? o[k] : []) if (!have.has(e.id)) { have.add(e.id); list.push(Object.assign(mark(e), { gone: e.gone || gone })); }
           out[k] = list;
         } else if (isRecords(x)) out[k] = x.map(mark);
-        else if (isMap(x) && typeof x.at === 'string') out[k] = mark(x);
+        else if (isMap(x) && (typeof x.at === 'string' || Object.prototype.hasOwnProperty.call(x, 'v'))) out[k] = mark(x);   // a setting, { v } with or without a change time
         else if (isMap(x)) out[k] = walk(x, os.map(o => o[k]).filter(isMap), false);
+        else if (x === undefined) { const w = walk({}, os.map(o => o[k]).filter(isMap), false); if (Object.keys(w).length) out[k] = w; }
         else out[k] = C(x);
       }
       return out;

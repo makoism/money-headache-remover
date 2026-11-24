@@ -101,7 +101,7 @@ const homeFigs = async p => JSON.stringify((await T.figs(p)).filter(f => f.amt !
     await A.p.click(`[data-cloudver="${vers[vers.length - 1]}"] button`);
     ck('restoring one asks first, with the same words', await until(async () => !!(await A.p.$('#a3CloudVerGo'))) && (await A.p.$eval('[data-cloud=verask]', e => e.textContent)).includes(OTHERS));
     await A.p.click('#a3CloudVerGo');
-    ck('restored from the cloud\'s earlier copy, the copy here kept first', await until(async () => /earlier copy/.test(await A.p.$eval('#a3SetMsg', e => e.textContent))) && !!(await A.p.$('#a3BkBack')));
+    ck('restored from the cloud\'s earlier copy, the copy here kept first', await until(async () => /earlier copy/.test(await A.p.$eval('#a3SetMsg', e => e.textContent))) && !!(await A.p.$('#a3BkBack')), await A.p.$eval('#a3SetMsg', e => e.textContent) + ' / ' + A.errs.join(' / '));
     const r3 = rev();
     await A.p.click('#a3CloudNow');
     ck('A sends it', await until(() => rev() > r3));

@@ -57,6 +57,21 @@ const shown = c => S.canon(Object.assign(Object.fromEntries(LISTS.map(k => [k, (
     ck('the top of the copy keeps its version number', first.v === BOOK.v);
   }
 
+  /* ---- a restored copy missing a whole section, and settings with no change time ---- */
+  {
+    const now = '2026-12-10T09:00:00.000+09:00';
+    const over = clone(BOOK);
+    over.plan = { budgets: [{ id: 'b1', name: 'Food', a: 30000, at: '2026-12-01T09:00:00.000+09:00', by: 'phn002' }], shares: [], goals: { list: [{ id: 'g1', a: 5, at: '2026-12-01T09:00:00.000+09:00' }] } };
+    over.home.country = { v: 'US' };
+    const restored = clone(BOOK); delete restored.plan; delete restored.checkins;
+    over.checkins = [{ id: 'c1', settled: [], at: '2026-12-01T09:00:00.000+09:00' }];
+    const out = Bk.restamp(restored, over, { now, by: 'dsk001', day: '2026-12-10' });
+    const at = out.accounts[0].at;
+    ck('a section the restored copy lacks: its records here are marked gone, at any depth', out.plan && out.plan.budgets[0].gone && out.plan.budgets[0].at === at && out.plan.goals.list[0].gone && out.checkins[0].gone, JSON.stringify(out.plan) + JSON.stringify(out.checkins));
+    ck('a setting with no change time that the restore sets is stamped too ({ v } gets `at` and `by`)', out.home.country.v === 'JP' && out.home.country.at === at && out.home.country.by === 'dsk001' && out.home.mode.at === at, JSON.stringify(out.home));
+    ck('a plain list with no ids (the currencies) is left as it is: the one known limit', S.canon(out.home.curs) === S.canon(BOOK.home.curs));
+  }
+
   /* ---- a copy from a clock far ahead never moves this device's clock [M4, AI1: store/clock.js holdArriving] ---- */
   const NOW = '2026-11-24T10:00:00.000+09:00', DAYMS = 86400000, notAhead = (c, now) => { const t = window.BurrowClock.newestAt(c); return !t || Date.parse(t) <= Date.parse(now) + DAYMS; };
   {
