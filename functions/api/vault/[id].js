@@ -8,6 +8,18 @@ import { json, fail, preflight, dayKey, minuteKey, clientIp, num, ensureSchema, 
 const ID_RE = /^[a-f0-9]{32,64}$/, TOKEN_RE = /^[a-f0-9]{32,128}$/;
 const MAX_BLOB = 3_000_000; /* characters of base64, about 2.2 MB: hundreds of times a normal plan */
 
+/* Two kinds of copy share this table. The old app (ui42.js) sends AES-GCM ciphertext in base64, which never reads as JSON.
+   app3 (wip/team/app3/src/cloud3.js) sends the pack envelope { fmt, v, enc, iv, data } as JSON in base64, so its fmt and v
+   are read here without decrypting anything (DECISIONS_ROUND2 E3). The rules added for app3 (FOR_MAKO, the five server
+   changes) apply only to app3's copies; the old app's copies keep the rules they had. Gives the envelope, or null. */
+export function envelopeOf(blob) {
+  if (typeof blob !== 'string' || blob.slice(0, 2) !== 'ey') return null;   // base64 of '{"' starts 'ey'
+  try {
+    const e = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(blob), c => c.charCodeAt(0))));
+    return e && typeof e === 'object' && !Array.isArray(e) ? e : null;
+  } catch (e) { return null; }
+}
+
 export const onRequestOptions = () => preflight();
 
 async function gate({ request, env, params }) {
@@ -44,11 +56,16 @@ export async function onRequestPut(ctx) {
       .bind(g.id, await sha256hex(g.token), b.blob, b.iv, rev, now, b.blob.length, today).run();
     return json({ rev, updated: now, created: true });
   }
-  const r = g.row;
+  const r = g.row, isNew = !!(envelopeOf(b.blob) || envelopeOf(r.blob));
+  /* [change 1] an app3 write must name the revision it is based on once a copy exists, so a second device can never write
+     over the first device's copy without taking it first (AQ1). force is the old app's "keep this device's copy"; app3
+     never sends it and it does not get round this. 409 makes cloud3 take the latest, join and send again (AW5). */
+  const force = !!b.force && !isNew;
+  if (isNew && !(Math.floor(+b.base || 0) > 0)) return fail(409, 'conflict', 'Name the copy this is based on.', { rev: r.rev, updated: r.updated_at });
   /* the copy on the server is newer: tell the page, which asks the person which one to keep */
   /* or the page sent changes made on an older copy (base: the revision it last loaded or sent) while another device wrote since: ask too */
   const base = Math.floor(+b.base || 0);
-  if (!b.force && (rev <= r.rev || (base > 0 && base !== r.rev))) return fail(409, 'conflict', 'The server has a newer copy.', { rev: r.rev, updated: r.updated_at });
+  if (!force && (rev <= r.rev || (base > 0 && base !== r.rev))) return fail(409, 'conflict', 'The server has a newer copy.', { rev: r.rev, updated: r.updated_at });
   const writes = r.writes_day === today ? r.writes + 1 : 1;
   if (writes > num(ctx.env.VAULT_WRITES_PER_DAY, 400)) return fail(429, 'rate_limited', 'Too many saves today for this vault.');
   await db.prepare('UPDATE vault SET blob = ?2, iv = ?3, rev = ?4, updated_at = ?5, prev_blob = ?6, prev_iv = ?7, prev_rev = ?8, size = ?9, writes_day = ?10, writes = ?11 WHERE id = ?1')

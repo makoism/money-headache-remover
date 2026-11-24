@@ -94,5 +94,23 @@ function todayDb() {
   ck('B5 an empty second database in the same process gets its tables too (the schema check is kept per database)', r.status === 200, r);
 }
 
+// ---------------- C. change 1: a write that names no base is refused when a copy exists ----------------
+/* only for app3's copies (the blob is the pack envelope); the old app's copies keep today's rules (A4) */
+{
+  const { env, id, token } = fresh();
+  let r = await call(env, 'PUT', id, token, Object.assign(envBlob(), { rev: 1 }));
+  ck('C1 the first app3 copy needs no base', r.status === 200 && r.j.created === true, r);
+  r = await call(env, 'PUT', id, token, Object.assign(envBlob(), { rev: 2 }));
+  ck('C2 a later app3 write with no base: 409 conflict with the stored rev (cloud3 takes it, joins, sends again)', r.status === 409 && r.j.error.code === 'conflict' && r.j.rev === 1, r);
+  r = await call(env, 'PUT', id, token, Object.assign(envBlob(), { rev: 2, base: 0 }));
+  ck('C3 base 0 counts as no base', r.status === 409, r);
+  r = await call(env, 'PUT', id, token, Object.assign(envBlob(), { rev: 2, force: true }));
+  ck('C4 force does not get round it for an app3 copy (app3 never sends force)', r.status === 409, r);
+  r = await call(env, 'PUT', id, token, Object.assign(envBlob(), { rev: 2, base: 1 }));
+  ck('C5 the same write naming the stored rev as its base: 200', r.status === 200 && r.j.rev === 2, r);
+  r = await call(env, 'GET', id, token);
+  ck('C6 and it is the copy kept', r.status === 200 && r.j.rev === 2, r);
+}
+
 console.log(bad ? `vault_server: ${bad} FAIL of ${n}` : `vault_server: ALL PASS (${n})`);
 process.exit(bad ? 1 : 0);
