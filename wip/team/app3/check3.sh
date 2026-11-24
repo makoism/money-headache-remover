@@ -38,6 +38,7 @@ step "statements, the writing half (pure): lines, matching, records"; run tests/
 step "the Plan tab's steps (pure)"; run tests/plan3_write.test.js "plan3_write: ALL PASS"
 step "the backup file's core"; run tests/backup3.test.js "backup3: ALL PASS"
 step "answers3, the one answers-to-book function (BV1): same answers, same book"; run tests/answers3.test.js "answers3: ALL PASS"
+step "the assistant's core with the fake model: Mako's setup chat to 201,400, before tax, a side job, a stale draft, a skipped question, changes with Undo (BU, BV, BW)"; run tests/chat3_core.test.js "chat3_core: ALL PASS"
 step "Ask, the pure half (the summary sent, the reply checked, steps through act3, Undo)"; run tests/ask3_core.test.js "ask3_core: ALL PASS"
 step "reminders, the pure half (days from the engine's calendar, the calendar file, Google and Outlook links)"; run tests/remind3.test.js "remind3: ALL PASS"
 step "no money maths in screens"; run tests/no_maths.js "NO MATHS PASS"
