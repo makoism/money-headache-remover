@@ -91,3 +91,11 @@ life has that shape could not set up or keep going. Nothing in it is open, excep
 | B8 | (A1) | A past period's gap is now a row in that period's Receipts, so the overspend shows where it came from. |
 
 The new words are drafts like every other line, for Mako's copy pass.
+
+## qc-foundation at the end of the slice: three figures fixed (lane/listfix2)
+
+| # | What was wrong | Fixed |
+|---|---|---|
+| A2 | The plan-over line named the next pay ("before pay on 10 Dec") though the plan first runs short later (28 Dec). | The engine gives each account's firstUnder; the line says "It runs short from 28 Dec". |
+| C1 | "Can spare" read the real-money walk, so money set aside for a goal looked spare. | It reads the full walk (accounts[].headroom). |
+| A1 | An investment's gap and a gap in another currency were listed as spending. | The engine marks them `apart`; Receipts leaves them out. |
