@@ -1,0 +1,192 @@
+#!/usr/bin/env node
+/* Setup fixes from Mako's first run of the live app (DECISIONS "The new foundation" items 13 and 14), through the
+   built page as a person uses it. Made-up yen only.
+   1. Pay is what lands in the bank (item 13, a correctness fact): the pay question says it is the amount that lands in
+      your bank, after tax, with the payslip's take-home figure as its help; the pay saved is the amount typed.
+   2. Everyday spending says what it covers: food, transport, small things, money spent without planning each item,
+      with an example.
+   3. A bill (and a card) can be removed in setup, with Undo.
+   4. A blank amount never traps: a blank optional field is fine; every required field left blank says what is needed
+      next to it and focuses it; typing clears it; Back always works.
+   5. Each section is saved on its own with a "Saved" notice and Undo. A partly done setup is held as a draft on this
+      device (not a book): a reload half way keeps what was saved and nothing that was not; "See my money" builds the
+      book through build_book only from saved sections, and the draft is cleared once the book is kept. */
+'use strict';
+const L = require('./lives3.js').make('e3_setupfix');
+const { ck, go, typeIn, txt, w } = L;
+const { saveSections } = require('./setup_sections.js');
+const val = (p, s) => p.$eval(s, e => e.value).catch(() => null);
+const errOf = (p, id) => p.$eval(`#a3Setup [data-err-for="${id}"]`, e => e.textContent).catch(() => '(no error line)');
+const focused = p => p.evaluate(() => (document.activeElement || {}).id || (document.activeElement && document.activeElement.dataset.save ? 'save:' + document.activeElement.dataset.save : ''));
+const stateOf = (p, sec) => p.$eval(`#a3Setup [data-sec=${sec}]`, e => e.dataset.state).catch(() => null);
+const savedWords = (p, sec) => p.$eval(`#a3Setup [data-saved=${sec}]`, e => e.textContent.trim()).catch(() => null);
+const saveSec = async (p, sec) => { await p.click(`#a3Setup [data-save=${sec}]`); await w(250); };
+const band = p => p.$eval('#a3Msg', e => ({ text: e.textContent, undo: [...e.querySelectorAll('button')].some(b => b.textContent === 'Undo') }));
+const device = p => p.evaluate(() => new Promise(res => {
+  const rq = indexedDB.open('burrow3');
+  rq.onsuccess = () => { const db = rq.result; const tx = db.transaction(['device', 'book']), out = {}; tx.objectStore('device').get('device').onsuccess = e => { out.device = e.target.result || null; }; tx.objectStore('book').get('book').onsuccess = e => { out.book = e.target.result || null; }; tx.oncomplete = () => { db.close(); res(out); }; };
+  rq.onerror = () => res(null);
+}));
+const homeBank = p => p.$eval('#a3Home [data-card=bank] [data-fig=bank]', e => Number((e.dataset.amt !== undefined ? e : e.querySelector('[data-amt]')).dataset.amt)).catch(() => null);
+async function openSetup(day) {
+  const o = await L.open();
+  await go(o.p, day);
+  await o.p.click('#a3SetupGo'); await w(250);
+  return o;
+}
+(async () => {
+  /* 1 and 2: the words, and the pay saved is the amount typed */
+  {
+    const { c, p } = await openSetup('2026-12-01');
+    const lab = await txt(p, 'label[for=s3PayAmt]');
+    ck('item 13: the pay question asks what lands in your bank each pay day, after tax', lab === 'How much lands in your bank each pay day, after tax?', lab);
+    const help = await p.$eval('#s3PayAmt', e => { const h = document.getElementById(e.getAttribute('aria-describedby') || ''); return h ? h.textContent : ''; }).catch(() => '');
+    ck('item 13: its one-line help, read with the box: the payslip\'s take-home figure', help === 'Your payslip\'s take-home figure, not the amount before tax', help);
+    await p.click('#s3AddPay'); await w(100);
+    const lab2 = await txt(p, 'label[for=s3-pay2-a]');
+    ck('item 13: a second income asks for what lands, after tax, too', /lands/.test(lab2) && /after tax/.test(lab2), lab2);
+    await p.click('[data-row=pay2] [data-remove]'); await w(150);
+    const flab = await txt(p, 'label[for=s3Free]');
+    ck('item 14: everyday spending names what it covers: food, transport and small things', flab === 'About how much do you spend each pay period on food, transport and small things?', flab);
+    const fhelp = await p.$eval('#s3Free', e => { const h = document.getElementById(e.getAttribute('aria-describedby') || ''); return h ? h.textContent : ''; }).catch(() => '');
+    ck('item 14: its help says money spent without planning each item, with an example', /Money you spend without planning each item/.test(fhelp) && /For example/.test(fhelp) && !/\.$/.test(fhelp), fhelp);
+    await typeIn(p, '#s3Bank', '300000'); await typeIn(p, '#s3PayAmt', '241500'); await p.selectOption('#s3PayDay', '25');
+    const e = await saveSections(p);
+    ck('every section saves', e === '', e);
+    await p.click('#a3SetupSave'); await w(700);
+    ck('saved: Home shows', await p.$eval('#a3Setup', e => e.hidden), await txt(p, '#a3SetupErr'));
+    const bk = await L.readBook(p), pay = (bk.schedules || []).find(s => s.kind === 'income');
+    ck('item 13: the pay saved is the amount typed, what lands in the bank (241,500)', pay && pay.steps[0].amount === 241500, JSON.stringify(pay && pay.steps));
+    await c.close();
+  }
+  /* 4: every required field left blank says what is needed next to it and focuses it; optional blanks are fine */
+  {
+    const { c, p } = await openSetup('2026-12-01');
+    await saveSec(p, 'bank');
+    ck('blank bank: says what is needed next to it', (await errOf(p, 's3Bank')) === 'Type what Main bank shows today', await errOf(p, 's3Bank'));
+    ck('blank bank: the box is focused and marked', (await focused(p)) === 's3Bank' && (await p.$eval('#s3Bank', e => e.getAttribute('aria-invalid'))) === 'true', await focused(p));
+    ck('blank bank: the error is read with the box', await p.$eval('#s3Bank', e => (e.getAttribute('aria-describedby') || '').split(' ').some(id => document.getElementById(id) && document.getElementById(id).dataset.errFor === 's3Bank')));
+    ck('blank bank: not saved', (await stateOf(p, 'bank')) !== 'saved');
+    await p.click('#a3SetupX'); await w(250);
+    ck('with the error showing, Back still works: the first screen shows', await p.$eval('#a3Setup', e => e.hidden) && !!(await p.$('#a3SetupGo')));
+    await p.click('#a3SetupGo'); await w(250);
+    ck('setup opens again', !(await p.$eval('#a3Setup', e => e.hidden)));
+    await saveSec(p, 'bank');
+    await p.fill('#s3Bank', '300000');
+    ck('typing clears the error', (await errOf(p, 's3Bank')) === '' && !(await p.$eval('#s3Bank', e => e.hasAttribute('aria-invalid'))), await errOf(p, 's3Bank'));
+    await p.click('#s3AddAcct'); await w(100);
+    await saveSec(p, 'bank');
+    ck('blank second account: says what is needed next to it, focused', (await errOf(p, 's3-acct2-a')) === 'Type what Second bank holds today, or 0' && (await focused(p)) === 's3-acct2-a', (await errOf(p, 's3-acct2-a')) + ' / ' + (await focused(p)));
+    await typeIn(p, '#s3-acct2-a', '5000');
+    await saveSec(p, 'bank');
+    ck('bank section saved, with "Saved" beside it', (await stateOf(p, 'bank')) === 'saved' && (await savedWords(p, 'bank')) === 'Saved', await savedWords(p, 'bank'));
+    const b1 = await band(p);
+    ck('the message band says it is saved, with Undo (screens/messages.js)', /saved/i.test(b1.text) && b1.undo, JSON.stringify(b1));
+    await saveSec(p, 'pay');
+    ck('blank pay: says what is needed next to it, focused', (await errOf(p, 's3PayAmt')) === 'Type how much Pay is' && (await focused(p)) === 's3PayAmt', (await errOf(p, 's3PayAmt')) + ' / ' + (await focused(p)));
+    await typeIn(p, '#s3PayAmt', '0'); await saveSec(p, 'pay');
+    ck('a pay of 0: build_book\'s words next to it', (await errOf(p, 's3PayAmt')) === 'A pay needs an amount. If it comes when it comes, pick No fixed pay', await errOf(p, 's3PayAmt'));
+    await typeIn(p, '#s3PayAmt', '250000'); await p.selectOption('#s3PayEvery', 'weeks2'); await w(100);
+    await saveSec(p, 'pay');
+    ck('blank day of one pay: says what is needed next to it, focused', (await errOf(p, 's3PayStart')) === 'Type the day of one pay, the last one or the next one' && (await focused(p)) === 's3PayStart', (await errOf(p, 's3PayStart')) + ' / ' + (await focused(p)));
+    await p.fill('#s3PayStart', '2026-11-27');
+    await p.click('#s3AddPay'); await w(100);
+    await saveSec(p, 'pay');
+    ck('blank second income: says what is needed next to it, focused', (await errOf(p, 's3-pay2-a')) === 'Type how much Second income is' && (await focused(p)) === 's3-pay2-a', (await errOf(p, 's3-pay2-a')) + ' / ' + (await focused(p)));
+    await typeIn(p, '#s3-pay2-a', '20000'); await p.selectOption('#s3-pay2-e', 'weeks4'); await w(100);
+    await saveSec(p, 'pay');
+    ck('blank day of one second income: says what is needed next to it, focused', (await errOf(p, 's3-pay2-st')) === 'Type the day of one pay, the last one or the next one' && (await focused(p)) === 's3-pay2-st', (await errOf(p, 's3-pay2-st')) + ' / ' + (await focused(p)));
+    await p.fill('#s3-pay2-st', '2026-11-20');
+    await saveSec(p, 'pay');
+    ck('pay section saved', (await stateOf(p, 'pay')) === 'saved', await stateOf(p, 'pay'));
+    await saveSec(p, 'free');
+    ck('everyday spending left blank (optional): saved', (await stateOf(p, 'free')) === 'saved' && (await errOf(p, 's3Free')) !== 'x', await stateOf(p, 'free'));
+    await p.click('#s3AddCard'); await w(100);
+    await saveSec(p, 'cards');
+    ck('blank card amount: says what is needed next to it, focused', (await errOf(p, 's3-card1-o')) === 'Type what is on Card now, or 0' && (await focused(p)) === 's3-card1-o', (await errOf(p, 's3-card1-o')) + ' / ' + (await focused(p)));
+    await typeIn(p, '#s3-card1-o', '12000'); await saveSec(p, 'cards');
+    ck('cards section saved', (await stateOf(p, 'cards')) === 'saved');
+    await p.click('#s3AddBill'); await w(100);
+    await saveSec(p, 'bills');
+    ck('blank bill amount: says what is needed next to it, focused', (await errOf(p, 's3-bill1-a')) === 'Type the amount of Bill' && (await focused(p)) === 's3-bill1-a', (await errOf(p, 's3-bill1-a')) + ' / ' + (await focused(p)));
+    await typeIn(p, '#s3-bill1-a', '8000'); await saveSec(p, 'bills');
+    ck('bills section saved', (await stateOf(p, 'bills')) === 'saved');
+    await saveSec(p, 'min');
+    ck('keep at least left blank (optional): saved', (await stateOf(p, 'min')) === 'saved');
+    await p.click('#a3SetupSave'); await w(700);
+    ck('every section saved: See my money keeps the book and Home shows', await p.$eval('#a3Setup', e => e.hidden), await txt(p, '#a3SetupErr'));
+    await c.close();
+  }
+  /* 3: a bill and a card can be removed, with Undo */
+  {
+    const { c, p } = await openSetup('2026-12-01');
+    await typeIn(p, '#s3Bank', '300000'); await typeIn(p, '#s3PayAmt', '250000'); await p.selectOption('#s3PayDay', '25');
+    for (const [k, name, amt, day] of [[1, 'Rent', 72000, '27'], [2, 'Phone', 4800, '20']]) {
+      await p.click('#s3AddBill'); await w(100);
+      await typeIn(p, `[data-row=bill${k}] [data-f=name]`, name); await typeIn(p, `[data-row=bill${k}] [data-f=amount]`, amt); await p.selectOption(`[data-row=bill${k}] [data-f=day]`, day);
+    }
+    await saveSec(p, 'bills');
+    ck('a bill row has its own Remove', !!(await p.$('[data-row=bill1] [data-remove]')));
+    await p.click('[data-row=bill1] [data-remove]'); await w(200);
+    ck('Rent removed from setup', !(await p.$('[data-row=bill1]')) && !!(await p.$('[data-row=bill2]')));
+    const b = await band(p);
+    ck('the band says Rent removed, with Undo', /Rent removed/.test(b.text) && b.undo, JSON.stringify(b));
+    ck('the bills section is not saved yet after the removal', (await stateOf(p, 'bills')) === 'changed' && (await savedWords(p, 'bills')) === 'Not saved yet', await savedWords(p, 'bills'));
+    await p.click('#a3Msg button'); await w(250);
+    ck('Undo puts Rent back as it was', (await val(p, '[data-row=bill1] [data-f=name]')) === 'Rent' && (await val(p, '[data-row=bill1] [data-f=amount]')) === '72000' && (await val(p, '[data-row=bill1] [data-f=day]')) === '27', await val(p, '[data-row=bill1] [data-f=amount]'));
+    ck('and the bills section is as saved again', (await stateOf(p, 'bills')) === 'saved');
+    await p.click('[data-row=bill1] [data-remove]'); await w(200);
+    await p.click('#s3AddCard'); await w(100);
+    await p.click('[data-row=card1] [data-remove]'); await w(200);
+    ck('a card can be removed too', !(await p.$('[data-row=card1]')));
+    const e = await saveSections(p);
+    ck('every section saves', e === '', e);
+    await p.click('#a3SetupSave'); await w(700);
+    ck('saved', await p.$eval('#a3Setup', e => e.hidden), await txt(p, '#a3SetupErr'));
+    const bk = await L.readBook(p), names = (bk.schedules || []).filter(s => !s.gone).map(s => s.name);
+    ck('the book has Phone and not the removed Rent', names.includes('Phone') && !names.includes('Rent'), names.join(','));
+    await c.close();
+  }
+  /* 5: each section saved on its own, Undo, and a reload half way */
+  {
+    const { c, p } = await openSetup('2026-11-24');
+    await typeIn(p, '#s3Bank', '286000'); await saveSec(p, 'bank');
+    await typeIn(p, '#s3PayAmt', '180000'); await p.selectOption('#s3PayDay', '10'); await saveSec(p, 'pay');
+    ck('pay saved on its own', (await stateOf(p, 'pay')) === 'saved' && (await savedWords(p, 'pay')) === 'Saved');
+    await typeIn(p, '#s3PayAmt', '190000');
+    ck('a change after saving says not saved yet', (await stateOf(p, 'pay')) === 'changed' && (await savedWords(p, 'pay')) === 'Not saved yet', await savedWords(p, 'pay'));
+    await saveSec(p, 'pay');
+    ck('saved again', (await stateOf(p, 'pay')) === 'saved');
+    await p.click('#a3Msg button'); await w(300);
+    ck('Undo takes back that save: the pay is 180,000 again, as saved', (await val(p, '#s3PayAmt')) === '180000' && (await stateOf(p, 'pay')) === 'saved', await val(p, '#s3PayAmt'));
+    let d = await device(p);
+    ck('the draft on this device holds the pay as 180,000', d && d.device && d.device.setup && d.device.setup.sections.pay.v.s3PayAmt === '180000', JSON.stringify(d && d.device));
+    ck('a partly done setup is a draft, not a book: nothing is kept as a book yet', d && !d.book, JSON.stringify(d && d.book));
+    await p.click('#s3AddBill'); await w(100);
+    await typeIn(p, '[data-row=bill1] [data-f=name]', 'Rent'); await typeIn(p, '[data-row=bill1] [data-f=amount]', '72000');
+    await p.click('#a3SetupSave'); await w(300);
+    ck('See my money with a section not saved: says which, setup stays open', /Your bills/.test(await txt(p, '#a3SetupErr')) && !(await p.$eval('#a3Setup', e => e.hidden)), await txt(p, '#a3SetupErr'));
+    ck('and puts you on that section\'s Save', (await focused(p)) === 'save:bills', await focused(p));
+    /* leave half way: a reload */
+    await p.reload(); await w(700);
+    ck('after a reload half way, setup opens again by itself', !(await p.$eval('#a3Setup', e => e.hidden)));
+    ck('what was saved is back: the bank 286,000 and the pay 180,000', (await val(p, '#s3Bank')) === '286000' && (await val(p, '#s3PayAmt')) === '180000' && (await val(p, '#s3PayDay')) === '10', (await val(p, '#s3Bank')) + ' ' + (await val(p, '#s3PayAmt')));
+    ck('with Saved beside them', (await savedWords(p, 'bank')) === 'Saved' && (await savedWords(p, 'pay')) === 'Saved');
+    ck('what was not saved is not: no bill', !(await p.$('[data-row^=bill]')));
+    d = await device(p);
+    ck('still no book after the reload', d && !d.book);
+    await p.click('#s3AddBill'); await w(100);
+    await typeIn(p, '[data-row=bill1] [data-f=name]', 'Rent'); await typeIn(p, '[data-row=bill1] [data-f=amount]', '72000'); await p.selectOption('[data-row=bill1] [data-f=day]', '27');
+    const e = await saveSections(p);
+    ck('every section saves', e === '', e);
+    await p.click('#a3SetupSave'); await w(700);
+    ck('See my money: the book is built and Home shows', await p.$eval('#a3Setup', e => e.hidden), await txt(p, '#a3SetupErr'));
+    ck('Home shows the bank saved half way, 286,000', (await homeBank(p)) === 286000, await homeBank(p));
+    d = await device(p);
+    ck('the draft is cleared once the book is kept', d && d.book && !(d.device && d.device.setup), JSON.stringify(d && d.device));
+    await p.reload(); await w(600);
+    ck('after a reload Home shows, not setup', await p.$eval('#a3Setup', e => e.hidden) && (await homeBank(p)) === 286000);
+    await c.close();
+  }
+  await L.finish();
+})().catch(e => { console.log('FAIL crashed ' + e.stack); process.exit(1); });

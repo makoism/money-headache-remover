@@ -9786,9 +9786,10 @@ function openSetup3() {
       <div class="a3-actions"><button type="button" class="a3-btn" id="s3AddAcct">Add another account: a bank, cash or an e-wallet</button></div>
     </section>
     <section class="a3-card" data-card="pay"><h2>Your pay</h2>
-      <div class="a3-row3" data-row="pay1">
+      <div data-row="pay1">
         <div class="a3-field"><label for="s3PayName">Called</label><input class="a3-in a3-txt" id="s3PayName" data-f="name" placeholder="Pay" autocomplete="off"></div>
-        <div class="a3-field"><label for="s3PayAmt">How much lands</label><input class="a3-in" id="s3PayAmt" data-f="amount" data-amount data-money></div>
+        <div class="a3-field"><label for="s3PayAmt">How much lands in your bank each pay day, after tax?</label><input class="a3-in" id="s3PayAmt" data-f="amount" data-amount data-money aria-describedby="s3PayAmtH">
+          <p class="a3-sub" id="s3PayAmtH" data-hint="pay">Your payslip's take-home figure, not the amount before tax</p></div>
       </div>
       <div class="a3-field"><label for="s3PayEvery">How often it lands</label><select class="a3-in a3-sel" id="s3PayEvery">${EVERY3.map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}</select></div>
       <div class="a3-field" data-q="day"><label for="s3PayDay">Day of the month it lands</label><select class="a3-in a3-sel" id="s3PayDay">${dayOptions3('25')}</select></div>
@@ -9826,7 +9827,7 @@ function openSetup3() {
     setup3.pays++; const k = 'pay' + setup3.pays;
     $('#s3Pays').insertAdjacentHTML('beforeend', `<div class="a3-row3" data-row="${k}">
       <div class="a3-field"><label for="s3-${k}-n">Called</label><input class="a3-in a3-txt" id="s3-${k}-n" data-f="name" placeholder="Second income" autocomplete="off"></div>
-      <div class="a3-field"><label for="s3-${k}-a">How much lands</label><input class="a3-in" id="s3-${k}-a" data-f="amount" data-amount data-money></div>
+      <div class="a3-field"><label for="s3-${k}-a">How much lands each time, after tax?</label><input class="a3-in" id="s3-${k}-a" data-f="amount" data-amount data-money></div>
       <div class="a3-field"><label for="s3-${k}-e">When it lands</label><select class="a3-in a3-sel" id="s3-${k}-e" data-f="every"><option value="same">On the same days as your pay</option>${EVERY2_3.map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}</select></div>
       <div class="a3-field" data-q="day" hidden><label for="s3-${k}-d">Day of the month it lands</label><select class="a3-in a3-sel" id="s3-${k}-d" data-f="day">${dayOptions3('5')}</select></div>
       <div class="a3-field" data-q="day2" hidden><label for="s3-${k}-d2">And on day</label><select class="a3-in a3-sel" id="s3-${k}-d2" data-f="day2">${dayOptions3('20', [['last', 'the last day']])}</select></div>
