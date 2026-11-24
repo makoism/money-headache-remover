@@ -152,3 +152,33 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
 .a3-rows li.a3-hashelp > .a3-rcrow { flex: 1 1 100%; }
 .a3-helprow { flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .a3-helprow .burrow-help-text { flex: 1 1 100%; margin: 0; }
+/* the assistant (chat3.js, AI first): a bar at the foot of a phone that opens to a sheet over the lower part, a column
+   on the right on a wide screen, and the whole first screen before setup (the welcome, inside #a3Home) */
+.a3-chat { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; background: var(--bg); border-top: 1px solid var(--hair); padding: 8px 16px calc(8px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 8px; }
+.a3-chat[data-open] { height: 62vh; height: 62dvh; box-shadow: 0 -8px 24px rgba(0,0,0,.25); }
+.a3-chat:not([data-open]) .a3-chat-body, .a3-chat:not([data-open]) .a3-chat-head { display: none; }
+.a3-chat-body { flex: 1 1 auto; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 10px; }
+.a3-chat-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.a3-chat-head h2 { margin: 0; font-size: var(--t-cap); color: var(--ink2); font-weight: 600; }
+.a3-chat-row { display: flex; gap: 8px; align-items: flex-end; }
+.a3-chat-row .a3-in { flex: 1 1 auto; min-width: 0; width: auto; min-height: 44px; padding: 10px 14px; text-align: left; resize: none; }
+.a3-chat-row .a3-btn { flex: none; }
+.a3-chat-log { display: flex; flex-direction: column; gap: 10px; }
+.a3-chat-log:empty { display: none; }
+.a3-chat-card { align-self: stretch; }
+.a3-chat-card h3 { margin: 0 0 4px; font-size: var(--t-sm); }
+.a3-chat-saved { align-self: flex-start; margin: 0; font-size: var(--t-cap); color: var(--ink2); }
+.a3-chat-ways { display: flex; flex-wrap: wrap; gap: 8px; }
+.a3-chat-copy { width: 100%; min-height: 120px; text-align: left; font-size: var(--t-cap); }
+.a3-welcome .a3-chat-log { margin-top: 12px; }
+.a3-vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.a3-chat-lines { margin: 4px 0 0; padding-left: 18px; font-size: var(--t-sm); }
+.a3-chat-figs li { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; }
+body.a3-has-chat .a3 { padding-bottom: 150px; }
+@media (min-width: 1000px) {
+  .a3-chat { left: auto; top: 0; width: 360px; border-top: 0; border-left: 1px solid var(--hair); height: 100vh; height: 100dvh; padding: 16px; }
+  .a3-chat[data-open] { height: 100vh; height: 100dvh; box-shadow: none; }
+  .a3-chat:not([data-open]) .a3-chat-body, .a3-chat:not([data-open]) .a3-chat-head { display: flex; }
+  body.a3-has-chat { padding-right: 360px; }
+  body.a3-has-chat .a3 { padding-bottom: 96px; }
+}

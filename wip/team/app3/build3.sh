@@ -43,6 +43,8 @@ cat src/stmt3_read.js src/stmt3_plan.js
 cat src/money3.js src/e3.js src/act3.js src/plan3_write.js src/home3.js src/checkin3.js src/receipts3.js src/plan3.js src/setup3.js src/backup3.js src/cloud3.js src/cloud3_page.js src/settings3.js src/settings3_sw.js src/start3.js
 cat src/stmt3_ai.js src/stmt3.js   # statements lane
 cat src/ask3_core.js src/ask3.js   # Ask (ask lane): after stmt3_ai.js, whose route it uses
+for f in answers3.js chat3_core.js; do [ -f "src/$f" ] && cat "src/$f"; done   # the assistant's pure core (AI first, lane A)
+cat src/chat3.js   # the assistant panel (AI first, lane B)
 cat src/remind3.js src/remind3_page.js   # Reminders (ask lane)
 echo '})();'
 echo '</script>'
