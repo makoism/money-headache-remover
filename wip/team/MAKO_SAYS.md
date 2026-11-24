@@ -8,7 +8,7 @@ How it is kept:
 - Every QC reviewer marks each line that touches its role MET, NOT MET or NOT BUILT on every build. That is how we know a line reached the app.
 - A line here that no plan, test or reviewer covers is a fault in the process: tell the coordinator.
 - Newer lines win. Dates are Nov 2026. Refs: NF = DECISIONS.md "The new foundation" item; D = DECISIONS.md; R2 = foundation_review/DECISIONS_ROUND2.md; NS = NORTH_STAR.md; L = LESSONS.md.
-- Last changed: 24 Nov 2026, 12:20 JST (M6: a third ask-first reason). First version 24 Nov, M1 to M81.
+- Last changed: 24 Nov 2026, 12:30 JST (M82: Fable and the resets; before that M6: a third ask-first reason). First version 24 Nov, M1 to M81.
 
 ## A. How he wants to use the app
 
@@ -111,6 +111,7 @@ How it is kept:
 - M79. Reviewers check the way in too: "we missed this whole AI first thing." (24, NF17)
 - M80. What he tells the coordinator reaches every session, helper and reviewer: "we are all on the same page. That's the biggest thing for me." (24, NF18)
 - M81. The coordinator is the head of all of it and makes sure of M80. (24, NF18)
+- M82. Use Fable for every session, helper and reviewer where it is better, and use every limit reset, each only when its limit is fully used. Only Mako presses a reset; the coordinator tells him which and when. (24, NF19)
 
 ## Not settled yet (do not guess, do not ask him yourself; the coordinator brings these to him with the app in front of him)
 
