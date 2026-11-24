@@ -11,6 +11,7 @@ function runwayWords3(r, yr) {
   const who = x.several ? `. ${E3.nameOf(x.account)} runs out first` : '';
   const head = `<div class="a3-head"><p class="a3-sub" data-fig="runway" data-weeks="${esc3(x.more ? 'more' : x.weeks)}" data-day="${esc3(x.day || '')}" data-acct="${esc3(x.account)}">If no more pay came, your money lasts ${esc3(span)}${esc3(keep)}${esc3(who)}</p>${HELP3.button('runway')}</div>${HELP3.text('runway')}`;
   if (x.more) return head;
-  const under = x.minimum ? 'under its minimum' : 'below zero';
-  return head + `<p class="a3-sum" data-fig="runwaywhy">${esc3(E3.nameOf(x.account))} goes ${under} on ${esc3(day3(x.day, yr))}: ${esc3(sum3(x.parts, x.total, E3.curOf(x.account)))}</p>`;
+  /* "would", never "goes below zero": that is said only of the real walk (BM2, e3_warnwords J) */
+  const under = x.minimum ? 'would go under its minimum' : 'would run out';
+  return head + `<p class="a3-sum" data-fig="runwaywhy">${esc3(E3.nameOf(x.account))} ${under} on ${esc3(day3(x.day, yr))}: ${esc3(sum3(x.parts, x.total, E3.curOf(x.account)))}</p>`;
 }

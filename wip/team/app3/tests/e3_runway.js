@@ -51,13 +51,13 @@ async function runway(p, what, weeks, sum) {
   ck('24 Nov before Free to spend: no runway line (nothing says how fast the money goes)', (await line(p)) === null, await line(p));
   /* Free to spend through Plan's own form, as Home's prompt opens it */
   await p.click('#a3FreeGo'); await w(300); await p.fill('#pl-amount', '73000'); await p.click('[data-plbtn="0"]'); await w(400);
-  await runway(p, '24 Nov after setup', 4, 'Main bank goes below zero on 28 Dec: ¥300,000 (Main bank today) − ¥90,000 (Rent 27 Nov) − ¥54,000 (Card A, all owed, paid 10 Dec) − ¥90,000 (Rent 28 Dec) − ¥81,600 (Free to spend, 34 days) = − ¥15,600');
+  await runway(p, '24 Nov after setup', 4, 'Main bank would run out on 28 Dec: ¥300,000 (Main bank today) − ¥90,000 (Rent 27 Nov) − ¥54,000 (Card A, all owed, paid 10 Dec) − ¥90,000 (Rent 28 Dec) − ¥81,600 (Free to spend, 34 days) = − ¥15,600');
   await go(p, '2026-11-26'); await log(p, 20000, 'Main bank', { note: 'groceries' });
-  await runway(p, '26 Nov after a spend', 4, 'Main bank goes below zero on 28 Dec: ¥280,000 (Main bank today) − ¥90,000 (Rent 27 Nov) − ¥54,000 (Card A, all owed, paid 10 Dec) − ¥90,000 (Rent 28 Dec) − ¥76,800 (Free to spend, 32 days) = − ¥30,800');
+  await runway(p, '26 Nov after a spend', 4, 'Main bank would run out on 28 Dec: ¥280,000 (Main bank today) − ¥90,000 (Rent 27 Nov) − ¥54,000 (Card A, all owed, paid 10 Dec) − ¥90,000 (Rent 28 Dec) − ¥76,800 (Free to spend, 32 days) = − ¥30,800');
   await go(p, '2026-11-30'); await checkin(p, { 'Main bank': 188000, 'E-wallet': 10000 });
-  await runway(p, '30 Nov after a check-in', 4, 'Main bank goes below zero on 28 Dec: ¥188,000 (Main bank today) − ¥54,000 (Card A, all owed, paid 10 Dec) − ¥90,000 (Rent 28 Dec) − ¥67,200 (Free to spend, 28 days) = − ¥23,200');
+  await runway(p, '30 Nov after a check-in', 4, 'Main bank would run out on 28 Dec: ¥188,000 (Main bank today) − ¥54,000 (Card A, all owed, paid 10 Dec) − ¥90,000 (Rent 28 Dec) − ¥67,200 (Free to spend, 28 days) = − ¥23,200');
   await go(p, '2026-12-10'); await checkin(p, { 'Main bank': 360000, 'E-wallet': 10000 }, { 'Card A': 54000 });
-  await runway(p, '10 Dec after the pay day check-in', 10, 'Main bank goes below zero on 24 Feb 2027: ¥360,000 (Main bank today) − ¥90,000 (Rent 28 Dec) − ¥90,000 (Rent 27 Jan) − ¥182,400 (Free to spend, 76 days) = − ¥2,400');
+  await runway(p, '10 Dec after the pay day check-in', 10, 'Main bank would run out on 24 Feb 2027: ¥360,000 (Main bank today) − ¥90,000 (Rent 28 Dec) − ¥90,000 (Rent 27 Jan) − ¥182,400 (Free to spend, 76 days) = − ¥2,400');
   const help = await p.$eval('#a3Home [data-helptext=runway]', e => e.textContent).catch(() => null);
   ck('the "?" beside it explains it', !!help && /no more pay/.test(help), help);
   await c.close();

@@ -124,8 +124,15 @@ One help piece serves every "?", so changing a line there changes it everywhere.
 - Pay day in two steps reads "Today: ¥286,000 (Main bank today) + ¥180,000 (Main job 10 Dec) ... = ¥472,000 at the end of the day. Safe to spend counts on this pay coming in today".
 
 ## Stage 2 S1: "If no more pay came" (lane/s2b, 24 Nov JST): words and defaults for your run
-- Home, under safe to spend: "If no more pay came, your money lasts about 7 weeks". With a minimum: ", keeping your minimum". With several accounts: ". Main bank runs out first". Under it, the sum: "Main bank goes below zero on 14 Jan: ¥300,000 (Main bank today) − ¥90,000 (Rent 27 Nov) − ... = −¥2,400".
+- Home, under safe to spend: "If no more pay came, your money lasts about 7 weeks". With a minimum: ", keeping your minimum". With several accounts: ". Main bank runs out first". Under it, the sum: "Main bank would run out on 14 Jan: ¥300,000 (Main bank today) − ¥90,000 (Rent 27 Nov) − ... = −¥2,400".
 - The "?": "How long your money lasts if no more pay came: what your bank holds today, less your bills, card payments and your plan, day by day. Goal money kept in the bank is not counted. Money moved in from your own savings is."
 - Defaults used until you say: goal money kept in the bank is left out (named in the sum); goal set-asides each pay are left out (they stop when pay stops); the line shows only once Free to spend or a line is set.
 - With no fixed pay, Home already says "Lasts about N weeks at this rate", so this line is not shown there (one figure for one thing). That older line counts to below zero, not to your minimum: should it change to the minimum too?
 - Accounts are not added together yet: the line names the account that runs out first (a later slice adds them).
+
+## Stage 2 S5: money in another currency (lane/s2b, 24 Nov JST): words and defaults for your run
+- Setup: each extra account has "Money in" (yen, US dollars, pesos, euros), the home currency by default.
+- Home, a new "Total, about, in JPY" card, only when an account is in another currency: "¥436,250", then "Dollar account $1,000.00 at 1 USD = 150.25 JPY from 24 Nov, typed by you: ¥150,250". With no rate yet: "Dollar account $1,000.00 is not counted: no rate yet. Type one in Settings, Rates". After 30 days: ", over 30 days old".
+- Settings, a new "Rates" card: "1 USD is how many JPY", a From day (today by default), "Keep this rate", and the rates typed, latest first. Nothing is fetched from the internet.
+- Safe to spend still never counts money in another currency (that is a later slice, S9).
+- Question: should a rate also be typed the other way ("1 JPY is 0.0066 USD")? The engine reads either; the screen asks one way only.

@@ -1555,7 +1555,22 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
   // [L units q9] A saved amount that is not whole is kept as it is and flagged, never rounded on load.
   const loadAmount = a => ({ a, flag: !Number.isInteger(a) });
 
-  const api = { DECIMALS, known, decimals, toMinor, minorOf, fmt, interestOn, spread, loadAmount };
+  // [stage 2 S5, STAGE2_PLAN correction 2] An amount in whole minor units of `from` at a rate (a decimal string, kept at
+  // full precision: 1 `from` is `rate` `to`), as whole minor units of `to`; `inverse` reads the rate the other way (1 `to`
+  // is `rate` `from`). Whole-number maths with each currency's exponent, rounded half up (half away from zero below zero).
+  function convert(n, from, to, rate, inverse) {
+    if (from === to) return n;
+    const m = /^(\d+)(?:\.(\d+))?$/.exec(typeof rate === 'string' ? rate.trim() : '');
+    if (!m) throw new Error('not a rate: ' + rate);
+    const p = BigInt(m[1] + (m[2] || '')), k = 10n ** BigInt((m[2] || '').length);
+    if (p === 0n) throw new Error('not a rate: ' + rate);
+    const neg = n < 0, a = BigInt(Math.abs(n)), dt = 10n ** BigInt(decimals(to)), df = 10n ** BigInt(decimals(from));
+    const num = inverse ? a * k * dt : a * p * dt, den = inverse ? p * df : k * df;
+    const out = Number((2n * num + den) / (2n * den));
+    return neg ? -out : out;
+  }
+
+  const api = { DECIMALS, known, decimals, toMinor, minorOf, fmt, interestOn, spread, loadAmount, convert };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else (root.BurrowEngine = root.BurrowEngine || {}).units = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
@@ -1855,6 +1870,17 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     for (const h of curs) if (day == null || h.from <= day) c = h.cur;
     return c;
   }
+  // [stage 2 S5, STAGE2_PLAN corrections 2, 3, 2'] The rate in force for `cur` into `to` on a day (YYYY-MM-DD): of the
+  // live `rates` records for the pair in either direction with `from` on or before the day, the latest by `from`, then
+  // `at`, then id. `inverse` is true when that record runs the other way (1 `to` is `rate` `cur`). Null when none.
+  function rateOn(book, cur, to, day) {
+    const pair = r => live(r) && typeof r.from === 'string' && r.from <= day && ((r.cur === cur && r.to === to) || (r.cur === to && r.to === cur));
+    const s = v => String(v == null ? '' : v);
+    const list = ((book && book.rates) || []).filter(pair).sort((p, q) => (p.from !== q.from ? (p.from < q.from ? -1 : 1)
+      : s(p.at) !== s(q.at) ? (s(p.at) < s(q.at) ? -1 : 1) : s(p.id) < s(q.id) ? -1 : s(p.id) > s(q.id) ? 1 : 0));
+    const r = list.pop();
+    return r ? { id: r.id, from: r.from, rate: r.rate, inverse: r.cur !== cur, src: r.src || 'typed' } : null;
+  }
   function ctx(book, day) {
     const by = Object.create(null);
     for (const a of book.accounts || []) if (a && typeof a.id === 'string' && !a.gone) by[a.id] = a;
@@ -1990,7 +2016,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     return { ok: p.total === p.have && !bad.length, total: p.total, have: p.have, cards: bad };
   }
 
-  const api = { TYPES, TWO, owed, yours, live, fieldValue, homeOn, ctx, accountMoves, apply, sums, placesOf, proof };
+  const api = { TYPES, TWO, owed, yours, live, fieldValue, homeOn, rateOn, ctx, accountMoves, apply, sums, placesOf, proof };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else (root.BurrowEngine = root.BurrowEngine || {}).ledger = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
@@ -3431,6 +3457,20 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     for (const id of ids) if (res.accounts[id].currency !== home) beside[res.accounts[id].currency] = (beside[res.accounts[id].currency] || 0) + res.accounts[id].bank;
     const cardsOwed = Object.keys(cards).filter(id => cur(id) === home).reduce((t, id) => t + cards[id].owedNow, 0);
     res.total = { amount: homeTotal, beside, afterCards: homeTotal - cardsOwed };
+    // [stage 2 S5, STAGE2_PLAN 2.4 step 1] about how much in the home currency: each account in another currency at the
+    // rate in force today (ledger.rateOn), converted in whole numbers (units.convert); one with no rate yet is named in
+    // `missing`. A rate is old after 30 days. `amount` (the home currency only) is unchanged.
+    const others = ids.filter(id => res.accounts[id].currency !== home);
+    if (others.length) {
+      const parts = [], missing = [];
+      for (const id of others) {
+        const a = res.accounts[id], rt = L.rateOn(book, a.currency, home, asOf);
+        if (!rt) { missing.push({ account: id, currency: a.currency, amount: a.bank }); continue; }
+        parts.push({ account: id, currency: a.currency, amount: a.bank, converted: U.convert(a.bank, a.currency, home, rt.rate, rt.inverse),
+          rate: rt.rate, inverse: rt.inverse, rateFrom: rt.from, src: rt.src, old: today - dayNum(rt.from) > 30 });
+      }
+      res.total.inHome = { amount: parts.reduce((t, x) => t + x.converted, homeTotal), parts, missing };
+    }
 
     // ----- the check-in list [A1, A2, S6, U2, W2, X3] -----
     const bankIds = Object.keys(banks);
@@ -4103,8 +4143,11 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     for (const b of banks) {
       const type = b.type || 'bank';
       if (!BANK_TYPES[type]) throw new Error(b.name + ': no such kind of account ' + type);
-      const x = stamp({ id: idFor(b.key), name: b.name, type, cur, owner: null });
-      if (b !== main && b.min != null) x.minBank = { a: whole(b.min, b.name + "'s minimum"), cur };
+      // [stage 2 S5] an account in another currency: `cur` on its answer, its amount in that currency's minor units
+      const bc = b.cur || cur;
+      if (b === main && bc !== cur) throw new Error('the main bank is in the home currency');
+      const x = stamp({ id: idFor(b.key), name: b.name, type, cur: bc, owner: null });
+      if (b !== main && b.min != null) x.minBank = { a: whole(b.min, b.name + "'s minimum"), cur: bc };
       book.accounts.push(x);
       opening(x.id, whole(b.amount, b.name));
     }
@@ -8894,8 +8937,9 @@ function runwayWords3(r, yr) {
   const who = x.several ? `. ${E3.nameOf(x.account)} runs out first` : '';
   const head = `<div class="a3-head"><p class="a3-sub" data-fig="runway" data-weeks="${esc3(x.more ? 'more' : x.weeks)}" data-day="${esc3(x.day || '')}" data-acct="${esc3(x.account)}">If no more pay came, your money lasts ${esc3(span)}${esc3(keep)}${esc3(who)}</p>${HELP3.button('runway')}</div>${HELP3.text('runway')}`;
   if (x.more) return head;
-  const under = x.minimum ? 'under its minimum' : 'below zero';
-  return head + `<p class="a3-sum" data-fig="runwaywhy">${esc3(E3.nameOf(x.account))} goes ${under} on ${esc3(day3(x.day, yr))}: ${esc3(sum3(x.parts, x.total, E3.curOf(x.account)))}</p>`;
+  /* "would", never "goes below zero": that is said only of the real walk (BM2, e3_warnwords J) */
+  const under = x.minimum ? 'would go under its minimum' : 'would run out';
+  return head + `<p class="a3-sum" data-fig="runwaywhy">${esc3(E3.nameOf(x.account))} ${under} on ${esc3(day3(x.day, yr))}: ${esc3(sum3(x.parts, x.total, E3.curOf(x.account)))}</p>`;
 }
 /* ---------- Check your bank (WIRING_PLAN 1.1 item 3, step 9) ----------
    Lists every expected item since the last check (res.checkIn.toConfirm), ticked, with its amount editable; asks what
