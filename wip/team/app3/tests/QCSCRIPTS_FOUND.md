@@ -17,3 +17,15 @@ For the coordinator: each line says the file, and what a person sees.
 Seen on the walk, not counted as faults (for Mako's eye, a wording choice):
 - Plan, a card or a loan opened to change: clear "Day of the month it is paid" and press Save. The form says "Nothing
   changed" and keeps the old day. It is a message and nothing is lost, but it does not say the day is needed.
+
+## tests/e3_always.js (the assistant one tap away, page errors, network calls)
+
+- src/ask3.js, a new device: tap Ask on the first screen, in setup, or in Settings before setup. The page only says
+  "Set up first". The assistant cannot be asked anything before or during setup (M1, M2, M17). Seven places, one cause.
+  The setup chat is on lane/ai-panel, not on this base.
+- src/shell.html and src/app3.css, every long screen: Ask is a small link in the header and the header scrolls away
+  with the page. Scrolled to the end of 25 of the 35 places (setup, Home, Receipts, Plan and most of its forms, Check
+  your bank, Settings, Reminders, Add statements), Ask is off the screen (M1 "always on screen").
+
+Not faults: no page error on any of the 35 places, and no network call at all with the cloud copy off, also when Ask
+is opened from every place.

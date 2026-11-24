@@ -24,7 +24,7 @@ function make(label, KNOWN = {}) {
   const errs = [], dirs = [], ctxs = [], seen = new Set();
   const ck = (name, ok, extra) => {
     n++; seen.add(name);
-    const more = ok || extra === undefined ? '' : ' ' + String(extra).replace(/\s+/g, ' ').slice(0, 500);
+    const more = ok || extra === undefined ? '' : ' ' + String(extra).replace(/\s+/g, ' ').slice(0, 900);
     if (name in KNOWN) {
       if (ok) { bad++; console.log('FAIL ' + name + ' (listed in KNOWN but it passes now: take it out of KNOWN and QCSCRIPTS_FOUND.md)'); }
       else { known++; console.log('KNOWN FAIL ' + name + more + ' [' + KNOWN[name] + ']'); }
