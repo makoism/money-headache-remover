@@ -29,6 +29,8 @@ async function relay(p, health) {
     if (u === 'https://relay.example/api/ai') {
       if (rq.method() === 'OPTIONS') return rq.respond({ status: 204, headers: Object.assign({ 'access-control-allow-headers': 'content-type, x-app' }, H) });
       const body = JSON.parse(rq.postData()); sent.push(body);
+      /* [C5] the relay's own refusals, as functions/api/ai.js words them: { status, message } set by the test */
+      if (health.fail) return rq.respond({ status: health.fail.status, contentType: 'application/json', headers: H, body: JSON.stringify(health.fail.message ? { error: { code: 'x', message: health.fail.message } } : {}) });
       if (health.invite && String(body.invite || '').trim().toLowerCase() !== GOOD) return rq.respond({ status: 401, contentType: 'application/json', headers: H, body: JSON.stringify({ error: { code: 'invite_required', message: 'This page needs the code word from its owner.' } }) });
       const tool = body.tools[0].name;
       const input = tool === 'money_answer' ? { answer: 'Rent is 72,000 on 27 Nov.', actions: [] } : ROWS;
@@ -170,6 +172,50 @@ const idbText = p => p.evaluate(async () => {
     await ask(p, 'What is due before next pay?');
     ck('no word asked for: the answer comes, nothing kept on the device', (await lastAi(p)) === 'Rent is 72,000 on 27 Nov.' && sent[0].invite === '' && (await p.evaluate(() => localStorage.length)) === 0);
     ck('no page errors (no word)', errs.length === 0, errs.join(' | '));
+    await b.close();
+  }
+  /* [C5] the server's own message is shown for 400, 429 and 503 (functions/api/ai.js words each case), never a bare
+     "(503)" or "try again in a minute" for a daily limit; a reply with no message keeps the old words. Settings says so
+     when /api/health reports the AI is off, and says nothing when it is on. */
+  {
+    const { b, p, errs } = await T.open();
+    const health = { ai: true };
+    await relay(p, health);
+    await p.goto(T.URL0 + '?try=mako&today=' + DAY); await T.w(400);
+    await p.click('#a3AskGo'); await T.w(400);
+    for (const [status, message] of [[429, 'Daily limit for this device reached. Try again tomorrow.'], [503, 'The AI has no credit left on this page. The owner needs to top it up.'], [400, 'Claude rejected the request.']]) {
+      health.fail = { status, message };
+      await ask(p, 'What is due before next pay?');
+      const got = await lastAi(p);
+      ck(`C5: a ${status} shows the server's own message`, got === `That didn't go through: ${message} Your question is back in the box`, got);
+    }
+    health.fail = { status: 500 };
+    await ask(p, 'What is due before next pay?');
+    ck('C5: a reply with no message keeps the plain fallback', /the AI did not answer \(500\)/.test(await lastAi(p)), await lastAi(p));
+    health.fail = { status: 429 };
+    await ask(p, 'What is due before next pay?');
+    ck('C5: a 429 with no message keeps the caller\'s words', /too many questions right now/.test(await lastAi(p)), await lastAi(p));
+    health.fail = { status: 503, message: 'The relay has no API key yet.' };
+    await p.click('#a3AskClose'); await T.w(200);
+    await pick(p);
+    await p.click('#a3StmtRead'); await T.w(900);
+    const sheet = await p.$eval('#a3Stmt', e => e.textContent);
+    ck('C5: Add statements shows the server\'s message too, never "(503)"', /The relay has no API key yet/.test(sheet) && !/\(503\)/.test(sheet), sheet.slice(0, 400));
+    if (await p.$('#a3StmtX')) { await p.click('#a3StmtX'); await T.w(200); }
+    await p.click('#a3SetGo'); await T.w(500);
+    ck('C5: the AI is on: Settings has no "AI is off" line', !(await p.$('[data-set=aioff]')));
+    const errs1 = errs.filter(e => !/status of (400|429|500|503)/.test(e));   // the browser's own lines for the relay's refusals
+    ck('no page errors (C5, the browser\'s lines for the refusals aside)', errs1.length === 0, errs1.join(' | '));
+    await b.close();
+  }
+  {
+    const { b, p, errs } = await T.open();
+    await relay(p, { ai: false });
+    await p.goto(T.URL0 + '?try=mako&today=' + DAY); await T.w(400);
+    await p.click('#a3SetGo'); await T.w(500);
+    const off = await p.$eval('[data-set=aioff]', e => e.textContent).catch(() => null);
+    ck('C5: /api/health says ai false: Settings says the AI is off', off === 'The AI is off on this page right now. Everything else still works', off);
+    ck('no page errors (AI off)', errs.length === 0, errs.join(' | '));
     await b.close();
   }
   fs.rmSync(dir, { recursive: true, force: true });

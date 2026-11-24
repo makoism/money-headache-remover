@@ -109,6 +109,13 @@ function paintWord3() {
   $('#a3SetWordKeep').addEventListener('click', keep);
   $('#a3SetWordIn').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); keep(); } });
   if (w) $('#a3SetWordClear').addEventListener('click', () => { STMT3_AI.setWord(''); paintWord3(); setMsg3('The code word is cleared from this device.'); });
+  paintAiOff3();
+}
+/* [C5] when this page's own server says its AI is off (/api/health, ai false), Settings says so; no server, no line */
+async function paintAiOff3() {
+  const h = await STMT3_AI.health(), el = $('#a3SetWord');
+  if (!SET3.open || !el || !h || h.ai !== false || el.querySelector('[data-set=aioff]')) return;
+  el.insertAdjacentHTML('afterbegin', '<p class="a3-warn" data-set="aioff">The AI is off on this page right now. Everything else still works</p>');
 }
 async function paintSpace3() {
   const el = $('#a3Space'); if (!el || typeof BurrowPersist !== 'object') return;
