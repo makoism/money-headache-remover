@@ -12,7 +12,8 @@
    any `at` in either copy, store/clock.js) and this device's `by`, so it wins the cloud copy's three-way join on the next
    sync [BD4: every edit moves `at`]; `told` stays. The clock sees both copies held against this device's now (store/clock.js
    holdArriving), so a time far ahead in a file never stamps anything ahead of today. A record in the copy it replaces (or in the copy last synced) that the
-   restored copy lacks is marked gone, the same way, since in the join a side that lacks a record never changed it. The
+   restored copy lacks is marked gone, the same way, since in the join a side that lacks a record never changed it; so is
+   a setting it lacks (a statement lesson, a plan limit, a shared screen choice taught or set after the backup). The
    kept versions of both stay (AQ3). Put it back goes through the same restamp. A section the restored copy lacks
    altogether has its records here marked gone too, and a setting written { v } with no change time is stamped like one
    that has one. The one known limit: a plain value or a list with no ids (home.curs) has no change time to carry, so
@@ -72,6 +73,7 @@
   const isMap = x => !!x && typeof x === 'object' && !Array.isArray(x);
   const isRecords = l => Array.isArray(l) && l.every(r => isMap(r) && typeof r.id === 'string');
   const C = x => JSON.parse(JSON.stringify(x));
+  const isSetting = x => isMap(x) && (typeof x.at === 'string' || Object.prototype.hasOwnProperty.call(x, 'v'));
   function restamp(restored, over, opts) {
     opts = opts || {};
     const Ck = root.BurrowClock, now = opts.now || Ck.nowIso();
@@ -97,7 +99,10 @@
           for (const o of os) for (const e of isRecords(o[k]) ? o[k] : []) if (!have.has(e.id)) { have.add(e.id); list.push(Object.assign(mark(e), { gone: e.gone || gone })); }
           out[k] = list;
         } else if (isRecords(x)) out[k] = x.map(mark);
-        else if (isMap(x) && (typeof x.at === 'string' || Object.prototype.hasOwnProperty.call(x, 'v'))) out[k] = mark(x);   // a setting, { v } with or without a change time
+        else if (isSetting(x)) out[k] = mark(x);   // a setting, { v } with or without a change time
+        // a setting here (or in the copy last synced) that the restored copy lacks is saved marked gone, its value kept
+        // beside the mark (SCHEMA_V3 0 "Nothing is deleted"): left out, the join would read "never changed" and bring it back
+        else if (x === undefined && os.some(o => isSetting(o[k]))) { const e = os.map(o => o[k]).find(isSetting); out[k] = Object.assign(mark(e), { gone: e.gone || gone }); }
         else if (isMap(x)) out[k] = walk(x, os.map(o => o[k]).filter(isMap), false);
         else if (x === undefined) { const w = walk({}, os.map(o => o[k]).filter(isMap), false); if (Object.keys(w).length) out[k] = w; }
         else out[k] = C(x);

@@ -173,6 +173,58 @@ const shown = c => S.canon(Object.assign(Object.fromEntries(LISTS.map(k => [k, (
   const putsNow = vault.log.filter(x => x.method === 'PUT').length;
   ck('listing and reading versions sent nothing', vault.log.filter(x => x.method === 'GET' && /versions=1|rev=/.test(x.query)).length === 3 && putsNow > 0);
 
+  /* ---- a restore holds: nothing added after the backup comes back with the next send and take (qc-foundation, restore
+     confirm, finding 1). A setting, a plan item, an account and a money event are each added after the backup, on this
+     device and on the other one. In the join a side that lacks an item never changed it, so the restore has to write
+     each of them marked gone; a setting the backup lacks was left out of what was saved, and came back. ---- */
+  {
+    const v3 = makeVault(), api3 = C.client({ fetch: v3.fetch, base: () => 'http://vault.test' }), k3 = await C.keysFor(C.newCode());
+    const s3 = async d => { const r = await C.syncOnce({ api: api3, pack, S, keys: k3, device: d.dev, copy: d.copy, now: '2026-12-07T12:00:00.000+09:00' }); if (!r.ok) throw new Error('sync ' + r.why); return { copy: r.copy, dev: r.device, r }; };
+    /* what a person has: every record and every setting not marked gone, at any depth, without when or by whom */
+    const live = x => (Array.isArray(x) ? x.filter(r => !(r && r.gone)).map(live)
+      : x && typeof x === 'object' ? Object.fromEntries(Object.entries(x).filter(([k, e]) => !(e && e.gone) && !['at', 'by', 'told', 'held', 'keptVersions', 'rev'].includes(k)).map(([k, e]) => [k, live(e)]).filter(([, e]) => !(e && typeof e === 'object' && !Array.isArray(e) && !Object.keys(e).length)))
+        : x);
+    const has = c => S.canon(live(c));
+    const first = clone(BOOK);
+    first.imports = { cats: { 'k:old shop': { v: 'food', src: 'person', at: '2026-11-20T09:00:00.000+09:00', by: 'dsk001' } } };
+    let A3 = await s3({ copy: first, dev: {} }), B3 = await s3({ copy: null, dev: {} });
+    const bk = clone(A3.copy);   // the backup, made now
+    const plain = clone(BOOK);   // and one from before any lesson, plan limit or shared screen choice
+    const acct = BOOK.accounts[0].id, t = (d, h) => `2026-12-0${d}T${h}:00:00.000+09:00`;
+    const addAll = (c, by, d, tag) => {
+      c.imports = c.imports || {}; c.imports.cats = Object.assign({}, c.imports.cats, { ['k:shop ' + tag]: { v: 'transport', src: 'person', card: BOOK.accounts[1].id, at: t(d, '09'), by } });
+      c.plan = Object.assign({}, c.plan); c.plan.limits = Object.assign({}, c.plan.limits, { ['ceiling' + tag]: { v: { a: 50000, cur: 'JPY' }, at: t(d, '09'), by } });
+      c.ui = Object.assign({}, c.ui, { ['show' + tag]: { v: 'cards', at: t(d, '09'), by } });
+      c.plan.budgets = (c.plan.budgets || []).concat([{ id: by + '-budget' + tag + '0-1', name: 'Food ' + tag, place: 'free', cur: 'JPY', per: 'month', from: '2026-12-01', steps: [{ from: '2026-12-01', amount: 30000 }], told: t(d, '09'), at: t(d, '09'), by }]);
+      c.accounts.push({ id: by + '-acct' + tag + '00000-1', name: 'Wallet ' + tag, type: 'cash', cur: 'JPY', owner: null, told: t(d, '09'), at: t(d, '09'), by });
+      c.events.push({ id: by + '-event' + tag + '0000-1', k: 'spend', acct, date: '2026-12-0' + d, a: 1200, told: t(d, '09'), at: t(d, '09'), by });
+    };
+    addAll(A3.copy, 'dsk001', 3, 'a'); A3 = await s3(A3); B3 = await s3(B3);
+    addAll(B3.copy, 'phn002', 4, 'b'); B3 = await s3(B3); A3 = await s3(A3);
+    const added = c => ['a', 'b'].map(g => [!!(c.imports.cats['k:shop ' + g] && !c.imports.cats['k:shop ' + g].gone), !!(c.plan.limits['ceiling' + g] && !c.plan.limits['ceiling' + g].gone), !!(c.ui['show' + g] && !c.ui['show' + g].gone),
+      c.plan.budgets.some(r => r.name === 'Food ' + g && !r.gone), c.accounts.some(r => r.name === 'Wallet ' + g && !r.gone), c.events.some(r => /-event/.test(r.id) && r.by !== undefined && r.id.includes('event' + g) && !r.gone)].join());
+    ck('before the restore both devices hold everything added after the backup', S.canon(A3.copy) === S.canon(B3.copy) && added(A3.copy).join() === Array(12).fill(true).join(), added(A3.copy).join(' / '));
+    for (const [what, file] of [['the backup', bk], ['a backup from before any lesson, plan limit or screen choice', plain]]) {
+      const before = clone(A3.copy);
+      const out = Bk.restamp(file, A3.copy, { now: '2026-12-07T10:00:00.000+09:00', by: 'dsk001', day: '2026-12-07', also: [A3.dev.base] });
+      ck(what + ' restored: this device holds it and nothing more', has(out) === has(file), has(out).slice(0, 300));
+      const g = ((out.imports || {}).cats || {})['k:shop a'];
+      ck(what + ': a lesson added after it is kept, marked gone, with the new change time and this device', !!g && g.gone === '2026-12-07' && g.v === 'transport' && g.by === 'dsk001' && g.at === out.accounts[0].at, JSON.stringify(g));
+      A3 = await s3({ copy: out, dev: A3.dev });
+      ck(what + ': after the next send this device still holds it and nothing more', A3.r.pushed && has(A3.copy) === has(file), has(A3.copy).slice(0, 300));
+      B3 = await s3(B3);
+      ck(what + ': the other device takes it and holds it and nothing more', has(B3.copy) === has(file), added(B3.copy).join(' / '));
+      A3 = await s3(A3); B3 = await s3(B3); A3 = await s3(A3);
+      ck(what + ': after one more send and take on each, both still hold it and nothing more', has(A3.copy) === has(file) && has(B3.copy) === has(file) && S.canon(A3.copy) === S.canon(B3.copy), added(A3.copy).join(' / ') + ' // ' + added(B3.copy).join(' / '));
+      ck(what + ': a setting, a plan item, an account and a money event added after it, on either device: none is back', added(A3.copy).concat(added(B3.copy)).join() === Array(24).fill(false).join(), added(A3.copy).join(' / '));
+      ck(what + ': nothing is asked', S.afterSync(B3.copy).questions.length === 0 && !(B3.copy.keptVersions || []).some(k => k.ask));
+      // Put it back: everything added after the backup is here again, on both
+      A3 = await s3({ copy: Bk.restamp(before, A3.copy, { now: '2026-12-07T10:30:00.000+09:00', by: 'dsk001', day: '2026-12-07', also: [A3.dev.base] }), dev: A3.dev });
+      B3 = await s3(B3); A3 = await s3(A3);
+      ck(what + ': Put it back brings all of it back, on both devices', has(A3.copy) === has(before) && has(B3.copy) === has(before) && added(B3.copy).join() === Array(12).fill(true).join(), added(B3.copy).join(' / '));
+    }
+  }
+
   console.log(bad ? `restore3: ${bad} FAIL of ${n}` : `restore3: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })().catch(e => { console.log('FAIL crashed ' + e.stack); process.exit(1); });
