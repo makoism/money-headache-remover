@@ -16,9 +16,10 @@ const L = require('./lives3.js').make('e3_overdrawn');
 const { ck, go, typeIn, txt, w } = L;
 const { saveSections } = require('./setup_sections.js');
 const amt = (p, sel) => p.$eval(sel, e => Number((e.dataset.amt !== undefined ? e : e.querySelector('[data-amt]')).dataset.amt)).catch(() => null);
-/* the amber line on the bank card: its words, its classes and its colours as drawn */
+/* the amber line that says the bank is below zero today (the engine's below-zero warning, worded by screens/status.js):
+   its words, its classes and its colours as drawn */
 const below = p => p.evaluate(() => {
-  const el = document.querySelector('#a3Home [data-card=bank] [data-fig=belowzero]');
+  const el = [...document.querySelectorAll('#a3Home [data-warn=below_minimum]')].find(e => /is below zero today/.test(e.textContent));
   if (!el) return null;
   const probe = document.createElement('p'); probe.className = 'a3-warn a3-bad'; document.body.appendChild(probe);
   const red = getComputedStyle(probe).color; probe.className = 'a3-warn'; const amber = getComputedStyle(probe).color; probe.remove();
@@ -69,7 +70,7 @@ async function sameAsEngine(p, day, what) {
     const why = await txt(p, '#a3Home [data-fig=shortwhy]');
     ck('setup: the sum under it ends at −¥85,000', /=\s*−⁠?¥85,000$/.test(why.trim()), why);
     const b = await below(p);
-    ck('Home: a line on the bank card says it is below zero', !!b && /below zero/i.test(b.text), JSON.stringify(b));
+    ck('Home: one line says Bank A is below zero today', !!b && /^Bank A is below zero today/.test(b.text), JSON.stringify(b));
     ck('Home: the line is amber, never red', !!b && /\ba3-warn\b/.test(b.cls) && !/a3-bad/.test(b.cls) && b.color === b.amber && b.color !== b.red, JSON.stringify(b));
     ck('Home: no shame in its words', !!b && !/overdr|debt|warning|careful|!/i.test(b.text), b && b.text);
     ck('Home: nothing on the bank card is red', (await bankCardRed(p)) === 0);

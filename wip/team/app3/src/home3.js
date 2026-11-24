@@ -149,7 +149,7 @@ function drawHome3() {
     const a = r.accounts[id];
     out.push(`<section class="a3-card" data-card="bank" data-acct="${esc3(id)}"><h2>${esc3(label3('bankToday'))}: ${esc3(E3.nameOf(id))}</h2>
       <p class="a3-big" data-fig="bank">${fig3('accounts.*.bank', a.bank, a.currency)}</p>
-      <p class="a3-sub" data-fig="age">${bankParts3(a, yr)}</p>${a.bank < 0 ? `<p class="a3-warn" data-fig="belowzero">${esc3(E3.nameOf(id))} is below zero today. Everything here counts from what it shows</p>` : ''}</section>`);   // [M47] amber, never red
+      <p class="a3-sub" data-fig="age">${bankParts3(a, yr)}</p></section>`);
   }
   /* safe to spend until next pay, with the sum behind it */
   const until = safeUntil3(r, yr, home);
