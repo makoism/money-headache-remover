@@ -106,6 +106,8 @@
   const AQ = node ? require('./ask3_core.js') : root.ASK3C;
   const ANS = node ? require('./answers3.js') : root.ANSWERS3;
   const PW = () => (node ? require('./plan3_write.js') : root.PLAN3W);
+  const CK = node ? require('../../engine/checkin.js') : E.checkin;
+  const IDS = node ? require('../../engine/ids.js') : E.ids;
   const ROUNDS = 6, TURNS = 10, KEEP = 200, MAX_TOKENS = 2000, MAX_STEPS = 6;
   const DAY = /^\d{4}-\d{2}-\d{2}$/;
   const live = x => x && !x.gone;
@@ -144,12 +146,12 @@ SETUP (when FIGURES says there is no book yet). Ask these in order, one per mess
 ${GUIDE.map(g => g.n + '. ' + g.ask).join('\n')}
 After each answer, save it with draft_set (that section's whole list each time; nothing is in the app until fill_book). A pay needs afterTax true: only save a pay once the person said the amount is after tax. A second income needs same: true or false. Never fill in a minimum or a figure the person did not give. NEEDED lists what fill_book still needs; ask for those. fill_book only when the person says to fill it in.
 
-AFTER SETUP. When the person says they spent, got or moved money, or asks to change a bill, pay, line, goal or card, use change. The app makes the change at once and shows what changed with Undo; a delete, or a change larger than safe to spend, waits for their OK. Refs (A1, L1, G1, B1, P1, S1) come from FIGURES or list; never invent one. Not a licensed adviser: for investments, loans or taxes, say so in one line.`;
+AFTER SETUP. When a pay, bill or card payment the app expects has come in or gone out ("my pay came in", "rent came out"), use change with landed and its P, B or A ref: never money_in or log_spend for it, which would count it twice. When they say what their bank app or card app shows today, use bank_figure or card_figure with that figure. When the person says they spent, got or moved money, or asks to change a bill, pay, line, goal or card, use change. The app makes the change at once and shows what changed with Undo; a delete, or a change larger than safe to spend, waits for their OK. Refs (A1, L1, G1, B1, P1, S1) come from FIGURES or list; never invent one. Not a licensed adviser: for investments, loans or taxes, say so in one line.`;
 
   /* ---- the tools (BU2: no figures or draft read tool) ---- */
   const num = { type: 'number', description: 'A plain number in the currency, no symbol.' };
   const str = d => ({ type: 'string', description: d });
-  const DO = ['log_spend', 'refund', 'money_in', 'move_money', 'remove', 'add_bill', 'change_bill', 'end_bill', 'add_pay', 'add_line', 'change_line', 'end_line', 'set_free', 'add_goal', 'set_aside', 'add_card', 'add_account'];
+  const DO = ['landed', 'bank_figure', 'card_figure', 'log_spend', 'refund', 'money_in', 'move_money', 'remove', 'add_bill', 'change_bill', 'end_bill', 'add_pay', 'add_line', 'change_line', 'end_line', 'set_free', 'add_goal', 'set_aside', 'add_card', 'add_account'];
   const SECTIONS = ['country', 'banks', 'pays', 'cards', 'bills', 'asked', 'statements', 'payToday', 'free', 'min'];
   const TOOLS = [
     { name: 'list', description: 'Records with their refs: accounts, pays, bills, cards, lines, goals, or the recent spends of one account (amount, date and ref only).',
@@ -159,7 +161,7 @@ AFTER SETUP. When the person says they spent, got or moved money, or asks to cha
     { name: 'draft_set', description: 'Save one setup section into the draft, its whole value. Nothing reaches the app until fill_book. Sections: country "JP"|"PH"|"XX"; banks [{name, amount, type?, confirmed?}] (first is where pay lands; confirmed true when the person gave the figure again today); pays [{name, amount, every: month|days|weeks|none, day?, day2?, n?, start?, shift?: before|after, bank?, afterTax, same?}]; cards [{name, owed, payDay, closeDay: day|"last"|"not sure", shift?, payFrom?, confirmed?}]; bills [{name, amount, day, every?: month|year, month?, from?}]; asked [{name, out: true|false}]; statements [{name, amount|"not sure"}]; payToday {landed: true|false}; free amount|null; min amount|null.',
       input_schema: { type: 'object', properties: { section: { type: 'string', enum: SECTIONS }, value: { description: 'The section\'s whole value.' } }, required: ['section', 'value'] } },
     { name: 'fill_book', description: 'Turn the draft into the person\'s Burrow. Only when they said to fill it in. Refused while NEEDED is not empty.', input_schema: { type: 'object', properties: {} } },
-    { name: 'change', description: 'Make up to ' + MAX_STEPS + ' changes, each a named step: ' + DO.join(', ') + '. Fields: amount, account (A ref), from and to (A refs), line (L ref), goal (G ref), ref (the record: S, B, P, L or G ref), date (YYYY-MM-DD, today or before), note, name, day, day2, every (month|days|weeks1..4|none), start, when (now|next|once), target, due, owed, payDay, closeDay, type (bank|cash|ewallet), moved (true|false).',
+    { name: 'change', description: 'Make up to ' + MAX_STEPS + ' changes, each a named step: ' + DO.join(', ') + '. landed {ref: the P, B or card A ref, amount? only if it was different, date? the day it landed}; bank_figure and card_figure {account, amount}. Fields: amount, account (A ref), from and to (A refs), line (L ref), goal (G ref), ref (the record: S, B, P, L or G ref), date (YYYY-MM-DD, today or before), note, name, day, day2, every (month|days|weeks1..4|none), start, when (now|next|once), target, due, owed, payDay, closeDay, type (bank|cash|ewallet), moved (true|false).',
       input_schema: { type: 'object', properties: { steps: { type: 'array', items: { type: 'object', properties: { do: { type: 'string', enum: DO }, amount: num }, required: ['do'] } } }, required: ['steps'] } },
   ];
 
@@ -429,6 +431,29 @@ AFTER SETUP. When the person says they spent, got or moved money, or asks to cha
     const schName = id => ((book.schedules || []).find(s => s.id === id) || {}).name;
     const note = v => (typeof v === 'string' && v.trim() ? clean(v, 60) : undefined);
     const on = d => (d === today ? 'today' : day1(d));
+    /* [qc-foundation confirm 3; M45, M37] what the app expects, landed: a tick through the check-in writer */
+    if (what === 'landed') {
+      const id = ref(a.ref, 'PBA');
+      if (!id || (String(a.ref).charAt(0) === 'A' && (acctRec(id) || {}).type !== 'card')) return { bad: 'a landed step for a ref I do not know' };
+      const due = (LA.lookahead(book, today).checkIn.toConfirm || []).filter(o => { const oc = IDS.occurrence(o.item); return oc && oc.schedule === id; });
+      const o = (a.date ? due.filter(x => x.lands === a.date) : due.filter(x => x.lands <= today)).slice(-1)[0] || due[0];
+      if (!o) return { bad: 'nothing from ' + (schName(id) || nm(id)) + ' is expected now' };
+      const x = a.amount != null ? amt(a.amount, (acctRec(o.account) || {}).cur) : o.amount;
+      const d = a.date != null ? date(a.date) : null;
+      if (!x || (a.date != null && !d)) return { bad: 'a landed step I could not read' };
+      const s = (book.schedules || []).find(y => y.id === id), inc = s && s.kind === 'income';
+      const ci = { ticked: [o.item], expected: { [o.item]: o.amount }, lands: { [o.item]: o.lands } };
+      if (x !== o.amount) ci.amounts = { [o.item]: x };
+      if (d) ci.landed = { [o.item]: d };
+      return { kind: 'checkIn', ci, text: `${schName(id) || nm(id)} of ${day1(o.lands)} landed: ${m(x)} ${inc ? 'in' : 'from'} ${nm(o.account)}`, amount: 0, figs: a.amount != null ? [x] : [] };
+    }
+    if (what === 'bank_figure' || what === 'card_figure') {
+      const id = ref(a.account, 'A'), rec = id && acctRec(id), card = what === 'card_figure';
+      if (!rec || (rec.type === 'card') !== card) return { bad: 'a ' + (card ? 'card' : 'bank') + ' figure for an account I do not know' };
+      const x = amt(a.amount, rec.cur, true);
+      if (x == null) return { bad: 'a figure I could not read' };
+      return { kind: 'checkIn', ci: { figures: { [id]: x } }, text: `${rec.name} shows ${m(x, rec.cur)} today`, amount: 0, figs: [x] };
+    }
     if (what === 'log_spend' || what === 'refund' || what === 'money_in') {
       const acct = acctOr(a.account), cur = acct && (acctRec(acct) || {}).cur, x = amt(a.amount, cur), d = date(a.date);
       const line = what === 'money_in' ? null : lineOf(a.line);
@@ -490,8 +515,14 @@ AFTER SETUP. When the person says they spent, got or moved money, or asks to cha
     return { bad: what ? 'a change I can\'t make (' + what.slice(0, 30) + ')' : 'a change I could not read' };
   }
   const ACT = { logSpend: 1, refund: 1, moneyIn: 1, moveMoney: 1, remove: 1 };
-  function runOne(door, s, opts) {
+  function runOne(door, s, opts, deps) {
     if (ACT[s.kind]) return door[s.kind](...s.args, opts);
+    if (s.kind === 'checkIn') {
+      let out;
+      try { out = CK.checkIn(deps.book(), Object.assign({ day: deps.today(), told: deps.told(), newId: deps.newId, unticked: [] }, s.ci)); }
+      catch (e) { return Promise.resolve({ ok: false, why: 'bad', text: e.message }); }
+      return door.addRecords('Check your bank', out, opts);
+    }
     return door.run('Assistant: ' + s.text, w => PW()[s.kind](w, ...s.args), opts);
   }
   /* the engine's figures before and after (minor units) */
@@ -509,7 +540,7 @@ AFTER SETUP. When the person says they spent, got or moved money, or asks to cha
   async function carryOut(state, card, deps) {
     const door = deps.door, before = deps.book(), today = deps.today(), done = [];
     for (const s of card.plan) {
-      const res = await runOne(door, s, { quiet: true });
+      const res = await runOne(door, s, { quiet: true }, deps);
       if (!res.ok) {
         for (const st of done.slice().reverse()) await door.undo(st.id, { quiet: true });
         card.status = 'refused'; card.why = s.text + ': ' + res.text;

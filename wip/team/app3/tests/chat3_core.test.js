@@ -202,6 +202,58 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const r2 = await K.turn(S2, 'I was given 500,000 in cash', Object.assign(h.deps(f2), { door: deps.door }));
     eq([r2.shown.find(x => x.who === 'card').card.status, r2.shown.find(x => x.who === 'card').card.ask], ['ask', 'large']);
   });
+  /* [qc-foundation confirm finding 3; M45, M37, M22] what landed, and what the bank or card shows today, go through the
+     check-in writer (engine/checkin.js) and ACT3.addRecords, never as money in or a spend */
+  await t('"my pay came in" on pay day ticks the pay: counted once, the period starts; money_in is never used for it', async () => {
+    const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
+    hp.day = '2026-12-10';
+    const v0 = L.lookahead(hp.book, hp.day);
+    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'landed', ref: 'P1' }] })]), say('Ticked. Your new pay period starts today.')]);
+    const d = hp.deps(f);
+    const r = await K.turn(state, 'my pay came in', d);
+    const c = r.shown.find(x => x.who === 'card').card;
+    eq([c.status, c.lines], ['done', ['Pay of 10 Dec landed: ¥240,000 in Main bank']]);
+    const v = L.lookahead(hp.book, hp.day);
+    eq(v.period.start, '2026-12-10', 'the period starts');
+    eq(v.safeToSpend.headline, 275000, 'counted once (money in would give 515,000)');
+    eq(hp.book.events.filter(e => e.k === 'in' && !e.gone).map(e => [e.sub, e.a, e.date]), [['pay', 240000, '2026-12-10']]);
+    ok(/landed/.test(K.SYSTEM) && /never money_in or log_spend for it/.test(K.SYSTEM), 'the prompt steers to landed');
+    /* Undo takes the tick back */
+    const u = await K.undo(r.state, r.shown.find(x => x.who === 'card').id, d); ok(u.ok, JSON.stringify(u));
+    eq(L.lookahead(hp.book, hp.day).safeToSpend.headline, v0.safeToSpend.headline);
+  });
+  await t('"rent came out" ticks Rent: the bank drops 72,000 once and Rent is no longer due; safe to spend does not drop twice', async () => {
+    const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
+    hp.day = '2026-11-27';
+    const v0 = L.lookahead(hp.book, hp.day), main = hp.book.home.main.v.acct;
+    const f = FAKE.make([say('', [call('list', { what: 'bills' })]), body => { const b = FAKE.results(body)[0].text.split('\n').find(l => /Rent/.test(l)).split(' | ')[0]; return say('', [call('change', { steps: [{ do: 'landed', ref: b }] })]); }, say('Ticked.')]);
+    const r = await K.turn(state, 'rent came out', hp.deps(f));
+    eq(r.shown.find(x => x.who === 'card').card.status, 'done');
+    const v = L.lookahead(hp.book, hp.day);
+    eq(v.accounts[main].bank, v0.accounts[main].bank - 72000, 'the bank once');
+    eq(v.safeToSpend.headline, v0.safeToSpend.headline, 'safe to spend the same: Rent was already set aside');
+    ok(!v.dueBeforeNextPay.items.some(o => o.amount === 72000), 'Rent no longer due');
+  });
+  await t('"my bank shows 250,000" and "Card A shows 60,000": a check of each through the check-in writer, typed figures only', async () => {
+    const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
+    hp.day = '2026-11-25';
+    const main = hp.book.home.main.v.acct, cardA = hp.book.accounts.find(a => a.name === 'Card A').id;
+    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'bank_figure', account: 'A1', amount: 250000 }, { do: 'card_figure', account: 'A2', amount: 60000 }] })]), say('Noted.')]);
+    const r = await K.turn(state, 'my bank shows 250,000 and Card A shows 60,000', hp.deps(f));
+    const c = r.shown.find(x => x.who === 'card').card;
+    eq([c.status, c.lines], ['done', ['Main bank shows ¥250,000 today', 'Card A shows ¥60,000 today']]);
+    const v = L.lookahead(hp.book, hp.day);
+    eq([v.accounts[main].bank, v.cards[cardA].owedNow], [250000, 60000]);
+    eq(hp.book.checkins.length, 2, 'one check-in record each');
+    /* a figure nobody typed asks first */
+    const f2 = FAKE.make([say('', [call('change', { steps: [{ do: 'bank_figure', account: 'A1', amount: 233000 }] })]), say('Is that right?')]);
+    const r2 = await K.turn(r.state, 'I checked my bank', hp.deps(f2));
+    eq(r2.shown.find(x => x.who === 'card').card.ask, 'guess');
+    /* a card figure on a bank, or a bank figure on a card, is dropped */
+    const one = async input => (await K.handle(K.fresh(), { id: 'x', name: 'change', input }, hp.deps(FAKE.make([])))).result;
+    ok(/^Nothing changed/.test(await one({ steps: [{ do: 'card_figure', account: 'A1', amount: 1 }] })));
+    ok(/^Nothing changed/.test(await one({ steps: [{ do: 'landed', ref: 'B9' }] })));
+  });
   /* the fill's Undo (BV2): the book goes, the draft stays; once anything else was written, "start over" */
   await t('Undo of the fill after something else was written becomes "start over"; startOver discards and keeps the draft', async () => {
     const fillId = S2.turns.find(x => x.who === 'card' && x.card.kind === 'fill').id;
