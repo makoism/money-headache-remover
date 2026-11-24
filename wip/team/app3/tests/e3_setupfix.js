@@ -139,12 +139,22 @@ async function openSetup(day) {
     await p.click('#s3AddCard'); await w(100);
     await p.click('[data-row=card1] [data-remove]'); await w(200);
     ck('a card can be removed too', !(await p.$('[data-row=card1]')));
+    /* M13: a bank row too (a second bank added in setup), with Undo */
+    await p.click('#s3AddAcct'); await w(100);
+    await typeIn(p, '[data-row=acct2] [data-f=name]', 'Savings'); await typeIn(p, '[data-row=acct2] [data-f=amount]', '5000');
+    await p.click('[data-row=acct2] [data-remove]'); await w(200);
+    const ba = await band(p);
+    ck('M13: a second bank can be removed, with Undo', !(await p.$('[data-row=acct2]')) && /Savings removed/.test(ba.text) && ba.undo, JSON.stringify(ba));
+    await p.click('#a3Msg button'); await w(250);
+    ck('M13: Undo puts the bank back as it was', (await val(p, '[data-row=acct2] [data-f=name]')) === 'Savings' && (await val(p, '[data-row=acct2] [data-f=amount]')) === '5000');
+    await p.click('[data-row=acct2] [data-remove]'); await w(200);
     const e = await saveSections(p);
     ck('every section saves', e === '', e);
     await p.click('#a3SetupSave'); await w(700);
     ck('saved', await p.$eval('#a3Setup', e => e.hidden), await txt(p, '#a3SetupErr'));
     const bk = await L.readBook(p), names = (bk.schedules || []).filter(s => !s.gone).map(s => s.name);
     ck('the book has Phone and not the removed Rent', names.includes('Phone') && !names.includes('Rent'), names.join(','));
+    ck('M13: the book has no Savings account', !(bk.accounts || []).some(a => a.name === 'Savings'), (bk.accounts || []).map(a => a.name).join(','));
     await c.close();
   }
   /* 5: each section saved on its own, Undo, and a reload half way */
