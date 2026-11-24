@@ -1109,22 +1109,67 @@
       return list;
     }
 
+    // [stage 2 S1, STAGE2_PLAN 2.1, corrections 5 and 5'] the runway's plan: every line and Free to spend on the account by
+    // the day, whether or not pay is fixed (no "left this period", no per-pay periods). Each day's amount is the step in
+    // force that day (never a `once`), converted from its own `per` by the units rule: a month's amount x 12, a per-pay
+    // amount x the pays of the period-starting pay in that year (12 with no fixed pay), over the year's days a day, rounded
+    // down, the rest of each month's own share on its last day; a week's a seventh a day, the rest on the seventh day.
+    const stepIn = (steps, d) => {
+      const list = (steps || []).filter(x => x && !x.gone).map(x => ({ f: x.from == null ? -Infinity : dayNum(x.from), at: x.at || '', a: x.amount }))
+        .sort((p, q) => p.f - q.f || (p.at < q.at ? -1 : p.at > q.at ? 1 : 0));
+      let a = null;
+      for (const x of list) if (x.f <= d) a = x.a;
+      return a;
+    };
+    const paysInYear = {};
+    const perYear = (per, y) => {
+      if (per !== 'pay' || !periodStream) return 12;
+      if (paysInYear[y] == null) paysInYear[y] = Object.keys(S.yearPays(periodStream, calOf(periodStream.acct), y).byDue).length || 12;
+      return paysInYear[y];
+    };
+    function runwayPlanned(id) {
+      const srcs = lineSrcs.filter(l => moneyAcct(lineAcct(l)) === id).map(l => ({ src: l, name: l.name, perOn: () => l.per }));
+      if (freeSrc && moneyAcct(lineAcct(freeSrc)) === id) srcs.push({ src: freeSrc, name: 'Free to spend', perOn: d => freePerOn(d) });
+      const list = [];
+      for (const { src, name, perOn } of srcs) {
+        for (let d = today + 1; d <= today + LATER_ON_DAYS; d++) {
+          const amount = stepIn(src.steps, d), per = perOn(d);
+          if (!amount) continue;
+          let want;
+          if (per === 'week') {
+            const f = src.from ? dayNum(src.from) : openEv[moneyAcct(lineAcct(src))] ? openDay(moneyAcct(lineAcct(src))) : today + 1;
+            const day7 = (((d - f) % 7) + 7) % 7 === 6;
+            want = Math.floor(amount / 7) + (day7 ? amount - 7 * Math.floor(amount / 7) : 0);
+          } else {
+            const [y, mo] = ymOf(d), yearDays = dayIn(y + 1, 1, 1) - dayIn(y, 1, 1), monthDays = dayIn(y, mo + 1, 1) - dayIn(y, mo, 1);
+            const yearly = amount * perYear(per, y), perDay = Math.floor(yearly / yearDays);
+            want = perDay + (d === dayIn(y, mo, 'last') ? Math.floor(yearly * monthDays / yearDays) - perDay * monthDays : 0);
+          }
+          if (want) list.push({ land: d, amount: want, label: name, group: name });
+        }
+      }
+      return list;
+    }
+
     // ----- the walk, one account at a time [B3, B9, F1, F2, F3, F9, F14, H5, H7, H8, Q2, Q4, S4, T3, T4, V2] -----
     // [BM2] `real`: the real-money walk, the bank's own money only (pays, bills, card payments, moves): no goals, no plan
     // lines. Below zero and under the minimum are judged on it; the full walk (goals and plan lines off) is what can be spared.
-    function walk(id, end, minimum, real) {
+    // [stage 2 S1] `runway`: as if no more pay came: no pay at all (a transfer in from your own account is not pay and
+    // stays), goals kept in it still off, no "left this period", and the plan by the day (runwayPlanned).
+    function walk(id, end, minimum, real, runway) {
       const start = banks[id].bank;
       const why = [{ label: acct[id].name + ' today', amount: start }];
       let bal = start;
       const placeLeft = {};
       if (!real) for (const g of keptIn[id] || []) { bal -= g.amount; placeLeft[g.id] = g.amount; why.push({ label: g.label || g.name + ', kept in it', amount: -g.amount }); }
-      if (periodStream && !real) for (const l of (planLeft.lines || []).filter(x => x.acct === id && x.left)) { const left = Math.max(0, l.left); bal -= left; why.push({ label: l.name + ' left this period', amount: -left }); }
+      const head = why.slice();
+      if (periodStream && !real && !runway) for (const l of (planLeft.lines || []).filter(x => x.acct === id && x.left)) { const left = Math.max(0, l.left); bal -= left; why.push({ label: l.name + ' left this period', amount: -left }); }
       const steps = [];
       for (const o of items) {
         if (o.settled) continue;
         // [BH1, replaces H8 for safe to spend] money not yet seen never counts: a pay past its day and not ticked (late or
         // not seen) is left out of the walk until it is ticked; a pay due today counts [G4]
-        if (o.kind === 'income' && o.acct === id && !o.otherCur && o.land >= today && !leftToday(o) && o.land <= end)
+        if (o.kind === 'income' && !runway && o.acct === id && !o.otherCur && o.land >= today && !leftToday(o) && o.land <= end)
           steps.push({ day: o.land, order: 0, amount: o.amount, label: o.name + ' ' + short(o.land), pay: true });
         if (o.kind === 'loan' && cur(o.card) !== cur(id)) continue;   // [V2] warned below
         if ((o.kind === 'bill' || o.kind === 'transfer' || o.kind === 'auto' || o.kind === 'loan') && o.acct === id && o.land <= end) {
@@ -1152,7 +1197,7 @@
           if (pt.due <= end) steps.push({ day: Math.max(pt.due, today), order: 1, amount: -amt, label: pa.name + ', part posted ' + short(pt.due) });
         }
       }
-      if (!real) for (const p of plannedFor(id)) if (p.land <= end) steps.push({ day: p.land, order: 2, amount: -p.amount, label: p.label });
+      if (!real) for (const p of runway ? runwayPlanned(id) : plannedFor(id)) if (p.land <= end) steps.push({ day: p.land, order: 2, amount: -p.amount, label: p.label, group: p.group });
       steps.sort((a, b) => a.day - b.day || a.order - b.order);
       let low = bal, lowDay = today, lowAt = 0, firstBelowZero = null, belowBal = null;
       // [B1, QC numbers] the first day the bank ends under its minimum (or zero) and how far under then, and the first
@@ -1176,7 +1221,7 @@
       // [slice 6, G4] the lowest point is the start of today, yet today brings money in and takes some out: those steps
       // are not in the sum, so they are given apart, in the walk's order (the pay first), for the screen to show
       const todayParts = lowAt === 0 && steps.some(x => x.day === today && x.pay) ? steps.filter(x => x.day === today && x.order !== 2).map(x => ({ label: x.label, amount: x.amount })) : null;   // real money only: never plan lines
-      return { lowest: low, lowestDay: lowDay, headroom: low - minimum, why, firstBelowZero, belowBal, firstUnder, payAfter, payAfterLow: payAfterLow == null ? null : payAfterLow, start, steps, todayParts };
+      return { lowest: low, lowestDay: lowDay, headroom: low - minimum, why, head, firstBelowZero, belowBal, firstUnder, payAfter, payAfterLow: payAfterLow == null ? null : payAfterLow, start, steps, todayParts };
     }
 
     const backsGoal = id => places.some(g => g.keptIn && g.keptIn.acct === id && g.keptIn.mode === 'ownAccount' && removedOn(g) === null);
@@ -1281,6 +1326,34 @@
     if (!periodStream) {   // [B4] "lasts about N weeks"
       const lastDay = homeSpend.map(id => walk(id, today + LATER_ON_DAYS, res.accounts[id].minimum).firstBelowZero);
       res.lastsAboutWeeks = planLeft.lines || planLeft.free ? Math.floor((Math.min(...lastDay.map(d => (d === null ? today + LATER_ON_DAYS : d))) - today) / 7) : null;
+    }
+    // [stage 2 S1, STAGE2_PLAN 2.1 and corrections 5, 5'] opts.runway: "if no more pay came, your money lasts about N
+    // weeks". Each account safe to spend counts (spendFrom, in the home currency) is walked as if no more pay came
+    // (walk's `runway`); the day is the first one it ends under its minimum (zero with none), up to a year ahead. The
+    // headline is the account that gets there first (ties by id), named when there are several; adding the accounts
+    // together is a later slice. `parts` add up to `total`, how far under on that day (the minimum is the last part);
+    // the plan's days are one part per line. None when there is no plan by which the money goes (no lines, no Free to
+    // spend). No place carries a runway figure (an emergency fund included).
+    if (opts.runway) {
+      const ids = homeSpend.slice().sort((x, y) => idCmp({ id: x }, { id: y }));
+      const per = {};
+      for (const id of ids) {
+        const minimum = res.accounts[id].minimum, w = walk(id, today + LATER_ON_DAYS, minimum, false, true), f = w.firstUnder;
+        if (!f) { per[id] = { day: null, days: null, weeks: null, more: true, minimum, parts: null, total: null }; continue; }
+        const parts = w.head.map(p => ({ label: p.label, amount: p.amount })), groups = {};
+        for (const x of w.steps) {
+          if (x.day > f.day) break;
+          if (!x.group) { parts.push({ label: x.label, amount: x.amount }); continue; }
+          groups[x.group] = groups[x.group] || { amount: 0, n: 0 };
+          groups[x.group].amount += x.amount; groups[x.group].n++;
+        }
+        for (const g of Object.keys(groups).sort()) parts.push({ label: g + ', ' + groups[g].n + (groups[g].n === 1 ? ' day' : ' days'), amount: groups[g].amount });
+        parts.push({ label: 'minimum', amount: minimum ? -minimum : 0 });
+        per[id] = { day: dayStr(f.day), days: f.day - today, weeks: Math.floor((f.day - today) / 7), more: false, minimum, parts, total: parts.reduce((t, p) => t + p.amount, 0) };
+      }
+      const hasPlan = ids.some(id => lineSrcs.some(l => moneyAcct(lineAcct(l)) === id) || (freeSrc && moneyAcct(lineAcct(freeSrc)) === id));
+      const first = ids.slice().sort((x, y) => (per[x].day === per[y].day ? 0 : per[x].day === null ? 1 : per[y].day === null ? -1 : per[x].day < per[y].day ? -1 : 1))[0];
+      res.runway = !hasPlan || !first ? null : Object.assign({ account: first, several: ids.length > 1 }, per[first], { accounts: per });
     }
 
     // ----- due before next pay [F7, F13, F21, F23, H8, W2] -----

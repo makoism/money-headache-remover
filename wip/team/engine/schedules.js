@@ -206,7 +206,7 @@
     return due => { const sh = monthShare(sch, cal, due, stepOn(sch, dayIn(ymOf(due)[0], 1, 1)), cache); return sh ? sh.amount : stepOn(sch, due); };
   }
 
-  const api = { calendar, holidays, bankClosed, easter, keyLive, keyAmount, dueDays, occurrences, stepOn, monthShare };
+  const api = { calendar, holidays, bankClosed, easter, keyLive, keyAmount, dueDays, occurrences, stepOn, monthShare, yearPays };
   if (node) module.exports = api;
   else (root.BurrowEngine = root.BurrowEngine || {}).schedules = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
