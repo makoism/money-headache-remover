@@ -122,3 +122,4 @@ How it is kept:
 5. "The four numbers" (18 Nov) were named for the old model: which four now?
 6. Play money "not tracked in detail" against sending receipts to the assistant. "Everyday spending" has no agreed new word yet.
 7. A restore from a backup removes, on both devices, money that happened after the backup was made (M67 says money that happened always joins up). Built as: the restore screen says so in one line before he confirms, and Put it back or the kept copy brings it back.
+8. What "safe to spend" means when the bank can spare far more than the everyday budget has left (found 24 Nov: one day before pay it read 1,818 with 182,400 in the bank). One headline was doing two jobs. Built as two named figures on Home whenever they differ: everyday money left until pay, and what the bank can spare beyond the plan. Which one is the headline, and their names, are his to say at his run (M7, M12, M36).

@@ -4,6 +4,22 @@ Written 2026-11-18 on branch `wip-38.31`. Read this whole file before touching a
 
 ## 0. Handoff (latest first)
 
+**2026-11-24 18:55 JST, MAIN 16 (Fable), state.** Read wip/team/MAKO_SAYS.md first. Report to Coordinator 11 (session_01BFpKEXW1AERpCVxch4xuXD). LANE B is session_01BFpKEZBRWqdY7tLMMx4sDU.
+- **Lost time:** every session was stopped by the 5-hour usage limit from about 14:40 to 17:50 JST.
+- **Candidate 2:** wip-38.31 at c2bea7d = 9c65e8d + lane/blockers fd3e020 + two setup fixes. check3 full ALL GOOD.
+  - The comma fault (coordinator's first job): a setup part was compared by box text; now by value (setup3.js amountText3, snap3). Tests: e3_setupfix part 7, and e3_amounts types commas, a space, full-width digits and a yen sign into every amount box.
+  - The bill Remove shift: a row's questions are reworded while typing (shapeSoon3), not on leaving the box. Test: e3_setupfix part 6.
+  - Round folder qc_reports/2026-11-24_candidate2 (check3.txt, screens, scope.txt). Running: qc-controls, qc-novice, qc-north-star, qc-layout-touch.
+  - The main commit is prepared in the worktree .claude/worktrees/republish (branch republish-c2bea7d, from origin/main, same private path; the path is in the scratchpad file app3_path.txt and on origin/republish-9c65e8d). Make it again after any fix, then send the hash to the coordinator with the scope list.
+- **lane/homefix is NOT merged.** qc-novice FAILED it (qc_reports/2026-11-24_homefix_3a4f514). It needs foundation_review/TWO_FIGURES_PLAN.md (on lane/next): two named figures when the everyday budget is the limit ("Everyday money left until pay", "Your bank can spare", agreed with the coordinator, MAKO_SAYS not settled 8), the pay-day headline, and a later-dated pay change shown on Plan. qc-foundation is on the plan. Then qc-novice part 4 and qc-numbers.
+- **M67 (a spend on phone two waits for Send now) is NOT fixed.** Cause: nothing takes the cloud copy while the page stays open, and a send waits 90 s after any sync (cloud3_page.js). foundation_review/SYNC_PULL_PLAN.md (on lane/next) failed qc-foundation once (qc_reports/2026-11-24_sync_pull_plan); version 2 at the end of that file takes the three faults in and needs qc-foundation again before building.
+- **Branches of mine:**
+  - lane/next (worktree .claude/worktrees/next): wip-38.31 + homefix + blockers + the two setup fixes, plus the two plans. Local only so far.
+  - lane/cand2: the candidate; the same as wip-38.31.
+  - lane/ai-merge (a helper's worktree, running): lane/ai-core + lane/ai-panel joined onto lane/next, setup3.js by hand. Needs a row in back3.js LAYERS for any new sheet (LANE B's note). When green: qc-assistant and qc-foundation, then merge. This is queue item 2, the top priority after the candidate.
+- **Then:** lane/controls-base (full check3 and a qc-foundation confirm), CONTROLS_PLAN slices, lane/restore fixes (with LANE B), lane/s2b, SORTED "no queue" items.
+- **While reviewers run** the main checkout must stay on the candidate (they open wip/team/app3/index.html there). Work in worktrees.
+
 **2026-11-24 13:45 JST, MAIN 15 handoff to MAIN 16 (Fable).** Read wip/team/MAKO_SAYS.md first.
 - **Candidate:**
   - wip-38.31 at 9c65e8d: setupfix, install, invite, checkspeed, candfix. check3 ALL GOOD.

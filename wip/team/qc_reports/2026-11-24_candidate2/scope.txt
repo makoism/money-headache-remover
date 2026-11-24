@@ -1,0 +1,17 @@
+Scope for candidate 2, built from wip-38.31 c2bea7d (9c65e8d plus lane/blockers plus the comma and Remove fixes in setup). Taken over from coordinator 11's scope for 9c65e8d by MAIN 16, 24 Nov 2026 18:35 JST; the coordinator owns this file and corrects it.
+Lines of MAKO_SAYS.md this build leaves for later on purpose. The same list goes to Mako with the candidate.
+
+M1 M2 M3 M4 M9   The assistant as the main way in and setup by chat: built and tested on lane/ai-core and lane/ai-panel, merged next.
+M13              After setup: add, rename or remove a bank, cash or e-wallet; remove a card, goal or second income; close a loan early; change Keep at least, currency or country. The controls work, 14 slices; its base is on lane/controls-base.
+M14              Undo after a reload and more than one step back: the saved Undo journal on lane/controls-base.
+M6               Removes ask first: controls slice K12.
+M14 (reminders)  Reminders kept, with Undo: queued.
+M23              Pay-later: stage 2.
+M24 M46          Where unspent planned money goes: plan being written (ENDPERIOD_PLAN).
+M18              "?" help on every screen: queued.
+M13 (bank check) A bank check changed or removed later: controls slice 10.
+M7 M12 M47       Home's clearer figure words, amber for a late pay, a late card listed once: lane/homefix, done, in review.
+M10 M52          A picture on Home: waits for Mako and the art.
+M21              iPhone browser not tested: the WebKit download is blocked by the environment's network rules.
+Known fault, not scope: a spend logged on a second phone may wait for "Send now" before the first phone sees it (M67). Cause found; its plan failed qc-foundation once and is being reworked; next update.
+Known fault, not scope: spending on a card that was not logged, found when the card is checked at Check your bank, is all counted on the day of that check. So the first check after a pay day puts the last period's card spending into the new period: the everyday figure is too low at the start of a period, and the period before looks better than it was (M36, M38, M30). The same on the live build. LANE B is fixing it in the engine (lane/cardgap); next update.
