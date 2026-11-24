@@ -290,6 +290,13 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     ok(!badPaste.ok && /before or after tax/.test(badPaste.text), badPaste.text);
     ok(!K.pasteBack(K.fresh(), 'sorry, I cannot help', d9).ok);
   });
+  await t('an amount in the AI\'s words that is not in the figures, the draft or the person\'s words is marked "check this" (AI_FIRST_PLAN 7)', async () => {
+    const h10 = page('2026-11-24');
+    await runSetup(h10, FAKE.make(steps(SETUP)));
+    const f = FAKE.make([say('Safe to spend is 201,400 until 10 Dec, so a 9,000 dinner fits. You will have about 150,000 left.')]);
+    const r = await K.turn(K.fresh(), 'can I afford a 9,000 dinner?', h10.deps(f));
+    eq(r.shown.find(x => x.who === 'ai').check, ['150,000']);
+  });
   console.log(bad ? `chat3_core: ${bad} of ${n} FAILED` : `chat3_core: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })();
