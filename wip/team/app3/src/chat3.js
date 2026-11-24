@@ -335,6 +335,9 @@ async function startChat3() {
   await chat3Route();
   /* anything written through act3 after the fill means the fill can no longer be undone: the cloud copy may send */
   if (ACT3 && typeof ACT3.onChange === 'function') ACT3.onChange(() => { if (E3.held()) E3.release().then(() => renderChat3()); });
+  /* the hold can end without an act3 step too (the cloud copy turned on): the fill card is drawn again */
+  let heldWas = E3.held();
+  E3.onSaved(() => { if (heldWas !== E3.held()) { heldWas = E3.held(); if (E3.book) renderChat3(); } });
   if (!E3.book) renderHome3(); else renderChat3();
 }
 root3.BurrowApp3.chat = { CHAT3, redraw: chat3Redraw, save: chat3Save };   // for the page tests (start3.js)

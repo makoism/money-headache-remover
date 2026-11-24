@@ -51,7 +51,10 @@ async function syncNow3(opts) {
   opts = opts || {};
   const st = await cloudState3();
   if (!st.on || E3.mode === 'try') return null;
-  if (E3.held && E3.held()) { C3.dirty = true; return null; }   // [BV2.9] the setup chat's fill can still be undone: nothing leaves yet
+  /* [AI_JOIN_FIXES B; M61, M67] the setup chat's fill was held back while it could be undone (BV2.9), and a cloud copy
+     turned on then sent nothing and said nothing. A cloud copy that is on ends the hold: the first copy goes, and the
+     fill's Undo is over (the card then says how to change things) */
+  if (E3.held && E3.held()) await E3.release();
   if (C3.busy) { C3.again = true; return null; }
   C3.busy = true; clearTimeout(C3.timer);
   const snap = E3.book;
