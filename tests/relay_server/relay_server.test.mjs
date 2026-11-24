@@ -8,7 +8,7 @@
    D. prompt caching: cache_control on the system prompt and on the last tool; model and the rest unchanged. */
 import worker from '../../worker/index.js';
 import { makeD1 } from '../vault_server/d1_stub.mjs';
-import { randomBytes } from 'node:crypto';
+import { randomBytes, createHash, createHmac } from 'node:crypto';
 
 let bad = 0, n = 0;
 const ck = (name, ok, extra) => { n++; console.log((ok ? 'PASS ' : 'FAIL ') + name + (ok ? '' : ' ' + String(extra === undefined ? '' : typeof extra === 'string' ? extra : JSON.stringify(extra)).slice(0, 500))); if (!ok) bad++; };
@@ -158,7 +158,10 @@ const APP3 = {
   ck('C10 another code word has its own count', other.status === 200, other.j);
   const none = await post(env, OLD.plain(anonOf()));
   ck('C11 a wrong or missing code word is still refused 401', none.status === 401 && none.j.error.code === 'invite_required', none.j);
-  ck('C12 the code word itself is never stored (the key is a hash)', !usageRows(db).some(x => /acorn|pinecone/i.test(x.k)) && usageRows(db).filter(x => /^u:i:[0-9a-f]{32}$/.test(x.k)).length === 2, usageRows(db));
+  const mac = w => 'u:i:' + createHmac('sha256', 'test-key').update(w).digest('hex').slice(0, 32), plain = w => 'u:i:' + createHash('sha256').update(w).digest('hex').slice(0, 32);
+  const keys = usageRows(db).map(x => x.k);
+  ck('C12 the code word is stored only as an HMAC-SHA-256 keyed with the server secret: never the word, never a plain hash', !keys.some(k => /acorn|pinecone/i.test(k)) && keys.includes(mac('acorn')) && keys.includes(mac('pinecone')) && !keys.includes(plain('acorn')) && !keys.includes(plain('pinecone')), keys);
+
 }
 {
   // C13: the global token cap and the per-minute cap stay

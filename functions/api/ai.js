@@ -14,7 +14,7 @@
      IP_PER_MINUTE       default 30
      INVITE_CODES        optional "word1, word2": when set, a call must carry a matching invite
      ANTHROPIC_BASE_URL  default https://api.anthropic.com (tests point it at a stub) */
-import { json, fail, preflight, dayKey, minuteKey, clientIp, num, ensureSchema, bump, readUsage, inviteOk, sha256hex } from '../_lib.js';
+import { json, fail, preflight, dayKey, minuteKey, clientIp, num, ensureSchema, bump, readUsage, inviteOk } from '../_lib.js';
 
 const TIERS = { quick: 'MODEL_QUICK', default: 'MODEL_DEFAULT', complex: 'MODEL_COMPLEX' };
 const MODEL_DEF = { quick: 'claude-haiku-5-5', default: 'claude-sonnet-5-5', complex: 'claude-sonnet-5-5' };
@@ -114,12 +114,17 @@ export async function onRequestPost({ request, env }) {
   return new Response(out.readable, { status: 200, headers: Object.assign({ 'content-type': 'text/event-stream; charset=utf-8', 'cache-control': 'no-store', 'x-accel-buffering': 'no' }, corsHeaders()) });
 }
 /* whose count a call goes on (USER_DAILY_CALLS). Never the page's `anon`: that is drawn fresh on each page open, so it
-   would reset the count. The code word is stored only as a hash. */
+   would reset the count. The code word is stored only as an HMAC-SHA-256 keyed with the API key (already a server secret),
+   so the word cannot be found from the table by trying words. */
 async function callerKey(env, body, ip) {
   const coded = String(env.INVITE_CODES || '').split(',').some(s => s.trim());
-  if (coded) return { k: 'u:i:' + (await sha256hex(String(body.invite || '').trim().toLowerCase())).slice(0, 32), name: 'this code word' };
+  if (coded) return { k: 'u:i:' + (await hmacHex(env.ANTHROPIC_API_KEY, String(body.invite || '').trim().toLowerCase())).slice(0, 32), name: 'this code word' };
   if (typeof body.device === 'string') return { k: 'u:d:' + body.device.toLowerCase(), name: 'this device' };
   return { k: 'u:ip:' + ip, name: 'this connection' };
+}
+async function hmacHex(secret, msg) {
+  const enc = new TextEncoder(), key = await crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  return Array.from(new Uint8Array(await crypto.subtle.sign('HMAC', key, enc.encode(msg))), x => x.toString(16).padStart(2, '0')).join('');
 }
 /* with caching, input_tokens is only the uncached rest: the whole prompt is input + cache write + cache read, and the caps
    count the whole prompt as before */
