@@ -239,5 +239,25 @@ import { SCHEMA } from '../../functions/_lib.js';
   ck('F12 a first write that lost the race to another first write is refused 409, not a server error', r.status === 409 && (await call(env, 'GET', id, token)).j.blob === other.blob, r);
 }
 
+// ---------------- G. change 5: the daily write limit is 1,500 ----------------
+{
+  const { db, env, id, token } = fresh();
+  await call(env, 'PUT', id, token, Object.assign(envBlob(), { rev: 1 }));
+  const today = new Date().toISOString().slice(0, 10);
+  db.raw.prepare('UPDATE vault SET writes = 400, writes_day = ? WHERE id = ?').run(today, id);
+  let r = await call(env, 'PUT', id, token, Object.assign(envBlob(), { rev: 2, base: 1 }));
+  ck('G1 the 401st write of the day is taken (the old limit was 400)', r.status === 200, r);
+  db.raw.prepare('UPDATE vault SET writes = 1499 WHERE id = ?').run(id);
+  r = await call(env, 'PUT', id, token, Object.assign(envBlob(), { rev: 3, base: 2 }));
+  ck('G2 the 1,500th is taken', r.status === 200, r);
+  r = await call(env, 'PUT', id, token, Object.assign(envBlob(), { rev: 4, base: 3 }));
+  ck('G3 the 1,501st is refused 429 rate_limited (cloud3: "busy")', r.status === 429 && r.j.error.code === 'rate_limited', r);
+  r = await call(envOf(db, { VAULT_WRITES_PER_DAY: '2000' }), 'PUT', id, token, Object.assign(envBlob(), { rev: 4, base: 3 }));
+  ck('G4 the VAULT_WRITES_PER_DAY variable still sets it when present', r.status === 200, r);
+  db.raw.prepare("UPDATE vault SET writes = 1500, writes_day = '2026-01-01' WHERE id = ?").run(id);
+  r = await call(env, 'PUT', id, token, Object.assign(envBlob(), { rev: 5, base: 4 }));
+  ck('G5 a new day starts the count again', r.status === 200, r);
+}
+
 console.log(bad ? `vault_server: ${bad} FAIL of ${n}` : `vault_server: ALL PASS (${n})`);
 process.exit(bad ? 1 : 0);

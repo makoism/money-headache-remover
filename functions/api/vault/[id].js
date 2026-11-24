@@ -108,7 +108,7 @@ export async function onRequestPut(ctx) {
   const base = Math.floor(+b.base || 0);
   if (!force && (rev <= r.rev || (base > 0 && base !== r.rev))) return fail(409, 'conflict', 'The server has a newer copy.', { rev: r.rev, updated: r.updated_at });
   const writes = r.writes_day === today ? r.writes + 1 : 1;
-  if (writes > num(ctx.env.VAULT_WRITES_PER_DAY, 400)) return fail(429, 'rate_limited', 'Too many saves today for this vault.');
+  if (writes > num(ctx.env.VAULT_WRITES_PER_DAY, 1500)) return fail(429, 'rate_limited', 'Too many saves today for this vault.');
   /* [change 3] one transaction: the copy being replaced joins its earlier versions (on the first write after this change,
      the previous version already stored in prev_blob joins them first), the new copy is stored, and only the last 10 stay.
      Every step holds only while the row is still the one read above (same rev and date), so two writes at once cannot
