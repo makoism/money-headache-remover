@@ -552,3 +552,17 @@ The five corrections at the end of STAGE2_PLAN.md are accepted. The most importa
 ## BT. Second plan review (24 Nov morning JST)
 The corrections 1prime, 2prime and 5prime at the end of STAGE2_PLAN.md are accepted. Each person's Free to spend is a people map inside the plan.shares entry, and the entry keeps the household total. The rate in force is the latest in either direction. The S1 walk uses steps converted by each line's per, and leaves out goal set-asides.
 BT2. The people-map rules (1'' in STAGE2_PLAN.md) passed a narrow qc-foundation review. Lane A and the merge of S1 may go ahead.
+
+## BU. How the AI-first slice is built (efficiency review, 24 Nov late morning JST)
+BU1. Slice 1 runs as three lanes:
+- **A:** the pure core (chat3_core.js, fake_ai.js, recorded replies).
+- **B:** the panel and e3_chatwalk, built against A's interface, which is fixed on day one.
+- **C:** a relay branch off main.
+
+addPay, changePay and addAccount go to slice 4.
+BU2. No `figures` or `draft` read tools. Fresh figures and the draft go with every round.
+BU3. Relay, before real use, on a main-relay branch with Mako's yes:
+- the per-day call cap is keyed to the invite code or a device id, never a random `anon`
+- prompt caching on the system prompt and tools
+BU4. One scripted real-AI walk (about $0.50 a run) replays the setup answers and checks the end figure 201,400. It is not a gate.
+BU5. Running cost, estimated at Sonnet prices: about $0.60 per setup, about $10 to $17 a month for daily use. To Mako: a spend limit in the Anthropic console.
