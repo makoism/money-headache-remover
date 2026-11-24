@@ -59,7 +59,7 @@ async function syncNow3(opts) {
   const snap = E3.book;
   try {
     const keys = await CLOUD3.keysFor(st.code);
-    const r = await CLOUD3.syncOnce({ api: cloudApi3(), pack: BurrowPack, S: BurrowEngine.sync, keys, device: { base: st.base, baseRev: st.baseRev }, copy: snap, keepalive: !!opts.leaving });
+    const r = await CLOUD3.syncOnce({ api: cloudApi3(), pack: BurrowPack, S: BurrowEngine.sync, keys, device: { base: st.base, baseRev: st.baseRev }, copy: snap, keepalive: !!opts.leaving, now: nowIso3() });
     C3.lastSync = Date.now();
     if (!r.ok && r.why === 'deleted') {   // 410: deleted on another device; this device stops until it is turned on again
       C3.why = null; C3.dirty = false;
@@ -181,7 +181,7 @@ function verAsk3(rev, label) {
   $('#a3CloudVerNo').addEventListener('click', () => { ask.innerHTML = ''; });
   $('#a3CloudVerGo').addEventListener('click', async () => {
     const st = await cloudState3();
-    const g = await CLOUD3.fetchRev({ api: cloudApi3(), pack: BurrowPack, keys: await CLOUD3.keysFor(st.code), rev });
+    const g = await CLOUD3.fetchRev({ api: cloudApi3(), pack: BurrowPack, keys: await CLOUD3.keysFor(st.code), rev, now: nowIso3(), mine: E3.book });
     if (!g.ok) { setMsg3(g.why === 'gone' ? 'The cloud does not keep that version any more. Nothing changed.' : WHY3[g.why] || WHY3.server, true); ask.innerHTML = ''; return; }
     const ok = await restoreBook3(g.copy, 'Before an earlier cloud version was restored');
     setMsg3(ok ? 'Restored the earlier copy from the cloud. It goes to your other devices with the next send.' : 'This could not be saved on this device. Nothing changed.', !ok);

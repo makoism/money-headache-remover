@@ -31,7 +31,7 @@ const shown = c => S.canon(Object.assign(Object.fromEntries(LISTS.map(k => [k, (
     const by = 'dsk001', now = '2026-12-10T09:00:00.000+09:00';
     const over = clone(BOOK);
     over.events.push({ id: 'dsk001-zzzzzzzzzz-1', k: 'spend', acct: BOOK.accounts[0].id, date: '2026-12-09', a: 700, told: '2026-12-09T12:00:00.000+09:00', at: '2026-12-09T12:00:00.000+09:00', by: 'phn002' });
-    over.schedules[0] = Object.assign({}, over.schedules[0], { name: 'Main job (later)', at: '2026-12-30T08:00:00.000+09:00', by: 'phn002' });   // a clock ahead of this one
+    over.schedules[0] = Object.assign({}, over.schedules[0], { name: 'Main job (later)', at: '2026-12-10T20:00:00.000+09:00', by: 'phn002' });   // a clock some hours ahead of this one
     over.home.main = { v: { acct: BOOK.accounts[0].id }, at: '2026-12-08T08:00:00.000+09:00', by: 'phn002' };
     over.keptVersions = [{ id: 'kept:x1', of: 'x1', in: 'schedules', versions: [], ask: false, at: '2026-12-08T08:00:00.000+09:00', by: 'phn002' }];
     const restored = clone(BOOK);
@@ -42,7 +42,7 @@ const shown = c => S.canon(Object.assign(Object.fromEntries(LISTS.map(k => [k, (
     const out = Bk.restamp(restored, over, { now, by, day: '2026-12-10' });
     ck('the inputs are not changed', JSON.stringify(restored) === before && JSON.stringify(over) === beforeOver);
     const at = out.schedules[0].at;
-    ck('the new `at` is later than any `at` seen, even a clock ahead of this one', Date.parse(at) > Date.parse('2026-12-30T08:00:00.000+09:00'), at);
+    ck('the new `at` is later than any `at` seen, even a clock some hours ahead of this one', Date.parse(at) > Date.parse('2026-12-10T20:00:00.000+09:00'), at);
     const all = LISTS.flatMap(k => out[k] || []);
     ck('every record brought back (and every one marked gone) carries the one new `at` and this device', all.length > 0 && all.every(r => r.at === at && r.by === by), JSON.stringify(all.filter(r => r.at !== at || r.by !== by)).slice(0, 200));
     ck('a record keeps its `told` (when it was first heard)', out.events.find(e => e.id === BOOK.events[1].id).told === BOOK.events[1].told);
@@ -57,11 +57,38 @@ const shown = c => S.canon(Object.assign(Object.fromEntries(LISTS.map(k => [k, (
     ck('the top of the copy keeps its version number', first.v === BOOK.v);
   }
 
+  /* ---- a copy from a clock far ahead never moves this device's clock [M4, AI1: store/clock.js holdArriving] ---- */
+  const NOW = '2026-11-24T10:00:00.000+09:00', DAYMS = 86400000, notAhead = (c, now) => { const t = window.BurrowClock.newestAt(c); return !t || Date.parse(t) <= Date.parse(now) + DAYMS; };
+  {
+    const restored = { v: 3, events: [{ id: 'e1', amt: 5, at: '2027-11-24T10:00:00.000+09:00', told: '2027-11-24T10:00:00.000+09:00', by: 'x' }, { id: 'e2', amt: 7, at: '2026-01-01T00:00:00.000+09:00', by: 'x' }] };
+    const over = { v: 3, events: [{ id: 'e3', amt: 9, at: '2026-11-20T00:00:00.000+09:00', by: 'a' }] };
+    const out = Bk.restamp(restored, over, { by: 'a', now: NOW, day: '2026-11-24' });
+    ck('a backup with a record a year ahead, restored today, stamps nothing in 2027', !JSON.stringify(out).includes('2027-') && notAhead(out, NOW), JSON.stringify(out));
+    const ahead = Bk.restamp(restored, { v: 3, events: [{ id: 'e3', at: '2028-01-01T00:00:00.000+09:00' }] }, { by: 'a', now: NOW });
+    ck('nor does a copy here that already holds a time far ahead', !/202[78]-/.test(JSON.stringify(ahead.events.map(e => e.at))), JSON.stringify(ahead.events));
+  }
+  {
+    const v = makeVault(), api0 = C.client({ fetch: v.fetch, base: () => 'http://vault.test' }), pk = window.BurrowPack, k0 = await C.keysFor(C.newCode());
+    const far = clone(BOOK); far.events[0] = Object.assign({}, far.events[0], { at: '2027-11-24T10:00:00.000+09:00', by: 'phn002' });
+    let r = await C.syncOnce({ api: api0, pack: pk, S, keys: k0, device: {}, copy: far, now: '2027-11-24T10:00:00.000+09:00' });   // B, a clock a year ahead, sends
+    r = await C.syncOnce({ api: api0, pack: pk, S, keys: k0, device: {}, copy: null, now: NOW });
+    ck('the cloud pull holds a record from a clock a year ahead: nothing on this device is ahead of its own now', r.ok && notAhead(r.copy, NOW) && !!r.copy.events[0].held, JSON.stringify(r.copy.events[0]));
+    const puts = v.log.filter(x => x.method === 'PUT').length;
+    const again = await C.syncOnce({ api: api0, pack: pk, S, keys: k0, device: r.device, copy: r.copy, now: '2026-11-24T10:01:00.000+09:00' });
+    ck('pulled again, it is held the same way: nothing changed, nothing sent', again.ok && !again.pushed && v.log.filter(x => x.method === 'PUT').length === puts && S.canon(again.copy) === S.canon(r.copy));
+    const clk = window.BurrowClock.makeClock(); clk.see(again.copy);
+    ck('the next own write on this device is stamped today, not next year', clk.stamp(NOW).startsWith('2026-11-24'));
+    const vs = await C.fetchVersions({ api: api0, keys: k0 });
+    const g = vs.ok && vs.versions.length ? await C.fetchRev({ api: api0, pack: pk, keys: k0, rev: vs.versions[0].rev, now: NOW }) : { ok: false };
+    const cur = await C.fetchRev({ api: api0, pack: pk, keys: k0, rev: v.rows.get(k0.id).rev, now: NOW });
+    ck('a cloud version read back is held the same way', cur.ok && notAhead(cur.copy, NOW) && (!g.ok || notAhead(g.copy, NOW)), JSON.stringify(cur).slice(0, 200));
+  }
+
   /* ---- two devices, the fake vault ---- */
   const vault = makeVault();
   const api = C.client({ fetch: vault.fetch, base: () => 'http://vault.test' });
   const pack = window.BurrowPack, keys = await C.keysFor(C.newCode());
-  const sync = async d => { const r = await C.syncOnce({ api, pack, S, keys, device: d.dev, copy: d.copy }); if (!r.ok) throw new Error('sync ' + r.why); return { copy: r.copy, dev: r.device, r }; };
+  const sync = async d => { const r = await C.syncOnce({ api, pack, S, keys, device: d.dev, copy: d.copy, now: '2026-12-07T12:00:00.000+09:00' }); if (!r.ok) throw new Error('sync ' + r.why); return { copy: r.copy, dev: r.device, r }; };
   let A = await sync({ copy: clone(BOOK), dev: {} });
   let Bd = await sync({ copy: null, dev: {} });
   const backup = clone(A.copy);   // A saves a backup file now
@@ -81,7 +108,7 @@ const shown = c => S.canon(Object.assign(Object.fromEntries(LISTS.map(k => [k, (
   // the case is real: a plain replace (today's restore) does not stick once joined with the cloud
   {
     const v2 = makeVault(), api2 = C.client({ fetch: v2.fetch, base: () => 'http://vault.test' });
-    const s2 = async d => { const r = await C.syncOnce({ api: api2, pack, S, keys, device: d.dev, copy: d.copy }); return { copy: r.copy, dev: r.device }; };
+    const s2 = async d => { const r = await C.syncOnce({ api: api2, pack, S, keys, device: d.dev, copy: d.copy, now: '2026-12-07T12:00:00.000+09:00' }); return { copy: r.copy, dev: r.device }; };
     let a = await s2({ copy: clone(here), dev: {} }), b = await s2({ copy: null, dev: {} });
     a = await s2({ copy: clone(backup), dev: a.dev }); b = await s2(b);
     ck('without the restamp, B does not end up with the restored copy (records added later come back)', shown(b.copy) !== shown(backup));
@@ -106,7 +133,7 @@ const shown = c => S.canon(Object.assign(Object.fromEntries(LISTS.map(k => [k, (
   Bd = await sync(Bd);
   ck('and B takes it: what was there before the restore', shown(Bd.copy) === shown(here), shown(Bd.copy).slice(0, 300));
   A = await sync(A);
-  ck('both devices end on the same copy', S.canon(A.copy) === S.canon(Bd.copy));
+  ck('both devices end on the same copy', S.canon(A.copy) === S.canon(Bd.copy), (() => { const d = []; for (const k of Object.keys(A.copy)) if (S.canon(A.copy[k]) !== S.canon(Bd.copy[k])) d.push(k + ' ' + JSON.stringify((A.copy[k] || []).filter((r, i) => S.canon(r) !== S.canon((Bd.copy[k] || [])[i])).slice(0, 2)) + ' VS ' + JSON.stringify((Bd.copy[k] || []).filter((r, i) => S.canon(r) !== S.canon((A.copy[k] || [])[i])).slice(0, 2))); return d.join(' / '); })());
 
   // B changes a record and adds one before A has seen them; A restores and sends: B's change is asked, both kept; B's new record stays
   Object.assign(Bd.copy.schedules.find(s => s.id === s1), { name: 'Side work (B, unseen)', at: '2026-12-07T11:00:00.000+09:00', by: 'phn002' });
