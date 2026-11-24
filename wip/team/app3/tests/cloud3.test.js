@@ -160,6 +160,45 @@ const canon = x => S.canon(x);
     ck('a write refused because the copy was just deleted is said as deleted too', !r.ok && r.why === 'deleted' && !v4.rows.size, JSON.stringify(r).slice(0, 200));
   }
 
+  // ---- CS3: the base is never ahead of the book. A write is refused, then the retry fails: the device keeps the base it
+  //      started with, so the next sync joins again. The other device changed one spend, removed another, and renamed
+  //      the pay this device renamed too (M20): all of it survives on both, and the question is asked ----
+  {
+    const v5 = makeVault(), api5 = C.client({ fetch: v5.fetch, base: () => 'http://vault.test' });
+    const bank = BOOK.accounts[0].id, sid = BOOK.schedules[0].id;
+    const sp = (id, a, at) => ({ id, k: 'spend', acct: bank, date: '2026-12-06', a, told: at.slice(0, 16) + '+09:00', at, by: 'dsk001' });
+    const start = clone(BOOK); start.events.push(sp('dsk001-q4w8e2r6t1-1', 1200, '2026-12-06T10:00:00.000+09:00'), sp('dsk001-q4w8e2r6t1-2', 800, '2026-12-06T10:05:00.000+09:00'));
+    let a = await C.syncOnce({ api: api5, pack, S, keys, device: {}, copy: start });
+    let Aa = { copy: a.copy, dev: a.device };
+    let b = await C.syncOnce({ api: api5, pack, S, keys, device: {}, copy: null });
+    let Bb = { copy: b.copy, dev: b.device };
+    // the other device: one spend changed, one removed, the pay renamed
+    const x = Bb.copy.events.find(e => e.id === 'dsk001-q4w8e2r6t1-1'); Object.assign(x, { a: 2100, at: '2026-12-07T09:00:00.000+09:00', by: 'phn002' });
+    const y = Bb.copy.events.find(e => e.id === 'dsk001-q4w8e2r6t1-2'); Object.assign(y, { gone: '2026-12-07', at: '2026-12-07T09:01:00.000+09:00', by: 'phn002' });
+    Object.assign(Bb.copy.schedules.find(s => s.id === sid), { name: 'Main job (phone)', at: '2026-12-07T09:02:00.000+09:00', by: 'phn002' });
+    b = await C.syncOnce({ api: api5, pack, S, keys, device: Bb.dev, copy: Bb.copy }); Bb = { copy: b.copy, dev: b.device };
+    // this device renamed the same pay; its write is refused once (as when another write lands first), then the cloud cannot be reached
+    Object.assign(Aa.copy.schedules.find(s => s.id === sid), { name: 'Main job (desk)', at: '2026-12-07T08:00:00.000+09:00', by: 'dsk001' });
+    let refusedOnce = false, down = false;
+    const apiA = { del: k => api5.del(k), rev: k => api5.rev(k),
+      get: k => (down ? Promise.resolve({ status: 0, ok: false, j: {} }) : api5.get(k)),
+      put: async (k, body, ka) => { if (!refusedOnce) { refusedOnce = true; down = true; return { status: 409, ok: false, j: { error: { code: 'conflict' } } }; } return api5.put(k, body, ka); } };
+    const mine = clone(Aa.copy);
+    const f = await C.syncOnce({ api: apiA, pack, S, keys, device: Aa.dev, copy: mine });
+    ck('CS3: a refused write then a failed retry is a failed sync', !f.ok && f.why === 'net');
+    ck('CS3: the device keeps the base it started with, never the one it took on the way', f.device.baseRev === Aa.dev.baseRev && canon(f.device.base) === canon(Aa.dev.base), 'baseRev ' + f.device.baseRev + ' started ' + Aa.dev.baseRev);
+    // the page keeps its book and whatever base the failed sync handed it; the next sync, online again
+    down = false;
+    a = await C.syncOnce({ api: api5, pack, S, keys, device: f.device, copy: mine }); Aa = { copy: a.copy, dev: a.device };
+    b = await C.syncOnce({ api: api5, pack, S, keys, device: Bb.dev, copy: Bb.copy }); Bb = { copy: b.copy, dev: b.device };
+    const amt = c => c.events.find(e => e.id === 'dsk001-q4w8e2r6t1-1').a, gone = c => !!c.events.find(e => e.id === 'dsk001-q4w8e2r6t1-2').gone;
+    ck('CS3: the other device\'s changed spend survives on both', amt(Aa.copy) === 2100 && amt(Bb.copy) === 2100, amt(Aa.copy) + ' ' + amt(Bb.copy));
+    ck('CS3: the other device\'s removed spend stays removed on both', gone(Aa.copy) && gone(Bb.copy));
+    const kp = c => (c.keptVersions || []).find(k => k.id === 'kept:' + sid);
+    ck('CS3: the pay renamed on both is still asked, both names kept (M20)', [Aa.copy, Bb.copy].every(c => kp(c) && kp(c).ask === true && kp(c).versions.map(v => v.name).sort().join('|') === 'Main job (desk)|Main job (phone)'), JSON.stringify(kp(Aa.copy)));
+    ck('CS3: both devices hold the same copy', canon(Aa.copy) === canon(Bb.copy));
+  }
+
   console.log(bad ? `cloud3: ${bad} FAIL of ${n}` : `cloud3: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })().catch(e => { console.log('FAIL crashed ' + e.stack); process.exit(1); });

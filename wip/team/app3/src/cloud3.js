@@ -91,13 +91,16 @@
   // device: { base, baseRev } as kept on this device (SCHEMA_V3 2.2 `sync`); copy: this device's shared copy.
   // Gives { ok, copy, device: { base, baseRev }, pushed, merged, questions, firstJoin } or { ok: false, why, device }.
   // A refused write is retried from the copy it took as its base (AW5), up to three times.
+  // [CS3] A base goes only with the copy that holds it. A sync that fails hands back the copy and the base it was given,
+  // never a base it took on the way: a caller that keeps its book then keeps the base that book was joined from.
   async function syncOnce({ api, pack, S, keys, device, copy, keepalive }) {
     let dev = { base: device && device.base != null ? device.base : null, baseRev: device && device.baseRev != null ? device.baseRev : null };
-    let cur = noRev(copy), merged = false;
+    const dev0 = dev, copy0 = noRev(copy);
+    let cur = copy0, merged = false;
     const firstJoin = dev.base === null && S.hasData(cur);
     for (let i = 0; i < TRIES; i++) {
       const cloud = await fetchCloud({ api, pack, keys });
-      if (!cloud.ok) return { ok: false, why: cloud.why, device: dev, copy: cur };
+      if (!cloud.ok) return { ok: false, why: cloud.why, device: dev0, copy: copy0 };
       const r = S.syncDevice({ copy: cur, base: dev.base === null ? undefined : dev.base, baseRev: dev.baseRev === null ? undefined : dev.baseRev }, { rev: cloud.rev, copy: cloud.copy });
       merged = merged || r.merged;
       const out = noRev(r.device.copy);
@@ -111,11 +114,11 @@
         dev = { base: JSON.parse(JSON.stringify(out)), baseRev: r.rev };   // its own object: the copy is edited later, the base never
         return { ok: true, copy: out, device: dev, pushed: true, merged, firstJoin, questions: S.afterSync(out).questions };
       }
-      if (p.status !== 409) return { ok: false, why: failOf(p.status), device: dev, copy: cur };
+      if (p.status !== 409) return { ok: false, why: failOf(p.status), device: dev0, copy: copy0 };
       // [AW5] refused: keep the joined copy, with the copy it took as its base, and join again on the latest
       cur = out; dev = { base: JSON.parse(JSON.stringify(cloud.copy)), baseRev: cloud.rev };
     }
-    return { ok: false, why: WHY.busy, device: dev, copy: cur };
+    return { ok: false, why: WHY.busy, device: dev0, copy: copy0 };
   }
 
   const api = { SALT, ROUNDS, INFO, newCode, codeShow, codeClean, codeValid, keysFor, wrap, unwrap, client, fetchCloud, syncOnce, noRev };

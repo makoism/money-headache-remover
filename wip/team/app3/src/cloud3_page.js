@@ -41,6 +41,7 @@ const WHY3 = {
   newer: 'The cloud copy was saved by a newer version of the app. Update the app to use it. Nothing here was changed.',
   key: 'The cloud copy could not be opened with this code.',
   damaged: 'The cloud copy could not be read. Nothing here was changed.',
+  save: 'What your other device changed could not be saved on this device. Your money here is as it was. Free some space, then open the app again.',
   fmt: 'The cloud copy is not one this version can read. Update the app. Nothing here was changed.',
   deleted: 'The cloud copy was deleted on another device. This device keeps its money. Turn the cloud copy on again with a new code to share it.',
 };
@@ -66,18 +67,28 @@ async function syncNow3(opts) {
     }
     if (!r.ok) {
       C3.why = r.why;
-      await putCloud3(Object.assign({}, st, { base: r.device.base, baseRev: r.device.baseRev, failAt: st.failAt || Date.now() }));
+      await putCloud3(Object.assign({}, st, { failAt: st.failAt || Date.now() }));   // [CS3] the book was not replaced: the base stays
       return r;
     }
     C3.why = null; C3.dirty = false;
     let next = r.copy;
     if (E3.book !== snap) { next = BurrowEngine.sync.sync(snap, E3.book, r.copy); C3.dirty = true; }   // changed while it ran: joined, sent next time
+    /* [CS3] the base is saved only together with the book that holds it: after the book was replaced, or when the book
+       here already is that copy. A book that could not be saved keeps the base it started with, so the next sync joins
+       again from the same place and nothing the other device changed or removed is undone */
+    let held = false;
     if (S3same(next, E3.book) === false) {
       if (r.firstJoin && E3.book) await keepCopy3('Before this device joined the cloud copy');
       C3.applying = true;
       const ok = await E3.replace(next);
       C3.applying = false;
       if (ok) { renderHome3(); if (typeof renderPlan3 === 'function') { try { renderPlan3(); } catch (e) { /* the plan lane's own */ } } }
+      else held = true;
+    }
+    if (held) {
+      C3.why = 'save'; if (r.pushed) C3.dirty = false;
+      await putCloud3(Object.assign({}, st, { failAt: st.failAt || Date.now() }));
+      return r;
     }
     await putCloud3(Object.assign({}, st, { base: r.device.base, baseRev: r.device.baseRev, sentAt: r.pushed || !st.sentAt ? Date.now() : st.sentAt, failAt: 0 }));
     const qs = r.questions.length;
