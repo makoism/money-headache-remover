@@ -129,7 +129,7 @@ function openSetup3() {
     $('#s3Accts').insertAdjacentHTML('beforeend', `<div class="a3-group" data-row="${k}"><div class="a3-row3">
       <div class="a3-field"><label for="s3-${k}-n">Called</label><input class="a3-in a3-txt" id="s3-${k}-n" data-f="name" placeholder="Cash, an e-wallet, a second bank" autocomplete="off"></div>
       <div class="a3-field"><label for="s3-${k}-a">What it holds today</label><input class="a3-in" id="s3-${k}-a" data-f="amount" data-amount data-money></div></div>
-      <div class="a3-field"><label for="s3-${k}-t">What it is</label><select class="a3-in a3-sel" id="s3-${k}-t" data-f="type">${KINDS3.map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}</select></div></div>`);
+      <div class="a3-field"><label for="s3-${k}-t">What it is</label><select class="a3-in a3-sel" id="s3-${k}-t" data-f="type">${KINDS3.map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}</select></div>${curPick3(k)}</div>`);
     bindMoney3($(`#s3-${k}-a`));
     shape3();
   });
@@ -144,13 +144,13 @@ function openSetup3() {
   $('#s3Bank').focus();
 }
 /* one input behaviour (screens/inputs.js) in the chosen currency */
-function bindMoney3(el) { BurrowScreens.inputs.bind(el, { kind: 'amount', get code() { return $('#s3Cur').value; }, optional: el.hasAttribute('data-optional') }); }
+function bindMoney3(el) { BurrowScreens.inputs.bind(el, { kind: 'amount', get code() { return rowCur3(el.closest('[data-row^=acct]')); }, optional: el.hasAttribute('data-optional') }); }
 function closeSetup3() { $('#a3Setup').hidden = true; $('#a3Setup').innerHTML = ''; setup3 = null; $('#a3Home').hidden = false; renderHome3(); }
 /* the answers as build_book takes them. strict: a missing amount is asked for (throws 'asked'); else it counts as 0,
    for a draft book that only says which bills were due since the last pay */
 function answers3(strict) {
   const err = $('#a3SetupErr'), cur = $('#s3Cur').value;
-  const need = (el, words) => { const v = typed3(el.value, cur); if (v !== null) return v; if (!strict) return 0; err.textContent = words; el.focus(); throw new Error('asked'); };
+  const need = (el, words, c) => { const v = typed3(el.value, c || cur); if (v !== null) return v; if (!strict) return 0; err.textContent = words; el.focus(); throw new Error('asked'); };
   const text = (el, dflt) => (el.value || '').trim() || dflt;
   const bankName = text($('#s3BankName'), 'Main bank');
   const min = $('#s3Min').value.trim() ? need($('#s3Min'), 'Type the amount to keep at least, or leave it blank') : null;
@@ -164,7 +164,7 @@ function answers3(strict) {
   /* [slice 6] the other accounts: a second bank, cash, an e-wallet, each with what it holds today */
   $$('#a3Setup [data-row^=acct]').forEach(row => {
     const name = text(row.querySelector('[data-f=name]'), KIND_NAME3[row.querySelector('[data-f=type]').value]);
-    ans.banks.push({ key: row.dataset.row, name, type: row.querySelector('[data-f=type]').value, amount: need(row.querySelector('[data-f=amount]'), `Type what ${name} holds today, or 0`) });
+    ans.banks.push({ key: row.dataset.row, name, type: row.querySelector('[data-f=type]').value, cur: rowCur3(row), amount: need(row.querySelector('[data-f=amount]'), `Type what ${name} holds today, or 0`, rowCur3(row)) });
   });
   /* the account a select names; a hidden one (only one account to choose) is the main bank */
   const acctOf = sel => (sel && !sel.closest('[data-q=acct]').hidden && sel.value) || 'bank1';

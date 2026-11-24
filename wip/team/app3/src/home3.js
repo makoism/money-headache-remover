@@ -136,6 +136,7 @@ function drawHome3() {
       <p class="a3-big" data-fig="bank">${fig3('accounts.*.bank', a.bank, a.currency)}</p>
       <p class="a3-sub" data-fig="age">${bankParts3(a, yr)}</p></section>`);
   }
+  out.push(totalWords3(r, yr));   // [stage 2 S5] the Total in the home currency, when an account is in another (home3_rates.js)
   /* safe to spend until next pay, with the sum behind it */
   const until = safeUntil3(r, yr);
   /* [BJ5] when Free to spend caps the headline, the engine's sum ends with the cap, so the two figures agree */

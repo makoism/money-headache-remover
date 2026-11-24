@@ -32,7 +32,7 @@
   const node = typeof module === 'object' && module.exports;
   const C = node ? require('../../store/clock.js') : root.BurrowClock;
   const PATHS = { events: ['events'], checkins: ['checkins'], accounts: ['accounts'], schedules: ['schedules'], places: ['places'],
-    people: ['people'], budgets: ['plan', 'budgets'], shares: ['plan', 'shares'] };
+    people: ['people'], budgets: ['plan', 'budgets'], shares: ['plan', 'shares'], rates: ['rates'] };
   const SPEND_FROM = { bank: 1, cash: 1, ewallet: 1, wallet: 1, card: 1, paylater: 1 };   // where a spend can be paid from
   const OWN = { bank: 1, cash: 1, ewallet: 1, wallet: 1 };                                 // money moved between these
   const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;

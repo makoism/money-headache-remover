@@ -8064,7 +8064,7 @@ const E3 = (() => {
   const node = typeof module === 'object' && module.exports;
   const C = node ? require('../../store/clock.js') : root.BurrowClock;
   const PATHS = { events: ['events'], checkins: ['checkins'], accounts: ['accounts'], schedules: ['schedules'], places: ['places'],
-    people: ['people'], budgets: ['plan', 'budgets'], shares: ['plan', 'shares'] };
+    people: ['people'], budgets: ['plan', 'budgets'], shares: ['plan', 'shares'], rates: ['rates'] };
   const SPEND_FROM = { bank: 1, cash: 1, ewallet: 1, wallet: 1, card: 1, paylater: 1 };   // where a spend can be paid from
   const OWN = { bank: 1, cash: 1, ewallet: 1, wallet: 1 };                                 // money moved between these
   const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -8840,6 +8840,7 @@ function drawHome3() {
       <p class="a3-big" data-fig="bank">${fig3('accounts.*.bank', a.bank, a.currency)}</p>
       <p class="a3-sub" data-fig="age">${bankParts3(a, yr)}</p></section>`);
   }
+  out.push(totalWords3(r, yr));   // [stage 2 S5] the Total in the home currency, when an account is in another (home3_rates.js)
   /* safe to spend until next pay, with the sum behind it */
   const until = safeUntil3(r, yr);
   /* [BJ5] when Free to spend caps the headline, the engine's sum ends with the cap, so the two figures agree */
@@ -8940,6 +8941,24 @@ function runwayWords3(r, yr) {
   /* "would", never "goes below zero": that is said only of the real walk (BM2, e3_warnwords J) */
   const under = x.minimum ? 'would go under its minimum' : 'would run out';
   return head + `<p class="a3-sum" data-fig="runwaywhy">${esc3(E3.nameOf(x.account))} ${under} on ${esc3(day3(x.day, yr))}: ${esc3(sum3(x.parts, x.total, E3.curOf(x.account)))}</p>`;
+}
+/* ---------- Home: the Total in the home currency (stage 2 S5, STAGE2_PLAN 2.4 step 1) ----------
+   Shown only when an account is in another currency: the engine's res.total.inHome, each such account with the rate
+   in force, its day and who gave it, and an account with no rate yet named apart. Every figure is the engine's; this
+   file words and places (tests: no_maths.js, e3_rates.js). Words are drafts for Mako's copy pass (FOR_MAKO.md). */
+function totalWords3(r, yr) {
+  const x = r.total && r.total.inHome;
+  if (!x) return '';
+  const home = E3.home();
+  const by = { typed: 'typed by you', convert: 'from your own conversion' };
+  const parts = x.parts.map(t => {
+    const pair = t.inverse ? `1 ${home} = ${t.rate} ${t.currency}` : `1 ${t.currency} = ${t.rate} ${home}`;
+    return `<li data-fig="totalpart" data-acct="${esc3(t.account)}">${esc3(E3.nameOf(t.account))} ${money3(t.amount, t.currency)} at ${esc3(pair)} from ${esc3(day3(t.rateFrom, yr))}, ${esc3(by[t.src] || by.typed)}${t.old ? ', over 30 days old' : ''}: ${fig3('total.inHome.parts.*.converted', t.converted, home)}</li>`;
+  }).join('');
+  const missing = x.missing.map(m => `<p class="a3-warn" data-fig="totalmissing" data-acct="${esc3(m.account)}">${esc3(E3.nameOf(m.account))} ${money3(m.amount, m.currency)} is not counted: no rate yet. Type one in Settings, Rates</p>`).join('');
+  return `<section class="a3-card" data-card="total"><h2>${esc3(label3('total'))}, about, in ${esc3(home)}</h2>
+    <p class="a3-big" data-fig="totalhome">${fig3('total.inHome.amount', x.amount, home)}</p>
+    ${parts ? `<ul class="a3-rows a3-sub">${parts}</ul>` : ''}${missing}</section>`;
 }
 /* ---------- Check your bank (WIRING_PLAN 1.1 item 3, step 9) ----------
    Lists every expected item since the last check (res.checkIn.toConfirm), ticked, with its amount editable; asks what
@@ -9908,7 +9927,7 @@ function openSetup3() {
     $('#s3Accts').insertAdjacentHTML('beforeend', `<div class="a3-group" data-row="${k}"><div class="a3-row3">
       <div class="a3-field"><label for="s3-${k}-n">Called</label><input class="a3-in a3-txt" id="s3-${k}-n" data-f="name" placeholder="Cash, an e-wallet, a second bank" autocomplete="off"></div>
       <div class="a3-field"><label for="s3-${k}-a">What it holds today</label><input class="a3-in" id="s3-${k}-a" data-f="amount" data-amount data-money></div></div>
-      <div class="a3-field"><label for="s3-${k}-t">What it is</label><select class="a3-in a3-sel" id="s3-${k}-t" data-f="type">${KINDS3.map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}</select></div></div>`);
+      <div class="a3-field"><label for="s3-${k}-t">What it is</label><select class="a3-in a3-sel" id="s3-${k}-t" data-f="type">${KINDS3.map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}</select></div>${curPick3(k)}</div>`);
     bindMoney3($(`#s3-${k}-a`));
     shape3();
   });
@@ -9923,13 +9942,13 @@ function openSetup3() {
   $('#s3Bank').focus();
 }
 /* one input behaviour (screens/inputs.js) in the chosen currency */
-function bindMoney3(el) { BurrowScreens.inputs.bind(el, { kind: 'amount', get code() { return $('#s3Cur').value; }, optional: el.hasAttribute('data-optional') }); }
+function bindMoney3(el) { BurrowScreens.inputs.bind(el, { kind: 'amount', get code() { return rowCur3(el.closest('[data-row^=acct]')); }, optional: el.hasAttribute('data-optional') }); }
 function closeSetup3() { $('#a3Setup').hidden = true; $('#a3Setup').innerHTML = ''; setup3 = null; $('#a3Home').hidden = false; renderHome3(); }
 /* the answers as build_book takes them. strict: a missing amount is asked for (throws 'asked'); else it counts as 0,
    for a draft book that only says which bills were due since the last pay */
 function answers3(strict) {
   const err = $('#a3SetupErr'), cur = $('#s3Cur').value;
-  const need = (el, words) => { const v = typed3(el.value, cur); if (v !== null) return v; if (!strict) return 0; err.textContent = words; el.focus(); throw new Error('asked'); };
+  const need = (el, words, c) => { const v = typed3(el.value, c || cur); if (v !== null) return v; if (!strict) return 0; err.textContent = words; el.focus(); throw new Error('asked'); };
   const text = (el, dflt) => (el.value || '').trim() || dflt;
   const bankName = text($('#s3BankName'), 'Main bank');
   const min = $('#s3Min').value.trim() ? need($('#s3Min'), 'Type the amount to keep at least, or leave it blank') : null;
@@ -9943,7 +9962,7 @@ function answers3(strict) {
   /* [slice 6] the other accounts: a second bank, cash, an e-wallet, each with what it holds today */
   $$('#a3Setup [data-row^=acct]').forEach(row => {
     const name = text(row.querySelector('[data-f=name]'), KIND_NAME3[row.querySelector('[data-f=type]').value]);
-    ans.banks.push({ key: row.dataset.row, name, type: row.querySelector('[data-f=type]').value, amount: need(row.querySelector('[data-f=amount]'), `Type what ${name} holds today, or 0`) });
+    ans.banks.push({ key: row.dataset.row, name, type: row.querySelector('[data-f=type]').value, cur: rowCur3(row), amount: need(row.querySelector('[data-f=amount]'), `Type what ${name} holds today, or 0`, rowCur3(row)) });
   });
   /* the account a select names; a hidden one (only one account to choose) is the main bank */
   const acctOf = sel => (sel && !sel.closest('[data-q=acct]').hidden && sel.value) || 'bank1';
@@ -10060,6 +10079,16 @@ async function saveSetup3() {
   $('#a3Setup').hidden = true; $('#a3Setup').innerHTML = ''; setup3 = null; $('#a3Home').hidden = false;
   renderHome3(); msg3('Saved on this device');
 }
+/* ---------- setup: an account in another currency (stage 2 S5, STAGE2_PLAN 2.4) ----------
+   Each extra account row gets "Money in", the home currency by default. What it holds is read in its own currency
+   (its own minor units). Joined in setup3.js by the row's HTML and the answers. Words are drafts for Mako's copy pass. */
+const CURS3 = [['JPY', 'Yen'], ['USD', 'US dollars'], ['PHP', 'Philippine pesos'], ['EUR', 'Euros']];
+function curPick3(k) {
+  const home = $('#s3Cur').value;
+  return `<div class="a3-field"><label for="s3-${k}-c">Money in</label><select class="a3-in a3-sel" id="s3-${k}-c" data-f="cur">${CURS3.map(([v, t]) => `<option value="${v}"${v === home ? ' selected' : ''}>${t}</option>`).join('')}</select></div>`;
+}
+/* the row's currency (the home one when the row has no pick) */
+function rowCur3(row) { const s = row && row.querySelector('[data-f=cur]'); return s ? s.value : $('#s3Cur').value; }
 /* ---------- BACKUP3: a backup file of the new shape, and restoring one (SCHEMA_V3 1; DECISIONS_ROUND2 D2, D5, D6, BE3) ----------
    Saving: the shared copy packed by store/pack.js ({ fmt: 'gz1', v, data }: JSON, gzipped, base64), as a .json file. With a
    code typed by the person it is also encrypted (AES-GCM); the key is made from the code with PBKDF2-SHA-256 (150,000
@@ -10554,12 +10583,13 @@ function openSet3() {
   sheet.innerHTML = `<div class="a3-sheet-in">
       <h1 id="a3SetT">Settings</h1>
       <p class="a3-warn" id="a3SetMsg" role="status" hidden></p>
-      ${money}${tryBook ? tryNote : `${device}${backup}${cloud}`}
+      ${money}${ratesCard3()}${tryBook ? tryNote : `${device}${backup}${cloud}`}
       <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3SetClose">Done</button></div></div>`;
   /* over whatever shows (the panels and the tab bar), put back as they were on Done */
   SET3.was = [...document.querySelectorAll('[data-panel], .a3-tabs, #a3Check, #a3StmtBar, #a3Stmt')].map(el => [el, el.hidden]);
   SET3.was.forEach(([el]) => { el.hidden = true; }); sheet.hidden = false;
   $('#a3SetClose').addEventListener('click', closeSet3);
+  wireRates3();   // [stage 2 S5] Rates (settings3_rates.js)
   if (!tryBook) {
     paintSpace3();
     $('#a3Persist').addEventListener('click', async () => { await BurrowPersist.askToKeep(); paintSpace3(); });
@@ -10653,6 +10683,47 @@ async function paintKept3() {
 /* the header's Settings button and Escape, without touching the start file */
 document.addEventListener('click', e => { if (e.target.closest && e.target.closest('#a3SetGo')) openSet3(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && SET3.open && !SET3.restore) closeSet3(); });
+/* ---------- Settings: Rates (stage 2 S5, STAGE2_PLAN 2.4, corrections 2, 3 and 2') ----------
+   For each currency an account is held in other than the home one: type "1 USD is ___ JPY" from a day (today by
+   default). Each one is a `rates` record through act3 (the one write door), the rate kept as the typed decimal text,
+   never a number. Nothing is fetched from the internet. The rates typed are listed, latest first. Joined in
+   settings3.js by the card and its wiring. Words are drafts for Mako's copy pass (FOR_MAKO.md). */
+function rateCurs3() {
+  const home = E3.home();
+  return [...new Set(((E3.book && E3.book.accounts) || []).filter(a => a && !a.gone && a.cur && a.cur !== home).map(a => a.cur))].sort();
+}
+function ratesCard3() {
+  if (!E3.book || E3.mode === 'try') return '';
+  const curs = rateCurs3(), home = E3.home();
+  if (!curs.length) return '';
+  const yr = E3.today().slice(0, 4);
+  const list = ((E3.book.rates || []).filter(x => x && !x.gone)).slice()
+    .sort((x, y) => (x.from !== y.from ? (x.from < y.from ? 1 : -1) : String(x.at) < String(y.at) ? 1 : -1))
+    .map(x => `<li data-set="rate">1 ${esc3(x.cur)} = ${esc3(x.rate)} ${esc3(x.to)} from ${esc3(day3(x.from, yr))}</li>`).join('');
+  return `<div class="a3-card" data-card="rates"><h2>Rates</h2>
+    <p class="a3-next">For the Total on Home, about how much your money in another currency is in ${esc3(home)}. Type the rate your bank or exchange gave you.</p>
+    <div class="a3-field"><label for="a3RateCur">Currency</label><select class="a3-in a3-sel" id="a3RateCur">${curs.map(c => `<option value="${esc3(c)}">${esc3(c)}</option>`).join('')}</select></div>
+    <div class="a3-field"><label for="a3Rate" id="a3RateL">1 ${esc3(curs[0])} is how many ${esc3(home)}</label><input class="a3-in a3-text" id="a3Rate" inputmode="decimal" autocomplete="off"></div>
+    <div class="a3-field"><label for="a3RateFrom">From</label><input class="a3-in" id="a3RateFrom" type="date" value="${esc3(E3.today())}"></div>
+    <p class="a3-warn a3-bad" id="a3RateErr" role="alert" hidden></p>
+    <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3RateSave">Keep this rate</button></div>
+    ${list ? `<ul class="a3-rows a3-sub">${list}</ul>` : ''}</div>`;
+}
+function wireRates3() {
+  if (!$('#a3RateSave')) return;
+  const home = E3.home(), err = $('#a3RateErr');
+  $('#a3RateCur').addEventListener('change', () => { $('#a3RateL').textContent = `1 ${$('#a3RateCur').value} is how many ${home}`; });
+  $('#a3RateSave').addEventListener('click', async () => {
+    const text = $('#a3Rate').value.trim(), from = $('#a3RateFrom').value;
+    const say = words => { err.textContent = words; err.hidden = false; };
+    /* a positive decimal with a point, kept as typed: never turned into a number, so nothing is lost */
+    if (!/^\d+(\.\d+)?$/.test(text) || !/[1-9]/.test(text)) return say('Type the rate as a number above 0, with a point for decimals, like 150.25');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(from)) return say('Pick the day this rate is from');
+    const res = await ACT3.run('Rate', w => { w.add('rates', { from, cur: $('#a3RateCur').value, to: home, rate: text, src: 'typed' }); }, { undo: 'Rate kept' });
+    if (!res.ok) return say(res.text || 'This could not be kept. Nothing changed');
+    closeSet3(); openSet3();
+  });
+}
 /* ---------- the service worker from the page (DECISIONS_ROUND2 D6, BD5) ----------
    Only when the page is served (http or https): a page opened as a file has no worker and needs none. A new build's worker
    takes over by itself; this page then reloads the next time it goes to the background (the money is saved on every

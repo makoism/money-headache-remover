@@ -52,12 +52,13 @@ function openSet3() {
   sheet.innerHTML = `<div class="a3-sheet-in">
       <h1 id="a3SetT">Settings</h1>
       <p class="a3-warn" id="a3SetMsg" role="status" hidden></p>
-      ${money}${tryBook ? tryNote : `${device}${backup}${cloud}`}
+      ${money}${ratesCard3()}${tryBook ? tryNote : `${device}${backup}${cloud}`}
       <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3SetClose">Done</button></div></div>`;
   /* over whatever shows (the panels and the tab bar), put back as they were on Done */
   SET3.was = [...document.querySelectorAll('[data-panel], .a3-tabs, #a3Check, #a3StmtBar, #a3Stmt')].map(el => [el, el.hidden]);
   SET3.was.forEach(([el]) => { el.hidden = true; }); sheet.hidden = false;
   $('#a3SetClose').addEventListener('click', closeSet3);
+  wireRates3();   // [stage 2 S5] Rates (settings3_rates.js)
   if (!tryBook) {
     paintSpace3();
     $('#a3Persist').addEventListener('click', async () => { await BurrowPersist.askToKeep(); paintSpace3(); });
