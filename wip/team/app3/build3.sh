@@ -49,6 +49,7 @@ cat src/money3.js src/e3.js src/act3.js src/plan3_write.js src/home3.js src/chec
 cat src/stmt3_ai.js src/stmt3.js   # statements lane
 cat src/ask3_core.js src/ask3.js   # Ask (ask lane): after stmt3_ai.js, whose route it uses
 cat src/remind3.js src/remind3_page.js   # Reminders (ask lane)
+cat src/back3.js   # which sheet is open: the back button, typing kept, one message at a time (after every sheet's file)
 echo '})();'
 echo '</script>'
 echo '</body>'
