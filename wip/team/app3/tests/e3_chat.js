@@ -4,8 +4,8 @@
    called: the relay is a made-up address answered by this test. Tue 24 Nov 2026, made-up amounts.
    1. Before setup the panel is the whole first screen: the welcome, the box, the privacy line, "See what is sent", the
       ways in that were there before; no bar. With the site's AI off: "Set up on the screens" and "Use any AI".
-   2. "Use any AI": the questions as one request to copy; the answer pasted back goes section by section through the
-      core's draft checks and shows the draft card; an answer with no JSON is refused in words.
+   2. "Use any AI": the core's request to copy (the real core); the answer pasted back goes through its draft checks and
+      the draft card shows; an answer with nothing to read is refused in words.
    3. "Set up on the screens": setup3 opens, filled from the draft (ANSWERS3.toForm).
    4. With the relay on: no ways card; a message goes through the relay (the page's own request, x-app, the core's body)
       and the answer shows; a relay that fails says so, puts the message back and shows the ways.
@@ -49,15 +49,6 @@ function fake() {
     confirm: async (st, id) => { window.__calls.push(['confirm', id]); return { state: setCard(st, id, c => { c.status = 'done'; }), shown: [], ok: true }; },
     notNow: async (st, id) => { window.__calls.push(['notNow', id]); return { state: setCard(st, id, c => { c.status = 'not now'; }), shown: [], ok: true }; },
     startOver: async st => { window.__calls.push(['startOver']); const s = clone(st); s.turns.filter(t => t.card && t.card.kind === 'fill').forEach(t => { t.card.status = 'start over'; }); return { state: s, shown: [], ok: true }; },
-    draftEdit: (st0, section, value) => {
-      window.__calls.push(['draftEdit', section, value]);
-      if (section === 'min' && value === 'lots') return { state: st0, shown: [], ok: false, text: 'Keep at least needs an amount' };
-      const st = clone(st0);
-      st.draft = Object.assign({}, st.draft, { [section]: value });
-      st.turns = st.turns.filter(t => !(t.card && t.card.kind === 'draft'));
-      card(st, { kind: 'draft', sections: Object.keys(st.draft).map(k => ({ key: k, title: k, lines: [JSON.stringify(st.draft[k])] })), need: ['your pay'], ready: false });
-      return { state: st, shown: [], ok: true };
-    },
   });
 }
 const shows = (p, sel) => p.$eval(sel, e => getComputedStyle(e).display !== 'none' && e.getClientRects().length > 0).catch(() => false);
@@ -101,14 +92,13 @@ async function say(p, text) { await p.$eval('#a3ChatIn', (e, v) => { e.value = v
     /* 2 */
     await p.click('#a3ChatAny'); await T.w(100);
     const ask = await p.$eval('#a3ChatAnyAsk', e => e.value);
-    ck('"Use any AI" gives one request with the answer shape', /ONE JSON object/.test(ask) && /payToday/.test(ask) && ask.includes(DAY));
+    ck('"Use any AI" gives the core\'s request: the questions and the answer shape', /ANSWER SHAPE/.test(ask) && /QUESTIONS/.test(ask) && /Which bank does your pay go into/.test(ask));
     await p.$eval('#a3ChatAnyPaste', e => { e.value = 'no json here'; }); await p.click('#a3ChatAnyCheck'); await T.w(100);
-    ck('an answer with no JSON is refused in words', /no JSON object/.test(await p.$eval('#a3ChatAnyErr', e => e.textContent)));
-    await p.$eval('#a3ChatAnyPaste', e => { e.value = 'Here you go:\n{"country":"JP","banks":[{"name":"Main bank","amount":286000}],"pays":[{"name":"Pay","amount":240000,"every":"month","day":10}],"bills":[{"name":"Rent","amount":72000,"day":27}],"min":"lots"}'; }); await p.click('#a3ChatAnyCheck'); await T.w(300);
-    const calls = await p.evaluate(() => window.__calls.filter(c => c[0] === 'draftEdit'));
-    ck('each section went through the core\'s draft checks', JSON.stringify(calls.map(c => c[1])) === '["country","banks","pays","bills","min"]', JSON.stringify(calls));
-    ck('the draft card shows', /Your answers so far/.test(await p.$eval('[data-card=chat-draft]', e => e.textContent)) && /286000/.test(await p.$eval('[data-card=chat-draft]', e => e.textContent)));
-    ck('a section refused is said', /Not taken: Keep at least needs an amount/.test(await p.$eval('#a3ChatLog', e => e.textContent)));
+    ck('an answer with nothing to read is refused in words', /no answers I can read/.test(await p.$eval('#a3ChatAnyErr', e => e.textContent)));
+    await p.$eval('#a3ChatAnyPaste', e => { e.value = 'Here you go:\n{"country":"JP","banks":[{"name":"Main bank","amount":286000}],"pays":[{"name":"Pay","amount":240000,"every":"month","day":10,"shift":"before","afterTax":true}],"bills":[{"name":"Rent","amount":72000,"day":27}]}'; }); await p.click('#a3ChatAnyCheck'); await T.w(300);
+    ck('the answer went through the core\'s draft checks: a Saved line', /Saved: /.test(await p.$eval('#a3ChatLog', e => e.textContent)));
+    const dc = await p.$eval('[data-card=chat-draft]', e => e.textContent);
+    ck('the draft card shows the answers, ready to fill in', /Your answers so far/.test(dc) && /286,000 on 24 Nov/.test(dc) && /240,000 after tax/.test(dc) && /Fill in my Burrow/.test(dc), dc.replace(/\s+/g, ' ').slice(0, 300));
     /* 3 */
     await p.$eval('#a3ChatScreens', e => e.click()); await T.w(300);
     ck('"Set up on the screens" opens setup filled from the draft', await shows(p, '#a3Setup') && (await p.$eval('#s3BankName', e => e.value)) === 'Main bank' && /^286,?000$/.test(await p.$eval('#s3Bank', e => e.value))
