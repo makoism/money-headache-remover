@@ -56,8 +56,8 @@
     'reason.below_minimum': W('{account} goes {amount} under its minimum on {day}'),
     'reason.below_zero': W('{account} goes {amount} below zero on {day}'),
     'reason.set_aside_over': W('{who} is {amount} more than {account} can spare on {day}'),
-    'reason.plan_over': W('Your plan lines need {amount} more than your bank can spare before pay on {until}'),
-    'reason.plan_over_no_pay': W('Your plan lines need {amount} more than your bank can spare'),
+    'reason.plan_over': W('Your plan lines need {amount} more than your bank can spare. It runs short from {day}'),
+    'reason.plan_over_no_day': W('Your plan lines need {amount} more than your bank can spare'),
     'reason.gain_to_ask': W('{account} has more in it than the app expected'),
     'reason.check_again': W('Check {account} again'),
     'reason.minimum_other_currency': W('What\'s the minimum for {account} in its own currency'),
@@ -125,7 +125,7 @@
     if (r.code === 'short' && r.short) return r.until ? (r.short.minimum ? 'reason.short_before_min' : 'reason.short_before') : r.short.minimum ? 'reason.short_from_min' : 'reason.short_from';
     if (r.code === 'short') return r.day ? 'reason.short_on' : 'reason.short';
     if (r.code === 'to_confirm') return r.count === 1 ? 'reason.to_confirm_one' : 'reason.to_confirm_many';
-    if (r.code === 'plan_over') return r.until ? 'reason.plan_over' : 'reason.plan_over_no_pay';
+    if (r.code === 'plan_over') return r.day ? 'reason.plan_over' : 'reason.plan_over_no_day';
     if (r.code === 'nothing_safe') return r.until ? 'reason.nothing_safe' : 'reason.nothing_safe_no_pay';
     if (r.code === 'safe') return r.until ? 'reason.safe' : 'reason.safe_no_pay';
     return 'reason.' + r.code;
@@ -161,7 +161,7 @@
     /* [LISTFIX A2] the plan lines alone need more than the accounts can spare: the bank itself does not go under (no
        short, no below-zero warning) and no goal holds too much, so the shortfall is the plan's */
     if (stp.shortfall > 0 && !stp.short && !below.length && !warnings.some(w => w.code === 'set_aside_over'))
-      out.push({ state: 'plan_over', reason: { code: 'plan_over', amount: stp.shortfall, currency: ctx.currency, until }, next: { code: 'plan_over' }, note: 'plan_over' });
+      out.push({ state: 'plan_over', reason: { code: 'plan_over', amount: stp.shortfall, currency: ctx.currency, day: planShortDay(accounts, ctx.currency) }, next: { code: 'plan_over' }, note: 'plan_over' });
     const paySeen = (r.notSeenYet && r.notSeenYet.items || []).find(i => i.direction === 'in');
     if (pay.late || paySeen) out.push({ state: 'late', reason: { code: 'pay_late', since: pay.late ? pay.next_pay : paySeen.lands }, next: { code: 'check_in_when_it_lands' }, note: 'pay_late' });
     const toConfirm = (r.checkIn && r.checkIn.toConfirm) || [];
@@ -179,6 +179,17 @@
     return out;
   }
 
+  /* [LISTFIX2 A2] the first day the full walk (plan lines and goals too) runs short, in any account in the home currency
+     that cannot spare its share: the engine's accounts[].firstUnder; never the next pay, which may come before it */
+  function planShortDay(accounts, currency) {
+    let day = null;
+    for (const id of Object.keys(accounts)) {
+      const a = accounts[id];
+      if (a.currency !== currency || !(a.headroom < 0) || !a.firstUnder) continue;
+      if (day === null || a.firstUnder < day) day = a.firstUnder;
+    }
+    return day;
+  }
   /* the minimum a warning is measured against, or null for none (zero): the engine's own field, else the account's */
   function minimumOf(w, accounts) {
     const m = w.minimum !== undefined ? w.minimum : (accounts[w.account] || {}).minimum;
@@ -210,7 +221,8 @@
   }
   /* [LISTFIX C1] an account going under while another can spare the money: which one to move it from, how much (the
      lowest it goes, its later low when there is one) and by which day. The account that can spare the most is named,
-     from the engine's real-money walk (accounts[].real.headroom, BM2), only when it can spare all of it; '' otherwise.
+     from the engine's full walk (accounts[].headroom: money set aside for goals and plan lines are not spare;
+     LISTFIX2), only when it can spare all of it; '' otherwise.
      ctx: { currency, names, accounts (the engine's) } */
   function moveText(w, ctx) {
     ctx = ctx || {};
@@ -220,8 +232,8 @@
     let best = null;
     for (const id of Object.keys(accounts)) {
       const a = accounts[id];
-      if (id === w.account || !a.spendFrom || a.currency !== own.currency || !a.real || a.real.headroom < amount) continue;
-      if (!best || a.real.headroom > accounts[best].real.headroom) best = id;
+      if (id === w.account || !a.spendFrom || a.currency !== own.currency || !(a.headroom >= amount)) continue;
+      if (!best || a.headroom > accounts[best].headroom) best = id;
     }
     if (!best) return '';
     return fill('next.move_from', { amount, from: best, account: w.account, day: w.day, currency: own.currency || ctx.currency }, ctx);
