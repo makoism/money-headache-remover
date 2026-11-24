@@ -226,10 +226,11 @@
     // A whole copy kept before a big replace (backup restore, cloud load), as its own record [D2]. Only the newest
     // KEEP_COPIES are kept (by moment, since each `at` carries its own offset); older ones are removed in the same write.
     // opts.pin keeps it outside that count (app3: the copy from before the first restore) until removeCopy drops it.
+    // opts.at keeps it under the time it was first kept.
     keepCopy(copy, why, opts) {
       return this.run(async () => {
         if (readOnly()) throw new Error('read-only');
-        const at = nowIso(), id = COPY_LO + at;
+        const at = (opts && opts.at) || nowIso(), id = COPY_LO + at;   // opts.at: a dropped copy kept again as it was (Undo of Drop it)
         const tx = await this.tx(['kept'], 'readwrite'), kept = tx.objectStore('kept'), had = [];
         kept.put(Object.assign({ id, why: why || '', at, copy }, opts && opts.pin ? { pin: true } : {}));
         kept.openCursor(IDBKeyRange.bound(COPY_LO, COPY_HI)).onsuccess = e => {
@@ -238,7 +239,8 @@
           c.continue();
         };
         await done(tx);
-        const old = had.sort((x, y) => y.ms - x.ms || (x.id < y.id ? 1 : -1)).slice(KEEP_COPIES - 1);
+        // a pinned copy is outside the count, so keeping one removes no other
+        const old = had.sort((x, y) => y.ms - x.ms || (x.id < y.id ? 1 : -1)).slice(KEEP_COPIES - (opts && opts.pin ? 0 : 1));
         if (old.length) {
           const tx2 = await this.tx(['kept'], 'readwrite');
           for (const o of old) tx2.objectStore('kept').delete(o.id);

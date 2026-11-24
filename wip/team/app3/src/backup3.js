@@ -116,7 +116,41 @@
     else delete out.keptVersions;
     return out;
   }
-  const api = { WORDS, ROUNDS, MIN_CODE, codeOk, make, read, fileName, restamp };
+  /* since(from, now): what `now` holds that `from` does not, for the one line shown before a restore, Put it back and
+     Drop it. Counts, never sums: { n, money, checks, other, changed, all }. n is every live record (at any depth) and every
+     live setting in `now` that is not live in `from`: money in or out (an event that is not a bank check), bank checks,
+     and the rest. Money a check ticked as landed or paid is money in or out. changed is what both hold with different
+     content (when and by whom are not content). */
+  const NOT_CONTENT = ['at', 'by', 'told', 'held', 'goneBy'];
+  const canon = x => (Array.isArray(x) ? '[' + x.map(canon).join(',') + ']'
+    : isMap(x) ? '{' + Object.keys(x).filter(k => !NOT_CONTENT.includes(k)).sort().map(k => JSON.stringify(k) + ':' + canon(x[k])).join(',') + '}' : JSON.stringify(x));
+  function holds(copy) {
+    const out = new Map();
+    (function walk(x, path, top) {
+      for (const k of Object.keys(x)) {
+        const v = x[k], p = path + '/' + k;
+        if (top && ['keptVersions', 'rev', 'at', 'v'].includes(k)) continue;
+        // a check-in's own record is the envelope of its bank figures, which are counted: it can only differ
+        if (isRecords(v)) { for (const r of v) if (!r.gone) out.set(p + '#' + r.id, { kind: top && k === 'checkins' ? 'plain' : k !== 'events' ? 'other' : r.k === 'check' ? 'checks' : 'money', c: canon(r) }); }
+        else if (isSetting(v)) { if (!v.gone) out.set(p, { kind: 'other', c: canon(v) }); }
+        else if (isMap(v)) walk(v, p, false);
+        else out.set(p, { kind: 'plain', c: canon(v) });   // a plain value or a list with no ids: it can only differ
+      }
+    })(isMap(copy) ? copy : {}, '', true);
+    return out;
+  }
+  function since(from, now) {
+    const a = holds(from), b = holds(now), out = { n: 0, money: 0, checks: 0, other: 0, changed: 0, all: 0 };   // all: added and changed together
+    for (const [k, v] of b) {
+      const w = a.get(k);
+      if (w) { if (w.c !== v.c) { out.changed++; out.all++; } }
+      else if (k.startsWith('/checkins#')) continue;
+      else if (v.kind === 'plain') { out.changed++; out.all++; }
+      else { out.n++; out.all++; out[v.kind]++; }
+    }
+    return out;
+  }
+  const api = { WORDS, ROUNDS, MIN_CODE, codeOk, make, read, fileName, restamp, since };
   root.BACKUP3 = api;
   if (typeof module === 'object' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

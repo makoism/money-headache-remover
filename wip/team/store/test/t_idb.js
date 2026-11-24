@@ -130,6 +130,23 @@ module.exports = [
     t.assert.eq(r.after.includes('first'), false, 'removeCopy drops it when the person chooses');
   } },
 
+  { name: 'a dropped pinned copy is kept again as it was (its own time, id and pin), and keeping a pinned copy removes no other [D2]', run: async t => {
+    const p = await t.page();
+    const r = await p.evaluate(async () => {
+      const s = await window.BurrowStore.open(); await s.load();
+      const c = window.makeCopy(3); await s.save(c, { full: true });
+      const pin = await s.keepCopy(c, 'first', { pin: true });
+      for (let i = 0; i < 5; i++) { await new Promise(res => setTimeout(res, 5)); await s.keepCopy(c, 'restore ' + i); }
+      const was = await s.keptCopy(pin);
+      await s.removeCopy(pin);
+      const back = await s.keepCopy(was.copy, was.why, { pin: true, at: was.at });
+      const now = await s.keptCopy(back), list = await s.keptCopies();
+      return { same: back === pin, at: now.at === was.at, pin: now.pin === true, why: now.why, whys: list.map(x => x.why) };
+    });
+    t.assert.eq([r.same, r.at, r.pin, r.why], [true, true, true, 'first'], 'kept again under its own id and time, pinned');
+    t.assert.eq(r.whys.slice().sort(), ['first', 'restore 0', 'restore 1', 'restore 2', 'restore 3', 'restore 4'], 'the newest 5 beside it all stay');
+  } },
+
   { name: 'device-only state is its own record and never in the shared copy [D3]', run: async t => {
     const ctx = await t.context();
     const a = await t.page(ctx);

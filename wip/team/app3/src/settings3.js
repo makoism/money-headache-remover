@@ -7,7 +7,7 @@
    `at` and this device's `by`, what it lacks marked gone), so with the cloud copy on it wins the join on the next send
    and reaches the other devices; before either, the person is told so (FOR_MAKO "Open: a restore while the cloud copy
    is on"). */
-const SET3 = { open: false, restore: null, was: null };
+const SET3 = { open: false, restore: null, was: null, dropped: null };
 const setMsg3 = (text, bad) => { const el = $('#a3SetMsg'); if (el) { el.textContent = text || ''; el.classList.toggle('a3-bad', !!bad); el.hidden = !text; } };
 /* a whole copy kept before a replace, in the store's own kept store [D2]; gives its id, or null when it could not be kept */
 async function keepCopy3(why, pin) {
@@ -87,7 +87,7 @@ function openSet3() {
   $('#a3SetT').focus();
 }
 function closeSet3() {
-  SET3.open = false; SET3.restore = null;
+  SET3.open = false; SET3.restore = null; SET3.dropped = null;   // a dropped copy is held for Undo only while Settings is open
   $('#a3Set').hidden = true; $('#a3Set').innerHTML = '';
   (SET3.was || []).forEach(([el, h]) => { el.hidden = h; }); SET3.was = null;
   const b = $('#a3SetGo'); if (b) b.focus();
@@ -137,7 +137,8 @@ async function readBackup3(file, code) {
   if (!r.ok) { ask.innerHTML = ''; setMsg3(r.words, true); return; }
   SET3.restore = r.copy;
   const on = await cloudOn3(), n = (r.copy.events || []).filter(e => e && !e.gone).length, others = on && E3.book ? ' ' + OTHERS3 : '';
-  const after = E3.book ? `<br>Anything you logged after this backup was made goes${on ? ', on every device' : ' from this device'}. Put it back brings it back.` : '';
+  const s = E3.book ? BACKUP3.since(r.copy, E3.book) : null;
+  const after = E3.book ? `<br>Anything you logged after this backup was made goes${on ? ', on every device' : ' from this device'}${s.n ? `: ${things3(s.n)} here now ${s.n === 1 ? 'is' : 'are'} not in it ${kinds3(s)}` : ''}. Put it back brings it back.` : '';
   ask.innerHTML = `<p class="a3-warn" data-set="restoreask">${E3.book ? 'This replaces the money on this device with the backup. What is here now is kept, and Put it back brings it back.' : 'This puts the money from the backup on this device.'} The backup holds ${n} record${n === 1 ? '' : 's'}.${others}${after}</p>
     <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3BkGo">Restore it</button><button type="button" class="a3-btn" id="a3BkNo">Cancel</button></div>`;
   $('#a3BkGo').addEventListener('click', async () => {
@@ -149,30 +150,73 @@ async function readBackup3(file, code) {
   });
   $('#a3BkNo').addEventListener('click', () => { SET3.restore = null; ask.innerHTML = ''; });
 }
+/* the one line before Put it back and Drop it: how many things, in which kinds (counts from BACKUP3.since, no sums) */
+const things3 = n => (n === 1 ? '1 thing' : n + ' things');
+const kinds3 = s => '(' + [s.money ? 'money in or out: ' + s.money : '', s.checks ? 'bank checks: ' + s.checks : '', s.other ? 'other: ' + s.other : ''].filter(Boolean).join(', ') + ')';
+function backWords3(s, on) {
+  const all = s.all, where = on ? ', on every device after the next send' : ', from this device';
+  if (!all) return 'Put this copy back? Nothing was added or changed since it was kept. What is here now is kept first, with its own Put it back.';
+  const added = s.n ? `${things3(s.n)} added since it was kept ${s.n === 1 ? 'goes' : 'go'} ${kinds3(s)}` : 'Nothing was added since it was kept';
+  const changed = s.changed ? `, and ${things3(s.changed)} changed since ${s.changed === 1 ? 'goes back to how it was' : 'go back to how they were'}` : '';
+  return `Put this copy back? ${added}${changed}${where}. What is here now is kept first, and its own Put it back brings ${all === 1 ? 'it' : 'them'} back.`;
+}
+function dropWords3(s) {
+  return `Drop this copy? It is the only copy of the money from before your first restore${s.n ? `, with ${things3(s.n)} that ${s.n === 1 ? 'is' : 'are'} not in the money here now ${kinds3(s)}` : ''}. Undo brings it back while Settings stays open, and after that nothing can.`;
+}
+/* a copy dropped while Settings is open: one line with Undo, which keeps it again as it was (its own time, pinned) */
+const dropped3 = () => (SET3.dropped ? `<p class="a3-sub" data-set="dropped">Dropped that kept copy. <button type="button" class="a3-btn" id="a3BkUndrop">Undo</button></p>` : '');
+async function undrop3() {
+  const k = SET3.dropped; if (!k) return;
+  const ok = await E3.rec('copy', { copy: k.copy, why: k.why, pin: true, at: k.at });
+  if (ok) SET3.dropped = null;
+  setMsg3(ok ? 'That kept copy is back.' : 'It could not be kept again on this device. Undo is still here.', !ok);
+  paintKept3();
+}
 /* every kept whole copy, newest first, each with its time and its own Put it back; the pinned one (from before the
-   first restore) also offers Drop it (draft words, FOR_MAKO copy pass) */
+   first restore) also offers Drop it. Both ask first, in one line: what goes and how to get it back (M6: ask first for
+   deletes). A dropped copy is held until Settings closes, so Undo can keep it again as it was (M14)
+   (draft words, FOR_MAKO copy pass) */
 async function paintKept3() {
   const el = $('#a3BkKept'); if (!el) return;
   const list = (await E3.rec('copies')) || [], others = (await cloudOn3()) ? ' ' + OTHERS3 : '';
   if (!SET3.open) return;
-  if (!list.length) { el.innerHTML = ''; return; }
-  el.innerHTML = `<p class="a3-sub" data-set="keptnote">The money that was here before each restore is kept. Put it back brings that money back.${others}</p>
+  const wire = () => { const u = $('#a3BkUndrop'); if (u) u.addEventListener('click', undrop3); };
+  if (!list.length) { el.innerHTML = dropped3(); wire(); return; }
+  el.innerHTML = `${dropped3()}<p class="a3-sub" data-set="keptnote">The money that was here before each restore is kept. Put it back brings that money back.${others}</p>
     <ul class="a3-rows">${list.map((c, i) => `<li data-kept="${esc3(c.id)}"${c.pin ? ' data-pin="1"' : ''}><span data-set="kept">${esc3(c.why)}, ${esc3(day3(c.at.slice(0, 10), E3.today().slice(0, 4)))} ${esc3(c.at.slice(11, 16))}${c.pin ? '. Kept until you drop it' : ''}</span>
-      <button type="button" class="a3-btn" data-back${i === 0 ? ' id="a3BkBack"' : ''}>Put it back</button>${c.pin ? '<button type="button" class="a3-btn" data-drop>Drop it</button>' : ''}</li>`).join('')}</ul>`;
+      <button type="button" class="a3-btn" data-back${i === 0 ? ' id="a3BkBack"' : ''}>Put it back</button>${c.pin ? '<button type="button" class="a3-btn" data-drop>Drop it</button>' : ''}</li>`).join('')}</ul>
+    <div id="a3BkKeptAsk"></div>`;
+  wire();
+  const ask = $('#a3BkKeptAsk');
+  const question = (name, words, yes, go) => {
+    const id = name === 'back' ? 'a3BkBack' : 'a3BkDrop';
+    ask.innerHTML = `<p class="a3-warn" data-set="${name}ask">${esc3(words)}</p>
+      <div class="a3-actions"><button type="button" class="a3-btn solid" id="${id}Go">${yes}</button><button type="button" class="a3-btn" id="${id}No">Cancel</button></div>`;
+    $('#' + id + 'Go').addEventListener('click', go);
+    $('#' + id + 'No').addEventListener('click', () => { ask.innerHTML = ''; });
+    $('#' + id + 'No').focus();
+  };
   for (const li of el.querySelectorAll('[data-kept]')) {
     const id = li.dataset.kept;
     li.querySelector('[data-back]').addEventListener('click', async () => {
       const k = await E3.rec(id);
       if (!k || !k.copy) { setMsg3('That kept copy is gone. Nothing changed.', true); return; }
-      const ok = await restoreBook3(k.copy, 'Before a kept copy was put back', { back: true });
-      setMsg3(ok ? 'Put back. The money that was here a moment ago is kept too.' : 'This could not be saved on this device. Nothing changed.', !ok);
-      paintKept3();
+      question('back', backWords3(BACKUP3.since(k.copy, E3.book), await cloudOn3()), 'Put it back', async () => {
+        const ok = await restoreBook3(k.copy, 'Before a kept copy was put back', { back: true });
+        setMsg3(ok ? 'Put back. The money that was here a moment ago is kept too.' : 'This could not be saved on this device. Nothing changed.', !ok);
+        paintKept3();
+      });
     });
     const drop = li.querySelector('[data-drop]');
     if (drop) drop.addEventListener('click', async () => {
-      const ok = await E3.rec('drop', id);
-      setMsg3(ok ? 'Dropped that kept copy.' : 'That kept copy could not be dropped. Nothing changed.', !ok);
-      paintKept3();
+      const k = await E3.rec(id);
+      if (!k || !k.copy) { setMsg3('That kept copy is gone. Nothing changed.', true); return; }
+      question('drop', dropWords3(BACKUP3.since(E3.book, k.copy)), 'Drop it', async () => {
+        const ok = await E3.rec('drop', id);
+        setMsg3(ok ? '' : 'That kept copy could not be dropped. Nothing changed.', !ok);
+        if (ok) SET3.dropped = k;
+        paintKept3();
+      });
     });
   }
 }

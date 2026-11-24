@@ -100,7 +100,11 @@ async function download(p, dir, click) {
     await (await p.$('#a3BkFile')).uploadFile(oldApp); await T.w(400);
     ck('an old app backup is refused: version one starts empty', /old app/.test(await msg(p)) && !(await p.$('#a3BkGo')));
     // put it back
-    await p.click('#a3BkBack'); await T.w(600);
+    await p.click('#a3BkBack'); await T.w(400);
+    const backAsk = await p.$eval('[data-set=backask]', e => e.textContent).catch(() => '');
+    ck('Put it back asks first; with the cloud copy off it speaks of this device only', backAsk === 'Put this copy back? Nothing was added since it was kept, and 1 thing changed since goes back to how it was, from this device. What is here now is kept first, and its own Put it back brings it back.', backAsk);
+    ck('nothing changes while it asks', (await stored(p, 'book')).book.schedules[0].name === 'Main job (from backup)');
+    await p.click('#a3BkBackGo').catch(() => {}); await T.w(600);
     ck('Put it back brings the kept copy back', (await stored(p, 'book')).book.schedules[0].name === bk.schedules[0].name && /Put back/.test(await msg(p)));
     await p.click('#a3SetClose'); await T.w(200);
     await p.reload(); await T.w(400);

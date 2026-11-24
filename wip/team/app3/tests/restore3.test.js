@@ -225,6 +225,30 @@ const shown = c => S.canon(Object.assign(Object.fromEntries(LISTS.map(k => [k, (
     }
   }
 
+  /* ---- since(from, now): what `now` holds that `from` does not, counted for the question before Put it back, Drop it
+     and a restore (qc-foundation, restore confirm, finding 2) ---- */
+  {
+    const from = clone(BOOK), now = clone(BOOK), acct = BOOK.accounts[0].id, t = '2026-12-05T09:00:00.000+09:00';
+    ck('two copies of one book: nothing added, nothing changed', S.canon(Bk.since(from, now)) === S.canon({ n: 0, money: 0, checks: 0, other: 0, changed: 0, all: 0 }), JSON.stringify(Bk.since(from, now)));
+    ck('a restamped copy of the same book counts nothing (when and by whom are not content)', Bk.since(from, Bk.restamp(now, from, { now: t, by: 'dsk001' })).n === 0 && Bk.since(from, Bk.restamp(now, from, { now: t, by: 'dsk001' })).changed === 0);
+    now.events.push({ id: 'dsk001-s1aaaaaaaa-1', k: 'spend', acct, date: '2026-12-05', a: 4300, told: t, at: t, by: 'dsk001' });
+    now.events.push({ id: 'dsk001-s2aaaaaaaa-1', k: 'in', acct, date: '2026-12-05', a: 900, told: t, at: t, by: 'dsk001' });
+    now.events.push({ id: 'dsk001-c1aaaaaaaa-1', k: 'check', acct, date: '2026-12-05', a: 339000, told: t, at: t, by: 'dsk001' });
+    now.events.push({ id: 'dsk001-s3aaaaaaaa-1', k: 'spend', acct, date: '2026-12-05', a: 10, gone: '2026-12-05', told: t, at: t, by: 'dsk001' });   // logged and taken back: not counted
+    now.checkins = [{ id: 'dsk001-k1aaaaaaaa-1', settled: [], told: t, at: t, by: 'dsk001' }];   // the envelope of the bank check: not a thing of its own
+    now.accounts.push({ id: 'dsk001-a1aaaaaaaa-1', name: 'Wallet', type: 'cash', cur: 'JPY', told: t, at: t, by: 'dsk001' });
+    now.plan = { shares: [], budgets: [{ id: 'dsk001-b1aaaaaaaa-1', name: 'Food', told: t, at: t, by: 'dsk001' }] };
+    now.imports = { cats: { 'k:shop': { v: 'food', src: 'person', at: t, by: 'dsk001' }, 'k:taken back': { v: 'food', gone: '2026-12-05', at: t, by: 'dsk001' } } };
+    now.schedules[0] = Object.assign({}, now.schedules[0], { name: 'Main job (renamed)', at: t, by: 'dsk001' });
+    now.home.country = { v: 'US', at: t, by: 'dsk001' };
+    const s = Bk.since(from, now);
+    ck('money in or out, bank checks and other things added are counted, each once; what was taken back is not', S.canon(s) === S.canon({ n: 6, money: 2, checks: 1, other: 3, changed: 2, all: 8 }), JSON.stringify(s));
+    const back = Bk.since(now, from);
+    ck('the other way round: nothing added, the two changed', back.n === 0 && back.changed === 2, JSON.stringify(back));
+    ck('a record marked gone in the older copy and live now counts as added', Bk.since(Object.assign(clone(from), { events: from.events.map((e, i) => (i ? e : Object.assign({}, e, { gone: '2026-12-01' }))) }), from).n === 1);
+    ck('nothing here yet: everything in the copy counts', Bk.since(null, from).n === ['accounts', 'schedules', 'events'].reduce((a, k) => a + from[k].filter(r => !r.gone).length, 0) + 3, JSON.stringify(Bk.since(null, from)));
+  }
+
   console.log(bad ? `restore3: ${bad} FAIL of ${n}` : `restore3: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })().catch(e => { console.log('FAIL crashed ' + e.stack); process.exit(1); });
