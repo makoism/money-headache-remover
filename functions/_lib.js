@@ -23,14 +23,23 @@ export const clientIp = req => req.headers.get('cf-connecting-ip') || req.header
 export const num = (v, def) => { const n = parseInt(v, 10); return isFinite(n) && n >= 0 ? n : def; };
 
 /* ---- D1: the tables are created on first use, so no migration step is needed ---- */
-let schemaReady = null;
+/* Cloudflare runs only `wrangler deploy`, never a D1 migration, so every statement here is safe to run again on the live
+   database as it stands: CREATE ... IF NOT EXISTS only, nothing dropped, no column changed. Kept once per database. */
+export const SCHEMA = [
+  `CREATE TABLE IF NOT EXISTS usage (day TEXT NOT NULL, k TEXT NOT NULL, calls INTEGER NOT NULL DEFAULT 0, tokens INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (day, k))`,
+  `CREATE TABLE IF NOT EXISTS vault (id TEXT PRIMARY KEY, token_hash TEXT NOT NULL, blob TEXT NOT NULL, iv TEXT NOT NULL, rev INTEGER NOT NULL, updated_at INTEGER NOT NULL, created_at INTEGER NOT NULL, prev_blob TEXT, prev_iv TEXT, prev_rev INTEGER, size INTEGER NOT NULL DEFAULT 0, writes_day TEXT, writes INTEGER NOT NULL DEFAULT 0)`,
+  /* the last 10 earlier versions of each cloud copy, dated (updated_at: when that version was written; NULL for the one
+     carried over from vault.prev_blob, whose date was never kept) */
+  `CREATE TABLE IF NOT EXISTS vault_versions (id TEXT NOT NULL, rev INTEGER NOT NULL, blob TEXT NOT NULL, iv TEXT NOT NULL, size INTEGER NOT NULL DEFAULT 0, updated_at INTEGER)`,
+  `CREATE INDEX IF NOT EXISTS vault_versions_id ON vault_versions (id, rev)`,
+  /* an app3 cloud copy that was deleted: a later write is refused until a fresh turn-on (fresh: true) */
+  `CREATE TABLE IF NOT EXISTS vault_gone (id TEXT PRIMARY KEY, token_hash TEXT NOT NULL, rev INTEGER NOT NULL, deleted_at INTEGER NOT NULL)`,
+];
+const schemaReady = new WeakMap();
 export async function ensureSchema(db) {
   if (!db) return false;
-  if (!schemaReady) schemaReady = db.batch([
-    db.prepare(`CREATE TABLE IF NOT EXISTS usage (day TEXT NOT NULL, k TEXT NOT NULL, calls INTEGER NOT NULL DEFAULT 0, tokens INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (day, k))`),
-    db.prepare(`CREATE TABLE IF NOT EXISTS vault (id TEXT PRIMARY KEY, token_hash TEXT NOT NULL, blob TEXT NOT NULL, iv TEXT NOT NULL, rev INTEGER NOT NULL, updated_at INTEGER NOT NULL, created_at INTEGER NOT NULL, prev_blob TEXT, prev_iv TEXT, prev_rev INTEGER, size INTEGER NOT NULL DEFAULT 0, writes_day TEXT, writes INTEGER NOT NULL DEFAULT 0)`),
-  ]).then(() => true).catch(e => { schemaReady = null; throw e; });
-  return schemaReady;
+  if (!schemaReady.has(db)) schemaReady.set(db, db.batch(SCHEMA.map(s => db.prepare(s))).then(() => true).catch(e => { schemaReady.delete(db); throw e; }));
+  return schemaReady.get(db);
 }
 
 /* count one event under a key for today and return the new totals */
