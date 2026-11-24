@@ -10000,7 +10000,7 @@ async function openSetup3() {
   /* the sheet's own listeners, once: the sheet stays, only its inside is drawn again on each open */
   if (!host.dataset.wired) {
     host.dataset.wired = '1';
-    host.addEventListener('input', e => { if (!setup3) return; $('#a3SetupErr').textContent = ''; clearErr3(e.target); markAll3(); typedSoon3(); });
+    host.addEventListener('input', e => { if (!setup3) return; $('#a3SetupErr').textContent = ''; clearErr3(e.target); markAll3(); typedSoon3(); shapeSoon3(); });
     /* [item 14] any row added here can be taken out; each section has its own Save */
     host.addEventListener('click', e => {
       if (!setup3) return;
@@ -10304,6 +10304,13 @@ const keepDraft3 = (sections, days, skip, kept) => {
   return E3.rec('setup', Object.keys(sections).length || Object.keys(typed).length ? { v: 1, sections, days, typed } : null);
 };
 /* what is typed is kept a moment after the typing stops, and at once on Back */
+/* what a row shows (its questions and their words) is worked out while the person types, not only when the box is left:
+   leaving a box then changes nothing, so the row's Remove is still where the finger is going */
+function shapeSoon3() {
+  if (!setup3) return;
+  clearTimeout(setup3.shapeT);
+  setup3.shapeT = setTimeout(() => { if (!setup3) return; shape3(); askTaken3(); }, 80);
+}
 function typedSoon3() {
   if (!setup3) return;
   clearTimeout(setup3.typedT);
