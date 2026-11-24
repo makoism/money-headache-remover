@@ -179,6 +179,23 @@ const APP3 = {
   ck('C17 the cap message is plain words and the code stays rate_limited', r.status === 429 && r.j.error.code === 'rate_limited' && /today|tomorrow/i.test(r.j.error.message), r.j);
 }
 
+{
+  // C18: the default cap is 400 a day for a household with a code word, 150 for a device or an IP
+  const burn = async (env, mk, max) => { for (let i = 1; i <= max; i++) { const r = await post(env, mk()); if (r.status === 429) return i; } return 0; };
+  const dbA = makeD1(), envA = envOf(dbA, { INVITE_CODES: 'acorn', IP_PER_MINUTE: '100000' });
+  const hitA = await burn(envA, () => Object.assign(OLD.plain(anonOf()), { invite: 'acorn' }), 402);
+  ck('C18 with a code word and no USER_DAILY_CALLS the household gets 400 calls a day (the 401st is refused)', hitA === 401, hitA);
+  const dbB = makeD1(), envB = envOf(dbB, { IP_PER_MINUTE: '100000' }), dev = hex(16);
+  const hitB = await burn(envB, () => Object.assign(OLD.plain(anonOf()), { device: dev }), 152);
+  ck('C19 a device keeps the 150 default (the 151st is refused)', hitB === 151, hitB);
+  const dbC = makeD1(), envC = envOf(dbC, { IP_PER_MINUTE: '100000' });
+  const hitC = await burn(envC, () => OLD.plain(anonOf()), 152);
+  ck('C20 an IP keeps the 150 default', hitC === 151, hitC);
+  const dbD = makeD1(), envD = envOf(dbD, { INVITE_CODES: 'acorn', USER_DAILY_CALLS: '2' });
+  const hitD = await burn(envD, () => Object.assign(OLD.plain(anonOf()), { invite: 'acorn' }), 4);
+  ck('C21 a USER_DAILY_CALLS the owner set still wins for a code word', hitD === 3, hitD);
+}
+
 // ---------------- D. prompt caching ----------------
 {
   const db = makeD1(), env = envOf(db);

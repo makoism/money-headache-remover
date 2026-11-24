@@ -9,8 +9,8 @@
      MODEL_DEFAULT       default claude-sonnet-5-5     (the assistant)
      MODEL_COMPLEX       default claude-sonnet-5-5
      DAILY_TOKEN_CAP     default 3000000  tokens a day across everyone (in + out); the relay stops at the cap
-     USER_DAILY_CALLS    default 150      calls a day for one caller: the invite code when INVITE_CODES is set (the owner's whole
-                                          household shares one count), else the page's device id (`device`), else the client IP
+     USER_DAILY_CALLS    calls a day for one caller: the invite code when INVITE_CODES is set (the owner's whole household
+                         shares one count; default 400), else the page's device id (`device`), else the client IP (default 150)
      IP_PER_MINUTE       default 30
      INVITE_CODES        optional "word1, word2": when set, a call must carry a matching invite
      ANTHROPIC_BASE_URL  default https://api.anthropic.com (tests point it at a stub) */
@@ -42,7 +42,7 @@ export async function onRequestPost({ request, env }) {
       const perMin = await bump(db, `m:${ip}:${minuteKey()}`, 1, 0, day);
       if (perMin.calls > num(env.IP_PER_MINUTE, 30)) return fail(429, 'rate_limited', 'Too many requests. Wait a minute.');
       const user = await readUsage(db, who.k, day);
-      if (user.calls >= num(env.USER_DAILY_CALLS, 150)) return fail(429, 'rate_limited', `Daily limit for ${who.name} reached. Try again tomorrow.`);
+      if (user.calls >= num(env.USER_DAILY_CALLS, who.cap)) return fail(429, 'rate_limited', `Daily limit for ${who.name} reached. Try again tomorrow.`);
       const all = await readUsage(db, 'all', day);
       if (all.tokens >= num(env.DAILY_TOKEN_CAP, 3000000)) return fail(429, 'rate_limited', 'The page\'s daily AI budget is used up. Try again tomorrow.');
     }
@@ -118,9 +118,9 @@ export async function onRequestPost({ request, env }) {
    so the word cannot be found from the table by trying words. */
 async function callerKey(env, body, ip) {
   const coded = String(env.INVITE_CODES || '').split(',').some(s => s.trim());
-  if (coded) return { k: 'u:i:' + (await hmacHex(env.ANTHROPIC_API_KEY, String(body.invite || '').trim().toLowerCase())).slice(0, 32), name: 'this code word' };
-  if (typeof body.device === 'string') return { k: 'u:d:' + body.device.toLowerCase(), name: 'this device' };
-  return { k: 'u:ip:' + ip, name: 'this connection' };
+  if (coded) return { k: 'u:i:' + (await hmacHex(env.ANTHROPIC_API_KEY, String(body.invite || '').trim().toLowerCase())).slice(0, 32), name: 'this code word', cap: 400 };
+  if (typeof body.device === 'string') return { k: 'u:d:' + body.device.toLowerCase(), name: 'this device', cap: 150 };
+  return { k: 'u:ip:' + ip, name: 'this connection', cap: 150 };
 }
 async function hmacHex(secret, msg) {
   const enc = new TextEncoder(), key = await crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
