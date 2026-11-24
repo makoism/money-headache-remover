@@ -99,6 +99,7 @@ page|tests/e3_invite.js|e3_invite: ALL PASS||300|the code word for the AI: the b
 page|tests/e3_remind.js|e3_remind: ALL PASS||300|Reminders on the page (check-ins and bills, the calendar file, Google and Outlook, nothing sent)
 page|tests/e3_cloud.js|e3_cloud: ALL PASS||300|the cloud copy, two devices through the page (local fake vault)
 page|tests/e3_sw.js|e3_sw: ALL PASS||300|the service worker (precache, offline, 3 s timeout, a new build)
+page|tests/e3_boxwalk.js|e3_boxwalk: ALL PASS||600|a walker for every box and sheet (QC_ROLES scripts b): left empty, a wrong value, a plain message, nothing saved, a way out, then every box right saves; its KNOWN faults are in tests/QCSCRIPTS_FOUND.md
 EOF
 )
 # The slowest first, so the pool ends together (CHECK3.md has the times these come from). Unlisted tests follow.
@@ -112,6 +113,7 @@ page_tests_for() {   # page_tests_for <changed path, relative to app3/>
     tests/lives3.js)          echo e3_life_a e3_life_a2 e3_life_b e3_life_c e3_life_d ;;
     tests/e3_act_book.js)     echo e3_home e3_checkin ;;
     tests/fake_vault.js)      echo e3_cloud e3_listfix ;;
+    tests/qc_places.js)       echo e3_boxwalk ;;
     tests/*.js)               basename "$1" .js ;;
     src/home3.js)             echo e3_home e3_ns e3_homeplan e3_warnwords e3_cardline e3_bankparts e3_names e3_payday ;;
     src/checkin3.js)          echo e3_checkin e3_checkgap e3_cardfig e3_reload e3_bankparts e3_payday ;;
