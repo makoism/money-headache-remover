@@ -4,6 +4,16 @@ Written 2026-11-18 on branch `wip-38.31`. Read this whole file before touching a
 
 ## 0. Handoff (latest first)
 
+**2026-11-24 11:55 JST, MAIN 15:** report to **Coordinator 11, session_01BFpKEXW1AERpCVxch4xuXD**. Coordinator 10 has handed over.
+- **Live on main:** app3 at the private path, the vault changes (4ab1f49), and the relay cap and caching (6740469). The site's AI and invite word are on.
+- **Next for Mako:** the republish candidate. It is wip-38.31 once setupfix and invite are merged and green, prepared as a main commit that changes only public/n/<private path>/ (2 files), with 3 or 4 phone screenshots of the new setup and the invite box.
+- **Running:**
+  - lane/setupfix and lane/invite
+  - lane/ai-core and lane/ai-panel: AI first, slice 1, the setup chat
+  - lane/restore
+  - lane/checkspeed
+  - lane/s2b: stage 2, finishing its fixes, then paused
+
 **2026-11-24 09:50 JST, standing rule (Mako, DECISIONS new foundation item 10):** never ask Mako anything in a build chat. Every question, approval and result goes to the coordinator (send_message to session_01BFpKEWtR1vrLMuizJWTGpk), who asks him and relays his words. One known limit: this session's safety check refused a push to main on relayed approval. It went through only after Mako answered in this chat. The coordinator has been told.
 
 **2026-11-24 09:45 JST, MAIN 15: non-stop again (Mako asked why it stopped).**
