@@ -132,3 +132,108 @@ Two rows of M_COVERAGE.md are wrong and should be corrected there: M47 says MET,
 - **N26**: put "Check your bank" above "Pay not in yet" when the last check is over 14 days old. screens/status.js (state order).
 - **S23**: redraw the Settings sheet after a cloud join. settings3.js:32 (paint after join in cloud3_page.js).
 - **S24**: find the 404 (the icon likely) in the made-up server log. If it is the icon, lane/install's uncommitted icon fixes it.
+
+## Controls report (controls.md: 25 kinds, 192 cells), sorted
+
+Read MAKO_SAYS.md first. Added 24 Nov by a read-only helper. Report: controls.md (K), on the live build (main 6740469, app3 build 5bf4d32). Each finding was checked against wip-38.31 at 4e9e40d and the lanes: origin/lane/ai-core 55fdf26, origin/lane/ai-panel 7dd019d, lane/setupfix 0d289db (local worktree agent-ae677ae9ec4601481), lane/controls-base d034090 (CONTROLS_PLAN corrections BZ), origin/lane/restore 089d0be. Three lanes have no commit ahead of wip-38.31 yet: lane/install 89d5c44 (manifest and the one-pay test only; its Receipts doors are uncommitted in worktree agent-a90fe3b2e758fbd01), lane/homefix eaf8516 and lane/blockers 4e9e40d (both empty so far, so nothing of theirs could be checked).
+
+Same three groups. "Plan" means foundation_review/CONTROLS_PLAN.md on wip-38.31. File and line are under wip/team/app3/src on wip-38.31 unless a lane is named.
+
+### The grid, every NO and BROKEN cell
+
+| # | Kind and cells | Group | Where, checked in code |
+|---|---|---|---|
+| K1 | Bank account: add later, rename, remove, assistant | QUEUED (assistant add FIXED in lane) | Plan slices 4 (add, rename), 5 (close, remove), 13 (main bank). Assistant add: ai-core 1ea0af3, 401353a (`add_account`). No screen door on any branch |
+| K2 | Cash, e-wallet: add in setup | FIXED | 1278c6b (wip-38.31): setup adds a second bank, cash or an e-wallet (setup3.js:130, 167). The other cells are the account row: as K1 |
+| K3 | Card: remove; remove row in setup; assistant | Setup row FIXED in lane; rest QUEUED | setupfix 64eb561 (row Remove with Undo). Close and remove: Plan slice 6. Assistant: ai-core `add_card`, `card_figure` (0b8a49c); `change_card`, close: slice 6 |
+| K4 | Card and pay: the weekend rule cannot be changed (also "Setup answers", blocker 8) | NO QUEUE | changeOwed writes name, pay day, close day only (plan3_write.js:343-352); changeBill has no shift. The Plan does not name it |
+| K5 | Loan: add in setup | NO QUEUE | Setup has no loan row (setup3.js). The Plan's loan row starts at Plan > Add a loan |
+| K6 | Loan: "Still owed" cannot be changed | NO QUEUE | plOwedForm3 has Name, day, Usual payment only (plan3.js:335-342); changeOwed has no owed (plan3_write.js:343-352). The Plan lists `changeOwed` as EXISTS and adds nothing |
+| K7 | Loan: remove BROKEN (blocker 5) | NO QUEUE (slice 6 may reach it) | See confirm 2. Plan slice 6 folds closeLoan into closeAccount and gives "Pay it off now" for a card. It does not say the same for a loan |
+| K8 | Loan: assistant | QUEUED | Plan slice 6: `add_loan`, `close_loan`, `change_loan` |
+| K9 | Pay: remove; assistant | QUEUED (assistant change FIXED in lane) | Plan slice 7 (`endPay`, `end_pay`). ai-core `change_bill`, `add_pay`, `landed` |
+| K10 | Second income: add later; remove; blank setup row traps; assistant | Setup row FIXED in lane; assistant add FIXED in lane; rest QUEUED | setupfix 64eb561, 313ce7d. ai-core 1ea0af3, bde36f9 (`add_pay`). Screen door and end: Plan slice 7 |
+| K11 | Bill: blank setup row blocks save; assistant | FIXED in lane | setupfix 64eb561, 313ce7d. ai-core 57df561, 55fdf26 (`add_bill`, `change_bill`, `end_bill`) |
+| K12 | Bill, budget line, spend, refund, an assistant change: remove does not ask first (M6, blocker 6) | NO QUEUE for the screens; FIXED in lane for the assistant | See confirm 4. ai-core 57df561, 8b04744: the assistant asks first for deletes. The Plan names the confirm only for the assistant's close and remove (slice 5) |
+| K13 | Budget line: add in setup; goal: add in setup | NO QUEUE for the screens; FIXED in lane for the chat | Setup screens have no line or goal row. The setup chat can add them after the fill (ai-core `add_line`, `add_goal`). The Plan has no setup door for either |
+| K14 | Budget line: assistant add and end | FIXED in lane | ai-core 57df561 (`add_line`, `end_line`) |
+| K15 | Goal: remove; assistant | QUEUED (assistant add FIXED in lane) | Plan slice 9 (`removeGoal`, `remove_goal`, `change_goal`, `take_out`). ai-core `add_goal` |
+| K16 | Spend, refund: assistant change and remove | Remove and refund FIXED in lane; change NO QUEUE | ai-core `remove` (S refs), `refund`. `change_spend` is MISSING in the Plan's table with no slice (as A15) |
+| K17 | Money in (not pay): every cell NO (M22) | FIXED; words QUEUED | See confirm 9. 0764817 (wip-38.31). Assistant: ai-core `money_in` |
+| K18 | Move between own accounts: BROKEN; assistant | Partly FIXED; rest QUEUED and NO QUEUE | See confirm 1. With two accounts it works (setup: 1278c6b). Adding one later: Plan slice 4. The empty To list itself: NO QUEUE. Assistant: ai-core `move_money` |
+| K19 | Check of the bank: assistant | FIXED in lane | ai-core 0b8a49c (`bank_figure`, `card_figure`, `landed`). Changing or removing a past check: Plan slice 10 |
+| K20 | Lowest the bank should go: add later, change, remove, assistant (M42) | QUEUED | Plan slice 3 (`setKeep`, `set_keep`). Same as C12 |
+| K21 | Currency: change; assistant | QUEUED | Plan slice 12 (Start again; no relabel, on purpose). No assistant step, on purpose |
+| K22 | Country: NOT BUILT | Setup FIXED; change QUEUED | 1278c6b (setup3.js:43). Plan slice 12 (`setCountry`) |
+| K23 | Reminder: no Undo; not kept across a reload (BROKEN, blocker 7) | NO QUEUE | See confirm 3. The Plan has no reminder row |
+| K24 | Reminder, backup file, cloud copy: assistant | QUEUED | RESUME section 0, queue after the candidate: A17 |
+| K25 | Setup answers: change (bank name, keep at least, currency); no start over; assistant | QUEUED; assistant FIXED in lane | Plan slices 4, 3, 12. Setup by chat: ai-panel f687ff6, c23321f. Weekend rules: K4 |
+
+### Blockers, confusing, polish and the owner's lines
+
+| # | Finding | Group | Where, checked in code |
+|---|---|---|---|
+| K26 | Blocker 1: blank row trap in setup; "Type how much Pay is" for a second income | FIXED in lane; name FIXED | setupfix 64eb561, 313ce7d. Name: 1278c6b (setup3.js:186 says "Second income") |
+| K27 | Blocker 2: setup Back loses everything | FIXED in lane (saved sections) | setupfix 88d541b. Rest as C1 |
+| K28 | Blockers 3, 4, 8, 9 | As K1, K3, K9, K10, K15, K20, K25 | Blocker 9: ai-core has 20 steps now (chat3_core.js:154 on 55fdf26) |
+| K29 | Blocker 10 and M47: a bank below zero cannot be typed | NO QUEUE that is written down | checkin3.js:57 and setup3.js:153, 159 read through typed3, and screens/inputs.js:26 refuses a minus. Not in the Plan, not in RESUME. If lane/blockers has it, nothing is committed there yet |
+| K30 | "Type amount as an amount", too big | QUEUED | plan3.js:182. RESUME section 0: the walker for every box and sheet (as N24) |
+| K31 | "Left out ... (remove_bill)" | QUEUED | RESUME section 0, queue after the candidate: A12, A24, A25 |
+| K32 | Setup accepts a zero bill that Plan refuses | NO QUEUE | See confirm 6 |
+| K33 | Home: "more than Free to spend left" | FIXED | 5979073 |
+| K34 | Android back from any sheet leaves the app | NO QUEUE that is written down | No sheet writes a history entry: the only history call is replaceState (e3.js:46). None on ai-panel either |
+| K35 | Sheets other than setup lose their typing on Back | NO QUEUE | plForm3's Back closes the form (plan3.js:211, 215) |
+| K36 | "Save a backup file" has no "saved" words | Not found in code | settings3.js:125 writes "Saved <name>. Keep it somewhere safe" (e2c8186, already in the live build). It may sit out of view below the button |
+| K37 | The Undo bar stays over later sheets | NO QUEUE | See confirm 8 |
+| K38 | Console 404 on /api/vault before the first cloud copy | NO QUEUE | cloud3.js:63 fetches the vault id before one exists. Maybe the same 404 as S24 |
+| K39 | For Mako: ended bills stay listed | QUEUED | For Mako's run (as S26) |
+| K40 | M1, M2, M79 | FIXED in lane | As A1, A2, A3 |
+| K41 | M14: setup has no Undo | FIXED in lane (sections); last step QUEUED | setupfix 88d541b. "See my money" through E3.fill: Plan slice 12 |
+| K42 | M23: one bank only, no cash or e-wallet | Mostly FIXED; pay-later QUEUED | 1278c6b. STAGE2_PLAN 2.3 (as S11) |
+| K43 | M24: no choice of where unspent money goes | QUEUED | RESUME section 0, "Coordinator agreed (12:20 JST)": M24 and M46, after controls slice 1 |
+| K44 | Not checked by the reviewer: imported statement, desktop and 320 width, "Change the next one only", Home "Add a card" | NO QUEUE as a QC gap | Remove an import: Plan slice 11 |
+
+### Rows CONTROLS_PLAN.md does not cover
+
+Each NO and BROKEN row was checked against the Plan (wip-38.31, and the BZ corrections on lane/controls-base d034090, which add nothing to this list).
+
+1. **K4** the weekend rule of a card or a pay cannot be changed after it is made.
+2. **K5** no loan in setup.
+3. **K6** a loan's "Still owed" cannot be changed.
+4. **K7** a loan cannot be closed. The Plan calls closeLoan EXISTS. Slice 6 names "Pay it off now" for cards only.
+5. **K12** the screens' End this bill, End this line and Receipts Remove do not ask first. The Plan gives the confirm to the assistant only.
+6. **K13** no budget line or goal in the setup screens.
+7. **K16** `change_spend`: in the Plan's table as MISSING, in no slice.
+8. **K18** "Moved" is offered with one account and an empty To list. Slice 4 lets a second account be added, but nothing hides the door or points to it.
+9. **K23** reminders: no row in the Plan at all (not kept, no Undo). K24 covers only the assistant side, in RESUME, not in the Plan.
+10. **K29** a bank below zero cannot be typed.
+11. **K32** a zero bill in setup.
+12. **K34, K35, K37** Android back, typing lost on Back, the Undo bar over later sheets. These are sheet faults, outside the Plan's scope.
+
+### Confirmed on wip-38.31 (4e9e40d), with file and line
+
+1. **"Moved" with one account: CONFIRMED.** receipts3.js:120 builds the To list as every own account except the From one, so with one account it is empty (receipts3.js:122). Save then fails with "Pick the account the money went to" (act3.js:58, 177-180). Run in node on the made-up book: the same words. Nothing on wip-38.31 adds an account after setup.
+2. **A loan can never be closed: CONFIRMED in part.** closeLoan refuses while anything is owed: "still owes money. Tick its last payment at Check your bank first" (plan3_write.js:310). Check your bank has boxes for banks and cards only, none for a loan (checkin3.js:20, 28). "Still owed" is not in the loan's form or in changeOwed (plan3.js:335-342, plan3_write.js:343-352). One part of the report is not right: a loan payment does show in the Check your bank list once its day has come (engine/lookahead.js:752, 1376; run in node: a loan of 50,000 added 25 Nov shows its 10,000 on 21 Dec). So a loan closes only after every payment has been ticked, month by month. A loan paid off early, or typed wrong, can never be closed or corrected.
+3. **Reminders not kept, no Undo: CONFIRMED, and written that way on purpose.** remind3_page.js:5 says "nothing is saved: the choices start fresh each time". The choices live in a variable (remind3_page.js:8) and each change only redraws (remind3_page.js:47-51). No ACT3 step, so no Undo bar.
+4. **End this bill, End this line, Receipts Remove act at once: CONFIRMED.** plan3.js:281 and plan3.js:242 are plain buttons, and the one click handler runs the step straight away (plan3.js:188-192). Receipts: rcRemove3 calls ACT3.remove with no question (receipts3.js:242-245). Each shows an Undo bar after. Nothing says what is lost.
+6. **Setup accepts a zero bill: CONFIRMED.** Setup reads the bill amount with `need`, which takes 0 (setup3.js:153, 216), and build_book only checks it is a whole number (engine/build_book.js:46, 152). A pay of 0 is refused there (setup3.js:194), a bill is not. Plan refuses: "Type the amount above zero" (plan3_write.js:28, 100). lane/setupfix has the same gap (setup3.js:240, 303 there).
+8. **The Undo bar stays over later sheets: CONFIRMED.** The bar is the message band #a3Msg (shell.html:7). An Undo message lives 8 seconds (screens/messages.js:20). No sheet hides or clears it when it opens: Settings (settings3.js:59), Reminders (remind3_page.js:45), Ask (ask3.js:35) and the Plan forms (plan3.js:159) leave #a3Msg alone, and no code calls the queue's dismiss.
+9. **"Money came in" that is not pay (M22): BUILT on wip-38.31, under another name.** Receipts has a fourth choice "Money in" (receipts3.js:133, heading "Log money that came in, like a client payment or a gift" at 134), written by ACT3.moneyIn (act3.js:171), from 0764817. The words are still "Spend" and "Money in", not "Money went out" and "Money came in". lane/install has no commit for this. Its worktree (agent-a90fe3b2e758fbd01) holds uncommitted work that makes two main doors "Money went out" and "Money came in" with Refund and Moved smaller under them (receipts3.js:133-135 there, app3.css, a new tests/e3_doors.js). It keeps the same four modes, so confirm 1 (the empty To list) is not changed by it.
+
+Items 5 and 7 were skipped: they are with lane/blockers.
+
+### Smallest fix for each new "no queue" item
+
+- **K4**: add the weekend rule to the card form and the pay form (changeOwed, changeBill take `shift`). plan3.js:335, plan3_write.js:343. Add the row to the Plan's table.
+- **K5, K13**: a Plan decision, not code yet: either setup rows for a loan, a line and a goal, or the Plan's table says "after setup only" for them.
+- **K6, K7**: a "Still owed today" box in the loan's form, written as a check on the loan (as a card figure is), and "Pay it off now" for a loan in slice 6. plan3.js:335, plan3_write.js:305, 343.
+- **K12**: one question before End and Remove on the screens, saying what is lost, through plForm3's existing ask slot (#plAsk, plan3.js:173) and Receipts' ask (#rcAsk). Not settled 1 in MAKO_SAYS decides how far.
+- **K16**: put `change_spend` in a slice (8 fits).
+- **K18**: with one own account, hide "Moved" or show "Add another account first" with the door from slice 4. receipts3.js:119-123.
+- **K23**: keep the choices on the device (not in the book) and put them back on open, or say on the sheet "these choices are not kept". remind3_page.js:8. Add a reminder row to the Plan's table.
+- **K29**: let the bank figure take a minus at Check your bank and setup. checkin3.js:57, setup3.js:159, screens/inputs.js:26. Needs qc-numbers.
+- **K32**: refuse a bill of 0 in setup with Plan's words. setup3.js:216 (and 303 on setupfix).
+- **K34**: each sheet pushes one history entry and closes on back. start3.js and each sheet's open.
+- **K35**: keep a Plan form's typing until Save or a second Back. plan3.js:211.
+- **K37**: clear the Undo message when a sheet or another form opens. A `clear('act3')` on the queue (screens/messages.js) called from each sheet's open.
+- **K38**: do not fetch the vault before a cloud copy exists. cloud3.js:63.
