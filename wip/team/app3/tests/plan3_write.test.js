@@ -521,6 +521,34 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     eq(count(h.book, 'Gym'), 12, 'a day each month as before');
     r = await h.go('addBill', { name: 'Bad', amount: 1, every: 'year', month: 2, day: 30 }); ok(!r.ok && r.why === 'bad', JSON.stringify(r));
   });
+  await t('addAccount the same day the main bank was checked: moved before or after looking is asked; before is not taken off twice (qc-foundation confirm 4)', async () => {
+    const CK = require(E + 'checkin.js');
+    const h = setup();
+    ok((await h.A.addRecords('Check your bank', CK.checkIn(h.book, { day: DAY, told: DAY + 'T09:00+09:00', newId: I.idMaker('p3wrck', Math.random), figures: { [BANK]: 286000 } }))).ok);
+    const ask = await h.go('addAccount', { name: 'Savings', type: 'bank', amount: 50000, moved: true });
+    ok(!ask.ok && ask.text === 'Was it moved before or after you looked at Main bank today?', JSON.stringify(ask));
+    const before = await h.go('addAccount', { name: 'Savings', type: 'bank', amount: 50000, moved: true, afterFigure: false });
+    ok(before.ok, JSON.stringify(before));
+    let v = view(h.book), a = h.book.accounts.slice(-1)[0];
+    eq([v.accounts[a.id].bank, v.accounts[BANK].bank], [50000, 286000], 'moved before the figure: already out of it');
+    ok((await h.A.undo(before.step.id)).ok);
+    const after = await h.go('addAccount', { name: 'Savings 2', type: 'bank', amount: 50000, moved: true, afterFigure: true });
+    ok(after.ok, JSON.stringify(after));
+    v = view(h.book); a = h.book.accounts.slice(-1)[0];
+    eq([v.accounts[a.id].bank, v.accounts[BANK].bank], [50000, 236000], 'moved after the figure: taken off once');
+  });
+  await t('addAccount: money moved from any live bank, not only the main one (qc-foundation confirm, watch)', async () => {
+    const h = setup();
+    ok((await h.go('addAccount', { name: 'Second bank', type: 'bank', amount: 80000, moved: false })).ok);
+    const second = h.book.accounts.slice(-1)[0].id;
+    const ask = await h.go('addAccount', { name: 'Savings', type: 'bank', amount: 30000, from: second });
+    ok(!ask.ok && ask.text === 'Is this new money, or moved from Second bank since today?', JSON.stringify(ask));
+    const r = await h.go('addAccount', { name: 'Savings', type: 'bank', amount: 30000, from: second, moved: true, afterFigure: true });
+    ok(r.ok, JSON.stringify(r));
+    const v = view(h.book), a = h.book.accounts.slice(-1)[0];
+    eq([v.accounts[a.id].bank, v.accounts[second].bank, v.accounts[BANK].bank], [30000, 50000, 286000]);
+    const card = await h.go('addAccount', { name: 'X', type: 'bank', amount: 1, from: CARD_A, moved: true }); ok(!card.ok && /Pick the bank the money came from/.test(card.text), JSON.stringify(card));
+  });
   console.log(bad ? `plan3_write: ${bad} FAIL of ${n}` : `plan3_write: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })();

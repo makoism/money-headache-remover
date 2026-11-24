@@ -417,7 +417,9 @@
     }
     return id;
   }
-  /* x: { name, type: 'bank' | 'cash' | 'ewallet' | 'wallet', amount, min?, moved: true | false, date? }. `moved` answers
+  /* x: { name, type: 'bank' | 'cash' | 'ewallet' | 'wallet', amount, min?, moved: true | false, date?, from?, afterFigure? }.
+     `from` is the account the money came from (the main bank by default); on the day of that account's figure,
+     `afterFigure` says whether it was moved after the person looked (before: the figure already left it out). `moved` answers
      "Is this new money, or moved from <main bank> since <the day of its last figure>?" [qc-foundation F3a]. Not moved
      since then (new money, or moved before that figure, which already left it out): the account opens with its amount
      and a check of it today, nothing taken off the main bank. Moved since then: the account opens at 0 and is checked at 0
@@ -429,24 +431,29 @@
     const name = nameOk(x.name), type = x.type || 'bank';
     if (!OWN_KINDS[type]) bad(type === 'card' ? 'Add a card with Add a card' : type === 'loan' ? 'Add a loan with Add a loan' : 'Pick a bank, cash, an e-wallet or a wallet');
     if (!(Number.isInteger(x.amount) && x.amount >= 0)) bad('Type what it holds today, zero or more');
-    const main = mainOf(w);
-    /* the main bank's last figure typed (its own check, never a statement's) */
-    const last = (w.book.events || []).filter(e => live(e) && e.k === 'check' && !e.stmt && e.acct === main && e.date <= w.today).map(e => e.date).sort().pop() || w.today;
-    const since = SN3.dayLabel(last, last.slice(0, 4) !== w.today.slice(0, 4));
-    if (x.moved !== true && x.moved !== false) bad('Is this new money, or moved from ' + nameOf(w, main) + ' since ' + since + '?');
+    /* [qc-foundation confirm, watch] moved from any live bank, cash or e-wallet of your own; the main bank by default */
+    const from = x.from || mainOf(w);
+    if (!(w.book.accounts || []).some(y => live(y) && !y.closed && y.id === from && OWN_KINDS[y.type])) bad('Pick the bank the money came from');
+    /* that account's last figure typed (its own check, never a statement's) */
+    const last = (w.book.events || []).filter(e => live(e) && e.k === 'check' && !e.stmt && e.acct === from && e.date <= w.today).map(e => e.date).sort().pop() || w.today;
+    const since = last === w.today ? 'today' : SN3.dayLabel(last, last.slice(0, 4) !== w.today.slice(0, 4));
+    if (x.moved !== true && x.moved !== false) bad('Is this new money, or moved from ' + nameOf(w, from) + ' since ' + since + '?');
     sameName(w.book.accounts || [], name);
     const date = x.moved ? x.date || w.today : w.today;
     if (!DAY.test(date) || date > w.today) bad('Pick the day it was moved, today or before');
-    if (x.moved && date < last) bad('That day is before ' + nameOf(w, main) + "'s figure of " + since + ', which already left it out. Add it as not moved since then');
+    if (x.moved && date < last) bad('That day is before ' + nameOf(w, from) + "'s figure of " + since + ', which already left it out. Add it as not moved since then');
+    /* [qc-foundation confirm 4] moved on the day of that figure: before the person looked, the figure already left it out */
+    if (x.moved && date === last && x.afterFigure !== true && x.afterFigure !== false) bad('Was it moved before or after you looked at ' + nameOf(w, from) + (last === w.today ? ' today' : ' on ' + since) + '?');
+    const moved = x.moved && !(date === last && x.afterFigure === false);
     const rec = { name, type, cur: home(w), owner: null };
     if (x.min != null && x.min !== '') rec.minBank = { a: amountOk(x.min, 'the amount to keep'), cur: home(w) };
     const id = w.add('accounts', rec);
     /* moved: it opens with 0 at the end of the day before the move, so the move (told now, on its own day) comes after
        the opening whatever day it was; an opening dated the move day and told later would already hold it [AN4] */
-    const openDay = x.moved ? SC.dayStr(SC.dayNum(date) - 1) : date;
-    w.add('events', { k: 'open', acct: id, date: openDay, a: x.moved ? 0 : x.amount });
-    w.add('events', { k: 'check', acct: id, date: openDay, a: x.moved ? 0 : x.amount });
-    if (x.moved && x.amount > 0) w.add('events', { k: 'transfer', date, a: x.amount, acct: main, acct2: id, src: { type: 'typed' } });
+    const openDay = moved ? SC.dayStr(SC.dayNum(date) - 1) : w.today;
+    w.add('events', { k: 'open', acct: id, date: openDay, a: moved ? 0 : x.amount });
+    w.add('events', { k: 'check', acct: id, date: openDay, a: moved ? 0 : x.amount });
+    if (moved && x.amount > 0) w.add('events', { k: 'transfer', date, a: x.amount, acct: from, acct2: id, src: { type: 'typed' } });
     return id;
   }
 
