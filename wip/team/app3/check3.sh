@@ -108,6 +108,7 @@ page_tests_for() {   # page_tests_for <changed path, relative to app3/>
     tests/lives3.js)          echo e3_life_a e3_life_a2 e3_life_b e3_life_c e3_life_d ;;
     tests/e3_act_book.js)     echo e3_home e3_checkin ;;
     tests/fake_vault.js)      echo e3_cloud e3_listfix ;;
+    tests/fake_ai.js)         echo chat3_core.test ;;
     tests/*.js)               basename "$1" .js ;;
     src/home3.js)             echo e3_home e3_ns e3_homeplan e3_warnwords e3_cardline e3_bankparts e3_names e3_payday ;;
     src/checkin3.js)          echo e3_checkin e3_checkgap e3_cardfig e3_reload e3_bankparts e3_payday ;;
