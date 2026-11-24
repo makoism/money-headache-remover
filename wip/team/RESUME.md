@@ -4,6 +4,26 @@ Written 2026-11-18 on branch `wip-38.31`. Read this whole file before touching a
 
 ## 0. Handoff (latest first)
 
+**2026-11-24 13:45 JST, MAIN 15 handoff to MAIN 16 (Fable).** Read wip/team/MAKO_SAYS.md first.
+- **Candidate:**
+  - wip-38.31 at 9c65e8d: setupfix, install, invite, checkspeed, candfix. check3 ALL GOOD.
+  - Main commit f773b80 is on branch republish-9c65e8d. It touches only public/n/<path>/, now 5 files (index.html, sw3.js, the manifest and two icons for M33).
+  - Round folder: qc_reports/2026-11-24_candidate_9c65e8d. qc-north-star FAILed (expected: AI first and M13 are not in this candidate). qc-controls is running.
+  - Screenshots are in the MAIN 15 scratchpad.
+- **New finding for MAIN 16 (qc-north-star blocker 4, M67):** a spend logged on phone two reached phone one only after "Send now". Check the pull timer and visibility pull in cloud3_page.js.
+- **Branches to merge, and what each still owes:**
+  - **lane/blockers:** LANE B owns it (session_01BFpKEZBRWqdY7tLMMx4sDU). MAIN 15 does not message or merge it. MAIN 16 merges it after its check3 and reviews.
+  - **lane/restore (e6e7034):** qc-foundation narrow FAIL (qc_reports/2026-11-24_restore_confirm): a setting added after the backup returns; Put it back and Drop it must ask first; pull before a restore when online. Not restarted here (refused), so MAIN 16 takes it.
+  - **lane/homefix:** Fable, running here. It needs qc-novice part 4 before it merges.
+  - **lane/controls-base (9fcbf91):** all 4 base items and BZ2 are done. It needs a full check3 and a qc-foundation confirm, then merge. It includes ai-core b59f994.
+  - **lane/ai-core (cc12d71) and lane/ai-panel (7dd019d):** both finished. They merge together after the candidate. setup3.js is joined by hand with setupfix (both rewrite form3; take setupfix's sections plus ai-panel's answers3 path).
+  - **lane/s2b (87965d5):** done. It merges after the candidate (BX).
+- **Queue after those:**
+  - the CONTROLS_PLAN slices 1 to 14
+  - SORTED.md "no queue" items
+  - the layout faults seen in the screenshots: drop-downs clip at 390, the Saved band covers the section title, the tab bar shows over setup
+  - LANE B's jobs: qcscripts, webkit, the ENDPERIOD plan, and reminders once controls-base is merged
+
 **2026-11-24 12:30 JST, MAIN 15, Mako (NF19, M82): helpers and reviewers run on Fable.** Pass model "fable" on every Agent call. Lanes that are mid-task are not restarted. After the candidate is sent, MAIN 15 writes this handoff and Coordinator 11 starts MAIN 16 on Fable.
 - **Open lanes and what each owes:**
   - **setupfix** (worktree agent-ae677ae9ec4601481, not pushed): the pay-landed question, the Home note for today's pay (F1 conditions), and its report.
