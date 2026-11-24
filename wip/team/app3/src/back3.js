@@ -1,12 +1,14 @@
-/* ---------- back3: the one piece that knows which sheet or form is open (SORTED K34, K35) ----------
+/* ---------- back3: the one piece that knows which sheet or form is open (SORTED K34, K35, K37) ----------
    No sheet's own file is touched: this watches the page (which sheet is shown, whether a Plan form or a receipt being
-   changed is drawn) and does two things from that one list.
+   changed is drawn) and does three things from that one list.
    1. The phone's back button [K34]: each open layer holds one history entry. Back closes the layer on top (a
       statement's later step goes back one step) and the app stays. A layer closed by its own button takes its entry
       with it, so back never does nothing. Back on a tab with nothing open leaves the app, as before.
    2. What was typed is kept [K35]: a layer closed with something typed in it shows it again the next time the same
       one opens, until anything is saved, or it is closed again untouched. Setup keeps its own draft (setup3.js);
       Settings (codes) and statements (files) are never kept.
+   3. One message at a time [K37]: an Undo bar from before never sits over a layer opened after it. It is held back
+      while the layer shows and comes back when the layer closes, if its time is not up.
    A new sheet needs a row in LAYERS (tests/e3_back.js counts the page's sheets against its own list).
    No money here: `held` and `skip` are lists of markers, so nothing is counted with sums. */
 const BACK3 = (() => {
@@ -55,16 +57,23 @@ const BACK3 = (() => {
   /* ---- the page changed: which layers opened, which closed, and the history entries to match ---- */
   /* a layer that shows again as it was drawn (Ask was over it, or its tab was left and come back to) was only covered:
      it still holds its typing. One drawn anew gets what was typed in the one before it */
-  const drawn = new WeakSet();
+  const drawn = new WeakMap();
   const domOf = l => { const r = l.root(); return r.classList.contains('a3-sheet') ? r.firstElementChild || r : r; };
   function sync() {
     const on = open(), keys = on.map(l => l.key);
     const fresh = on.filter(l => !was.includes(l.key));
     was = keys;
+    /* [K37] an Undo bar from before a layer opened is held back while that layer shows (each layer remembers the
+       newest message at the moment it was drawn; the latest of the open layers' marks is the cover). An Undo made
+       inside a layer shows there, and the held one shows again when the layer closes, if its time is not up */
+    for (const l of on) { const d = domOf(l); if (!drawn.has(d)) drawn.set(d, { mark: MSG3.mark(), isNew: true }); }
+    let top = null;
+    for (const l of on) { const m = drawn.get(domOf(l)).mark; if (top === null || m > top) top = m; }
+    MSG3.cover('undo', top);
     for (const l of fresh) {
-      const d = domOf(l);
-      if (drawn.has(d)) continue;
-      drawn.add(d);
+      const d = drawn.get(domOf(l));
+      if (!d.isNew) continue;
+      d.isNew = false;
       if (!l.keep) continue;
       if (now[l.key]) { kept[now[l.key].sig] = now[l.key].vals; delete now[l.key]; }   // kept by form: Add a goal never drops Add a bill's typing
       putBack(l);
