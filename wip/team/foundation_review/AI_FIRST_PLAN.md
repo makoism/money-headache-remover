@@ -197,3 +197,28 @@ the screens' setup opens with the same answers filled in.
 11. **addPay starts from today**, the same way addBill does.
 12. **addAccount, when the money was moved from the main bank,** opens the account at 0 and checks it at 0, then moves the amount from the main bank on the day it was moved. This is the same pattern addGoal uses. New money opens with the amount instead. It never does both.
 13. **Watch:** when a bank figure is given on a day a pay lands, both the chat and the setup screen ask: "Has today's pay already landed in that figure?"
+
+## Mako says lines (MAKO_SAYS.md, added 24 Nov by the controls lane)
+- **Serves:**
+  - M1: AI first, always on screen.
+  - M2: setup is a chat.
+  - M3: full control through named actions.
+  - M4: day to day by talking, with receipts by chat (slice 5).
+  - M5: the screens are for seeing and checking.
+  - M6: change, show, Undo; confirm for deletes and big changes.
+  - M9: uploads in setup (slice 3).
+  - M17: ask anything, any time.
+  - M29 and M39: pay after tax, asked "before or after tax?".
+  - M53: one thing at a time.
+- **Touches:**
+  - M13: addPay and addAccount; the rest is in CONTROLS_PLAN.
+  - M14: the fill's Undo.
+  - M16: the setup draft beside setupfix's sections.
+  - M18: explain.
+  - M32 and M41: the close-day question.
+  - M42: the minimum is never filled in for the person.
+  - M54: copy goes to qc-voice and Mako's pass.
+  - M61: undoing the fill throws away the store, and nothing else.
+  - M63 and M68: the relay and its key and cap.
+  - M64: nothing goes to main without his yes.
+- **Not settled lines it depends on:** 1, 2, 4 and 6.
