@@ -474,7 +474,16 @@
     }
     // [A3, A4, T6] the filler of a stretch, split by days at each period start in it (or all to the older period)
     function makeFiller(id, first, last, amount) {
-      const starts = periodStartDays.filter(d => d > first && d <= last).sort((x, y) => x - y);
+      // [CARDGAP 2b] cut at every day a reader counts from: each period start, and, while the plan runs by the day (no
+      // fixed pay), each calendar month's first day and the day of the change to no fixed pay; so a gap across the 1st
+      // is split by days and never counts nowhere
+      const byDayCuts = [];
+      if (!periodStream) {
+        const [fy, fm] = ymOf(first);
+        for (let k = 1; ; k++) { const d = dayIn(fy, fm + k, 1); if (d > last) break; byDayCuts.push(d); }
+        if (noneSince != null) byDayCuts.push(noneSince);
+      }
+      const starts = [...new Set(periodStartDays.concat(byDayCuts))].filter(d => d > first && d <= last).sort((x, y) => x - y);
       const cuts = [first, ...starts, last + 1], days = last - first + 1, parts = [];
       let given = 0;
       for (let i = 0; i < cuts.length - 1; i++) {
@@ -595,19 +604,30 @@
       const stmtAmount = cl => { const b = statementsTo(cl, cl).list.find(x => x.close === cl); return b ? b.amount : owedAt(cl); };
       // a card check sets the statement it names and what is owed now; the gaps are its fillers [A3]
       const fillers = [];
-      for (const e of live().filter(x => x.k === 'check' && x.account === id && !x.stmt)) {
-        let gap = 0;
+      // [CARDGAP] each gap carries the days it covers (the day after this card's check before it, to this check) and
+      // is cut by days like a bank's (makeFiller); the checks are walked in the bank's order, never as told
+      const cardChecks = live().filter(x => x.k === 'check' && x.account === id && !x.stmt).sort(byTime);
+      for (const e of cardChecks) {
+        const before = cardChecks.filter(x => x.day < e.day).map(x => x.day), prevDay = before.length ? Math.max(...before) : null;
+        const parts = [];
+        const stretch = (from, to, amount) => { if (amount) parts.push(...makeFiller(id, Math.min(from, to), to, amount).parts); };
+        let gap = 0, closed = null;
         const sx = live().find(x => x.k === 'check' && x.account === id && x.stmt && x.grp != null && x.grp === e.grp);
         if (sx) {
           const cl = dayNum(sx.stmtDate), g = sx.a - stmtAmount(cl);
           if (g) lines.push({ day: cl, amount: g, what: 'filler' });
           gap += g;
+          stretch(prevDay != null && prevDay < cl ? prevDay + 1 : cl, cl, g);   // a close day on or before the check before it: that one day
+          closed = cl;
         }
         const g2 = e.a - owedAt(e.day);
         if (g2) lines.push({ day: e.day, amount: g2, what: 'filler' });
         gap += g2;
+        const last0 = Math.max(prevDay != null ? prevDay : -Infinity, closed != null ? closed : -Infinity);
+        stretch(last0 === -Infinity ? e.day : last0 + 1, e.day, g2);
         // more: typed above what the app had (spending not logged); less: below it (comes off spending), each 0 or more
-        fillers.push({ account: id, day: e.date, amount: gap, more: Math.max(0, gap), less: Math.max(0, -gap) });
+        fillers.push({ account: id, day: e.date, amount: gap, more: Math.max(0, gap), less: Math.max(0, -gap),
+          from: parts.length ? parts[0].from : e.date, to: e.date, parts });
       }
       const owedNow = owedAt(knownTo) + lines.filter(l => l.day > knownTo).reduce((t, l) => t + l.amount, 0);
 
@@ -976,7 +996,7 @@
         }
         if (lineId === 'free') for (const cid in cards) {
           if (cur(cid) !== cur(acctId)) continue;
-          for (const f of cards[cid].fillers) if ((fromOpening || dayNum(f.day) >= lp) && dayNum(f.day) <= upTo) filled += f.amount;
+          for (const f of cards[cid].fillers) for (const pt of f.parts) if ((fromOpening || dayNum(pt.from) >= lp) && dayNum(pt.from) <= upTo) filled += pt.amount;   // [CARDGAP] by part, as a bank's
         }
         const spent = live().filter(e => e.k === 'spend' && !isFeeRecord(e) && counts(e)).reduce((t, e) => t + e.a, 0)
           - live().filter(e => e.k === 'in' && e.sub === 'refund' && counts(e)).reduce((t, e) => t + e.a, 0) + filled;   // [O] a refund given back to its line

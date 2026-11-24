@@ -65,4 +65,47 @@ t('the same in every order the records can arrive in', () => {
     e => e.sort((x, y) => (String(x.date) < String(y.date) ? 1 : -1)), e => e.slice(1).concat(e.slice(0, 1))];
   for (const o of orders) { const s = spentOf(life(o).book); eq([s.old.free.spent, s.now.free.spent], [56000, 16000]); }
 });
+// ---- no fixed pay: the plan runs by the calendar month, and a gap across the 1st is split by days [CARDGAP 2b] ----
+// Made-up yen: a bank at 420,000, no fixed pay, Free to spend 60,000 a month, set up 1 Nov 2026.
+//   28 Nov  bank checked at 420,000 (no gap); on 5 Dec it shows 406,000: 14,000 not logged over 29 Nov to 5 Dec,
+//           seven days: 29 and 30 Nov (2 of 7: 4,000) are November's, 1 to 5 Dec (5 of 7: 10,000) are December's.
+//   So on 5 Dec Free to spend left this month is 60,000 - 10,000 = 50,000. Before the fix the whole gap counted nowhere
+//   (60,000 left). The same with the 14,000 found on a card instead of the bank.
+function byDayLife(where) {
+  const newId = IDS.idMaker('p7m2xd');
+  const out = BB.buildBook({ day: '2026-11-01', told: '2026-11-01T12:00:00.000+09:00', currency: 'JPY', country: 'JP',
+    banks: [{ key: 'bank1', name: 'Main bank', amount: 420000, main: true, min: null }],
+    pays: [{ key: 'pay1', name: 'Work', bank: 'bank1', amount: null, every: 'none' }],
+    cards: [{ key: 'card1', name: 'Card A', owed: 0, payDay: 27, closeDay: 'not sure', payFrom: 'bank1', shift: 'none', inFull: true }],
+    bills: [], free: 60000 }, { newId });
+  let book = out.book || out;
+  const card = book.accounts.find(a => a.type === 'card').id, bank = book.accounts.find(a => a.type !== 'card').id;
+  const check = (day, figures) => {
+    const r = LA.lookahead(book, day), expected = {}, lands = {};
+    for (const o of r.checkIn.toConfirm) { expected[o.item] = o.amount; lands[o.item] = o.lands; }
+    book = CI.apply(book, CI.checkIn(book, { day, told: day + 'T12:00:00.000+09:00', newId, figures, ticked: r.checkIn.toConfirm.map(o => o.item), unticked: [], amounts: {}, expected, lands, landed: {} }));
+  };
+  check('2026-11-28', { [bank]: 420000, [card]: 0 });
+  check('2026-12-05', where === 'card' ? { [bank]: 420000, [card]: 14000 } : { [bank]: 406000, [card]: 0 });
+  return { book, card, bank };
+}
+t('no fixed pay, a bank gap across the 1st: 10,000 of 14,000 is December\'s, so 50,000 is left', () => {
+  const { book, bank } = byDayLife('bank'), r = LA.lookahead(book, '2026-12-05');
+  eq(r.accounts[bank].fillers.slice(-1)[0].parts.map(p => [p.from, p.to, p.amount]), [['2026-11-29', '2026-11-30', 4000], ['2026-12-01', '2026-12-05', 10000]]);
+  ok(r.safeToSpend.cappedByFreeToSpend); eq(r.safeToSpend.headline, 50000);   // the headline is Free to spend left this month
+});
+t('no fixed pay, a card gap across the 1st: the same, 4,000 and 10,000, 50,000 left', () => {
+  const { book, card } = byDayLife('card'), r = LA.lookahead(book, '2026-12-05');
+  eq(r.cards[card].fillers.slice(-1)[0].parts.map(p => [p.from, p.to, p.amount]), [['2026-11-29', '2026-11-30', 4000], ['2026-12-01', '2026-12-05', 10000]]);
+  ok(r.safeToSpend.cappedByFreeToSpend); eq(r.safeToSpend.headline, 50000);   // the headline is Free to spend left this month
+});
+t('every card gap\'s parts add up to the gap, and none is dated after its check or has no days', () => {
+  for (const b of [life().book, byDayLife('card').book]) {
+    const r = LA.lookahead(b, '2026-12-13');
+    for (const id of Object.keys(r.cards)) for (const f of r.cards[id].fillers) {
+      eq(f.parts.reduce((t, p) => t + p.amount, 0), f.amount);
+      for (const p of f.parts) ok(p.to <= f.day && p.days >= 1 && p.from <= p.to, JSON.stringify(p));
+    }
+  }
+});
 done('card_gap_period.test.js');
