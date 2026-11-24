@@ -141,7 +141,14 @@
      Free to spend is asked about as an amount each pay, from that pay (a line a month becomes a line each pay). */
   /* [qc-foundation F4, BY] startsPeriod is one undated flag: the live pay holding it (other than `but`), and whether a
      pay's newest rule (by its `from`) has a fixed day */
-  const starterOf = (w, but) => A3.listOf(w.book, 'schedules').find(y => live(y) && y.id !== but && y.kind === 'income' && y.startsPeriod) || null;
+  /* [BZ2] which pay starts the periods is dated: the pay holding it on a day (engine/schedules.js periodHolder). Moving it
+     is a new entry { from, at, by } on the pay taking it, never an edit of the old pay, so the old pay's past periods
+     stay its own. A new entry is never dated before the newest entry any pay has (BQ2), or it would lose for good. */
+  const holderOn = (w, day) => SC.periodHolder(A3.listOf(w.book, 'schedules').filter(live), day);
+  const ended = (y, day) => !!y.ends && y.ends <= day;
+  const newestFrom = w => { let m = ''; for (const y of A3.listOf(w.book, 'schedules').filter(live)) for (const x of (Array.isArray(y.startsPeriod) ? y.startsPeriod : [])) if (x && !x.gone && x.from && x.from > m) m = x.from; return m; };
+  const entriesOf = y => (y.startsPeriod === true ? [{ from: null }] : Array.isArray(y.startsPeriod) ? y.startsPeriod : []);
+  const takeEntry = (w, y, from) => { const nf = newestFrom(w); return entriesOf(y).concat([{ from: nf > from ? nf : from }]); };
   const fixedNow = y => { const l = (y.rules || []).filter(r => r && !r.gone).slice().sort((p, q) => (p.from || '') < (q.from || '') ? -1 : (p.from || '') > (q.from || '') ? 1 : 0); return ((l.pop() || {}).rule || {}).every !== 'none'; };
   function changeBill(w, id, x) {
     const s = find(w, 'schedules', id), v = PE.scheduleView(w.book, w.today)[id];
@@ -173,9 +180,10 @@
         const probe = Object.assign({}, s, { rules: (s.rules || []).concat([{ from, rule: rhythm }]) });
         from = PE.firstLanding(Object.assign({}, w.book, { schedules: [probe] }), id, from) || from;
         if (s.shift === 'none') ch.shift = 'before';
-        /* [qc-foundation F4, BY] the flag moves here when the pay holding it has no fixed day now */
-        const other = starterOf(w, id);
-        if (!s.startsPeriod && (!other || !fixedNow(other))) { if (other) w.edit('schedules', other.id, { startsPeriod: null }); ch.startsPeriod = true; }
+        /* [qc-foundation F4, BZ2] the flag comes here, from its first pay, when the pay holding it has no fixed day now or
+           has ended */
+        const h = holderOn(w, w.today);
+        if (!h || (h.id !== id && (!fixedNow(h) || ended(h, w.today)))) ch.startsPeriod = takeEntry(w, s, from);
       }
       if ((x.amount != null && x.amount !== v.amount) || (fromNone && x.amount != null)) ch.steps = (s.steps || []).concat([{ from, amount: amountOk(x.amount, 'the amount') }]);
       if (dayMoved) ch.rules = (s.rules || []).concat([{ from, rule: { every: 'month', days: [dayOfMonth(x.day)] } }]);
@@ -184,7 +192,7 @@
     if (!Object.keys(ch).length) bad('Nothing changed');
     /* [slice 6] the pay that starts the period changes how often it lands: each line counted each pay is asked about;
        [slice 6b] from no fixed pay, each line and Free to spend a month */
-    const starts = !!(s.startsPeriod || ch.startsPeriod);
+    const starts = (holderOn(w, w.today) || {}).id === id || !!ch.startsPeriod;
     const perPay = !rhythm || !starts ? [] : fromNone ? linesEachMonth(w) : linesEachPay(w);
     if (perPay.length) {
       const got = x.lines || {};
@@ -192,6 +200,7 @@
       if (missing.length) bad(toNone ? `Your pay will have no fixed day. How much a month from then for ${names}?` : `Your pay will land ${everyWords[x.every]}. How much each pay from then for ${names}?`);
     }
     const r = w.edit('schedules', id, ch);
+    if (ch.startsPeriod) stampNew(r, 'startsPeriod');
     if (ch.steps) stampNew(r, 'steps');
     if (ch.rules) stampNew(r, 'rules');
     /* the new amounts start with the pay period that holds the change day: from the last pay landing on or before it;
@@ -240,6 +249,13 @@
     if (!DAY.test(last)) bad('Pick the last day');
     if (v.lastNamed && last < v.lastNamed) bad('It can end on ' + v.lastNamed + ' at the earliest: that one is already paid or noted');
     w.edit('schedules', id, { ends: last });
+    /* [BZ2, qc-foundation confirm finding 1] "my job ended": the pay holding the flag after its last day hands it, dated
+       the day after, to another live pay with a fixed day that has not ended; with none, it keeps it until a pay is added */
+    const next = SC.dayAfter(last), h = s.kind === 'income' ? holderOn(w, next) : null;
+    if (h && h.id === id) {
+      const other = A3.listOf(w.book, 'schedules').find(y => live(y) && y.id !== id && y.kind === 'income' && fixedNow(y) && !ended(y, last));
+      if (other) { const r = w.edit('schedules', other.id, { startsPeriod: takeEntry(w, other, next) }); stampNew(r, 'startsPeriod'); }
+    }
     return s.id;
   }
 
@@ -395,18 +411,17 @@
     if (x.every === 'month') rule = { every: 'month', days: [dayOfMonth(x.day)] };
     else if (x.every === 'days') { if (x.day2 == null || x.day2 === '') bad('Pick the second day it lands'); const d1 = dayOrLast(x.day), d2 = dayOrLast(x.day2); rule = { every: 'month', days: d1 === d2 ? [d1] : [d1, d2] }; }
     else if (!none) { if (!DAY.test(x.start || '')) bad('Pick the day of one pay, the last one or the next one'); const n = Number(x.every.slice(5)); rule = { every: 'weeks', n, from: BUILD.weeksAnchor(x.start, w.today, n) }; }
-    /* [qc-foundation F4, BY] it starts the pay periods when no pay with a fixed day does: a pay holding the flag with no
-       fixed day now gives it up (one step, so one Undo puts it back) */
-    const holder = starterOf(w, null), first = !none && (!holder || !fixedNow(holder));
+    /* [qc-foundation F4, BZ2] it starts the pay periods, from today, when no pay with a fixed day does now: the pay holding
+       the flag has no fixed day now, or has ended. The old pay keeps its own flag, so its past periods stay */
+    const holder = holderOn(w, w.today), first = !none && (!holder || !fixedNow(holder) || ended(holder, w.today));
     /* [BV5] as changeBill from no fixed pay: each line and Free to spend counted a month is asked about as an amount
        each pay, from this pay's first landing */
-    const monthly = first ? linesEachMonth(w) : [];
+    const monthly = first && (!holder || !fixedNow(holder)) ? linesEachMonth(w) : [];   // [BZ2] after an ended pay with a fixed day, lines stay each pay
     const got = x.lines || {}, missing = monthly.filter(l => got[l.key] == null);
     if (missing.length) bad(`Your pay will land ${everyWords[x.every]}. How much each pay from then for ${missing.map(l => l.name).join(' and ')}?`);
-    if (first && holder) w.edit('schedules', holder.id, { startsPeriod: null });
     const id = w.add('schedules', Object.assign({ kind: 'income', name, acct, cur: home(w), shift: none ? 'none' : x.shift || 'before', from: w.today,
-      rules: [{ from: null, rule }], steps: [{ from: null, amount }] }, first ? { startsPeriod: true } : {}));
-    const r = find(w, 'schedules', id); stampNew(r, 'rules'); stampNew(r, 'steps');
+      rules: [{ from: null, rule }], steps: [{ from: null, amount }] }, first ? { startsPeriod: takeEntry(w, {}, w.today) } : {}));
+    const r = find(w, 'schedules', id); stampNew(r, 'rules'); stampNew(r, 'steps'); if (first) stampNew(r, 'startsPeriod');
     if (monthly.length) {
       const from = PE.firstLanding(w.book, id, w.today) || w.today;
       for (const l of monthly) {
