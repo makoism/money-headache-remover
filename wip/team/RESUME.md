@@ -18,6 +18,8 @@ Written 2026-11-18 on branch `wip-38.31`. Read this whole file before touching a
   - **lane/controls-base (9fcbf91):** all 4 base items and BZ2 are done. It needs a full check3 and a qc-foundation confirm, then merge. It includes ai-core b59f994.
   - **lane/ai-core (cc12d71) and lane/ai-panel (7dd019d):** both finished. They merge together after the candidate. setup3.js is joined by hand with setupfix (both rewrite form3; take setupfix's sections plus ai-panel's answers3 path).
   - **lane/s2b (87965d5):** done. It merges after the candidate (BX).
+- **First for MAIN 16:** in setup, leaving a bill's name box moves its Remove button down about 25 px, so a tap on Remove right after typing misses (found by LANE B, setup3.js).
+- **lane/homefix (3a4f514):** all 10 items done; qc-novice is reviewing it (qc_reports/2026-11-24_homefix_3a4f514).
 - **Queue after those:**
   - the CONTROLS_PLAN slices 1 to 14
   - SORTED.md "no queue" items
