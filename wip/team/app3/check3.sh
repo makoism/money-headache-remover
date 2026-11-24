@@ -95,6 +95,7 @@ step "the setup chat walked through the real page with the fake model: Mako's sh
 step "the assistant panel: the welcome as the first screen, the ways when the AI is off, the relay, cards with Undo and asking first, the bar and the column"; run tests/e3_chat.js "e3_chat: ALL PASS"
 step "the setup chat's fill and its Undo: two tabs, the cloud copy held back while it can be undone (BV2.9)"; run tests/e3_fillundo.js "e3_fillundo: ALL PASS"
 step "Ask on the page (recorded replies: the viewer's Claude and the relay)"; run tests/e3_ask.js "e3_ask: ALL PASS"
+step "the code word for the AI (a made-up relay: the box, the 401 words, Settings, kept on this device only)"; run tests/e3_invite.js "e3_invite: ALL PASS"
 step "Reminders on the page (check-ins and bills, the calendar file, Google and Outlook, nothing sent)"; run tests/e3_remind.js "e3_remind: ALL PASS"
 step "the cloud copy, two devices through the page (local fake vault)"; run tests/e3_cloud.js "e3_cloud: ALL PASS"
 step "the service worker (precache, offline, 3 s timeout, a new build)"; run tests/e3_sw.js "e3_sw: ALL PASS"

@@ -44,6 +44,7 @@ function stmt3Pick() {
   const sheet = stmt3Show(`<h1 id="a3StmtT">Add statements</h1>
     <section class="a3-card"><h2>Before you start</h2><p class="a3-sub" data-privacy="ai">${esc3(STMT3_WORDS.ai)}</p><p class="a3-sub">${esc3(STMT3_WORDS.kept)}</p></section>
     <section class="a3-card"><h2>Your files</h2><p class="a3-sub">A CSV from your bank's website works best. PDFs and screenshots work too</p>${rows}
+      <div id="a3StmtWord"></div>
       <p class="a3-sub" id="a3StmtProg" aria-live="polite"></p><p class="a3-err" id="a3StmtErr"></p>
       <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3StmtRead">Read with the AI</button><button type="button" class="a3-btn" id="a3StmtX">Back</button></div></section>
     <details class="a3-card" id="a3StmtAny"><summary>Use any AI instead</summary>
@@ -63,25 +64,42 @@ function stmt3Pick() {
   $('#a3StmtRead').addEventListener('click', stmt3ReadAI);
   $('#a3StmtCopy').addEventListener('click', () => { const t = $('#a3StmtAsk'); t.select(); try { navigator.clipboard.writeText(t.value).then(() => msg3('Copied'), () => msg3('Select the request and copy it')); } catch (e) { msg3('Select the request and copy it'); } });
   $('#a3StmtCheck').addEventListener('click', stmt3CheckPaste);
+  stmt3Word('');
+}
+/* the code word box, when the relay asks for one and none is kept on this device (stmt3_ai.js keeps it) */
+async function stmt3Word(bad) {
+  if (!bad && !(await STMT3_AI.needWord())) return;
+  const slot = $('#a3StmtWord'); if (!slot || !slot.isConnected) return;
+  STMT3_AI.wordBox(slot, '', () => { const e = $('#a3StmtErr'); if (e) e.textContent = ''; });
+  if (bad) slot.querySelector('#a3WordIn').focus();
 }
 async function stmt3ReadAI() {
   const prog = $('#a3StmtProg'), err = $('#a3StmtErr'), btn = $('#a3StmtRead');
   const jobs = [];
   for (const a of stmt3Accts()) for (const f of stmt3.files[a.id] || []) jobs.push({ a, f, line: a.name + ', ' + f.name + ': waiting' });
   if (!jobs.length) { err.textContent = 'Choose a file for at least one account first'; return; }
+  if (await STMT3_AI.needWord()) { await stmt3Word(''); err.textContent = 'Type the code word for the AI first'; $('#a3WordIn').focus(); return; }
   err.textContent = ''; btn.disabled = true;
   const paint = () => { prog.innerHTML = jobs.map(j => `<span class="a3-line${j.bad ? ' a3-bad-t' : ''}">${esc3(j.line)}</span>`).join(''); };
   const reads = [], assign = [];
+  let wordBad = false;
   for (const j of jobs) {
+    if (wordBad) { j.line = j.a.name + ', ' + j.f.name + ': not read'; continue; }
     j.line = j.a.name + ', ' + j.f.name + ': reading'; paint();
     try {
       const r = await STMT3_AI.readFile(j.f, j.a, E3.today());
       j.line = j.a.name + ', ' + j.f.name + ': ' + (r.rows.length ? `${r.rows.length} ${r.rows.length === 1 ? 'line' : 'lines'}${r.from ? `, ${day3(r.from, E3.today().slice(0, 4))} to ${day3(r.to, E3.today().slice(0, 4))}` : ''}` : 'no lines found');
       if (r.rows.length) { reads.push(r); assign.push(j.a.id); }
-    } catch (e) { j.bad = true; j.line = j.a.name + ', ' + j.f.name + ': ' + ((e && e.message) || 'could not be read'); }
+    } catch (e) {
+      j.bad = true;
+      if (e && e.word) { wordBad = true; j.line = j.a.name + ', ' + j.f.name + ': not read, the code word didn\'t match'; }
+      else j.line = j.a.name + ', ' + j.f.name + ': ' + ((e && e.message) || 'could not be read');
+    }
     paint();
   }
+  paint();
   btn.disabled = false;
+  if (wordBad) { err.textContent = STMT3_AI.WORD_BAD; await stmt3Word(STMT3_AI.WORD_BAD); return; }
   if (!reads.length) { err.textContent = 'Nothing could be read. Each file\'s line above says why'; return; }
   stmt3Got(reads, assign);
 }

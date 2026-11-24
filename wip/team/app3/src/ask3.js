@@ -26,6 +26,7 @@ function openAsk3() {
       <details class="a3-ask-sent"><summary>See what is sent</summary><pre id="a3AskSent"></pre></details></div>
     <div class="a3-ask-log" id="a3AskLog" aria-live="polite"></div>
     <div class="a3-card" data-card="ask-in">
+      <div id="a3AskWord"></div>
       <label class="a3-ask-label" for="a3AskIn">Your question</label>
       <textarea class="a3-in a3-text a3-ask-in" id="a3AskIn" rows="3" maxlength="500"></textarea>
       <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3AskSend">Ask</button><button type="button" class="a3-btn" id="a3AskClose">Close</button></div>
@@ -40,6 +41,14 @@ function openAsk3() {
   $('#a3AskIn').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask3Send(); } });
   for (const b of sheet.querySelectorAll('[data-asktry]')) b.addEventListener('click', () => { $('#a3AskIn').value = b.dataset.asktry; ask3Send(); });
   scrollTo(0, 0); $('#a3AskIn').focus();
+  ask3Word('');
+}
+/* the code word box, when the relay asks for one and none is kept on this device (stmt3_ai.js keeps it) */
+async function ask3Word(bad) {
+  if (!bad && !(await STMT3_AI.needWord())) return false;
+  const slot = $('#a3AskWord'); if (!ASK3.open || !slot) return false;
+  STMT3_AI.wordBox(slot, bad, () => { const q = $('#a3AskIn'); if (q) q.focus(); });
+  return true;
 }
 function closeAsk3() {
   if (!ASK3.open) return;
@@ -65,15 +74,10 @@ function ask3Anon() {
   return (ASK3.anon = s);
 }
 async function ask3Relay(base, rq) {
-  const body = { v: 1, anon: ask3Anon(), invite: '', tier: 'default', max_tokens: 2000, effort: 'low',
+  const body = { v: 1, anon: ask3Anon(), tier: 'default', max_tokens: 2000, effort: 'low',
     tools: [{ name: rq.name, description: rq.description, input_schema: rq.schema }], tool_choice: { type: 'auto' },
     messages: [{ role: 'user', content: [{ type: 'text', text: rq.prompt + `\n\nAnswer by calling the ${rq.name} tool once.` }] }] };
-  let r;
-  try { r = await fetch(base + '/api/ai', { method: 'POST', headers: { 'content-type': 'application/json', 'x-app': 'mhr2000' }, body: JSON.stringify(body) }); }
-  catch (e) { throw new Error('no connection. Check the internet and try again'); }
-  if (r.status === 429) throw new Error('too many questions right now, try again in a minute');
-  if (!r.ok) throw new Error('the AI did not answer (' + r.status + ')');
-  const res = await r.json();
+  const res = await STMT3_AI.post(base, body, 'too many questions right now, try again in a minute');   // the one place a relay call is sent, with the code word
   const use = (res.content || []).find(b => b.type === 'tool_use' && b.name === rq.name);
   if (use && use.input && typeof use.input === 'object') return use.input;
   const text = (res.content || []).filter(b => b.type === 'text').map(b => b.text).join('').trim();
@@ -91,6 +95,7 @@ async function ask3Send() {
   const box = $('#a3AskIn'), q = box.value.trim();
   if (ASK3.busy) return;
   if (!q) { box.focus(); return; }
+  if (await STMT3_AI.needWord()) { await ask3Word('Type the code word first, then Ask again'); $('#a3WordIn').focus(); return; }
   ASK3.busy = true; $('#a3AskSend').disabled = true;
   box.value = '';
   ask3Bubble('a3-ask-me', q);
@@ -112,8 +117,9 @@ async function ask3Send() {
   } catch (e) {
     bot.classList.remove('a3-ask-wait'); bot.classList.add('a3-bad');
     const m = String((e && e.message) || e);
-    bot.textContent = m === ASK3_WORDS.none ? m : 'That didn\'t go through: ' + m + '. Your question is back in the box';
+    bot.textContent = m === ASK3_WORDS.none || (e && e.word) ? m : 'That didn\'t go through: ' + m + '. Your question is back in the box';
     box.value = q;
+    if (e && e.word) { await ask3Word(m); const w = $('#a3WordIn'); if (w) w.focus(); }
   }
   ASK3.busy = false; $('#a3AskSend').disabled = false;
 }

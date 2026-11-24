@@ -188,3 +188,4 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
   body.a3-has-chat { padding-right: 360px; }
 }
 .a3-chat-check { color: var(--warn); font-size: var(--t-cap); }
+.a3-word { margin-bottom: 14px; }   /* the code word box above the question or the files (stmt3_ai.js) */
