@@ -80,6 +80,7 @@ step "life B, the 15th and the last day, two banks and an e-wallet (Lia, pesos, 
 step "the real-page walk, walk 4 run A: setup 24 Nov to 15 Feb, hand-worked figures at every step"; run tests/e3_walk.js "e3_walk: ALL PASS"
 step "the walk again in Tokyo at 04:40 (every figure the same after a reload at each check-in)"; TZ=Asia/Tokyo WALK_CLOCK=04:40 run tests/e3_walk.js "e3_walk: ALL PASS"
 step "the walk again in Tokyo at 23:30 (every figure the same after a reload at each check-in)"; TZ=Asia/Tokyo WALK_CLOCK=23:30 run tests/e3_walk.js "e3_walk: ALL PASS"
+step "stage 2 S1: if no more pay came, your money lasts about N weeks (Mako's shape, setup 24 Nov to pay day 10 Dec, hand-worked at each step)"; run tests/e3_runway.js "e3_runway: ALL PASS"
 step "guard (idle CPU, long tasks, outside requests, errors)"; run tests/guard3.js "guard3: ALL PASS"
 step "offline load"; run tests/offline.js "offline: ALL PASS"
 step "the private publish (a made-up path, a copy of public/ served by the worker's rules)"; run tests/e3_publish.js "e3_publish: ALL PASS"

@@ -122,3 +122,10 @@ One help piece serves every "?", so changing a line there changes it everywhere.
 - (slice 6b, BQ3) With no fixed pay, "Free to spend left" starts again each calendar month: the month's amount less what was spent on it that month. In the month of setup, or of the change to no fixed pay, it counts from that day, its share by days left.
 - (slice 6b) A second income can land every 1, 2, 3 or 4 weeks or on two days a month; setup and the pay form offer every 3 weeks.
 - Pay day in two steps reads "Today: ¥286,000 (Main bank today) + ¥180,000 (Main job 10 Dec) ... = ¥472,000 at the end of the day. Safe to spend counts on this pay coming in today".
+
+## Stage 2 S1: "If no more pay came" (lane/s2b, 24 Nov JST): words and defaults for your run
+- Home, under safe to spend: "If no more pay came, your money lasts about 7 weeks". With a minimum: ", keeping your minimum". With several accounts: ". Main bank runs out first". Under it, the sum: "Main bank goes below zero on 14 Jan: ¥300,000 (Main bank today) − ¥90,000 (Rent 27 Nov) − ... = −¥2,400".
+- The "?": "How long your money lasts if no more pay came: what your bank holds today, less your bills, card payments and your plan, day by day. Goal money kept in the bank is not counted. Money moved in from your own savings is."
+- Defaults used until you say: goal money kept in the bank is left out (named in the sum); goal set-asides each pay are left out (they stop when pay stops); the line shows only once Free to spend or a line is set.
+- With no fixed pay, Home already says "Lasts about N weeks at this rate", so this line is not shown there (one figure for one thing). That older line counts to below zero, not to your minimum: should it change to the minimum too?
+- Accounts are not added together yet: the line names the account that runs out first (a later slice adds them).

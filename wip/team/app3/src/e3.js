@@ -126,7 +126,7 @@ const E3 = (() => {
     } catch (e) { return value === undefined ? null : false; }
   }
   function view(day) {
-    const res = BurrowEngine.lookahead.lookahead(book, day || today());
+    const res = BurrowEngine.lookahead.lookahead(book, day || today(), { runway: true });   // [stage 2 S1] Home's runway line
     return res;
   }
   /* names for what the engine returns by id (a lookup, nothing worked out) */

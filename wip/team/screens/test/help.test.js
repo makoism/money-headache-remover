@@ -5,7 +5,7 @@ const { test, run } = require('./harness');
 const help = require('../help.js');
 
 test('every key has one or two plain lines, no em dash, no comfort words (VOICE A1)', () => {
-  for (const k of ['safeToSpend', 'status', 'period', 'periodMoved', 'lineShare']) {
+  for (const k of ['safeToSpend', 'status', 'period', 'periodMoved', 'lineShare', 'runway']) {
     const w = help.WORDS[k];
     assert.ok(w && w.length >= 1 && w.length <= 2, k);
     for (const l of w) {
