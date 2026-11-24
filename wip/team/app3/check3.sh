@@ -127,7 +127,8 @@ page_tests_for() {   # page_tests_for <changed path, relative to app3/>
 job() {   # job <n> <file> <timeout> <env...>
   local n=$1 f=$2 t=$3 out rc t0=$SECONDS note=""; shift 3
   local cmd=(node "$f"); [[ "$f" == *.sh ]] && cmd=(bash "$f")
-  out=$(env CHECK3_JOB="$RUN_ID.$n." "$@" timeout "$t" "${cmd[@]}" 2>&1 < /dev/null); rc=$?
+  local tmp="$WORK/tmp/$n"; mkdir -p "$tmp"   # the test's temp profiles and files, removed when it ends (they filled the disk)
+  out=$(env CHECK3_JOB="$RUN_ID.$n." TMPDIR="$tmp" "$@" timeout "$t" "${cmd[@]}" 2>&1 < /dev/null); rc=$?
   note=$(reap "$n")
   # The browser itself going away under load from other lanes (a detached frame, a closed session, a failed launch)
   # is not a test result: that one case runs again once, and says so. A FAIL line is never run again.
@@ -135,9 +136,10 @@ job() {   # job <n> <file> <timeout> <env...>
   # it is what a walk prints when another session runs pkill -f chrome-linux64/chrome under it.
   if [ $rc -ne 0 ] && ! echo "$out" | grep -q "^FAIL [^c]" && echo "$out" | grep -q "detached Frame\|Session closed\|Target closed\|Target page, context or browser has been closed\|Failed to launch the browser"; then
     note="$note${note:+$'\n'}RETRIED: the browser went away under load (no FAIL line), so $f ran once more. The first run's last lines:"$'\n'"$(echo "$out" | tail -8)"
-    out=$(env CHECK3_JOB="$RUN_ID.$n." "$@" timeout "$t" "${cmd[@]}" 2>&1 < /dev/null); rc=$?
+    out=$(env CHECK3_JOB="$RUN_ID.$n." TMPDIR="$tmp" "$@" timeout "$t" "${cmd[@]}" 2>&1 < /dev/null); rc=$?
     local again; again=$(reap "$n"); [ -n "$again" ] && note="$note"$'\n'"$again"
   fi
+  rm -rf "$tmp"
   [ $rc -eq 124 ] && note="$note${note:+$'\n'}TIMED OUT after $t s"
   printf '%s\n' "$out" > "$WORK/$n.out"; printf '%s' "$note" > "$WORK/$n.note"; echo $((SECONDS - t0)) > "$WORK/$n.sec"
   echo "$rc" > "$WORK/$n.rc.tmp" && mv "$WORK/$n.rc.tmp" "$WORK/$n.rc"   # written last: the test is finished
