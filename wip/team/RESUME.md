@@ -4,6 +4,18 @@ Written 2026-11-18 on branch `wip-38.31`. Read this whole file before touching a
 
 ## 0. Handoff (latest first)
 
+**2026-11-24 12:30 JST, MAIN 15, Mako (NF19, M82): helpers and reviewers run on Fable.** Pass model "fable" on every Agent call. Lanes that are mid-task are not restarted. After the candidate is sent, MAIN 15 writes this handoff and Coordinator 11 starts MAIN 16 on Fable.
+- **Open lanes and what each owes:**
+  - **setupfix** (worktree agent-ae677ae9ec4601481, not pushed): the pay-landed question, the Home note for today's pay (F1 conditions), and its report.
+  - **install** (lane/install): the manifest (M33), the two-incomes test (M28), and the Receipts doors (M22).
+  - **controls-base** (lane/controls-base): CONTROLS_PLAN BZ corrections, the Undo journal, the dated startsPeriod (with endBill moving it), revive-on-live-record, and the sync a.kind fix.
+  - **ai-core** (lane/ai-core, b59f994 and on): the landed, bank-figure and card-figure actions, addBill rhythm, the F3 same-day case, and moved-from any bank.
+  - **ai-panel** (lane/ai-panel, 7dd019d): done. It merges after the candidate, together with ai-core, and setup3.js is joined by hand with setupfix.
+  - **restore** (lane/restore): the data-safety FAIL fixes.
+  - **s2b** (87965d5): done. It merges after the candidate (BX).
+  - **The back-test sort:** the three live-build reports go into qc_reports/2026-11-24_backtest_live_build/SORTED.md.
+- **Candidate:** wip-38.31 plus setupfix plus install. Then full check3, then qc-controls and qc-north-star, then the main commit for public/n/<path>/ only, with the NOT BUILT list for scope.txt.
+
 **2026-11-24 12:15 JST, MAIN 15:** report to Coordinator 11 (session_01BFpKEXW1AERpCVxch4xuXD). Read wip/team/MAKO_SAYS.md first. Every brief for a helper starts with that line.
 - **Merged:**
   - checkspeed: full check3 takes about 6 minutes; `./check3.sh quick` takes 1.
