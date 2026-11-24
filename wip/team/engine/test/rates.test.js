@@ -58,6 +58,10 @@ t('a tie on from goes to the later at, then the larger id; a gone record is neve
   b.rates.push(rate('r4', '2026-11-25', 'USD', 'JPY', '152', { gone: true }), rate('r5', '2026-11-25', 'EUR', 'JPY', '160'));
   eq(Lg.rateOn(b, 'USD', 'JPY', '2026-11-26').id, 'r3');
 });
+t('at is compared as a moment, not as text: 04:00Z is after 12:00+09:00 (03:00Z)', () => {
+  const b = book0([rate('r1', '2026-11-24', 'USD', 'JPY', '150', { at: '2026-11-24T12:00:00+09:00' }), rate('r2', '2026-11-24', 'USD', 'JPY', '151', { at: '2026-11-24T04:00:00Z' })]);
+  eq(Lg.rateOn(b, 'USD', 'JPY', '2026-11-24').id, 'r2');
+});
 t('the same pair in nine orders gives the same rate', () => {
   const list = [rate('r1', '2026-11-24', 'USD', 'JPY', '150'), rate('r2', '2026-11-24', 'USD', 'JPY', '151'), rate('r3', '2026-11-20', 'JPY', 'USD', '0.0066'), rate('r4', '2026-11-24', 'JPY', 'USD', '0.0067', { gone: true })];
   const want = Lg.rateOn(book0(list), 'USD', 'JPY', '2026-11-30').id;

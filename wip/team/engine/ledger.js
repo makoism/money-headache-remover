@@ -42,8 +42,9 @@
       .map(e => { const x = acc[e.acct].cur, y = acc[e.acct2].cur;
         return { id: e.id, from: e.date, at: e.at, cur: x, to: y, src: 'convert',
           rate: (BigInt(e.a2) * 10n ** BigInt(U.decimals(x))) + '/' + (BigInt(e.a) * 10n ** BigInt(U.decimals(y))) }; });
+    const when = r => { const k = Date.parse(r.at); return isNaN(k) ? -8.64e15 : k; };   // `at` as a moment, its offset read
     const list = ((book && book.rates) || []).concat(fromEvents).filter(pair).sort((p, q) => (p.from !== q.from ? (p.from < q.from ? -1 : 1)
-      : s(p.at) !== s(q.at) ? (s(p.at) < s(q.at) ? -1 : 1) : s(p.id) < s(q.id) ? -1 : s(p.id) > s(q.id) ? 1 : 0));
+      : when(p) !== when(q) ? when(p) - when(q) : s(p.id) < s(q.id) ? -1 : s(p.id) > s(q.id) ? 1 : 0));
     const r = list.pop();
     return r ? { id: r.id, from: r.from, rate: r.rate, inverse: r.cur !== cur, src: r.src || 'typed', shown: U.shownRate(r.rate, r.cur !== cur) } : null;
   }
