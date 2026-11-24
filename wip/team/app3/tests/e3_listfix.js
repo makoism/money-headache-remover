@@ -111,6 +111,20 @@ const rows = p => p.$$eval('#rcList li', es => es.map(e => ({ gap: e.dataset.gap
     const warnG = await p.$$eval('#a3Home [data-warn]', es => es.map(e => e.textContent));
     ck('C1b: with 30,000 set aside in Main bank, no advice to move 20,000 from it', !mvG && warnG.some(x => /Bank B goes ¥5,000 below zero on 15 Dec/.test(x)), mvG + ' / ' + warnG.join(' | ')); }
 
+  /* A1, second case (qc-foundation): gaps the engine does not count as spending are not listed as spending. An
+     investment, 500,000 at setup, checked at 540,000 on 28 Nov (a rise is never spending, T watch), and a dollar
+     wallet, $100.00 at setup, checked at $90.00 on 28 Nov (another currency: not counted until stage 2). On 29 Nov
+     Receipts lists neither. */
+  { const bkI = T.book(), I = 'k7m2qa-f3n8p1x6wd-71', U = 'k7m2qa-f3n8p1x6wd-76', ev = (id, k, acct, date, a, told, grp) => ({ id, k, acct, date, a, told, grp });
+    bkI.accounts.push({ id: I, name: 'Invest', type: 'investment', cur: 'JPY', owner: null, minBank: null }, { id: U, name: 'Dollars', type: 'bank', cur: 'USD', owner: null, minBank: null });
+    bkI.events.push(ev('k7m2qa-f3n8p1x6wd-72', 'open', I, '2026-11-20', 500000, '2026-11-20T24:00', 'setup'), ev('k7m2qa-f3n8p1x6wd-73', 'check', I, '2026-11-20', 500000, '2026-11-20T24:00', 'setup'),
+      ev('k7m2qa-f3n8p1x6wd-74', 'check', I, '2026-11-28', 540000, '2026-11-28T20:00+09:00', 'k7m2qa-f3n8p1x6wd-75'),
+      ev('k7m2qa-f3n8p1x6wd-77', 'open', U, '2026-11-20', 10000, '2026-11-20T24:00', 'setup'), ev('k7m2qa-f3n8p1x6wd-78', 'check', U, '2026-11-20', 10000, '2026-11-20T24:00', 'setup'),
+      ev('k7m2qa-f3n8p1x6wd-79', 'check', U, '2026-11-28', 9000, '2026-11-28T20:00+09:00', 'k7m2qa-f3n8p1x6wd-75'));
+    await fresh(bkI); await go('2026-11-29');
+    await p.tap('[data-tab="receipts"]'); await T.w(300);
+    const rI = await rows(p);
+    ck('A1b: no gap row for the investment or the dollar account', !rI.some(r => r.gap), JSON.stringify(rI)); }
 
   /* B1: the same check as A1 on a fresh device, saved while "Was Card A's payment ¥54,000?" is still showing: the gap
      is counted as spending all the same (the engine's filler, 850), so the Undo bar says "It counts as spending" too. */
