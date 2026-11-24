@@ -89,6 +89,7 @@ step "the private publish (a made-up path, a copy of public/ served by the worke
 step "two tabs on one device"; run tests/e3_tabs.js "e3_tabs: ALL PASS"
 step "Settings and the backup file"; run tests/e3_backup.js "e3_backup: ALL PASS"
 step "Ask on the page (recorded replies: the viewer's Claude and the relay)"; run tests/e3_ask.js "e3_ask: ALL PASS"
+step "the code word for the AI (a made-up relay: the box, the 401 words, Settings, kept on this device only)"; run tests/e3_invite.js "e3_invite: ALL PASS"
 step "Reminders on the page (check-ins and bills, the calendar file, Google and Outlook, nothing sent)"; run tests/e3_remind.js "e3_remind: ALL PASS"
 step "the cloud copy, two devices through the page (local fake vault)"; run tests/e3_cloud.js "e3_cloud: ALL PASS"
 step "the service worker (precache, offline, 3 s timeout, a new build)"; run tests/e3_sw.js "e3_sw: ALL PASS"
