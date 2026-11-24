@@ -60,7 +60,22 @@
   // [L units q9] A saved amount that is not whole is kept as it is and flagged, never rounded on load.
   const loadAmount = a => ({ a, flag: !Number.isInteger(a) });
 
-  const api = { DECIMALS, known, decimals, toMinor, minorOf, fmt, interestOn, spread, loadAmount };
+  // [stage 2 S5, STAGE2_PLAN correction 2] An amount in whole minor units of `from` at a rate (a decimal string, kept at
+  // full precision: 1 `from` is `rate` `to`), as whole minor units of `to`; `inverse` reads the rate the other way (1 `to`
+  // is `rate` `from`). Whole-number maths with each currency's exponent, rounded half up (half away from zero below zero).
+  function convert(n, from, to, rate, inverse) {
+    if (from === to) return n;
+    const m = /^(\d+)(?:\.(\d+))?$/.exec(typeof rate === 'string' ? rate.trim() : '');
+    if (!m) throw new Error('not a rate: ' + rate);
+    const p = BigInt(m[1] + (m[2] || '')), k = 10n ** BigInt((m[2] || '').length);
+    if (p === 0n) throw new Error('not a rate: ' + rate);
+    const neg = n < 0, a = BigInt(Math.abs(n)), dt = 10n ** BigInt(decimals(to)), df = 10n ** BigInt(decimals(from));
+    const num = inverse ? a * k * dt : a * p * dt, den = inverse ? p * df : k * df;
+    const out = Number((2n * num + den) / (2n * den));
+    return neg ? -out : out;
+  }
+
+  const api = { DECIMALS, known, decimals, toMinor, minorOf, fmt, interestOn, spread, loadAmount, convert };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else (root.BurrowEngine = root.BurrowEngine || {}).units = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

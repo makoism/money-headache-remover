@@ -1435,6 +1435,20 @@
     for (const id of ids) if (res.accounts[id].currency !== home) beside[res.accounts[id].currency] = (beside[res.accounts[id].currency] || 0) + res.accounts[id].bank;
     const cardsOwed = Object.keys(cards).filter(id => cur(id) === home).reduce((t, id) => t + cards[id].owedNow, 0);
     res.total = { amount: homeTotal, beside, afterCards: homeTotal - cardsOwed };
+    // [stage 2 S5, STAGE2_PLAN 2.4 step 1] about how much in the home currency: each account in another currency at the
+    // rate in force today (ledger.rateOn), converted in whole numbers (units.convert); one with no rate yet is named in
+    // `missing`. A rate is old after 30 days. `amount` (the home currency only) is unchanged.
+    const others = ids.filter(id => res.accounts[id].currency !== home);
+    if (others.length) {
+      const parts = [], missing = [];
+      for (const id of others) {
+        const a = res.accounts[id], rt = L.rateOn(book, a.currency, home, asOf);
+        if (!rt) { missing.push({ account: id, currency: a.currency, amount: a.bank }); continue; }
+        parts.push({ account: id, currency: a.currency, amount: a.bank, converted: U.convert(a.bank, a.currency, home, rt.rate, rt.inverse),
+          rate: rt.rate, inverse: rt.inverse, rateFrom: rt.from, src: rt.src, old: today - dayNum(rt.from) > 30 });
+      }
+      res.total.inHome = { amount: parts.reduce((t, x) => t + x.converted, homeTotal), parts, missing };
+    }
 
     // ----- the check-in list [A1, A2, S6, U2, W2, X3] -----
     const bankIds = Object.keys(banks);

@@ -25,6 +25,17 @@
     for (const h of curs) if (day == null || h.from <= day) c = h.cur;
     return c;
   }
+  // [stage 2 S5, STAGE2_PLAN corrections 2, 3, 2'] The rate in force for `cur` into `to` on a day (YYYY-MM-DD): of the
+  // live `rates` records for the pair in either direction with `from` on or before the day, the latest by `from`, then
+  // `at`, then id. `inverse` is true when that record runs the other way (1 `to` is `rate` `cur`). Null when none.
+  function rateOn(book, cur, to, day) {
+    const pair = r => live(r) && typeof r.from === 'string' && r.from <= day && ((r.cur === cur && r.to === to) || (r.cur === to && r.to === cur));
+    const s = v => String(v == null ? '' : v);
+    const list = ((book && book.rates) || []).filter(pair).sort((p, q) => (p.from !== q.from ? (p.from < q.from ? -1 : 1)
+      : s(p.at) !== s(q.at) ? (s(p.at) < s(q.at) ? -1 : 1) : s(p.id) < s(q.id) ? -1 : s(p.id) > s(q.id) ? 1 : 0));
+    const r = list.pop();
+    return r ? { id: r.id, from: r.from, rate: r.rate, inverse: r.cur !== cur, src: r.src || 'typed' } : null;
+  }
   function ctx(book, day) {
     const by = Object.create(null);
     for (const a of book.accounts || []) if (a && typeof a.id === 'string' && !a.gone) by[a.id] = a;
@@ -160,7 +171,7 @@
     return { ok: p.total === p.have && !bad.length, total: p.total, have: p.have, cards: bad };
   }
 
-  const api = { TYPES, TWO, owed, yours, live, fieldValue, homeOn, ctx, accountMoves, apply, sums, placesOf, proof };
+  const api = { TYPES, TWO, owed, yours, live, fieldValue, homeOn, rateOn, ctx, accountMoves, apply, sums, placesOf, proof };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else (root.BurrowEngine = root.BurrowEngine || {}).ledger = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

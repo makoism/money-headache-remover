@@ -69,8 +69,11 @@
     for (const b of banks) {
       const type = b.type || 'bank';
       if (!BANK_TYPES[type]) throw new Error(b.name + ': no such kind of account ' + type);
-      const x = stamp({ id: idFor(b.key), name: b.name, type, cur, owner: null });
-      if (b !== main && b.min != null) x.minBank = { a: whole(b.min, b.name + "'s minimum"), cur };
+      // [stage 2 S5] an account in another currency: `cur` on its answer, its amount in that currency's minor units
+      const bc = b.cur || cur;
+      if (b === main && bc !== cur) throw new Error('the main bank is in the home currency');
+      const x = stamp({ id: idFor(b.key), name: b.name, type, cur: bc, owner: null });
+      if (b !== main && b.min != null) x.minBank = { a: whole(b.min, b.name + "'s minimum"), cur: bc };
       book.accounts.push(x);
       opening(x.id, whole(b.amount, b.name));
     }
