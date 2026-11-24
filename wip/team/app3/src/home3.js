@@ -152,7 +152,9 @@ function drawHome3() {
   /* [BM3] each part names its own amount: a cap that takes everything (the headline is 0) says "all of it" */
   const all = r.safeToSpend.headline === 0 ? 'all of it: ' : '';
   const capParts = (r.safeToSpend.whyParts || []).map((x, i) => (x.over ? Object.assign({}, x, { label: `${all}Free to spend is ${money3(x.over, home)} over this period` })
-    : i > 0 && all && r.period && r.period.free && r.period.free.left === 0 ? Object.assign({}, x, { label: `${all}Free to spend is used up this period` }) : x));
+    : i > 0 && all && r.period && r.period.free && r.period.free.left === 0 ? Object.assign({}, x, { label: `${all}Free to spend is used up this period` })
+    /* [LISTFIX B3] the step the cap takes off, said as what it is: held back, because Free to spend has only so much left */
+    : i > 0 && !all ? Object.assign({}, x, { label: `held back: Free to spend has only ${money3(r.safeToSpend.headline, home)} left this period` }) : x));
   const capLine = r.safeToSpend.whyParts ? `<p class="a3-sum" data-fig="cap">${esc3(sum3(capParts, r.safeToSpend.headline, home))}</p>${freeShare3(r, home)}` : '';
   const sums = `${ids.filter(id => r.accounts[id].spendFrom).map(id => `<p class="a3-sum" data-fig="why">${esc3(whyWords3(r.accounts[id]))}</p>${todayWords3(r.accounts[id], id)}`).join('')}${capLine}`;
   /* [BL3] short: the sum's own total, before the pay after its lowest point (only when one brings money), and the first

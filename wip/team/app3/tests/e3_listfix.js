@@ -9,7 +9,8 @@
    A2. Plan lines alone needing more than the bank can spare: Home says so, by how much, and what to do (worked below).
    C1. A second bank going below zero while the main one can spare it: Home says to move the money, how much and from where.
    B1. A gap saved while the card question shows: the Undo bar still says it counts as spending.
-   B2. Right after setup, Home says why safe to spend is small: Free to spend counts its share for the days left. */
+   B2. Right after setup, Home says why safe to spend is small: Free to spend counts its share for the days left.
+   B3. The cap step in the sum under safe to spend says it is held back, and why. */
 'use strict';
 const T = require('./lib3.js');
 const { ck } = T;
@@ -113,6 +114,11 @@ const rows = p => p.$$eval('#rcList li', es => es.map(e => ({ gap: e.dataset.gap
   ck('B2: Home says why: Free to spend counts ¥40,000 of ¥60,000 this pay period, because you started partway through it', sh.startsWith('Free to spend counts ¥40,000 of ¥60,000 this pay period, because you started partway through it. The full ¥60,000 counts from your next pay'), sh);
   ck('B2: with the "?" of Plan\'s "Why only part?"', !!(await p.$('#a3Home [data-fig="freeshare"] .burrow-help[data-help=lineShare]')));
   await T.shot(p, 'listfix_b2');
+
+  /* B3: the same Home. The sum under safe to spend ends with the cap (BJ5); its step says what it is: "(held back: Free
+     to spend has only ¥40,000 left this period) = ¥40,000", never "(more than Free to spend left this period)". */
+  const cap = await p.$eval('#a3Home [data-fig="cap"]', e => e.textContent.trim()).catch(() => '');
+  ck('B3: the cap step reads (held back: Free to spend has only ¥40,000 left this period) = ¥40,000', /\(held back: Free to spend has only ¥40,000 left this period\) = ¥40,000$/.test(cap) && !/more than Free to spend/.test(cap), cap);
 
   const errs = [].concat(...errLists); ck('no page errors', errs.length === 0, errs.join(' | '));
   await b.close(); T.done('e3_listfix');
