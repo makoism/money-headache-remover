@@ -1416,6 +1416,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
 .a3-rows li.a3-hashelp > .a3-rcrow { flex: 1 1 100%; }
 .a3-helprow { flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .a3-helprow .burrow-help-text { flex: 1 1 100%; margin: 0; }
+.a3-word { margin-bottom: 14px; }   /* the code word box above the question or the files (stmt3_ai.js) */
 </style>
 </head>
 <body>
@@ -10535,15 +10536,17 @@ function openSet3() {
       <div id="a3BkAsk"></div>
       <div id="a3BkKept"></div></div>`;
   const cloud = typeof cloudCard3 === 'function' ? cloudCard3() : '';
+  const word = '<div class="a3-card" data-card="word" id="a3SetWord"></div>';   // the code word for the AI: a device thing, shown for a try book too
   sheet.innerHTML = `<div class="a3-sheet-in">
       <h1 id="a3SetT">Settings</h1>
       <p class="a3-warn" id="a3SetMsg" role="status" hidden></p>
-      ${money}${tryBook ? tryNote : `${device}${backup}${cloud}`}
+      ${money}${tryBook ? tryNote : `${device}${backup}${cloud}`}${word}
       <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3SetClose">Done</button></div></div>`;
   /* over whatever shows (the panels and the tab bar), put back as they were on Done */
   SET3.was = [...document.querySelectorAll('[data-panel], .a3-tabs, #a3Check, #a3StmtBar, #a3Stmt')].map(el => [el, el.hidden]);
   SET3.was.forEach(([el]) => { el.hidden = true; }); sheet.hidden = false;
   $('#a3SetClose').addEventListener('click', closeSet3);
+  paintWord3();
   if (!tryBook) {
     paintSpace3();
     $('#a3Persist').addEventListener('click', async () => { await BurrowPersist.askToKeep(); paintSpace3(); });
@@ -10570,6 +10573,24 @@ async function fromOther3() {
   $('#a3SetT').insertAdjacentHTML('afterend', `<p class="a3-next" data-set="other">Type the cloud code from your other device, or restore a backup file you saved there</p>`);
   for (let i = 0; i < 40 && SET3.open && !$('#a3CloudHave'); i++) await new Promise(r => setTimeout(r, 25));   // the cloud card paints after it reads its state
   if (SET3.open && $('#a3CloudHave') && typeof haveCode3 === 'function') haveCode3();
+}
+/* the code word for the AI (stmt3_ai.js keeps it on this device only): change it or clear it */
+function paintWord3() {
+  const el = $('#a3SetWord'); if (!el) return;
+  const w = STMT3_AI.word();
+  el.innerHTML = `<h2>Code word for the AI</h2>
+    <p class="a3-next" data-set="word">${w ? 'A code word is kept on this device only. It is never in your backup file or cloud copy, and goes only to this page\'s own server.' : 'No code word is kept on this device. One is needed only when the page\'s owner asks for it.'}</p>
+    <div class="a3-field"><label for="a3SetWordIn">${w ? 'New code word' : 'Code word'}</label>
+      <input class="a3-in a3-text" id="a3SetWordIn" type="text" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+    <div class="a3-actions"><button type="button" class="a3-btn" id="a3SetWordKeep">${w ? 'Change it' : 'Keep it'}</button>${w ? '<button type="button" class="a3-btn" id="a3SetWordClear">Clear it</button>' : ''}</div>`;
+  const keep = () => {
+    const v = $('#a3SetWordIn').value.trim();
+    if (!v) { setMsg3('Type the code word first.', true); $('#a3SetWordIn').focus(); return; }
+    STMT3_AI.setWord(v); paintWord3(); setMsg3('The code word is kept on this device.');
+  };
+  $('#a3SetWordKeep').addEventListener('click', keep);
+  $('#a3SetWordIn').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); keep(); } });
+  if (w) $('#a3SetWordClear').addEventListener('click', () => { STMT3_AI.setWord(''); paintWord3(); setMsg3('The code word is cleared from this device.'); });
 }
 async function paintSpace3() {
   const el = $('#a3Space'); if (!el || typeof BurrowPersist !== 'object') return;
@@ -10717,30 +10738,83 @@ async function leaveTry3() {
      2. the viewer's own Claude (window.claude.use('sample')), inside the Claude viewer.
    Nothing is sent until the person taps Read, and only the files they chose. No key is kept on the device: the relay's
    anonymous id is drawn once per page open. PDFs go only through the relay (the viewer's Claude takes pictures alone).
-   A file that is not a picture or a PDF is read here as text (UTF-8, else Shift_JIS, else EUC-JP) and sent as text. */
+   A file that is not a picture or a PDF is read here as text (UTF-8, else Shift_JIS, else EUC-JP) and sent as text.
+   The code word (the relay's INVITE_CODES): when /api/health says invite, the word the person types is kept on this
+   device only (localStorage burrow3.invite, a small device thing [D1]), never in the book, a backup or the cloud copy,
+   and sent nowhere but the relay's own `invite` field. Every relay call, Ask's too, goes through post() here. */
 const STMT3_AI = (() => {
   const IMG = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
   const PDF_MAX = 6000000, TEXT_MAX = 240000;
   const isPdf = f => f.type === 'application/pdf' || /\.pdf$/i.test(f.name || '');
   const isImg = f => IMG.includes(f.type);
   const anon = (() => { const abc = 'abcdefghijklmnopqrstuvwxyz0123456789'; let s = ''; for (const b of crypto.getRandomValues(new Uint8Array(16))) s += abc[b % 36]; return s; })();
-  let route = null;
+  let route = null, healthGot = null;
+  /* ---- the code word, kept on this device only ---- */
+  const WORD_KEY = 'burrow3.invite', WORD_BAD = 'The code word didn\'t match. Type it again';
+  let wordMem = null;   // when localStorage is blocked, the word lasts for this page only
+  function word() { if (wordMem !== null) return wordMem; try { return localStorage.getItem(WORD_KEY) || ''; } catch (e) { return ''; } }
+  function setWord(w) {
+    const v = String(w || '').trim();
+    try { if (v) localStorage.setItem(WORD_KEY, v); else localStorage.removeItem(WORD_KEY); wordMem = null; } catch (e) { wordMem = v; }
+    return v;
+  }
   function relayBase() {
     const named = typeof window.STMT3_RELAY === 'string' ? window.STMT3_RELAY : '';
     if (named) return named.replace(/\/$/, '');
     return /^https?:$/.test(location.protocol) ? location.origin : '';
   }
+  /* what the site's relay offers ({ ai, invite }), or null when there is none; asked once per page open */
+  async function health() {
+    if (healthGot) return healthGot;
+    const base = relayBase(); if (!base) return null;
+    try {
+      const r = await fetch(base + '/api/health', { cache: 'no-store' });
+      const h = r.ok ? await r.json() : null;
+      if (h && typeof h === 'object') healthGot = h;
+      return h;
+    } catch (e) { return null; }   // no relay here
+  }
+  /* true when the relay asks for a code word and none is kept on this device (only the relay is asked, never the viewer's Claude) */
+  async function needWord() { const h = await health(); return !!(h && h.ai && h.invite) && !word(); }
+  /* the one place a relay call is sent: the kept word in `invite`; plain words for each way it can fail.
+     busy: the words for too many calls. A 401 invite_required forgets the word and throws an Error with .word = true. */
+  async function post(base, body, busy) {
+    let r;
+    try { r = await fetch(base + '/api/ai', { method: 'POST', headers: { 'content-type': 'application/json', 'x-app': 'mhr2000' }, body: JSON.stringify(Object.assign({}, body, { invite: word() })) }); }
+    catch (e) { throw new Error('no connection. Check the internet and try again'); }
+    if (r.status === 401) {
+      const j = await r.json().catch(() => null);
+      if (j && j.error && j.error.code === 'invite_required') { setWord(''); const e = new Error(WORD_BAD); e.word = true; throw e; }
+    }
+    if (r.status === 429) throw new Error(busy || 'too many requests right now, try again in a minute');
+    if (!r.ok) throw new Error('the AI did not answer (' + r.status + ')');
+    return r.json();
+  }
+  /* the box for the code word, put in `slot` (Ask and Add statements); `bad` says why it shows again. On Keep the word
+     is kept on this device and onKept() runs. */
+  function wordBox(slot, bad, onKept) {
+    if (!slot) return;
+    slot.innerHTML = `<div class="a3-field a3-word" id="a3Word"><label for="a3WordIn">Code word for the AI (ask the owner)</label>
+      <input class="a3-in a3-text" id="a3WordIn" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="a3WordH">
+      <p class="a3-sub" id="a3WordH">Kept on this device only, and sent only to this page's own server.</p>
+      <p class="a3-err" id="a3WordErr" role="alert"></p>
+      <div class="a3-actions"><button type="button" class="a3-btn" id="a3WordKeep">Keep it</button></div></div>`;
+    const err = slot.querySelector('#a3WordErr'), say = t => { err.textContent = t || ''; err.hidden = !t; };
+    say(bad);
+    const keep = () => {
+      const v = slot.querySelector('#a3WordIn').value.trim();
+      if (!v) { say('Type the code word first'); slot.querySelector('#a3WordIn').focus(); return; }
+      setWord(v); slot.innerHTML = '';
+      if (onKept) onKept();
+    };
+    slot.querySelector('#a3WordKeep').addEventListener('click', keep);
+    slot.querySelector('#a3WordIn').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); keep(); } });
+  }
   /* which way the AI can be reached from this copy: { how: 'relay' | 'claude', fn } or { how: null, why } */
   async function connect() {
     if (route && route.how) return route;
-    const base = relayBase();
-    if (base) {
-      try {
-        const r = await fetch(base + '/api/health', { cache: 'no-store' });
-        const h = r.ok ? await r.json() : null;
-        if (h && h.ai) return (route = { how: 'relay', base });
-      } catch (e) { /* no relay here */ }
-    }
+    const base = relayBase(), h = await health();
+    if (h && h.ai) return (route = { how: 'relay', base, invite: !!h.invite });
     try {
       const c = window.claude;
       if (c && typeof c.use === 'function') { const fn = await c.use('sample'); if (typeof fn === 'function') return (route = { how: 'claude', fn }); }
@@ -10754,15 +10828,10 @@ const STMT3_AI = (() => {
   async function viaRelay(base, prompt, file, text) {
     const content = [{ type: 'text', text: `${prompt}${text !== null ? `\n\nTHE FILE (${file.name})\n${text}` : ''}` + `\n\nAnswer by calling the ${NAME} tool once, with every field filled in. No words outside the tool call.` }];
     if (text === null) content.push({ type: isPdf(file) ? 'document' : 'image', source: { type: 'base64', media_type: isPdf(file) ? 'application/pdf' : file.type, data: await dataOf(file) } });
-    const body = { v: 1, anon, invite: '', tier: 'default', max_tokens: 24000, effort: 'low',
+    const body = { v: 1, anon, tier: 'default', max_tokens: 24000, effort: 'low',
       tools: [{ name: NAME, description: 'The transaction rows of one statement file.', input_schema: STMT3R.ROWS_SCHEMA }], tool_choice: { type: 'auto' },
       messages: [{ role: 'user', content }] };
-    let r;
-    try { r = await fetch(base + '/api/ai', { method: 'POST', headers: { 'content-type': 'application/json', 'x-app': 'mhr2000' }, body: JSON.stringify(body) }); }
-    catch (e) { throw new Error('no connection. Check the internet and try again'); }
-    if (r.status === 429) throw new Error('too many requests right now, try again in a minute');
-    if (!r.ok) throw new Error('the AI did not answer (' + r.status + ')');
-    const res = await r.json();
+    const res = await post(base, body);
     const use = (res.content || []).find(b => b.type === 'tool_use' && b.name === NAME);
     if (res.stop_reason === 'max_tokens') throw new Error('too long for one read. Split it or use fewer pages');
     if (use && use.input && typeof use.input === 'object') return use.input;
@@ -10788,7 +10857,7 @@ const STMT3_AI = (() => {
     const raw = r.how === 'relay' ? await viaRelay(r.base, prompt, file, text) : await viaClaude(r.fn, prompt, file, text);
     return STMT3R.cleanRead(raw, file.name, today);
   }
-  return { connect, readFile, reset: () => { route = null; } };
+  return { connect, readFile, post, needWord, word, setWord, wordBox, WORD_BAD, reset: () => { route = null; healthGot = null; } };
 })();
 /* ---------- Statements (DECISIONS_ROUND2 E4, E7; SCHEMA_V3 6.4) ----------
    Add statements: choose files for each account (the bank and each card), read them with the AI (stmt3_ai.js) or with
@@ -10836,6 +10905,7 @@ function stmt3Pick() {
   const sheet = stmt3Show(`<h1 id="a3StmtT">Add statements</h1>
     <section class="a3-card"><h2>Before you start</h2><p class="a3-sub" data-privacy="ai">${esc3(STMT3_WORDS.ai)}</p><p class="a3-sub">${esc3(STMT3_WORDS.kept)}</p></section>
     <section class="a3-card"><h2>Your files</h2><p class="a3-sub">A CSV from your bank's website works best. PDFs and screenshots work too</p>${rows}
+      <div id="a3StmtWord"></div>
       <p class="a3-sub" id="a3StmtProg" aria-live="polite"></p><p class="a3-err" id="a3StmtErr"></p>
       <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3StmtRead">Read with the AI</button><button type="button" class="a3-btn" id="a3StmtX">Back</button></div></section>
     <details class="a3-card" id="a3StmtAny"><summary>Use any AI instead</summary>
@@ -10855,25 +10925,42 @@ function stmt3Pick() {
   $('#a3StmtRead').addEventListener('click', stmt3ReadAI);
   $('#a3StmtCopy').addEventListener('click', () => { const t = $('#a3StmtAsk'); t.select(); try { navigator.clipboard.writeText(t.value).then(() => msg3('Copied'), () => msg3('Select the request and copy it')); } catch (e) { msg3('Select the request and copy it'); } });
   $('#a3StmtCheck').addEventListener('click', stmt3CheckPaste);
+  stmt3Word('');
+}
+/* the code word box, when the relay asks for one and none is kept on this device (stmt3_ai.js keeps it) */
+async function stmt3Word(bad) {
+  if (!bad && !(await STMT3_AI.needWord())) return;
+  const slot = $('#a3StmtWord'); if (!slot || !slot.isConnected) return;
+  STMT3_AI.wordBox(slot, '', () => { const e = $('#a3StmtErr'); if (e) e.textContent = ''; });
+  if (bad) slot.querySelector('#a3WordIn').focus();
 }
 async function stmt3ReadAI() {
   const prog = $('#a3StmtProg'), err = $('#a3StmtErr'), btn = $('#a3StmtRead');
   const jobs = [];
   for (const a of stmt3Accts()) for (const f of stmt3.files[a.id] || []) jobs.push({ a, f, line: a.name + ', ' + f.name + ': waiting' });
   if (!jobs.length) { err.textContent = 'Choose a file for at least one account first'; return; }
+  if (await STMT3_AI.needWord()) { await stmt3Word(''); err.textContent = 'Type the code word for the AI first'; $('#a3WordIn').focus(); return; }
   err.textContent = ''; btn.disabled = true;
   const paint = () => { prog.innerHTML = jobs.map(j => `<span class="a3-line${j.bad ? ' a3-bad-t' : ''}">${esc3(j.line)}</span>`).join(''); };
   const reads = [], assign = [];
+  let wordBad = false;
   for (const j of jobs) {
+    if (wordBad) { j.line = j.a.name + ', ' + j.f.name + ': not read'; continue; }
     j.line = j.a.name + ', ' + j.f.name + ': reading'; paint();
     try {
       const r = await STMT3_AI.readFile(j.f, j.a, E3.today());
       j.line = j.a.name + ', ' + j.f.name + ': ' + (r.rows.length ? `${r.rows.length} ${r.rows.length === 1 ? 'line' : 'lines'}${r.from ? `, ${day3(r.from, E3.today().slice(0, 4))} to ${day3(r.to, E3.today().slice(0, 4))}` : ''}` : 'no lines found');
       if (r.rows.length) { reads.push(r); assign.push(j.a.id); }
-    } catch (e) { j.bad = true; j.line = j.a.name + ', ' + j.f.name + ': ' + ((e && e.message) || 'could not be read'); }
+    } catch (e) {
+      j.bad = true;
+      if (e && e.word) { wordBad = true; j.line = j.a.name + ', ' + j.f.name + ': not read, the code word didn\'t match'; }
+      else j.line = j.a.name + ', ' + j.f.name + ': ' + ((e && e.message) || 'could not be read');
+    }
     paint();
   }
+  paint();
   btn.disabled = false;
+  if (wordBad) { err.textContent = STMT3_AI.WORD_BAD; await stmt3Word(STMT3_AI.WORD_BAD); return; }
   if (!reads.length) { err.textContent = 'Nothing could be read. Each file\'s line above says why'; return; }
   stmt3Got(reads, assign);
 }
@@ -11239,6 +11326,7 @@ function openAsk3() {
       <details class="a3-ask-sent"><summary>See what is sent</summary><pre id="a3AskSent"></pre></details></div>
     <div class="a3-ask-log" id="a3AskLog" aria-live="polite"></div>
     <div class="a3-card" data-card="ask-in">
+      <div id="a3AskWord"></div>
       <label class="a3-ask-label" for="a3AskIn">Your question</label>
       <textarea class="a3-in a3-text a3-ask-in" id="a3AskIn" rows="3" maxlength="500"></textarea>
       <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3AskSend">Ask</button><button type="button" class="a3-btn" id="a3AskClose">Close</button></div>
@@ -11253,6 +11341,14 @@ function openAsk3() {
   $('#a3AskIn').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask3Send(); } });
   for (const b of sheet.querySelectorAll('[data-asktry]')) b.addEventListener('click', () => { $('#a3AskIn').value = b.dataset.asktry; ask3Send(); });
   scrollTo(0, 0); $('#a3AskIn').focus();
+  ask3Word('');
+}
+/* the code word box, when the relay asks for one and none is kept on this device (stmt3_ai.js keeps it) */
+async function ask3Word(bad) {
+  if (!bad && !(await STMT3_AI.needWord())) return false;
+  const slot = $('#a3AskWord'); if (!ASK3.open || !slot) return false;
+  STMT3_AI.wordBox(slot, bad, () => { const q = $('#a3AskIn'); if (q) q.focus(); });
+  return true;
 }
 function closeAsk3() {
   if (!ASK3.open) return;
@@ -11278,15 +11374,10 @@ function ask3Anon() {
   return (ASK3.anon = s);
 }
 async function ask3Relay(base, rq) {
-  const body = { v: 1, anon: ask3Anon(), invite: '', tier: 'default', max_tokens: 2000, effort: 'low',
+  const body = { v: 1, anon: ask3Anon(), tier: 'default', max_tokens: 2000, effort: 'low',
     tools: [{ name: rq.name, description: rq.description, input_schema: rq.schema }], tool_choice: { type: 'auto' },
     messages: [{ role: 'user', content: [{ type: 'text', text: rq.prompt + `\n\nAnswer by calling the ${rq.name} tool once.` }] }] };
-  let r;
-  try { r = await fetch(base + '/api/ai', { method: 'POST', headers: { 'content-type': 'application/json', 'x-app': 'mhr2000' }, body: JSON.stringify(body) }); }
-  catch (e) { throw new Error('no connection. Check the internet and try again'); }
-  if (r.status === 429) throw new Error('too many questions right now, try again in a minute');
-  if (!r.ok) throw new Error('the AI did not answer (' + r.status + ')');
-  const res = await r.json();
+  const res = await STMT3_AI.post(base, body, 'too many questions right now, try again in a minute');   // the one place a relay call is sent, with the code word
   const use = (res.content || []).find(b => b.type === 'tool_use' && b.name === rq.name);
   if (use && use.input && typeof use.input === 'object') return use.input;
   const text = (res.content || []).filter(b => b.type === 'text').map(b => b.text).join('').trim();
@@ -11304,6 +11395,7 @@ async function ask3Send() {
   const box = $('#a3AskIn'), q = box.value.trim();
   if (ASK3.busy) return;
   if (!q) { box.focus(); return; }
+  if (await STMT3_AI.needWord()) { await ask3Word('Type the code word first, then Ask again'); $('#a3WordIn').focus(); return; }
   ASK3.busy = true; $('#a3AskSend').disabled = true;
   box.value = '';
   ask3Bubble('a3-ask-me', q);
@@ -11325,8 +11417,9 @@ async function ask3Send() {
   } catch (e) {
     bot.classList.remove('a3-ask-wait'); bot.classList.add('a3-bad');
     const m = String((e && e.message) || e);
-    bot.textContent = m === ASK3_WORDS.none ? m : 'That didn\'t go through: ' + m + '. Your question is back in the box';
+    bot.textContent = m === ASK3_WORDS.none || (e && e.word) ? m : 'That didn\'t go through: ' + m + '. Your question is back in the box';
     box.value = q;
+    if (e && e.word) { await ask3Word(m); const w = $('#a3WordIn'); if (w) w.focus(); }
   }
   ASK3.busy = false; $('#a3AskSend').disabled = false;
 }

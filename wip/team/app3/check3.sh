@@ -90,6 +90,7 @@ page|tests/e3_publish.js|e3_publish: ALL PASS||300|the private publish (a made-u
 page|tests/e3_tabs.js|e3_tabs: ALL PASS||300|two tabs on one device
 page|tests/e3_backup.js|e3_backup: ALL PASS||300|Settings and the backup file
 page|tests/e3_ask.js|e3_ask: ALL PASS||300|Ask on the page (recorded replies: the viewer's Claude and the relay)
+page|tests/e3_invite.js|e3_invite: ALL PASS||300|the code word for the AI: the box, a word that does not match, Settings, never in the book
 page|tests/e3_remind.js|e3_remind: ALL PASS||300|Reminders on the page (check-ins and bills, the calendar file, Google and Outlook, nothing sent)
 page|tests/e3_cloud.js|e3_cloud: ALL PASS||300|the cloud copy, two devices through the page (local fake vault)
 page|tests/e3_sw.js|e3_sw: ALL PASS||300|the service worker (precache, offline, 3 s timeout, a new build)
@@ -113,8 +114,8 @@ page_tests_for() {   # page_tests_for <changed path, relative to app3/>
     src/plan3.js|src/plan3_write.js) echo e3_plan e3_rhythms e3_lineshare e3_homeplan e3_paychange e3_names ;;
     src/setup3.js)            echo e3_setup e3_setup6 e3_income2 e3_weeks3 e3_first ;;
     src/start3.js)            echo e3_first e3_file e3_try ;;
-    src/stmt3*.js)            echo e3_stmt e3_stmt_once e3_walk4 ;;
-    src/ask3*.js)             echo e3_ask ;;
+    src/stmt3*.js)            echo e3_stmt e3_stmt_once e3_walk4 e3_invite ;;
+    src/ask3*.js)             echo e3_ask e3_invite ;;
     src/backup3.js|src/settings3.js) echo e3_backup e3_tabs ;;
     src/sw3.js|src/settings3_sw.js|sw3.js) echo e3_sw offline ;;
     src/cloud3*.js)           echo e3_cloud ;;
