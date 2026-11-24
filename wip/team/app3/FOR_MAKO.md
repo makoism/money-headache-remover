@@ -1,7 +1,7 @@
 # app3: for Mako
 
-## Cloud copy: five server changes to approve in one reply (recommended: approve all)
-Until these are in, keep the cloud copy on one device. Nothing changes for the old app.
+## Cloud copy: the five server changes went live on 24 Nov
+You approved all five and they went live on 24 Nov, so the cloud copy can be on more than one device now. Nothing changes for the old app.
 1. **Refuse a write that names no base when a copy already exists.** Today a second device could overwrite the first device's copy. Recommended: yes, this is the important one.
 2. **Refuse a copy in an unknown format or a newer shape.** It stops an older or broken page writing something the app can't read. Recommended: yes.
 3. **Keep dated earlier versions**, not only the last one, so a bad copy can be undone. Recommended: yes, the last 10.
@@ -26,7 +26,7 @@ Until these are in, keep the cloud copy on one device. Nothing changes for the o
 - Home shows safe to spend until your next pay, with the sum behind it. If a number looks wrong, the sum shows where it came from.
 - Log a spend in Receipts. Only the amount is needed.
 - **Check your bank** whenever you like, and at least after each pay day. Untick anything that hasn't gone through yet, then type what the bank shows. Something you untick stays on the list until it lands.
-- In Settings, **save a backup file** after setup and after each check-in for the first weeks. Keep the cloud copy off, or on one device only, until the server changes below are approved.
+- In Settings, **save a backup file** after setup and after each check-in for the first weeks. The cloud copy can be on your phone and your computer together.
 - Statements: Add statements on Home. Answer every question it asks before Add.
 
 **If something looks wrong:** take a screenshot and send it. Don't fix numbers by hand. The walk tests mean a wrong figure is a bug we want to see.
