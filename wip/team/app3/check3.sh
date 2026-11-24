@@ -131,7 +131,9 @@ job() {   # job <n> <file> <timeout> <env...>
   note=$(reap "$n")
   # The browser itself going away under load from other lanes (a detached frame, a closed session, a failed launch)
   # is not a test result: that one case runs again once, and says so. A FAIL line is never run again.
-  if [ $rc -ne 0 ] && ! echo "$out" | grep -q "^FAIL [^c]" && echo "$out" | grep -q "detached Frame\|Session closed\|Target closed\|Failed to launch the browser"; then
+  # "Target page, context or browser has been closed" is the same case in Playwright's words (the walk and the lives):
+  # it is what a walk prints when another session runs pkill -f chrome-linux64/chrome under it.
+  if [ $rc -ne 0 ] && ! echo "$out" | grep -q "^FAIL [^c]" && echo "$out" | grep -q "detached Frame\|Session closed\|Target closed\|Target page, context or browser has been closed\|Failed to launch the browser"; then
     note="$note${note:+$'\n'}RETRIED: the browser went away under load (no FAIL line), so $f ran once more. The first run's last lines:"$'\n'"$(echo "$out" | tail -8)"
     out=$(env CHECK3_JOB="$RUN_ID.$n." "$@" timeout "$t" "${cmd[@]}" 2>&1 < /dev/null); rc=$?
     local again; again=$(reap "$n"); [ -n "$again" ] && note="$note"$'\n'"$again"
