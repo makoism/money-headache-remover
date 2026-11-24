@@ -4,6 +4,14 @@ Written 2026-11-18 on branch `wip-38.31`. Read this whole file before touching a
 
 ## 0. Handoff (latest first)
 
+**2026-11-24 09:45 JST, MAIN 15: non-stop again (Mako asked why it stopped).**
+- **Republish candidate:** wip-38.31 at f279c86, with the other lives plus slices 6 and 6b. Gates are green: check3 ALL GOOD, engine 18 runs, scenarios exit 0, rules 817.
+- **To update the live link when Mako says so:** run publish3.sh with the SAME private path. The path is in the scratchpad file app3_path.txt, or ask Mako for his link. Then push only those two files to main, with his OK in chat.
+- **Running, each on its own branch:**
+  - lane/vault: the 5 cloud server changes, built and tested, not deployed
+  - lane/listfix: correctness, clarity and stuck items from FOR_MAKO and SLICE6
+  - STAGE2_PLAN.md draft: couples, second currency, the rich merge, interest, instalments. It goes to efficiency and qc-foundation, then the first thin slice.
+
 **2026-11-24 08:45 JST, MAIN 15: PUBLISHED.** Mako said yes in chat. Build 5bf4d32 went to main as ba79e69: only the two app3 files under public/n/<private path>/ were added. The path is not written here; Mako has the link. The BG2 checks (e3_publish) passed against main's live sw.js before the push. This session's network cannot reach the site, so Mako confirms that the root is unchanged and the new link loads.
 **Next:** slice 6b (lane/slice6b, e5c6ae6) needs qc-foundation before it merges. Decide Free to spend with no fixed pay (recommend: it starts again each month). Mako's run feedback, from app3/FOR_MAKO.md. Then art and the 3D world, with Mako.
 
