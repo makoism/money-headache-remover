@@ -32,6 +32,10 @@
   // too, worked out from the event each time as an exact ratio: 1 <what left> is a2 x 10^(its exponent) / (a x 10^(the
   // other's)) <what arrived>, dated by the event, `src: 'convert'`. `shown` is the rate in the asked direction, rounded
   // for display only (units.shownRate).
+  // [second review, F3] a saved rate must be a decimal string above zero ('150.25'); any other is skipped by rateOn
+  // and listed by badRates ({ id, rate }), never thrown
+  const goodRate = r => typeof r.rate === 'string' && /^\d+(\.\d+)?$/.test(r.rate) && /[1-9]/.test(r.rate);
+  const badRates = book => ((book && book.rates) || []).filter(r => live(r) && !goodRate(r)).map(r => ({ id: r.id, rate: r.rate }));
   function rateOn(book, cur, to, day) {
     const U = typeof module === 'object' && module.exports ? require('./units.js') : root.BurrowEngine.units;
     const pair = r => live(r) && typeof r.from === 'string' && r.from <= day && ((r.cur === cur && r.to === to) || (r.cur === to && r.to === cur));
@@ -43,7 +47,7 @@
         return { id: e.id, from: e.date, at: e.at, cur: x, to: y, src: 'convert',
           rate: (BigInt(e.a2) * 10n ** BigInt(U.decimals(x))) + '/' + (BigInt(e.a) * 10n ** BigInt(U.decimals(y))) }; });
     const when = r => { const k = Date.parse(r.at); return isNaN(k) ? -8.64e15 : k; };   // `at` as a moment, its offset read
-    const list = ((book && book.rates) || []).concat(fromEvents).filter(pair).sort((p, q) => (p.from !== q.from ? (p.from < q.from ? -1 : 1)
+    const list = ((book && book.rates) || []).filter(goodRate).concat(fromEvents).filter(pair).sort((p, q) => (p.from !== q.from ? (p.from < q.from ? -1 : 1)
       : when(p) !== when(q) ? when(p) - when(q) : s(p.id) < s(q.id) ? -1 : s(p.id) > s(q.id) ? 1 : 0));
     const r = list.pop();
     return r ? { id: r.id, from: r.from, rate: r.rate, inverse: r.cur !== cur, src: r.src || 'typed', shown: U.shownRate(r.rate, r.cur !== cur) } : null;
@@ -183,7 +187,7 @@
     return { ok: p.total === p.have && !bad.length, total: p.total, have: p.have, cards: bad };
   }
 
-  const api = { TYPES, TWO, owed, yours, live, fieldValue, homeOn, rateOn, ctx, accountMoves, apply, sums, placesOf, proof };
+  const api = { TYPES, TWO, owed, yours, live, fieldValue, homeOn, rateOn, badRates, ctx, accountMoves, apply, sums, placesOf, proof };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else (root.BurrowEngine = root.BurrowEngine || {}).ledger = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

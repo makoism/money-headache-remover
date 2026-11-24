@@ -1154,7 +1154,14 @@
         }
       }
       if (from < today && srcs.length) {
-        const left = Math.max(0, stretch - (banks[id] ? banks[id].loggedOut : 0));
+        // [second review, F1] less only what was logged against these lines or Free to spend since that check, on any
+        // account in this currency (a card too), refunds given back to them added again: never a bill paid, a transfer
+        // or a card payment
+        const mine = new Set(srcs.map(x => x.src.id));
+        const lineOf = e => (e.line ? e.line : e.k === 'spend' && freeSrc && !e.settles.length && !e.place && !isFeeRecord(e) ? 'free' : null);
+        const logged = live().filter(e => e.day > from && e.day <= today && e.account && acct[e.account] && cur(e.account) === cur(id) && mine.has(lineOf(e)))
+          .reduce((t, e) => t + (e.k === 'spend' && !isFeeRecord(e) ? e.a : e.k === 'in' && e.sub === 'refund' ? -e.a : 0), 0);
+        const left = Math.max(0, stretch - logged);
         list.push({ land: today, amount: left, label: `Your plan since your last check (${short(from + 1)} to today), less what you logged` });
       }
       return list;
@@ -1169,7 +1176,8 @@
     // zero), and a transfer in counts what its account moved, from that account's own runway walk (its pay left out,
     // its own transfers in not counted, so two accounts never lean on each other). `runway === 'noIn'` is that walk.
     const movedBy = {};
-    const movedFrom = src => (movedBy[src] = movedBy[src] || (banks[src] ? walk(src, today + LATER_ON_DAYS, 0, false, 'noIn').moved : null));
+    // [second review, watch] an account that is not walked (a card, a loan) holds no money of the person's: nothing moves
+    const movedFrom = src => (movedBy[src] = movedBy[src] || (banks[src] ? walk(src, today + LATER_ON_DAYS, 0, false, 'noIn').moved : {}));
     function walk(id, end, minimum, real, runway) {
       const start = banks[id].bank;
       const why = [{ label: acct[id].name + ' today', amount: start }];
@@ -1194,7 +1202,7 @@
         }
         if (o.kind === 'transfer' && o.to === id && o.land >= today && o.land <= end && runway !== 'noIn') {
           const full = o.amount2 != null ? o.amount2 : o.amount, mv = runway ? movedFrom(o.acct) : null;
-          const got = !mv || mv[o.id] == null ? full : mv[o.id] === o.amount ? full : Math.floor(mv[o.id] * full / o.amount);
+          const m = !mv ? o.amount : mv[o.id] || 0, got = m === o.amount ? full : Math.floor(m * full / o.amount);
           steps.push({ day: o.land, order: 0, amount: got, label: o.name + ' in ' + short(o.land) });
         }
       }
@@ -1375,7 +1383,9 @@
       }
       const hasPlan = ids.some(id => lineSrcs.some(l => moneyAcct(lineAcct(l)) === id) || (freeSrc && moneyAcct(lineAcct(freeSrc)) === id));
       const first = ids.slice().sort((x, y) => (per[x].day === per[y].day ? 0 : per[x].day === null ? 1 : per[y].day === null ? -1 : per[x].day < per[y].day ? -1 : 1))[0];
-      res.runway = !hasPlan || !first ? null : Object.assign({ account: first, several: ids.length > 1 }, per[first], { accounts: per });
+      // [second review, watch] accounts in another currency are left out (never converted here), and named
+      const leftOut = Object.keys(res.accounts).filter(id => res.accounts[id].currency !== home && acct[id] && SPEND_TYPES[acct[id].type]).sort((x, y) => idCmp({ id: x }, { id: y }));
+      res.runway = !hasPlan || !first ? null : Object.assign({ account: first, several: ids.length > 1 }, per[first], { accounts: per, leftOut });
     }
 
     // ----- due before next pay [F7, F13, F21, F23, H8, W2] -----
@@ -1469,7 +1479,7 @@
         parts.push({ account: id, currency: a.currency, amount: a.bank, converted: U.convert(a.bank, a.currency, home, rt.rate, rt.inverse),
           rate: rt.rate, inverse: rt.inverse, shown: rt.shown, rateFrom: rt.from, src: rt.src, old: today - dayNum(rt.from) > 30 });
       }
-      res.total.inHome = { amount: parts.reduce((t, x) => t + x.converted, homeTotal), parts, missing };
+      res.total.inHome = { amount: parts.reduce((t, x) => t + x.converted, homeTotal), parts, missing, bad: L.badRates(book) };
     }
 
     // ----- the check-in list [A1, A2, S6, U2, W2, X3] -----

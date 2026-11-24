@@ -127,4 +127,18 @@ t('a rate keeps its string through JSON (never a float)', () => {
   eq(typeof b.rates[0].rate, 'string');
   eq(Lg.rateOn(b, 'USD', 'JPY', '2026-11-24').rate, '151.515151515');
 });
+// [second review, F3] A rates record that is not a decimal string is skipped and named in `bad`, never thrown.
+t('a broken rate is skipped and named, never thrown: 150.25 as a number, "150,25", "0", "1e2", " 150.25 "', () => {
+  for (const r of [150.25, '150,25', '0', '1e2', ' 150.25 ']) {
+    const { book, ids } = walkBook();
+    book.rates = [rate('rt5m2x-9', '2026-11-24', 'USD', 'JPY', r)];
+    const x = lookahead(book, '2026-11-24').total.inHome;
+    eq([x.amount, x.missing.length, x.bad], [286000, 1, [{ id: 'rt5m2x-9', rate: r }]]);
+    eq(Lg.rateOn(book, 'USD', 'JPY', '2026-11-24'), null);
+  }
+  const { book } = walkBook();
+  book.rates = [rate('rt5m2x-1', '2026-11-24', 'USD', 'JPY', '150.25'), rate('rt5m2x-9', '2026-11-25', 'USD', 'JPY', '1e2')];
+  const x = lookahead(book, '2026-11-26').total.inHome;
+  eq([x.amount, x.parts[0].rate, x.bad.length], [436250, '150.25', 1]);   // the good one still in force
+});
 done(path.basename(__filename));

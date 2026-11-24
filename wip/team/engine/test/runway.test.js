@@ -207,4 +207,44 @@ t('what was logged since the check comes off that stretch, never below nothing: 
   ok(r.parts.some(p => /since your last check/.test(p.label) && p.amount === -1800), JSON.stringify(r.parts));
   eq(r.day, '2027-01-14');
 });
+// ----- the second review (qc-foundation on 65331b8) -----
+// [F1] The days since the last check are reduced only by what was logged against the plan's lines or Free to spend,
+// on any account (a card too), never by a bill paid, a transfer or a card payment.
+t('F1: rent of 27 Nov logged as paid does not shorten the plan since the check: 15 Dec keeps 28 Dec-style 4 weeks', () => {
+  const { book, ids } = make();
+  const rentId = book.schedules.find(s => s.name === 'Rent').id;
+  book.events.push({ id: 'rw7k3q-r1', k: 'spend', acct: ids.b, date: '2026-11-27', a: 90000, told: '2026-11-27T12:00:00+09:00', at: '2026-11-27T12:00:00+09:00', by: 'rw7k3q', settles: [rentId + '@2026-11-27'] });
+  const r = rw(book, '2026-12-15');
+  // bank 210,000; the plan 25 Nov to 15 Dec 50,400 (nothing logged against it); rent 27 Dec 90,000: under on 14 Jan
+  eq([r.day, r.days, r.weeks], ['2027-01-14', 30, 4]);
+  ok(r.parts.some(p => /since your last check/.test(p.label) && p.amount === -50400), JSON.stringify(r.parts));
+});
+t('F1: 48,000 logged on a card against Free to spend, 25 to 30 Nov, comes off the plan since the check: still 14 Jan', () => {
+  const { book, ids } = B.buildBook({ day: DAY, told: TOLD, currency: 'JPY', country: 'JP', banks: [{ key: 'b', name: 'Main bank', amount: 300000 }],
+    cards: [{ key: 'c', name: 'Card', owed: 0, payDay: 10, closeDay: 15, payFrom: 'b' }],
+    pays: [{ key: 'p', name: 'Main job', bank: 'b', amount: 250000, day: 10, shift: 'after', startsPeriod: true }],
+    bills: [{ key: 'rent', name: 'Rent', from: 'b', amount: 90000, day: 27, shift: 'none' }], free: 73000 }, { newId: I.idMaker('rw7k3q') });
+  for (let d = 25; d <= 30; d++) book.events.push({ id: 'rw7k3q-c' + d, k: 'spend', acct: ids.c, date: '2026-11-' + d, a: 8000, line: 'free', told: `2026-11-${d}T12:00:00+09:00`, at: `2026-11-${d}T12:00:00+09:00`, by: 'rw7k3q', src: { type: 'typed' } });
+  const r = rw(book, '2026-12-15');
+  // the plan since the check 50,400 less 48,000 logged: 2,400; the card's 48,000 leaves the bank on 10 Jan: the same 14 Jan
+  ok(r.parts.some(p => /since your last check/.test(p.label) && p.amount === -2400), JSON.stringify(r.parts));
+  eq(r.day, '2027-01-14');
+});
+// [watch] A transfer in from an account that is not walked (a card's cash, a loan) counts nothing in the runway.
+t('a transfer in from a card counts nothing (it is not money the person holds)', () => {
+  const { book, ids } = B.buildBook({ day: DAY, told: TOLD, currency: 'JPY', country: 'JP', banks: [{ key: 'b', name: 'Main bank', amount: 300000 }],
+    cards: [{ key: 'c', name: 'Card', owed: 0, payDay: 10, closeDay: 15, payFrom: 'b' }],
+    pays: [{ key: 'p', name: 'Main job', bank: 'b', amount: 250000, day: 10, shift: 'after', startsPeriod: true }],
+    bills: [{ key: 'rent', name: 'Rent', from: 'b', amount: 90000, day: 27, shift: 'none' }], free: 73000 }, { newId: I.idMaker('rw7k3q') });
+  book.schedules.push({ id: 'rw7k3q-tr3', kind: 'transfer', name: 'Cash from card', acct: ids.c, acct2: ids.b, cur: 'JPY', shift: 'none',
+    rules: [{ from: null, rule: { every: 'once', date: '2026-12-01' } }], steps: [{ from: null, amount: 50000 }], told: TOLD, at: TOLD, by: 'rw7k3q' });
+  eq(rw(book).day, '2027-01-14');
+});
+// [watch] Accounts in another currency are left out of the runway, and named.
+t('an account in another currency is left out of the runway and named in leftOut', () => {
+  const { book, ids } = make({ banks: [{ key: 'u', name: 'Dollar account', amount: 100000, cur: 'USD' }] });
+  const r = rw(book);
+  eq([r.day, r.leftOut], ['2027-01-14', [ids.u]]);
+  eq(rw(make().book).leftOut, []);
+});
 done(path.basename(__filename));
