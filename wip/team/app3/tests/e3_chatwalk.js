@@ -14,7 +14,9 @@
    Then: Undo the fill (back to the first screen, the answers kept), fill again from the draft card (201,400), a reload
    (the same figures, the chat kept), one spend by chat, "I spent 1,200 on lunch": safe to spend 201,400 - 1,200 =
    200,200, Main bank 286,000 - 1,200 = 284,800; a reload (the same); Undo on its card: 201,400 and 286,000 again; the
-   fill's own button is Start over now. Every request: max_tokens 2,000, the invite field, no record id. */
+   fill's own button is Start over now. Every request: max_tokens 2,000, the invite field, no record id.
+   The same answers typed on the setup screens (setup3) on another device make the same book, record for record: ids,
+   moments and devices aside, every account, schedule, record, check-in, plan entry and setting is the same. */
 'use strict';
 const T = require('./lib3.js'), { ck } = T;
 const fs = require('fs'), os = require('os');
@@ -73,6 +75,44 @@ const fig = (p, sel) => p.$eval(sel, e => Number((e.dataset.amt !== undefined ? 
 const home = async p => ({ safe: await fig(p, '#a3Home [data-fig=safe]'), bank: await fig(p, '#a3Home [data-card=bank] [data-fig=bank]'), due: await fig(p, '#a3Home [data-fig=duetotal]'),
   next: await p.$eval('#a3Home [data-fig=nextpay]', e => e.textContent).catch(() => null),
   cards: await p.$$eval('#a3Home [data-cardid] [data-fig=owed] [data-amt]', e => e.map(x => Number(x.dataset.amt))) });
+/* a book with its ids named by what they are, and the moments, devices and steps that differ between two setups left out */
+const DROP = { told: 1, at: 1, by: 1, grp: 1, rev: 1 };
+function same(book) {
+  const b = JSON.parse(JSON.stringify(book)), names = {};
+  for (const a of b.accounts || []) names[a.id] = 'acct:' + a.name;
+  for (const x of b.schedules || []) names[x.id] = 'sched:' + x.name;
+  for (const x of b.places || []) names[x.id] = 'place:' + x.name;
+  const key = e => JSON.stringify([e.k, names[e.acct] || e.acct, e.date, e.a, e.sub || '']);
+  (b.events || []).slice().sort((x, y) => (key(x) < key(y) ? -1 : 1)).forEach((e, i) => { names[e.id] = 'event:' + i; });
+  (b.checkins || []).forEach((c, i) => { names[c.id] = 'checkin:' + i; });
+  const strip = v => Array.isArray(v) ? v.map(strip) : v && typeof v === 'object' ? Object.fromEntries(Object.keys(v).sort().filter(k => !DROP[k]).map(k => [k, strip(v[k])])) : v;
+  let t = JSON.stringify(strip(b));
+  for (const id of Object.keys(names).sort((x, y) => y.length - x.length)) t = t.split(id).join(names[id]);
+  const out = JSON.parse(t);
+  out.events = (out.events || []).sort((x, y) => (x.id < y.id ? -1 : 1));
+  return out;
+}
+const diff = (x, y, at) => { if (JSON.stringify(x) === JSON.stringify(y)) return null; if (x && y && typeof x === 'object' && typeof y === 'object') { for (const k of new Set(Object.keys(x).concat(Object.keys(y)))) { const d = diff(x[k], y[k], at + '.' + k); if (d) return d; } } return at + ': ' + JSON.stringify(x) + ' vs ' + JSON.stringify(y); };
+/* the same answers on the setup screens, in a browser of its own */
+async function byScreens() {
+  const o = await T.open({ profile: fs.mkdtempSync(os.tmpdir() + '/a3chatwalk2-') }), p = o.p;
+  await p.goto(T.URL0 + '?today=' + DAY); await T.w(500);
+  await p.$eval('#a3SetupGo', e => e.click()); await T.w(200);
+  const put = (sel, v) => p.$eval(sel, (e, x) => { e.value = x; e.dispatchEvent(new Event('input', { bubbles: true })); e.dispatchEvent(new Event('change', { bubbles: true })); }, String(v));
+  const click = sel => p.$eval(sel, e => e.click());
+  await put('#s3Bank', '286000'); await put('#s3PayAmt', '240000'); await put('#s3PayDay', '10'); await put('#s3PayShift', 'before');
+  let k = 0;
+  for (const c of MAKO.cards) { k++; await click('#s3AddCard'); const r = `[data-row=card${k}] `; await put(r + '[data-f=name]', c.name); await put(r + '[data-f=owed]', c.owed); await put(r + '[data-f=payDay]', c.payDay); await put(r + '[data-f=shift]', c.shift); }
+  k = 0;
+  for (const x of MAKO.bills) { k++; await click('#s3AddBill'); const r = `[data-row=bill${k}] `; await put(r + '[data-f=name]', x.name); await put(r + '[data-f=amount]', x.amount); await put(r + '[data-f=day]', x.day); }
+  await T.w(200);
+  const asked = await p.$$eval('[data-q=takenOut]:not([hidden]) label', e => e.map(x => x.textContent));
+  await click('#a3SetupSave'); await T.w(700);
+  const book = await p.evaluate(() => BurrowApp3.E3.book);
+  const safe = await fig(p, '#a3Home [data-fig=safe]');
+  await o.b.close();
+  return { book, safe, asked, errs: o.errs };
+}
 const log = p => p.$eval('#a3ChatLog', e => e.textContent.replace(/\s+/g, ' '));
 (async () => {
   const prof = fs.mkdtempSync(os.tmpdir() + '/a3chatwalk-');
@@ -100,6 +140,7 @@ const log = p => p.$eval('#a3ChatLog', e => e.textContent.replace(/\s+/g, ' '));
     /* fill */
     await tell(p, SETUP[SETUP.length - 1][0]);
     ck('the fill: the core read back the engine\'s figures', /Filled in\. Safe to spend ¥201,400, Main bank ¥286,000\./.test(seen.fill || ''), seen.fill);
+    const chatBook = await p.evaluate(() => BurrowApp3.E3.book);
     let h = await home(p);
     ck('Home: safe to spend 201,400 (286,000 - 84,600 due before pay)', h.safe === 201400, JSON.stringify(h));
     ck('Home: Main bank 286,000', h.bank === 286000);
@@ -141,6 +182,15 @@ const log = p => p.$eval('#a3ChatLog', e => e.textContent.replace(/\s+/g, ' '));
     await p.reload(); await T.w(900);
     h = await home(p);
     ck('after a reload: still 201,400 and 286,000', h.safe === 201400 && h.bank === 286000, JSON.stringify(h));
+
+    /* the same answers on the setup screens: the same book */
+    const scr = await byScreens();
+    ck('on the setup screens the same answers ask only about the Phone of 20 Nov, and give 201,400', JSON.stringify(scr.asked) === '["Did the Phone of 20 Nov leave your bank?"]' && scr.safe === 201400, JSON.stringify([scr.asked, scr.safe]));
+    const d = diff(same(chatBook), same(scr.book), 'book');
+    ck('the chat\'s book and the screens\' book are the same, record for record', !d && chatBook.events.length === scr.book.events.length && chatBook.events.length > 0, d);
+    const other = JSON.parse(JSON.stringify(scr.book)); other.events.find(e => e.k === 'check').a = 285000;
+    ck('(the comparison sees one record that differs)', !!diff(same(chatBook), same(other), 'book'));
+    ck('no page errors on the screens', !scr.errs.length, scr.errs.join(' | '));
 
     /* what was sent */
     const book = await p.evaluate(() => BurrowApp3.E3.book);
