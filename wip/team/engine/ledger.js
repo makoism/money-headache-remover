@@ -28,13 +28,24 @@
   // [stage 2 S5, STAGE2_PLAN corrections 2, 3, 2'] The rate in force for `cur` into `to` on a day (YYYY-MM-DD): of the
   // live `rates` records for the pair in either direction with `from` on or before the day, the latest by `from`, then
   // `at`, then id. `inverse` is true when that record runs the other way (1 `to` is `rate` `cur`). Null when none.
+  // [S6] A conversion (`convert`, or a `transfer` or `repay` between two currencies, both amounts above zero) is a rate
+  // too, worked out from the event each time as an exact ratio: 1 <what left> is a2 x 10^(its exponent) / (a x 10^(the
+  // other's)) <what arrived>, dated by the event, `src: 'convert'`. `shown` is the rate in the asked direction, rounded
+  // for display only (units.shownRate).
   function rateOn(book, cur, to, day) {
+    const U = typeof module === 'object' && module.exports ? require('./units.js') : root.BurrowEngine.units;
     const pair = r => live(r) && typeof r.from === 'string' && r.from <= day && ((r.cur === cur && r.to === to) || (r.cur === to && r.to === cur));
     const s = v => String(v == null ? '' : v);
-    const list = ((book && book.rates) || []).filter(pair).sort((p, q) => (p.from !== q.from ? (p.from < q.from ? -1 : 1)
+    const acc = {}; for (const a of (book && book.accounts) || []) if (live(a) && a.id) acc[a.id] = a;
+    const fromEvents = ((book && book.events) || []).filter(e => live(e) && (e.k === 'convert' || e.k === 'transfer' || e.k === 'repay')
+      && acc[e.acct] && acc[e.acct2] && acc[e.acct].cur !== acc[e.acct2].cur && Number.isInteger(e.a) && Number.isInteger(e.a2) && e.a > 0 && e.a2 > 0)
+      .map(e => { const x = acc[e.acct].cur, y = acc[e.acct2].cur;
+        return { id: e.id, from: e.date, at: e.at, cur: x, to: y, src: 'convert',
+          rate: (BigInt(e.a2) * 10n ** BigInt(U.decimals(x))) + '/' + (BigInt(e.a) * 10n ** BigInt(U.decimals(y))) }; });
+    const list = ((book && book.rates) || []).concat(fromEvents).filter(pair).sort((p, q) => (p.from !== q.from ? (p.from < q.from ? -1 : 1)
       : s(p.at) !== s(q.at) ? (s(p.at) < s(q.at) ? -1 : 1) : s(p.id) < s(q.id) ? -1 : s(p.id) > s(q.id) ? 1 : 0));
     const r = list.pop();
-    return r ? { id: r.id, from: r.from, rate: r.rate, inverse: r.cur !== cur, src: r.src || 'typed' } : null;
+    return r ? { id: r.id, from: r.from, rate: r.rate, inverse: r.cur !== cur, src: r.src || 'typed', shown: U.shownRate(r.rate, r.cur !== cur) } : null;
   }
   function ctx(book, day) {
     const by = Object.create(null);

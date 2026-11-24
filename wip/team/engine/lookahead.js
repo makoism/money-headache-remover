@@ -1445,7 +1445,7 @@
         const a = res.accounts[id], rt = L.rateOn(book, a.currency, home, asOf);
         if (!rt) { missing.push({ account: id, currency: a.currency, amount: a.bank }); continue; }
         parts.push({ account: id, currency: a.currency, amount: a.bank, converted: U.convert(a.bank, a.currency, home, rt.rate, rt.inverse),
-          rate: rt.rate, inverse: rt.inverse, rateFrom: rt.from, src: rt.src, old: today - dayNum(rt.from) > 30 });
+          rate: rt.rate, inverse: rt.inverse, shown: rt.shown, rateFrom: rt.from, src: rt.src, old: today - dayNum(rt.from) > 30 });
       }
       res.total.inHome = { amount: parts.reduce((t, x) => t + x.converted, homeTotal), parts, missing };
     }

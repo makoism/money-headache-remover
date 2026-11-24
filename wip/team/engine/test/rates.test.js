@@ -42,7 +42,7 @@ t('the latest from on or before the day; before the first, none', () => {
   eq(Lg.rateOn(b, 'USD', 'JPY', '2026-11-23'), null);
   eq([Lg.rateOn(b, 'USD', 'JPY', '2026-11-30').rate, Lg.rateOn(b, 'USD', 'JPY', '2026-12-01').rate], ['150.25', '151.52']);
   const r = Lg.rateOn(b, 'USD', 'JPY', '2026-12-05');
-  eq([r.id, r.from, r.src, r.inverse], ['r2', '2026-12-01', 'typed', false]);
+  eq([r.id, r.from, r.src, r.inverse, r.shown], ['r2', '2026-12-01', 'typed', false, '151.52']);
 });
 t('either direction: a later JPY to USD rate wins and is read inverted', () => {
   const b = book0([rate('r1', '2026-11-24', 'USD', 'JPY', '150.25'), rate('r2', '2026-12-01', 'JPY', 'USD', '0.0066')]);
@@ -88,7 +88,7 @@ t('24 Nov, 150.25 typed: Total 286,000 + 150,250 = 436,250, with the rate, its d
   book.rates = [rate('rt5m2x-1', '2026-11-24', 'USD', 'JPY', '150.25')];
   const r = lookahead(book, '2026-11-24'), x = r.total.inHome;
   eq(x.amount, 436250);
-  eq(x.parts, [{ account: ids.u, currency: 'USD', amount: 100000, converted: 150250, rate: '150.25', inverse: false, rateFrom: '2026-11-24', src: 'typed', old: false }]);
+  eq(x.parts, [{ account: ids.u, currency: 'USD', amount: 100000, converted: 150250, rate: '150.25', inverse: false, shown: '150.25', rateFrom: '2026-11-24', src: 'typed', old: false }]);
   eq(x.missing, []);
   eq(r.total.amount, 286000);   // the home figure itself is unchanged
 });
