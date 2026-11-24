@@ -11,7 +11,8 @@
    B1. A gap saved while the card question shows: the Undo bar still says it counts as spending.
    B2. Right after setup, Home says why safe to spend is small: Free to spend counts its share for the days left.
    B3. The cap step in the sum under safe to spend says it is held back, and why.
-   B4. The bank after the cards in whole sentences, naming that bills due by then are taken off. */
+   B4. The bank after the cards in whole sentences, naming that bills due by then are taken off.
+   B5. A cloud code used on a device with its own numbers says what happens first, and changes nothing until asked. */
 'use strict';
 const T = require('./lib3.js');
 const { ck } = T;
@@ -129,6 +130,51 @@ const rows = p => p.$$eval('#rcList li', es => es.map(e => ({ gap: e.dataset.gap
   ck('B4: the bank after the cards says it counts everything on the cards now, as their close days are not sure', ac.includes('It counts everything on the cards now, as their close days are not sure'), ac);
   ck('B4: and that bills due by then are taken off', ac.includes('Bills due by then are taken off'), ac);
   ck('B4: never the half sentence', !ac.includes('If everything on the cards now is taken'), ac);
+
+  /* B5: two devices on the local fake vault (tests/fake_vault.js), as e3_cloud. A has the made-up book and turns the
+     cloud copy on. B already has its own numbers (the made-up book with its bank figure typed as 300,000 at setup).
+     B types A's code: B is told first that this device has its own numbers, that they are kept as a copy and that it
+     will choose which to keep. Nothing on B changes until "Use the code"; "Not now" leaves it as it was. After "Use the
+     code" B is asked which copy to keep (the engine's whole-copy question), and a whole copy was kept first. */
+  {
+    const fs = require('fs'), os = require('os'), path = require('path');
+    const { makeVault, serve } = require('./fake_vault.js');
+    const vault = makeVault(), srv = await serve(vault, () => fs.readFileSync(path.join(__dirname, '../index.html')));
+    const URL = `http://127.0.0.1:${srv.port}/?today=2026-12-10`;
+    const until = async (f, ms) => { for (let i = 0; i < (ms || 8000) / 100; i++) { if (await f()) return true; await T.w(100); } return false; };
+    const seed = (q, x) => q.evaluate(async bk0 => { const s = await BurrowStore.open(); await s.load(); await s.save(bk0, { full: true }); s.close(); }, x);
+    const storedB = q => q.evaluate(async () => { const s = await BurrowStore.open(); try { const r = await s.load(); return r.copy; } finally { s.close(); } });
+    const A = await T.open({ profile: fs.mkdtempSync(path.join(os.tmpdir(), 'a3lfA-')) });
+    const B = await T.open({ profile: fs.mkdtempSync(path.join(os.tmpdir(), 'a3lfB-')) });
+    errLists.push(A.errs, B.errs);
+    try {
+      await A.p.goto(URL); await T.w(300); await seed(A.p, T.book()); await A.p.reload(); await T.w(400);
+      await A.p.click('#a3SetGo'); await T.w(200); await A.p.click('#a3CloudOn');
+      await until(async () => !!(await A.p.$('[data-cloud=code]')));
+      const code = (await A.p.$eval('[data-cloud=code]', e => e.textContent)).trim();
+      await A.p.click('#a3CloudSaved'); await until(() => vault.rows.size === 1);
+      const own = T.book(); own.events.filter(e => e.acct === own.home.main.v.acct && (e.k === 'open' || e.k === 'check')).forEach(e => { e.a = 300000; });
+      await B.p.goto(URL); await T.w(300); await seed(B.p, own); await B.p.reload(); await T.w(400);
+      await B.p.click('#a3SetGo'); await T.w(200);
+      await B.p.click('#a3CloudHave'); await B.p.type('#a3CloudCode', code); await B.p.click('#a3CloudUse');
+      ck('B5: a device with its own numbers is told first', await until(async () => !!(await B.p.$('[data-cloud=joinask]'))));
+      const ask = await B.p.$eval('[data-cloud=joinask]', e => e.textContent).catch(() => '');
+      ck('B5: it says the numbers here are kept as a copy and it will choose which to keep', /already has its own numbers/.test(ask) && /kept as a copy/.test(ask) && /choose which to keep/.test(ask), ask);
+      const openB = c => c.events.find(e => e.k === 'open' && e.acct === own.home.main.v.acct).a;
+      ck('B5: nothing on B has changed yet', openB(await storedB(B.p)) === 300000);
+      await B.p.click('#a3CloudJoinNo'); await T.w(300);
+      ck('B5: "Not now" leaves B as it was, with the cloud copy off', openB(await storedB(B.p)) === 300000 && !(await B.p.$('[data-cloud=joinask]')) && /^Off\./.test(await B.p.$eval('#a3CloudState', e => e.textContent)));
+      await B.p.click('#a3CloudUse'); await until(async () => !!(await B.p.$('#a3CloudJoinYes')));
+      await B.p.click('#a3CloudJoinYes');
+      ck('B5: after "Use the code" B is asked which copy to keep', await until(async () => /Keep this one/.test(await B.p.$eval('#a3Set', e => e.textContent).catch(() => '')), 10000));
+      const kept = await B.p.evaluate(async () => { const s = await BurrowStore.open(); try { await s.load(); return (await s.keptCopies()).map(c => c.why); } catch (e) { return String(e); } finally { s.close(); } });
+      ck('B5: and a whole copy of its own numbers was kept first', JSON.stringify(kept).includes('Before this device joined the cloud copy'), JSON.stringify(kept));
+    } finally {
+      /* the vault answers 404 while it holds no copy (as in e3_cloud): that is not a page error */
+      for (const l of [A.errs, B.errs]) { const keep = l.filter(e => !/Failed to load resource/.test(e)); l.length = 0; l.push(...keep); }
+      await A.b.close(); await B.b.close(); await srv.close();
+    }
+  }
 
   const errs = [].concat(...errLists); ck('no page errors', errs.length === 0, errs.join(' | '));
   await b.close(); T.done('e3_listfix');

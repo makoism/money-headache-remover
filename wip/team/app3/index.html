@@ -10339,10 +10339,10 @@ function haveCode3() {
       <input class="a3-in a3-text" id="a3CloudCode" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX">
       <p class="a3-err" id="a3CloudErr" role="alert"></p></div>
     <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3CloudUse">Use this code</button></div>`;
-  $('#a3CloudUse').addEventListener('click', useCode3);
+  $('#a3CloudUse').addEventListener('click', () => useCode3());
   $('#a3CloudCode').focus();
 }
-async function useCode3() {
+async function useCode3(sure) {
   const err = $('#a3CloudErr'), code = CLOUD3.codeClean($('#a3CloudCode').value);
   if (!CLOUD3.codeValid(code)) { err.textContent = 'The code is 20 letters and digits, like XXXX-XXXX-XXXX-XXXX-XXXX. Check that none is missing.'; return; }
   err.textContent = 'Looking for the cloud copy.';
@@ -10350,6 +10350,19 @@ async function useCode3() {
   const c = await CLOUD3.fetchCloud({ api: cloudApi3(), pack: BurrowPack, keys });
   if (!c.ok) { err.textContent = c.why === 'code' ? 'This code does not open a cloud copy. Check every character.' : WHY3[c.why] || WHY3.server; return; }
   if (!c.copy) { err.textContent = 'There is no cloud copy for this code. Check every character against the code you saved.'; return; }
+  /* [LISTFIX B5] a device that already has its own numbers is told what happens before anything changes: the cloud copy
+     comes here, the numbers here are kept as a whole copy first, and Settings asks which to keep (the engine's
+     whole-copy question). Nothing changes until "Use the code" */
+  if (sure !== true && BurrowEngine.sync.hasData(E3.book)) {
+    err.textContent = '';
+    const ask = $('#a3CloudJoin') || $('#a3CloudForm').appendChild(document.createElement('div'));
+    ask.id = 'a3CloudJoin';
+    ask.innerHTML = `<p class="a3-warn" data-cloud="joinask">This device already has its own numbers. Using the code brings the cloud copy here. The numbers on this device are kept as a copy first, and then you choose which to keep.</p>
+      <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3CloudJoinYes">Use the code</button><button type="button" class="a3-btn" id="a3CloudJoinNo">Not now</button></div>`;
+    $('#a3CloudJoinYes').addEventListener('click', () => { ask.remove(); useCode3(true); });
+    $('#a3CloudJoinNo').addEventListener('click', () => ask.remove());
+    return;
+  }
   await putCloud3({ on: true, code, base: null, baseRev: null, sentAt: 0, failAt: 0 });
   err.textContent = '';
   await syncNow3();
