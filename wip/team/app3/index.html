@@ -10461,7 +10461,7 @@ async function versions3() {
 }
 function verAsk3(rev, label) {
   const ask = $('#a3CloudVerAsk');
-  ask.innerHTML = `<p class="a3-warn" data-cloud="verask">${esc3(label)}: this replaces the money on this device with that version. What is here now is kept, and Put it back brings it back. ${esc3(OTHERS3)}</p>
+  ask.innerHTML = `<p class="a3-warn" data-cloud="verask">${esc3(label)}: this replaces the money on this device with that version. What is here now is kept, and Put it back brings it back. ${esc3(OTHERS3)}<br>Anything you logged after this version was sent goes, on every device. Put it back brings it back.</p>
     <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3CloudVerGo">Restore it</button><button type="button" class="a3-btn" id="a3CloudVerNo">Cancel</button></div>`;
   $('#a3CloudVerNo').addEventListener('click', () => { ask.innerHTML = ''; });
   $('#a3CloudVerGo').addEventListener('click', async () => {
@@ -10731,8 +10731,9 @@ async function readBackup3(file, code) {
   }
   if (!r.ok) { ask.innerHTML = ''; setMsg3(r.words, true); return; }
   SET3.restore = r.copy;
-  const n = (r.copy.events || []).filter(e => e && !e.gone).length, others = (await cloudOn3()) && E3.book ? ' ' + OTHERS3 : '';
-  ask.innerHTML = `<p class="a3-warn" data-set="restoreask">${E3.book ? 'This replaces the money on this device with the backup. What is here now is kept, and Put it back brings it back.' : 'This puts the money from the backup on this device.'} The backup holds ${n} record${n === 1 ? '' : 's'}.${others}</p>
+  const on = await cloudOn3(), n = (r.copy.events || []).filter(e => e && !e.gone).length, others = on && E3.book ? ' ' + OTHERS3 : '';
+  const after = E3.book ? `<br>Anything you logged after this backup was made goes${on ? ', on every device' : ' from this device'}. Put it back brings it back.` : '';
+  ask.innerHTML = `<p class="a3-warn" data-set="restoreask">${E3.book ? 'This replaces the money on this device with the backup. What is here now is kept, and Put it back brings it back.' : 'This puts the money from the backup on this device.'} The backup holds ${n} record${n === 1 ? '' : 's'}.${others}${after}</p>
     <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3BkGo">Restore it</button><button type="button" class="a3-btn" id="a3BkNo">Cancel</button></div>`;
   $('#a3BkGo').addEventListener('click', async () => {
     const ok = await restoreBook3(SET3.restore, 'Before a backup was restored');

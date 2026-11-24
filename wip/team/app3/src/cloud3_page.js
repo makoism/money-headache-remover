@@ -176,7 +176,7 @@ async function versions3() {
 }
 function verAsk3(rev, label) {
   const ask = $('#a3CloudVerAsk');
-  ask.innerHTML = `<p class="a3-warn" data-cloud="verask">${esc3(label)}: this replaces the money on this device with that version. What is here now is kept, and Put it back brings it back. ${esc3(OTHERS3)}</p>
+  ask.innerHTML = `<p class="a3-warn" data-cloud="verask">${esc3(label)}: this replaces the money on this device with that version. What is here now is kept, and Put it back brings it back. ${esc3(OTHERS3)}<br>Anything you logged after this version was sent goes, on every device. Put it back brings it back.</p>
     <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3CloudVerGo">Restore it</button><button type="button" class="a3-btn" id="a3CloudVerNo">Cancel</button></div>`;
   $('#a3CloudVerNo').addEventListener('click', () => { ask.innerHTML = ''; });
   $('#a3CloudVerGo').addEventListener('click', async () => {

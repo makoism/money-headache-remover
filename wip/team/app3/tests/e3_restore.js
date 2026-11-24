@@ -66,6 +66,7 @@ const homeFigs = async p => JSON.stringify((await T.figs(p)).filter(f => f.amt !
     await (await A.p.$('#a3BkFile')).uploadFile(backupFile); await T.w(400);
     const ask = await A.p.$eval('[data-set=restoreask]', e => e.textContent);
     ck('before the restore it says the other devices are replaced too after the next send', ask.includes(OTHERS), ask);
+    ck('before the restore it says in one line that money logged after the backup goes on every device, and how to get it back', ask.includes('Anything you logged after this backup was made goes, on every device. Put it back brings it back.'), ask);
     await A.p.click('#a3BkGo'); await T.w(500);
     ck('restored', /Restored/.test(await A.p.$eval('#a3SetMsg', e => e.textContent)));
     const r1 = rev();
@@ -100,6 +101,7 @@ const homeFigs = async p => JSON.stringify((await T.figs(p)).filter(f => f.amt !
     ck('the list says the other devices follow too', (await A.p.$eval('[data-cloud=versions]', e => e.textContent)).includes(OTHERS));
     await A.p.click(`[data-cloudver="${vers[vers.length - 1]}"] button`);
     ck('restoring one asks first, with the same words', await until(async () => !!(await A.p.$('#a3CloudVerGo'))) && (await A.p.$eval('[data-cloud=verask]', e => e.textContent)).includes(OTHERS));
+    ck('and says money logged after that version goes on every device, and how to get it back', (await A.p.$eval('[data-cloud=verask]', e => e.textContent)).includes('Anything you logged after this version was sent goes, on every device. Put it back brings it back.'));
     await A.p.click('#a3CloudVerGo');
     ck('restored from the cloud\'s earlier copy, the copy here kept first', await until(async () => /earlier copy/.test(await A.p.$eval('#a3SetMsg', e => e.textContent))) && !!(await A.p.$('#a3BkBack')), await A.p.$eval('#a3SetMsg', e => e.textContent) + ' / ' + A.errs.join(' / '));
     const r3 = rev();
