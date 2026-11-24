@@ -3110,6 +3110,7 @@ html:has(.a3-setup-open) { scroll-padding-top: 150px; }
       }
       return x.amount;
     }
+    let freeAllDays = false;
     function plannedFor(id) {
       const list = [];
       const lines = (planLeft.lines || []).filter(l => l.acct === id);
@@ -3126,8 +3127,13 @@ html:has(.a3-setup-open) { scroll-padding-top: 150px; }
       } else {
         // [B4, M9, M10] no fixed pay: by day. A monthly amount x 12 / the year's days a day, rounded down, the rest of each
         // month's own share on its last day; a weekly one a seventh a day, the rest on the seventh day.
+        // [THREE_VALUES] this month's everyday money is not taken off by the day here: it caps the headline, as a pay
+        // period's does, so it is never counted twice. Later months' days are held as before. `freeAllDays` (how long
+        // the money lasts at this rate) keeps every day.
+        const [ty0, tm0] = ymOf(today), monthEnd0 = dayIn(ty0, tm0, 'last');
         for (const l of lines) {
           for (let d = today + 1; d <= today + LATER_ON_DAYS; d++) {
+            if (l === planLeft.free && d <= monthEnd0 && !freeAllDays) continue;
             const [y, mo] = ymOf(d), yearDays = dayIn(y + 1, 1, 1) - dayIn(y, 1, 1);
             let want;
             if (l.per === 'week') {
@@ -3320,7 +3326,9 @@ html:has(.a3-setup-open) { scroll-padding-top: 150px; }
     const np = nextPays[0];
     res.daysToNextPay = np ? { days: Math.max(0, np.land - today), next_pay: dayStr(np.land), item: np.id, late: np.land < today || undefined } : { days: null };
     if (!periodStream) {   // [B4] "lasts about N weeks"
+      freeAllDays = true;
       const lastDay = homeSpend.map(id => walk(id, today + LATER_ON_DAYS, res.accounts[id].minimum).firstBelowZero);
+      freeAllDays = false;
       res.lastsAboutWeeks = planLeft.lines || planLeft.free ? Math.floor((Math.min(...lastDay.map(d => (d === null ? today + LATER_ON_DAYS : d))) - today) / 7) : null;
     }
 
@@ -3336,6 +3344,21 @@ html:has(.a3-setup-open) { scroll-padding-top: 150px; }
     // [S1, G4, BH1] the pay safe to spend runs to: the next one, or on its day (counted) or while it is late, the one after
     res.safeToSpend.until = after ? dayStr(after.land) : null;
     res.safeToSpend.untilPay = after ? after.id : null;
+    // ----- three values, one meaning in every life [THREE_VALUES_PLAN; MAKO_SAYS Not settled 8] -----
+    // canSpare: what the home-currency spend-from accounts can spare after everything due, goals, plan lines, the
+    //   minimum and the everyday money of the days after lastDay that the walk holds; not reduced by everyday money up
+    //   to lastDay; signed. everyday: the everyday amount as set (full), the part that counts this stretch, what is
+    //   spent and left of it (counts less spent is left), and the last day it runs to: the day before the next counted
+    //   pay, or this month's last day with no fixed pay. noJob: canSpare less everyday left, never below zero.
+    //   The headline above is max(0, min(canSpare, everyday left)), or max(0, canSpare) with no everyday amount.
+    {
+      const [ty1, tm1] = ymOf(today), f = planLeft.free && planLeft.free.left != null ? planLeft.free : null;
+      const lastDay = periodStream ? (after ? dayStr(after.land - 1) : null) : dayStr(dayIn(ty1, tm1, 'last'));
+      const counts = f ? (f.counts != null ? f.counts : f.amount) : null;
+      res.canSpare = { amount: raw, lastDay, through: res.horizon };
+      res.everyday = f ? { full: f.amount, counts, spent: counts - f.left, left: f.left, lastDay, kind: periodStream ? 'pay' : 'month' } : null;
+      res.noJob = { amount: Math.max(0, raw - (f ? Math.max(0, f.left) : 0)) };
+    }
     // [BJ1] a pay due today left unticked at a check-in today is not counted: named so the heading can say so
     res.safeToSpend.notCounting = np && leftToday(np) ? np.id : null;
     res.dueBeforeNextPay = { until: dayStr(until), byAccount, items: due.map(itemOut), total: due.filter(o => !o.otherCur).reduce((t, o) => t + o.amount, 0) };

@@ -25,10 +25,14 @@
           rent's second is Mon 1 Feb: horizon 1 Feb. Bills: phone 21 Dec 5,000, rent 1 Jan 120,000, phone 20 Jan
           5,000, rent 1 Feb 120,000 = 250,000. Food 11 to 31 Dec 21 x 1,315 + 2 = 27,617, January 40,767, 1 Feb 1,315 =
           69,699; Free to spend 21 x 3,287 + 20 = 69,047, 101,917, 3,287 = 174,251; together 243,950.
-          543,000 - 250,000 - 243,950 = 49,050, under Free to spend left (70,967): safe to spend 49,050.
+          [THREE_VALUES, 24 Nov] This month's Free to spend is not taken off by the day as well as being the cap (that
+          counted December's everyday money twice: the old figure here was 543,000 - 250,000 - 243,950 = 49,050).
+          What Checking can spare leaves December's 69,047 out: 543,000 - 250,000 - (243,950 - 69,047) = 118,097,
+          over Free to spend left (70,967): safe to spend 70,967.
    12 Dec spend $25.00 on Free to spend: Checking 540,500; Free to spend left 70,967 - 2,500 = 68,467. Horizon 1 Feb. By the day 13 Dec
           to 1 Feb: Food 19 x 1,315 + 2 + 40,767 + 1,315 = 67,069; Free 19 x 3,287 + 20 + 101,917 + 3,287 = 167,677;
-          together 234,746. 540,500 - 250,000 - 234,746 = 55,754: safe 55,754.
+          together 234,746, less December's own Free to spend by the day (19 x 3,287 + 20 = 62,473) is 172,273.
+          540,500 - 250,000 - 172,273 = 118,227, over Free to spend left: safe 68,467 (it read 55,754 before).
    15 Dec check-in (no pay is expected now): Checking shows $5,405.00. Horizon 1 Feb. By the day 16 Dec to 1 Feb:
           Food 16 x 1,315 + 2 + 40,767 + 1,315 = 63,124; Free 16 x 3,287 + 20 + 101,917 + 3,287 = 157,816; together
           220,940. 540,500 - 250,000 - 220,940 = 69,560, over Free to spend left: safe 68,467.
@@ -93,12 +97,12 @@ const num = v => Number(String(v).replace(/[^\d.]/g, ''));
   ck('10 Dec saved', !(await L.txt(p, '#plErr')).replace('(none)', '').trim(), await L.txt(p, '#plErr'));
   const plan = await L.txt(p, '#a3Plan');
   ck('10 Dec Plan: no pay period, Food $400 and Free to spend $1,000 a month', /Your plan, with no fixed pay/.test(plan) && /Food[^|]*\| Comes off by the day \| \$400 a month/.test(plan) && /\$1,000 a month/.test(plan), plan);
-  await home(p, '10 Dec, no fixed pay from today', 49050, { Checking: 543000 });
+  await home(p, '10 Dec, no fixed pay from today', 70967, { Checking: 543000 });
   ck('10 Dec Home: no period', !(await p.$('#a3Home [data-fig=period]')));
   await L.sameAfterReload(p, '10 Dec after the change');
 
   await go(p, '2026-12-12'); await log(p, 25, 'Checking', { note: 'lunch' });
-  await home(p, '12 Dec after $25.00 on Free to spend', 55754, { Checking: 540500 });
+  await home(p, '12 Dec after $25.00 on Free to spend', 68467, { Checking: 540500 });
   await go(p, '2026-12-15');
   const list15 = await checkin(p, { Checking: '5405' });
   ck('15 Dec check-in: no pay is asked about', !list15.some(t => /Pay/.test(t)), list15.join(' | '));
