@@ -121,7 +121,8 @@ function chat3Card(t) {
 }
 function chat3Turn(t) {
   if (t.who === 'person') return `<p class="a3-ask-me" data-turn="${esc3(t.id)}">${esc3(t.text)}</p>`;
-  if (t.who === 'ai') return `<p class="a3-ask-ai" data-turn="${esc3(t.id)}">${esc3(t.text)}</p>`;
+  /* [AI_FIRST_PLAN 7] an amount the AI wrote that is in nothing it was given: marked for checking against the screens */
+  if (t.who === 'ai') return `<p class="a3-ask-ai" data-turn="${esc3(t.id)}">${esc3(t.text)}${(t.check || []).length ? `<span class="a3-chat-check" data-chat="check"><br>Check this: ${esc3(t.check.join(', '))} is the AI's own figure, not the app's. The screens have the app's figures</span>` : ''}</p>`;
   if (t.who === 'note') return `<p class="a3-chat-saved" data-turn="${esc3(t.id)}" role="status">${esc3(t.text)}</p>`;
   if (t.who === 'card') return chat3Card(t);
   return '';

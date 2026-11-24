@@ -42,7 +42,7 @@ function fake() {
       if (msg === 'change') card(st, { kind: 'change', status: 'done', lines: ['Log 1,200 on Free to spend from Main bank, today'], rows: [{ label: 'Safe to spend', before: 201400, after: 200200 }], steps: ['s1'] });
       if (msg === 'big') card(st, { kind: 'change', status: 'ask', ask: 'large', lines: ['Log 300,000 on Free to spend from Main bank, today'], rows: [{ label: 'Safe to spend', before: 201400, after: 0 }] });
       if (msg === 'fill') card(st, { kind: 'fill', status: 'done', figures: { safe: 201400, bank: 286000 } });
-      st.turns.push({ id: tid(st), who: 'ai', text: words });
+      st.turns.push(Object.assign({ id: tid(st), who: 'ai', text: words }, msg === 'guess' ? { check: ['9,999'] } : {}));
       return { state: st, shown: [], stop: 'words' };
     },
     undo: async (st, id) => { window.__calls.push(['undo', id]); return { state: setCard(st, id, c => { c.status = 'undone'; }), shown: [], ok: true }; },
@@ -155,6 +155,8 @@ async function say(p, text) { await p.$eval('#a3ChatIn', (e, v) => { e.value = v
     ck('once something else is written it is Start over', (await p.$eval('[data-card=chat-fill] [data-chatundo]', e => e.textContent)) === 'Start over');
     await p.click('[data-card=chat-fill] [data-chatundo]'); await T.w(400);
     ck('Start over asks first, then goes through the core', /^Start over\?/.test(p.__dialog || '') && (await p.evaluate(() => window.__calls.filter(c => c[0] === 'startOver').length)) === 1);
+    await say(p, 'guess');
+    ck('an amount the AI made up is marked Check this', /Check this: 9,999 is the AI's own figure/.test(await p.$eval('#a3ChatLog', e => e.textContent)));
     /* 8 */
     await p.click('#a3Chat #a3ChatFile'); await T.w(100);
     ck('before a file: the whole file goes, with name, address, employer, account number; crop out My Number', /whole file goes to the AI, with your name, address, employer and account number/.test(await p.$eval('[data-privacy=upload]', e => e.textContent)) && /My Number/.test(await p.$eval('[data-privacy=upload]', e => e.textContent)));

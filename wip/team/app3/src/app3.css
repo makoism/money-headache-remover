@@ -187,3 +187,4 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
   .a3-chat:not([data-open]) .a3-chat-body, .a3-chat:not([data-open]) .a3-chat-head { display: flex; }
   body.a3-has-chat { padding-right: 360px; }
 }
+.a3-chat-check { color: var(--warn); font-size: var(--t-cap); }
