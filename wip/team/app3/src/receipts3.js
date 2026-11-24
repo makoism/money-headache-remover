@@ -5,7 +5,7 @@
    write goes through ACT3 (src/act3.js), which gives the Undo bar. Free to spend left and safe to spend are the
    engine's, before and after: for a draft the engine is asked about the book the draft would make (ACT3.dry). This
    file chooses, writes and places; it never adds, takes away or rounds (tests: no_maths.js, e3_receipts.js). */
-const RC3 = { mode: 'spend', edit: null, at: null, search: '', last: null };
+const RC3 = { mode: 'spend', edit: null, at: null, search: '', last: null, held: null };
 const RC_KIND3 = { spend: 'logSpend', refund: 'refund', moved: 'moveMoney', in: 'moneyIn' };
 const RC_SPEND_FROM3 = { bank: 1, cash: 1, ewallet: 1, wallet: 1, card: 1, paylater: 1 };
 const RC_OWN3 = { bank: 1, cash: 1, ewallet: 1, wallet: 1 };
@@ -116,7 +116,12 @@ function rcFormHtml3() {
   const mainId = main && main.acct;
   const fromSel = pick(e ? e.acct : null, fromList, mainId);
   let fields = '';
-  if (m === 'moved') {
+  /* [K18] money moves only between your own accounts: with one, there is nowhere to move it to, so the form says so
+     instead of an empty To list and a Save that fails (a way to add an account goes here once the app has one) */
+  const noTo = m === 'moved' && !e && fromList.length < 2;
+  if (noTo) {
+    fields = '';
+  } else if (m === 'moved') {
     const toList = fromList.filter(o => o.v !== fromSel);
     fields = `<div class="a3-field"><label for="rcFrom">From</label><select class="a3-in a3-sel" id="rcFrom">${rcOptions3(fromList, fromSel)}</select></div>
       <div class="a3-field"><label for="rcTo">To</label><select class="a3-in a3-sel" id="rcTo">${rcOptions3(toList, pick(e ? e.acct2 : null, toList, null))}</select></div>`;
@@ -133,6 +138,9 @@ function rcFormHtml3() {
   /* M22: two main doors, Money went out and Money came in; Refund and Moved under them as smaller choices (same modes) */
   const seg = (k, n, main) => `<button type="button" class="a3-seg${main ? ' a3-door' : ' a3-seg-s'}" data-mode="${k}"${main ? ' data-door="main"' : ''} aria-pressed="${k === m}"${e ? ' disabled' : ''}>${n}</button>`;
   const modes = `<div class="a3-doors">${seg('spend', 'Money went out', true)}${seg('in', 'Money came in', true)}</div><div class="a3-segs">${seg('refund', 'Refund')}${seg('moved', 'Moved')}</div>`;
+  if (noTo) return `<h2>Log money moved between your accounts</h2>
+    <div role="group" aria-label="What happened">${modes}</div>
+    <p class="a3-sub" id="rcNoTo">Moving money needs a second account of your own, like savings, cash or an e-wallet. You have one, so there is nowhere to move it to yet</p>`;
   return `<h2>${e ? 'Change this' : { spend: 'Log a spend', refund: 'Log a refund', moved: 'Log money moved between your accounts', in: 'Log money that came in, like a client payment or a gift' }[m]}</h2>
     <div role="group" aria-label="What happened">${modes}</div>
     <div class="a3-field"><label for="rcAmt">Amount</label><input class="a3-in" data-amount type="text" inputmode="decimal" autocomplete="off" id="rcAmt" value="${esc3(amt)}" placeholder="${esc3(SM.symbol(E3.home()).trim())}"></div>
@@ -179,12 +187,14 @@ function rcPreview3() {
   out.innerHTML = `After this: ${f.free != null ? `${esc3(label3('freeToSpendLeft'))} <b data-fig="rc-free-after">${fig3('period.free.left', f.free, cur)}</b>, ` : ''}${esc3(label3('safeToSpend').toLowerCase())} <b data-fig="rc-safe-after">${fig3('safeToSpend.headline', f.safe, cur)}</b>${ov ? `<br><span class="a3-late" data-fig="rc-over">${esc3(ov)}</span>` : ''}`;
 }
 function rcWire3() {
+  /* a mode keeps what was typed, also across Moved with nowhere to move to (which has no boxes) */
+  for (const b of document.querySelectorAll('[data-mode]')) b.addEventListener('click', () => { const keep = $('#rcAmt') ? rcKeep3() : (RC3.held || {}); RC3.held = keep; RC3.mode = b.dataset.mode; $('#rcForm').innerHTML = rcFormHtml3(); rcPut3(keep); rcWire3(); if ($('#rcAmt')) $('#rcAmt').focus(); });
   const amt = $('#rcAmt');
+  if (!amt) return;
   BurrowScreens.inputs.bind(amt, { kind: 'amount', code: E3.home(), optional: true });
   for (const el of document.querySelectorAll('#rcForm input, #rcForm select')) { el.addEventListener('input', rcPreview3); el.addEventListener('change', rcPreview3); }
   const from = $('#rcFrom');
   if (from) from.addEventListener('change', () => { const keep = rcKeep3(); $('#rcForm').innerHTML = rcFormHtml3(); rcPut3(keep); rcWire3(); });
-  for (const b of document.querySelectorAll('[data-mode]')) b.addEventListener('click', () => { const keep = rcKeep3(); RC3.mode = b.dataset.mode; $('#rcForm').innerHTML = rcFormHtml3(); rcPut3(keep); rcWire3(); $('#rcAmt').focus(); });
   $('#rcSave').addEventListener('click', () => rcSave3());
   $('#rcAskYes').addEventListener('click', () => rcSave3(true));
   $('#rcAskNo').addEventListener('click', () => { rcAskOff3(); $('#rcAmt').focus(); });
@@ -196,7 +206,7 @@ function rcWire3() {
 }
 /* what was typed survives a change of mode or account */
 function rcKeep3() { const v = id => ($(id) ? $(id).value : null); return { amt: v('#rcAmt'), date: v('#rcDate'), note: v('#rcNote'), from: v('#rcFrom') }; }
-function rcPut3(k) { if (k.amt != null) $('#rcAmt').value = k.amt; if (k.date) $('#rcDate').value = k.date; if (k.note != null) $('#rcNote').value = k.note; if (k.from && $('#rcFrom') && [...$('#rcFrom').options].some(o => o.value === k.from)) { $('#rcFrom').value = k.from; } }
+function rcPut3(k) { if (!$('#rcAmt')) return; if (k.amt != null) $('#rcAmt').value = k.amt; if (k.date) $('#rcDate').value = k.date; if (k.note != null) $('#rcNote').value = k.note; if (k.from && $('#rcFrom') && [...$('#rcFrom').options].some(o => o.value === k.from)) { $('#rcFrom').value = k.from; } }
 
 function rcWords3(x, r) {
   const cur = E3.curOf(x.acct || x.from), amt = money3(x.a, cur);

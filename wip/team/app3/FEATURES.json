@@ -2,6 +2,7 @@
  "slice": 1,
  "note": "DECISIONS_ROUND2 AZ5: passes is flipped to true only when the test is green in ./check3.sh. check3.sh fails if a feature marked passing has a red test.",
  "features": [
+  { "name": "Receipts Moved with one account of your own (K18): one line says a second account is needed first, no empty To list and no Save to fail, nothing written; what was typed is kept when going back", "test": "tests/e3_moved1.js", "passes": true },
   { "name": "Receipts opens on two doors (M22): Money went out and Money came in, side by side and whole at 320 px, with Refund and Moved under them as smaller choices; the same modes and saved records as before", "test": "tests/e3_doors.js", "passes": true },
   { "name": "Two incomes on the 10th entered as one pay (M28): Mako's made-up shape set up with one pay of 240,000; next pay, the period and safe to spend hand-worked on 20 Nov, 9 Dec and after Check your bank on 10 Dec (the next pay after Coming of Age Day), the same as the try book with two incomes", "test": "tests/e3_onepay.js", "passes": true },
   { "name": "Installed to the home screen (M33: Android, Chrome): manifest3.webmanifest beside the page, The Burrow, standalone, start_url and scope relative to the page's own folder so any private path works, icons 192 and 512 any and maskable, kept by the worker, no installability errors in Chrome", "test": "tests/e3_install.js", "passes": true },
