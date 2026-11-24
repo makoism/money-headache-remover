@@ -29,7 +29,9 @@ const SN = require('../../screens/names.js');
          Tue 12 Jan in the try book), and the period running now is written as running to today's pay */
     const got = await period(), head = await p.$eval('[data-card=safe] h2', e => e.textContent);
     ck('10 Dec: the period runs to today\'s pay, never 10 Nov to 10 Dec', got.text === '10 Nov to today\'s pay', got.text);
-    ck('10 Dec: safe to spend runs to the next pay after today\'s', head === 'Safe to spend until next pay on 12 Jan 2027, includes today\'s pay of ¥180,000, not in your bank yet', head);   // [BV2.13] counted, not seen yet   // the try book's January pay lands Tue 12 Jan (Sun 10, holiday Mon 11)
+    /* [C8, M51] "next pay" is today's pay on this screen (the period card), so the heading names the one after it as that */
+    ck('10 Dec: safe to spend runs to the pay after today\'s, and says so', head === 'Safe to spend until the pay after today\'s, on 12 Jan 2027, includes today\'s pay of ¥180,000, not in your bank yet', head);   // [BV2.13] counted, not seen yet
+    ck('10 Dec: "next pay" means one pay on Home: today\'s', /Next pay 10 Dec, today/.test(got.next) && !/next pay on/i.test(await p.$eval('#a3Home', e => e.textContent)), got.next);   // the try book's January pay lands Tue 12 Jan (Sun 10, holiday Mon 11)
   }
   await p.click('#a3CheckGo'); await T.w(200);
   const names = await p.$$eval('.a3-tick', rs => rs.map(r => [r.dataset.item, r.querySelector('label span').textContent]));

@@ -65,7 +65,7 @@ const DAYS = ['2026-11-23', '2026-12-09', '2026-12-10', '2026-12-11', '2026-12-1
   /* every label beside a figure is the name table's name for that figure */
   const SN = require('../../screens/names.js');
   const shown = await p.evaluate(() => [['[data-card=safe] h2', 'safeToSpend.headline'], ['[data-card=due] h2', 'dueBeforeNextPay.total'], ['[data-card=period] h2', 'period.start']].map(([s, f]) => ({ label: document.querySelector(s) ? document.querySelector(s).textContent : '', figure: f })));
-  const labelOnly = shown.map(x => ({ label: x.label.replace(/ until next pay on .*$/, ''), figure: x.figure }));
+  const labelOnly = shown.map(x => ({ label: x.label.replace(/ until (next pay on|the pay after today's,) .*$/, ''), figure: x.figure }));
   ck('labels come from the name table', SN.check(labelOnly).length === 0, SN.check(labelOnly).join('; '));
   /* Plan and Receipts are here already: the last line names only what is still to come */
   ck('no "Coming next" line on Home', !/Coming next/.test(await p.$eval('#a3Home', e => e.textContent)));

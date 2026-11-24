@@ -22,6 +22,14 @@ test('Mako\'s shape, five days after setup: safe, with the amount and the day of
   assert.strictEqual(s.next, null);
 });
 
+test('on pay day the status runs to the pay after today\'s, never "until pay on" today [C8]', () => {
+  const r = clone(engine('mako_shape', '2026-11-25'));
+  r.daysToNextPay = { days: 0, next_pay: '2026-11-25', item: 'x' }; r.safeToSpend.until = '2026-12-10';
+  const s = status.statusOf(r, YEN);
+  assert.strictEqual(s.reason.until, '2026-12-10');
+  assert.strictEqual(s.text.reason, '¥182,000 is safe to spend until pay on 10 Dec');
+});
+
 test('the status is frozen: a screen cannot write its own verdict into it', () => {
   const s = status.statusOf(engine('mako_shape', '2026-11-25'), YEN);
   assert.ok(Object.isFrozen(s) && Object.isFrozen(s.reason) && Object.isFrozen(s.text) && Object.isFrozen(s.also));

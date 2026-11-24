@@ -93,7 +93,8 @@ function safeUntil3(r, yr, home) {
      words with the engine's own amount for it */
   const np = r.daysToNextPay || {}, notIn = np.days === 0 && !r.safeToSpend.notCounting && ((r.checkIn || {}).toConfirm || []).find(o => o.item === np.item);
   const notInWords = notIn ? `, includes today's pay of ${esc3(money3(notIn.amount, home))}, not in your bank yet` : '';
-  if (n.days === 0 && r.safeToSpend.until) return ` until next pay on ${esc3(day3(r.safeToSpend.until, yr))}${r.safeToSpend.notCounting ? ', not counting today\'s pay (not in at your check today)' : ''}${notInWords}`;
+  /* [C8, M51] "next pay" on this screen is today's pay (the period card), so this one is named "the pay after today's" */
+  if (n.days === 0 && r.safeToSpend.until) return ` until the pay after today's, on ${esc3(day3(r.safeToSpend.until, yr))}${r.safeToSpend.notCounting ? ', not counting today\'s pay (not in at your check today)' : ''}${notInWords}`;
   return ` until next pay on ${d}${notInWords}`;
 }
 /* [LISTFIX B2, I4, BP2] right after setup, Free to spend counts only its share for the days left in the period, and it

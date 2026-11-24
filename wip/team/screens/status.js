@@ -139,7 +139,8 @@
     const accounts = r.accounts || {};
     const stp = r.safeToSpend || {};
     const pay = r.daysToNextPay || {};
-    const until = pay.next_pay || null;
+    /* [C8] the pay safe to spend runs to (safeToSpend.until): on pay day that is the pay after today's, never today */
+    const until = stp.until || pay.next_pay || null;
     const warnings = r.warnings || [];
     const below = warnings.filter(w => w.code === 'below_minimum').sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0));
     if (!Object.keys(accounts).length) out.push({ state: 'empty', reason: { code: 'no_figures' }, next: { code: 'check_in' } });

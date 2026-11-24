@@ -4598,7 +4598,8 @@ html:has(.a3-setup-open) { scroll-padding-top: 150px; }
     const accounts = r.accounts || {};
     const stp = r.safeToSpend || {};
     const pay = r.daysToNextPay || {};
-    const until = pay.next_pay || null;
+    /* [C8] the pay safe to spend runs to (safeToSpend.until): on pay day that is the pay after today's, never today */
+    const until = stp.until || pay.next_pay || null;
     const warnings = r.warnings || [];
     const below = warnings.filter(w => w.code === 'below_minimum').sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0));
     if (!Object.keys(accounts).length) out.push({ state: 'empty', reason: { code: 'no_figures' }, next: { code: 'check_in' } });
@@ -8734,7 +8735,8 @@ function safeUntil3(r, yr, home) {
      words with the engine's own amount for it */
   const np = r.daysToNextPay || {}, notIn = np.days === 0 && !r.safeToSpend.notCounting && ((r.checkIn || {}).toConfirm || []).find(o => o.item === np.item);
   const notInWords = notIn ? `, includes today's pay of ${esc3(money3(notIn.amount, home))}, not in your bank yet` : '';
-  if (n.days === 0 && r.safeToSpend.until) return ` until next pay on ${esc3(day3(r.safeToSpend.until, yr))}${r.safeToSpend.notCounting ? ', not counting today\'s pay (not in at your check today)' : ''}${notInWords}`;
+  /* [C8, M51] "next pay" on this screen is today's pay (the period card), so this one is named "the pay after today's" */
+  if (n.days === 0 && r.safeToSpend.until) return ` until the pay after today's, on ${esc3(day3(r.safeToSpend.until, yr))}${r.safeToSpend.notCounting ? ', not counting today\'s pay (not in at your check today)' : ''}${notInWords}`;
   return ` until next pay on ${d}${notInWords}`;
 }
 /* [LISTFIX B2, I4, BP2] right after setup, Free to spend counts only its share for the days left in the period, and it
