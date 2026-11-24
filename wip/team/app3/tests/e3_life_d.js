@@ -50,6 +50,7 @@
           = 184,110; together 257,753. 625,500 - 250,000 - 257,753 = 117,747, over Free to spend left, which starts
           again in January (BQ3): 100,000, nothing spent on it yet: safe 100,000. */
 'use strict';
+const { finishSetup: finishSetup3 } = require('./setup_sections.js');   // setup is saved one section at a time (item 14)
 const L = require('./lives3.js').make('e3_life_d');
 const { ck, go, tab, typeIn, log, checkin, home, w } = L;
 const num = v => Number(String(v).replace(/[^\d.]/g, ''));
@@ -67,7 +68,7 @@ const num = v => Number(String(v).replace(/[^\d.]/g, ''));
     k++; await p.click('#s3AddBill'); const r = `[data-row=bill${k}] `;
     await typeIn(p, r + '[data-f=name]', name); await typeIn(p, r + '[data-f=amount]', amt); await p.selectOption(r + '[data-f=day]', day);
   }
-  await p.click('#a3SetupSave'); await w(700);
+  await finishSetup3(p); await w(700);
   await home(p, '1 Dec after setup', 46666, { Checking: 550000 });
   ck('1 Dec: the period is 30 Nov to 14 Dec', (await p.$eval('[data-fig=period]', e => e.textContent).catch(() => '')) === '30 Nov to 14 Dec');
   /* 3 Dec: Food $200.00 each pay */

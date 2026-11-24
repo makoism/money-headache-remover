@@ -6,6 +6,7 @@
    BI4b: a late or not seen pay is named by the day it lands (after the weekend rule), not its unmoved due day: with
    pay moved to the working day before, the January pay lands Fri 8 Jan, and on 13 Jan Home says "due 8 Jan". */
 'use strict';
+const { finishSetup: finishSetup3 } = require('./setup_sections.js');   // setup is saved one section at a time (item 14)
 const T = require('./lib3.js'), { ck } = T;
 const CI = require('../../engine/checkin.js'), I = require('../../engine/ids.js');
 const typeIn = async (p, sel, v) => { await p.click(sel, { clickCount: 3 }); await p.keyboard.press('Backspace'); await p.type(sel, String(v)); };
@@ -39,7 +40,7 @@ const typeIn = async (p, sel, v) => { await p.click(sel, { clickCount: 3 }); awa
     ck('the question names the bill and its own day (QC F3), and the answer starts as yes', /^Did the Phone of 20 Nov leave your bank\?/.test(asked[2][3]) && asked[2][2] === 'yes', JSON.stringify(asked[2]));
     await p.select('[data-row=bill3] [data-f=takenOut]', 'no');
     await T.shot(p, 'setup_bi3_2026-11-24');
-    await p.click('#a3SetupSave'); await T.w(600);
+    await finishSetup3(p); await T.w(600);
     const f = await T.figs(p), safe = f.filter(x => x.fig === 'safe')[0];
     ck('with Phone still to go, safe to spend is 196,600', safe && safe.amt === 196600, JSON.stringify(safe));
     const why = f.filter(x => x.fig === 'why')[0];
