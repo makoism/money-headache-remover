@@ -48,7 +48,7 @@ echo '})();'
 echo '</script>'
 echo '</body>'
 echo '</html>'
-} > "$OUT"
+} > "$OUT.tmp.$$"; mv "$OUT.tmp.$$" "$OUT"   # in one step: a test reading the page while another builds never sees half a file
 wc -c "$OUT"
 # the service worker beside it (D6, backup lane): its cache is named by this build, so a new build is a new worker
-sed "s/@@BUILD@@/$(sha1sum "$OUT" | cut -c1-12)/" src/sw3.js > sw3.js
+sed "s/@@BUILD@@/$(sha1sum "$OUT" | cut -c1-12)/" src/sw3.js > sw3.js.tmp.$$; mv sw3.js.tmp.$$ sw3.js
