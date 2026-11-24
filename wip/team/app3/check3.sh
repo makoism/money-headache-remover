@@ -38,6 +38,8 @@ node|tests/e3_stmt_read.js|e3_stmt_read: ALL PASS||300|statements, the reading h
 node|tests/e3_stmt_plan.js|e3_stmt_plan: ALL PASS||300|statements, the writing half (pure): lines, matching, records
 node|tests/plan3_write.test.js|plan3_write: ALL PASS||300|the Plan tab's steps (pure)
 node|tests/backup3.test.js|backup3: ALL PASS||300|the backup file's core
+node|tests/answers3.test.js|answers3: ALL PASS||300|answers3, the one answers-to-book function (BV1): same answers, same book
+node|tests/chat3_core.test.js|chat3_core: ALL PASS||300|the assistant's core with the fake model: Mako's setup chat to 201,400, before tax, a side job, a stale draft, a skipped question, changes with Undo (BU, BV, BW)
 node|tests/ask3_core.test.js|ask3_core: ALL PASS||300|Ask, the pure half (the summary sent, the reply checked, steps through act3, Undo)
 node|tests/remind3.test.js|remind3: ALL PASS||300|reminders, the pure half (days from the engine's calendar, the calendar file, Google and Outlook links)
 node|tests/no_maths.js|NO MATHS PASS||300|no money maths in screens

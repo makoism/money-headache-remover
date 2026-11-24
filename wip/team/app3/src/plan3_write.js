@@ -22,7 +22,7 @@
   const bad = text => { throw new A3.Bad(text); };
   const BUILD = node ? require('../../engine/build_book.js') : root.BurrowEngine.build;
   const PAY_NEEDS_AMOUNT = BUILD.PAY_NEEDS_AMOUNT;
-  const SC = Object.assign({}, node ? require('../../engine/schedules.js') : root.BurrowEngine.schedules, { dayNum: (node ? require('../../engine/dates.js') : root.BurrowEngine.dates).dayNum });
+  const SC = Object.assign({}, node ? require('../../engine/schedules.js') : root.BurrowEngine.schedules, { dayNum: (node ? require('../../engine/dates.js') : root.BurrowEngine.dates).dayNum, dayStr: (node ? require('../../engine/dates.js') : root.BurrowEngine.dates).dayStr });
   const live = x => x && !x.gone;
   const DAY = /^\d{4}-\d{2}-\d{2}$/;
   const amountOk = (a, what) => { if (!Number.isInteger(a) || !(a > 0)) bad('Type ' + what + ' above zero'); return a; };
@@ -96,12 +96,31 @@
   }
 
   /* ---- bills ---- */
+  /* [qc-foundation confirm, yearly bills] x.every: 'month' (default, `day`), 'year' (`month` 1 to 12 and `day`, or `date`
+     'MM-DD'), 'months' (every `n` months from `start`, the day of one), as build_book writes them */
+  const DAYS_IN = { 1: 31, 2: 29, 3: 31, 4: 30, 5: 31, 6: 30, 7: 31, 8: 31, 9: 30, 10: 31, 11: 30, 12: 31 };
+  function billRule(x) {
+    const every = x.every || 'month';
+    if (every === 'month') return { every: 'month', days: [dayOfMonth(x.day)] };
+    if (every === 'year') {
+      const m = x.date ? Number(String(x.date).slice(0, 2)) : Number(x.month), d = x.date ? Number(String(x.date).slice(3)) : x.day;
+      if (!(Number.isInteger(m) && m >= 1 && m <= 12)) bad('Pick the month it is due');
+      if (!(Number.isInteger(d) && d >= 1 && d <= DAYS_IN[m])) bad('Pick a day that month has');
+      return { every: 'year', date: String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0') };
+    }
+    if (every === 'months') {
+      if (!(Number.isInteger(x.n) && x.n >= 1 && x.n <= 24)) bad('Every how many months?');
+      if (!DAY.test(x.start || '')) bad('Pick the day of one of them');
+      return { every: 'months', n: x.n, from: x.start };
+    }
+    return bad('Pick how often it is due');
+  }
   function addBill(w, x) {
-    const name = nameOk(x.name), a = amountOk(x.amount, 'the amount'), d = dayOfMonth(x.day), acct = x.acct || mainOf(w);
+    const name = nameOk(x.name), a = amountOk(x.amount, 'the amount'), rule = billRule(x), acct = x.acct || mainOf(w);
     if (!(w.book.accounts || []).some(y => live(y) && y.id === acct)) bad('Pick the account it is paid from');
     sameName(A3.listOf(w.book, 'schedules').filter(s => s.kind === 'bill'), name);
     const id = w.add('schedules', { kind: 'bill', name, acct, cur: home(w), shift: x.shift || 'after', from: x.from || w.today,
-      rules: [{ from: null, rule: { every: 'month', days: [d] } }], steps: [{ from: null, amount: a }] });
+      rules: [{ from: null, rule }], steps: [{ from: null, amount: a }] });
     const r = find(w, 'schedules', id); stampNew(r, 'rules'); stampNew(r, 'steps');
     return id;
   }
@@ -120,6 +139,10 @@
      to a day or every few weeks: the new rule and the pay's amount start with its first pay on or after `from` (until
      that pay is ticked the plan runs by the day), the pay starts the period when no other pay does, and each line and
      Free to spend is asked about as an amount each pay, from that pay (a line a month becomes a line each pay). */
+  /* [qc-foundation F4, BY] startsPeriod is one undated flag: the live pay holding it (other than `but`), and whether a
+     pay's newest rule (by its `from`) has a fixed day */
+  const starterOf = (w, but) => A3.listOf(w.book, 'schedules').find(y => live(y) && y.id !== but && y.kind === 'income' && y.startsPeriod) || null;
+  const fixedNow = y => { const l = (y.rules || []).filter(r => r && !r.gone).slice().sort((p, q) => (p.from || '') < (q.from || '') ? -1 : (p.from || '') > (q.from || '') ? 1 : 0); return ((l.pop() || {}).rule || {}).every !== 'none'; };
   function changeBill(w, id, x) {
     const s = find(w, 'schedules', id), v = PE.scheduleView(w.book, w.today)[id];
     const ch = {};
@@ -150,7 +173,9 @@
         const probe = Object.assign({}, s, { rules: (s.rules || []).concat([{ from, rule: rhythm }]) });
         from = PE.firstLanding(Object.assign({}, w.book, { schedules: [probe] }), id, from) || from;
         if (s.shift === 'none') ch.shift = 'before';
-        if (!s.startsPeriod && !A3.listOf(w.book, 'schedules').some(y => live(y) && y.id !== id && y.kind === 'income' && y.startsPeriod)) ch.startsPeriod = true;
+        /* [qc-foundation F4, BY] the flag moves here when the pay holding it has no fixed day now */
+        const other = starterOf(w, id);
+        if (!s.startsPeriod && (!other || !fixedNow(other))) { if (other) w.edit('schedules', other.id, { startsPeriod: null }); ch.startsPeriod = true; }
       }
       if ((x.amount != null && x.amount !== v.amount) || (fromNone && x.amount != null)) ch.steps = (s.steps || []).concat([{ from, amount: amountOk(x.amount, 'the amount') }]);
       if (dayMoved) ch.rules = (s.rules || []).concat([{ from, rule: { every: 'month', days: [dayOfMonth(x.day)] } }]);
@@ -352,7 +377,87 @@
     return id;
   }
 
-  const api = { linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan };
+  /* ---- a pay and an account added after setup (AI_FIRST_PLAN corrections BV5, BV2.11, BV2.12) ---- */
+  /* x: { name, amount, every: 'month' | 'days' | 'weeks1'..'weeks4' | 'none', day, day2, start, shift?, acct?, lines? }.
+     From today, as addBill [BV2.11]; the rhythm as build_book writes it (every n weeks stepped back to on or before
+     today). No fixed day: no amount needed, never starts the period [B4]. The first pay with a fixed day in a book with
+     none is added with no fixed day and then changed to its day through changeBill, so it starts the period from its
+     first pay and each line and Free to spend is asked about as an amount each pay, as changeBill does [BV5]. */
+  function addPay(w, x) {
+    const name = nameOk(x.name), acct = x.acct || mainOf(w);
+    if (!EVERY[x.every]) bad('Pick how often it lands');
+    if (!(w.book.accounts || []).some(y => live(y) && y.id === acct && y.type !== 'card' && y.type !== 'loan')) bad('Pick the account it lands in');
+    sameName(A3.listOf(w.book, 'schedules').filter(s => s.kind === 'income'), name);
+    const none = x.every === 'none';
+    if (!none && (x.amount == null || x.amount === 0)) bad(PAY_NEEDS_AMOUNT);
+    const amount = x.amount == null ? null : amountOk(x.amount, 'the amount');
+    let rule = { every: 'none' };
+    if (x.every === 'month') rule = { every: 'month', days: [dayOfMonth(x.day)] };
+    else if (x.every === 'days') { if (x.day2 == null || x.day2 === '') bad('Pick the second day it lands'); const d1 = dayOrLast(x.day), d2 = dayOrLast(x.day2); rule = { every: 'month', days: d1 === d2 ? [d1] : [d1, d2] }; }
+    else if (!none) { if (!DAY.test(x.start || '')) bad('Pick the day of one pay, the last one or the next one'); const n = Number(x.every.slice(5)); rule = { every: 'weeks', n, from: BUILD.weeksAnchor(x.start, w.today, n) }; }
+    /* [qc-foundation F4, BY] it starts the pay periods when no pay with a fixed day does: a pay holding the flag with no
+       fixed day now gives it up (one step, so one Undo puts it back) */
+    const holder = starterOf(w, null), first = !none && (!holder || !fixedNow(holder));
+    /* [BV5] as changeBill from no fixed pay: each line and Free to spend counted a month is asked about as an amount
+       each pay, from this pay's first landing */
+    const monthly = first ? linesEachMonth(w) : [];
+    const got = x.lines || {}, missing = monthly.filter(l => got[l.key] == null);
+    if (missing.length) bad(`Your pay will land ${everyWords[x.every]}. How much each pay from then for ${missing.map(l => l.name).join(' and ')}?`);
+    if (first && holder) w.edit('schedules', holder.id, { startsPeriod: null });
+    const id = w.add('schedules', Object.assign({ kind: 'income', name, acct, cur: home(w), shift: none ? 'none' : x.shift || 'before', from: w.today,
+      rules: [{ from: null, rule }], steps: [{ from: null, amount }] }, first ? { startsPeriod: true } : {}));
+    const r = find(w, 'schedules', id); stampNew(r, 'rules'); stampNew(r, 'steps');
+    if (monthly.length) {
+      const from = PE.firstLanding(w.book, id, w.today) || w.today;
+      for (const l of monthly) {
+        const a = amountOk(got[l.key], 'the amount each pay for ' + l.name);
+        if (l.key === 'free') w.add('shares', { from, cur: home(w), per: { free: 'pay' }, free: a, goals: {} });
+        else { const e = w.edit('budgets', l.key, Object.assign({ steps: (l.rec.steps || []).concat([{ from, amount: a }]) }, l.rec.per === 'month' ? { per: 'pay' } : {})); stampNew(e, 'steps'); }
+      }
+    }
+    return id;
+  }
+  /* x: { name, type: 'bank' | 'cash' | 'ewallet' | 'wallet', amount, min?, moved: true | false, date?, from?, afterFigure? }.
+     `from` is the account the money came from (the main bank by default); on the day of that account's figure,
+     `afterFigure` says whether it was moved after the person looked (before: the figure already left it out). `moved` answers
+     "Is this new money, or moved from <main bank> since <the day of its last figure>?" [qc-foundation F3a]. Not moved
+     since then (new money, or moved before that figure, which already left it out): the account opens with its amount
+     and a check of it today, nothing taken off the main bank. Moved since then: the account opens at 0 and is checked at 0
+     at the end of the day before the move, then one transfer from the main bank on the move day, as addGoal and setAside do [BV2.12,
+     F3c]; never both. A move day before the main bank's last figure is refused [F3b]. */
+  const SN3 = node ? require('../../screens/names.js') : root.BurrowScreens.names;
+  const OWN_KINDS = { bank: 1, cash: 1, ewallet: 1, wallet: 1 };
+  function addAccount(w, x) {
+    const name = nameOk(x.name), type = x.type || 'bank';
+    if (!OWN_KINDS[type]) bad(type === 'card' ? 'Add a card with Add a card' : type === 'loan' ? 'Add a loan with Add a loan' : 'Pick a bank, cash, an e-wallet or a wallet');
+    if (!(Number.isInteger(x.amount) && x.amount >= 0)) bad('Type what it holds today, zero or more');
+    /* [qc-foundation confirm, watch] moved from any live bank, cash or e-wallet of your own; the main bank by default */
+    const from = x.from || mainOf(w);
+    if (!(w.book.accounts || []).some(y => live(y) && !y.closed && y.id === from && OWN_KINDS[y.type])) bad('Pick the bank the money came from');
+    /* that account's last figure typed (its own check, never a statement's) */
+    const last = (w.book.events || []).filter(e => live(e) && e.k === 'check' && !e.stmt && e.acct === from && e.date <= w.today).map(e => e.date).sort().pop() || w.today;
+    const since = last === w.today ? 'today' : SN3.dayLabel(last, last.slice(0, 4) !== w.today.slice(0, 4));
+    if (x.moved !== true && x.moved !== false) bad('Is this new money, or moved from ' + nameOf(w, from) + ' since ' + since + '?');
+    sameName(w.book.accounts || [], name);
+    const date = x.moved ? x.date || w.today : w.today;
+    if (!DAY.test(date) || date > w.today) bad('Pick the day it was moved, today or before');
+    if (x.moved && date < last) bad('That day is before ' + nameOf(w, from) + "'s figure of " + since + ', which already left it out. Add it as not moved since then');
+    /* [qc-foundation confirm 4] moved on the day of that figure: before the person looked, the figure already left it out */
+    if (x.moved && date === last && x.afterFigure !== true && x.afterFigure !== false) bad('Was it moved before or after you looked at ' + nameOf(w, from) + (last === w.today ? ' today' : ' on ' + since) + '?');
+    const moved = x.moved && !(date === last && x.afterFigure === false);
+    const rec = { name, type, cur: home(w), owner: null };
+    if (x.min != null && x.min !== '') rec.minBank = { a: amountOk(x.min, 'the amount to keep'), cur: home(w) };
+    const id = w.add('accounts', rec);
+    /* moved: it opens with 0 at the end of the day before the move, so the move (told now, on its own day) comes after
+       the opening whatever day it was; an opening dated the move day and told later would already hold it [AN4] */
+    const openDay = moved ? SC.dayStr(SC.dayNum(date) - 1) : w.today;
+    w.add('events', { k: 'open', acct: id, date: openDay, a: moved ? 0 : x.amount });
+    w.add('events', { k: 'check', acct: id, date: openDay, a: moved ? 0 : x.amount });
+    if (moved && x.amount > 0) w.add('events', { k: 'transfer', date, a: x.amount, acct: from, acct2: id, src: { type: 'typed' } });
+    return id;
+  }
+
+  const api = { addPay, addAccount, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan };
   if (node) module.exports = api;
   else root.PLAN3W = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
