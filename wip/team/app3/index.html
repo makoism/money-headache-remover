@@ -7765,6 +7765,9 @@ function screen3(draw) {
 }
 /* a typed amount as whole minor units, or null (never rounded; a minus is refused) */
 function typed3(text, cur) { const r = SM.parse(text, cur); return r.ok ? r.minor : null; }
+/* [M47, K29] what a bank shows today can be below zero: the one box where a minus is read (a bank only, never a card,
+   a pay or a bill), as whole minor units or null */
+function typedBank3(text, cur) { const r = SM.parse(text, cur, { allowMinus: true }); return r.ok ? r.minor : null; }
 /* '2026-12-10' as '10 Dec', with the year when it is not the shown day's year */
 const day3 = (s, thisYear) => (s ? SN.dayLabel(s, !!thisYear && s.slice(0, 4) !== thisYear) : '');
 const label3 = (key, ctx) => SN.label(key, ctx);
@@ -8795,7 +8798,7 @@ function drawHome3() {
     const a = r.accounts[id];
     out.push(`<section class="a3-card" data-card="bank" data-acct="${esc3(id)}"><h2>${esc3(label3('bankToday'))}: ${esc3(E3.nameOf(id))}</h2>
       <p class="a3-big" data-fig="bank">${fig3('accounts.*.bank', a.bank, a.currency)}</p>
-      <p class="a3-sub" data-fig="age">${bankParts3(a, yr)}</p></section>`);
+      <p class="a3-sub" data-fig="age">${bankParts3(a, yr)}</p>${a.bank < 0 ? `<p class="a3-warn" data-fig="belowzero">${esc3(E3.nameOf(id))} is below zero today. Everything here counts from what it shows</p>` : ''}</section>`);   // [M47] amber, never red
   }
   /* safe to spend until next pay, with the sum behind it */
   const until = safeUntil3(r, yr, home);
@@ -8924,7 +8927,7 @@ function openCheck3() {
   sheet.hidden = false; $('#a3Home').hidden = true; scrollTo(0, 0);
   /* one input behaviour (screens/inputs.js): the first tap selects, so typing replaces; read through money.js when left */
   sheet.querySelectorAll('[data-amt]').forEach(el => { const o = list.find(x => x.item === el.dataset.amt); BurrowScreens.inputs.bind(el, { kind: 'amount', code: E3.curOf(o.account) }); });
-  sheet.querySelectorAll('[data-bankfig]').forEach(el => BurrowScreens.inputs.bind(el, { kind: 'amount', code: E3.curOf(el.dataset.bankfig), optional: true }));
+  sheet.querySelectorAll('[data-bankfig]').forEach(el => BurrowScreens.inputs.bind(el, { kind: 'amount', code: E3.curOf(el.dataset.bankfig), optional: true, allowMinus: true }));   // [M47] a bank can be below zero
   sheet.querySelectorAll('[data-cardfig]').forEach(el => BurrowScreens.inputs.bind(el, { kind: 'amount', code: E3.curOf(el.dataset.cardfig), optional: true }));
   sheet.querySelectorAll('input, select').forEach(el => { el.addEventListener('input', checkPreview3); el.addEventListener('change', checkPreview3); });
   sheet.querySelectorAll('[data-gapyes]').forEach(el => el.addEventListener('click', () => { check3.sure[el.dataset.gapyes] = true; checkPreview3(); }));
@@ -8939,7 +8942,7 @@ function closeCheck3() { $('#a3Check').hidden = true; $('#a3Home').hidden = fals
 function readCheck3(strict) {
   const sheet = $('#a3Check'), figures = {}, bad = (text, el) => ({ bad: text, el });
   for (const el of sheet.querySelectorAll("[data-bankfig]")) {
-    const id = el.dataset.bankfig, v = typed3(el.value, E3.curOf(id));
+    const id = el.dataset.bankfig, v = typedBank3(el.value, E3.curOf(id));
     if (v === null) { if (strict) return bad(`Type what ${E3.nameOf(id)} shows today, as an amount`, el); continue; }
     figures[id] = v;
   }
@@ -9970,10 +9973,17 @@ async function openSetup3() {
   const me = setup3, draft = await E3.rec('setup');
   if (setup3 === me && draft && (draft.sections || draft.typed)) { restoreDraft3(draft); $('#a3SetupBack').hidden = false; $('#s3Bank').focus(); }
 }
+/* [M47, K29] the boxes that ask what a bank shows today: the main bank's, and another account's while its kind is a
+   bank. A bank can be below zero, so these read a minus; cash, an e-wallet, a pay, a card and a bill never do */
+function bankBox3(el) {
+  if (el.id === 's3Bank') return true;
+  const row = el.closest('[data-row^=acct]'), type = row && el.dataset.f === 'amount' ? row.querySelector('[data-f=type]') : null;
+  return !!type && type.value === 'bank';
+}
 /* one input behaviour (screens/inputs.js) in the chosen currency */
 /* [item 14] a box that can't be read says why next to it when it is left; a blank one is asked for only on Save */
 function bindMoney3(el) {
-  BurrowScreens.inputs.bind(el, { kind: 'amount', get code() { return $('#s3Cur').value; }, optional: el.hasAttribute('data-optional'),
+  BurrowScreens.inputs.bind(el, { kind: 'amount', get code() { return $('#s3Cur').value; }, optional: el.hasAttribute('data-optional'), get allowMinus() { return bankBox3(el); },
     onError: r => { if (r.reason !== 'empty') fieldErr3(el, r.message); }, onValue: () => clearErr3(el) });
 }
 /* [item 14] a box's own error line, right after it and read with it; it goes as soon as the box is changed, and the
@@ -10008,7 +10018,7 @@ function answers3(strict, sec) {
   const cur = $('#s3Cur').value;
   const asks = el => strict && (!sec || sec.contains(el));
   const ask = (el, words) => { fieldErr3(el, words); el.focus(); throw new Error('asked'); };
-  const need = (el, words) => { const v = typed3(el.value, cur); if (v !== null) return v; if (!asks(el)) return 0; return ask(el, words); };
+  const need = (el, words) => { const v = bankBox3(el) ? typedBank3(el.value, cur) : typed3(el.value, cur); if (v !== null) return v; if (!asks(el)) return 0; return ask(el, words); };
   const text = (el, dflt) => (el.value || '').trim() || dflt;
   const bankName = text($('#s3BankName'), 'Main bank');
   const min = $('#s3Min').value.trim() ? need($('#s3Min'), 'Type the amount to keep at least, or leave it blank') : null;

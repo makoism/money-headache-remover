@@ -199,10 +199,17 @@ async function openSetup3() {
   const me = setup3, draft = await E3.rec('setup');
   if (setup3 === me && draft && (draft.sections || draft.typed)) { restoreDraft3(draft); $('#a3SetupBack').hidden = false; $('#s3Bank').focus(); }
 }
+/* [M47, K29] the boxes that ask what a bank shows today: the main bank's, and another account's while its kind is a
+   bank. A bank can be below zero, so these read a minus; cash, an e-wallet, a pay, a card and a bill never do */
+function bankBox3(el) {
+  if (el.id === 's3Bank') return true;
+  const row = el.closest('[data-row^=acct]'), type = row && el.dataset.f === 'amount' ? row.querySelector('[data-f=type]') : null;
+  return !!type && type.value === 'bank';
+}
 /* one input behaviour (screens/inputs.js) in the chosen currency */
 /* [item 14] a box that can't be read says why next to it when it is left; a blank one is asked for only on Save */
 function bindMoney3(el) {
-  BurrowScreens.inputs.bind(el, { kind: 'amount', get code() { return $('#s3Cur').value; }, optional: el.hasAttribute('data-optional'),
+  BurrowScreens.inputs.bind(el, { kind: 'amount', get code() { return $('#s3Cur').value; }, optional: el.hasAttribute('data-optional'), get allowMinus() { return bankBox3(el); },
     onError: r => { if (r.reason !== 'empty') fieldErr3(el, r.message); }, onValue: () => clearErr3(el) });
 }
 /* [item 14] a box's own error line, right after it and read with it; it goes as soon as the box is changed, and the
@@ -237,7 +244,7 @@ function answers3(strict, sec) {
   const cur = $('#s3Cur').value;
   const asks = el => strict && (!sec || sec.contains(el));
   const ask = (el, words) => { fieldErr3(el, words); el.focus(); throw new Error('asked'); };
-  const need = (el, words) => { const v = typed3(el.value, cur); if (v !== null) return v; if (!asks(el)) return 0; return ask(el, words); };
+  const need = (el, words) => { const v = bankBox3(el) ? typedBank3(el.value, cur) : typed3(el.value, cur); if (v !== null) return v; if (!asks(el)) return 0; return ask(el, words); };
   const text = (el, dflt) => (el.value || '').trim() || dflt;
   const bankName = text($('#s3BankName'), 'Main bank');
   const min = $('#s3Min').value.trim() ? need($('#s3Min'), 'Type the amount to keep at least, or leave it blank') : null;
