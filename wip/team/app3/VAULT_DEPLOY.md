@@ -105,3 +105,8 @@ either way.
 - app3 shows a deleted cloud copy (410) as a general server problem. A line like "This cloud copy was deleted on another
   device. Turn it on again to start a new one" would be clearer. app3 has no screen yet for the 10 kept versions; the
   server keeps them now so one can be added later without losing history.
+
+## Added after the data-safety review (24 Nov)
+- **After a rollback:** the old code's DELETE removes only the `vault` row. Before rolling forward again, clear orphaned versions: `DELETE FROM vault_versions WHERE id NOT IN (SELECT id FROM vault);`
+- **The daily limit after a rollback:** a rollback brings back the old code default of 400 if the `VAULT_WRITES_PER_DAY` dashboard variable was removed. Set it to 1500 in the dashboard if you roll back.
+- **Size:** each copy keeps up to 11 blobs. About a week after the deploy, look at D1 storage in the dashboard.
