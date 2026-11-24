@@ -183,6 +183,9 @@ test('warnings are worded here from the engine\'s data, never its text: "below z
     const s = status.warningText({ account: 'bank', card: 'visa', loan: 'car', code, day: '2026-12-03', gain: 100, text: 'raw 2026-12-03' }, ctx);
     assert.ok(s && !iso.test(s) && !/raw/.test(s) && !/[.;!]$/.test(s), code + ': ' + s);
   }
+  // [BZ3] a removed account, line or bill brought back by a record from another device: worded from its data
+  assert.strictEqual(status.warningText({ account: 'bank', code: 'revived', name: 'Checking', by: ['x'], text: 'raw' }, ctx), 'Checking was removed, but money was logged on it on another device, so it is back');
+  assert.strictEqual(status.warningText({ line: 'food', code: 'revived', name: 'Food', by: ['x'], text: 'raw' }, ctx), 'Food was removed, but something logged on another device uses it, so it is back');
   // the status line under a minimum of none says below zero too
   const r = engine('mako_shape', '2026-11-25');
   r.warnings = [{ account: Object.keys(r.accounts)[0], code: 'below_minimum', day: '2026-12-07', amount: 12000, short: 12000, minimum: null }];

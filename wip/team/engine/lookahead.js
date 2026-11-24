@@ -57,6 +57,9 @@
 
   function lookahead(book, asOf, opts) {
     opts = opts || {};
+    // [BZ3] a removed account, line or schedule that a live record names counts again (ledger.js revive), with a warning
+    const RV = L.revive(book);
+    book = RV.book;
     const at = opts.at || 'end of day';
     const today = dayNum(asOf);
     const knownTo = at === 'start of day' ? today - 1 : today;   // what the app has heard of by then
@@ -69,6 +72,8 @@
     const main = fv(homeInfo.main) || {};
     const mainAcct = main.acct || null;
     const res = { asOf, at, accounts: {}, cards: {}, owed: {}, places: {}, warnings: [], laterOn: [] };
+    for (const x of RV.revived) res.warnings.push(Object.assign({ [x.kind]: x.id, code: 'revived', name: x.name, by: x.by },
+      { text: `${x.name || 'Something'} was removed, but a record on another device names it, so it is back` }));
 
     // ----- accounts -----
     const acct = {};

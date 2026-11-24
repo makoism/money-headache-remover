@@ -15,6 +15,7 @@
   const D = node ? require('./dates.js') : root.BurrowEngine.dates;
   const IDS = node ? require('./ids.js') : root.BurrowEngine.ids;
   const SC = node ? require('./schedules.js') : root.BurrowEngine.schedules;
+  const LG = node ? require('./ledger.js') : root.BurrowEngine.ledger;
   const { dayNum, dayStr } = D;
   const { ORDINARY, MOVED: MOVED_TEXT, REF, DATE } = IDS;
 
@@ -529,6 +530,8 @@
   }
   function afterSync(copy) {
     const c = closedChecks(copy);
+    // [BZ3] a removed account, line or schedule a live record names is back (ledger.js revive, the look ahead's rule)
+    for (const x of LG.revive(copy).revived) c.notices.push({ [x.kind]: x.id, notice: 'revived', by: x.by });
     let which = (copy.keptVersions || []).filter(k => k.ask).map(k => ({ q: 'which', of: k.of, kept: k.id }));
     let mins = minimumQuestions(copy);
     // [AW4, AT3] A main-bank switch and a minimum change meeting at a sync are one question: the `which` about `home.main`, the

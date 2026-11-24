@@ -84,10 +84,10 @@ t('every case of sync_v1.json was asked (66 when written)', () => ok(cases >= 66
 }
 
 // 3. it runs in a page
-t('sync.js loads in a page after dates, units, ids and schedules (no require, no Buffer)', () => {
+t('sync.js loads in a page after dates, units, ids, schedules and ledger (no require, no Buffer)', () => {
   const ctx = { TextEncoder, console };
   ctx.window = ctx; vm.createContext(ctx);
-  for (const f of ['dates.js', 'units.js', 'ids.js', 'schedules.js', 'sync.js']) vm.runInContext(fs.readFileSync(path.join(__dirname, '..', f), 'utf8'), ctx, { filename: f });
+  for (const f of ['dates.js', 'units.js', 'ids.js', 'schedules.js', 'ledger.js', 'sync.js']) vm.runInContext(fs.readFileSync(path.join(__dirname, '..', f), 'utf8'), ctx, { filename: f });
   const P = ctx.BurrowEngine.sync;
   ok(P && typeof P.syncDevice === 'function');
   eq(JSON.stringify(P.impIds({ account: 'bank', lines: [{ ref: 'ä 1', date: '2026-12-01', a: 5, dir: 'out' }] })), '["imp:bank:ref:%C3%A4%201"]');
