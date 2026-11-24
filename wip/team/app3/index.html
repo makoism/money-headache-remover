@@ -2624,7 +2624,12 @@ html:has(.a3-setup-open) { scroll-padding-top: 150px; }
       // is cut by days like a bank's (makeFiller); the checks are walked in the bank's order, never as told
       const cardChecks = live().filter(x => x.k === 'check' && x.account === id && !x.stmt).sort(byTime);
       for (const e of cardChecks) {
-        const before = cardChecks.filter(x => x.day < e.day).map(x => x.day), prevDay = before.length ? Math.max(...before) : null;
+        // the check before this one: the latest on an earlier day, else the card's opening day (its opening check is not
+        // among the live records); a second check on the same day covers that one day only
+        const before = cardChecks.filter(x => x.day < e.day).map(x => x.day);
+        const sameDayEarlier = cardChecks.slice(0, cardChecks.indexOf(e)).some(x => x.day === e.day);
+        const openD = openEv[id] ? openDay(id) : null;
+        const prevDay = sameDayEarlier ? e.day - 1 : before.length ? Math.max(...before) : openD != null && openD < e.day ? openD : null;
         const parts = [];
         const stretch = (from, to, amount) => { if (amount) parts.push(...makeFiller(id, Math.min(from, to), to, amount).parts); };
         let gap = 0, closed = null;
