@@ -7,7 +7,8 @@
        808) and 1 day in this one (850 - 808 = 42). Receipts shows the 42 in this period and the 808 under Earlier, each
        named as found at the bank check of 10 Dec, on Free to spend, and not a button (it changes only at a check).
    A2. Plan lines alone needing more than the bank can spare: Home says so, by how much, and what to do (worked below).
-   C1. A second bank going below zero while the main one can spare it: Home says to move the money, how much and from where. */
+   C1. A second bank going below zero while the main one can spare it: Home says to move the money, how much and from where.
+   B1. A gap saved while the card question shows: the Undo bar still says it counts as spending. */
 'use strict';
 const T = require('./lib3.js');
 const { ck } = T;
@@ -81,6 +82,19 @@ const rows = p => p.$$eval('#rcList li', es => es.map(e => ({ gap: e.dataset.gap
   const mv = await txt(p, '#a3Home [data-fig="move-from"]');
   ck('C1: and says where from: Move ¥20,000 from Main bank to Bank B by 15 Dec. Main bank can spare it', mv === 'Move ¥20,000 from Main bank to Bank B by 15 Dec. Main bank can spare it', mv);
   await T.shot(p, 'listfix_c1');
+
+  /* B1: the same check as A1 on a fresh device, saved while "Was Card A's payment ¥54,000?" is still showing: the gap
+     is counted as spending all the same (the engine's filler, 850), so the Undo bar says "It counts as spending" too. */
+  await fresh(bk);
+  await go('2026-12-10');
+  await p.click('#a3CheckGo'); await T.w(300);
+  await typeIn(p, `[data-bankfig="${bank}"]`, '386,550');
+  ck('B1: the card question is showing', !!(await txt(p, `[data-gapq="${bank}"]`)));
+  await p.click('#a3CheckSave'); await T.w(500);
+  const barB1 = await p.evaluate(() => { const m = document.querySelector('#a3Msg .burrow-msg'); return m ? m.querySelector('span').textContent : ''; });
+  ck('B1: the Undo bar says ¥850 more left your bank than you logged. It counts as spending', barB1.includes('¥850 more left your bank than you logged. It counts as spending'), barB1);
+  const gapB1 = await p.evaluate(async () => { const s = await BurrowStore.open(); const r = await s.load(); s.close(); return r.copy; }).then(c => T.L.lookahead(c, '2026-12-10').accounts[bank].fillers.slice(-1)[0].amount);
+  ck('B1: and the engine counts the 850', gapB1 === 850, gapB1);
 
   const errs = [].concat(...errLists); ck('no page errors', errs.length === 0, errs.join(' | '));
   await b.close(); T.done('e3_listfix');

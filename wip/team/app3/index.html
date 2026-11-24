@@ -8989,7 +8989,8 @@ async function saveCheck3() {
     if (f.startsWith('place:')) e.place = f.slice(6); else e.line = f.slice(5);
     out.events.push(e); logged[id] = rcForName3(e);
   }
-  const words = Object.keys(d.figures).map(id => { const g = gapWords3(before, id, day); return !g ? '' : logged[id] ? `${g.text.split('. ')[0]}, now logged as a spend on ${logged[id]}` : g.text; }).filter(Boolean);
+  /* [LISTFIX B1] saved with the card question still open, the gap is counted as spending all the same: the words say so */
+  const words = Object.keys(d.figures).map(id => { const g = gapWords3(before, id, day); return !g ? '' : logged[id] ? `${g.text.split('. ')[0]}, now logged as a spend on ${logged[id]}` : g.loss && g.ask.length ? `${g.text}. It counts as spending` : g.text; }).filter(Boolean);
   /* act3 is the only door: the check-in is one step, with its Undo bar */
   const said = [E3.mode === 'try' ? 'Bank checked. Made-up numbers, so nothing is saved' : 'Bank checked'].concat(words).join('. ');
   const r = await ACT3.addRecords('Check your bank', out, { undo: said });
