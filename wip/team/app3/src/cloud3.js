@@ -56,11 +56,11 @@
   // ---------- the server ----------
   function client(opts) {
     const f = opts.fetch || ((...a) => root.fetch(...a)), base = opts.base, wait = opts.timeout || 20000;
-    async function req(k, method, body, keepalive) {
+    async function req(k, method, body, keepalive, query) {
       const ctl = typeof AbortController === 'function' ? new AbortController() : null;
       const timer = ctl ? setTimeout(() => ctl.abort(), wait) : 0;
       try {
-        const r = await f(base() + '/api/vault/' + k.id, { method, cache: 'no-store', keepalive: !!keepalive,
+        const r = await f(base() + '/api/vault/' + k.id + (query ? '?' + query : ''), { method, cache: 'no-store', keepalive: !!keepalive,
           headers: Object.assign({ 'x-vault-token': k.token }, body ? { 'content-type': 'application/json' } : {}),
           body: body ? JSON.stringify(body) : undefined, signal: ctl ? ctl.signal : undefined });
         let j = null; try { j = await r.json(); } catch (e) { j = null; }
@@ -68,7 +68,8 @@
       } catch (e) { return { status: 0, ok: false, j: {} }; }   // no connection, or the 20 seconds ran out
       finally { clearTimeout(timer); }
     }
-    return { get: k => req(k, 'GET'), put: (k, b, keepalive) => req(k, 'PUT', b, keepalive), del: k => req(k, 'DELETE') };
+    return { get: k => req(k, 'GET'), put: (k, b, keepalive) => req(k, 'PUT', b, keepalive), del: k => req(k, 'DELETE'),
+      versions: k => req(k, 'GET', null, false, 'versions=1'), rev: (k, n) => req(k, 'GET', null, false, 'rev=' + encodeURIComponent(n)) };
   }
   // 410: the cloud copy was deleted on another device; it stays gone until a fresh turn-on (a new code), so the device stops
   const WHY = { net: 'net', code: 'code', busy: 'busy', server: 'server', deleted: 'deleted' };
@@ -87,6 +88,26 @@
     const u = await pack.unpack(env, { key: keys.key });
     if (!u.ok) return { ok: false, why: u.why };   // 'newer' (a later shape: refused, nothing changed), 'key', 'damaged', 'fmt'
     return { ok: true, rev: +g.j.rev || 0, copy: noRev(u.copy), updated: g.j.updated || null };
+  }
+  // The server's earlier versions (its last 10, newest first): { ok, versions: [{ rev, updated, size }] } or { ok: false, why }.
+  // `updated` is the server's time in ms, or null for one kept before the server noted times.
+  async function fetchVersions({ api, keys }) {
+    const g = await api.versions(keys);
+    if (!g.ok) return { ok: false, why: g.status === 404 ? 'none' : failOf(g.status) };
+    const vs = (Array.isArray(g.j.versions) ? g.j.versions : []).filter(v => v && typeof v.rev === 'number')
+      .map(v => ({ rev: v.rev, updated: typeof v.updated === 'number' ? v.updated : null, size: +v.size || 0 }));
+    return { ok: true, rev: +g.j.rev || 0, versions: vs };
+  }
+  // One of them: { ok, rev, copy } (opened like the cloud copy, a newer shape refused) or { ok: false, why } ('gone' when not kept).
+  async function fetchRev({ api, pack, keys, rev }) {
+    const g = await api.rev(keys, rev);
+    if (g.status === 404) return { ok: false, why: 'gone' };
+    if (!g.ok) return { ok: false, why: failOf(g.status) };
+    const env = unwrap(g.j.blob);
+    if (!env) return { ok: false, why: 'damaged' };
+    const u = await pack.unpack(env, { key: keys.key });
+    if (!u.ok) return { ok: false, why: u.why };
+    return { ok: true, rev: +g.j.rev || 0, copy: noRev(u.copy), updated: typeof g.j.updated === 'number' ? g.j.updated : null };
   }
   // device: { base, baseRev } as kept on this device (SCHEMA_V3 2.2 `sync`); copy: this device's shared copy.
   // Gives { ok, copy, device: { base, baseRev }, pushed, merged, questions, firstJoin } or { ok: false, why, device }.
@@ -118,7 +139,7 @@
     return { ok: false, why: WHY.busy, device: dev, copy: cur };
   }
 
-  const api = { SALT, ROUNDS, INFO, newCode, codeShow, codeClean, codeValid, keysFor, wrap, unwrap, client, fetchCloud, syncOnce, noRev };
+  const api = { SALT, ROUNDS, INFO, newCode, codeShow, codeClean, codeValid, keysFor, wrap, unwrap, client, fetchCloud, fetchVersions, fetchRev, syncOnce, noRev };
   root.CLOUD3 = api;
   if (typeof module === 'object' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

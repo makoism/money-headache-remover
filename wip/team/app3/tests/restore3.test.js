@@ -117,6 +117,19 @@ const shown = c => S.canon(Object.assign(Object.fromEntries(LISTS.map(k => [k, (
   ck('a change B made that A had not seen is asked, with both versions kept', !!k1 && k1.ask && k1.versions.some(v => v.name === 'Side work (B, unseen)') && A.copy.schedules.find(s => s.id === s1).name === BOOK.schedules[1].name, JSON.stringify(k1));
   ck('a record B added that A had not seen stays', !!A.copy.events.find(e => e.id === 'phn002-dddddddddd-1' && !e.gone));
 
+  // the server's earlier versions (?versions=1), and one of them restored (?rev=N) through the same restamp
+  const vs = await C.fetchVersions({ api, keys });
+  ck('the earlier versions are listed, newest first, each with its revision and time', vs.ok && vs.versions.length >= 5 && vs.versions.every((v, i) => typeof v.rev === 'number' && typeof v.updated === 'number' && (i === 0 || v.rev < vs.versions[i - 1].rev)), JSON.stringify(vs).slice(0, 300));
+  const first = vs.versions[vs.versions.length - 1];
+  const got = await C.fetchRev({ api, pack, keys, rev: first.rev });
+  ck('the oldest one reads back as the first copy sent', got.ok && shown(got.copy) === shown(backup) && got.copy.rev === undefined, JSON.stringify(got).slice(0, 200));
+  ck('a revision the server does not keep is said, not read', (await C.fetchRev({ api, pack, keys, rev: 999 })).why === 'gone');
+  A = await sync({ copy: Bk.restamp(got.copy, A.copy, { now: '2026-12-07T11:10:00.000+09:00', by: 'dsk001', day: '2026-12-07', also: [A.dev.base] }), dev: A.dev });
+  Bd = await sync(Bd);
+  ck('restored from the server\'s earlier version, B holds exactly it', shown(Bd.copy) === shown(got.copy), shown(Bd.copy).slice(0, 200));
+  const putsNow = vault.log.filter(x => x.method === 'PUT').length;
+  ck('listing and reading versions sent nothing', vault.log.filter(x => x.method === 'GET' && /versions=1|rev=/.test(x.query)).length === 3 && putsNow > 0);
+
   console.log(bad ? `restore3: ${bad} FAIL of ${n}` : `restore3: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })().catch(e => { console.log('FAIL crashed ' + e.stack); process.exit(1); });

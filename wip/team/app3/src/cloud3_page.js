@@ -9,7 +9,10 @@
    This device's cloud state is device-only (SCHEMA_V3 2.2: code, base, baseRev, when last sent, when it fell behind),
    kept beside the book (E3.rec 'cloud'), never in the copy that is sent or in a backup.
    Where the vault is: the page's own address when it is served (the site), else the site's address (RELAY3, from
-   wip/team/RELAY at build time). A try book never sends anything. */
+   wip/team/RELAY at build time). A try book never sends anything.
+   Earlier versions: the vault keeps the copy's last 10 earlier versions (?versions=1, one read with ?rev=N). Settings
+   lists them by when they were sent, and one is restored the way a backup file is (restoreBook3 in settings3.js: the copy
+   here kept first, every record restamped so it reaches the other devices with the next send), after saying so. */
 const C3 = { st: null, busy: false, again: false, timer: 0, lastSync: 0, dirty: false, applying: false, shown: null, why: null, reach: null };
 const CLOUD_EVERY3 = 90000, CLOUD_SOON3 = 5000;
 const cloudBase3 = () => (/^https?:$/.test(location.protocol) ? location.origin : (typeof RELAY3 === 'string' ? RELAY3.replace(/\/$/, '') : ''));
@@ -149,11 +152,43 @@ async function paintCloud3() {
   const behind = st.failAt ? `<p class="a3-warn" data-cloud="behind">Changes made since ${esc3(when3(st.failAt))} are on this device only for now.</p>` : '';
   body.innerHTML = `${behind}<div class="a3-actions"><button type="button" class="a3-btn" id="a3CloudNow">Send now</button>
       <button type="button" class="a3-btn" id="a3CloudShow">Show code</button>
+      <button type="button" class="a3-btn" id="a3CloudVers">Earlier versions</button>
       <button type="button" class="a3-btn" id="a3CloudOff">Turn off</button></div><div id="a3CloudForm"></div>`;
   $('#a3CloudNow').addEventListener('click', async () => { state.textContent = 'Sending.'; await syncNow3(); });
   $('#a3CloudShow').addEventListener('click', () => { $('#a3CloudForm').innerHTML = `<p class="a3-code" data-cloud="code">${esc3(CLOUD3.codeShow(st.code))}</p>`; });
   $('#a3CloudOff').addEventListener('click', offAsk3);
+  $('#a3CloudVers').addEventListener('click', versions3);
   paintQuestions3();
+}
+/* the cloud's earlier versions, newest first; one is restored after asking (draft words, FOR_MAKO copy pass) */
+async function versions3() {
+  const f = $('#a3CloudForm'); f.innerHTML = '<p class="a3-sub">Looking for earlier versions.</p>';
+  const st = await cloudState3();
+  const keys = await CLOUD3.keysFor(st.code);
+  const r = await CLOUD3.fetchVersions({ api: cloudApi3(), keys });
+  if (!SET3.open || !$('#a3CloudForm')) return;
+  if (!r.ok) { f.innerHTML = `<p class="a3-warn">${esc3(WHY3[r.why] || WHY3.server)}</p>`; return; }
+  if (!r.versions.length) { f.innerHTML = '<p class="a3-sub" data-cloud="versions">The cloud has no earlier versions of this copy yet.</p>'; return; }
+  f.innerHTML = `<p class="a3-next" data-cloud="versions">The cloud keeps the last ${r.versions.length === 1 ? 'version' : r.versions.length + ' versions'} before the one it holds now. Restoring one replaces the money on this device; what is here now is kept, and Put it back brings it back. ${esc3(OTHERS3)}</p>
+    <ul class="a3-rows">${r.versions.map(v => `<li data-cloudver="${v.rev}"><span>${v.updated ? 'Sent ' + esc3(when3(v.updated)) : 'An earlier version'}</span><button type="button" class="a3-btn">Restore this one</button></li>`).join('')}</ul>
+    <div id="a3CloudVerAsk"></div>`;
+  for (const li of f.querySelectorAll('[data-cloudver]')) li.querySelector('button').addEventListener('click', () => verAsk3(+li.dataset.cloudver, li.querySelector('span').textContent));
+}
+function verAsk3(rev, label) {
+  const ask = $('#a3CloudVerAsk');
+  ask.innerHTML = `<p class="a3-warn" data-cloud="verask">${esc3(label)}: this replaces the money on this device with that version. What is here now is kept, and Put it back brings it back. ${esc3(OTHERS3)}</p>
+    <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3CloudVerGo">Restore it</button><button type="button" class="a3-btn" id="a3CloudVerNo">Cancel</button></div>`;
+  $('#a3CloudVerNo').addEventListener('click', () => { ask.innerHTML = ''; });
+  $('#a3CloudVerGo').addEventListener('click', async () => {
+    const st = await cloudState3();
+    const g = await CLOUD3.fetchRev({ api: cloudApi3(), pack: BurrowPack, keys: await CLOUD3.keysFor(st.code), rev });
+    if (!g.ok) { setMsg3(g.why === 'gone' ? 'The cloud does not keep that version any more. Nothing changed.' : WHY3[g.why] || WHY3.server, true); ask.innerHTML = ''; return; }
+    const ok = await restoreBook3(g.copy, 'Before an earlier cloud version was restored');
+    setMsg3(ok ? 'Restored the earlier copy from the cloud. It goes to your other devices with the next send.' : 'This could not be saved on this device. Nothing changed.', !ok);
+    if ($('#a3CloudForm')) $('#a3CloudForm').innerHTML = '';
+    paintKept3();
+    const save = $('#a3BkSave'); if (save) save.disabled = !E3.book;
+  });
 }
 async function turnOn3() {
   $('#a3CloudState').textContent = 'Checking the cloud can be reached.';

@@ -91,6 +91,25 @@ const homeFigs = async p => JSON.stringify((await T.figs(p)).filter(f => f.amt !
     await B.p.reload(); await T.w(300);
     ck('B takes it too: the figures from before the restore', await until(async () => await homeFigs(B.p) === figs1), await homeFigs(B.p));
 
+    /* ---- the cloud's earlier versions: listed in Settings, the oldest restored, and B follows ---- */
+    await A.p.click('#a3SetGo'); await T.w(300);
+    await A.p.click('#a3CloudVers');
+    ck('Earlier versions lists the copies the cloud keeps, newest first', await until(async () => (await A.p.$$('[data-cloudver]')).length >= 3));
+    const vers = await A.p.$$eval('[data-cloudver]', ls => ls.map(l => +l.dataset.cloudver));
+    ck('each with its own revision, newest first', vers.every((v, i) => i === 0 || v < vers[i - 1]), vers.join(','));
+    ck('the list says the other devices follow too', (await A.p.$eval('[data-cloud=versions]', e => e.textContent)).includes(OTHERS));
+    await A.p.click(`[data-cloudver="${vers[vers.length - 1]}"] button`);
+    ck('restoring one asks first, with the same words', await until(async () => !!(await A.p.$('#a3CloudVerGo'))) && (await A.p.$eval('[data-cloud=verask]', e => e.textContent)).includes(OTHERS));
+    await A.p.click('#a3CloudVerGo');
+    ck('restored from the cloud\'s earlier copy, the copy here kept first', await until(async () => /earlier copy/.test(await A.p.$eval('#a3SetMsg', e => e.textContent))) && !!(await A.p.$('#a3BkBack')));
+    const r3 = rev();
+    await A.p.click('#a3CloudNow');
+    ck('A sends it', await until(() => rev() > r3));
+    await A.p.click('#a3SetClose'); await T.w(300);
+    ck('A shows the figures of the first copy sent', await homeFigs(A.p) === figs0, await homeFigs(A.p));
+    await B.p.reload(); await T.w(300);
+    ck('B takes it too', await until(async () => await homeFigs(B.p) === figs0), await homeFigs(B.p));
+
     const outside = A.requests.concat(B.requests).filter(r => !own(r));
     ck('every request went to the page\'s own address', outside.length === 0, outside.join(' '));
     const errs = A.errs.concat(B.errs).filter(e => !/Failed to load resource/.test(e));
