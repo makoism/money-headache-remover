@@ -26,12 +26,12 @@ const SN = require('../../screens/names.js');
   ck('23 Nov reads 10 Nov to 9 Dec', first.text === '10 Nov to 9 Dec', first.text);
   await p.goto(T.URL0 + '?try=mako&today=2026-12-10'); await T.w(300);
   {   /* [S1] on pay day, before the check: the pay counts today (G4), so safe to spend runs to the January pay (on
-         Tue 12 Jan in the try book), and the period running now is written as running to today's pay */
+         Fri 8 Jan in the try book, the working day before the weekend), and the period running now is written as running to today's pay */
     const got = await period(), head = await p.$eval('[data-card=safe] h2', e => e.textContent);
     ck('10 Dec: the period runs to today\'s pay, never 10 Nov to 10 Dec', got.text === '10 Nov to today\'s pay', got.text);
     /* [C8, M51] "next pay" is today's pay on this screen (the period card), so the heading names the one after it as that */
-    ck('10 Dec: safe to spend runs to the pay after today\'s, and says so', head === 'Safe to spend until the pay after today\'s, on 12 Jan 2027, includes today\'s pay of ¥180,000, not in your bank yet', head);   // [BV2.13] counted, not seen yet
-    ck('10 Dec: "next pay" means one pay on Home: today\'s', /Next pay 10 Dec, today/.test(got.next) && !/next pay on/i.test(await p.$eval('#a3Home', e => e.textContent)), got.next);   // the try book's January pay lands Tue 12 Jan (Sun 10, holiday Mon 11)
+    ck('10 Dec: safe to spend runs to the pay after today\'s, and says so', head === 'Safe to spend until the pay after today\'s, on 8 Jan 2027, includes today\'s pay of ¥180,000, not in your bank yet', head);   // [BV2.13] counted, not seen yet
+    ck('10 Dec: "next pay" means one pay on Home: today\'s', /Next pay 10 Dec, today/.test(got.next) && !/next pay on/i.test(await p.$eval('#a3Home', e => e.textContent)), got.next);   // the try book's January pay lands Fri 8 Jan (Sun 10, holiday Mon 11: the working day before)
   }
   await p.click('#a3CheckGo'); await T.w(200);
   const names = await p.$$eval('.a3-tick', rs => rs.map(r => [r.dataset.item, r.querySelector('label span').textContent]));
@@ -39,7 +39,7 @@ const SN = require('../../screens/names.js');
   await p.tap('[data-bankfig]'); await p.keyboard.type('526000');
   await p.click('#a3CheckSave'); await T.w(300);
   const after = await period();
-  ck('after both pays are ticked on 10 Dec, the period starts that day', after.start === '2026-12-10' && after.end === '2027-01-11' && after.text === '10 Dec 2026 to 11 Jan 2027', JSON.stringify(after));
+  ck('after both pays are ticked on 10 Dec, the period starts that day', after.start === '2026-12-10' && after.end === '2027-01-07' && after.text === '10 Dec 2026 to 7 Jan 2027', JSON.stringify(after));
   ck('and the next pay is coming', after.state === 'coming', after.next);
   ck('no page errors', errs.length === 0, errs.join(' | '));
   await b.close(); T.done('e3_period');

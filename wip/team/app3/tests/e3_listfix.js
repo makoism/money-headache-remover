@@ -54,7 +54,7 @@ const rows = p => p.$$eval('#rcList li', es => es.map(e => ({ gap: e.dataset.gap
   ck('A1: the period before lists its part, ¥808, from the same check', before.length === 1 && /Found at your bank check on 10 Dec/.test(before[0].text) && /¥808$/.test(before[0].text), JSON.stringify(rs));
   await T.shot(p, 'listfix_a1');
 
-  /* A2: a fresh copy of the made-up book on 12 Dec: safe to spend 35,000 until pay on 12 Jan. The 10 Dec pay is not
+  /* A2: a fresh copy of the made-up book on 12 Dec: safe to spend 35,000 until pay on 8 Jan. The 10 Dec pay is not
      ticked, so the period holding setup (20 Nov) still runs, and Food of 100,000 each pay period, added on Plan, counts
      its share from the setup day (I4): 100,000 x 20 / 30 = 66,666. The plan needs 66,666 - 35,000 = 31,666 more than
      the bank can spare. The bank itself never goes under, so Home says the plan is the cause, with the amount, the

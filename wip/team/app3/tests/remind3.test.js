@@ -16,9 +16,9 @@ const RENT = 'k7m2qa-f3n8p1x6wd-6';
 
 t('check-in days: the day after each pay lands and the middle of each pay period, from today, by the real landing days', () => {
   const c = R.checkins(mako(), DAY, { months: 3 });
-  // pays land 10 Nov, 10 Dec, 12 Jan (10 Jan is a Sunday and 11 Jan Coming of Age Day), 10 Feb
-  eq(c.items.slice(0, 5), [{ day: '2026-11-25', kind: 'mid' }, { day: '2026-12-11', kind: 'afterPay' }, { day: '2026-12-26', kind: 'mid' },
-    { day: '2027-01-13', kind: 'afterPay' }, { day: '2027-01-26', kind: 'mid' }], 'days');
+  // pays land 10 Nov, 10 Dec, Fri 8 Jan (10 Jan is a Sunday and 11 Jan Coming of Age Day, so the working day before), 10 Feb
+  eq(c.items.slice(0, 5), [{ day: '2026-11-25', kind: 'mid' }, { day: '2026-12-11', kind: 'afterPay' }, { day: '2026-12-24', kind: 'mid' },
+    { day: '2027-01-09', kind: 'afterPay' }, { day: '2027-01-24', kind: 'mid' }], 'days');
   ok(c.items.every(x => x.day >= DAY), 'nothing before today');
 });
 t('check-in days: only the ones chosen', () => {
