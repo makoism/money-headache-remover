@@ -1,5 +1,13 @@
 # app3: for Mako
 
+## Cloud copy: five server changes to approve in one reply (recommended: approve all)
+Until these are in, keep the cloud copy on one device. Nothing changes for the old app.
+1. **Refuse a write that names no base when a copy already exists.** Today a second device could overwrite the first device's copy. Recommended: yes, this is the important one.
+2. **Refuse a copy in an unknown format or a newer shape.** It stops an older or broken page writing something the app can't read. Recommended: yes.
+3. **Keep dated earlier versions**, not only the last one, so a bad copy can be undone. Recommended: yes, the last 10.
+4. **Leave a "deleted" marker when you delete the cloud copy**, so another device doesn't send it back up. Recommended: yes.
+5. **Raise the daily write limit**, which is 400 today. One send every 90 seconds fits normal use, but a tab left open all day could pass it. Recommended: raise it to 1,500.
+
 ## Starting with your real numbers (one page)
 
 **Before you start**
