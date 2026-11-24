@@ -1874,7 +1874,36 @@ html:has(.a3-setup-open) { scroll-padding-top: 150px; }
     return due => { const sh = monthShare(sch, cal, due, stepOn(sch, dayIn(ymOf(due)[0], 1, 1)), cache); return sh ? sh.amount : stepOn(sch, due); };
   }
 
-  const api = { calendar, holidays, bankClosed, easter, keyLive, keyAmount, dueDays, occurrences, stepOn, monthShare };
+  // ---------- [BZ2] which pay starts the pay periods on a day ----------
+  // `startsPeriod` on a pay is `true` (every book saved before BZ2: held since the pay's start) or dated entries like
+  // `rules`: [{ from, at, by }] (`from: null`: since the pay's start; an entry marked `gone` holds nothing). The pay that
+  // holds it on a day has the newest entry on or before that day: by `from`, then `at`; on a full tie (two bare flags in an
+  // old book) the pay with a fixed day on that day, then the first saved. Moving it is a new entry on the new pay, so the
+  // old pay's past stays its own. The rule in force is read by `from` (ties by `at`), as the look ahead reads it [BQ4].
+  const holdEntries = s => (s.startsPeriod === true ? [{ f: -Infinity, at: '' }]
+    : Array.isArray(s.startsPeriod) ? s.startsPeriod.filter(x => x && !x.gone).map(x => ({ f: x.from == null ? -Infinity : dayNum(x.from), at: x.at || '' })) : []);
+  function ruleOnDay(s, d) {
+    let r = null;
+    (s.rules || []).filter(x => x && !x.gone).map((x, i) => ({ f: i === 0 || x.from == null ? -Infinity : dayNum(x.from), at: x.at || '', rule: x.rule || {} }))
+      .sort((p, q) => p.f - q.f || (p.at < q.at ? -1 : p.at > q.at ? 1 : 0)).forEach(x => { if (x.f <= d) r = x.rule; });
+    return r;
+  }
+  function periodHolder(list, day) {
+    const d = typeof day === 'string' ? dayNum(day) : day;
+    let best = null, bk = null;
+    for (const s of list || []) {
+      if (!s || s.gone || s.kind !== 'income' || !s.startsPeriod) continue;
+      const fixed = ((ruleOnDay(s, d) || {}).every || 'none') !== 'none' ? 1 : 0;
+      for (const e of holdEntries(s)) {
+        if (e.f > d) continue;
+        const k = [e.f, e.at, fixed];
+        if (!bk || k[0] > bk[0] || (k[0] === bk[0] && (k[1] > bk[1] || (k[1] === bk[1] && k[2] > bk[2])))) { best = s; bk = k; }
+      }
+    }
+    return best;
+  }
+
+  const api = { calendar, holidays, bankClosed, easter, keyLive, keyAmount, dueDays, occurrences, stepOn, monthShare, periodHolder, ruleOnDay, dayAfter: day => dayStr(dayNum(day) + 1) };
   if (node) module.exports = api;
   else (root.BurrowEngine = root.BurrowEngine || {}).schedules = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
@@ -2040,7 +2069,53 @@ html:has(.a3-setup-open) { scroll-padding-top: 150px; }
     return { ok: p.total === p.have && !bad.length, total: p.total, have: p.have, cards: bad };
   }
 
-  const api = { TYPES, TWO, owed, yours, live, fieldValue, homeOn, ctx, accountMoves, apply, sums, placesOf, proof };
+  // [BZ3] A removed account, line or schedule that a live record names comes back, as a late spend reopens a closed
+  // account (AP1): money that happened always joins up (M67). The namers: a live event's `acct`, `acct2`, `card`, `line`,
+  // `stream` and settled occurrences; a live schedule's `acct` and `acct2`; a live line's `acct`; a live account's
+  // `payFrom`. With an account come its own records removed in the same step (the same `goneBy`, naming it). Read from the
+  // data, nothing written: the book given back is a copy with those records live, and `revived` lists what came back and
+  // the live records that named it, for the look ahead's warning and afterSync's notice. Nothing removed: the same book.
+  function revive(book) {
+    const lists = { account: book.accounts || [], line: (book.plan && book.plan.budgets) || [], schedule: book.schedules || [] };
+    const gone = {};
+    let any = false;
+    for (const k of Object.keys(lists)) { gone[k] = new Map(); for (const r of lists[k]) if (r && r.gone && r.id) { gone[k].set(r.id, r); any = true; } }
+    if (!any) return { book, revived: [] };
+    const back = { account: new Map(), line: new Map(), schedule: new Map() };
+    const occOf = x => (x && typeof x === 'object' ? x.s : typeof x === 'string' && x.indexOf('@') > 0 ? x.slice(0, x.lastIndexOf('@')) : null);
+    const name = (kind, id, by) => { if (id != null && gone[kind].has(id)) { const l = back[kind].get(id) || []; if (!l.includes(by)) l.push(by); back[kind].set(id, l); } };
+    const isLive = (kind, r) => r && !r.gone && r.id || (r && r.id && back[kind].has(r.id));
+    for (let round = 0; round < 3; round++) {
+      const before = back.account.size + back.line.size + back.schedule.size;
+      for (const e of book.events || []) {
+        if (!e || e.gone) continue;
+        for (const a of [e.acct, e.acct2, e.card]) name('account', a, e.id);
+        name('line', e.line, e.id);
+        name('schedule', e.stream, e.id);
+        for (const x of [].concat(e.settles || [])) name('schedule', occOf(x), e.id);
+      }
+      for (const s of lists.schedule) if (isLive('schedule', s)) { name('account', s.acct, s.id); name('account', s.acct2, s.id); }
+      for (const l of lists.line) if (isLive('line', l)) name('account', l.acct, l.id);
+      for (const a of lists.account) if (isLive('account', a)) name('account', a.payFrom, a.id);
+      if (back.account.size + back.line.size + back.schedule.size === before) break;
+    }
+    if (!back.account.size && !back.line.size && !back.schedule.size) return { book, revived: [] };
+    const strip = r => { const o = Object.assign({}, r); delete o.gone; delete o.goneBy; return o; };
+    // an account's own records removed with it: the same step (`goneBy`), or, with no step named on the record, the same day
+    const mateOf = (e, a) => { const g = gone.account.get(a); return !!g && (e.goneBy ? e.goneBy === g.goneBy : e.gone === g.gone); };
+    const mate = e => e && e.gone && [e.acct, e.acct2].some(a => a != null && back.account.has(a) && mateOf(e, a));
+    const out = Object.assign({}, book, {
+      accounts: (book.accounts || []).map(a => (a && back.account.has(a.id) ? strip(a) : a)),
+      schedules: (book.schedules || []).map(s => (s && back.schedule.has(s.id) ? strip(s) : s)),
+      events: (book.events || []).map(e => (mate(e) ? strip(e) : e)),
+    });
+    if (book.plan) out.plan = Object.assign({}, book.plan, { budgets: lists.line.map(l => (l && back.line.has(l.id) ? strip(l) : l)) });
+    const revived = [];
+    for (const kind of ['account', 'line', 'schedule']) for (const [id, by] of [...back[kind]].sort((x, y) => (x[0] < y[0] ? -1 : 1))) revived.push({ kind, id, name: gone[kind].get(id).name || null, by: by.slice().sort() });
+    return { book: out, revived };
+  }
+
+  const api = { TYPES, TWO, owed, yours, live, fieldValue, homeOn, ctx, accountMoves, apply, sums, placesOf, proof, revive };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else (root.BurrowEngine = root.BurrowEngine || {}).ledger = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
@@ -2103,6 +2178,9 @@ html:has(.a3-setup-open) { scroll-padding-top: 150px; }
 
   function lookahead(book, asOf, opts) {
     opts = opts || {};
+    // [BZ3] a removed account, line or schedule that a live record names counts again (ledger.js revive), with a warning
+    const RV = L.revive(book);
+    book = RV.book;
     const at = opts.at || 'end of day';
     const today = dayNum(asOf);
     const knownTo = at === 'start of day' ? today - 1 : today;   // what the app has heard of by then
@@ -2115,6 +2193,8 @@ html:has(.a3-setup-open) { scroll-padding-top: 150px; }
     const main = fv(homeInfo.main) || {};
     const mainAcct = main.acct || null;
     const res = { asOf, at, accounts: {}, cards: {}, owed: {}, places: {}, warnings: [], laterOn: [] };
+    for (const x of RV.revived) res.warnings.push(Object.assign({ [x.kind]: x.id, code: 'revived', name: x.name, by: x.by },
+      { text: `${x.name || 'Something'} was removed, but a record on another device names it, so it is back` }));
 
     // ----- accounts -----
     const acct = {};
@@ -2388,11 +2468,19 @@ html:has(.a3-setup-open) { scroll-padding-top: 150px; }
     const wasNone = s => ((rulesByFrom(s)[0] || {}).rule || {}).every === 'none';
     // the days (up to today) on which a pay changed from a fixed day to no fixed pay
     const noneDays = s => { const l = rulesByFrom(s), out = []; l.forEach((x, k) => { if (k && x.f <= today && x.rule.every === 'none' && l[k - 1].rule.every !== 'none') out.push(x.f); }); return out; };
-    let periodStream = schedules.find(s => s.kind === 'income' && s.startsPeriod && ruleToday(s) && ruleToday(s).every !== 'none');
+    // [BZ2] the pay that holds the flag on a day (schedules.js periodHolder): each period is drawn from the pay that held it
+    // on its pay's due day, so a job change keeps the old pay's periods and the new pay starts them from its entry's day
+    const holderMemo = new Map();
+    const holderAt = d => { if (!holderMemo.has(d)) holderMemo.set(d, S.periodHolder(schedules, d)); return holderMemo.get(d); };
+    const holdsOn = o => { const h = holderAt(o.due); return !!h && h.id === o.sid; };
+    for (const o of items) if (o.kind === 'income') o.startsPeriod = holdsOn(o);
+    const holderToday = holderAt(today);
+    let periodStream = holderToday && ruleToday(holderToday) && ruleToday(holderToday).every !== 'none' ? holderToday : null;
     const windowEnd = o => calOf(o.acct).addWorking(o.land, postingDays(o.acct));
     const stillExpected = o => isNotYet(o) && windowEnd(o) < openDay(o.acct);             // [Z2]
     const lateExpected = o => o.land < today && (today <= windowEnd(o) || stillExpected(o));   // [G3, H8]
-    const startsPeriod = e => e.k === 'in' && e.sub !== 'refund' && !!periodStream && e.settles.some(s => I.scheduleOf(s) === periodStream.id);
+    let payIds = new Set();
+    const startsPeriod = e => e.k === 'in' && e.sub !== 'refund' && !!periodStream && e.settles.some(x => payIds.has(x));
     // [BJ1] a pay due today left unticked at a check-in made today is not seen: it is not counted (BH1 over G4)
     const checkedOn = {};
     for (const e of all) if (e.e && !e.e.gone && e.e.k === 'check' && !e.e.stmt && e.e.date && dayNum(e.e.date) === today && !isOpeningCheck(e.e) && dayNum(e.e.told || e.e.date) <= knownTo) checkedOn[e.e.acct] = true;
@@ -2405,7 +2493,8 @@ html:has(.a3-setup-open) { scroll-padding-top: 150px; }
     const monthCache = {};   // each year's pays for the units rules, for this look ahead only
     let pays, nextPays, periodStartDays, occByStart, allStartDays = [], allOccByStart = {};   // [T1] each period is named by the occurrence of the pay that starts it
     const periodsOf = cut => {
-      pays = periodStream ? items.filter(o => o.sid === periodStream.id) : [];
+      pays = periodStream ? items.filter(o => o.kind === 'income' && o.startsPeriod) : [];
+      payIds = new Set(pays.map(o => o.id));
       nextPays = pays.filter(o => !o.settled && (o.land >= today || lateExpected(o)));
       periodStartDays = []; occByStart = {}; allStartDays = []; allOccByStart = {};
       pays.slice().sort((x, y) => x.due - y.due).forEach((o, i, list) => {
@@ -2416,7 +2505,8 @@ html:has(.a3-setup-open) { scroll-padding-top: 150px; }
         if (cut == null || d >= cut) { periodStartDays.push(d); occByStart[d] = o.id; }   // [BQ1]
       });
     };
-    const streamCuts = periodStream ? noneDays(periodStream) : [];
+    // [BQ1, BZ2] a change to no fixed pay by any pay that held the flag cuts the periods before it
+    const streamCuts = periodStream ? schedules.filter(x => x.kind === 'income' && x.startsPeriod).map(x => noneDays(x).filter(d => holderAt(d) === x)).reduce((a, l) => a.concat(l), []).sort((x, y) => x - y) : [];
     const cut = streamCuts.length ? streamCuts[streamCuts.length - 1] : null;
     periodsOf(cut);
     if (periodStream && (wasNone(periodStream) || cut !== null) && !periodStartDays.length) { periodStream = null; periodsOf(null); }
@@ -3114,8 +3204,9 @@ html:has(.a3-setup-open) { scroll-padding-top: 150px; }
       if (x.per === 'month' && periodStream) {
         const o = occId ? pays.find(p => p.id === occId) : pays.find(p => p.land === startDay);
         const oc = !o && occId ? I.occurrence(occId) : null;
-        const due = o ? o.due : oc && oc.schedule === periodStream.id ? dayNum(oc.due) : null;
-        const sh = due === null ? null : S.monthShare(periodStream, calOf(periodStream.acct), due, x.amount, monthCache);
+        const st = o ? sched[o.sid] : oc && sched[oc.schedule] && sched[oc.schedule].startsPeriod ? sched[oc.schedule] : null;   // [BZ2] the pay that started it
+        const due = o ? o.due : st ? dayNum(oc.due) : null;
+        const sh = due === null ? null : S.monthShare(st, calOf(st.acct), due, x.amount, monthCache);
         if (sh) return sh.amount;
       }
       return x.amount;
@@ -3567,7 +3658,7 @@ html:has(.a3-setup-open) { scroll-padding-top: 150px; }
     // [BQ4] the rule in force by `from` (ties by `at`), never by the order saved
     const ruleOn = s => { let rule = null; (s.rules || []).filter(x => x && !x.gone).map((x, i) => ({ f: i === 0 || x.from == null ? -Infinity : D.dayNum(x.from), at: x.at || '', rule: x.rule }))
       .sort((p, q) => p.f - q.f || (p.at < q.at ? -1 : p.at > q.at ? 1 : 0)).forEach(x => { if (x.f <= today) rule = x.rule; }); return rule || {}; };
-    const stream = live.find(s => s.kind === 'income' && s.startsPeriod && ruleOn(s).every !== 'none');
+    const holder = S.periodHolder(live, today), stream = holder && ruleOn(holder).every !== 'none' ? holder : null;   // [BZ2] the pay holding it today
     const AHEAD = { year: 1, monthsList: 1, once: 1 };
     const out = [];
     for (const s of live.filter(x => x.kind === 'bill')) {
@@ -4534,7 +4625,7 @@ html:has(.a3-setup-open) { scroll-padding-top: 150px; }
   const LEVEL = { sample: 'wait', empty: 'wait', short: 'warn', warning: 'warn', set_aside: 'bad', plan_over: 'bad', question: 'wait', late: 'wait', check: 'wait', zero: 'wait', no_free: 'wait', ok: 'good' };
   /* engine warning codes (lookahead_ref.js): which change the state, which are notes under it */
   const WARNING_STATE = { below_minimum: 'warning', set_aside_over: 'set_aside', check_again: 'question', gain_to_ask: 'question', minimum_other_currency: 'question' };
-  const NOTE_ONLY = ['card_other_currency', 'loan_other_currency', 'income_other_currency', 'spend_other_currency', 'reopened'];
+  const NOTE_ONLY = ['card_other_currency', 'loan_other_currency', 'income_other_currency', 'spend_other_currency', 'reopened', 'revived'];
 
   /* every word the status says, all drafts for Mako's copy pass (VOICE: one-line notes have no full stop) */
   const W = (text) => ({ text, forMako: true });
@@ -4602,6 +4693,8 @@ html:has(.a3-setup-open) { scroll-padding-top: 150px; }
     'warn.check_again': W('The {account} figure of {day} was wrong: what does it show now'),
     'warn.gain_to_ask': W('{account} shows {amount} more than the app had: was that figure right'),
     'warn.reopened': W('{account} was closed, but money came into it, so it is open again'),
+    'warn.revived': W('{account} was removed, but money was logged on it on another device, so it is back'),
+    'warn.revived_item': W('{name} was removed, but something logged on another device uses it, so it is back'),
     'warn.minimum_other_currency': W('The minimum kept for {account} is in another currency: what is its minimum in its own'),
     'warn.card_other_currency': W('{card} is paid from {account} in another currency: it is not taken off safe to spend until it is paid'),
     'warn.loan_other_currency': W('{loan} is paid from {account} in another currency: it is not taken off safe to spend until it is paid'),
@@ -4728,6 +4821,7 @@ html:has(.a3-setup-open) { scroll-padding-top: 150px; }
     if (w.code === 'set_aside_over') return fill('warn.set_aside_over', { who: whoOf(w), account: w.account, amount: w.amount, day: w.day, currency }, ctx);
     if (w.code === 'check_again') return fill('warn.check_again', { account: w.account, day: w.day }, ctx);
     if (w.code === 'gain_to_ask') return fill('warn.gain_to_ask', { account: w.account, amount: w.gain, currency }, ctx);
+    if (w.code === 'revived') return w.account ? fill('warn.revived', { account: w.account }, ctx) : fill('warn.revived_item', { name: w.name || 'Something' }, ctx);   // [BZ3]
     if (w.code === 'card_other_currency') return fill('warn.card_other_currency', { account: w.account, card: w.card }, ctx);
     if (w.code === 'loan_other_currency') return fill('warn.loan_other_currency', { account: w.account, loan: w.loan }, ctx);
     if (WORDS['warn.' + w.code]) return fill('warn.' + w.code, { account: w.account }, ctx);
@@ -6062,6 +6156,7 @@ function stmtReceipts(rows, catOf, acctOf) {
   const D = node ? require('./dates.js') : root.BurrowEngine.dates;
   const IDS = node ? require('./ids.js') : root.BurrowEngine.ids;
   const SC = node ? require('./schedules.js') : root.BurrowEngine.schedules;
+  const LG = node ? require('./ledger.js') : root.BurrowEngine.ledger;
   const { dayNum, dayStr } = D;
   const { ORDINARY, MOVED: MOVED_TEXT, REF, DATE } = IDS;
 
@@ -6280,6 +6375,7 @@ function stmtReceipts(rows, catOf, acctOf) {
     for (const k of new Set(Object.keys(m).concat(Object.keys(t)))) {
       if (top && k === 'keptVersions') continue;
       const x = m[k], y = t[k], z = b[k], p = path ? path + '.' + k : k;
+      if (top && k === 'journal') { out[k] = joinJournal(x, y); continue; }
       if (top && (k === 'rev' || k === 'v') && (typeof x === 'number' || typeof y === 'number')) out[k] = Math.max(...[x, y].filter(n => typeof n === 'number'));
       else if (top && k === 'at' && (typeof x === 'string' || typeof y === 'string')) out[k] = newest(x, y);   // when the copy was saved
       else if (Array.isArray(x) || Array.isArray(y)) out[k] = isRecords(x, y, z) ? records(p, z, x, y, conflicts) : item(p, path, z, x, y, false, conflicts);
@@ -6288,6 +6384,22 @@ function stmtReceipts(rows, catOf, acctOf) {
       else out[k] = plain(z, x, y);
     }
     return out;
+  }
+  // [BZ1] The Undo journal (app3/src/act3.js): one entry per step a device made. Joined by id from both copies, never a
+  // question; the same entry on both: the one marked undone (then the one with more records moved since); the latest
+  // JOURNAL_KEEP by moment, so a step dropped on both sides is not brought back by the base.
+  const JOURNAL_KEEP = 200;
+  function joinJournal(x, y) {
+    const by = new Map();
+    for (const j of [].concat(Array.isArray(x) ? x : [], Array.isArray(y) ? y : [])) {
+      if (!isMap(j) || typeof j.id !== 'string') continue;
+      const had = by.get(j.id);
+      if (!had) { by.set(j.id, j); continue; }
+      const score = e => (e.undone ? 2e9 : 0) + Object.keys(e.moved || {}).length;
+      if (score(j) > score(had) || (score(j) === score(had) && canon(j) > canon(had))) by.set(j.id, j);
+    }
+    const mMs = j => { const v = ms(j.moment); return isNaN(v) ? -Infinity : v; };
+    return [...by.values()].sort((a, b) => mMs(a) - mMs(b) || (a.id < b.id ? -1 : 1)).slice(-JOURNAL_KEEP).map(C);
   }
   function sync(base, mine, theirs) {
     const conflicts = [];
@@ -6333,7 +6445,7 @@ function stmtReceipts(rows, catOf, acctOf) {
     const ids = c => new Set(((c || {}).events || []).map(e => e.id));
     const Mi = ids(mine), Ti = ids(theirs);
     const accts = new Map((out.accounts || []).map(a => [a.id, a]));
-    const win = id => { const a = accts.get(id) || {}; return a.postingDays != null ? a.postingDays : a.kind === 'card' ? 7 : 1; };
+    const win = id => { const a = accts.get(id) || {}; return a.postingDays != null ? a.postingDays : a.type === 'card' ? 7 : 1; };   // [BZ4] an account's kind is its `type`
     const fits = (t, a) => (t.est ? Math.abs(a - t.a) * 10 <= Math.max(a, t.a) : a === t.a);
     const imps = evs.filter(e => !e.gone && isImp(e) && dirOf(e) && e.acct2 == null && typeof e.date === 'string')
       .sort((x, y) => (x.date < y.date ? -1 : x.date > y.date ? 1 : x.id < y.id ? -1 : 1));
@@ -6469,7 +6581,7 @@ function stmtReceipts(rows, catOf, acctOf) {
   const OWED = { card: 1, loan: 1, paylater: 1 };
   const names = (e, id) => [e.acct, e.acct2, e.card].includes(id);
   function delta(e, a) {
-    const sign = OWED[a.kind] ? -1 : 1, amt = Number(e.a) || 0;
+    const sign = OWED[a.type] ? -1 : 1, amt = Number(e.a) || 0;   // [BZ4] `type`, never `kind`
     let d = 0;
     if (e.k === 'in' || e.k === 'refund') { if (e.acct === a.id) d += amt; }
     else if (e.k === 'spend') { if (e.acct === a.id) d -= amt; }
@@ -6559,6 +6671,8 @@ function stmtReceipts(rows, catOf, acctOf) {
   }
   function afterSync(copy) {
     const c = closedChecks(copy);
+    // [BZ3] a removed account, line or schedule a live record names is back (ledger.js revive, the look ahead's rule)
+    for (const x of LG.revive(copy).revived) c.notices.push({ [x.kind]: x.id, notice: 'revived', by: x.by });
     let which = (copy.keptVersions || []).filter(k => k.ask).map(k => ({ q: 'which', of: k.of, kept: k.id }));
     let mins = minimumQuestions(copy);
     // [AW4, AT3] A main-bank switch and a minimum change meeting at a sync are one question: the `which` about `home.main`, the
@@ -8547,6 +8661,34 @@ const E3 = (() => {
     },
   };
 
+  /* ---- [BZ1] the saved Undo journal: one entry per step, in the book's top-level `journal`, the latest JOURNAL_KEEP.
+     An entry: { id (the step id, the records' grp), label, moment (the step's at), day, by, told, added, removed:
+     [{ list, id }], edited: [{ list, id, before: { field: old value, at, by } }], revived: [{ list, id, before }],
+     undone?: the Undo's step id, moved?: { record id: at } (a record an Undo put back as this step left it) }.
+     The sync joins journals by id and keeps the latest JOURNAL_KEEP (engine/sync.js). ---- */
+  const JOURNAL_KEEP = 200;
+  /* the order of two entries by moment (a clock, not money), then id */
+  const byMoment = (a, b) => { const x = Date.parse(a && a.moment) || 0, y = Date.parse(b && b.moment) || 0; return x < y ? -1 : x > y ? 1 : a.id < b.id ? -1 : 1; };
+  function journalAdd(book, entry) {
+    const list = Array.isArray(book.journal) ? book.journal : (book.journal = []);
+    list.push(entry);
+    if (list.length > JOURNAL_KEEP) {
+      const sorted = list.slice().sort(byMoment);
+      while (sorted.length > JOURNAL_KEEP) sorted.shift();
+      const keep = new Set(sorted);
+      book.journal = list.filter(j => keep.has(j));
+    }
+  }
+  /* a field the step added had no old value: kept as null (an edit never leaves a null, it takes the field away) so the
+     saved text still names it, and Undo takes it away again */
+  const keptEdit = x => { const before = {}; for (const k of Object.keys(x.before)) before[k] = x.before[k] === undefined ? null : clone(x.before[k]); return { list: x.list, id: x.id, before }; };
+  const ownAt = (j, id) => (j.moved && j.moved[id]) || j.moment;
+  function fromJournal(j) {
+    const m = { id: j.id, label: j.label, at: j.moment, added: j.added || [], edited: j.edited || [], removed: j.removed || [], revived: j.revived || [], own: {} };
+    for (const x of m.added.concat(m.edited, m.removed, m.revived)) m.own[x.id] = ownAt(j, x.id);
+    return m;
+  }
+
   const ARGS = { logSpend: 1, refund: 1, moneyIn: 1, moveMoney: 1, edit: 2, remove: 1, addRecords: 2 };   // how many each takes
   const LABELS = { logSpend: 'Spend logged', refund: 'Refund logged', moneyIn: 'Money in logged', moveMoney: 'Money moved', edit: 'Changed', remove: 'Removed' };
   function make(o) {
@@ -8556,7 +8698,7 @@ const E3 = (() => {
     let queue = Promise.resolve(), by = null;
 
     /* plan a step on a copy; returns { book, step } or throws Bad */
-    function plan(label, fn, dry) {
+    function plan(label, fn, dry, undoing) {
       const cur = o.book();
       if (!cur) throw new Bad('Set up first');
       if (clock) clock.see(cur);
@@ -8570,13 +8712,18 @@ const E3 = (() => {
       if (o.check && !dry) {
         try { o.check(book); } catch (e) { const err = new Bad('This would leave numbers the app refuses: ' + e.message); err.why = 'engine'; throw err; }
       }
-      return { book, step: { id, label, out, at: s.at, added: w.log.added, edited: w.log.edited, removed: w.log.removed, revived: w.log.revived } };
+      const step = { id, label, out, at: s.at, added: w.log.added, edited: w.log.edited, removed: w.log.removed, revived: w.log.revived };
+      /* [BZ1] the step's journal entry goes into the same save, so an Undo after a reload finds what it edited too */
+      if (!dry && !undoing) journalAdd(book, { id, label, moment: s.at, day: s.day, by: s.by, told: s.told,
+        added: clone(w.log.added), edited: w.log.edited.map(keptEdit), removed: clone(w.log.removed), revived: clone(w.log.revived) });
+      if (undoing) undoing(book, s);
+      return { book, step };
     }
     function run(label, fn, opts) {
       opts = opts || {};
       const p = queue.then(async () => {
         let planned;
-        try { planned = plan(label, fn); } catch (e) {
+        try { planned = plan(label, fn, false, opts.journalUndo); } catch (e) {
           if (e instanceof Bad) return { ok: false, why: e.why || 'bad', text: e.message };
           throw e;
         }
@@ -8600,9 +8747,23 @@ const E3 = (() => {
     /* Undo: put back only what that step did. What it added is marked gone; what it removed is put back; what it
        changed gets its old values. A record a later step changed since is left alone and the Undo is refused. */
     function undo(stepId, opts) {
-      const mem = steps.find(s => s.id === stepId);
+      /* [BZ1] this visit's memory first; after a reload, the saved journal (what the step added, removed and edited, with
+         the old values); a step from before the journal: what it added (grp) and removed (goneBy), as before */
+      const cur = o.book();
+      const saved = !steps.some(s => s.id === stepId) && cur ? ((cur.journal || []).find(j => j && j.id === stepId) || null) : null;
+      if (saved && saved.undone) return Promise.resolve({ ok: false, why: 'bad', text: 'That was undone already' });
+      const mem = steps.find(s => s.id === stepId) || (saved ? fromJournal(saved) : undefined);
       /* once kept: the step is gone from this visit's list, and an earlier step that left a record as this Undo put it
          back may be undone in turn (its record now carries the Undo's `at`) */
+      /* [BZ1] in the same save: the entry is marked undone, and an earlier entry that left a record as this Undo put it
+         back now owns that record at the Undo's `at` (as `after` does for this visit's steps) */
+      const journalUndo = (book, s) => {
+        const list = book.journal || [], own = list.find(j => j && j.id === stepId);
+        if (own) own.undone = s.id;
+        if (mem) for (const x of mem.edited.concat(mem.removed)) for (const j of list) {
+          if (j && j !== own && !j.undone && ownAt(j, x.id) === x.before.at) j.moved = Object.assign({}, j.moved, { [x.id]: s.at });
+        }
+      };
       const after = u => {
         const i = steps.indexOf(mem); if (i >= 0) steps.splice(i, 1);
         if (mem) for (const x of mem.edited.concat(mem.removed)) for (const p of steps) if (p.own[x.id] && p.own[x.id] === x.before.at) p.own[x.id] = u.at;
@@ -8626,7 +8787,7 @@ const E3 = (() => {
           for (const k of Object.keys(x.before)) if (k !== 'at' && k !== 'by') back[k] = x.before[k] === undefined ? null : x.before[k];
           w.edit(x.list, x.id, back);
         }
-      }, Object.assign({ isUndo: true, after }, opts)).then(r => {
+      }, Object.assign({ isUndo: true, after, journalUndo }, opts)).then(r => {
         if (o.queue && r.ok && !(opts && opts.quiet)) o.queue.post({ kind: 'toast', key: 'act3', text: 'Undone' });
         if (o.queue && !r.ok && !(opts && opts.quiet)) o.queue.post({ kind: 'toast', key: 'act3', text: r.text });
         return r;
@@ -8800,7 +8961,14 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
      Free to spend is asked about as an amount each pay, from that pay (a line a month becomes a line each pay). */
   /* [qc-foundation F4, BY] startsPeriod is one undated flag: the live pay holding it (other than `but`), and whether a
      pay's newest rule (by its `from`) has a fixed day */
-  const starterOf = (w, but) => A3.listOf(w.book, 'schedules').find(y => live(y) && y.id !== but && y.kind === 'income' && y.startsPeriod) || null;
+  /* [BZ2] which pay starts the periods is dated: the pay holding it on a day (engine/schedules.js periodHolder). Moving it
+     is a new entry { from, at, by } on the pay taking it, never an edit of the old pay, so the old pay's past periods
+     stay its own. A new entry is never dated before the newest entry any pay has (BQ2), or it would lose for good. */
+  const holderOn = (w, day) => SC.periodHolder(A3.listOf(w.book, 'schedules').filter(live), day);
+  const ended = (y, day) => !!y.ends && y.ends <= day;
+  const newestFrom = w => { let m = ''; for (const y of A3.listOf(w.book, 'schedules').filter(live)) for (const x of (Array.isArray(y.startsPeriod) ? y.startsPeriod : [])) if (x && !x.gone && x.from && x.from > m) m = x.from; return m; };
+  const entriesOf = y => (y.startsPeriod === true ? [{ from: null }] : Array.isArray(y.startsPeriod) ? y.startsPeriod : []);
+  const takeEntry = (w, y, from) => { const nf = newestFrom(w); return entriesOf(y).concat([{ from: nf > from ? nf : from }]); };
   const fixedNow = y => { const l = (y.rules || []).filter(r => r && !r.gone).slice().sort((p, q) => (p.from || '') < (q.from || '') ? -1 : (p.from || '') > (q.from || '') ? 1 : 0); return ((l.pop() || {}).rule || {}).every !== 'none'; };
   function changeBill(w, id, x) {
     const s = find(w, 'schedules', id), v = PE.scheduleView(w.book, w.today)[id];
@@ -8832,9 +9000,10 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
         const probe = Object.assign({}, s, { rules: (s.rules || []).concat([{ from, rule: rhythm }]) });
         from = PE.firstLanding(Object.assign({}, w.book, { schedules: [probe] }), id, from) || from;
         if (s.shift === 'none') ch.shift = 'before';
-        /* [qc-foundation F4, BY] the flag moves here when the pay holding it has no fixed day now */
-        const other = starterOf(w, id);
-        if (!s.startsPeriod && (!other || !fixedNow(other))) { if (other) w.edit('schedules', other.id, { startsPeriod: null }); ch.startsPeriod = true; }
+        /* [qc-foundation F4, BZ2] the flag comes here, from its first pay, when the pay holding it has no fixed day now or
+           has ended */
+        const h = holderOn(w, w.today);
+        if (!h || (h.id !== id && (!fixedNow(h) || ended(h, w.today)))) ch.startsPeriod = takeEntry(w, s, from);
       }
       if ((x.amount != null && x.amount !== v.amount) || (fromNone && x.amount != null)) ch.steps = (s.steps || []).concat([{ from, amount: amountOk(x.amount, 'the amount') }]);
       if (dayMoved) ch.rules = (s.rules || []).concat([{ from, rule: { every: 'month', days: [dayOfMonth(x.day)] } }]);
@@ -8843,7 +9012,7 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     if (!Object.keys(ch).length) bad('Nothing changed');
     /* [slice 6] the pay that starts the period changes how often it lands: each line counted each pay is asked about;
        [slice 6b] from no fixed pay, each line and Free to spend a month */
-    const starts = !!(s.startsPeriod || ch.startsPeriod);
+    const starts = (holderOn(w, w.today) || {}).id === id || !!ch.startsPeriod;
     const perPay = !rhythm || !starts ? [] : fromNone ? linesEachMonth(w) : linesEachPay(w);
     if (perPay.length) {
       const got = x.lines || {};
@@ -8851,6 +9020,7 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
       if (missing.length) bad(toNone ? `Your pay will have no fixed day. How much a month from then for ${names}?` : `Your pay will land ${everyWords[x.every]}. How much each pay from then for ${names}?`);
     }
     const r = w.edit('schedules', id, ch);
+    if (ch.startsPeriod) stampNew(r, 'startsPeriod');
     if (ch.steps) stampNew(r, 'steps');
     if (ch.rules) stampNew(r, 'rules');
     /* the new amounts start with the pay period that holds the change day: from the last pay landing on or before it;
@@ -8899,6 +9069,13 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     if (!DAY.test(last)) bad('Pick the last day');
     if (v.lastNamed && last < v.lastNamed) bad('It can end on ' + v.lastNamed + ' at the earliest: that one is already paid or noted');
     w.edit('schedules', id, { ends: last });
+    /* [BZ2, qc-foundation confirm finding 1] "my job ended": the pay holding the flag after its last day hands it, dated
+       the day after, to another live pay with a fixed day that has not ended; with none, it keeps it until a pay is added */
+    const next = SC.dayAfter(last), h = s.kind === 'income' ? holderOn(w, next) : null;
+    if (h && h.id === id) {
+      const other = A3.listOf(w.book, 'schedules').find(y => live(y) && y.id !== id && y.kind === 'income' && fixedNow(y) && !ended(y, last));
+      if (other) { const r = w.edit('schedules', other.id, { startsPeriod: takeEntry(w, other, next) }); stampNew(r, 'startsPeriod'); }
+    }
     return s.id;
   }
 
@@ -9054,18 +9231,17 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     if (x.every === 'month') rule = { every: 'month', days: [dayOfMonth(x.day)] };
     else if (x.every === 'days') { if (x.day2 == null || x.day2 === '') bad('Pick the second day it lands'); const d1 = dayOrLast(x.day), d2 = dayOrLast(x.day2); rule = { every: 'month', days: d1 === d2 ? [d1] : [d1, d2] }; }
     else if (!none) { if (!DAY.test(x.start || '')) bad('Pick the day of one pay, the last one or the next one'); const n = Number(x.every.slice(5)); rule = { every: 'weeks', n, from: BUILD.weeksAnchor(x.start, w.today, n) }; }
-    /* [qc-foundation F4, BY] it starts the pay periods when no pay with a fixed day does: a pay holding the flag with no
-       fixed day now gives it up (one step, so one Undo puts it back) */
-    const holder = starterOf(w, null), first = !none && (!holder || !fixedNow(holder));
+    /* [qc-foundation F4, BZ2] it starts the pay periods, from today, when no pay with a fixed day does now: the pay holding
+       the flag has no fixed day now, or has ended. The old pay keeps its own flag, so its past periods stay */
+    const holder = holderOn(w, w.today), first = !none && (!holder || !fixedNow(holder) || ended(holder, w.today));
     /* [BV5] as changeBill from no fixed pay: each line and Free to spend counted a month is asked about as an amount
        each pay, from this pay's first landing */
-    const monthly = first ? linesEachMonth(w) : [];
+    const monthly = first && (!holder || !fixedNow(holder)) ? linesEachMonth(w) : [];   // [BZ2] after an ended pay with a fixed day, lines stay each pay
     const got = x.lines || {}, missing = monthly.filter(l => got[l.key] == null);
     if (missing.length) bad(`Your pay will land ${everyWords[x.every]}. How much each pay from then for ${missing.map(l => l.name).join(' and ')}?`);
-    if (first && holder) w.edit('schedules', holder.id, { startsPeriod: null });
     const id = w.add('schedules', Object.assign({ kind: 'income', name, acct, cur: home(w), shift: none ? 'none' : x.shift || 'before', from: w.today,
-      rules: [{ from: null, rule }], steps: [{ from: null, amount }] }, first ? { startsPeriod: true } : {}));
-    const r = find(w, 'schedules', id); stampNew(r, 'rules'); stampNew(r, 'steps');
+      rules: [{ from: null, rule }], steps: [{ from: null, amount }] }, first ? { startsPeriod: takeEntry(w, {}, w.today) } : {}));
+    const r = find(w, 'schedules', id); stampNew(r, 'rules'); stampNew(r, 'steps'); if (first) stampNew(r, 'startsPeriod');
     if (monthly.length) {
       const from = PE.firstLanding(w.book, id, w.today) || w.today;
       for (const l of monthly) {
@@ -10182,8 +10358,9 @@ function plBillForm3(id) {
   const every = everyNow ? [{ key: 'every', label: 'How often it lands', kind: 'pick', value: everyNow, options: PL_EVERY3 },
     { key: 'day2', label: 'And on day', kind: 'pick', value: everyNow === 'days' ? String(r0.days[1]) : 'last', options: PL_DAY2_3 },
     { key: 'start', label: 'The day of one pay, when it lands every few weeks', kind: 'date', value: r0.every === 'weeks' ? r0.from : '' }] : [];
-  const others = book.schedules.some(x => plLive3(x) && x.id !== s.id && x.kind === 'income' && x.startsPeriod);
-  const starts = s.startsPeriod || (everyNow === 'none' && !others);
+  /* [BZ2] the pay holding the flag today (a dated flag: the engine says which) */
+  const holder = BurrowEngine.schedules.periodHolder((book.schedules || []).filter(plLive3), E3.today());
+  const starts = (holder && holder.id === s.id) || (everyNow === 'none' && !holder);
   const perPay = every.length && starts ? (everyNow === 'none' ? PLAN3W.linesEachMonth({ book, today: E3.today() }) : PLAN3W.linesEachPay({ book, today: E3.today() })) : [];
   const lines = perPay.map(l => ({ key: 'ln-' + l.key, label: `${l.name} ${everyNow === 'none' ? 'a month' : 'each pay'} from the change`, kind: 'amount', value: l.amount, optional: true, hint: ' ' }));
   plForm3(s.name, [{ key: 'name', label: 'Name', kind: 'text', value: s.name }, { key: 'amount', label: 'Amount', kind: 'amount', value: v0.amount }].concat(every.slice(0, 1),
@@ -13493,7 +13670,7 @@ root3.BurrowApp3.chat = { CHAT3, redraw: chat3Redraw, save: chat3Save };   // fo
 
   function checkins(book, today, o) {
     o = Object.assign({ afterPay: true, mid: true, months: 12 }, o || {});
-    const pay = (book.schedules || []).find(s => live(s) && s.kind === 'income' && s.startsPeriod && !s.ends);
+    const holder = S.periodHolder((book.schedules || []).filter(live), today), pay = holder && !holder.ends ? holder : null;   // [BZ2] the pay holding the flag today
     const rule = pay && ruleNow(pay, today);
     if (!pay || !rule || rule.every === 'none') return { items: [], repeat: { afterPay: null, mid: null }, why: 'There is no pay day set, so there are no pay periods to remind you in. Set your pay day in Plan first' };
     const t = D.dayNum(today), end = endOf(today, o.months);

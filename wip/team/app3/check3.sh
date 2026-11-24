@@ -123,7 +123,7 @@ page_tests_for() {   # page_tests_for <changed path, relative to app3/>
     tests/e3_act_book.js)     echo e3_home e3_checkin ;;
     tests/fake_vault.js)      echo e3_cloud e3_listfix ;;
     tests/setup_sections.js)  echo e3_setup e3_setupfix e3_setup6 e3_income2 e3_weeks3 e3_walk2 e3_paytoday e3_chatwalk e3_chat ;;   # a helper (setup saved section by section), not a test
-    tests/fake_ai.js|tests/fake_ai_page.js) echo e3_fakeai_page e3_chatwalk e3_chat ;;   # helpers (the fake model, and it behind a made-up relay), not tests
+    tests/fake_ai.js|tests/fake_ai_page.js) echo e3_fakeai_page e3_chatwalk e3_chat chat3_core.test ;;   # helpers (the fake model, and it behind a made-up relay), not tests
     tests/*.js)               basename "$1" .js ;;
     src/home3.js)             echo e3_home e3_ns e3_homeplan e3_warnwords e3_cardline e3_bankparts e3_names e3_payday ;;
     src/checkin3.js)          echo e3_checkin e3_checkgap e3_cardfig e3_reload e3_bankparts e3_payday e3_overdrawn ;;

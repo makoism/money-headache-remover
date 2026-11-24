@@ -206,7 +206,36 @@
     return due => { const sh = monthShare(sch, cal, due, stepOn(sch, dayIn(ymOf(due)[0], 1, 1)), cache); return sh ? sh.amount : stepOn(sch, due); };
   }
 
-  const api = { calendar, holidays, bankClosed, easter, keyLive, keyAmount, dueDays, occurrences, stepOn, monthShare };
+  // ---------- [BZ2] which pay starts the pay periods on a day ----------
+  // `startsPeriod` on a pay is `true` (every book saved before BZ2: held since the pay's start) or dated entries like
+  // `rules`: [{ from, at, by }] (`from: null`: since the pay's start; an entry marked `gone` holds nothing). The pay that
+  // holds it on a day has the newest entry on or before that day: by `from`, then `at`; on a full tie (two bare flags in an
+  // old book) the pay with a fixed day on that day, then the first saved. Moving it is a new entry on the new pay, so the
+  // old pay's past stays its own. The rule in force is read by `from` (ties by `at`), as the look ahead reads it [BQ4].
+  const holdEntries = s => (s.startsPeriod === true ? [{ f: -Infinity, at: '' }]
+    : Array.isArray(s.startsPeriod) ? s.startsPeriod.filter(x => x && !x.gone).map(x => ({ f: x.from == null ? -Infinity : dayNum(x.from), at: x.at || '' })) : []);
+  function ruleOnDay(s, d) {
+    let r = null;
+    (s.rules || []).filter(x => x && !x.gone).map((x, i) => ({ f: i === 0 || x.from == null ? -Infinity : dayNum(x.from), at: x.at || '', rule: x.rule || {} }))
+      .sort((p, q) => p.f - q.f || (p.at < q.at ? -1 : p.at > q.at ? 1 : 0)).forEach(x => { if (x.f <= d) r = x.rule; });
+    return r;
+  }
+  function periodHolder(list, day) {
+    const d = typeof day === 'string' ? dayNum(day) : day;
+    let best = null, bk = null;
+    for (const s of list || []) {
+      if (!s || s.gone || s.kind !== 'income' || !s.startsPeriod) continue;
+      const fixed = ((ruleOnDay(s, d) || {}).every || 'none') !== 'none' ? 1 : 0;
+      for (const e of holdEntries(s)) {
+        if (e.f > d) continue;
+        const k = [e.f, e.at, fixed];
+        if (!bk || k[0] > bk[0] || (k[0] === bk[0] && (k[1] > bk[1] || (k[1] === bk[1] && k[2] > bk[2])))) { best = s; bk = k; }
+      }
+    }
+    return best;
+  }
+
+  const api = { calendar, holidays, bankClosed, easter, keyLive, keyAmount, dueDays, occurrences, stepOn, monthShare, periodHolder, ruleOnDay, dayAfter: day => dayStr(dayNum(day) + 1) };
   if (node) module.exports = api;
   else (root.BurrowEngine = root.BurrowEngine || {}).schedules = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

@@ -269,8 +269,9 @@ function plBillForm3(id) {
   const every = everyNow ? [{ key: 'every', label: 'How often it lands', kind: 'pick', value: everyNow, options: PL_EVERY3 },
     { key: 'day2', label: 'And on day', kind: 'pick', value: everyNow === 'days' ? String(r0.days[1]) : 'last', options: PL_DAY2_3 },
     { key: 'start', label: 'The day of one pay, when it lands every few weeks', kind: 'date', value: r0.every === 'weeks' ? r0.from : '' }] : [];
-  const others = book.schedules.some(x => plLive3(x) && x.id !== s.id && x.kind === 'income' && x.startsPeriod);
-  const starts = s.startsPeriod || (everyNow === 'none' && !others);
+  /* [BZ2] the pay holding the flag today (a dated flag: the engine says which) */
+  const holder = BurrowEngine.schedules.periodHolder((book.schedules || []).filter(plLive3), E3.today());
+  const starts = (holder && holder.id === s.id) || (everyNow === 'none' && !holder);
   const perPay = every.length && starts ? (everyNow === 'none' ? PLAN3W.linesEachMonth({ book, today: E3.today() }) : PLAN3W.linesEachPay({ book, today: E3.today() })) : [];
   const lines = perPay.map(l => ({ key: 'ln-' + l.key, label: `${l.name} ${everyNow === 'none' ? 'a month' : 'each pay'} from the change`, kind: 'amount', value: l.amount, optional: true, hint: ' ' }));
   plForm3(s.name, [{ key: 'name', label: 'Name', kind: 'text', value: s.name }, { key: 'amount', label: 'Amount', kind: 'amount', value: v0.amount }].concat(every.slice(0, 1),

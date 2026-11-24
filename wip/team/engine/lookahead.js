@@ -57,6 +57,9 @@
 
   function lookahead(book, asOf, opts) {
     opts = opts || {};
+    // [BZ3] a removed account, line or schedule that a live record names counts again (ledger.js revive), with a warning
+    const RV = L.revive(book);
+    book = RV.book;
     const at = opts.at || 'end of day';
     const today = dayNum(asOf);
     const knownTo = at === 'start of day' ? today - 1 : today;   // what the app has heard of by then
@@ -69,6 +72,8 @@
     const main = fv(homeInfo.main) || {};
     const mainAcct = main.acct || null;
     const res = { asOf, at, accounts: {}, cards: {}, owed: {}, places: {}, warnings: [], laterOn: [] };
+    for (const x of RV.revived) res.warnings.push(Object.assign({ [x.kind]: x.id, code: 'revived', name: x.name, by: x.by },
+      { text: `${x.name || 'Something'} was removed, but a record on another device names it, so it is back` }));
 
     // ----- accounts -----
     const acct = {};
@@ -342,11 +347,19 @@
     const wasNone = s => ((rulesByFrom(s)[0] || {}).rule || {}).every === 'none';
     // the days (up to today) on which a pay changed from a fixed day to no fixed pay
     const noneDays = s => { const l = rulesByFrom(s), out = []; l.forEach((x, k) => { if (k && x.f <= today && x.rule.every === 'none' && l[k - 1].rule.every !== 'none') out.push(x.f); }); return out; };
-    let periodStream = schedules.find(s => s.kind === 'income' && s.startsPeriod && ruleToday(s) && ruleToday(s).every !== 'none');
+    // [BZ2] the pay that holds the flag on a day (schedules.js periodHolder): each period is drawn from the pay that held it
+    // on its pay's due day, so a job change keeps the old pay's periods and the new pay starts them from its entry's day
+    const holderMemo = new Map();
+    const holderAt = d => { if (!holderMemo.has(d)) holderMemo.set(d, S.periodHolder(schedules, d)); return holderMemo.get(d); };
+    const holdsOn = o => { const h = holderAt(o.due); return !!h && h.id === o.sid; };
+    for (const o of items) if (o.kind === 'income') o.startsPeriod = holdsOn(o);
+    const holderToday = holderAt(today);
+    let periodStream = holderToday && ruleToday(holderToday) && ruleToday(holderToday).every !== 'none' ? holderToday : null;
     const windowEnd = o => calOf(o.acct).addWorking(o.land, postingDays(o.acct));
     const stillExpected = o => isNotYet(o) && windowEnd(o) < openDay(o.acct);             // [Z2]
     const lateExpected = o => o.land < today && (today <= windowEnd(o) || stillExpected(o));   // [G3, H8]
-    const startsPeriod = e => e.k === 'in' && e.sub !== 'refund' && !!periodStream && e.settles.some(s => I.scheduleOf(s) === periodStream.id);
+    let payIds = new Set();
+    const startsPeriod = e => e.k === 'in' && e.sub !== 'refund' && !!periodStream && e.settles.some(x => payIds.has(x));
     // [BJ1] a pay due today left unticked at a check-in made today is not seen: it is not counted (BH1 over G4)
     const checkedOn = {};
     for (const e of all) if (e.e && !e.e.gone && e.e.k === 'check' && !e.e.stmt && e.e.date && dayNum(e.e.date) === today && !isOpeningCheck(e.e) && dayNum(e.e.told || e.e.date) <= knownTo) checkedOn[e.e.acct] = true;
@@ -359,7 +372,8 @@
     const monthCache = {};   // each year's pays for the units rules, for this look ahead only
     let pays, nextPays, periodStartDays, occByStart, allStartDays = [], allOccByStart = {};   // [T1] each period is named by the occurrence of the pay that starts it
     const periodsOf = cut => {
-      pays = periodStream ? items.filter(o => o.sid === periodStream.id) : [];
+      pays = periodStream ? items.filter(o => o.kind === 'income' && o.startsPeriod) : [];
+      payIds = new Set(pays.map(o => o.id));
       nextPays = pays.filter(o => !o.settled && (o.land >= today || lateExpected(o)));
       periodStartDays = []; occByStart = {}; allStartDays = []; allOccByStart = {};
       pays.slice().sort((x, y) => x.due - y.due).forEach((o, i, list) => {
@@ -370,7 +384,8 @@
         if (cut == null || d >= cut) { periodStartDays.push(d); occByStart[d] = o.id; }   // [BQ1]
       });
     };
-    const streamCuts = periodStream ? noneDays(periodStream) : [];
+    // [BQ1, BZ2] a change to no fixed pay by any pay that held the flag cuts the periods before it
+    const streamCuts = periodStream ? schedules.filter(x => x.kind === 'income' && x.startsPeriod).map(x => noneDays(x).filter(d => holderAt(d) === x)).reduce((a, l) => a.concat(l), []).sort((x, y) => x - y) : [];
     const cut = streamCuts.length ? streamCuts[streamCuts.length - 1] : null;
     periodsOf(cut);
     if (periodStream && (wasNone(periodStream) || cut !== null) && !periodStartDays.length) { periodStream = null; periodsOf(null); }
@@ -1068,8 +1083,9 @@
       if (x.per === 'month' && periodStream) {
         const o = occId ? pays.find(p => p.id === occId) : pays.find(p => p.land === startDay);
         const oc = !o && occId ? I.occurrence(occId) : null;
-        const due = o ? o.due : oc && oc.schedule === periodStream.id ? dayNum(oc.due) : null;
-        const sh = due === null ? null : S.monthShare(periodStream, calOf(periodStream.acct), due, x.amount, monthCache);
+        const st = o ? sched[o.sid] : oc && sched[oc.schedule] && sched[oc.schedule].startsPeriod ? sched[oc.schedule] : null;   // [BZ2] the pay that started it
+        const due = o ? o.due : st ? dayNum(oc.due) : null;
+        const sh = due === null ? null : S.monthShare(st, calOf(st.acct), due, x.amount, monthCache);
         if (sh) return sh.amount;
       }
       return x.amount;

@@ -22,6 +22,8 @@ function setup(book) {
   return h;
 }
 const view = b => L.lookahead(b, DAY);
+/* [BZ2] the pay that holds the flag on a day (today by default) */
+const holderOn = (b, d) => (require(E + 'schedules.js').periodHolder(b.schedules, d || DAY) || {}).id || null;
 const BANK = 'k7m2qa-f3n8p1x6wd-1', CARD_A = 'k7m2qa-f3n8p1x6wd-2', RENT = 'k7m2qa-f3n8p1x6wd-6';
 const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq([r.told, r.by, r.grp], [DAY + 'T12:00+09:00', 'p3wrtd', step.id], 'told by grp'); ok(/[+-]\d\d:\d\d$/.test(r.at), 'at ' + r.at); };
 
@@ -486,7 +488,9 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     eq(view(h.book).period, null, 'no fixed pay: no periods');
     r = await h.go('addPay', { name: 'Job', amount: 300000, every: 'month', day: 25 }); ok(r.ok, JSON.stringify(r));
     const job = h.book.schedules.find(s => s.name === 'Job');
-    eq([!!job.startsPeriod, !!h.book.schedules.find(s => s.id === MAIN).startsPeriod], [true, false], 'the flag moved');
+    /* [BZ2] the flag moves as a dated entry on the new pay; the old pay keeps its own, so its past periods stay */
+    eq(holderOn(h.book), job.id, 'the flag moved');
+    eq([job.startsPeriod.map(x => [x.from, x.by]), h.book.schedules.find(s => s.id === MAIN).startsPeriod], [[[DAY, 'p3wrtd']], true]);
     eq([job.from, job.rules.map(x => [x.from, x.rule])], ['2026-11-25', [[null, { every: 'month', days: [25] }]]]);
     eq(view(h.book).daysToNextPay.next_pay, '2026-11-25', 'the Job pay is the next pay');
     /* ticked at a check-in: it starts the period from the 25th */
@@ -498,14 +502,15 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     ok((await h.A.undo(h.A.steps().slice(-1)[0].id)).ok);
     /* Undo puts the flag back where it was */
     ok((await h.A.undo(r.step.id)).ok);
-    eq(!!h.book.schedules.find(s => s.id === MAIN).startsPeriod, true);
+    eq(holderOn(h.book), MAIN);
   });
   await t('changeBill from no fixed pay back to a day takes the flag when the pay holding it has no fixed day now (qc-foundation F4)', async () => {
     const h = setup(), MAIN = h.book.schedules.find(s => s.name === 'Main job').id, SIDE = h.book.schedules.find(s => s.name === 'Side job').id;
     ok((await h.go('changeBill', SIDE, { every: 'none' })).ok);
     ok((await h.go('changeBill', MAIN, { every: 'none' })).ok);
     const r = await h.go('changeBill', SIDE, { every: 'month', day: 25, amount: 70000 }); ok(r.ok, JSON.stringify(r));
-    eq([!!h.book.schedules.find(s => s.id === SIDE).startsPeriod, !!h.book.schedules.find(s => s.id === MAIN).startsPeriod], [true, false]);
+    /* [BZ2] from its first pay on the 25th (today); before it the old pay held it */
+    eq([holderOn(h.book, '2026-11-24'), holderOn(h.book), h.book.schedules.find(s => s.id === SIDE).startsPeriod.map(x => x.from)], [MAIN, SIDE, ['2026-11-25']]);
   });
   await t('addBill takes how often: a yearly 12,000 counts once a year, every 3 months 4 times; a day the month lacks is refused (qc-foundation confirm, yearly bills)', async () => {
     const S = require(E + 'schedules.js'), D = require(E + 'dates.js'), cal = S.calendar('JP');
@@ -548,6 +553,73 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     const v = view(h.book), a = h.book.accounts.slice(-1)[0];
     eq([v.accounts[a.id].bank, v.accounts[second].bank, v.accounts[BANK].bank], [30000, 50000, 286000]);
     const card = await h.go('addAccount', { name: 'X', type: 'bank', amount: 1, from: CARD_A, moved: true }); ok(!card.ok && /Pick the bank the money came from/.test(card.text), JSON.stringify(card));
+  });
+  /* ---- [BZ2, BZ1] the job change through the named steps, and Undo after a reload (qc-foundation confirm on ai-core,
+     findings 1 and 2: t5.js and t7.js) ---- */
+  const CKW = require(E + 'checkin.js');
+  const MAINJ = 'k7m2qa-f3n8p1x6wd-4', SIDEJ = 'k7m2qa-f3n8p1x6wd-5';
+  const reloadOf = h => setup(JSON.parse(JSON.stringify(h.book)));
+  async function jobLife() {
+    const b = mako(); b.events = b.events.filter(e => e.k === 'open' || e.k === 'check');
+    const h = setup(b);
+    ok((await h.go('addLine', { name: 'Food', amount: 40000 })).ok);
+    const F = h.book.plan.budgets[0].id;
+    h.tick = async (day, occs) => { DAY = day; const exp = {}, lands = {}; for (const [o, a, l] of occs) { exp[o] = a; lands[o] = l; }
+      const out = CKW.checkIn(h.book, { day, told: day + 'T13:00+09:00', newId: I.idMaker('p3wrck', Math.random), ticked: occs.map(x => x[0]), expected: exp, lands });
+      const r = await h.A.addRecords('Check your bank', out); ok(r.ok, 'tick ' + r.text); };
+    h.spend = async (day, a) => { DAY = day; const r = await h.A.logSpend({ date: day, a, acct: CARD_A, line: F }); ok(r.ok, 'spend ' + r.text); };
+    await h.spend('2026-12-04', 15000);
+    await h.tick('2026-12-10', [[MAINJ + '@2026-12-10', 180000, '2026-12-10'], [SIDEJ + '@2026-12-10', 60000, '2026-12-10']]);
+    await h.spend('2026-12-20', 12000); await h.spend('2027-01-03', 9000);
+    DAY = '2027-01-05';
+    return h;
+  }
+  const at = (b, d) => { const r = L.lookahead(b, d, { periods: true }); return { period: r.period && [r.period.start, r.period.end], food: r.period && r.period.lines.map(l => l.left), past: (r.periods || []).map(p => [p.start, p.end, p.lines.map(l => l.left)]) }; };
+  await t('[BZ2] "my job ended, the new one pays 300,000 on the 25th" on 5 Jan: end both pays, add the new one; each period follows the pay that held the flag then', async () => {
+    const h = await jobLife(), before = at(h.book, '2027-01-05');
+    eq(before.period, ['2026-12-10', '2027-01-07']);   // the made-up book's pay moves to the working day before since homefix (b75f0258): 10 Jan 2027 is a Sunday, so pay lands Fri 8 Jan (it was Tue 12 Jan when this test was written on lane/controls-base)
+    ok((await h.go('endBill', MAINJ, {})).ok);
+    eq([holderOn(h.book, '2027-01-05'), holderOn(h.book, '2027-01-06')], [MAINJ, SIDEJ], 'ending the pay holding it moves it to the other pay with a fixed day, from the day after');
+    ok((await h.go('endBill', SIDEJ, {})).ok);
+    const r = await h.go('addPay', { name: 'New job', amount: 300000, every: 'month', day: 25 }); ok(r.ok, JSON.stringify(r));
+    const NJ = h.book.schedules.find(s => s.name === 'New job').id;
+    eq(holderOn(h.book, '2027-01-06'), NJ, 'the new pay holds it after the ended ones');
+    const d5 = at(h.book, '2027-01-05');
+    eq([d5.period, d5.food, d5.past], [['2026-12-10', '2027-01-24'], [19000], before.past], 'on 5 Jan: this period runs to the day before the new pay; Food 19,000 left; past periods as they were');
+    await h.spend('2027-01-20', 8000);
+    await h.tick('2027-01-26', [[NJ + '@2027-01-25', 300000, '2027-01-25']]);
+    await h.spend('2027-02-10', 7000);
+    const j26 = at(h.book, '2027-01-26'), f15 = at(h.book, '2027-02-15');
+    eq([j26.period, j26.food], [['2027-01-25', '2027-02-24'], [40000]], 'a new period starts with the new pay');
+    eq(j26.past.slice(-1), [['2026-12-10', '2027-01-24', [11000]]], 'the period before it keeps Food 11,000 left');
+    eq([f15.period, f15.food], [['2027-01-25', '2027-02-24'], [33000]]);
+    DAY = '2026-11-25';
+  });
+  await t('[BZ1, BZ2] ending the pay holding the flag, then a reload and Undo: the end and the flag move both come back', async () => {
+    const h = await jobLife();
+    const r = await h.go('endBill', MAINJ, {}); ok(r.ok);
+    const h2 = reloadOf(h), u = await h2.A.undo(r.step.id);
+    ok(u.ok, JSON.stringify(u));
+    const m = h2.book.schedules.find(s => s.id === MAINJ), sd = h2.book.schedules.find(s => s.id === SIDEJ);
+    eq([m.ends, sd.startsPeriod, holderOn(h2.book, '2027-02-01')], [undefined, undefined, MAINJ]);
+    DAY = '2026-11-25';
+  });
+  await t('[BZ1] rent changed to 80,000, then a reload and Undo: rent is 72,000 again (t7.js)', async () => {
+    const h = setup(), RENTJ = 'k7m2qa-f3n8p1x6wd-6';
+    const r = await h.go('changeBill', RENTJ, { amount: 80000 }); ok(r.ok, JSON.stringify(r));
+    const h2 = reloadOf(h), u = await h2.A.undo(r.step.id);
+    ok(u.ok, JSON.stringify(u));
+    eq(h2.book.schedules.find(s => s.id === RENTJ).steps.map(x => [x.from, x.amount]), [[null, 72000]]);
+  });
+  await t('[BZ1, BZ2] an added pay that took the flag, then a reload and Undo: the pay is gone and the old pay holds the flag again (t7.js)', async () => {
+    const h = setup();
+    ok((await h.go('changeBill', SIDEJ, { every: 'none' })).ok); ok((await h.go('changeBill', MAINJ, { every: 'none' })).ok);
+    const r = await h.go('addPay', { name: 'Job', amount: 300000, every: 'month', day: 25 }); ok(r.ok, JSON.stringify(r));
+    const job = h.book.schedules.find(s => s.name === 'Job').id;
+    eq(holderOn(h.book), job);
+    const h2 = reloadOf(h), u = await h2.A.undo(r.step.id);
+    ok(u.ok, JSON.stringify(u));
+    eq([h2.book.schedules.find(s => s.id === job).gone, holderOn(h2.book)], [DAY, MAINJ]);
   });
   console.log(bad ? `plan3_write: ${bad} FAIL of ${n}` : `plan3_write: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);

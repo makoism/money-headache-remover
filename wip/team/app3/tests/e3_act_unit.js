@@ -279,6 +279,115 @@ const ev = (b, id) => b.events.find(e => e.id === id);
     await h.A.logSpend({ date: DAY, a: 1000, acct: bank });
     eq(given, before);
   });
+  /* ---- [BZ1, qc-foundation finding 2] the saved Undo journal: Undo after a reload undoes edits too ---- */
+  const reload = (h, r) => setup({ book: clone(h.book), newId: I.idMaker('t3actd', () => r || 0.7) });
+  await t('[BZ1] each step saves a journal entry in the same save: step id, label, moment, what it added, removed and edited (old values)', async () => {
+    const h = setup();
+    ok(!('journal' in h.book), 'a book saved today has no journal');
+    const a = await h.A.logSpend({ date: DAY, a: 1000, acct: bank });
+    const b = await h.A.edit(a.step.added[0].id, { a: 900 });
+    const c = await h.A.remove(a.step.added[0].id);
+    eq(h.saves, 3, 'one save each, the journal inside it');
+    eq(h.book.journal.map(j => [j.id, j.label, j.moment, j.day]), [[a.step.id, 'logSpend', a.step.at, DAY], [b.step.id, 'edit', b.step.at, DAY], [c.step.id, 'remove', c.step.at, DAY]]);
+    eq(h.book.journal[0].added, [{ list: 'events', id: a.step.added[0].id }]);
+    eq(h.book.journal[1].edited.map(x => [x.list, x.id, x.before.a, x.before.at]), [['events', a.step.added[0].id, 1000, a.step.at]]);
+    eq(h.book.journal[2].removed.map(x => [x.list, x.id]), [['events', a.step.added[0].id]]);
+  });
+  await t('[BZ1] a step that only edits, then a reload, then Undo: the old value is back', async () => {
+    const h = setup();
+    const a = await h.A.logSpend({ date: DAY, a: 1000, acct: bank }), sp = a.step.added[0].id;
+    const r0 = view(h.book);
+    const b = await h.A.edit(sp, { a: 900, note: 'lunch' });
+    const ren = await h.A.run('Renamed', w => { w.edit('accounts', WALLET, { name: 'Purse' }); });
+    ok(b.ok && ren.ok);
+    const h2 = reload(h);
+    const u1 = await h2.A.undo(ren.step.id);
+    ok(u1.ok, JSON.stringify(u1));
+    eq(h2.book.accounts.find(x => x.id === WALLET).name, 'Wallet', 'the rename undone after a reload');
+    const u2 = await h2.A.undo(b.step.id);
+    ok(u2.ok, JSON.stringify(u2));
+    const e = ev(h2.book, sp);
+    eq([e.a, 'note' in e], [1000, false], 'the old amount back, the note taken away');
+    eq(view(h2.book).safeToSpend.headline, r0.safeToSpend.headline, 'safe to spend as before the edit');
+    eq(h2.book.journal.filter(j => j.undone).map(j => j.id).sort(), [b.step.id, ren.step.id].sort(), 'both marked undone');
+    const again = await h2.A.undo(b.step.id);
+    ok(!again.ok && /undone already/.test(again.text), 'a second Undo of the same step is refused: ' + JSON.stringify(again));
+  });
+  await t('[BZ1] two edits of one record: after a reload the newer is undone, then the older', async () => {
+    const h = setup();
+    const a = await h.A.logSpend({ date: DAY, a: 1000, acct: bank }), sp = a.step.added[0].id;
+    const b = await h.A.edit(sp, { a: 900 }), c = await h.A.edit(sp, { a: 800 });
+    const h2 = reload(h);
+    const early = await h2.A.undo(b.step.id);
+    ok(!early.ok && early.why === 'later', 'the older first is refused: a later step changed it');
+    ok((await h2.A.undo(c.step.id)).ok, 'the newer');
+    eq(ev(h2.book, sp).a, 900);
+    const h3 = reload(h2, 0.9);
+    ok((await h3.A.undo(b.step.id)).ok, 'then the older, after another reload');
+    eq(ev(h3.book, sp).a, 1000);
+  });
+  /* the close shape (controls slice 5): a final check, the money moved out as `close:<account>`, `closed` on the account */
+  const closeWallet = w => {
+    w.add('events', { k: 'check', acct: WALLET, date: DAY, a: 10000, src: { type: 'typed' } });
+    w.add('events', { id: 'close:' + WALLET, k: 'transfer', acct: WALLET, acct2: bank, date: DAY, a: 10000, src: { type: 'typed' } });
+    w.edit('accounts', WALLET, { closed: DAY });
+  };
+  await t('[BZ1] the close shape: transfer plus close, then a reload and Undo: all of it back, nothing half done', async () => {
+    const h = setup(), before = clone(h.book), r0 = view(h.book);
+    const c = await h.A.run('Closed', closeWallet);
+    ok(c.ok, JSON.stringify(c));
+    const r1 = view(h.book);
+    eq(r1.accounts[bank].bank, r0.accounts[bank].bank + 10000, 'the money moved to the bank');
+    const h2 = reload(h);
+    const u = await h2.A.undo(c.step.id);
+    ok(u.ok, JSON.stringify(u));
+    const w = h2.book.accounts.find(x => x.id === WALLET);
+    ok(!('closed' in w), 'not closed');
+    ok(ev(h2.book, 'close:' + WALLET).gone && c.step.added.every(x => ev(h2.book, x.id).gone), 'the transfer and the check gone');
+    const r2 = view(h2.book);
+    eq([r2.accounts[bank].bank, r2.accounts[WALLET].bank, r2.safeToSpend.headline], [r0.accounts[bank].bank, r0.accounts[WALLET].bank, r0.safeToSpend.headline], 'the figures as before the close');
+    const strip = b => JSON.stringify(Object.assign({}, b, { journal: undefined, events: b.events.filter(e => !e.gone).map(e => e.id).sort(), accounts: b.accounts.map(x => { const y = Object.assign({}, x); delete y.at; delete y.by; return y; }) }));
+    eq(strip(h2.book), strip(before), 'live records as before');
+  });
+  await t('[BZ1] the close shape: a later step touched the account, so Undo after a reload is refused whole and changes nothing', async () => {
+    const h = setup();
+    const c = await h.A.run('Closed', closeWallet);
+    ok((await h.A.run('Renamed', w => { w.edit('accounts', WALLET, { name: 'Old wallet' }); })).ok);
+    const h2 = reload(h), mid = clone(h2.book);
+    const u = await h2.A.undo(c.step.id);
+    ok(!u.ok && u.why === 'later', JSON.stringify(u));
+    eq(h2.book, mid, 'nothing half done: the transfer, the check and closed all stay');
+    eq(h2.saves, 0);
+  });
+  await t('[BZ1 migration] a step made before the journal still undoes what it can after a reload (adds and removes); an edit-only one is refused, nothing changed', async () => {
+    const h = setup();
+    const a = await h.A.logSpend({ date: DAY, a: 1000, acct: bank }), sp = a.step.added[0].id;
+    const b = await h.A.edit(sp, { a: 900 });
+    const x = await h.A.logSpend({ date: DAY, a: 700, acct: bank }), rm = await h.A.remove(x.step.added[0].id);
+    const old = clone(h.book); delete old.journal;   // as a book saved before the journal
+    const h2 = setup({ book: old, newId: I.idMaker('t3actd', () => 0.7) });
+    const ub = await h2.A.undo(b.step.id);
+    ok(!ub.ok, 'an old edit-only step cannot be found: ' + JSON.stringify(ub));
+    eq(ev(h2.book, sp).a, 900, 'and nothing changed');
+    ok((await h2.A.undo(rm.step.id)).ok, 'an old removal is put back');
+    ok((await h2.A.undo(a.step.id)).ok, 'an old add is taken back');
+    eq([ev(h2.book, sp).gone, ev(h2.book, x.step.added[0].id).gone], [DAY, undefined]);
+    ok(!h2.book.journal || h2.book.journal.length === 0, 'Undo steps are not journaled: ' + JSON.stringify(h2.book.journal));
+  });
+  await t('[BZ1 migration] the engine reads a book with a journal the same as without one', async () => {
+    const h = setup();
+    await h.A.logSpend({ date: DAY, a: 1000, acct: bank });
+    await h.A.run('Closed', closeWallet);
+    const no = clone(h.book); delete no.journal;
+    eq(JSON.stringify(view(h.book)), JSON.stringify(view(no)));
+  });
+  await t('[BZ1] the journal keeps the latest 200 steps', async () => {
+    const h = setup();
+    let first = null, last = null;
+    for (let i = 0; i < 203; i++) { const r = await h.A.logSpend({ date: DAY, a: 10 + i, acct: bank }, { quiet: true }); if (!first) first = r; last = r; }
+    eq(h.book.journal.length, 200);
+    ok(!h.book.journal.some(j => j.id === first.step.id) && h.book.journal[199].id === last.step.id, 'the oldest dropped');
+  });
   console.log(bad ? `e3_act_unit: ${bad} FAIL of ${n}` : `e3_act_unit: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })();
