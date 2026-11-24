@@ -183,3 +183,17 @@ the screens' setup opens with the same answers filled in.
    - "See what is sent" says that account, bill and income names are sent.
    - The device id is kept on the device (BU3).
 7. **Question 9 asks whether the side job is the same amount each time.** If not, it is saved as a pay with no fixed day.
+
+## Corrections, second review (24 Nov, BV2; these add to the corrections above)
+8. **Answers keep the days they were given for.**
+   - Each bill answer is saved with the landing days it answered. Each statement answer is saved with the day that statement closed.
+   - fillBook runs buildBook again for the fill day, and refuses unless those days match exactly.
+   - Answers sit on the draft item under a key made by the shared function, never by their position in a list.
+9. **fillBook runs only when E3.mode is 'none'.**
+   - The discard removes only the book, its details and its records. It keeps the device record and the kept copies.
+   - It leaves a mark in the device record, so another tab gets "behind" instead of writing everything back.
+   - The cloud copy is held back until the Undo turns into "Start over".
+10. **The shared function also fills in the card's weekend rule ('after').** A "not sure" statement figure becomes the whole amount owed, as on the setup screen.
+11. **addPay starts from today**, the same way addBill does.
+12. **addAccount, when the money was moved from the main bank,** opens the account at 0 and checks it at 0, then moves the amount from the main bank on the day it was moved. This is the same pattern addGoal uses. New money opens with the amount instead. It never does both.
+13. **Watch:** when a bank figure is given on a day a pay lands, both the chat and the setup screen ask: "Has today's pay already landed in that figure?"

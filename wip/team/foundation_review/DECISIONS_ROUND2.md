@@ -579,3 +579,4 @@ The seven corrections at the end of AI_FIRST_PLAN.md are accepted:
 
 ## BW. How the assistant changes money (Mako, 24 Nov 11:30 JST, "full steam ahead")
 The assistant makes the change, shows what changed, and Undo is one tap. A confirm step comes first only for deleting something, or for any change larger than the safe-to-spend figure. This is marked for his run. The setup chat follows the 15-step draft. It asks how many banks (one is fine for now), and he can ask anything about the app at any point. The site's AI and invite word were live from 11:30 JST.
+BV2. The five extra rules from the confirming review (items 8 to 13 in AI_FIRST_PLAN.md) are accepted, along with the pay-day question. The end-of-slice review checks them. There is no further plan round (BN, lesson 4).
