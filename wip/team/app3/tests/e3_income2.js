@@ -8,6 +8,7 @@
    2. A room let ¥30,000 on the 10th and the 20th: saved as two days each month; Plan: "day 10 and day 20 each month,
       next 10 Dec". With no day of one given for every few weeks, setup asks for it first. */
 'use strict';
+const { finishSetup: finishSetup3 } = require('./setup_sections.js');   // setup is saved one section at a time (item 14)
 const L = require('./lives3.js').make('e3_income2');
 const { ck, go, tab, typeIn, w } = L;
 const shown = (p, s) => p.$eval(s, e => !e.closest('[hidden]')).catch(() => false);
@@ -18,7 +19,7 @@ async function setup(p, fill) {
   await typeIn(p, '#s3PayAmt', '250000'); await p.selectOption('#s3PayDay', '25');
   await p.click('#s3AddPay'); await w(100);
   await fill(p);
-  await p.click('#a3SetupSave'); await w(700);
+  await finishSetup3(p); await w(700);
 }
 (async () => {
   {
@@ -29,7 +30,7 @@ async function setup(p, fill) {
       ck('a second income offers every n weeks and two days a month', ['same', 'month', 'days', 'weeks1', 'weeks2', 'weeks4', 'none'].every(v => opts.includes(v)), opts.join(','));
       await p.selectOption('[data-row=pay2] [data-f=every]', 'weeks2'); await w(100);
       ck('every 2 weeks: the day of one is asked, no day of the month', await shown(p, '[data-row=pay2] [data-f=start]') && !(await shown(p, '[data-row=pay2] [data-f=day]')) && !(await shown(p, '[data-row=pay2] [data-f=day2]')));
-      await p.click('#a3SetupSave'); await w(400);
+      await finishSetup3(p); await w(400);
       ck('no day of one given: asked before saving', (await L.txt(p, '[data-err-for=s3-pay2-st]')) === 'Type the day of one pay, the last one or the next one' && !(await p.$eval('#a3Setup', e => e.hidden)));
       await p.fill('[data-row=pay2] [data-f=start]', '2026-12-11');
     });

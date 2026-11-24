@@ -49,6 +49,7 @@
    8 Mar  check-in: rent and car insurance ticked; Checking 787,950: 787,950 - 65,000 = 722,950; 15 Mar 718,450
           (lowest). Safe 728,450. */
 'use strict';
+const { finishSetup: finishSetup3 } = require('./setup_sections.js');   // setup is saved one section at a time (item 14)
 const L = require('./lives3.js').make('e3_life_a');
 const { ck, go, tab, typeIn, log, checkin, home, w } = L;
 const plan = async (p, sel) => p.$eval(sel, e => e.innerText.replace(/\s+/g, ' ')).catch(() => '(none)');
@@ -72,7 +73,7 @@ const row = (p, attr, name) => p.evaluate(([a, n]) => { const b = [...document.q
     if (month) { await p.selectOption(r + '[data-f=every]', 'year'); await p.selectOption(r + '[data-f=month]', month); }
     await p.selectOption(r + '[data-f=day]', day);
   }
-  await p.click('#a3SetupSave'); await w(700);
+  await finishSetup3(p); await w(700);
   await home(p, '7 Dec after setup', 192500, { Checking: 185000, Cash: 12000 });
   ck('7 Dec: the period is 4 Dec to 17 Dec', (await p.$eval('[data-fig=period]', e => e.textContent).catch(() => '')) === '4 Dec to 17 Dec');
   await tab(p, 'plan');

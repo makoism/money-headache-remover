@@ -6,6 +6,7 @@
      that spend); nothing is saved until the person says so; "Change the amount" keeps the form; 1,200 then saves;
    - a new 400,000: asks with ¥318,800 (320,000 less the 1,200); "Save it anyway" saves it. */
 'use strict';
+const { finishSetup: finishSetup3 } = require('./setup_sections.js');   // setup is saved one section at a time (item 14)
 const T = require('./lib3.js'), { ck } = T;
 const typeIn = async (p, sel, v) => { await p.$eval(sel, e => { e.value = ''; }); await p.type(sel, String(v)); };
 const saved = p => p.evaluate(async () => { const s = await BurrowStore.open(); const r = await s.load(); if (s.db) s.db.close(); return r.copy; });
@@ -17,7 +18,7 @@ const ask = p => p.evaluate(() => { const a = document.getElementById('rcAsk'); 
   await p.goto(T.URL0 + '?today=2026-11-23'); await T.w(400);
   await p.click('#a3SetupGo'); await T.w(300);
   await typeIn(p, '#s3Bank', '320000'); await typeIn(p, '#s3PayAmt', '250000'); await p.select('#s3PayDay', '25');
-  await p.click('#a3SetupSave'); await T.w(700);
+  await finishSetup3(p); await T.w(700);
   await p.click('#a3LogGo'); await T.w(300);
   await typeIn(p, '#rcAmt', '12000'); await p.click('#rcSave'); await T.w(500);
   ck('12,000 is saved with no question', JSON.stringify(await spends(p)) === '[12000]' && (await ask(p)) === null, JSON.stringify(await spends(p)));

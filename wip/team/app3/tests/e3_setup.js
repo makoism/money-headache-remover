@@ -7,6 +7,7 @@
    Home then shows the same figures as the made-up try book on that day, after a reload too. A missing bank figure is
    refused with words and saves nothing. The old app's copies stay the same. */
 'use strict';
+const { finishSetup: finishSetup3 } = require('./setup_sections.js');   // setup is saved one section at a time (item 14)
 const T = require('./lib3.js'), { ck } = T;
 const DAY = '2026-11-20';
 const typeIn = async (p, sel, v) => { await p.click(sel, { clickCount: 3 }); await p.keyboard.press('Backspace'); await p.type(sel, String(v)); };
@@ -20,12 +21,12 @@ const typeIn = async (p, sel, v) => { await p.click(sel, { clickCount: 3 }); awa
   await p.click('#a3SetupGo'); await T.w(300);
   ck('setup asks what the bank shows today', /What does your bank show today/.test(await p.$eval('#a3Setup', e => e.textContent)));
   /* nothing typed: refused, nothing saved */
-  await p.click('#a3SetupSave'); await T.w(300);
+  await finishSetup3(p); await T.w(300);
   ck('a missing bank figure is refused with words', (await p.$eval('[data-err-for=s3Bank]', e => e.textContent).catch(() => '')) === 'Type what Main bank shows today' && !(await p.$eval('#a3Setup', e => e.hidden)));
   await typeIn(p, '#s3Bank', '286000');
   await p.select('#s3PayDay', '10'); await p.select('#s3PayShift', 'after');
   /* [BL1] a pay of 0 is refused with words and saves nothing */
-  await typeIn(p, '#s3PayAmt', '0'); await p.click('#a3SetupSave'); await T.w(300);
+  await typeIn(p, '#s3PayAmt', '0'); await finishSetup3(p); await T.w(300);
   ck('a pay of 0 is refused with words next to it', (await p.$eval('[data-err-for=s3PayAmt]', e => e.textContent).catch(() => '')) === 'A pay needs an amount. If it comes when it comes, pick No fixed pay' && !(await p.$eval('#a3Setup', e => e.hidden)), await p.$eval('[data-err-for=s3PayAmt]', e => e.textContent).catch(() => '(none)'));
   ck('the pay box is the one asked about', await p.evaluate(() => document.activeElement && document.activeElement.id === 's3PayAmt'));
   await typeIn(p, '#s3PayAmt', '180000'); await typeIn(p, '#s3PayName', 'Main job');
@@ -48,7 +49,7 @@ const typeIn = async (p, sel, v) => { await p.click(sel, { clickCount: 3 }); awa
   ck('the minimum starts blank (skipped means none)', (await p.$eval('#s3Min', e => e.value)) === '');
   ck('one why line under Keep at least, read with it', await p.$eval('#s3Min', e => { const h = document.getElementById(e.getAttribute('aria-describedby')); return !!h && h.dataset.hint === 'min' && /^Safe to spend /.test(h.textContent) && !/\.$/.test(h.textContent); }));
   await T.shot(p, 'setup_' + DAY);
-  await p.click('#a3SetupSave'); await T.w(600);
+  await finishSetup3(p); await T.w(600);
   const r = T.L.lookahead(bk, DAY);
   const check = async when => {
     const f = await T.figs(p), one = k => f.filter(x => x.fig === k);
@@ -87,7 +88,7 @@ const typeIn = async (p, sel, v) => { await p.click(sel, { clickCount: 3 }); awa
     ck('BL6: asks how much was on the statement that closed on 20 Nov', !ask.hidden && ask.label === 'How much of it was on the statement that closed on 20 Nov?', JSON.stringify(ask));
     ck('BL6: says when that part comes out', /comes out on 7 Dec/.test(ask.hint), ask.hint);
     await typeIn(q, r + '[data-f=statement]', '250');
-    await q.click('#a3SetupSave'); await T.w(700);
+    await finishSetup3(q); await T.w(700);
     ck('BL6: saved', await q.$eval('#a3Setup', e => e.hidden), await q.$eval('#a3SetupErr', e => e.textContent).catch(() => ''));
     const line = (await q.$eval('[data-cardid] .when', e => e.textContent)).replace(/⁠/g, '');
     ck('BL6: Home says $250.00 comes out on 7 Dec', /\$250\.00 comes out on 7 Dec/.test(line), line);
@@ -109,7 +110,7 @@ const typeIn = async (p, sel, v) => { await p.click(sel, { clickCount: 3 }); awa
     ck(tag + ': setup asks about everyday spending', lab === 'About how much do you spend each pay period on food, transport and small things?', lab);
     await typeIn(q, '#s3Bank', '320000'); await typeIn(q, '#s3PayAmt', '250000'); await q.select('#s3PayDay', '25'); await q.select('#s3PayShift', 'before');
     if (free) await typeIn(q, '#s3Free', free);
-    await q.click('#a3SetupSave'); await T.w(700);
+    await finishSetup3(q); await T.w(700);
     ck(tag + ': saved', await q.$eval('#a3Setup', e => e.hidden), await q.$eval('#a3SetupErr', e => e.textContent).catch(() => ''));
     const f = await T.figs(q), safe = f.find(x => x.fig === 'safe');
     const st = await q.$eval('[data-card=status]', e => ({ level: e.dataset.level, text: e.textContent.replace(/\s+/g, ' ') }));

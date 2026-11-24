@@ -188,5 +188,27 @@ async function openSetup(day) {
     ck('after a reload Home shows, not setup', await p.$eval('#a3Setup', e => e.hidden) && (await homeBank(p)) === 286000);
     await c.close();
   }
+  /* 5b: a draft left on one day and picked up on a later day. The bank, an account, a card's amount on it now and which
+     bills have left are figures of the day they were typed (LESSONS lesson 1: the only bank figure is what the bank
+     shows today): those sections come back with their answers but ask to be checked and saved again; the pay does not */
+  {
+    const { c, p } = await openSetup('2026-11-24');
+    await typeIn(p, '#s3Bank', '286000'); await saveSec(p, 'bank');
+    await typeIn(p, '#s3PayAmt', '180000'); await p.selectOption('#s3PayDay', '10'); await saveSec(p, 'pay');
+    await p.click('#s3AddCard'); await w(100); await typeIn(p, '#s3-card1-o', '54000'); await saveSec(p, 'cards');
+    await go(p, '2026-11-26'); await w(300);
+    ck('two days later, setup opens with what was saved', !(await p.$eval('#a3Setup', e => e.hidden)) && (await val(p, '#s3Bank')) === '286000' && (await val(p, '#s3-card1-o')) === '54000');
+    ck('the bank asks to be checked again: saved on 24 Nov', (await stateOf(p, 'bank')) === 'stale' && /^Saved on 24 Nov\. Check it still shows the same today, then Save$/.test(await savedWords(p, 'bank')), await savedWords(p, 'bank'));
+    ck('the card too', (await stateOf(p, 'cards')) === 'stale', await stateOf(p, 'cards'));
+    ck('the pay does not', (await stateOf(p, 'pay')) === 'saved' && (await savedWords(p, 'pay')) === 'Saved', await savedWords(p, 'pay'));
+    await p.click('#a3SetupSave'); await w(300);
+    ck('See my money first asks for the bank to be checked', /Your bank/.test(await txt(p, '#a3SetupErr')) && !(await p.$eval('#a3Setup', e => e.hidden)), await txt(p, '#a3SetupErr'));
+    await typeIn(p, '#s3Bank', '279000');
+    const e = await saveSections(p);
+    ck('checked and saved again', e === '' && (await stateOf(p, 'bank')) === 'saved', e);
+    await p.click('#a3SetupSave'); await w(700);
+    ck('Home shows the bank as checked on 26 Nov, 279,000', (await homeBank(p)) === 279000, await homeBank(p));
+    await c.close();
+  }
   await L.finish();
 })().catch(e => { console.log('FAIL crashed ' + e.stack); process.exit(1); });

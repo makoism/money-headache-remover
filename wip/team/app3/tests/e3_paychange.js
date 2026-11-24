@@ -11,6 +11,7 @@
    only for every few weeks. Saved: the rule starts with the first pay, Tue 15 Dec; Free to spend ¥50,000 each pay from
    then. */
 'use strict';
+const { finishSetup: finishSetup3 } = require('./setup_sections.js');   // setup is saved one section at a time (item 14)
 const L = require('./lives3.js').make('e3_paychange');
 const { ck, go, tab, typeIn, w } = L;
 const num = v => Number(String(v).replace(/[^\d.]/g, ''));
@@ -22,7 +23,7 @@ const num = v => Number(String(v).replace(/[^\d.]/g, ''));
   await typeIn(p, '#s3PayAmt', '150000'); await p.selectOption('#s3PayEvery', 'days'); await p.selectOption('#s3PayDay', '15'); await p.selectOption('#s3PayDay2', 'last');
   await typeIn(p, '#s3Free', '50000');
   await p.click('#s3AddBill'); await typeIn(p, '[data-row=bill1] [data-f=name]', 'Rent'); await typeIn(p, '[data-row=bill1] [data-f=amount]', '80000'); await p.selectOption('[data-row=bill1] [data-f=day]', '27');
-  await p.click('#a3SetupSave'); await w(700);
+  await finishSetup3(p); await w(700);
   const box = () => p.evaluate(() => { const l = [...document.querySelectorAll('#a3Plan label')].find(x => /^Free to spend /.test(x.textContent)); const i = l && document.getElementById(l.getAttribute('for')); return i ? { label: l.textContent, v: i.value, hint: (i.parentElement.querySelector('.a3-sub') || {}).textContent || '' } : null; });
   const shown = k => p.$eval('#pl-' + k, e => !e.closest('.a3-field').hidden);
   const openPay = async () => { await tab(p, 'plan'); await p.click('[data-pay]'); await w(250); };

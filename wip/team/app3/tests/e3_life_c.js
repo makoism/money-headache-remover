@@ -45,6 +45,7 @@
           end of May 79,644; 21 Jun 79,644 - 21 x 1,315 - 5,000 = 47,029; 28 Jun 79,644 - 28 x 1,315 - 5,000 - 85,000 =
           -47,176: below zero on 28 Jun, 118 days away: 16 weeks. Cash never goes below zero. */
 'use strict';
+const { finishSetup: finishSetup3 } = require('./setup_sections.js');   // setup is saved one section at a time (item 14)
 const L = require('./lives3.js').make('e3_life_c');
 const { ck, go, tab, typeIn, log, checkin, home, w } = L;
 (async () => {
@@ -64,7 +65,7 @@ const { ck, go, tab, typeIn, log, checkin, home, w } = L;
   await w(200);
   const asked = await p.$$eval('#a3Setup [data-q=takenOut]:not([hidden]) label', ls => ls.map(l => l.textContent));
   ck('setup asks about the phone of 20 Nov and the rent of 27 Nov', asked.join(' | ') === 'Did the Phone of 20 Nov leave your bank? | Did the Rent of 27 Nov leave your bank?', asked.join(' | '));
-  await p.click('#a3SetupSave'); await w(700);
+  await finishSetup3(p); await w(700);
   await home(p, '1 Dec after setup', 260000, { Bank: 420000, Cash: 20000 });
   const due = await p.$eval('[data-card=due]', e => e.innerText.replace(/\s+/g, ' '));
   ck('1 Dec: due in the next 30 days, phone 21 Dec and rent 28 Dec', /^Due in the next 30 days/.test(due) && /Phone 21 Dec ¥5,000/.test(due) && /Rent 28 Dec ¥85,000/.test(due) && /Together ¥90,000/.test(due), due);

@@ -5,6 +5,7 @@
    - the cards box is there with no card yet and has "Add a card", which opens Plan's own add-card form (no second form);
      a card added there shows in the box. */
 'use strict';
+const { finishSetup: finishSetup3 } = require('./setup_sections.js');   // setup is saved one section at a time (item 14)
 const T = require('./lib3.js'), { ck } = T;
 const typeIn = async (p, sel, v) => { await p.click(sel, { clickCount: 3 }); await p.keyboard.press('Backspace'); await p.type(sel, String(v)); };
 const clean = s => (s || '').replace(/⁠/g, '').replace(/\s+/g, ' ').trim();
@@ -15,7 +16,7 @@ const clean = s => (s || '').replace(/⁠/g, '').replace(/\s+/g, ' ').trim();
   await p.click('#a3SetupGo'); await T.w(300);
   await typeIn(p, '#s3Bank', '320000'); await typeIn(p, '#s3PayAmt', '250000'); await p.select('#s3PayDay', '25');
   await typeIn(p, '#s3Free', '40000');
-  await p.click('#a3SetupSave'); await T.w(700);
+  await finishSetup3(p); await T.w(700);
   ck('saved', await p.$eval('#a3Setup', e => e.hidden));
   ck('no goals yet: no goals box on Home', !(await p.$('[data-card=goals]')));
   /* F3: the cards box with no card, and its Add a card */
