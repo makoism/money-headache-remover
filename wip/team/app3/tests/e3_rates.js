@@ -66,6 +66,11 @@ async function total(p, what, amount, part) {
   const list = await p.$$eval('#a3Set [data-set=rate]', es => es.map(e => e.textContent.replace(/[⁠\s]+/g, ' ').trim()));
   ck('Settings lists the rates typed, latest first', list.length === 2 && /151\.52/.test(list[0]) && /150\.25/.test(list[1]), list.join(' | '));
   await p.click('#a3SetClose'); await w(200);
+  /* [second review, watch] with Free to spend set the runway line shows, and says the dollars are left out of it */
+  await p.click('[data-tab=plan]'); await w(250); await p.click('#plSetFree'); await w(300); await p.fill('#pl-amount', '73000'); await p.click('[data-plbtn="0"]'); await w(400);
+  await p.click('[data-tab=home]'); await w(200);
+  const rl = await textOf(p, '#a3Home [data-fig=runway]');
+  ck('the runway line says money in other currencies is left out', !!rl && /^If no more pay came, Main bank lasts/.test(rl) && /Money in other currencies is left out/.test(rl), rl);
   await c.close();
   const secs = Math.round((Date.now() - t0) / 1000);
   ck(`the walk took ${secs} s (limit 180)`, secs < 180);

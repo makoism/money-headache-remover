@@ -9,7 +9,7 @@ function runwayWords3(r, yr) {
   const span = x.more ? 'a year or more' : x.weeks === 0 ? 'less than a week' : `about ${x.weeks} ${x.weeks === 1 ? 'week' : 'weeks'}`;
   const keep = x.minimum ? ', keeping your minimum' : '';
   /* [qc-foundation on S1, fix 2] the account is named, never "your money", until accounts are added together */
-  const who = x.several ? ', the first of your accounts to run out' : '';
+  const who = `${x.several ? ', the first of your accounts to run out' : ''}${(x.leftOut || []).length ? '. Money in other currencies is left out' : ''}`;   // [second review, watch]
   const head = `<div class="a3-head"><p class="a3-sub" data-fig="runway" data-weeks="${esc3(x.more ? 'more' : x.weeks)}" data-day="${esc3(x.day || '')}" data-acct="${esc3(x.account)}">If no more pay came, ${esc3(E3.nameOf(x.account))} lasts ${esc3(span)}${esc3(keep)}${esc3(who)}</p>${HELP3.button('runway')}</div>${HELP3.text('runway')}`;
   if (x.more) return head;
   /* "would", never "goes below zero": that is said only of the real walk (BM2, e3_warnwords J) */

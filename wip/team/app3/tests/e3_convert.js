@@ -11,7 +11,9 @@
           The same after a reload.
    30 Nov the 24 Nov typed rate still: ¥436,250.
    2 Dec  Settings, Rates: 152 from 2 Dec takes over: 199,000 x 152 / 100 = 302,480; Total ¥438,480, typed by you.
-   A move between two currencies with nothing typed for what arrived is refused with words. */
+   A move between two currencies with nothing typed for what arrived is refused with words.
+   Savings ¥50,000 (yen) is set up too, so every Total and safe to spend has 50,000 more than in e3_rates.js. At the
+   end the move is edited to Savings (second review, F2): Savings ¥200,000, Total ¥488,000. */
 'use strict';
 const L = require('./lives3.js').make('e3_convert');
 const { ck, go, tab, typeIn, w, txt, selByText } = L;
@@ -50,10 +52,11 @@ async function move(p, a, arrived) {
   await typeIn(p, '#s3Bank', '286000');
   await p.click('#s3AddAcct'); await typeIn(p, '[data-row=acct2] [data-f=name]', 'Dollar account');
   await p.selectOption('[data-row=acct2] [data-f=cur]', 'USD'); await typeIn(p, '[data-row=acct2] [data-f=amount]', '1000');
+  await p.click('#s3AddAcct'); await typeIn(p, '[data-row=acct3] [data-f=name]', 'Savings'); await typeIn(p, '[data-row=acct3] [data-f=amount]', '50000');
   await p.selectOption('#s3PayDay', '10'); await typeIn(p, '#s3PayName', 'Main job'); await typeIn(p, '#s3PayAmt', '180000');
   await p.click('#a3SetupSave'); await w(700);
   await typeRate(p, '150.25');
-  await total(p, '24 Nov', 436250, 'Dollar account $1,000 at 1 USD = 150.25 JPY from 24 Nov, typed by you: ¥150,250');
+  await total(p, '24 Nov', 486250, 'Dollar account $1,000 at 1 USD = 150.25 JPY from 24 Nov, typed by you: ¥150,250');
   await go(p, '2026-12-01');
   const bad = await move(p, 150000, null);
   ck('nothing typed for what arrived is refused with words', /arrived/.test(bad), bad);
@@ -63,17 +66,32 @@ async function move(p, a, arrived) {
   await tab(p, 'home');
   const banks2 = await p.evaluate(() => { const o = {}; for (const c of document.querySelectorAll('#a3Home [data-card=bank]')) o[c.querySelector('h2').textContent.replace(/^[^:]*:\s*/, '')] = c.querySelector('[data-fig=bank]').textContent.replace(/[⁠\s]+/g, ''); return o; });
   ck('1 Dec: Main bank ¥136,000 and the Dollar account $1,990.00', banks2['Main bank'] === '¥136,000' && banks2['Dollar account'] === '$1,990', JSON.stringify(banks2 || banks));
-  ck('1 Dec: safe to spend 136,000 (the dollars never count)', (await figOf(p, '#a3Home [data-fig=safe]')) === 136000);
-  await total(p, '1 Dec after the conversion', 437515, 'Dollar account $1,990 at 1 USD = 151.52 JPY from 1 Dec, from your own conversion: ¥301,515');
+  ck('1 Dec: safe to spend 136,000 + 50,000 (Savings); the dollars never count', (await figOf(p, '#a3Home [data-fig=safe]')) === 186000);
+  await total(p, '1 Dec after the conversion', 487515, 'Dollar account $1,990 at 1 USD = 151.52 JPY from 1 Dec, from your own conversion: ¥301,515');
   await p.reload(); await w(500);
-  await total(p, '1 Dec after a reload', 437515, 'Dollar account $1,990 at 1 USD = 151.52 JPY from 1 Dec, from your own conversion: ¥301,515');
+  await total(p, '1 Dec after a reload', 487515, 'Dollar account $1,990 at 1 USD = 151.52 JPY from 1 Dec, from your own conversion: ¥301,515');
   await tab(p, 'receipts');
   const rows = await p.$$eval('#rcList [data-rc]', rs => rs.map(r => r.textContent.replace(/\s+/g, ' ')));
   ck('Receipts lists the move to the Dollar account', rows.some(r => /Moved to Dollar account/.test(r)), rows.join(' | '));
   await go(p, '2026-11-30');
-  await total(p, '30 Nov (the typed rate of 24 Nov)', 436250, 'Dollar account $1,000 at 1 USD = 150.25 JPY from 24 Nov, typed by you: ¥150,250');
+  await total(p, '30 Nov (the typed rate of 24 Nov)', 486250, 'Dollar account $1,000 at 1 USD = 150.25 JPY from 24 Nov, typed by you: ¥150,250');
   await go(p, '2026-12-02'); await typeRate(p, '152', '2026-12-02');
-  await total(p, '2 Dec after typing 152', 438480, 'Dollar account $1,990 at 1 USD = 152.00 JPY from 2 Dec, typed by you: ¥302,480');
+  await total(p, '2 Dec after typing 152', 488480, 'Dollar account $1,990 at 1 USD = 152.00 JPY from 2 Dec, typed by you: ¥302,480');
+  /* [second review, F2] the move edited to Savings (one currency): what arrived in dollars is taken away, so Savings
+     gets the ¥150,000: 50,000 + 150,000 = 200,000; the Dollar account is $1,000 again; Total 136,000 + 200,000 +
+     100,000 x 152 / 100 = 488,000 */
+  await tab(p, 'receipts');
+  await p.click('#rcList [data-k=transfer] button'); await w(300);
+  await selByText(p, '#rcTo', 'Savings'); await w(150);
+  const hid = await p.$eval('#rcForm [data-q=arrived]', e => e.hidden).catch(() => null);
+  ck('editing the move to Savings hides What arrived', hid === true, hid);
+  await p.click('#rcSave'); await w(450);
+  const e2 = await txt(p, '#rcErr');
+  ck('the edit is kept', !e2 || e2 === '(none)', e2);
+  await tab(p, 'home');
+  const b3 = await p.evaluate(() => { const o = {}; for (const c of document.querySelectorAll('#a3Home [data-card=bank]')) o[c.querySelector('h2').textContent.replace(/^[^:]*:\s*/, '')] = c.querySelector('[data-fig=bank]').textContent.replace(/[⁠\s]+/g, ''); return o; });
+  ck('after the edit: Savings ¥200,000, Main bank ¥136,000, the Dollar account $1,000', b3['Savings'] === '¥200,000' && b3['Main bank'] === '¥136,000' && b3['Dollar account'] === '$1,000', JSON.stringify(b3));
+  await total(p, '2 Dec after the edit', 488000, 'Dollar account $1,000 at 1 USD = 152.00 JPY from 2 Dec, typed by you: ¥152,000');
   await c.close();
   const secs = Math.round((Date.now() - t0) / 1000);
   ck(`the walk took ${secs} s (limit 180)`, secs < 180);

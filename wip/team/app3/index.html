@@ -1893,6 +1893,10 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
   // too, worked out from the event each time as an exact ratio: 1 <what left> is a2 x 10^(its exponent) / (a x 10^(the
   // other's)) <what arrived>, dated by the event, `src: 'convert'`. `shown` is the rate in the asked direction, rounded
   // for display only (units.shownRate).
+  // [second review, F3] a saved rate must be a decimal string above zero ('150.25'); any other is skipped by rateOn
+  // and listed by badRates ({ id, rate }), never thrown
+  const goodRate = r => typeof r.rate === 'string' && /^\d+(\.\d+)?$/.test(r.rate) && /[1-9]/.test(r.rate);
+  const badRates = book => ((book && book.rates) || []).filter(r => live(r) && !goodRate(r)).map(r => ({ id: r.id, rate: r.rate }));
   function rateOn(book, cur, to, day) {
     const U = typeof module === 'object' && module.exports ? require('./units.js') : root.BurrowEngine.units;
     const pair = r => live(r) && typeof r.from === 'string' && r.from <= day && ((r.cur === cur && r.to === to) || (r.cur === to && r.to === cur));
@@ -1904,7 +1908,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
         return { id: e.id, from: e.date, at: e.at, cur: x, to: y, src: 'convert',
           rate: (BigInt(e.a2) * 10n ** BigInt(U.decimals(x))) + '/' + (BigInt(e.a) * 10n ** BigInt(U.decimals(y))) }; });
     const when = r => { const k = Date.parse(r.at); return isNaN(k) ? -8.64e15 : k; };   // `at` as a moment, its offset read
-    const list = ((book && book.rates) || []).concat(fromEvents).filter(pair).sort((p, q) => (p.from !== q.from ? (p.from < q.from ? -1 : 1)
+    const list = ((book && book.rates) || []).filter(goodRate).concat(fromEvents).filter(pair).sort((p, q) => (p.from !== q.from ? (p.from < q.from ? -1 : 1)
       : when(p) !== when(q) ? when(p) - when(q) : s(p.id) < s(q.id) ? -1 : s(p.id) > s(q.id) ? 1 : 0));
     const r = list.pop();
     return r ? { id: r.id, from: r.from, rate: r.rate, inverse: r.cur !== cur, src: r.src || 'typed', shown: U.shownRate(r.rate, r.cur !== cur) } : null;
@@ -2044,7 +2048,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     return { ok: p.total === p.have && !bad.length, total: p.total, have: p.have, cards: bad };
   }
 
-  const api = { TYPES, TWO, owed, yours, live, fieldValue, homeOn, rateOn, ctx, accountMoves, apply, sums, placesOf, proof };
+  const api = { TYPES, TWO, owed, yours, live, fieldValue, homeOn, rateOn, badRates, ctx, accountMoves, apply, sums, placesOf, proof };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else (root.BurrowEngine = root.BurrowEngine || {}).ledger = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
@@ -3204,7 +3208,14 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
         }
       }
       if (from < today && srcs.length) {
-        const left = Math.max(0, stretch - (banks[id] ? banks[id].loggedOut : 0));
+        // [second review, F1] less only what was logged against these lines or Free to spend since that check, on any
+        // account in this currency (a card too), refunds given back to them added again: never a bill paid, a transfer
+        // or a card payment
+        const mine = new Set(srcs.map(x => x.src.id));
+        const lineOf = e => (e.line ? e.line : e.k === 'spend' && freeSrc && !e.settles.length && !e.place && !isFeeRecord(e) ? 'free' : null);
+        const logged = live().filter(e => e.day > from && e.day <= today && e.account && acct[e.account] && cur(e.account) === cur(id) && mine.has(lineOf(e)))
+          .reduce((t, e) => t + (e.k === 'spend' && !isFeeRecord(e) ? e.a : e.k === 'in' && e.sub === 'refund' ? -e.a : 0), 0);
+        const left = Math.max(0, stretch - logged);
         list.push({ land: today, amount: left, label: `Your plan since your last check (${short(from + 1)} to today), less what you logged` });
       }
       return list;
@@ -3219,7 +3230,8 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
     // zero), and a transfer in counts what its account moved, from that account's own runway walk (its pay left out,
     // its own transfers in not counted, so two accounts never lean on each other). `runway === 'noIn'` is that walk.
     const movedBy = {};
-    const movedFrom = src => (movedBy[src] = movedBy[src] || (banks[src] ? walk(src, today + LATER_ON_DAYS, 0, false, 'noIn').moved : null));
+    // [second review, watch] an account that is not walked (a card, a loan) holds no money of the person's: nothing moves
+    const movedFrom = src => (movedBy[src] = movedBy[src] || (banks[src] ? walk(src, today + LATER_ON_DAYS, 0, false, 'noIn').moved : {}));
     function walk(id, end, minimum, real, runway) {
       const start = banks[id].bank;
       const why = [{ label: acct[id].name + ' today', amount: start }];
@@ -3244,7 +3256,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
         }
         if (o.kind === 'transfer' && o.to === id && o.land >= today && o.land <= end && runway !== 'noIn') {
           const full = o.amount2 != null ? o.amount2 : o.amount, mv = runway ? movedFrom(o.acct) : null;
-          const got = !mv || mv[o.id] == null ? full : mv[o.id] === o.amount ? full : Math.floor(mv[o.id] * full / o.amount);
+          const m = !mv ? o.amount : mv[o.id] || 0, got = m === o.amount ? full : Math.floor(m * full / o.amount);
           steps.push({ day: o.land, order: 0, amount: got, label: o.name + ' in ' + short(o.land) });
         }
       }
@@ -3425,7 +3437,9 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
       }
       const hasPlan = ids.some(id => lineSrcs.some(l => moneyAcct(lineAcct(l)) === id) || (freeSrc && moneyAcct(lineAcct(freeSrc)) === id));
       const first = ids.slice().sort((x, y) => (per[x].day === per[y].day ? 0 : per[x].day === null ? 1 : per[y].day === null ? -1 : per[x].day < per[y].day ? -1 : 1))[0];
-      res.runway = !hasPlan || !first ? null : Object.assign({ account: first, several: ids.length > 1 }, per[first], { accounts: per });
+      // [second review, watch] accounts in another currency are left out (never converted here), and named
+      const leftOut = Object.keys(res.accounts).filter(id => res.accounts[id].currency !== home && acct[id] && SPEND_TYPES[acct[id].type]).sort((x, y) => idCmp({ id: x }, { id: y }));
+      res.runway = !hasPlan || !first ? null : Object.assign({ account: first, several: ids.length > 1 }, per[first], { accounts: per, leftOut });
     }
 
     // ----- due before next pay [F7, F13, F21, F23, H8, W2] -----
@@ -3519,7 +3533,7 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
         parts.push({ account: id, currency: a.currency, amount: a.bank, converted: U.convert(a.bank, a.currency, home, rt.rate, rt.inverse),
           rate: rt.rate, inverse: rt.inverse, shown: rt.shown, rateFrom: rt.from, src: rt.src, old: today - dayNum(rt.from) > 30 });
       }
-      res.total.inHome = { amount: parts.reduce((t, x) => t + x.converted, homeTotal), parts, missing };
+      res.total.inHome = { amount: parts.reduce((t, x) => t + x.converted, homeTotal), parts, missing, bad: L.badRates(book) };
     }
 
     // ----- the check-in list [A1, A2, S6, U2, W2, X3] -----
@@ -8988,7 +9002,7 @@ function runwayWords3(r, yr) {
   const span = x.more ? 'a year or more' : x.weeks === 0 ? 'less than a week' : `about ${x.weeks} ${x.weeks === 1 ? 'week' : 'weeks'}`;
   const keep = x.minimum ? ', keeping your minimum' : '';
   /* [qc-foundation on S1, fix 2] the account is named, never "your money", until accounts are added together */
-  const who = x.several ? ', the first of your accounts to run out' : '';
+  const who = `${x.several ? ', the first of your accounts to run out' : ''}${(x.leftOut || []).length ? '. Money in other currencies is left out' : ''}`;   // [second review, watch]
   const head = `<div class="a3-head"><p class="a3-sub" data-fig="runway" data-weeks="${esc3(x.more ? 'more' : x.weeks)}" data-day="${esc3(x.day || '')}" data-acct="${esc3(x.account)}">If no more pay came, ${esc3(E3.nameOf(x.account))} lasts ${esc3(span)}${esc3(keep)}${esc3(who)}</p>${HELP3.button('runway')}</div>${HELP3.text('runway')}`;
   if (x.more) return head;
   /* "would", never "goes below zero": that is said only of the real walk (BM2, e3_warnwords J) */
@@ -9009,9 +9023,11 @@ function totalWords3(r, yr) {
     return `<li data-fig="totalpart" data-acct="${esc3(t.account)}">${esc3(E3.nameOf(t.account))} ${money3(t.amount, t.currency)} at ${esc3(pair)} from ${esc3(day3(t.rateFrom, yr))}, ${esc3(by[t.src] || by.typed)}${t.old ? ', over 30 days old' : ''}: ${fig3('total.inHome.parts.*.converted', t.converted, home)}</li>`;
   }).join('');
   const missing = x.missing.map(m => `<p class="a3-warn" data-fig="totalmissing" data-acct="${esc3(m.account)}">${esc3(E3.nameOf(m.account))} ${money3(m.amount, m.currency)} is not counted: no rate yet. Type one in Settings, Rates</p>`).join('');
+  /* [second review, F3] a saved rate the engine could not read is named, never used */
+  const bad = (x.bad || []).map(b => `<p class="a3-warn" data-fig="totalbadrate">A saved rate (${esc3(String(b.rate))}) is not a number with a point, so it is not used. Type it again in Settings, Rates</p>`).join('');
   return `<section class="a3-card" data-card="total"><h2>${esc3(label3('total'))}, about, in ${esc3(home)}</h2>
     <p class="a3-big" data-fig="totalhome">${fig3('total.inHome.amount', x.amount, home)}</p>
-    ${parts ? `<ul class="a3-rows a3-sub">${parts}</ul>` : ''}${missing}</section>`;
+    ${parts ? `<ul class="a3-rows a3-sub">${parts}</ul>` : ''}${missing}${bad}</section>`;
 }
 /* ---------- Check your bank (WIRING_PLAN 1.1 item 3, step 9) ----------
    Lists every expected item since the last check (res.checkIn.toConfirm), ticked, with its amount editable; asks what
@@ -9318,7 +9334,8 @@ function rcDraft3() {
 /* the edit's fields from a draft: a moved record names its accounts acct and acct2 */
 function rcFields3(x) {
   const f = { date: x.date, a: x.a, note: x.note };
-  if (RC3.mode === 'moved') return Object.assign(f, { acct: x.from, acct2: x.to }, x.a2 != null ? { a2: x.a2 } : {});
+  /* [second review, F2] one currency: a2 null takes away what arrived in another, so the To account gets `a` */
+  if (RC3.mode === 'moved') return Object.assign(f, { acct: x.from, acct2: x.to, a2: x.a2 != null ? x.a2 : null });
   f.acct = x.acct;
   if (RC3.mode === 'in') return f;
   if (x.place) f.place = x.place; else if (x.line) f.line = x.line; else { f.line = null; f.place = null; }

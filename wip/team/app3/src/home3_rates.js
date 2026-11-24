@@ -12,7 +12,9 @@ function totalWords3(r, yr) {
     return `<li data-fig="totalpart" data-acct="${esc3(t.account)}">${esc3(E3.nameOf(t.account))} ${money3(t.amount, t.currency)} at ${esc3(pair)} from ${esc3(day3(t.rateFrom, yr))}, ${esc3(by[t.src] || by.typed)}${t.old ? ', over 30 days old' : ''}: ${fig3('total.inHome.parts.*.converted', t.converted, home)}</li>`;
   }).join('');
   const missing = x.missing.map(m => `<p class="a3-warn" data-fig="totalmissing" data-acct="${esc3(m.account)}">${esc3(E3.nameOf(m.account))} ${money3(m.amount, m.currency)} is not counted: no rate yet. Type one in Settings, Rates</p>`).join('');
+  /* [second review, F3] a saved rate the engine could not read is named, never used */
+  const bad = (x.bad || []).map(b => `<p class="a3-warn" data-fig="totalbadrate">A saved rate (${esc3(String(b.rate))}) is not a number with a point, so it is not used. Type it again in Settings, Rates</p>`).join('');
   return `<section class="a3-card" data-card="total"><h2>${esc3(label3('total'))}, about, in ${esc3(home)}</h2>
     <p class="a3-big" data-fig="totalhome">${fig3('total.inHome.amount', x.amount, home)}</p>
-    ${parts ? `<ul class="a3-rows a3-sub">${parts}</ul>` : ''}${missing}</section>`;
+    ${parts ? `<ul class="a3-rows a3-sub">${parts}</ul>` : ''}${missing}${bad}</section>`;
 }

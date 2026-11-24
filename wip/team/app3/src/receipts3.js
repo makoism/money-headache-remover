@@ -145,7 +145,8 @@ function rcDraft3() {
 /* the edit's fields from a draft: a moved record names its accounts acct and acct2 */
 function rcFields3(x) {
   const f = { date: x.date, a: x.a, note: x.note };
-  if (RC3.mode === 'moved') return Object.assign(f, { acct: x.from, acct2: x.to }, x.a2 != null ? { a2: x.a2 } : {});
+  /* [second review, F2] one currency: a2 null takes away what arrived in another, so the To account gets `a` */
+  if (RC3.mode === 'moved') return Object.assign(f, { acct: x.from, acct2: x.to, a2: x.a2 != null ? x.a2 : null });
   f.acct = x.acct;
   if (RC3.mode === 'in') return f;
   if (x.place) f.place = x.place; else if (x.line) f.line = x.line; else { f.line = null; f.place = null; }

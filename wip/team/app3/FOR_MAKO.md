@@ -137,4 +137,5 @@ One help piece serves every "?", so changing a line there changes it everywhere.
 - Settings, a new "Rates" card: "1 USD is how many JPY", a From day (today by default), "Keep this rate", and the rates typed, latest first. Nothing is fetched from the internet.
 - Safe to spend still never counts money in another currency (that is a later slice, S9).
 - (S6) Receipts, Moved between a yen and a dollar account also asks "What arrived in Dollar account, in USD". That move is then the rate, "from your own conversion", shown rounded (151.52) and used exactly; a rate typed later takes over, and on the same day the one entered last wins. A typed 152 shows as 152.00.
+- (second review) The runway line adds ". Money in other currencies is left out" when you hold any. A saved rate that cannot be read is named on Home's Total card and not used. Editing a move so it goes between two accounts in one currency takes away what arrived in the other currency.
 - Question: should a rate also be typed the other way ("1 JPY is 0.0066 USD")? The engine reads either; the screen asks one way only.
