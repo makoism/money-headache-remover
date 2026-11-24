@@ -131,7 +131,8 @@ const idbText = p => p.evaluate(async () => {
     await p.click('#a3AskGo'); await T.w(400);
     ck('cleared: Ask shows the box again', await hasBox(p));
     ck('the word went nowhere but the relay\'s invite field', sent.every(s => Object.keys(s).filter(k => JSON.stringify(s[k]).includes(GOOD)).every(k => k === 'invite')));
-    ck('no page errors', errs.length === 0, errs.join(' | '));
+    const errs1 = errs.filter(e => !/status of 401 \(Unauthorized\)/.test(e));   // the browser's own line for the relay's 401, not a page error
+    ck('no page errors (the browser\'s line for the 401 aside)', errs1.length === 0, errs1.join(' | '));
     await p.setViewport({ width: 320, height: 700, isMobile: true, hasTouch: true }); await T.w(200);
     ck('no sideways scroll at 320 with the box', await p.evaluate(() => document.documentElement.scrollWidth <= 320));
     await T.shot(p, 'invite_box');

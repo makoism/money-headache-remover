@@ -152,3 +152,4 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
 .a3-rows li.a3-hashelp > .a3-rcrow { flex: 1 1 100%; }
 .a3-helprow { flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .a3-helprow .burrow-help-text { flex: 1 1 100%; margin: 0; }
+.a3-word { margin-bottom: 14px; }   /* the code word box above the question or the files (stmt3_ai.js) */

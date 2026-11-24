@@ -57,6 +57,26 @@ const STMT3_AI = (() => {
     if (!r.ok) throw new Error('the AI did not answer (' + r.status + ')');
     return r.json();
   }
+  /* the box for the code word, put in `slot` (Ask and Add statements); `bad` says why it shows again. On Keep the word
+     is kept on this device and onKept() runs. */
+  function wordBox(slot, bad, onKept) {
+    if (!slot) return;
+    slot.innerHTML = `<div class="a3-field a3-word" id="a3Word"><label for="a3WordIn">Code word for the AI (ask the owner)</label>
+      <input class="a3-in a3-text" id="a3WordIn" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="a3WordH">
+      <p class="a3-sub" id="a3WordH">Kept on this device only, and sent only to this page's own server.</p>
+      <p class="a3-err" id="a3WordErr" role="alert"></p>
+      <div class="a3-actions"><button type="button" class="a3-btn" id="a3WordKeep">Keep it</button></div></div>`;
+    const err = slot.querySelector('#a3WordErr'), say = t => { err.textContent = t || ''; err.hidden = !t; };
+    say(bad);
+    const keep = () => {
+      const v = slot.querySelector('#a3WordIn').value.trim();
+      if (!v) { say('Type the code word first'); slot.querySelector('#a3WordIn').focus(); return; }
+      setWord(v); slot.innerHTML = '';
+      if (onKept) onKept();
+    };
+    slot.querySelector('#a3WordKeep').addEventListener('click', keep);
+    slot.querySelector('#a3WordIn').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); keep(); } });
+  }
   /* which way the AI can be reached from this copy: { how: 'relay' | 'claude', fn } or { how: null, why } */
   async function connect() {
     if (route && route.how) return route;
@@ -104,5 +124,5 @@ const STMT3_AI = (() => {
     const raw = r.how === 'relay' ? await viaRelay(r.base, prompt, file, text) : await viaClaude(r.fn, prompt, file, text);
     return STMT3R.cleanRead(raw, file.name, today);
   }
-  return { connect, readFile, post, needWord, word, setWord, WORD_BAD, reset: () => { route = null; healthGot = null; } };
+  return { connect, readFile, post, needWord, word, setWord, wordBox, WORD_BAD, reset: () => { route = null; healthGot = null; } };
 })();
