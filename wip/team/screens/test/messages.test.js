@@ -108,4 +108,37 @@ test('every change is told to the band, so the band is the only place a message 
   assert.deepStrictEqual(seen, ['Saved', null]);
 });
 
+
+test('cover(kind, mark) holds back the messages posted up to the mark; uncovered in time they show again [K37]', () => {
+  const { c, q } = make();
+  let ran = 0;
+  q.post({ kind: 'notice', text: 'Saved to the cloud' });
+  q.post({ kind: 'undo', text: 'Bill ended', action: { label: 'Undo', run: () => { ran++; } } });
+  const id = q.post({ kind: 'undo', text: 'Spend logged', action: { label: 'Undo', run: () => { ran++; } } });
+  assert.strictEqual(shown(q), 'Spend logged');
+  q.cover('undo', q.mark());
+  assert.strictEqual(shown(q), 'Saved to the cloud');
+  assert.strictEqual(ran, 0);
+  /* an Undo made after the mark (inside the sheet) shows */
+  const inside = q.post({ kind: 'undo', text: 'Row removed', action: { label: 'Undo', run: () => { ran++; } } });
+  assert.strictEqual(shown(q), 'Row removed');
+  q.dismiss(inside);
+  c.tick(2000);
+  q.cover('undo', null);
+  assert.strictEqual(shown(q), 'Spend logged');
+  assert.strictEqual(q.act(id), true);
+  assert.strictEqual(ran, 1);
+  assert.throws(() => q.cover('everything', 1), /kind/);
+});
+
+test('a covered message that runs out of time is never shown late [K37]', () => {
+  const { c, q } = make();
+  q.post({ kind: 'undo', text: 'Spend logged', action: { label: 'Undo', run: () => {} } });
+  q.cover('undo', q.mark());
+  assert.strictEqual(shown(q), null);
+  c.tick(msgs.LIFE.undo);
+  q.cover('undo', null);
+  assert.strictEqual(shown(q), null);
+});
+
 run('messages.js');

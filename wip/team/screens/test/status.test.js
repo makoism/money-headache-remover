@@ -173,6 +173,11 @@ test('warnings are worded here from the engine\'s data, never its text: "below z
   const iso = /\d{4}-\d{2}/;
   const zero = status.warningText({ account: 'bank', code: 'below_minimum', day: '2027-01-05', amount: 1000, short: 1000, minimum: null, text: 'engine 2027-01-05' }, ctx);
   assert.strictEqual(zero, 'Checking goes $10 below zero on 5 Jan');
+  /* [M47, K29] the bank itself below zero today (the engine's own bank figure): said as it is, no amount beside the figure */
+  const now = status.warningText({ account: 'bank', code: 'below_minimum', day: '2027-01-05', amount: 1000, minimum: null }, Object.assign({ accounts: { bank: { bank: -1000, currency: 'USD' } } }, ctx));
+  assert.strictEqual(now, 'Checking is below zero today. Everything here counts from what it shows');
+  const above = status.warningText({ account: 'bank', code: 'below_minimum', day: '2027-01-05', amount: 1000, minimum: null }, Object.assign({ accounts: { bank: { bank: 4000, currency: 'USD' } } }, ctx));
+  assert.strictEqual(above, 'Checking goes $10 below zero on 5 Jan');
   const min = status.warningText({ account: 'bank', code: 'below_minimum', day: '2027-01-05', amount: 1000, short: 1000, minimum: 5000, text: 'x' }, ctx);
   assert.strictEqual(min, 'Checking goes $10 below its minimum of $50 on 5 Jan');
   const later = status.laterText({ account: 'bank', day: '2027-02-01', balance: -2500, amount: 2500, minimum: null, text: 'Later on: Checking goes below zero in 2027-02' }, ctx);

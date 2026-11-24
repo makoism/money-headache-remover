@@ -4551,6 +4551,7 @@ html:has(.a3-setup-open) { scroll-padding-top: 150px; }
     'next.set_free': W('Set Free to spend'),
     /* the engine's warnings, worded here from their data (account, amount, day, minimum or none), never its text */
     'warn.below_zero': W('{account} goes {amount} below zero on {day}'),
+    'warn.below_zero_now': W('{account} is below zero today. Everything here counts from what it shows'),   // [M47, K29] the bank itself is under: said as it is, in amber, no shame
     'warn.below_minimum': W('{account} goes {amount} below its minimum of {minimum} on {day}'),
     'warn.later_on': W('Later on: {account} goes below zero in {month}'),
     'warn.later_low_zero': W('Later on: {account} goes {amount} below zero on {day}'),
@@ -4674,7 +4675,9 @@ html:has(.a3-setup-open) { scroll-padding-top: 150px; }
     const currency = (accounts[w.account] || {}).currency || ctx.currency;
     if (w.code === 'below_minimum') {
       const minimum = minimumOf(w, accounts), amount = w.amount != null ? w.amount : w.short;
-      return fill(minimum ? 'warn.below_minimum' : 'warn.below_zero', { account: w.account, amount, minimum, day: w.day, currency }, ctx);
+      /* [M47, K29] the bank figure itself is below zero (the engine's own figure for it, nothing worked out here) */
+      const under = !minimum && (accounts[w.account] || {}).bank < 0;
+      return fill(minimum ? 'warn.below_minimum' : under ? 'warn.below_zero_now' : 'warn.below_zero', { account: w.account, amount, minimum, day: w.day, currency }, ctx);
     }
     if (w.code === 'set_aside_over') return fill('warn.set_aside_over', { who: whoOf(w), account: w.account, amount: w.amount, day: w.day, currency }, ctx);
     if (w.code === 'check_again') return fill('warn.check_again', { account: w.account, day: w.day }, ctx);
@@ -4952,7 +4955,8 @@ html:has(.a3-setup-open) { scroll-padding-top: 150px; }
     let items = [], seq = 0, timer = null, last;
 
     const better = (a, b) => (KINDS[a.kind] !== KINDS[b.kind] ? KINDS[a.kind] > KINDS[b.kind] : a.seq > b.seq);
-    function current() { let best = null; for (const x of items) if (!best || better(x, best)) best = x; return best; }
+    const hidden = x => covered[x.kind] != null && x.seq <= covered[x.kind];
+    function current() { let best = null; for (const x of items) if (!hidden(x) && (!best || better(x, best))) best = x; return best; }
     function purge() { const t = now(); items = items.filter(x => x.expiresAt === null || x.expiresAt > t); }
     function changed() {
       purge();
@@ -4983,6 +4987,17 @@ html:has(.a3-setup-open) { scroll-padding-top: 150px; }
       return item.id;
     }
     function dismiss(id) { items = items.filter(x => x.id !== id); changed(); }
+    /* [K37] a sheet opened after an Undo bar never has that bar over it: cover(kind, mark) holds back every message of
+       that kind posted up to the mark (mark() gives the newest message's place in line) while the sheet is open, and
+       cover(kind, null) lets them show again if their time is not up. Their time keeps running, nothing is lost or
+       run, and a message posted after the mark (an Undo made inside the sheet) shows as always */
+    const covered = {};
+    function cover(kind, upTo) {
+      if (!(kind in KINDS)) throw new Error('messages: kind must be undo, toast or notice, got ' + JSON.stringify(kind));
+      if (upTo == null) delete covered[kind]; else covered[kind] = upTo;
+      changed();
+    }
+    const mark = () => seq;
     function act(id) {
       const x = items.find(i => i.id === id);
       if (!x) return false;
@@ -4993,7 +5008,7 @@ html:has(.a3-setup-open) { scroll-padding-top: 150px; }
     function waiting() { purge(); return items.length ? items.length - 1 : 0; }   // not money: a count
     function view() { purge(); const c = current(); return c ? { id: c.id, kind: c.kind, text: c.text, action: c.action ? c.action.label : null } : null; }
     function onChange(f) { listeners.push(f); }
-    return { post, dismiss, act, waiting, current: view, onChange };
+    return { post, dismiss, cover, mark, act, waiting, current: view, onChange };
   }
 
   /* ---- the band, in a page ---- */
@@ -7765,6 +7780,9 @@ function screen3(draw) {
 }
 /* a typed amount as whole minor units, or null (never rounded; a minus is refused) */
 function typed3(text, cur) { const r = SM.parse(text, cur); return r.ok ? r.minor : null; }
+/* [M47, K29] what a bank shows today can be below zero: the one box where a minus is read (a bank only, never a card,
+   a pay or a bill), as whole minor units or null */
+function typedBank3(text, cur) { const r = SM.parse(text, cur, { allowMinus: true }); return r.ok ? r.minor : null; }
 /* '2026-12-10' as '10 Dec', with the year when it is not the shown day's year */
 const day3 = (s, thisYear) => (s ? SN.dayLabel(s, !!thisYear && s.slice(0, 4) !== thisYear) : '');
 const label3 = (key, ctx) => SN.label(key, ctx);
@@ -8924,7 +8942,7 @@ function openCheck3() {
   sheet.hidden = false; $('#a3Home').hidden = true; scrollTo(0, 0);
   /* one input behaviour (screens/inputs.js): the first tap selects, so typing replaces; read through money.js when left */
   sheet.querySelectorAll('[data-amt]').forEach(el => { const o = list.find(x => x.item === el.dataset.amt); BurrowScreens.inputs.bind(el, { kind: 'amount', code: E3.curOf(o.account) }); });
-  sheet.querySelectorAll('[data-bankfig]').forEach(el => BurrowScreens.inputs.bind(el, { kind: 'amount', code: E3.curOf(el.dataset.bankfig), optional: true }));
+  sheet.querySelectorAll('[data-bankfig]').forEach(el => BurrowScreens.inputs.bind(el, { kind: 'amount', code: E3.curOf(el.dataset.bankfig), optional: true, allowMinus: true }));   // [M47] a bank can be below zero
   sheet.querySelectorAll('[data-cardfig]').forEach(el => BurrowScreens.inputs.bind(el, { kind: 'amount', code: E3.curOf(el.dataset.cardfig), optional: true }));
   sheet.querySelectorAll('input, select').forEach(el => { el.addEventListener('input', checkPreview3); el.addEventListener('change', checkPreview3); });
   sheet.querySelectorAll('[data-gapyes]').forEach(el => el.addEventListener('click', () => { check3.sure[el.dataset.gapyes] = true; checkPreview3(); }));
@@ -8939,7 +8957,7 @@ function closeCheck3() { $('#a3Check').hidden = true; $('#a3Home').hidden = fals
 function readCheck3(strict) {
   const sheet = $('#a3Check'), figures = {}, bad = (text, el) => ({ bad: text, el });
   for (const el of sheet.querySelectorAll("[data-bankfig]")) {
-    const id = el.dataset.bankfig, v = typed3(el.value, E3.curOf(id));
+    const id = el.dataset.bankfig, v = typedBank3(el.value, E3.curOf(id));
     if (v === null) { if (strict) return bad(`Type what ${E3.nameOf(id)} shows today, as an amount`, el); continue; }
     figures[id] = v;
   }
@@ -9970,10 +9988,17 @@ async function openSetup3() {
   const me = setup3, draft = await E3.rec('setup');
   if (setup3 === me && draft && (draft.sections || draft.typed)) { restoreDraft3(draft); $('#a3SetupBack').hidden = false; $('#s3Bank').focus(); }
 }
+/* [M47, K29] the boxes that ask what a bank shows today: the main bank's, and another account's while its kind is a
+   bank. A bank can be below zero, so these read a minus; cash, an e-wallet, a pay, a card and a bill never do */
+function bankBox3(el) {
+  if (el.id === 's3Bank') return true;
+  const row = el.closest('[data-row^=acct]'), type = row && el.dataset.f === 'amount' ? row.querySelector('[data-f=type]') : null;
+  return !!type && type.value === 'bank';
+}
 /* one input behaviour (screens/inputs.js) in the chosen currency */
 /* [item 14] a box that can't be read says why next to it when it is left; a blank one is asked for only on Save */
 function bindMoney3(el) {
-  BurrowScreens.inputs.bind(el, { kind: 'amount', get code() { return $('#s3Cur').value; }, optional: el.hasAttribute('data-optional'),
+  BurrowScreens.inputs.bind(el, { kind: 'amount', get code() { return $('#s3Cur').value; }, optional: el.hasAttribute('data-optional'), get allowMinus() { return bankBox3(el); },
     onError: r => { if (r.reason !== 'empty') fieldErr3(el, r.message); }, onValue: () => clearErr3(el) });
 }
 /* [item 14] a box's own error line, right after it and read with it; it goes as soon as the box is changed, and the
@@ -10008,7 +10033,7 @@ function answers3(strict, sec) {
   const cur = $('#s3Cur').value;
   const asks = el => strict && (!sec || sec.contains(el));
   const ask = (el, words) => { fieldErr3(el, words); el.focus(); throw new Error('asked'); };
-  const need = (el, words) => { const v = typed3(el.value, cur); if (v !== null) return v; if (!asks(el)) return 0; return ask(el, words); };
+  const need = (el, words) => { const v = bankBox3(el) ? typedBank3(el.value, cur) : typed3(el.value, cur); if (v !== null) return v; if (!asks(el)) return 0; return ask(el, words); };
   const text = (el, dflt) => (el.value || '').trim() || dflt;
   const bankName = text($('#s3BankName'), 'Main bank');
   const min = $('#s3Min').value.trim() ? need($('#s3Min'), 'Type the amount to keep at least, or leave it blank') : null;
@@ -11989,6 +12014,120 @@ function rem3Save() {
 document.addEventListener('click', e => { if (e.target.closest && e.target.closest('#a3RemGo')) openRem3(); });
 document.addEventListener('click', e => { if (REM3.open && e.target.closest && e.target.closest('#a3SetGo, #a3AskGo')) closeRem3(); }, true);   // another sheet over Reminders: Reminders closes first
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && REM3.open) closeRem3(); });
+/* ---------- back3: the one piece that knows which sheet or form is open (SORTED K34, K35, K37) ----------
+   No sheet's own file is touched: this watches the page (which sheet is shown, whether a Plan form or a receipt being
+   changed is drawn) and does three things from that one list.
+   1. The phone's back button [K34]: each open layer holds one history entry. Back closes the layer on top (a
+      statement's later step goes back one step) and the app stays. A layer closed by its own button takes its entry
+      with it, so back never does nothing. Back on a tab with nothing open leaves the app, as before.
+   2. What was typed is kept [K35]: a layer closed with something typed in it shows it again the next time the same
+      one opens, until anything is saved, or it is closed again untouched. Setup keeps its own draft (setup3.js);
+      Settings (codes) and statements (files) are never kept.
+   3. One message at a time [K37]: an Undo bar from before never sits over a layer opened after it. It is held back
+      while the layer shows and comes back when the layer closes, if its time is not up.
+   A new sheet needs a row in LAYERS (tests/e3_back.js counts the page's sheets against its own list).
+   No money here: `held` and `skip` are lists of markers, so nothing is counted with sums. */
+const BACK3 = (() => {
+  const shownEl = sel => { const el = $(sel); return el && !el.closest('[hidden]') ? el : null; };
+  const sheet = (key, sel, close, keep) => ({ key, root: () => shownEl(sel), close, keep });
+  /* the layer on top first */
+  const LAYERS = [
+    sheet('ask', '#a3Ask', () => closeAsk3(), true),
+    sheet('rem', '#a3Rem', () => closeRem3()),
+    sheet('set', '#a3Set', () => closeSet3()),
+    sheet('stmt', '#a3Stmt', () => { const b = $('#a3StmtBack'); if (b) b.click(); else stmt3Close(); }),
+    sheet('setup', '#a3Setup', () => closeSetup3()),
+    sheet('check', '#a3Check', () => closeCheck3(), true),
+    sheet('plan-form', '#a3Plan [data-card=plan-form]', () => plClose3(), true),
+    { key: 'rc-edit', root: () => (shownEl('#rcCancel') ? $('#rcForm') : null), close: () => $('#rcCancel').click() },
+  ];
+  const open = () => LAYERS.filter(l => l.root());
+  const held = [], skip = [];
+  let was = [];
+  /* ---- what was typed, by layer ---- */
+  const nameOf = el => el.id || [...el.attributes].filter(a => a.name.startsWith('data-') && a.name !== 'data-input' && a.name !== 'data-error').map(a => `${a.name}=${a.value}`).join(';');
+  const fields = root => [...root.querySelectorAll('input, select, textarea')].filter(el => el.type !== 'password' && el.type !== 'file' && nameOf(el));
+  /* which form this is: the layer, the shown day, its heading and its boxes (Add a bill never gets Add a goal's typing) */
+  const sigOf = l => { const root = l.root(), h = root.querySelector('h1, h2'); return [l.key, E3.today(), h ? h.textContent : ''].concat(fields(root).map(nameOf)).join('|'); };
+  const snap = root => fields(root).map(el => [nameOf(el), el.type === 'checkbox' ? el.checked : el.value]);
+  let now = {}, kept = {}, putting = false;
+  function typedIn(e) {
+    if (putting || !e.target || !e.target.closest) return;
+    const l = open().find(x => x.keep && x.root().contains(e.target));
+    if (l) now[l.key] = { sig: sigOf(l), vals: snap(l.root()) };
+  }
+  function putBack(l) {
+    const sig = sigOf(l), vals = kept[sig]; delete kept[sig];
+    if (!vals) return;
+    putting = true;
+    try {
+      const els = fields(l.root());
+      for (const [name, v] of vals) {
+        const el = els.find(x => nameOf(x) === name); if (!el) continue;
+        if (el.type === 'checkbox') { if (el.checked !== v) { el.checked = v; el.dispatchEvent(new Event('change', { bubbles: true })); } }
+        else if (el.value !== v) { el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); }
+      }
+    } finally { putting = false; }
+  }
+  const forget = () => { now = {}; kept = {}; };
+  /* ---- the page changed: which layers opened, which closed, and the history entries to match ---- */
+  /* a layer that shows again as it was drawn (Ask was over it, or its tab was left and come back to) was only covered:
+     it still holds its typing. One drawn anew gets what was typed in the one before it */
+  const drawn = new WeakMap();
+  const domOf = l => { const r = l.root(); return r.classList.contains('a3-sheet') ? r.firstElementChild || r : r; };
+  function sync() {
+    const on = open(), keys = on.map(l => l.key);
+    const fresh = on.filter(l => !was.includes(l.key));
+    was = keys;
+    /* [K37] an Undo bar from before a layer opened is held back while that layer shows (each layer remembers the
+       newest message at the moment it was drawn; the latest of the open layers' marks is the cover). An Undo made
+       inside a layer shows there, and the held one shows again when the layer closes, if its time is not up */
+    for (const l of on) { const d = domOf(l); if (!drawn.has(d)) drawn.set(d, { mark: MSG3.mark(), isNew: true }); }
+    let top = null;
+    for (const l of on) { const m = drawn.get(domOf(l)).mark; if (top === null || m > top) top = m; }
+    MSG3.cover('undo', top);
+    for (const l of fresh) {
+      const d = drawn.get(domOf(l));
+      if (!d.isNew) continue;
+      d.isNew = false;
+      if (!l.keep) continue;
+      if (now[l.key]) { kept[now[l.key].sig] = now[l.key].vals; delete now[l.key]; }   // kept by form: Add a goal never drops Add a bill's typing
+      putBack(l);
+    }
+    entries();
+  }
+  /* one history entry per open layer. Stepping back off a closed layer's entry takes a moment (the browser does it
+     after this code ends), so nothing is pushed until it has landed: a sheet swapped for another (Ask over Reminders)
+     would else have its new entry stepped off instead */
+  let late = null;
+  function entries() {
+    if (skip.length) return;
+    const n = open().length;
+    while (held.length < n) { held.push(1); try { history.pushState({ a3: held.length }, ''); } catch (e) { held.pop(); return; } }
+    if (held.length > n) { held.pop(); skip.push(1); history.back(); late = setTimeout(() => { skip.length = 0; entries(); }, 1500); }
+  }
+  addEventListener('popstate', e => {
+    if (skip.length) { skip.pop(); clearTimeout(late); entries(); return; }
+    /* forward into the entry of a layer that is gone: step back off it */
+    if (e.state && e.state.a3 > held.length) { skip.push(1); history.back(); return; }
+    held.pop();
+    const top = open()[0];
+    if (top) { try { top.close(); } catch (err) { /* the layer's own fault: it stays, and so does the app */ } }
+    sync();
+  });
+  function start() {
+    /* a reload with a layer open leaves its entries behind: they are taken as held, and sync steps back off them */
+    const n = history.state && history.state.a3;
+    if (Number.isInteger(n) && n > 0 && n < 20) for (const x of Array(n).fill(1)) held.push(x);
+    document.addEventListener('input', typedIn, true);
+    document.addEventListener('change', typedIn, true);
+    if (typeof ACT3 === 'object' && ACT3) ACT3.onChange(forget);
+    new MutationObserver(sync).observe($('#a3'), { subtree: true, childList: true, attributes: true, attributeFilter: ['hidden'] });
+    sync();
+  }
+  return { start, open: () => open().map(l => l.key), forget };
+})();
+BACK3.start();
 })();
 </script>
 </body>

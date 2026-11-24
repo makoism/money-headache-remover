@@ -28,7 +28,8 @@
     let items = [], seq = 0, timer = null, last;
 
     const better = (a, b) => (KINDS[a.kind] !== KINDS[b.kind] ? KINDS[a.kind] > KINDS[b.kind] : a.seq > b.seq);
-    function current() { let best = null; for (const x of items) if (!best || better(x, best)) best = x; return best; }
+    const hidden = x => covered[x.kind] != null && x.seq <= covered[x.kind];
+    function current() { let best = null; for (const x of items) if (!hidden(x) && (!best || better(x, best))) best = x; return best; }
     function purge() { const t = now(); items = items.filter(x => x.expiresAt === null || x.expiresAt > t); }
     function changed() {
       purge();
@@ -59,6 +60,17 @@
       return item.id;
     }
     function dismiss(id) { items = items.filter(x => x.id !== id); changed(); }
+    /* [K37] a sheet opened after an Undo bar never has that bar over it: cover(kind, mark) holds back every message of
+       that kind posted up to the mark (mark() gives the newest message's place in line) while the sheet is open, and
+       cover(kind, null) lets them show again if their time is not up. Their time keeps running, nothing is lost or
+       run, and a message posted after the mark (an Undo made inside the sheet) shows as always */
+    const covered = {};
+    function cover(kind, upTo) {
+      if (!(kind in KINDS)) throw new Error('messages: kind must be undo, toast or notice, got ' + JSON.stringify(kind));
+      if (upTo == null) delete covered[kind]; else covered[kind] = upTo;
+      changed();
+    }
+    const mark = () => seq;
     function act(id) {
       const x = items.find(i => i.id === id);
       if (!x) return false;
@@ -69,7 +81,7 @@
     function waiting() { purge(); return items.length ? items.length - 1 : 0; }   // not money: a count
     function view() { purge(); const c = current(); return c ? { id: c.id, kind: c.kind, text: c.text, action: c.action ? c.action.label : null } : null; }
     function onChange(f) { listeners.push(f); }
-    return { post, dismiss, act, waiting, current: view, onChange };
+    return { post, dismiss, cover, mark, act, waiting, current: view, onChange };
   }
 
   /* ---- the band, in a page ---- */
