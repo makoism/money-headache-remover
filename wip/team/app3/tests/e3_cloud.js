@@ -105,6 +105,7 @@ const until = async (f, ms) => { for (let i = 0; i < (ms || 8000) / 100; i++) { 
     await A.p.click('#a3CloudOff'); await T.w(100);
     const words = await A.p.$eval('[data-cloud=offask]', e => e.textContent);
     ck('turning off says what is lost each way', /stays for your other devices/.test(words) && /opens nothing/.test(words) && /backup file/.test(words));
+    ck('it says another device that still has it on stops sending, and says so', /Another device that still has it on stops sending, and says so/.test(words) && !/sends it up again/.test(words), words);
     await A.p.click('#a3CloudDel');
     ck('the cloud copy is deleted and A is off', await until(async () => vault.rows.size === 0 && /^Off\./.test(await state(A.p))));
     ck('A\'s money stays', (await stored(A.p)).schedules.find(x => x.id === sid).name === 'Main job (desk)');
