@@ -92,6 +92,8 @@ page|tests/e3_life_b.js|e3_life_b: ALL PASS||600|life B, the 15th and the last d
 page|tests/e3_walk.js|e3_walk: ALL PASS||600|the real-page walk, walk 4 run A: setup 24 Nov to 15 Feb, hand-worked figures at every step
 page|tests/e3_walk.js|e3_walk: ALL PASS|TZ=Asia/Tokyo WALK_CLOCK=04:40|600|the walk again in Tokyo at 04:40 (every figure the same after a reload at each check-in)
 page|tests/e3_walk.js|e3_walk: ALL PASS|TZ=Asia/Tokyo WALK_CLOCK=23:30|600|the walk again in Tokyo at 23:30 (every figure the same after a reload at each check-in)
+page|tests/e3_walk_cardgap.js|e3_walk_cardgap: ALL PASS||600|the real-page walk, the card gap step (CARDGAP): Mako's month across the pay on the 10th with the cards checked each week, safe to spend and the bank hand-worked at every step
+page|tests/e3_walk_cardgap.js|e3_walk_cardgap: ALL PASS|TZ=Asia/Tokyo|600|the card gap walk again in Tokyo
 alone|tests/guard3.js|guard3: ALL PASS||300|guard (idle CPU, long tasks, outside requests, errors)
 page|tests/offline.js|offline: ALL PASS||300|offline load
 page|tests/e3_install.js|e3_install: ALL PASS||300|installed to the home screen (M33): the manifest beside the page, its icons, start_url in the page's own folder, kept by the worker, Chrome's installability check
