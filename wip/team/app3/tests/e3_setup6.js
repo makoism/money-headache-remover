@@ -100,7 +100,7 @@ const shown = (p, s) => p.$eval(s, e => !e.closest('[hidden]')).catch(() => fals
     ck('once a year: its month is asked', await shown(p, '[data-row=bill1] [data-f=month]'));
     await sel(p, '[data-row=bill1] [data-f=month]', '03'); await sel(p, '[data-row=bill1] [data-f=day]', '1');
     await p.click('#a3SetupSave'); await T.w(400);
-    ck('Sam: the day of one pay is asked before saving', (await p.$eval('#a3SetupErr', e => e.textContent)) === 'Type the day of one pay, the last one or the next one' && !(await p.$eval('#a3Setup', e => e.hidden)));
+    ck('Sam: the day of one pay is asked before saving', (await p.$eval('[data-err-for=s3PayStart]', e => e.textContent).catch(() => '')) === 'Type the day of one pay, the last one or the next one' && !(await p.$eval('#a3Setup', e => e.hidden)));
     await p.$eval('#s3PayStart', e => { e.value = '2026-12-04'; e.dispatchEvent(new Event('change', { bubbles: true })); });
     await p.click('#a3SetupSave'); await T.w(700);
     ck('Sam: saved', await p.$eval('#a3Setup', e => e.hidden), await p.$eval('#a3SetupErr', e => e.textContent).catch(() => ''));

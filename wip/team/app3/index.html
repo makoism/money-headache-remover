@@ -9812,7 +9812,7 @@ const ROW3 = {
 /* adds a row of that kind (a new key, or the key given to put one back); gives the row */
 function addRow3(kind, key) {
   let k = key;
-  if (!k) { setup3.n[kind]++; k = kind + setup3.n[kind]; }
+  if (!k) { setup3.n[kind]++; k = `${kind}${setup3.n[kind]}`; }
   const n = Number(k.slice(kind.length));
   if (n > setup3.n[kind]) setup3.n[kind] = n;
   $(ROWS_IN3[kind]).insertAdjacentHTML('beforeend', ROW3[kind](k));
@@ -9881,7 +9881,7 @@ function openSetup3() {
   </div>`;
   host.hidden = false; $('#a3Home').hidden = true; scrollTo(0, 0);
   host.querySelectorAll('[data-money]').forEach(el => bindMoney3(el));
-  host.addEventListener('input', () => { $('#a3SetupErr').textContent = ''; });
+  host.addEventListener('input', e => { $('#a3SetupErr').textContent = ''; clearErr3(e.target); });
   $('#s3AddPay').addEventListener('click', () => addRow3('pay'));
   $('#s3AddCard').addEventListener('click', () => addRow3('card'));
   $('#s3AddBill').addEventListener('click', () => addRow3('bill'));
@@ -9899,13 +9899,42 @@ function openSetup3() {
   $('#s3Bank').focus();
 }
 /* one input behaviour (screens/inputs.js) in the chosen currency */
-function bindMoney3(el) { BurrowScreens.inputs.bind(el, { kind: 'amount', get code() { return $('#s3Cur').value; }, optional: el.hasAttribute('data-optional') }); }
+/* [item 14] a box that can't be read says why next to it when it is left; a blank one is asked for only on Save */
+function bindMoney3(el) {
+  BurrowScreens.inputs.bind(el, { kind: 'amount', get code() { return $('#s3Cur').value; }, optional: el.hasAttribute('data-optional'),
+    onError: r => { if (r.reason !== 'empty') fieldErr3(el, r.message); }, onValue: () => clearErr3(el) });
+}
+/* [item 14] a box's own error line, right after it and read with it; it goes as soon as the box is changed, and the
+   person can always leave the box, go Back or change any other answer: nothing is locked */
+function fieldErr3(el, words) {
+  let p = $(`#a3Setup [data-err-for="${el.id}"]`);
+  if (!p) {
+    p = document.createElement('p'); p.className = 'a3-err'; p.id = el.id + '-err'; p.dataset.errFor = el.id; p.setAttribute('role', 'alert');
+    el.insertAdjacentElement('afterend', p);
+  }
+  p.textContent = words;
+  el.setAttribute('aria-invalid', 'true');
+  const d = (el.getAttribute('aria-describedby') || '').split(' ').filter(Boolean);
+  if (!d.includes(p.id)) el.setAttribute('aria-describedby', d.concat(p.id).join(' '));
+}
+function clearErr3(el) {
+  if (!el || !el.id) return;
+  const p = $(`#a3Setup [data-err-for="${el.id}"]`);
+  if (!p) return;
+  p.textContent = '';
+  el.removeAttribute('aria-invalid');
+  const d = (el.getAttribute('aria-describedby') || '').split(' ').filter(x => x && x !== p.id);
+  if (d.length) el.setAttribute('aria-describedby', d.join(' ')); else el.removeAttribute('aria-describedby');
+}
 function closeSetup3() { $('#a3Setup').hidden = true; $('#a3Setup').innerHTML = ''; setup3 = null; $('#a3Home').hidden = false; renderHome3(); }
-/* the answers as build_book takes them. strict: a missing amount is asked for (throws 'asked'); else it counts as 0,
-   for a draft book that only says which bills were due since the last pay */
-function answers3(strict) {
-  const err = $('#a3SetupErr'), cur = $('#s3Cur').value;
-  const need = (el, words) => { const v = typed3(el.value, cur); if (v !== null) return v; if (!strict) return 0; err.textContent = words; el.focus(); throw new Error('asked'); };
+/* the answers as build_book takes them. strict: a missing amount is asked for next to its box, which is focused
+   (throws 'asked'); else it counts as 0, for a draft book that only says which bills were due since the last pay.
+   sec (a setup section): only the boxes in it are asked for; the others count as 0 */
+function answers3(strict, sec) {
+  const cur = $('#s3Cur').value;
+  const asks = el => strict && (!sec || sec.contains(el));
+  const ask = (el, words) => { fieldErr3(el, words); el.focus(); throw new Error('asked'); };
+  const need = (el, words) => { const v = typed3(el.value, cur); if (v !== null) return v; if (!asks(el)) return 0; return ask(el, words); };
   const text = (el, dflt) => (el.value || '').trim() || dflt;
   const bankName = text($('#s3BankName'), 'Main bank');
   const min = $('#s3Min').value.trim() ? need($('#s3Min'), 'Type the amount to keep at least, or leave it blank') : null;
@@ -9933,7 +9962,7 @@ function answers3(strict) {
     if (ev === 'days') return { every: 'month', days: d === d2 ? [d] : [d, d2] };
     if (ev === 'none') return { every: 'none' };
     const start = startBox.value;
-    if (!start && strict) { err.textContent = 'Type the day of one pay, the last one or the next one'; startBox.focus(); throw new Error('asked'); }
+    if (!start && asks(startBox)) ask(startBox, 'Type the day of one pay, the last one or the next one');
     return { every: 'weeks', n: Number(ev.slice(5)), start: start || ans.day };
   };
   const rhythm = rhythmOf(every, day, $('#s3PayDay2').value, $('#s3PayStart'));
@@ -9946,7 +9975,7 @@ function answers3(strict) {
     if (r.every === 'none' && !box.value.trim()) { ans.pays.push(Object.assign({ key: row.dataset.row, name, bank, shift: 'none' }, r)); return; }
     /* [BL1] a pay of 0 is refused with build_book's own words; a draft counts a pay not typed yet as some amount */
     const amount = need(box, `Type how much ${name} is`);
-    if (amount === 0 && strict) { err.textContent = BurrowEngine.build.PAY_NEEDS_AMOUNT; box.focus(); throw new Error('asked'); }
+    if (amount === 0 && asks(box)) ask(box, BurrowEngine.build.PAY_NEEDS_AMOUNT);
     ans.pays.push(Object.assign({ key: row.dataset.row, name, bank, amount: amount || 1, shift: r.every === 'none' ? 'none' : shift }, r));
   });
   /* the first pay with a fixed day starts the pay period */

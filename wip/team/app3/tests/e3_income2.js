@@ -30,7 +30,7 @@ async function setup(p, fill) {
       await p.selectOption('[data-row=pay2] [data-f=every]', 'weeks2'); await w(100);
       ck('every 2 weeks: the day of one is asked, no day of the month', await shown(p, '[data-row=pay2] [data-f=start]') && !(await shown(p, '[data-row=pay2] [data-f=day]')) && !(await shown(p, '[data-row=pay2] [data-f=day2]')));
       await p.click('#a3SetupSave'); await w(400);
-      ck('no day of one given: asked before saving', (await L.txt(p, '#a3SetupErr')) === 'Type the day of one pay, the last one or the next one' && !(await p.$eval('#a3Setup', e => e.hidden)));
+      ck('no day of one given: asked before saving', (await L.txt(p, '[data-err-for=s3-pay2-st]')) === 'Type the day of one pay, the last one or the next one' && !(await p.$eval('#a3Setup', e => e.hidden)));
       await p.fill('[data-row=pay2] [data-f=start]', '2026-12-11');
     });
     ck('saved', await p.$eval('#a3Setup', e => e.hidden), await L.txt(p, '#a3SetupErr'));
