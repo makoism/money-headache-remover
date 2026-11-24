@@ -11698,7 +11698,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && ASK3.open)
    The chat state (the panel keeps it in its own IndexedDB store `chat3`: device only, never in the book, the cloud copy
    or a backup file)
      K.fresh() -> state { v: 1, turns: [], draft: null, fill: null, seq: 0 }
-       turns: [{ id, who: 'person' | 'ai' | 'note' | 'card', text, at, card? }], the last K.KEEP kept
+       turns: [{ id, who: 'person' | 'ai' | 'note' | 'card', text, at, card?, check? }], the last K.KEEP kept;
+         an 'ai' turn's check: [amounts in its words found in none of what it was sent] (the panel marks "Check this")
          a 'note' is the app's own line ("Saved", "That was not changed: ...");
          a 'card' carries card = one of
            { kind: 'change', status: 'done' | 'ask' | 'undone' | 'refused' | 'not now', lines: [words], rows: [{ label,
@@ -12272,7 +12273,12 @@ AFTER SETUP. When the person says they spent, got or moved money, or asks to cha
         return Object.assign(end('error'), { error: e && e.message });
       }
       const r = read(res);
-      if (r.words) addTurn(state, { who: 'ai', text: r.words, at: deps.told() }, shown);
+      if (r.words) {
+        /* [AI_FIRST_PLAN 7] an amount in its words that is in none of what it was given is marked for checking */
+        const given = (JSON.stringify(body.messages) + ' ' + message).normalize('NFKC').replace(/[,，]/g, '');
+        const check = (r.words.normalize('NFKC').match(/\d[\d,]{2,}(?:\.\d+)?/g) || []).filter(a => !new RegExp('(^|[^\\d])' + a.replace(/,/g, '').replace('.', '\\.') + '(?![\\d])').test(given));
+        addTurn(state, Object.assign({ who: 'ai', text: r.words, at: deps.told() }, check.length ? { check } : {}), shown);
+      }
       if (!r.calls.length) return end('words');
       const results = [];
       for (const c of r.calls) {
