@@ -53,7 +53,8 @@ async function walk(p, where, root) {
       if (how === 'Tab') {
         await p.click(sel); await p.keyboard.down('Shift'); await p.keyboard.press('Tab'); await p.keyboard.up('Shift'); await p.keyboard.press('Tab');
       } else await p[how](sel);
-      await T.w(30);
+      await T.w(30);   // then up to 2 s more for the focus to land when other tests load the machine (still checked below)
+      await p.waitForFunction(s => document.activeElement === document.querySelector(s), { timeout: 2000 }, sel).catch(() => {});
       const on = await p.$eval(sel, e => document.activeElement === e);
       await p.keyboard.type(DIGITS);
       const v = await p.$eval(sel, e => e.value);

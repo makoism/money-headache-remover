@@ -23,6 +23,7 @@ const sel = (p, s, v) => p.select(s, v);
 async function fresh(day) {
   const o = await T.open({ profile: require('fs').mkdtempSync(require('os').tmpdir() + '/a3setup6-') });
   await o.p.goto(T.URL0 + '?today=' + day); await T.w(400);
+  await o.p.waitForSelector('#a3SetupGo', { timeout: 10000 });   // under load the first screen can take longer than 400 ms
   await o.p.click('#a3SetupGo'); await T.w(300);
   return o;
 }
