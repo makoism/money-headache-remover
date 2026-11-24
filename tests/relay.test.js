@@ -65,10 +65,11 @@ const msg = (text, extra) => Object.assign({ v: 1, anon, tier: 'quick', messages
   r = await post('/api/ai', { v: 1, anon, messages: [{ role: 'user', content: 'x'.repeat(270000) }] }); j = await r.json(); ok(r.status === 400 && /text/i.test(j.error.message), 'too much text refused');
   r = await post('/api/ai', { v: 1, anon, messages: [{ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: 'image/bmp', data: 'AAAA' } }] }] }); ok(r.status === 400, 'bad image type refused');
   r = await fetch(BASE + '/api/ai', { method: 'OPTIONS' }); ok(r.status === 204 && r.headers.get('access-control-allow-origin') === '*', 'preflight answers');
-  // per-browser daily cap (USER_DAILY_CALLS=50 in the dev command): burn through it
-  const a2 = 'capanon_' + Math.random().toString(36).slice(2, 10); let last = 0, hit = 0;
-  for (let i = 0; i < 60; i++) { r = await post('/api/ai', { v: 1, anon: a2, tier: 'quick', messages: [{ role: 'user', content: 'n' + i }] }); last = r.status; if (r.status === 429) { hit = i; break; } }
-  ok(last === 429 && hit >= 50 && hit <= 52, `daily cap stops the browser after ${hit} calls (expected about 50)`);
+  // per-device daily cap (USER_DAILY_CALLS=50 in the dev command): burn through it. The count follows the page's device id
+  // (else the IP), never anon, so a fresh device id starts at zero (tests/relay_server covers the keys in full)
+  const dev2 = Array.from({ length: 32 }, () => '0123456789abcdef'[Math.floor(Math.random() * 16)]).join(''); let last = 0, hit = 0;
+  for (let i = 0; i < 60; i++) { r = await post('/api/ai', { v: 1, anon: 'capanon_' + i + 'x'.repeat(4), device: dev2, tier: 'quick', messages: [{ role: 'user', content: 'n' + i }] }); last = r.status; if (r.status === 429) { hit = i; break; } }
+  ok(last === 429 && hit >= 50 && hit <= 52, `daily cap stops the device after ${hit} calls (expected about 50)`);
 
   // ---- vault ----
   const id = 'ab'.repeat(16), tok = 'cd'.repeat(16), H = { 'x-vault-token': tok, 'content-type': 'application/json' };
