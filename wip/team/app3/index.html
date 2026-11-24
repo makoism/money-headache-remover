@@ -10808,14 +10808,18 @@ async function replaceBook3(next, why) {
 /* setup calls this once it has saved the first book [D7] */
 function afterSetup3() { return typeof BurrowPersist === 'object' ? BurrowPersist.afterSetup() : Promise.resolve(null); }
 
+/* the Money card's words, in one place: drawn when the sheet opens and again when the book changes under it [S23] */
+function setMoney3() {
+  const cur = E3.book ? E3.home() : null;
+  return `<h2>Money</h2>
+      <p class="a3-next">${cur ? `Amounts are shown in <b data-set="cur">${esc3(cur)}</b>.` : 'The currency is chosen in setup.'}</p>
+      ${cur ? '<p class="a3-sub">It stays the same once money is written down.</p>' : ''}`;
+}
 function openSet3() {
   if (SET3.open) return;
   SET3.open = true; SET3.restore = null;
   const sheet = $('#a3Set'), tryBook = E3.mode === 'try';
-  const cur = E3.book ? E3.home() : null;
-  const money = `<div class="a3-card" data-card="money"><h2>Money</h2>
-      <p class="a3-next">${cur ? `Amounts are shown in <b data-set="cur">${esc3(cur)}</b>.` : 'The currency is chosen in setup.'}</p>
-      ${cur ? '<p class="a3-sub">It stays the same once money is written down.</p>' : ''}</div>`;
+  const money = `<div class="a3-card" data-card="money">${setMoney3()}</div>`;
   const tryNote = `<p class="a3-later" data-set="trynote">Made-up numbers: nothing here is saved, backed up or sent.</p>`;
   const device = `<div class="a3-card" data-card="device"><h2>This device</h2>
       <p class="a3-next" id="a3Space">Checking what this device keeps.</p>
@@ -10862,6 +10866,7 @@ function closeSet3() {
   SET3.open = false; SET3.restore = null;
   $('#a3Set').hidden = true; $('#a3Set').innerHTML = '';
   (SET3.was || []).forEach(([el, h]) => { el.hidden = h; }); SET3.was = null;
+  if (SET3.stale) { SET3.stale = false; redrawTabs3(); }
   const b = $('#a3SetGo'); if (b) b.focus();
 }
 /* the first screen's "I already use the burrow on another device": Settings, with the cloud code box open and the
@@ -10953,6 +10958,20 @@ async function paintKept3() {
     paintKept3();
   });
 }
+/* [C9, S23] the book was replaced or joined while Settings was open (a restore, Put it back, the cloud copy): the sheet's
+   own Money card and Save button are drawn again at once, and Receipts and Plan are drawn again when the sheet closes
+   (they are hidden under it, and a hidden panel does not draw). Home is drawn by whoever replaced the book. */
+function redrawTabs3() {
+  if (typeof renderRc3 === 'function' && E3.book) { try { const k = rcKeep3(); renderRc3(); rcPut3(k); } catch (e) { /* Receipts draws itself on its next tap */ } }
+  if (typeof renderPlan3 === 'function') { try { renderPlan3(); } catch (e) { /* the plan lane's own */ } }
+}
+E3.onSaved(() => {
+  if (!SET3.open) return;
+  SET3.stale = true;
+  const m = $('#a3Set [data-card=money]'), save = $('#a3BkSave');
+  if (m) m.innerHTML = setMoney3();
+  if (save) save.disabled = !E3.book;
+});
 /* the header's Settings button and Escape, without touching the start file */
 document.addEventListener('click', e => { if (e.target.closest && e.target.closest('#a3SetGo')) openSet3(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && SET3.open && !SET3.restore) closeSet3(); });
