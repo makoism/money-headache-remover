@@ -9859,6 +9859,7 @@ async function openSetup3() {
     <section class="a3-card" data-sec="bank"><h2>Your bank</h2>
       <div class="a3-field"><label for="s3BankName">Its name</label><input class="a3-in a3-txt" id="s3BankName" placeholder="Main bank" autocomplete="off"></div>
       <div class="a3-field"><label for="s3Bank">What does your bank show today?</label><input class="a3-in" id="s3Bank" data-amount data-money></div>
+      <div class="a3-field" data-q="payToday" hidden><label for="s3PayToday">Your pay lands today. Has today's pay already landed in that figure?</label><select class="a3-in a3-sel" id="s3PayToday"><option value="">Choose</option><option value="yes">Yes, it is in it</option><option value="no">No, not yet</option></select></div>
       <div class="a3-field"><label for="s3Cur">Money in</label><select class="a3-in a3-sel" id="s3Cur"><option value="JPY" selected>Yen</option><option value="USD">US dollars</option><option value="PHP">Philippine pesos</option><option value="EUR">Euros</option></select></div>
       <div class="a3-field"><label for="s3Country">Where you bank</label><select class="a3-in a3-sel" id="s3Country" aria-describedby="s3CountryH">${COUNTRY3.map(([v, t]) => `<option value="${v}"${v === 'JP' ? ' selected' : ''}>${t}</option>`).join('')}</select>
         <p class="a3-sub" id="s3CountryH" data-hint="country">Its weekends and holidays move pay and bills to a working day</p></div>
@@ -10049,7 +10050,21 @@ function answers3(strict, sec) {
     ans.bills.push(Object.assign({ key: row.dataset.row, name, from: acctOf(row.querySelector('[data-f=from]')), amount: need(row.querySelector('[data-f=amount]'), `Type the amount of ${name}`), shift: 'after' }, when,
       q && !q.hidden && row.querySelector('[data-f=takenOut]').value === 'no' ? { takenOut: false } : {}));
   });
+  /* [BV2.13] on a day the pay lands: has it already landed in that figure? asked, never assumed (askTaken3 shows it);
+     last, so every other answer is asked first. Same words and shape as lane/ai-panel */
+  const pt = $('#a3Setup [data-q=payToday]'), ptBox = $('#s3PayToday');
+  ans.payToday = pt && !pt.hidden ? (ptBox.value || (asks(ptBox) ? ask(ptBox, 'Say whether today\'s pay is already in that figure') : null)) : null;
   return ans;
+}
+/* [BV2.13] the fixed pays landing on the setup day, by the engine's own calendar: [{ bank key, occurrence id }] */
+function payToday3(built, ans) {
+  const S = BurrowEngine.schedules, D = BurrowEngine.dates, cal = S.calendar(ans.country || 'XX'), d0 = D.dayNum(ans.day), out = [];
+  for (const p of ans.pays) {
+    if (p.every === 'none') continue;
+    const sch = built.book.schedules.find(x => x.id === built.ids[p.key]);
+    for (const o of S.occurrences(sch, cal, D.addMonths(d0, -1), D.addMonths(d0, 1))) if (o.land === d0) out.push({ bank: p.bank, id: o.id });
+  }
+  return out;
 }
 /* [slice 6] the form follows the answers: the boxes each rhythm needs, and an account choice only when there is more
    than one account of the kind it takes (banks only for a card). Options keep what was picked. */
@@ -10081,8 +10096,13 @@ function shape3() {
    names the bill and its own day: "Did the Rent of 27 Oct leave your bank?" */
 function askTaken3() {
   if (!setup3) return;
-  let asked = {}, stmts = {};
-  try { const d = BurrowEngine.build.buildBook(answers3(false), { newId: BurrowEngine.ids.idMaker('draft0') }); asked = d.asked || {}; stmts = d.askedStatements || {}; } catch (e) { asked = {}; }
+  let asked = {}, stmts = {}, today = false;
+  try {
+    const a = answers3(false), d = BurrowEngine.build.buildBook(a, { newId: BurrowEngine.ids.idMaker('draft0') });
+    asked = d.asked || {}; stmts = d.askedStatements || {}; today = payToday3(d, a).length > 0;
+  } catch (e) { asked = {}; }
+  /* [BV2.13] the pay lands today: is it in the figure typed? */
+  $('#a3Setup [data-q=payToday]').hidden = !today;
   const yr = (E3.today() || '').slice(0, 4);
   /* [BL6] a card set up after its close and before that statement's payment day: how much was on that statement */
   $$('#a3Setup [data-row^=card]').forEach(row => {
@@ -10218,6 +10238,14 @@ async function saveSetup3() {
   try { ans = answers3(true); } catch (e) { if (e.message === 'asked') return; throw e; }
   let built;
   try { built = BurrowEngine.build.buildBook(ans, { newId: E3.newId }); } catch (e) { err.textContent = e.message; return; }
+  /* [BV2.13] a pay landing today that is not in today's figure yet stays to come: named in its account's opening check
+     (the notYet the engine reads, as build_book does for a bill not out yet) */
+  if (ans.payToday === 'no') {
+    for (const x of payToday3(built, ans)) {
+      const check = built.book.events.find(e => e.k === 'check' && e.acct === built.ids[x.bank]);
+      if (check) check.notYet = (check.notYet || []).concat([x.id]);
+    }
+  }
   const ok = await E3.start(built.book);
   if (!ok) { err.textContent = 'This could not be saved on this device. Nothing changed'; return; }
   await E3.rec('setup', null);

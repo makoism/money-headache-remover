@@ -210,5 +210,41 @@ async function openSetup(day) {
     ck('Home shows the bank as checked on 26 Nov, 279,000', (await homeBank(p)) === 279000, await homeBank(p));
     await c.close();
   }
+  /* 6 (BV2.13, M36, M37): set up on pay day. foundation_review/scenarios/notyet_opening.json: Fri 25 Jun 2027, the bank
+     shows 40,000, pay 250,000 on the 25th (the working day before), rent 80,000 on the 27th (Sun: Mon 28 Jun), Free to
+     spend 60,000. Not landed yet: the pay stays to come (the opening check's notYet) and ny-01 says safe to spend is
+     40,000; Home says it includes today's pay, not in the bank yet. Landed: the 40,000 holds the pay, rent leaves 40,000
+     short, safe to spend 0. Not on a pay day: no question. An answer is required. */
+  for (const answer of ['no', 'yes']) {
+    const { c, p } = await openSetup('2027-06-25');
+    await typeIn(p, '#s3Bank', '40000'); await typeIn(p, '#s3PayAmt', '250000'); await p.selectOption('#s3PayDay', '10'); await w(150);
+    ck(answer + ': not a pay day (the 10th): no question about today\'s pay', await p.$eval('[data-q=payToday]', e => e.hidden));
+    await p.selectOption('#s3PayDay', '25'); await w(150);
+    ck(answer + ': on the pay day the question shows, in the bank section', !(await p.$eval('[data-q=payToday]', e => e.hidden)) && !!(await p.$('[data-sec=bank] #s3PayToday'))
+      && (await txt(p, 'label[for=s3PayToday]')) === 'Your pay lands today. Has today\'s pay already landed in that figure?', await txt(p, 'label[for=s3PayToday]'));
+    await p.click('#s3AddBill'); await w(100);
+    await typeIn(p, '[data-row=bill1] [data-f=name]', 'Rent'); await typeIn(p, '[data-row=bill1] [data-f=amount]', '80000'); await p.selectOption('[data-row=bill1] [data-f=day]', '27');
+    await typeIn(p, '#s3Free', '60000');
+    const e0 = await saveSections(p);
+    ck(answer + ': saving without an answer asks it next to the box', e0 === 'Say whether today\'s pay is already in that figure' && (await focused(p)) === 's3PayToday', e0);
+    await p.selectOption('#s3PayToday', answer);
+    const e = await saveSections(p);
+    ck(answer + ': every section saves', e === '', e);
+    await p.click('#a3SetupSave'); await w(700);
+    ck(answer + ': saved', await p.$eval('#a3Setup', e => e.hidden), await txt(p, '#a3SetupErr'));
+    const bk = await L.readBook(p), check = bk.events.find(x => x.k === 'check' && bk.accounts.find(a => a.id === x.acct && a.type === 'bank'));
+    const safe = await p.$eval('#a3Home [data-fig="safe"]', e => Number((e.dataset.amt !== undefined ? e : e.querySelector('[data-amt]')).dataset.amt)).catch(() => null);
+    const home = await txt(p, '#a3Home');
+    if (answer === 'no') {
+      ck('not yet: the opening check names today\'s pay as still to come', (check.notYet || []).length === 1 && /@2027-06-25$/.test(check.notYet[0]), JSON.stringify(check.notYet));
+      ck('not yet: safe to spend 40,000 (ny-01)', safe === 40000, safe);
+      ck('not yet: Home says it includes today\'s pay of ¥250,000, not in your bank yet', /includes today's pay of ¥250,000, not in your bank yet/.test(home), home);
+    } else {
+      ck('landed: nothing named as still to come', !(check.notYet || []).length, JSON.stringify(check.notYet));
+      ck('landed: safe to spend 0 (the pay is inside the 40,000; rent leaves it 40,000 short)', safe === 0, safe);
+      ck('landed: no "not in your bank yet" words', !/not in your bank yet/.test(home), home);
+    }
+    await c.close();
+  }
   await L.finish();
 })().catch(e => { console.log('FAIL crashed ' + e.stack); process.exit(1); });
