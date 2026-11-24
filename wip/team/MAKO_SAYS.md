@@ -121,3 +121,4 @@ How it is kept:
 4. One question at a time "like Typeform" (NS) against a free chat. Built as: the assistant asks one thing at a time.
 5. "The four numbers" (18 Nov) were named for the old model: which four now?
 6. Play money "not tracked in detail" against sending receipts to the assistant. "Everyday spending" has no agreed new word yet.
+7. A restore from a backup removes, on both devices, money that happened after the backup was made (M67 says money that happened always joins up). Built as: the restore screen says so in one line before he confirms, and Put it back or the kept copy brings it back.
