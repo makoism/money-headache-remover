@@ -4473,9 +4473,11 @@ html:has(.a3-setup-open) { scroll-padding-top: 150px; }
      ctx.origin    'typed' or 'sample' (required, from provenance.js): sample numbers are never judged as the person's
      ctx.names     { accountId: 'Main bank' } for the words, optional
      ctx.staleDays a bank figure older than this asks for a check-in (7 until Mako says otherwise)
+     ctx.oldDays   a bank figure older than this leads with "Check your bank", above a pay not in yet (14) [N26]
 
    One state, in this order (the first that is true wins, the rest go in `also` so they can sit under it):
-     sample > empty > short > warning > set_aside > plan_over > question > late > check > zero > no_free > ok
+     sample > empty > short > warning > set_aside > plan_over > question > check (old) > late > check > zero > no_free > ok
+   check (old) [N26]: the last bank check is over ctx.oldDays old, so a pay "not in yet" is only a guess; the check leads
    plan_over [LISTFIX A2]: the real money is fine (no short, no warning) but the plan lines need more than the accounts
    can spare, so nothing is safe to spend; it says so and by how much, never "it turns safe once your pay is in"
    no_free [north star F1]: a pay period with neither Free to spend nor a budget line, so safe to spend leaves nothing
@@ -4489,8 +4491,10 @@ html:has(.a3-setup-open) { scroll-padding-top: 150px; }
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (money, names) {
   'use strict';
 
+  const OLD_DAYS = 14;    // [N26] past this, "Check your bank" leads, above "Pay not in yet"
   const STALE_DAYS = 7;   // for Mako: how old a bank figure may get before the status asks for a check-in
-  const LEVEL = { sample: 'wait', empty: 'wait', short: 'bad', warning: 'bad', set_aside: 'bad', plan_over: 'bad', question: 'wait', late: 'wait', check: 'wait', zero: 'wait', no_free: 'wait', ok: 'good' };
+  /* [C3, M47] short and under a minimum (or below zero) are 'warn', plain amber: never 'bad', never red */
+  const LEVEL = { sample: 'wait', empty: 'wait', short: 'warn', warning: 'warn', set_aside: 'bad', plan_over: 'bad', question: 'wait', late: 'wait', check: 'wait', zero: 'wait', no_free: 'wait', ok: 'good' };
   /* engine warning codes (lookahead_ref.js): which change the state, which are notes under it */
   const WARNING_STATE = { below_minimum: 'warning', set_aside_over: 'set_aside', check_again: 'question', gain_to_ask: 'question', minimum_other_currency: 'question' };
   const NOTE_ONLY = ['card_other_currency', 'loan_other_currency', 'income_other_currency', 'spend_other_currency', 'reopened'];
@@ -4506,7 +4510,7 @@ html:has(.a3-setup-open) { scroll-padding-top: 150px; }
     'state.plan_over': W('Your plan needs more than you have'),
     'state.question': W('A question for you'),
     'state.late': W('Pay not in yet'),
-    'state.check': W('Time to check in'),
+    'state.check': W('Check your bank'),
     'state.zero': W('Nothing safe to spend yet'),
     'state.no_free': W('Add your everyday spending'),
     'state.ok': W('Fine for now'),
@@ -4603,7 +4607,8 @@ html:has(.a3-setup-open) { scroll-padding-top: 150px; }
     const accounts = r.accounts || {};
     const stp = r.safeToSpend || {};
     const pay = r.daysToNextPay || {};
-    const until = pay.next_pay || null;
+    /* [C8] the pay safe to spend runs to (safeToSpend.until): on pay day that is the pay after today's, never today */
+    const until = stp.until || pay.next_pay || null;
     const warnings = r.warnings || [];
     const below = warnings.filter(w => w.code === 'below_minimum').sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0));
     if (!Object.keys(accounts).length) out.push({ state: 'empty', reason: { code: 'no_figures' }, next: { code: 'check_in' } });
@@ -4627,12 +4632,16 @@ html:has(.a3-setup-open) { scroll-padding-top: 150px; }
        short, no below-zero warning) and no goal holds too much, so the shortfall is the plan's */
     if (stp.shortfall > 0 && !stp.short && !below.length && !warnings.some(w => w.code === 'set_aside_over'))
       out.push({ state: 'plan_over', reason: { code: 'plan_over', amount: stp.shortfall, currency: ctx.currency, day: planShortDay(accounts, ctx.currency) }, next: { code: 'plan_over' }, note: 'plan_over' });
+    /* [N26] the last bank check is old: checking the bank comes before a pay that only looks late */
+    const oldAfter = ctx.oldDays == null ? OLD_DAYS : ctx.oldDays;
+    const veryOld = Object.keys(accounts).some(id => accounts[id].ageDays > oldAfter);
+    if (veryOld) out.push({ state: 'check', reason: { code: 'old_figure', since: stp.oldestInput }, next: { code: 'check_in' }, note: 'old_figure' });
     const paySeen = (r.notSeenYet && r.notSeenYet.items || []).find(i => i.direction === 'in');
     if (pay.late || paySeen) out.push({ state: 'late', reason: { code: 'pay_late', since: pay.late ? pay.next_pay : paySeen.lands }, next: { code: 'check_in_when_it_lands' }, note: 'pay_late' });
     const toConfirm = (r.checkIn && r.checkIn.toConfirm) || [];
     if (toConfirm.length) out.push({ state: 'check', reason: { code: 'to_confirm', count: toConfirm.length, since: r.checkIn.since }, next: { code: 'check_in' }, note: 'to_confirm' });
     const stale = ctx.staleDays == null ? STALE_DAYS : ctx.staleDays;
-    if (Object.keys(accounts).some(id => accounts[id].ageDays > stale)) out.push({ state: 'check', reason: { code: 'old_figure', since: stp.oldestInput }, next: { code: 'check_in' }, note: 'old_figure' });
+    if (!veryOld && Object.keys(accounts).some(id => accounts[id].ageDays > stale)) out.push({ state: 'check', reason: { code: 'old_figure', since: stp.oldestInput }, next: { code: 'check_in' }, note: 'old_figure' });
     if (Object.keys(accounts).length && stp.headline === 0) {
       out.push({ state: 'zero', reason: { code: stp.cappedByFreeToSpend && until ? 'free_used_up' : 'nothing_safe', until }, next: until ? { code: 'wait_for_pay', until } : { code: 'log_money_in' } });
     }
@@ -4730,7 +4739,7 @@ html:has(.a3-setup-open) { scroll-padding-top: 150px; }
     return deepFreeze(s);
   }
 
-  return { statusOf, warningText, laterText, laterLowText, moveText, WORDS, STALE_DAYS };
+  return { statusOf, warningText, laterText, laterLowText, moveText, WORDS, STALE_DAYS, OLD_DAYS };
 });
 /* One input behaviour for every box (DECISIONS_ROUND2 C, sweep2_repeats A11: "$1,212", "TripLisbon"). The first tap or
    click into a box selects what is in it, so what is typed next replaces the old value instead of adding to it. A
@@ -7046,7 +7055,7 @@ const TRY_BOOKS = { mako: {
    "name": "Main job",
    "acct": "k7m2qa-f3n8p1x6wd-1",
    "cur": "JPY",
-   "shift": "after",
+   "shift": "before",
    "rules": [
     {
      "from": null,
@@ -7072,7 +7081,7 @@ const TRY_BOOKS = { mako: {
    "name": "Side job",
    "acct": "k7m2qa-f3n8p1x6wd-1",
    "cur": "JPY",
-   "shift": "after",
+   "shift": "before",
    "rules": [
     {
      "from": null,
@@ -8656,13 +8665,14 @@ function ageWords3(days) {
   return 'checked ' + days + ' days ago';
 }
 /* [QC F4] the line under bank today: its age while it is the check itself; once something is logged after the check,
-   both parts from the engine (the check and its day, what was logged out and in since), so a figure that moved never
-   says "checked today". One way of writing cents for the sentence (money.js formatter). */
+   the parts from the engine (the check and its day, what was logged out and in since), so a figure that moved never
+   says "checked today". [C13, M51] The parts are written as the sum that ends with the big figure above (the engine's
+   bank), in the way Home writes its other sums, so it never reads as two figures for the bank. One way of writing
+   cents for the line (money.js formatter); the signs are written, nothing is worked out here. */
 function bankParts3(a, yr) {
   if (!a.loggedIn && !a.loggedOut) return `${ageWords3(a.ageDays)}, on ${esc3(day3(a.asOf, yr))}`;
-  const f = fmt3(a.currency, [a.checked, a.loggedOut, a.loggedIn]);
-  const moved = [a.loggedOut ? `${f(a.loggedOut)} out` : '', a.loggedIn ? `${f(a.loggedIn)} in` : ''].filter(Boolean).join(' and ');
-  return `${f(a.checked)} checked ${esc3(day3(a.asOf, yr))}, ${moved} logged since`;
+  const f = fmt3(a.currency, [a.checked, a.loggedOut, a.loggedIn, a.bank]);
+  return esc3(`${f(a.checked)} (checked ${day3(a.asOf, yr)})${a.loggedOut ? ` ${SM.MINUS} ${f(a.loggedOut)} (out, logged since)` : ''}${a.loggedIn ? ` + ${f(a.loggedIn)} (in, logged since)` : ''} = ${f(a.bank)}`);
 }
 function dueWords3(n) {
   if (n === 0) return 'today';
@@ -8705,18 +8715,21 @@ function nextPay3(r) {
 /* [NORTH_STAR, BK1, BK3] what each bank holds after its cards are paid: the engine's dated figure (res.bankAfterCards),
    with what is in it (a pay), what is not (a late pay), goals kept in it, close days not sure, and a dip before its day;
    said once, in the cards box, never as safe to spend */
-function afterCards3(r, yr) {
+function afterCards3(r, yr, today) {
   const m = r.bankAfterCards || {};
   const days = list => esc3(SN.dayList(list, list.some(d => d.slice(0, 4) !== yr)));
+  /* [C10] a card day that is today is written "today": an overdue payment is taken today (BK1), whatever day it was due */
+  const paid = list => { const rest = list.filter(d => d !== today); return rest.length === list.length ? `on ${days(list)}` : `today${rest.length ? ` and on ${days(rest)}` : ''}`; };
   return Object.keys(m).map(id => {
     const x = m[id], f = fmt3(x.currency, [x.amount].concat(x.setAside.map(g => g.amount), x.dip ? [x.dip.amount] : []));
     const notIn = [...new Set(x.paysNotCounted.map(p => p.due))];
-    const notes = [x.pays.length ? `Your pay on ${days(x.pays)} is in it` : '', notIn.length ? `The pay due ${days(notIn)} is not counted, it has not come in` : '',
+    const lateCards = x.cardDays.includes(today) && x.cards.some(c => ((r.cards[c] || {}).overdue || []).length);
+    const notes = [lateCards ? 'The overdue card payments are counted as going out today' : '', x.pays.length ? `Your pay on ${days(x.pays)} is in it` : '', notIn.length ? `The pay due ${days(notIn)} is not counted, it has not come in` : '',
       /* [LISTFIX B4] whole sentences: what the figure assumes for the cards, and that bills due by then are taken off */
       x.ifAllTaken ? 'It counts everything on the cards now, as their close days are not sure' : '', x.billsTaken ? 'Bills due by then are taken off' : '', ...x.setAside.map(g => `${esc3(f(g.amount))} of it is set aside for ${esc3(g.name)}`),
       'This is the bank, not safe to spend'].filter(Boolean).join('. ');
     const dip = x.dip ? `<br><span class="a3-late" data-fig="aftercards-dip">Before then it goes ${esc3(f(x.dip.amount))} below zero on ${esc3(day3(x.dip.day, yr))}</span>` : '';
-    return `<li data-fig="aftercards" data-acct="${esc3(id)}" data-day="${esc3(x.day)}"><span>${esc3(label3('bankAfterCards'))} on ${days(x.cardDays)}: ${esc3(E3.nameOf(id))}<br><span class="when">${notes}</span>${dip}</span><span class="amt">${fig3('bankAfterCards.*.amount', x.amount, x.currency)}</span></li>`;
+    return `<li data-fig="aftercards" data-acct="${esc3(id)}" data-day="${esc3(x.day)}"><span>${esc3(label3('bankAfterCards'))} ${paid(x.cardDays)}: ${esc3(E3.nameOf(id))}<br><span class="when">${notes}</span>${dip}</span><span class="amt">${fig3('bankAfterCards.*.amount', x.amount, x.currency)}</span></li>`;
   }).join('');
 }
 /* money coming in (a pay) or going out, by the schedule an item belongs to (a lookup) */
@@ -8735,7 +8748,8 @@ function safeUntil3(r, yr, home) {
      words with the engine's own amount for it */
   const np = r.daysToNextPay || {}, notIn = np.days === 0 && !r.safeToSpend.notCounting && ((r.checkIn || {}).toConfirm || []).find(o => o.item === np.item);
   const notInWords = notIn ? `, includes today's pay of ${esc3(money3(notIn.amount, home))}, not in your bank yet` : '';
-  if (n.days === 0 && r.safeToSpend.until) return ` until next pay on ${esc3(day3(r.safeToSpend.until, yr))}${r.safeToSpend.notCounting ? ', not counting today\'s pay (not in at your check today)' : ''}${notInWords}`;
+  /* [C8, M51] "next pay" on this screen is today's pay (the period card), so this one is named "the pay after today's" */
+  if (n.days === 0 && r.safeToSpend.until) return ` until the pay after today's, on ${esc3(day3(r.safeToSpend.until, yr))}${r.safeToSpend.notCounting ? ', not counting today\'s pay (not in at your check today)' : ''}${notInWords}`;
   return ` until next pay on ${d}${notInWords}`;
 }
 /* [LISTFIX B2, I4, BP2] right after setup, Free to spend counts only its share for the days left in the period, and it
@@ -8808,13 +8822,26 @@ function drawHome3() {
     /* [LISTFIX B3] the step the cap takes off, said as what it is: held back, because Free to spend has only so much left */
     : i > 0 && !all ? Object.assign({}, x, { label: `held back: Free to spend has only ${money3(r.safeToSpend.headline, home)} left this period` }) : x));
   const capLine = r.safeToSpend.whyParts ? `<p class="a3-sum" data-fig="cap">${esc3(sum3(capParts, r.safeToSpend.headline, home))}</p>${freeShare3(r, home)}` : '';
-  const sums = `${ids.filter(id => r.accounts[id].spendFrom).map(id => `<p class="a3-sum" data-fig="why">${esc3(whyWords3(r.accounts[id]))}</p>${todayWords3(r.accounts[id], id)}`).join('')}${capLine}`;
+  /* [C2] when Free to spend left caps the headline, one plain line right under the figure says why it is what it is, with
+     the engine's two figures (what the accounts can spare, whyParts[0], and the headline): cause, then the figure, joined as one thought (VOICE B13) */
+  const capSay = (() => {
+    const s = r.safeToSpend, w = s.whyParts;
+    if (!s.cappedByFreeToSpend || !w || !w.length || !(w[0].amount > 0)) return '';   // nothing to spare: the short line says it
+    const f = fmt3(home, [w[0].amount, s.headline]);
+    const words = s.headline === 0 ? `Your accounts can spare ${f(w[0].amount)}, but your Free to spend is used up this period, so nothing is safe to spend`
+      : `Your accounts can spare ${f(w[0].amount)}, but only ${f(s.headline)} of your Free to spend is left this period, so ${f(s.headline)} is safe to spend`;
+    return `<p class="a3-next" data-fig="capsay">${esc3(words)}</p>`;
+  })();
+  /* [C3] when short, the short line's own sum is the one sum for that account: the same sum is never printed twice */
+  const shortId = r.safeToSpend.short && r.accounts[r.safeToSpend.short.account] && r.accounts[r.safeToSpend.short.account].real ? r.safeToSpend.short.account : null;
+  const sums = `${ids.filter(id => r.accounts[id].spendFrom && id !== shortId).map(id => `<p class="a3-sum" data-fig="why">${esc3(whyWords3(r.accounts[id]))}</p>${todayWords3(r.accounts[id], id)}`).join('')}${capLine}`;
   /* [BL3] short: the sum's own total, before the pay after its lowest point (only when one brings money), and the first
      day the bank goes under beside it */
   const sh = r.safeToSpend.short;
   /* [BM2] the short is the real money's (no goals, no plan lines): its own sum sits under it and ends with the same figure */
   const shA = sh && r.accounts[sh.account] && r.accounts[sh.account].real;
-  const short = sh ? `<p class="a3-warn a3-bad" data-fig="short">${esc3(label3('shortBy'))} ${fig3('safeToSpend.short', sh.amount, home)}${sh.beforePay ? ` before the pay on ${esc3(day3(sh.beforePay, yr))}` : ''}, below ${sh.minimum ? 'your minimum' : 'zero'} from ${esc3(day3(sh.day, yr))}</p>`
+  /* [C3, M47] short is a plain amber line (a3-warn), never red */
+  const short = sh ? `<p class="a3-warn" data-fig="short">${esc3(label3('shortBy'))} ${fig3('safeToSpend.short', sh.amount, home)}${sh.beforePay ? ` before the pay on ${esc3(day3(sh.beforePay, yr))}` : ''}, below ${sh.minimum ? 'your minimum' : 'zero'} from ${esc3(day3(sh.day, yr))}</p>`
     + (shA ? `<p class="a3-sum" data-fig="shortwhy">${esc3(sum3(shA.whyParts, shA.headroom, r.accounts[sh.account].currency))}</p>` : '') : '';
   /* the engine's warnings are data (account, amount, day, minimum or none): worded by screens/status.js, never its text;
      a lower point after the first day under is its own "Later on" line with its own day [B1] */
@@ -8823,7 +8850,7 @@ function drawHome3() {
     + (w.later ? `<p class="a3-warn" data-warn="later_low">${esc3(BurrowScreens.status.laterLowText(w, wctx))}</p>` : '')
     + (BurrowScreens.status.moveText(w, wctx) ? `<p class="a3-next" data-fig="move-from">${esc3(BurrowScreens.status.moveText(w, wctx))}</p>` : '')).join('');
   out.push(`<section class="a3-card" data-card="safe">${helpHead3(`<h2>${esc3(label3('safeToSpend'))}${until}</h2>`, 'safeToSpend')}
-    <p class="a3-big" data-fig="safe">${fig3('safeToSpend.headline', r.safeToSpend.headline, home)}</p>${short}${sums}${lastsWords3(r)}${warns}</section>`);
+    <p class="a3-big" data-fig="safe">${fig3('safeToSpend.headline', r.safeToSpend.headline, home)}</p>${capSay}${short}${sums}${lastsWords3(r)}${warns}</section>`);
   /* the period by its dates, and the next pay */
   const p = r.period;
   const per = p && p.start && p.end ? `<p class="a3-mid" data-fig="period" data-start="${esc3(p.start)}" data-end="${esc3(p.end)}">${esc3(period3(p))}</p>` : '';
@@ -8835,17 +8862,34 @@ function drawHome3() {
   const byAcct = Object.keys(due.byAccount).map(acct => `<p class="a3-acct">From ${esc3(E3.nameOf(acct))}</p><ul class="a3-rows">${rowsHtml3(due.items.filter(o => o.account === acct), E3.curOf(acct), yr, 'dueBeforeNextPay.items')}</ul>`).join('');
   /* [F13] with no fixed pay, "due" is the next 30 days */
   const dueName = label3('dueBeforeNextPay', { noFixedPay: !r.period });
-  out.push(`<section class="a3-card" data-card="due"><h2>${esc3(dueName)}</h2>${due.items.length ? byAcct + `<ul class="a3-rows"><li class="total"><span>Together</span><span class="amt" data-fig="duetotal">${fig3('dueBeforeNextPay.total', due.total, home)}</span></li></ul>` : `<p class="a3-sub">${r.period ? 'Nothing is due before next pay' : 'Nothing is due in the next 30 days'}</p>`}</section>`);
+  /* the late card and loan payments (the engine's overdue lists): listed once, in the overdue card [C10] */
+  const odSeen = new Set([].concat(...[r.cards, r.owed || {}].map(m => [].concat(...Object.keys(m).map(id => (m[id].overdue || []).map(o => o.item))))));
+  /* [C11] bills past their day and not ticked: the sum takes them off today (", late"), so they are listed here too, under
+     their own heading and after "Together" (the engine's total is of what is still to come). Home never says "nothing is
+     due" while the sum takes one off. Late card payments are in the overdue card, so the empty line says "nothing else" */
+  const lateOut = [].concat((r.notSeenYet.items || []).filter(o => o.direction === 'out').map(o => [o, 'notSeenYet.items']), (r.mayStillPost || []).filter(o => !isIncome3(o.item)).map(o => [o, 'mayStillPost']))
+    .filter(([o]) => !odSeen.has(o.item)).sort((a, b) => (a[0].lands < b[0].lands ? -1 : a[0].lands > b[0].lands ? 1 : 0));
+  const lateHtml = lateOut.length ? `<div data-fig="duelate"><p class="a3-acct">Late, not ticked off yet</p><p class="a3-sub">Safe to spend takes these off today</p><ul class="a3-rows">${lateOut.map(([o, path]) => `<li><span>${esc3(E3.occName(o.item))}<br><span class="when">${esc3(day3(o.lands, yr))}, late</span></span><span class="amt">${fig3(path, o.amount, o.currency || home)}</span></li>`).join('')}</ul></div>` : '';
+  const dueNone = lateOut.length ? '' : `<p class="a3-sub">${odSeen.size ? 'Nothing else' : 'Nothing'} is due ${r.period ? 'before next pay' : 'in the next 30 days'}</p>`;
+  out.push(`<section class="a3-card" data-card="due"><h2>${esc3(dueName)}</h2>${due.items.length ? byAcct + `<ul class="a3-rows"><li class="total"><span>Together</span><span class="amt" data-fig="duetotal">${fig3('dueBeforeNextPay.total', due.total, home)}</span></li></ul>` : dueNone}${lateHtml}</section>`);
+  /* overdue card and loan payments: past their day and not ticked, never dropped from the page [F4, H8, BF2] (plan lane).
+     [C10] It sits right above the cards box and is the one place a late payment is listed: the same payment is left out of
+     "May still go through" and "Not seen yet" (its state, late or not seen, is in its words here) */
+  const od = [].concat(...[['cards', r.cards], ['owed', r.owed || {}]].map(([k, m]) => Object.keys(m).map(id => (m[id].overdue || []).map(o =>
+    `<li data-fig="overdue" data-owed="${esc3(id)}" data-state="${esc3(o.state)}"><span>${esc3(E3.nameOf(id))}<br><span class="when">${overdueWords3(o, E3.curOf(id), yr, k + '.*.overdue.*.amount')}</span></span></li>`))));
+  const odItems = [].concat(...[].concat(...od));   // one list of the overdue items (od is per account, then per card)
+  if (odItems.length) out.push(`<section class="a3-card" data-card="overdue"><h2>Card and loan payments overdue</h2><ul class="a3-rows">${odItems.join('')}</ul></section>`);
   /* each card, and the bank after the cards are paid */
   const cardIds = Object.keys(r.cards), land = payLands3(r);
   {
     const rows = cardIds.map(id => {
       const k = r.cards[id], cur = E3.curOf(id), nx = k.next;
       const what = nx && nx.amount && nx.amount !== k.owedNow ? `${fig3('cards.*.next.amount', nx.amount, cur)} comes out` : 'Comes out';
-      /* [numbers review S2] a payment past its day and not ticked is named here too, never "Nothing to pay yet" */
+      /* [numbers review S2, C10] a payment past its day and not ticked is never "Nothing to pay yet": the line points to
+         the overdue card above, the one place the payment is listed */
       const od = (k.overdue || [])[0];
       const when = nx && nx.amount ? `${what} on ${esc3(day3(nx.payment_date, yr))}${besidePay3(nx.payment_date, land, yr)}`
-        : od ? `${fig3('cards.*.overdue.*.amount', od.amount, cur)} was due ${esc3(day3(od.payment_date, yr))}, not ticked off yet` : 'Nothing to pay yet';
+        : od ? 'A payment is overdue, see above' : 'Nothing to pay yet';
       /* [BL5] paid more than it owed: in credit by the engine's figure, never as owed with a minus */
       const amt = k.credit ? `<span data-fig="credit">${esc3(label3('inCredit').toLowerCase())} ${fig3('cards.*.credit', k.credit, cur)}</span>` : `<span data-fig="owed">${fig3('cards.*.owedNow', k.owedNow, cur)}</span>`;
       /* [NS-FIX 7] the day this card's figure was last typed */
@@ -8853,21 +8897,16 @@ function drawHome3() {
       return `<li data-cardid="${esc3(id)}"><span>${esc3(E3.nameOf(id))}<br><span class="when">${when}</span>${seen}</span><span class="amt">${amt}</span></li>`;
     }).join('');
     /* [north star F3] Add a card opens Plan's own add-card form (planOpen3), never a second form */
-    out.push(`<section class="a3-card" data-card="cards"><h2>${esc3(label3('owed'))} on your cards</h2>${cardIds.length ? `<ul class="a3-rows">${rows}${afterCards3(r, yr)}</ul>` : '<p class="a3-sub">No cards yet</p>'}<div class="a3-actions"><button type="button" class="a3-btn" id="a3AddCardGo">Add a card</button></div></section>`);
+    out.push(`<section class="a3-card" data-card="cards"><h2>${esc3(label3('owed'))} on your cards</h2>${cardIds.length ? `<ul class="a3-rows">${rows}${afterCards3(r, yr, day)}</ul>` : '<p class="a3-sub">No cards yet</p>'}<div class="a3-actions"><button type="button" class="a3-btn" id="a3AddCardGo">Add a card</button></div></section>`);
   }
   /* [north star F2] goals: one row each, what is set aside and its target (the engine's places); a tap opens it on Plan */
   const goals = ((E3.book && E3.book.places) || []).filter(g => g && !g.gone && g.kind === 'goal' && r.places && r.places[g.id]);
   if (goals.length) out.push(`<section class="a3-card" data-card="goals"><h2>Goals</h2><ul class="a3-rows">${goals.map(g => `<li><button type="button" class="a3-rcrow" data-homegoal="${esc3(g.id)}"><span>${esc3(g.name)}</span><span class="amt"><span data-fig="goal-kept">${fig3('places.*.kept', r.places[g.id].kept, g.cur || home)}</span> of ${fig3('places.*.target', g.target, g.cur || home)}</span></button></li>`).join('')}</ul></section>`);
-  /* overdue card and loan payments: past their day and not ticked, never dropped from the page [F4, H8, BF2] (plan lane) */
-  const od = [].concat(...[['cards', r.cards], ['owed', r.owed || {}]].map(([k, m]) => Object.keys(m).map(id => (m[id].overdue || []).map(o =>
-    `<li data-fig="overdue" data-owed="${esc3(id)}" data-state="${esc3(o.state)}"><span>${esc3(E3.nameOf(id))}<br><span class="when">${overdueWords3(o, E3.curOf(id), yr, k + '.*.overdue.*.amount')}</span></span></li>`))));
-  const odItems = [].concat(...[].concat(...od));   // one list of the overdue items (od is per account, then per card)
-  if (odItems.length) out.push(`<section class="a3-card" data-card="overdue"><h2>Card and loan payments overdue</h2><ul class="a3-rows">${odItems.join('')}</ul></section>`);
   /* [BI4a] what may still go through: inside its posting window, so safe to spend still takes it off (a pay is not counted) */
-  const may = r.mayStillPost || [];
+  const may = (r.mayStillPost || []).filter(o => !odSeen.has(o.item));
   if (may.length) out.push(`<section class="a3-card" data-card="maystill"><h2>${esc3(label3('mayStillPost'))}</h2><p class="a3-sub">Due and not ticked off yet, but it can still be on its way. Safe to spend counts what goes out, not what comes in</p><ul class="a3-rows">${may.map(o => `<li><span>${esc3(E3.occName(o.item))}<br><span class="when">${esc3(day3(o.lands, yr))}${isIncome3(o.item) ? ', coming in' : ''}</span></span><span class="amt">${fig3('mayStillPost', o.amount, o.currency || home)}</span></li>`).join('')}</ul></section>`);
   /* not seen yet, and later on */
-  const late = r.notSeenYet.items;
+  const late = r.notSeenYet.items.filter(o => !odSeen.has(o.item));
   if (late.length) out.push(`<section class="a3-card" data-card="notseen"><h2>${esc3(label3('notSeenYet'))}</h2><p class="a3-sub">These were due and are not ticked off. Check your bank to tick them</p><ul class="a3-rows">${rowsHtml3(late, home, yr, 'notSeenYet.items')}</ul></section>`);
   for (const l of r.laterOn) out.push(`<p class="a3-warn" data-warn="later">${esc3(BurrowScreens.status.laterText(l, wctx))}</p>`);
   out.push(`<div class="a3-actions"><button type="button" class="a3-btn solid" id="a3CheckGo">Check your bank</button><button type="button" class="a3-btn" id="a3LogGo">Log a spend</button></div>`);
@@ -9108,7 +9147,7 @@ function rcWhat3(e) {
 function rcFigs3(book) {
   try {
     const r = book === E3.book ? E3.view(E3.today()) : BurrowEngine.lookahead.lookahead(book, E3.today());
-    return { free: r.period && r.period.free ? r.period.free.left : null, safe: r.safeToSpend.headline, period: r.period };
+    return { free: r.period && r.period.free ? r.period.free.left : null, safe: r.safeToSpend.headline, period: r.period, capped: !!r.safeToSpend.cappedByFreeToSpend };
   } catch (e) { return null; }
 }
 /* [NS-FIX 4] a spend on a line that leaves the line over (the engine's `over` on the book the draft would make): the same
@@ -9286,9 +9325,15 @@ async function rcSave3(sure) {
   }
   rcAskOff3();
   const before = rcFigs3(E3.book);
-  let ov = null, onCard = null;
-  try { const dry = RC3.edit ? ACT3.dry('edit', RC3.edit.id, rcFields3(x)) : ACT3.dry(RC_KIND3[RC3.mode], x); ov = rcOver3(rcFigs3(dry), x); onCard = rcCardWords3(dry, x); } catch (e) { ov = null; }
-  const said = [rcWords3(x), onCard, ov].filter(Boolean).join('. ');
+  let ov = null, onCard = null, both = null;
+  try {
+    const dry = RC3.edit ? ACT3.dry('edit', RC3.edit.id, rcFields3(x)) : ACT3.dry(RC_KIND3[RC3.mode], x), df = rcFigs3(dry);
+    ov = rcOver3(df, x); onCard = rcCardWords3(dry, x);
+    /* [C2] a spend on Free to spend while Free to spend left caps safe to spend (the engine, on the book with the spend):
+       the bar says it lowers both, and why */
+    both = RC3.mode === 'spend' && x.line === 'free' && df && df.capped ? 'Safe to spend goes down with it, it\'s what\'s left of your Free to spend' : null;
+  } catch (e) { ov = null; }
+  const said = [rcWords3(x), onCard, ov, both].filter(Boolean).join('. ');
   const r = RC3.edit ? await ACT3.edit(RC3.edit.id, rcFields3(x), { undo: said }) : await ACT3[RC_KIND3[RC3.mode]](x, { undo: said });
   if (!r.ok) { $('#rcErr').textContent = r.text; return; }   // the form may have been drawn again meanwhile (another tab)
   RC3.last = before;
@@ -10798,14 +10843,18 @@ async function replaceBook3(next, why) {
 /* setup calls this once it has saved the first book [D7] */
 function afterSetup3() { return typeof BurrowPersist === 'object' ? BurrowPersist.afterSetup() : Promise.resolve(null); }
 
+/* the Money card's words, in one place: drawn when the sheet opens and again when the book changes under it [S23] */
+function setMoney3() {
+  const cur = E3.book ? E3.home() : null;
+  return `<h2>Money</h2>
+      <p class="a3-next">${cur ? `Amounts are shown in <b data-set="cur">${esc3(cur)}</b>.` : 'The currency is chosen in setup.'}</p>
+      ${cur ? '<p class="a3-sub">It stays the same once money is written down.</p>' : ''}`;
+}
 function openSet3() {
   if (SET3.open) return;
   SET3.open = true; SET3.restore = null;
   const sheet = $('#a3Set'), tryBook = E3.mode === 'try';
-  const cur = E3.book ? E3.home() : null;
-  const money = `<div class="a3-card" data-card="money"><h2>Money</h2>
-      <p class="a3-next">${cur ? `Amounts are shown in <b data-set="cur">${esc3(cur)}</b>.` : 'The currency is chosen in setup.'}</p>
-      ${cur ? '<p class="a3-sub">It stays the same once money is written down.</p>' : ''}</div>`;
+  const money = `<div class="a3-card" data-card="money">${setMoney3()}</div>`;
   const tryNote = `<p class="a3-later" data-set="trynote">Made-up numbers: nothing here is saved, backed up or sent.</p>`;
   const device = `<div class="a3-card" data-card="device"><h2>This device</h2>
       <p class="a3-next" id="a3Space">Checking what this device keeps.</p>
@@ -10852,6 +10901,7 @@ function closeSet3() {
   SET3.open = false; SET3.restore = null;
   $('#a3Set').hidden = true; $('#a3Set').innerHTML = '';
   (SET3.was || []).forEach(([el, h]) => { el.hidden = h; }); SET3.was = null;
+  if (SET3.stale) { SET3.stale = false; redrawTabs3(); }
   const b = $('#a3SetGo'); if (b) b.focus();
 }
 /* the first screen's "I already use the burrow on another device": Settings, with the cloud code box open and the
@@ -10879,6 +10929,13 @@ function paintWord3() {
   $('#a3SetWordKeep').addEventListener('click', keep);
   $('#a3SetWordIn').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); keep(); } });
   if (w) $('#a3SetWordClear').addEventListener('click', () => { STMT3_AI.setWord(''); paintWord3(); setMsg3('The code word is cleared from this device.'); });
+  paintAiOff3();
+}
+/* [C5] when this page's own server says its AI is off (/api/health, ai false), Settings says so; no server, no line */
+async function paintAiOff3() {
+  const h = await STMT3_AI.health(), el = $('#a3SetWord');
+  if (!SET3.open || !el || !h || h.ai !== false || el.querySelector('[data-set=aioff]')) return;
+  el.insertAdjacentHTML('afterbegin', '<p class="a3-warn" data-set="aioff">The AI is off on this page right now. Everything else still works</p>');
 }
 async function paintSpace3() {
   const el = $('#a3Space'); if (!el || typeof BurrowPersist !== 'object') return;
@@ -10943,6 +11000,20 @@ async function paintKept3() {
     paintKept3();
   });
 }
+/* [C9, S23] the book was replaced or joined while Settings was open (a restore, Put it back, the cloud copy): the sheet's
+   own Money card and Save button are drawn again at once, and Receipts and Plan are drawn again when the sheet closes
+   (they are hidden under it, and a hidden panel does not draw). Home is drawn by whoever replaced the book. */
+function redrawTabs3() {
+  if (typeof renderRc3 === 'function' && E3.book) { try { const k = rcKeep3(); renderRc3(); rcPut3(k); } catch (e) { /* Receipts draws itself on its next tap */ } }
+  if (typeof renderPlan3 === 'function') { try { renderPlan3(); } catch (e) { /* the plan lane's own */ } }
+}
+E3.onSaved(() => {
+  if (!SET3.open) return;
+  SET3.stale = true;
+  const m = $('#a3Set [data-card=money]'), save = $('#a3BkSave');
+  if (m) m.innerHTML = setMoney3();
+  if (save) save.disabled = !E3.book;
+});
 /* the header's Settings button and Escape, without touching the start file */
 document.addEventListener('click', e => { if (e.target.closest && e.target.closest('#a3SetGo')) openSet3(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && SET3.open && !SET3.restore) closeSet3(); });
@@ -11076,8 +11147,14 @@ const STMT3_AI = (() => {
       const j = await r.json().catch(() => null);
       if (j && j.error && j.error.code === 'invite_required') { setWord(''); const e = new Error(WORD_BAD); e.word = true; throw e; }
     }
-    if (r.status === 429) throw new Error(busy || 'too many requests right now, try again in a minute');
-    if (!r.ok) throw new Error('the AI did not answer (' + r.status + ')');
+    if (!r.ok) {
+      /* [C5] the server words each refusal itself (the daily limit, no key, no credit, a refused request): its message is
+         shown as it is, less its last full stop (the callers add their own). With no message, the old plain words */
+      const j = await r.json().catch(() => null), said = j && j.error && typeof j.error.message === 'string' ? j.error.message.trim().replace(/\.$/, '') : '';
+      if (said && (r.status === 400 || r.status === 429 || r.status === 503)) throw new Error(said);
+      if (r.status === 429) throw new Error(busy || 'too many requests right now, try again in a minute');
+      throw new Error('the AI did not answer (' + r.status + ')');
+    }
     return r.json();
   }
   /* the box for the code word, put in `slot` (Ask and Add statements); `bad` says why it shows again. On Keep the word
@@ -11147,7 +11224,7 @@ const STMT3_AI = (() => {
     const raw = r.how === 'relay' ? await viaRelay(r.base, prompt, file, text) : await viaClaude(r.fn, prompt, file, text);
     return STMT3R.cleanRead(raw, file.name, today);
   }
-  return { connect, readFile, post, needWord, word, setWord, wordBox, WORD_BAD, reset: () => { route = null; healthGot = null; } };
+  return { connect, readFile, post, health, needWord, word, setWord, wordBox, WORD_BAD, reset: () => { route = null; healthGot = null; } };
 })();
 /* ---------- Statements (DECISIONS_ROUND2 E4, E7; SCHEMA_V3 6.4) ----------
    Add statements: choose files for each account (the bank and each card), read them with the AI (stmt3_ai.js) or with

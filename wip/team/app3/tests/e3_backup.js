@@ -119,11 +119,44 @@ async function download(p, dir, click) {
     await (await p.$('#a3BkFile')).uploadFile(fileOf('fresh.json', (await B.make(bk)).text)); await T.w(400);
     ck('it says it puts the money from the backup here', /puts the money from the backup on this device/.test(await p.$eval('[data-set=restoreask]', e => e.textContent)));
     await p.click('#a3BkGo'); await T.w(500);
+    /* [S23] the Settings sheet is drawn again once there is money here: the currency, never "chosen in setup" */
+    ck('S23: Settings shows the currency after the restore, with the sheet still open', await p.$eval('[data-set=cur]', e => e.textContent).catch(() => null) === 'JPY' && !/chosen in setup/.test(await p.$eval('[data-card=money]', e => e.textContent)), await p.$eval('[data-card=money]', e => e.textContent));
     await p.click('#a3SetClose'); await T.w(200);
     ck('Home shows the restored book', /Safe to spend/.test(await p.$eval('#a3Home', e => e.textContent)));
     await p.reload(); await T.w(400);
     ck('and keeps it after a reload', /Safe to spend/.test(await p.$eval('#a3Home', e => e.textContent)));
     ck('no page errors (fresh)', errs.length === 0, errs.join(' | '));
+    await b.close();
+  }
+  /* ---- [C9] after a restore, Receipts and Plan are drawn again, not only Home ----
+     The made-up book is here and Receipts is open. A backup of the same book with one more spend (3,300, "from backup") and
+     the first pay renamed is restored: on closing Settings, Receipts lists that spend and its safe to spend is the
+     engine's for the restored book, without leaving the tab. Then on Plan, Put it back: the old name is back at once. */
+  {
+    const { b, p, errs } = await T.open({ profile: fs.mkdtempSync(path.join(os.tmpdir(), 'a3c9-')) });
+    await p.goto(T.URL0 + '?today=' + DAY); await T.w(300);
+    await seed(p, bk); await p.reload(); await T.w(400);
+    const other = JSON.parse(JSON.stringify(bk)), bank = bk.home.main.v.acct;
+    other.schedules[0].name = 'Main job (from backup)';
+    other.events.push({ id: 'k7m2qa-f3n8p1x6wd-9901', k: 'spend', acct: bank, date: DAY, a: 3300, note: 'from backup', told: DAY + 'T09:00:00.000+09:00', at: DAY + 'T09:00:00.000+09:00', by: 'k7m2qa' });
+    const safeOf = () => p.evaluate(() => { const e = document.querySelector('#a3Rc [data-fig="rc-safe"] [data-amt]'); return e ? Number(e.dataset.amt) : null; });
+    await p.tap('[data-tab="receipts"]'); await T.w(300);
+    const was = await safeOf(), want = T.L.lookahead(other, DAY).safeToSpend.headline;
+    ck('C9: before, Receipts shows the book here', was === T.L.lookahead(bk, DAY).safeToSpend.headline && was !== want && !/from backup/.test(await p.$eval('#a3Rc', e => e.textContent)), was + ' ' + want);
+    await p.click('#a3SetGo'); await T.w(300);
+    await (await p.$('#a3BkFile')).uploadFile(fileOf('c9.json', (await B.make(other)).text)); await T.w(400);
+    await p.click('#a3BkGo'); await T.w(500);
+    await p.click('#a3SetClose'); await T.w(300);
+    ck('C9: Receipts is still the open tab', !(await p.$eval('#a3Rc', e => e.hidden)));
+    ck('C9: Receipts lists the restored spend at once', /from backup/.test(await p.$eval('#rcList', e => e.textContent)), (await p.$eval('#rcList', e => e.textContent)).slice(0, 200));
+    ck('C9: its safe to spend is the restored book\'s (the engine\'s)', await safeOf() === want, (await safeOf()) + ' vs ' + want);
+    await p.tap('[data-tab="plan"]'); await T.w(400);
+    ck('C9: Plan shows the restored book', /Main job \(from backup\)/.test(await p.$eval('#a3Plan', e => e.textContent)));
+    await p.click('#a3SetGo'); await T.w(300);
+    await p.click('#a3BkBack'); await T.w(600);
+    await p.click('#a3SetClose'); await T.w(300);
+    ck('C9: after Put it back, Plan shows the old name at once', !(await p.$eval('#a3Plan', e => e.hidden)) && !/from backup/.test(await p.$eval('#a3Plan', e => e.textContent)));
+    ck('no page errors (C9)', errs.length === 0, errs.join(' | '));
     await b.close();
   }
   fs.rmSync(tmp, { recursive: true, force: true }); fs.rmSync(dl, { recursive: true, force: true });

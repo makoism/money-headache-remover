@@ -2,7 +2,7 @@
 /* The page as a plain file (Mako gets index.html as a file, so no ?try=mako). With nothing saved, the first screen offers
    "See it with made-up numbers first"; that opens the try book with a day box, and stepping the day through 23 Nov,
    10 Dec, 12 Dec and 8 Jan shows the engine's figures for each day. A check-in on 11 Dec, then 7 Jan in the day box:
-   card B comes out on Fri 8 Jan, before pay lands on Tue 12 Jan. Nothing is written. Screenshots in app3/shots/. */
+   card B comes out on Fri 8 Jan, the day pay lands (the working day before the weekend, like Mako's). Nothing is written. Screenshots in app3/shots/. */
 'use strict';
 const T = require('./lib3.js'), { ck } = T;
 const setDay = (p, d) => p.evaluate(d => { const e = document.getElementById('a3Day'); e.value = d; e.dispatchEvent(new Event('change', { bubbles: true })); }, d);
@@ -29,7 +29,7 @@ const setDay = (p, d) => p.evaluate(d => { const e = document.getElementById('a3
   await p.click('#a3CheckSave'); await T.w(300);
   await setDay(p, '2027-01-07'); await T.w(300);
   const lines = await p.$$eval('[data-cardid]', es => es.map(e => e.textContent));
-  ck('on 7 Jan card B comes out on 8 Jan, before pay lands on 12 Jan', lines.some(t => /Card B/.test(t) && /Comes out on 8 Jan, before your pay lands on 12 Jan/.test(t)), lines.join(' | '));
+  ck('on 7 Jan card B comes out on 8 Jan, the day pay lands', lines.some(t => /Card B/.test(t) && /Comes out on 8 Jan, the day your pay lands/.test(t)) && lines.some(t => /Card A/.test(t) && /Comes out on 12 Jan/.test(t)), lines.join(' | '));
   await T.shot(p, 'file_2027-01-07_after_checkin');
   const st = await p.evaluate(() => new Promise(res => { const rq = indexedDB.open('burrow3'); rq.onsuccess = () => { const db = rq.result; if (!db.objectStoreNames.length) { db.close(); res({ book: null, ls: localStorage.length }); return; } const tx = db.transaction(db.objectStoreNames[0]); const g = tx.objectStore(db.objectStoreNames[0]).getAll(); g.onsuccess = () => { db.close(); res({ book: g.result.length ? 'saved' : null, ls: localStorage.length }); }; }; rq.onerror = () => res({ book: 'error' }); }));
   ck('nothing written', st.book === null && st.ls === 0, JSON.stringify(st));

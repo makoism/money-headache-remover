@@ -63,7 +63,7 @@ function rcWhat3(e) {
 function rcFigs3(book) {
   try {
     const r = book === E3.book ? E3.view(E3.today()) : BurrowEngine.lookahead.lookahead(book, E3.today());
-    return { free: r.period && r.period.free ? r.period.free.left : null, safe: r.safeToSpend.headline, period: r.period };
+    return { free: r.period && r.period.free ? r.period.free.left : null, safe: r.safeToSpend.headline, period: r.period, capped: !!r.safeToSpend.cappedByFreeToSpend };
   } catch (e) { return null; }
 }
 /* [NS-FIX 4] a spend on a line that leaves the line over (the engine's `over` on the book the draft would make): the same
@@ -241,9 +241,15 @@ async function rcSave3(sure) {
   }
   rcAskOff3();
   const before = rcFigs3(E3.book);
-  let ov = null, onCard = null;
-  try { const dry = RC3.edit ? ACT3.dry('edit', RC3.edit.id, rcFields3(x)) : ACT3.dry(RC_KIND3[RC3.mode], x); ov = rcOver3(rcFigs3(dry), x); onCard = rcCardWords3(dry, x); } catch (e) { ov = null; }
-  const said = [rcWords3(x), onCard, ov].filter(Boolean).join('. ');
+  let ov = null, onCard = null, both = null;
+  try {
+    const dry = RC3.edit ? ACT3.dry('edit', RC3.edit.id, rcFields3(x)) : ACT3.dry(RC_KIND3[RC3.mode], x), df = rcFigs3(dry);
+    ov = rcOver3(df, x); onCard = rcCardWords3(dry, x);
+    /* [C2] a spend on Free to spend while Free to spend left caps safe to spend (the engine, on the book with the spend):
+       the bar says it lowers both, and why */
+    both = RC3.mode === 'spend' && x.line === 'free' && df && df.capped ? 'Safe to spend goes down with it, it\'s what\'s left of your Free to spend' : null;
+  } catch (e) { ov = null; }
+  const said = [rcWords3(x), onCard, ov, both].filter(Boolean).join('. ');
   const r = RC3.edit ? await ACT3.edit(RC3.edit.id, rcFields3(x), { undo: said }) : await ACT3[RC_KIND3[RC3.mode]](x, { undo: said });
   if (!r.ok) { $('#rcErr').textContent = r.text; return; }   // the form may have been drawn again meanwhile (another tab)
   RC3.last = before;

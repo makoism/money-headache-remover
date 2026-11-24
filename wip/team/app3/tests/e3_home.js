@@ -38,7 +38,9 @@ const DAYS = ['2026-11-23', '2026-12-09', '2026-12-10', '2026-12-11', '2026-12-1
     { const ac = one('aftercards'), want = r.bankAfterCards || {}, accts = Object.keys(want);
       ck(day + ' the bank after the cards are paid, once per bank, the engine\'s, in the cards box', ac.length === accts.length && accts.every((id, i) => ac[i].amt === want[id].amount && ac[i].card === 'cards'), JSON.stringify(ac) + ' vs ' + JSON.stringify(want));
       for (const [i, id] of accts.entries()) {
-        const x = want[id], head = `After your cards are paid on ${SN0.dayList(x.cardDays, x.cardDays.some(d => d.slice(0, 4) !== day.slice(0, 4)))}: Main bank`;
+        /* [C10] a card day that is today is written "today" (an overdue payment is taken today) */
+        const x = want[id], rest = x.cardDays.filter(d => d !== day), wy = x.cardDays.some(d => d.slice(0, 4) !== day.slice(0, 4));
+        const head = `After your cards are paid ${rest.length === x.cardDays.length ? 'on ' + SN0.dayList(x.cardDays, wy) : 'today' + (rest.length ? ' and on ' + SN0.dayList(rest, wy) : '')}: Main bank`;
         const t = ac[i] ? ac[i].text : '';
         ck(day + ' it names its day, the pay in it, close days not sure, and says it is not safe to spend', t.startsWith(head) && /not safe to spend/.test(t) && (!x.pays.length || t.includes('Your pay on')) && (!x.ifAllTaken || t.includes('It counts everything on the cards now, as their close days are not sure')) && (!x.paysNotCounted.length || /is not counted/.test(t)), t);
       } }
@@ -63,10 +65,60 @@ const DAYS = ['2026-11-23', '2026-12-09', '2026-12-10', '2026-12-11', '2026-12-1
   /* every label beside a figure is the name table's name for that figure */
   const SN = require('../../screens/names.js');
   const shown = await p.evaluate(() => [['[data-card=safe] h2', 'safeToSpend.headline'], ['[data-card=due] h2', 'dueBeforeNextPay.total'], ['[data-card=period] h2', 'period.start']].map(([s, f]) => ({ label: document.querySelector(s) ? document.querySelector(s).textContent : '', figure: f })));
-  const labelOnly = shown.map(x => ({ label: x.label.replace(/ until next pay on .*$/, ''), figure: x.figure }));
+  const labelOnly = shown.map(x => ({ label: x.label.replace(/ until (next pay on|the pay after today's,) .*$/, ''), figure: x.figure }));
   ck('labels come from the name table', SN.check(labelOnly).length === 0, SN.check(labelOnly).join('; '));
   /* Plan and Receipts are here already: the last line names only what is still to come */
   ck('no "Coming next" line on Home', !/Coming next/.test(await p.$eval('#a3Home', e => e.textContent)));
+  /* [C11] late bills the sum takes off today are listed under "Due before next pay", marked late.
+     The made-up book on 12 Dec, nothing ticked: the sum takes off Rent 27 Nov, Power 26 Nov and Internet 27 Nov (late). */
+  {
+    await p.setViewport({ width: 390, height: 844, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
+    await p.goto(T.URL0 + '?try=mako&today=2026-12-12'); await T.w(400);
+    const why = (await p.$eval('[data-fig=why]', e => e.textContent)).replace(/\u2060/g, '');
+    const lateRows = await p.$$eval('[data-card=due] [data-fig=duelate] li', ls => ls.map(l => l.textContent.replace(/\u2060/g, '')));
+    ck('C11: the sum takes off three late bills', ['Rent 27 Nov, late', 'Power 26 Nov, late', 'Internet 27 Nov, late'].every(x => why.includes(x)), why);
+    ck('C11: the same three are listed under Due before next pay, each marked late with its day and amount', lateRows.join(' | ') === 'Power26 Nov, late¥7,400 | Rent27 Nov, late¥72,000 | Internet27 Nov, late¥5,200', lateRows.join(' | '));
+    const dueTxt = (await p.$eval('[data-card=due]', e => e.textContent)).replace(/\u2060/g, '');
+    ck('C11: the heading over them says safe to spend takes them off today', /Late, not ticked off yet/.test(dueTxt) && /Safe to spend takes these off today/.test(dueTxt), dueTxt);
+    ck('C11: late card payments are not listed here again (C10: once, in the overdue card)', !lateRows.some(x => /Card/.test(x)), lateRows.join(' | '));
+  }
+  /* [C11] nothing more is due, but a late bill is taken off: never "Nothing is due before next pay". Yen, set up Mon 23 Nov
+     with 200,000, Pay 100,000 on the 25th, Rent 60,000 on the 26th. Seen Wed 2 Dec, nothing ticked: the pay of 25 Nov is not
+     counted, so the list runs to the pay on 25 Dec; Rent 26 Nov is late and comes off today; the next Rent is 26 Dec. */
+  {
+    const B = require('../../engine/build_book.js'), I = require('../../engine/ids.js');
+    const bk = B.buildBook({ day: '2026-11-23', told: '2026-11-23T09:00+09:00', country: 'JP', currency: 'JPY',
+      banks: [{ key: 'b', name: 'Main bank', amount: 200000 }],
+      pays: [{ key: 'pay', name: 'Pay', bank: 'b', amount: 100000, day: 25, shift: 'none', startsPeriod: true }],
+      bills: [{ key: 'rent', name: 'Rent', from: 'b', amount: 60000, day: 26, shift: 'none' }] }, { newId: I.idMaker('c11hme', () => 0.5) }).book;
+    const r = T.L.lookahead(bk, '2026-12-02');
+    ck('C11: the engine: nothing in the due list, Rent 26 Nov taken off late', r.dueBeforeNextPay.items.length === 0 && Object.values(r.accounts)[0].whyParts.some(x => x.label === 'Rent 26 Nov, late' && x.amount === -60000), JSON.stringify(r.dueBeforeNextPay) + JSON.stringify(Object.values(r.accounts)[0].whyParts));
+    const prof = require('fs').mkdtempSync(require('os').tmpdir() + '/a3prof-');
+    const o = await T.open({ profile: prof });
+    await o.p.goto(T.URL0 + '?today=2026-12-02'); await T.w(300);
+    await o.p.evaluate(async bk0 => { const s = await BurrowStore.open(); await s.save(bk0, { full: true }); s.db && s.db.close(); }, bk);
+    await o.p.reload(); await T.w(500);
+    const dueTxt = (await o.p.$eval('[data-card=due]', e => e.textContent)).replace(/\u2060/g, '');
+    ck('C11: Home never says nothing is due while the sum takes Rent off', !/Nothing is due/.test(dueTxt) && /Rent26 Nov, late¥60,000/.test(dueTxt), dueTxt);
+    ck('C11: no page errors', o.errs.length === 0, o.errs.join(' | '));
+    await o.b.close();
+  }
+  /* [N26] three weeks since the last bank check: Home leads with "Check your bank", above "Pay not in yet". The made-up
+     book kept as the person's own (so the status card shows), seen 12 Dec: last checked 20 Nov, the 10 Dec pay not seen. */
+  {
+    const prof = require('fs').mkdtempSync(require('os').tmpdir() + '/a3prof-');
+    const o = await T.open({ profile: prof });
+    await o.p.goto(T.URL0 + '?today=2026-12-12'); await T.w(300);
+    await o.p.evaluate(async bk0 => { const s = await BurrowStore.open(); await s.save(bk0, { full: true }); s.db && s.db.close(); }, bk);
+    await o.p.reload(); await T.w(500);
+    const r = T.L.lookahead(bk, '2026-12-12');
+    const st = await o.p.$eval('[data-card=status]', e => ({ head: e.querySelector('h2').textContent, text: e.textContent })).catch(() => null);
+    ck('N26: the engine: checked 22 days ago, and the pay not seen', r.accounts[bank].ageDays === 22 && r.period.nextPay.state === 'notSeen', r.accounts[bank].ageDays + ' ' + r.period.nextPay.state);
+    ck('N26: Home leads with Check your bank and the day of the last check, not "Pay not in yet"', st && st.head === 'Check your bank' && /Your bank figure is from 20 Nov/.test(st.text), JSON.stringify(st));
+    ck('N26: the status card is the first card on Home', await o.p.$eval('#a3Home [data-card]', e => e.dataset.card) === 'status');
+    ck('N26: no page errors', o.errs.length === 0, o.errs.join(' | '));
+    await o.b.close();
+  }
   const old = await T.readOld(p);
   ck('the old app\'s copy is byte for byte the same', old.ls === T.OLD_TEXT && old.idb === T.OLD_IDB, JSON.stringify(old).slice(0, 200));
   ck('no page errors', errs.length === 0, errs.join(' | '));

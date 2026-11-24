@@ -22,6 +22,14 @@ test('Mako\'s shape, five days after setup: safe, with the amount and the day of
   assert.strictEqual(s.next, null);
 });
 
+test('on pay day the status runs to the pay after today\'s, never "until pay on" today [C8]', () => {
+  const r = clone(engine('mako_shape', '2026-11-25'));
+  r.daysToNextPay = { days: 0, next_pay: '2026-11-25', item: 'x' }; r.safeToSpend.until = '2026-12-10';
+  const s = status.statusOf(r, YEN);
+  assert.strictEqual(s.reason.until, '2026-12-10');
+  assert.strictEqual(s.text.reason, '¥182,000 is safe to spend until pay on 10 Dec');
+});
+
 test('the status is frozen: a screen cannot write its own verdict into it', () => {
   const s = status.statusOf(engine('mako_shape', '2026-11-25'), YEN);
   assert.ok(Object.isFrozen(s) && Object.isFrozen(s.reason) && Object.isFrozen(s.text) && Object.isFrozen(s.also));
@@ -56,7 +64,7 @@ test('short: says by how much, from when, and what to do before then', () => {
   r.warnings.push({ account: 'bank', code: 'below_minimum', day: '2026-12-07', short: 12000 });
   const s = status.statusOf(r, Object.assign({ names: { bank: 'Main bank' } }, YEN));
   assert.strictEqual(s.state, 'short');
-  assert.strictEqual(s.level, 'bad');
+  assert.strictEqual(s.level, 'warn');
   assert.strictEqual(s.text.reason, 'You\'re short by ¥12,000 on 7 Dec');
   /* [BL3] with the engine's short (the sum's own total, the pay after the lowest point), the status says the headline's words */
   r.safeToSpend.short = { account: 'bank', day: '2026-12-07', amount: 15000, minimum: null, beforePay: '2026-12-25', first: 12000 };
@@ -73,7 +81,7 @@ test('short: says by how much, from when, and what to do before then', () => {
 test('one account under its minimum while the headline is fine: never "ok" (freelancer)', () => {
   const s = status.statusOf(engine('freelancer', '2027-02-04'), { currency: 'PHP', origin: 'typed', names: { ewallet: 'E-wallet' } });
   assert.strictEqual(s.state, 'warning');
-  assert.strictEqual(s.level, 'bad');
+  assert.strictEqual(s.level, 'warn');
   assert.strictEqual(s.reason.account, 'ewallet');
   assert.strictEqual(s.text.reason, 'E-wallet goes ₱1,500 below zero on 12 Mar');
   assert.ok(s.also.includes('later_on'));
@@ -105,7 +113,16 @@ test('notes only (another currency, a reopened account) sit under the state and 
 });
 
 test('pay late: the day it was due, and check in once it lands', () => {
-  const s = status.statusOf(engine('late_pay', '2027-01-09'), Object.assign({}, YEN, { currency: scen('late_pay').currency }));
+  /* [N26] in this made-up life the last bank check is over 14 days old on 9 Jan, so "Check your bank" leads and the late
+     pay sits under it; with a check from yesterday the late pay itself leads */
+  const r = clone(engine('late_pay', '2027-01-09')), ctx = Object.assign({}, YEN, { currency: scen('late_pay').currency });
+  const old = status.statusOf(r, ctx);
+  assert.ok(Object.keys(r.accounts).some(id => r.accounts[id].ageDays > 14), 'the last check is old');
+  assert.strictEqual(old.state, 'check');
+  assert.strictEqual(old.reason.code, 'old_figure');
+  assert.ok(old.also.includes('pay_late'), 'the late pay sits under the check');
+  for (const id in r.accounts) r.accounts[id].ageDays = 1;
+  const s = status.statusOf(r, ctx);
   assert.strictEqual(s.state, 'late');
   assert.strictEqual(s.reason.since, '2027-01-08');
   assert.strictEqual(s.next.code, 'check_in_when_it_lands');
@@ -118,6 +135,20 @@ test('things to tick off since the last check-in', () => {
   assert.strictEqual(s.state, 'check');
   assert.deepStrictEqual(s.reason, { code: 'to_confirm', count: 1, since: '2026-11-20' });
   assert.strictEqual(s.text.reason, '1 thing to tick off since 20 Nov');
+});
+
+test('a bank check over 14 days old leads, above a pay that is not in yet [N26]', () => {
+  const r = clone(engine('mako_shape', '2026-11-25'));
+  r.daysToNextPay = Object.assign({}, r.daysToNextPay, { late: true });
+  r.accounts.bank.ageDays = 14;
+  assert.strictEqual(status.statusOf(r, YEN).state, 'late', 'at 14 days the late pay still leads');
+  r.accounts.bank.ageDays = 15;
+  const s = status.statusOf(r, YEN);
+  assert.strictEqual(s.state, 'check');
+  assert.strictEqual(s.reason.code, 'old_figure');
+  assert.strictEqual(s.text.state, 'Check your bank');
+  assert.strictEqual(s.text.reason, 'Your bank figure is from 20 Nov');
+  assert.ok(s.also.includes('pay_late'), 'the late pay sits under it');
 });
 
 test('an old bank figure asks for a check-in (after staleDays, 7 unless set)', () => {
@@ -153,7 +184,7 @@ test('every made-up situation and every ask day: one known state, never "ok" nex
       assert.ok(STATES.includes(s.state), f + ' ' + d + ' ' + s.state);
       /* [BM2] money goes short when the real money does (short, below_minimum) or goals hold more than it can spare */
       const danger = !!r.safeToSpend.short || r.warnings.some(w => w.code === 'below_minimum' || w.code === 'set_aside_over');
-      if (danger) assert.ok(s.level === 'bad', `${f} ${d}: ${s.state} while money goes short`);
+      if (danger) assert.ok(s.level === 'bad' || s.level === 'warn', `${f} ${d}: ${s.state} while money goes short`);
       if (s.state === 'ok') assert.ok(r.safeToSpend.headline > 0 && !danger, f + ' ' + d);
       for (const part of ['state', 'reason']) assert.ok(typeof s.text[part] === 'string' && s.text[part] && !/undefined|NaN|null/.test(s.text[part]), `${f} ${d} ${part}: ${s.text[part]}`);
     }

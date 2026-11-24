@@ -29,7 +29,7 @@ const noStamp = s => s.replace(/DTSTAMP:\d{8}T\d{6}Z/g, 'DTSTAMP:x');
   ck('Reminders opens as its own sheet over the tabs', await p.$eval('#a3Rem', e => !e.hidden) && await p.$eval('#a3Home', e => e.hidden));
   const c0 = R.checkins(bk, DAY);
   ck('both check-in days ticked; the next three are the engine\'s days', await p.$eval('#a3RemAfter', e => e.checked) && await p.$eval('#a3RemMid', e => e.checked)
-    && (await p.$eval('#a3RemNext', e => e.textContent)) === 'Next: 25 Nov, 11 Dec, 26 Dec' && c0.items[1].day === '2026-12-11', await p.$eval('#a3RemNext', e => e.textContent));
+    && (await p.$eval('#a3RemNext', e => e.textContent)) === 'Next: 25 Nov, 11 Dec, 24 Dec' && c0.items[1].day === '2026-12-11', await p.$eval('#a3RemNext', e => e.textContent));
   const rows = await p.$$eval('[data-rembillrow]', e => e.map(x => [x.dataset.rembillrow, x.querySelector('input').checked, x.textContent.replace(/\s+/g, ' ').trim()]));
   ck('every bill, ticked, two days before by default', rows.length === 4 && rows.every(r => r[1]) && (await p.$eval('#a3RemBefore', e => e.value)) === '2', JSON.stringify(rows));
   ck('Rent: next reminder 25 Nov, due 27 Nov', /^Rent ?next reminder 25 Nov, due 27 Nov$/.test((rows.find(r => r[0] === RENT) || [])[2]), JSON.stringify(rows));
@@ -40,7 +40,7 @@ const noStamp = s => s.replace(/DTSTAMP:\d{8}T\d{6}Z/g, 'DTSTAMP:x');
   await p.click(`[data-rembill="${PHONE}"]`); await T.w(150);
   await p.select('#a3RemBefore', '0'); await T.w(150);
   await p.$eval('#a3RemTime', e => { e.value = '20:30'; e.dispatchEvent(new Event('change', { bubbles: true })); }); await T.w(150);
-  ck('untick mid period: only the days after pay', (await p.$eval('#a3RemNext', e => e.textContent)) === 'Next: 11 Dec, 13 Jan 2027, 11 Feb 2027', await p.$eval('#a3RemNext', e => e.textContent));
+  ck('untick mid period: only the days after pay', (await p.$eval('#a3RemNext', e => e.textContent)) === 'Next: 11 Dec, 9 Jan 2027, 11 Feb 2027', await p.$eval('#a3RemNext', e => e.textContent));
   const c1 = R.checkins(bk, DAY, { mid: false }), bills = R.bills(bk, DAY, { before: 0 }).filter(x => x.id !== PHONE);
   const ev = R.events({ checkins: c1, bills, time: '20:30' });
   ck('the count of reminders in the file', (await p.$eval('#a3RemCount', e => e.textContent)) === ev.length + ' reminders in the file', await p.$eval('#a3RemCount', e => e.textContent));
