@@ -142,6 +142,7 @@ function validate(b) {
     if (!Array.isArray(m.content) || !m.content.length) return 'Bad message content.';
     for (const c of m.content) {
       if (!c || typeof c !== 'object') return 'Bad content block.';
+      if (c.cache_control !== undefined) return 'cache_control is set by the server, not the page.'; /* the marks stay within the limit of 4 */
       if (c.type === 'text') { if (typeof c.text !== 'string') return 'Bad text block.'; text += c.text.length; }
       else if (c.type === 'image') {
         const s = c.source; if (!s || s.type !== 'base64' || IMG_TYPES.indexOf(s.media_type) < 0 || typeof s.data !== 'string' || s.data.length > MAX_IMG_B64) return 'Bad image.';

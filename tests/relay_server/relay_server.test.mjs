@@ -203,6 +203,12 @@ const APP3 = {
   r = await post(env5, Object.assign(OLD.stream(anonOf()), { device: hex(16) }));
   await new Promise(res => setTimeout(res, 20));
   ck('D10 a streamed call counts its cached tokens too and is keyed to the device', usageRows(db5).find(x => x.k === 'all').tokens === 218 && usageRows(db5).some(x => /^u:d:/.test(x.k) && x.tokens === 108), usageRows(db5));
+  const n0 = sent.length;
+  const withMark = OLD.plain(anonOf(), { messages: [{ role: 'user', content: [{ type: 'text', text: 'hi', cache_control: { type: 'ephemeral' } }] }] });
+  let rm = await post(env, withMark);
+  const withMark2 = OLD.tools(anonOf()); withMark2.messages = [{ role: 'user', content: 'x' }, { role: 'assistant', content: [{ type: 'tool_use', id: 't1', name: 'get_plan', input: {}, cache_control: { type: 'ephemeral' } }] }, { role: 'user', content: [{ type: 'tool_result', tool_use_id: 't1', content: 'y', cache_control: { type: 'ephemeral' } }] }];
+  let rm2 = await post(env, withMark2);
+  ck('D11 a cache_control in a message block from the page is refused 400 and never sent up', rm.status === 400 && rm2.status === 400 && sent.length === n0, [rm.j, rm2.j]);
   ck('D8 the messages are never given a cache mark', sent.every(s => !JSON.stringify(s.req.messages).includes('cache_control')), '');
 }
 
