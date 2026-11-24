@@ -109,6 +109,9 @@ async function openSetup(day) {
     await p.click('#s3AddBill'); await w(100);
     await saveSec(p, 'bills');
     ck('blank bill amount: says what is needed next to it, focused', (await errOf(p, 's3-bill1-a')) === 'Type the amount of Bill' && (await focused(p)) === 's3-bill1-a', (await errOf(p, 's3-bill1-a')) + ' / ' + (await focused(p)));
+    /* K32: a bill of 0 is refused with Plan's own words, as Plan refuses it */
+    await typeIn(p, '#s3-bill1-a', '0'); await saveSec(p, 'bills');
+    ck('a bill of 0: Plan\'s words next to it, focused, not saved', (await errOf(p, 's3-bill1-a')) === 'Type the amount above zero' && (await focused(p)) === 's3-bill1-a' && (await stateOf(p, 'bills')) !== 'saved', (await errOf(p, 's3-bill1-a')) + ' / ' + (await focused(p)));
     await typeIn(p, '#s3-bill1-a', '8000'); await saveSec(p, 'bills');
     ck('bills section saved', (await stateOf(p, 'bills')) === 'saved');
     await saveSec(p, 'min');

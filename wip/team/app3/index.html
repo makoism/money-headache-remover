@@ -10053,7 +10053,10 @@ function answers3(strict, sec) {
     /* once a year: its month and day ('MM-DD'); a day the month does not have is refused by build_book with words */
     const yearly = row.querySelector('[data-f=every]').value === 'year';
     const when = yearly ? { every: 'year', date: row.querySelector('[data-f=month]').value + '-' + row.querySelector('[data-f=day]').value.padStart(2, '0') } : { day: d };
-    ans.bills.push(Object.assign({ key: row.dataset.row, name, from: acctOf(row.querySelector('[data-f=from]')), amount: need(row.querySelector('[data-f=amount]'), `Type the amount of ${name}`), shift: 'after' }, when,
+    /* [K32] a bill of 0 is refused with Plan's own words (plan3_write amountOk), as Plan refuses it */
+    const box = row.querySelector('[data-f=amount]'), amount = need(box, `Type the amount of ${name}`);
+    if (amount === 0 && asks(box)) ask(box, 'Type the amount above zero');
+    ans.bills.push(Object.assign({ key: row.dataset.row, name, from: acctOf(row.querySelector('[data-f=from]')), amount, shift: 'after' }, when,
       q && !q.hidden && row.querySelector('[data-f=takenOut]').value === 'no' ? { takenOut: false } : {}));
   });
   /* [BV2.13] on a day the pay lands: has it already landed in that figure? asked, never assumed (askTaken3 shows it);
