@@ -66,6 +66,7 @@ const NO_SAVE = () => {
     /* ---- both rename the same pay with no signal; B changes one spend and removes another; then B sends ---- */
     down();
     await rename(A.p, sid, 'Main job (desk)', '2026-12-10T09:00:00.000+09:00', 'dsk001'); await A.p.reload(); await T.w(500);
+    await A.p.evaluate(() => { window.__noSave = true; });   // from here A cannot save its book (it takes by itself once there is signal)
     await rename(B.p, sid, 'Main job (phone)', '2026-12-10T09:05:00.000+09:00', 'phn002'); await B.p.reload(); await T.w(500);
     await receipts(B);
     await change(B.p, ids['coffee one'], '2100'); await remove(B.p, ids['tea two']);
@@ -74,7 +75,6 @@ const NO_SAVE = () => {
     ck('(B\'s changes are in the cloud)', (await stored(B.p)).events.find(e => e.id === ids['coffee one']).a === 2100);
 
     /* ---- (a) A takes the copy while it cannot save its book, then is opened again ---- */
-    await A.p.evaluate(() => { window.__noSave = true; });
     await sendNow(A);
     ck('(a) while the save is refused, A\'s book is not replaced', (await stored(A.p)).events.find(e => e.id === ids['coffee one']).a === 1200);
     await A.p.evaluate(() => { window.__noSave = false; });

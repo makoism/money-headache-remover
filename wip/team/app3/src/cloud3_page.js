@@ -10,7 +10,11 @@
    kept beside the book (E3.rec 'cloud'), never in the copy that is sent or in a backup.
    Where the vault is: the page's own address when it is served (the site), else the site's address (RELAY3, from
    wip/team/RELAY at build time). A try book never sends anything. */
-const C3 = { st: null, busy: false, again: false, timer: 0, lastSync: 0, dirty: false, applying: false, shown: null, why: null, reach: null };
+const C3 = { st: null, busy: false, again: false, timer: 0, tick: 0, lastSync: 0, lastCheck: 0, checkedAt: 0, dirty: false, applying: false, shown: null, why: null, stop: null, said: false, reach: null };
+/* The cloud clocks [CS1, CS2]: a take every 60 seconds while in view, and one on coming back into view unless the last
+   check was under 10 seconds ago. Tests run them faster through one number their harness puts in the page before these
+   scripts run. It is read once, here: nothing typed in the address bar, and nothing a page already open can set, changes it. */
+const CT3 = (() => { const k = typeof root3.__burrow3CloudSpeed === 'number' && root3.__burrow3CloudSpeed >= 1 && root3.__burrow3CloudSpeed <= 100 ? root3.__burrow3CloudSpeed : 1; return { take: 60000 / k, back: 10000 / k }; })();
 const CLOUD_EVERY3 = 90000, CLOUD_SOON3 = 5000;
 const cloudBase3 = () => (/^https?:$/.test(location.protocol) ? location.origin : (typeof RELAY3 === 'string' ? RELAY3.replace(/\/$/, '') : ''));
 const cloudApi3 = () => CLOUD3.client({ base: cloudBase3 });
@@ -24,6 +28,50 @@ function deviceBy3() {
 const nowIso3 = () => (typeof BurrowClock === 'object' ? BurrowClock.nowIso() : new Date().toISOString());
 async function cloudState3() { if (!C3.st) C3.st = (await E3.rec('cloud')) || { on: false }; return C3.st; }
 async function putCloud3(st) { C3.st = st; await E3.rec('cloud', st); }
+/* What the device keeps now, read again before every sync: another tab may have stopped the cloud copy or changed the code.
+   The base stays this tab's own while the code is the same: it goes with the book this tab holds [CS3] */
+async function freshCloud3() {
+  const d = (await E3.rec('cloud')) || { on: false }, mine = C3.st;
+  C3.st = mine && mine.on && d.on && mine.code === d.code && mine.baseRev != null ? Object.assign({}, d, { base: mine.base, baseRev: mine.baseRev }) : d;
+  return C3.st;
+}
+/* after a sync: what it learned is kept, unless another tab stopped the cloud copy or changed the code meanwhile */
+async function keepCloud3(st, patch) {
+  const d = await E3.rec('cloud');
+  if (d && (!d.on || d.code !== st.code)) { C3.st = d; return false; }
+  await putCloud3(Object.assign({}, st, patch));
+  return true;
+}
+/* [B3] is a change waiting to be sent: worked out from the book against the base, never from memory (a reload, a
+   second tab and a killed page all keep the answer) */
+function waiting3(st) {
+  if (!st || !st.on || !E3.book) return false;
+  return st.base == null ? true : S3same(E3.book, st.base) === false;
+}
+/* a sync that cannot get better by trying again: the timer stops until the person acts, and Home says so once */
+const STOP3 = {
+  code: 'The cloud copy has stopped on this device. The cloud does not accept this code any more. Open Settings to start a new one.',
+  newer: 'The cloud copy has stopped on this device until the app is updated. Your money here is as it was.',
+  fmt: 'The cloud copy has stopped on this device until the app is updated. Your money here is as it was.',
+  key: 'The cloud copy has stopped on this device. It could not be opened with this code. Open Settings to see more.',
+  save: 'What your other device changed could not be saved on this device, so the cloud copy has stopped here. Free some space, then open the app again.',
+};
+function stop3(why) {
+  C3.stop = why; C3.why = why; clearTimeout(C3.tick); clearTimeout(C3.timer);
+  if (!C3.said) { C3.said = true; MSG3.post({ kind: 'notice', key: 'cloud', text: STOP3[why] }); }
+}
+/* a sync or a check that failed. waiting: something here has not been sent, so Settings says since when */
+async function failed3(st, why, waiting) {
+  if (why === 'deleted') {   // 410: deleted on another device; this device stops until it is turned on again
+    C3.why = null; C3.dirty = false; clearTimeout(C3.tick);
+    await putCloud3({ on: false, gone: Date.now() });
+    if (!SET3.open) MSG3.post({ kind: 'notice', key: 'cloud', text: WHY3.deleted });
+    return;
+  }
+  C3.why = why;
+  if (waiting && !st.failAt) await keepCloud3(st, { failAt: Date.now() });
+  if (STOP3[why]) stop3(why);
+}
 async function reachable3() {
   const b = cloudBase3(); if (!b) return false;
   try {
@@ -41,65 +89,63 @@ const WHY3 = {
   newer: 'The cloud copy was saved by a newer version of the app. Update the app to use it. Nothing here was changed.',
   key: 'The cloud copy could not be opened with this code.',
   damaged: 'The cloud copy could not be read. Nothing here was changed.',
-  save: 'What your other device changed could not be saved on this device. Your money here is as it was. Free some space, then open the app again.',
+  save: 'What your other device changed could not be saved on this device, so the cloud copy has stopped here. Your money here is as it was. Free some space, then open the app again.',
   fmt: 'The cloud copy is not one this version can read. Update the app. Nothing here was changed.',
   deleted: 'The cloud copy was deleted on another device. This device keeps its money. Turn the cloud copy on again with a new code to share it.',
 };
 const when3 = ms => { const d = new Date(ms); return d.toDateString() === new Date().toDateString() ? d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : d.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); };
 
-/* one sync; the book here takes what it gives, joined again with any change made while it ran */
+/* one sync; the book here takes what it gives, joined again with any change made while it ran.
+   opts.act: the person asked (Send now, a code typed, turning it on), which also starts a stopped timer again */
 async function syncNow3(opts) {
   opts = opts || {};
-  const st = await cloudState3();
-  if (!st.on || E3.mode === 'try') return null;
+  if (E3.mode === 'try') return null;
   if (C3.busy) { C3.again = true; return null; }
   C3.busy = true; clearTimeout(C3.timer);
-  const snap = E3.book;
   try {
+    const st = await freshCloud3();
+    if (!st.on) return null;
+    if (opts.act) { C3.stop = null; C3.said = false; }
+    else if (C3.stop) return null;
+    const snap = E3.book, wasWaiting = waiting3(st);
     const keys = await CLOUD3.keysFor(st.code);
     const r = await CLOUD3.syncOnce({ api: cloudApi3(), pack: BurrowPack, S: BurrowEngine.sync, keys, device: { base: st.base, baseRev: st.baseRev }, copy: snap, keepalive: !!opts.leaving });
-    C3.lastSync = Date.now();
-    if (!r.ok && r.why === 'deleted') {   // 410: deleted on another device; this device stops until it is turned on again
-      C3.why = null; C3.dirty = false;
-      await putCloud3({ on: false, gone: Date.now() });
-      if (!SET3.open) msg3(WHY3.deleted);
-      return r;
-    }
-    if (!r.ok) {
-      C3.why = r.why;
-      await putCloud3(Object.assign({}, st, { failAt: st.failAt || Date.now() }));   // [CS3] the book was not replaced: the base stays
-      return r;
-    }
+    C3.lastSync = C3.lastCheck = Date.now();
+    if (!r.ok) { await failed3(st, r.why, wasWaiting || C3.dirty); return r; }   // [CS3] the book was not replaced: the base stays
     C3.why = null; C3.dirty = false;
     let next = r.copy;
     if (E3.book !== snap) { next = BurrowEngine.sync.sync(snap, E3.book, r.copy); C3.dirty = true; }   // changed while it ran: joined, sent next time
     /* [CS3] the base is saved only together with the book that holds it: after the book was replaced, or when the book
        here already is that copy. A book that could not be saved keeps the base it started with, so the next sync joins
        again from the same place and nothing the other device changed or removed is undone */
-    let held = false;
     if (S3same(next, E3.book) === false) {
       if (r.firstJoin && E3.book) await keepCopy3('Before this device joined the cloud copy');
       C3.applying = true;
       const ok = await E3.replace(next);
       C3.applying = false;
-      if (ok) { renderHome3(); if (typeof renderPlan3 === 'function') { try { renderPlan3(); } catch (e) { /* the plan lane's own */ } } }
-      else held = true;
+      if (ok) { try { redraw3(); } catch (e) { /* a screen's own fault: the book is saved */ } }   // the one redraw, as when another tab saved
+      else {   // [B1] it would write again at every timed sync and still not land: stop, and say so once
+        if (!st.failAt) await keepCloud3(st, { failAt: Date.now() });
+        stop3('save');
+        return r;
+      }
     }
-    if (held) {
-      C3.why = 'save'; if (r.pushed) C3.dirty = false;
-      await putCloud3(Object.assign({}, st, { failAt: st.failAt || Date.now() }));
-      return r;
-    }
-    await putCloud3(Object.assign({}, st, { base: r.device.base, baseRev: r.device.baseRev, sentAt: r.pushed || !st.sentAt ? Date.now() : st.sentAt, failAt: 0 }));
+    C3.checkedAt = Date.now();
+    await keepCloud3(st, { base: r.device.base, baseRev: r.device.baseRev, sentAt: r.pushed || !st.sentAt ? Date.now() : st.sentAt, failAt: 0 });
     const qs = r.questions.length;
     if (qs && !SET3.open) msg3('Your devices changed the same thing. Open Settings to choose which to keep.');
     return r;
   } finally {
     C3.busy = false;
     if (SET3.open) paintCloud3();
-    if (C3.again) { C3.again = false; later3(CLOUD_SOON3); }
-    else if (C3.dirty) later3(CLOUD_EVERY3);
+    after3();
   }
+}
+/* when a sync or a check ends: one asked for meanwhile runs, and a change still waiting is sent later */
+function after3() {
+  if (C3.stop) return;
+  if (C3.again) { C3.again = false; later3(CLOUD_SOON3); }
+  else if (C3.dirty) later3(CLOUD_EVERY3);
 }
 const S3same = (a, b) => BurrowEngine.sync.canon(CLOUD3.noRev(a || {})) === BurrowEngine.sync.canon(CLOUD3.noRev(b || {}));
 function later3(ms) { clearTimeout(C3.timer); C3.timer = setTimeout(() => syncNow3(), ms); }
@@ -109,16 +155,52 @@ function changed3() {
   C3.dirty = true;
   later3(Math.max(CLOUD_SOON3, C3.lastSync + CLOUD_EVERY3 - Date.now()));
 }
-/* the start file calls this once the book is loaded: take the cloud copy on opening */
+/* ---------- the take [CS2]: on coming into view and every 60 seconds while in view ----------
+   The timed check asks only for the cloud copy's revision. The copy is fetched (a full sync) only when that revision is
+   not the one this device's base has, or a change here is waiting. With nothing changed nothing is written anywhere. */
+const inView3 = () => document.visibilityState === 'visible';
+async function take3() {
+  if (E3.mode === 'try' || C3.busy || C3.stop) return;
+  let st = null, full = false;
+  C3.busy = true;
+  try {
+    st = await freshCloud3();
+    if (!st.on) return;
+    full = st.base == null || waiting3(st);
+    if (!full) {
+      const v = await CLOUD3.revOnly({ api: cloudApi3(), keys: await CLOUD3.keysFor(st.code) });
+      C3.lastCheck = Date.now();
+      if (!v.ok) await failed3(st, v.why, false);
+      else if (v.rev !== st.baseRev) full = true;
+      else { C3.checkedAt = Date.now(); C3.why = null; }   // in step: the book shows what was checked
+    }
+  } finally {
+    C3.busy = false;
+    if (!full) { if (SET3.open) paintCloud3(); after3(); }
+  }
+  if (full) await syncNow3();
+}
+function tick3(ms) {
+  clearTimeout(C3.tick);
+  if (E3.mode === 'try' || !inView3()) return;
+  C3.tick = setTimeout(async () => { await take3(); if (C3.st && C3.st.on && !C3.stop) tick3(CT3.take); }, ms);
+}
+/* back in view (or online again): a take now, unless one ran in the last 10 seconds; then the timer */
+function cameBack3() { if (C3.started && inView3()) tick3(Math.max(0, C3.lastCheck + CT3.back - Date.now())); }
+/* the start file calls this once the book is loaded: the cloud copy is taken on opening, always as a full sync [B3] */
 async function startCloud3() {
   if (E3.mode === 'try') return;
   E3.onSaved(changed3);
-  const st = await cloudState3();
-  if (st.on) syncNow3();
+  const st = await freshCloud3();
+  if (st.on) await syncNow3();
+  C3.started = true;   // from here coming back into view takes too (the page's own first showing is the opening sync above)
+  tick3(CT3.take);
 }
 const leaving3 = () => { if (C3.st && C3.st.on && C3.dirty) syncNow3({ leaving: true }); };
-document.addEventListener('visibilitychange', () => { if (document.hidden) leaving3(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) { clearTimeout(C3.tick); leaving3(); } else cameBack3(); });
 addEventListener('pagehide', leaving3);
+addEventListener('pageshow', cameBack3);
+addEventListener('online', cameBack3);
 
 /* ---------- the card in Settings ---------- */
 function cloudCard3() {
@@ -133,18 +215,20 @@ async function paintCloud3() {
   const st = await cloudState3();
   if (!SET3.open) return;
   if (C3.shown) {   // a new code, shown once
+    body.dataset.mode = 'code';
     state.textContent = 'Write this code down, or keep it in a password manager. It is the only way to open the cloud copy, from this device or another. Nobody else can get it back for you.';
     body.innerHTML = `<p class="a3-code" data-cloud="code">${esc3(CLOUD3.codeShow(C3.shown))}</p>
       <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3CloudSaved">I saved the code</button><button type="button" class="a3-btn" id="a3CloudCancel">Cancel</button></div>`;
     $('#a3CloudSaved').addEventListener('click', async () => {
       const code = C3.shown; C3.shown = null;
       await putCloud3({ on: true, code, base: null, baseRev: null, sentAt: 0, failAt: 0 });
-      paintCloud3(); await syncNow3();
+      paintCloud3(); await syncNow3({ act: true }); tick3(CT3.take);
     });
     $('#a3CloudCancel').addEventListener('click', () => { C3.shown = null; paintCloud3(); });
     return;
   }
   if (!st.on) {
+    body.dataset.mode = 'off';
     state.textContent = st.gone ? WHY3.deleted : 'Off. Your money is on this device only. A cloud copy is locked with a code only you have, and keeps your phone and computer the same.';
     body.innerHTML = `<div class="a3-actions">${E3.book ? '<button type="button" class="a3-btn solid" id="a3CloudOn">Keep a copy in the cloud</button>' : ''}
         <button type="button" class="a3-btn" id="a3CloudHave">I have a code</button></div><div id="a3CloudForm"></div>`;
@@ -158,12 +242,17 @@ async function paintCloud3() {
     : busy ? 'On. Sending the first copy.'
     : st.sentAt ? `On. Last in step with the cloud at ${when3(st.sentAt)}.` : 'On.';
   const behind = st.failAt ? `<p class="a3-warn" data-cloud="behind">Changes made since ${esc3(when3(st.failAt))} are on this device only for now.</p>` : '';
-  body.innerHTML = `${behind}<div class="a3-actions"><button type="button" class="a3-btn" id="a3CloudNow">Send now</button>
+  /* the buttons are drawn once: a timed check that ends while the person reads "Turn off" or the code never wipes it */
+  if (body.dataset.mode !== 'on') {
+    body.dataset.mode = 'on';
+    body.innerHTML = `<div id="a3CloudBehind"></div><div class="a3-actions"><button type="button" class="a3-btn" id="a3CloudNow">Send now</button>
       <button type="button" class="a3-btn" id="a3CloudShow">Show code</button>
       <button type="button" class="a3-btn" id="a3CloudOff">Turn off</button></div><div id="a3CloudForm"></div>`;
-  $('#a3CloudNow').addEventListener('click', async () => { state.textContent = 'Sending.'; await syncNow3(); });
-  $('#a3CloudShow').addEventListener('click', () => { $('#a3CloudForm').innerHTML = `<p class="a3-code" data-cloud="code">${esc3(CLOUD3.codeShow(st.code))}</p>`; });
-  $('#a3CloudOff').addEventListener('click', offAsk3);
+    $('#a3CloudNow').addEventListener('click', async () => { $('#a3CloudState').textContent = 'Sending.'; await syncNow3({ act: true }); tick3(CT3.take); });
+    $('#a3CloudShow').addEventListener('click', () => { $('#a3CloudForm').innerHTML = `<p class="a3-code" data-cloud="code">${esc3(CLOUD3.codeShow(C3.st.code))}</p>`; });
+    $('#a3CloudOff').addEventListener('click', offAsk3);
+  }
+  $('#a3CloudBehind').innerHTML = behind;
   paintQuestions3();
 }
 async function turnOn3() {
@@ -203,7 +292,7 @@ async function useCode3(sure) {
   }
   await putCloud3({ on: true, code, base: null, baseRev: null, sentAt: 0, failAt: 0 });
   err.textContent = '';
-  await syncNow3();
+  await syncNow3({ act: true }); tick3(CT3.take);
   setMsg3(E3.book ? 'This device now shares the cloud copy.' : '');
   paintCloud3();
 }
@@ -220,7 +309,7 @@ function offAsk3() {
 }
 async function turnOff3(del) {
   const st = await cloudState3();
-  clearTimeout(C3.timer); C3.dirty = false; C3.why = null;
+  clearTimeout(C3.timer); clearTimeout(C3.tick); C3.dirty = false; C3.why = null; C3.stop = null; C3.said = false;
   if (del && st.code) {
     const r = await cloudApi3().del(await CLOUD3.keysFor(st.code));
     if (!r.ok) { setMsg3('The cloud copy could not be deleted right now, so it is still on. Try again when you are online.', true); return; }

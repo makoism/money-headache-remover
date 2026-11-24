@@ -199,6 +199,29 @@ const canon = x => S.canon(x);
     ck('CS3: both devices hold the same copy', canon(Aa.copy) === canon(Bb.copy));
   }
 
+  // ---- CS2: asking only for the revision (no copy comes back), for the timed take ----
+  {
+    const v6 = makeVault(), api6 = C.client({ fetch: v6.fetch, base: () => 'http://vault.test' });
+    let rv = await C.revOnly({ api: api6, keys });
+    ck('revOnly: nothing stored reads as revision 0', rv.ok && rv.rev === 0, JSON.stringify(rv));
+    const ra = await C.syncOnce({ api: api6, pack, S, keys, device: {}, copy: clone(BOOK) });
+    const before = v6.log.length;
+    rv = await C.revOnly({ api: api6, keys });
+    ck('revOnly: after a send the cloud\'s revision is this device\'s baseRev', rv.ok && rv.rev === ra.device.baseRev, JSON.stringify(rv));
+    const call = v6.log[v6.log.length - 1];
+    ck('revOnly: one call, asking for versions only, and no copy in the answer', v6.log.length === before + 1 && call.method === 'GET' && call.query === 'versions=1' && !('blob' in v6.handle('GET', keys.id, keys.token, null, new URLSearchParams('versions=1')).j));
+    const rb = await C.syncOnce({ api: api6, pack, S, keys, device: {}, copy: null });
+    ck('revOnly: after a take too', (await C.revOnly({ api: api6, keys })).rev === rb.device.baseRev);
+    rv = await C.revOnly({ api: api6, keys: Object.assign({}, keys, { token: 'ab'.repeat(32) }) });
+    ck('revOnly: a token the vault does not accept is a code problem', !rv.ok && rv.why === 'code', JSON.stringify(rv));
+    await api6.del(keys);
+    rv = await C.revOnly({ api: api6, keys });
+    ck('revOnly: a copy deleted on another device is said as deleted (410), as a full sync says it', !rv.ok && rv.why === 'deleted', JSON.stringify(rv));
+    const off = C.client({ fetch: async () => { throw new TypeError('Failed to fetch'); }, base: () => 'http://vault.test' });
+    rv = await C.revOnly({ api: off, keys });
+    ck('revOnly: no connection is said as such', !rv.ok && rv.why === 'net');
+  }
+
   console.log(bad ? `cloud3: ${bad} FAIL of ${n}` : `cloud3: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })().catch(e => { console.log('FAIL crashed ' + e.stack); process.exit(1); });

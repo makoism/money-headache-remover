@@ -56,11 +56,11 @@
   // ---------- the server ----------
   function client(opts) {
     const f = opts.fetch || ((...a) => root.fetch(...a)), base = opts.base, wait = opts.timeout || 20000;
-    async function req(k, method, body, keepalive) {
+    async function req(k, method, body, keepalive, query) {
       const ctl = typeof AbortController === 'function' ? new AbortController() : null;
       const timer = ctl ? setTimeout(() => ctl.abort(), wait) : 0;
       try {
-        const r = await f(base() + '/api/vault/' + k.id, { method, cache: 'no-store', keepalive: !!keepalive,
+        const r = await f(base() + '/api/vault/' + k.id + (query || ''), { method, cache: 'no-store', keepalive: !!keepalive,
           headers: Object.assign({ 'x-vault-token': k.token }, body ? { 'content-type': 'application/json' } : {}),
           body: body ? JSON.stringify(body) : undefined, signal: ctl ? ctl.signal : undefined });
         let j = null; try { j = await r.json(); } catch (e) { j = null; }
@@ -68,7 +68,8 @@
       } catch (e) { return { status: 0, ok: false, j: {} }; }   // no connection, or the 20 seconds ran out
       finally { clearTimeout(timer); }
     }
-    return { get: k => req(k, 'GET'), put: (k, b, keepalive) => req(k, 'PUT', b, keepalive), del: k => req(k, 'DELETE') };
+    /* rev: the revision alone (?versions=1 answers with `rev` and no copy), for the timed take [CS2] */
+    return { get: k => req(k, 'GET'), rev: k => req(k, 'GET', null, false, '?versions=1'), put: (k, b, keepalive) => req(k, 'PUT', b, keepalive), del: k => req(k, 'DELETE') };
   }
   // 410: the cloud copy was deleted on another device; it stays gone until a fresh turn-on (a new code), so the device stops
   const WHY = { net: 'net', code: 'code', busy: 'busy', server: 'server', deleted: 'deleted' };
@@ -87,6 +88,14 @@
     const u = await pack.unpack(env, { key: keys.key });
     if (!u.ok) return { ok: false, why: u.why };   // 'newer' (a later shape: refused, nothing changed), 'key', 'damaged', 'fmt'
     return { ok: true, rev: +g.j.rev || 0, copy: noRev(u.copy), updated: g.j.updated || null };
+  }
+  // [CS2] Only the cloud copy's revision: { ok, rev } (0 when nothing is stored) or { ok: false, why }, said as a full sync
+  // says it (a copy deleted on another device is 'deleted'). No copy is fetched, so a timed check costs one small call.
+  async function revOnly({ api, keys }) {
+    const g = await api.rev(keys);
+    if (g.status === 404) return { ok: true, rev: 0 };
+    if (!g.ok) return { ok: false, why: failOf(g.status) };
+    return { ok: true, rev: +g.j.rev || 0 };
   }
   // device: { base, baseRev } as kept on this device (SCHEMA_V3 2.2 `sync`); copy: this device's shared copy.
   // Gives { ok, copy, device: { base, baseRev }, pushed, merged, questions, firstJoin } or { ok: false, why, device }.
@@ -121,7 +130,7 @@
     return { ok: false, why: WHY.busy, device: dev0, copy: copy0 };
   }
 
-  const api = { SALT, ROUNDS, INFO, newCode, codeShow, codeClean, codeValid, keysFor, wrap, unwrap, client, fetchCloud, syncOnce, noRev };
+  const api = { SALT, ROUNDS, INFO, newCode, codeShow, codeClean, codeValid, keysFor, wrap, unwrap, client, fetchCloud, revOnly, syncOnce, noRev };
   root.CLOUD3 = api;
   if (typeof module === 'object' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);
