@@ -7,6 +7,8 @@ ENGINE="dates.js units.js ids.js schedules.js ledger.js lookahead.js periods.js 
 SCREENS="money.js names.js status.js inputs.js provenance.js messages.js help.js"
 STORE="clock.js guard.js idb.js persist.js"
 OUT=index.html
+set -e   # a part that cannot be read (a full disk, a missing file) stops the build before it replaces the page
+trap 'rm -f "$OUT.tmp.$$" sw3.js.tmp.$$' EXIT
 {
 cat <<'HEAD'
 <!DOCTYPE html>
@@ -48,7 +50,7 @@ echo '})();'
 echo '</script>'
 echo '</body>'
 echo '</html>'
-} > "$OUT"
+} > "$OUT.tmp.$$"; mv "$OUT.tmp.$$" "$OUT"   # in one step: a test reading the page while another builds never sees half a file
 wc -c "$OUT"
 # the service worker beside it (D6, backup lane): its cache is named by this build, so a new build is a new worker
-sed "s/@@BUILD@@/$(sha1sum "$OUT" | cut -c1-12)/" src/sw3.js > sw3.js
+sed "s/@@BUILD@@/$(sha1sum "$OUT" | cut -c1-12)/" src/sw3.js > sw3.js.tmp.$$; mv sw3.js.tmp.$$ sw3.js
