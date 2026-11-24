@@ -32,17 +32,22 @@ Mako, 24 Nov 2026, after his first run of version one: "the fact that we missed 
 | qc-art-director | The art rules. | Only when art changes. Art waits for Mako. |
 | efficiency | Is the plan the fastest safe way? (Reviews the process, not the app.) | Every new plan. |
 
+## Two levels
+- **A slice:** `check3.sh`, then only the one or two reviewers whose question the slice touches (see "When it runs").
+- **A release, or a candidate for Mako's link:** every reviewer that applies, and PASS from all five gates.
+
 ## How to run a round
 1. Build the page and run the full check: `cd wip/team/app3 && ./check3.sh > ../qc_reports/<round>/check3.txt 2>&1`. Round names: `<date>_<what>`, for example `2026-11-25_candidate3`.
 2. Make the screen pack: `node wip/team/qc/pack3.js wip/team/qc_reports/<round>/screens`.
-3. Start every reviewer that applies at the same time, each a fresh agent, each given only: the build path and the round folder. Never reuse a reviewer that saw an earlier build.
+3. If the build leaves lines of MAKO_SAYS.md for a later slice on purpose, ask the coordinator for `scope.txt` in the round folder (the coordinator writes it; the same list goes to Mako with the candidate).
+3b. After the check has finished (not during it), start every reviewer that applies, at most four at a time (the machine has four cores), each a fresh agent, each given only: the build path and the round folder. Never reuse a reviewer that saw an earlier build.
 4. Every FAIL is fixed. A finding seen in an earlier round is fixed at its cause, by building the missing shared piece (lesson 2), and the reviewer's grid or list gains the case.
 5. Run again, fresh reviewers, only the ones that failed plus any whose area the fixes touched.
 6. A release or a candidate for Mako's link needs PASS from all five gates and no NOT MET or NOT BUILT left unexplained. What is NOT BUILT on purpose (a later slice) is listed for Mako in plain words with the candidate, never hidden.
 7. Commit the round folder.
 
 ## Scripts beat reviewers
-Anything a reviewer finds twice becomes a script in `check3.sh`. The controls grid should become a table in the app with a test that walks it, so a missing door fails the check before any reviewer runs. Reviewers then spend their time on what scripts cannot see.
+Anything a reviewer finds twice becomes a script in `check3.sh`. The controls grid should become a table in the app with a test that walks it, so a missing door fails the check before any reviewer runs. Reviewers then spend their time on what scripts cannot see. The order agreed with the efficiency review (24 Nov), one commit each, test first: (a) the controls table and its walk; (b) a walker for every box and sheet (empty, wrong value, a message, a way out); (c) the assistant one tap away everywhere, no page errors, no network calls with cloud copy and assistant off; (d) no cut-off text and no tap target under 44 at 320, 390 and 1300 wide; (e) every M line of MAKO_SAYS.md is named by a test, a brief or a scope file; (f) a wording lint. A brief is cut down only after its script has caught a planted fault.
 
 ## How to update
 - Mako's words go into MAKO_SAYS.md the same hour (the coordinator does this). Reviewers pick them up from there with no other change.

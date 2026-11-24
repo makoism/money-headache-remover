@@ -33,7 +33,7 @@ async function open(o = {}) {
   p.on('pageerror', e => errs.push('PAGE ERROR ' + e.message));
   p.on('console', m => { if (m.type() === 'error' && !/ERR_FILE_NOT_FOUND/.test(m.text())) errs.push('console: ' + m.text()); });
   await p.goto(url); await p.waitForTimeout(400);
-  return { p, ctx, errs, url, profile: dir, close: () => ctx.close() };
+  return { p, ctx, errs, url, profile: dir, close: async () => { await ctx.close(); if (!o.profile) fs.rmSync(dir, { recursive: true, force: true }); } };
 }
 /* every word a person can see on the page right now, and every thing they can tap */
 const text = p => p.evaluate(() => document.body.innerText);

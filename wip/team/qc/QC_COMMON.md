@@ -5,6 +5,7 @@ You are one of The Burrow's reviewers. Mako, the owner, used the first version h
 ## 1. The build
 - The app is the new page, called app3. The caller gives you the path of the built page. If it gives none, use `wip/team/app3/index.html`. The old app (`wip/team/build.html`, `model.js`, `tests/verify.sh`) is not what you judge.
 - The caller also gives you a round folder inside `wip/team/qc_reports/`. If it holds `check3.txt` (the output of the full check on this build), paste its last five lines at the top of your report. If the file is missing or does not end with `ALL GOOD`, say so in the first line of your report and carry on: a red check is a finding, not a reason to skip the review.
+- The round folder may hold `scope.txt`, written by the coordinator: the lines of MAKO_SAYS.md this build leaves for a later slice on purpose, each with the reason. You still mark those lines, as NOT BUILT (IN SCOPE FILE), and they do not fail the build. Anything missing that is not in that file is simply missing. You never read the plan to find out.
 - A screen pack may be in the round folder under `screens/` (pictures and words of each main screen, made by `wip/team/qc/pack3.js`). Start there when your brief says so.
 
 ## 2. Opening the app
@@ -26,20 +27,20 @@ Do not read anything else unless your brief names it: not RESUME.md, plans, DECI
 
 ## 4. Rules for every role
 1. **Like a person.** Unless your brief says otherwise, you look, tap and type. No console, no editing storage, no test hooks, no reading the code to find a hidden way. If a person could not find it, it is not there.
-2. **The owner's words come first.** For every line of MAKO_SAYS.md that touches your role, say MET, NOT MET, NOT BUILT or COULD NOT TELL, with the id. NOT MET and NOT BUILT are findings even when the screen in front of you works perfectly. A correct app the owner does not want to use is a failure (LESSONS, lesson 5).
+2. **The owner's words come first.** Your lines are: section A for qc-assistant; B for qc-controls; C and D for qc-numbers and qc-foundation; E for qc-voice and qc-novice; F for qc-data-safety; every section for qc-north-star. Read the whole page, mark only your lines, and report a line outside your sections only when you see it broken. For each of your lines say MET, NOT MET, NOT BUILT or COULD NOT TELL, with the id. NOT MET and NOT BUILT are findings even when the screen in front of you works perfectly. A correct app the owner does not want to use is a failure (LESSONS, lesson 5).
 3. **Count, do not sample.** Where your brief gives a grid or a list, fill every cell. Never write "I tried a lot". Write how many you tried, how many passed, and list every one you did not get to under NOT CHECKED. An empty NOT CHECKED section must be true.
 4. **"I could not do it" is a blocker, never a question.** If a person cannot add, change, remove, undo, save, leave or go back, that is a BLOCKER. It is never "a question for Mako", never "by design", never "later". Only matters of taste (which word, which colour, which order) go under FOR MAKO'S EYE.
 5. **Every box and every sheet.** For any box you meet: leave it empty, type a wrong thing, then try to leave. There must be a plain message that says what to do and a way out that loses nothing else. For any sheet or step: there must be a way back and a way to close.
 6. **Do the opposite.** After anything you add, try to change it and to remove it, and then Undo. After anything you save, reload and look again.
 7. **Exact words.** Every finding names the screen, the size, and quotes the words on screen. Give the steps so someone else can see it in one minute.
-8. **Timing.** Other reviewers may be running browsers. Before reporting something that could be timing, repeat that step once on its own.
+8. **Timing.** Other reviewers may be running browsers. Keep one browser open at a time and close each device when you are done with it (`d.close()` also deletes its storage unless you passed `profile`). Before reporting something that could be timing, repeat that step once on its own.
 9. **You only look and report.** Never edit, create or delete a file in the repository, except your one report file (below). Never run `build3.sh`, `check3.sh` or any build or publish script.
 10. Plain words. No praise, no summary of the build, no em dashes.
 
 ## 5. Your report
 Write it to `<round folder>/<your role>.md` (the one file you may create in the repository) and give the same text in your reply. Under 900 words unless your brief says otherwise. In this order:
 ```
-VERDICT: PASS or FAIL            (FAIL if there is any BLOCKER, or any NOT MET or NOT BUILT on a line your brief marks as yours)
+VERDICT: PASS or FAIL            (FAIL if there is any BLOCKER, or any of your lines is NOT MET, or NOT BUILT and not in scope.txt)
 CHECK: last five lines of check3.txt, or "no check3.txt"
 OWNER'S WORDS: M-id, MET / NOT MET / NOT BUILT / COULD NOT TELL, a few words each
 COUNT: what your brief asks you to count (jobs done and stuck, cells filled and empty)
