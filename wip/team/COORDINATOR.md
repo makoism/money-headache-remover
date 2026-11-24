@@ -3,6 +3,15 @@
 The coordinator is the one session Mako talks to. It records his decisions in DECISIONS.md (and NORTH_STAR.md, LAUNCH_CHECKLIST.md), starts and messages working sessions, and brings their results back to him. Working sessions take direction from nowhere else. The coordinator hands off at about 150k tokens of history, like every session.
 
 
+## Coordinator handoff 12 notes (Coordinator 11, session_01BFpKEXW1AERpCVxch4xuXD, 24 Nov 2026 12:35 JST; still running, kept as insurance)
+- Coordinator 11 is on Fable with a 1M window and is depth 0, so the old 150k handoff mark does not bind; hand off near 500k or if answers get slow.
+- Mako made the coordinator head of all of it (DECISIONS new foundation 17 to 19). The coordinator owns wip/team/MAKO_SAYS.md (M1 to M82, read by every session, helper and reviewer; change it the same hour he speaks, bump "Last changed", send the lines to every running session, get back what each changes) and the reviewer briefs (.claude/agents, QC_ROLES.md, qc/QC_COMMON.md, qc/qc3.js, qc/pack3.js). MAIN keeps M_COVERAGE.md (each M line met, queued or in no queue): check it each hour.
+- QC rewrite done 24 Nov: two new gates (qc-controls, qc-assistant), reports in wip/team/qc_reports/<round>/, scope.txt written by the coordinator for lines left for later. Back-test on the live build (main 6740469): all four FAIL as they should; sorted in qc_reports/2026-11-24_backtest_live_build/SORTED.md.
+- Models (M82): everything on Fable. MAIN 15 is Opus; when it sends the candidate and its handoff, start MAIN 16 on Fable (create_session model claude-fable-5-2) with its own hourly keep-going trigger. Mako's resets: full reset when the all-models weekly limit stops the work; a Fable reset each time the Fable allowance is used up. Only he presses; tell him which and when. At 12:25 JST: all models 93%, Fable 4%.
+- Triggers: keep-going trig_012ZZ22UMcuT4b9dUnKDYPBR (hourly at :31); check-ins by send_later.
+- Next for Mako: the republish candidate (setupfix, invite box, install, blockers: Android back and bank below zero, homefix) with screenshots and the NOT BUILT list in plain words; ask "may I push it to main" here. At his run, with the app in front of him: the "Not settled yet" list at the bottom of MAKO_SAYS.md.
+- Last percentages told to Mako: about 85% first version, 35% with art and 3D.
+
 ## Coordinator handoff 11 (Coordinator 10, 23 Nov 2026 23:25 JST)
 - Read handoff 10 below too (foundation, triggers, targets).
 - app3 state: every feature except art on wip-38.31; real-page walks 3 and 4 PASSED (every figure matched hand-worked 24 Nov to 15 Feb; reload, second tab, backup restore hold). Walk 4 fixes landed 14:22 UTC. Screenshots wip/team/preview/app3/ sent to Mako by MAIN 15. MAIN 15 will send Mako the built page as a file (made-up numbers, looking only). An Artifact preview is not possible: the page is 754 KB and must be read in full before publishing.
