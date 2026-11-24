@@ -73,6 +73,9 @@ page|tests/e3_first.js|e3_first: ALL PASS||300|the ways out of the first screen 
 page|tests/e3_file.js|e3_file: ALL PASS||300|as a plain file:the first screen, the try book and its day box
 page|tests/e3_setup.js|e3_setup: ALL PASS||300|setup3
 page|tests/e3_setupfix.js|e3_setupfix: ALL PASS||300|setup fixes from Mako's first run: pay after tax, rows removed, empty amounts, each section saved with Undo, today's pay landed, a reload half way
+page|tests/e3_overdrawn.js|e3_overdrawn: ALL PASS||300|a bank below zero typed at setup and at Check your bank, the amber line on Home, a reload (M47)
+page|tests/e3_back.js|e3_back: ALL PASS||300|the phone's back button on every sheet, form and setup: it closes the top one, the app stays, typing is kept (K34, K35)
+page|tests/e3_undobar.js|e3_undobar: ALL PASS||300|the Undo bar never sits over a sheet or form opened after it, and is back when that closes in time (K37)
 page|tests/e3_onepay.js|e3_onepay: ALL PASS||300|two incomes on the 10th entered as one pay (M28): setup 20 Nov, 9 Dec, Check your bank on 10 Dec, hand-worked next pay, period and safe to spend
 page|tests/e3_setup6.js|e3_setup6: ALL PASS||300|setup for the other lives: the country chosen, more accounts, pay rhythms, a second income on its own day, cards and bills from their account, once a year (slice 6)
 page|tests/e3_income2.js|e3_income2: ALL PASS||300|a second income every n weeks (stepped back to a day on or before setup) or on two days a month (slice 6b)
@@ -115,11 +118,12 @@ page_tests_for() {   # page_tests_for <changed path, relative to app3/>
     tests/setup_sections.js)  echo e3_setup e3_setupfix e3_setup6 e3_income2 e3_weeks3 e3_walk2 ;;   # a helper (setup saved section by section), not a test
     tests/*.js)               basename "$1" .js ;;
     src/home3.js)             echo e3_home e3_ns e3_homeplan e3_warnwords e3_cardline e3_bankparts e3_names e3_payday ;;
-    src/checkin3.js)          echo e3_checkin e3_checkgap e3_cardfig e3_reload e3_bankparts e3_payday ;;
+    src/checkin3.js)          echo e3_checkin e3_checkgap e3_cardfig e3_reload e3_bankparts e3_payday e3_overdrawn ;;
     src/receipts3.js)         echo e3_receipts e3_listfix e3_moneyin e3_bigspend e3_stmt_once e3_period e3_names e3_doors e3_moved1 ;;
     src/plan3.js|src/plan3_write.js) echo e3_plan e3_rhythms e3_lineshare e3_homeplan e3_paychange e3_names ;;
-    src/setup3.js)            echo e3_setup e3_setupfix e3_setup6 e3_income2 e3_weeks3 e3_first e3_onepay ;;
+    src/setup3.js)            echo e3_setup e3_setupfix e3_setup6 e3_income2 e3_weeks3 e3_first e3_onepay e3_overdrawn ;;
     src/start3.js)            echo e3_first e3_file e3_try ;;
+    src/back3.js)             echo e3_back e3_undobar e3_checkin e3_plan e3_receipts e3_setupfix e3_stmt e3_ask e3_remind e3_backup e3_tabs ;;
     src/stmt3*.js)            echo e3_stmt e3_stmt_once e3_walk4 e3_invite ;;
     src/ask3*.js)             echo e3_ask e3_invite ;;
     src/backup3.js|src/settings3.js) echo e3_backup e3_tabs ;;

@@ -90,6 +90,7 @@
     'next.set_free': W('Set Free to spend'),
     /* the engine's warnings, worded here from their data (account, amount, day, minimum or none), never its text */
     'warn.below_zero': W('{account} goes {amount} below zero on {day}'),
+    'warn.below_zero_now': W('{account} is below zero today. Everything here counts from what it shows'),   // [M47, K29] the bank itself is under: said as it is, in amber, no shame
     'warn.below_minimum': W('{account} goes {amount} below its minimum of {minimum} on {day}'),
     'warn.later_on': W('Later on: {account} goes below zero in {month}'),
     'warn.later_low_zero': W('Later on: {account} goes {amount} below zero on {day}'),
@@ -218,7 +219,9 @@
     const currency = (accounts[w.account] || {}).currency || ctx.currency;
     if (w.code === 'below_minimum') {
       const minimum = minimumOf(w, accounts), amount = w.amount != null ? w.amount : w.short;
-      return fill(minimum ? 'warn.below_minimum' : 'warn.below_zero', { account: w.account, amount, minimum, day: w.day, currency }, ctx);
+      /* [M47, K29] the bank figure itself is below zero (the engine's own figure for it, nothing worked out here) */
+      const under = !minimum && (accounts[w.account] || {}).bank < 0;
+      return fill(minimum ? 'warn.below_minimum' : under ? 'warn.below_zero_now' : 'warn.below_zero', { account: w.account, amount, minimum, day: w.day, currency }, ctx);
     }
     if (w.code === 'set_aside_over') return fill('warn.set_aside_over', { who: whoOf(w), account: w.account, amount: w.amount, day: w.day, currency }, ctx);
     if (w.code === 'check_again') return fill('warn.check_again', { account: w.account, day: w.day }, ctx);

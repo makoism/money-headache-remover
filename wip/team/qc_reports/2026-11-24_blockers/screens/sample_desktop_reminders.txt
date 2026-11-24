@@ -1,0 +1,64 @@
+the burrow
+Settings
+Reminders
+Ask
+
+Made-up numbers shaped like a real month. Nothing you do here is saved
+Show the page as on
+Set up with my own numbers
+Reminders
+Check your bank
+
+A reminder to open the app and check your bank. It keeps safe to spend true
+
+The day after pay lands
+The middle of each pay period
+
+Next: 11 Dec, 26 Dec, 13 Jan 2027
+
+Bills
+Remind me
+On the day
+1 day before
+2 days before
+3 days before
+5 days before
+A week before
+Rent
+next reminder 26 Dec, due 28 Dec
+Power
+next reminder 26 Dec, due 28 Dec
+Phone
+next reminder 19 Dec, due 21 Dec
+Internet
+next reminder 26 Dec, due 28 Dec
+At
+Add to your calendar
+
+Nothing is sent anywhere. The calendar file is made on this phone and your calendar app opens it. The reminders say what is due, never an amount.
+
+Save the calendar file
+
+72 reminders in the file
+
+Google Calendar repeats each one. Outlook adds the next one only. The calendar file has every one for the next year, moved for weekends and holidays.
+
+Check your bank: after pay lands
+Google
+Outlook
+Check your bank: middle of the pay period
+Google
+Outlook
+Rent
+Google
+Outlook
+Power
+Google
+Outlook
+Phone
+Google
+Outlook
+Internet
+Google
+Outlook
+Close
