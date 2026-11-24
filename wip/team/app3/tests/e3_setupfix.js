@@ -311,5 +311,54 @@ async function openSetup(day) {
     ck(answer + ': the next pay never reads "in null days"', !/null/.test(home), home);
     await c.close();
   }
+  /* 7: an amount typed with a comma stays saved (qc-novice on 3a4f514, three phones: "182,400" saved, then the part fell
+     back to "Not saved yet" when the next part was saved, and See my money refused). A part is compared by the VALUE of
+     each amount box, never its text. Save is pressed without leaving the box first, as a phone's tap on a button does. */
+  {
+    const { c, p } = await openSetup('2026-11-24');
+    const put = (sel, t) => p.$eval(sel, (e, t) => { e.focus(); e.value = t; e.dispatchEvent(new Event('input', { bubbles: true })); }, t);
+    const press = sec => p.$eval(`#a3Setup [data-save=${sec}]`, e => e.click());
+    await put('#s3Bank', '182,400'); await press('bank'); await w(300);
+    ck('comma: the bank part says Saved', (await stateOf(p, 'bank')) === 'saved', await savedWords(p, 'bank'));
+    await put('#s3PayAmt', '231,000'); await p.selectOption('#s3PayDay', '25'); await press('pay'); await w(300);
+    ck('comma: after the pay part is saved, the bank part is still Saved', (await stateOf(p, 'bank')) === 'saved', await savedWords(p, 'bank'));
+    await put('#s3Free', '６０，０００'); await press('free'); await w(300);
+    await p.click('#s3AddCard'); await w(100); await put('[data-row=card1] [data-f=owed]', '48,000'); await press('cards'); await w(300);
+    await p.click('#s3AddBill'); await w(100); await put('[data-row=bill1] [data-f=name]', 'Rent'); await put('[data-row=bill1] [data-f=amount]', '72 000'); await press('bills'); await w(300);
+    await put('#s3Min', '¥10,000'); await press('min'); await w(300);
+    await p.evaluate(() => document.activeElement && document.activeElement.blur()); await w(200);
+    const states = []; for (const sec of ['bank', 'pay', 'free', 'cards', 'bills', 'min']) states.push(sec + ':' + await stateOf(p, sec));
+    ck('comma: all six parts are still Saved after every box is left', states.every(x => /:saved$/.test(x)), states.join(' '));
+    await p.reload(); await w(500);
+    if (await p.$('#a3SetupGo')) { await p.click('#a3SetupGo').catch(() => {}); await w(300); }
+    const states2 = []; for (const sec of ['bank', 'pay', 'free', 'cards', 'bills', 'min']) states2.push(sec + ':' + await stateOf(p, sec));
+    ck('comma: all six parts are Saved after a reload', states2.every(x => /:saved$/.test(x)), states2.join(' '));
+    await p.click('#a3SetupSave'); await w(700);
+    ck('comma: See my money keeps the book', await p.$eval('#a3Setup', e => e.hidden), await txt(p, '#a3SetupErr'));
+    const bk = await L.readBook(p);
+    const bank = bk && bk.events.find(x => x.k === 'check');
+    ck('comma: the bank in the book is 182,400', !!bank && JSON.stringify(bank).includes('182400'), JSON.stringify(bank));
+    ck('comma: Home shows the bank as ¥182,400', (await homeBank(p)) === 182400, await homeBank(p));
+    await c.close();
+  }
+  /* 6: leaving a box never moves the row's Remove (found by LANE B): what a row shows is worked out while the person
+     types, so a tap on Remove straight after typing lands on Remove. A real tap at the place the button was. */
+  {
+    const { c, p } = await openSetup('2026-11-24');
+    await typeIn(p, '#s3Bank', '300000'); await typeIn(p, '#s3PayAmt', '250000'); await p.selectOption('#s3PayDay', '25');
+    const top = sel => p.$eval(sel, e => Math.round(e.getBoundingClientRect().top + scrollY));
+    for (const [kind, add, f, typed] of [['bill', '#s3AddBill', 'name', 'Gym and swimming'], ['bill', '#s3AddBill', 'amount', '4800'], ['card', '#s3AddCard', 'owed', '52000'], ['card', '#s3AddCard', 'name', 'Everyday card'], ['pay', '#s3AddPay', 'amount', '30000']]) {
+      await p.click(add); await w(150);
+      const row = kind === 'pay' ? '[data-row=pay2]' : `[data-row^=${kind}]`, rm = row + ' [data-remove]';
+      await p.focus(`${row} [data-f=${f}]`); await p.keyboard.type(typed, { delay: 20 }); await w(400);
+      const before = await top(rm);
+      const box = await p.$eval(rm, e => { e.scrollIntoView({ block: 'center' }); const r = e.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
+      await p.mouse.click(box.x, box.y); await w(250);
+      const gone = !(await p.$(row));
+      ck(`${kind}, after typing its ${f}: a tap where Remove was takes the row out`, gone, gone ? '' : `Remove was at ${before}, now at ${await top(rm)}`);
+      if (!gone) { await p.click(rm); await w(150); }
+    }
+    await c.close();
+  }
   await L.finish();
 })().catch(e => { console.log('FAIL crashed ' + e.stack); process.exit(1); });
