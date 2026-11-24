@@ -8,7 +8,7 @@ How it is kept:
 - Every QC reviewer marks each line that touches its role MET, NOT MET or NOT BUILT on every build. That is how we know a line reached the app.
 - A line here that no plan, test or reviewer covers is a fault in the process: tell the coordinator.
 - Newer lines win. Dates are Nov 2026. Refs: NF = DECISIONS.md "The new foundation" item; D = DECISIONS.md; R2 = foundation_review/DECISIONS_ROUND2.md; NS = NORTH_STAR.md; L = LESSONS.md.
-- Last changed: 24 Nov 2026, 12:40 JST (first version, M1 to M81).
+- Last changed: 24 Nov 2026, 12:20 JST (M6: a third ask-first reason). First version 24 Nov, M1 to M81.
 
 ## A. How he wants to use the app
 
@@ -17,7 +17,7 @@ How it is kept:
 - M3. The assistant knows the whole picture and has "full control over all the numbers". (24, NF12; first said 16 to 17, D)
 - M4. Day to day he mostly talks to it ("here are my new receipts"). It adds, sorts, reports. (24, NF12)
 - M5. Screens are for seeing and checking. (24, NF12)
-- M6. It changes, shows what changed, Undo is one tap. Confirm only for deletes and changes over safe to spend. Not yet confirmed by him. (24, NF15, R2 BW)
+- M6. It changes, shows what changed, Undo is one tap. It asks first only for deletes, for changes over safe to spend, and before writing an amount the person never typed (the team's safety rule under M61: never guess money silently). Not yet confirmed by him. (24, NF15, R2 BW)
 - M7. See at a glance where all the money is and what is safe to spend. "Nothing is unknown." (17, NS)
 - M8. Built for himself first. It must replace his spreadsheet. (19, NS)
 - M9. "I can upload all my stuff here and it does it all for me." Setup asks only what statements cannot answer. (19, NS)
