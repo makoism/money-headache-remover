@@ -14,3 +14,4 @@ M7 M12 M47       Home's clearer figure words, amber for a late pay, a late card 
 M10 M52          A picture on Home: waits for Mako and the art.
 M21              iPhone browser not tested: the WebKit download is blocked by the environment's network rules.
 Known fault, not scope: a spend logged on a second phone may wait for "Send now" before the first phone sees it (M67). Cause found; its plan failed qc-foundation once and is being reworked; next update.
+Known fault, not scope: spending on a card that was not logged, found when the card is checked at Check your bank, is all counted on the day of that check. So the first check after a pay day puts the last period's card spending into the new period: the everyday figure is too low at the start of a period, and the period before looks better than it was (M36, M38, M30). The same on the live build. LANE B is fixing it in the engine (lane/cardgap); next update.
