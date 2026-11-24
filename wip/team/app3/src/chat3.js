@@ -20,6 +20,10 @@ const CHAT3_WORDS = {
   startOver: 'Start over? Your money on this device goes and the setup answers stay, so you can fill it in again. Anything you logged since is lost.',
 };
 
+/* below the wide screen the page scrolls inside #a3, above the bar (app3.css): every screen's scrollTo moves it too.
+   A function declaration, so it stands for the window's scrollTo in every file of this page. */
+function scrollTo(x, y) { window.scrollTo(x, y); const m = document.getElementById('a3'); if (m) m.scrollTop = y; }
+
 /* ---- the chat kept on this device: its own IndexedDB, never the book's ---- */
 function chat3Db() {
   if (CHAT3.db) return Promise.resolve(CHAT3.db);
@@ -250,11 +254,34 @@ function chat3FileNotice() {
   $('#a3ChatFileX').addEventListener('click', () => { box.innerHTML = ''; });
   $('#a3ChatPick').addEventListener('change', () => { $('#a3ChatFileSay').textContent = CHAT3_WORDS.noFiles; });
 }
-/* "Set up on the screens": setup3, filled from the draft (answers3, the one shared answers-to-book function) */
+/* "Set up on the screens": setup3, filled from the draft (ANSWERS3.toForm, the one shared answers function); the boxes
+   are setup3's own, filled as a person would, so its Save is the same */
 function chat3Screens() {
   openSetup3();
   const d = CHAT3.state && CHAT3.state.draft;
-  if (d && typeof ANSWERS3 === 'object' && typeof ANSWERS3.toForm === 'function') { try { ANSWERS3.toForm(d, document); } catch (e) { /* the form stays as it was */ } }
+  if (!d || !(d.banks || []).length || typeof ANSWERS3 !== 'object') return;
+  try { chat3FormFill(ANSWERS3.toForm(d)); } catch (e) { /* the form stays as it was: every box can still be typed */ }
+}
+function chat3FormFill(f) {
+  const cur = f.cur || 'JPY';
+  const amt = (el, v) => { if (el && v != null) el.value = SM.toInput(v, cur); };
+  const val = (el, v) => { if (el && v != null) { el.value = String(v); el.dispatchEvent(new Event('change', { bubbles: true })); } };
+  const txt = (el, v) => { if (el && v != null) el.value = v; };
+  const last = sel => $$(sel).pop();
+  val($('#s3Cur'), cur); val($('#s3Country'), f.country);
+  txt($('#s3BankName'), f.bankName); amt($('#s3Bank'), f.bank);
+  for (const a of f.accts || []) { $('#s3AddAcct').click(); const row = last('#a3Setup [data-row^=acct]'); txt(row.querySelector('[data-f=name]'), a.name); amt(row.querySelector('[data-f=amount]'), a.amount); val(row.querySelector('[data-f=type]'), a.type); }
+  const p = f.pay || {};
+  txt($('#s3PayName'), p.name); amt($('#s3PayAmt'), p.amount); val($('#s3PayEvery'), p.every); val($('#s3PayDay'), p.day); val($('#s3PayDay2'), p.day2);
+  txt($('#s3PayStart'), p.start); val($('#s3PayShift'), p.shift); val($('#s3PayAcct'), p.acct);
+  for (const x of f.pays || []) { $('#s3AddPay').click(); const row = last('#a3Setup [data-row^=pay]'); txt(row.querySelector('[data-f=name]'), x.name); amt(row.querySelector('[data-f=amount]'), x.amount); val(row.querySelector('[data-f=every]'), x.every); val(row.querySelector('[data-f=day]'), x.day); val(row.querySelector('[data-f=day2]'), x.day2); txt(row.querySelector('[data-f=start]'), x.start); val(row.querySelector('[data-f=acct]'), x.acct); }
+  for (const c of f.cards || []) { $('#s3AddCard').click(); const row = last('#a3Setup [data-row^=card]'); txt(row.querySelector('[data-f=name]'), c.name); amt(row.querySelector('[data-f=owed]'), c.owed); val(row.querySelector('[data-f=payDay]'), c.payDay); val(row.querySelector('[data-f=closeDay]'), c.closeDay); val(row.querySelector('[data-f=payFrom]'), c.payFrom); val(row.querySelector('[data-f=shift]'), c.shift); amt(row.querySelector('[data-f=statement]'), c.statement); }
+  for (const b of f.bills || []) { $('#s3AddBill').click(); const row = last('#a3Setup [data-row^=bill]'); txt(row.querySelector('[data-f=name]'), b.name); amt(row.querySelector('[data-f=amount]'), b.amount); val(row.querySelector('[data-f=every]'), b.every); val(row.querySelector('[data-f=month]'), b.month); val(row.querySelector('[data-f=day]'), b.day); val(row.querySelector('[data-f=from]'), b.from); }
+  amt($('#s3Free'), f.free); amt($('#s3Min'), f.min);
+  /* the questions the day asks (bills already out, a statement), from the boxes just filled, then their answers */
+  $('#a3Setup').dispatchEvent(new Event('change', { bubbles: true }));
+  (f.bills || []).forEach((b, i) => val($$('#a3Setup [data-row^=bill]')[i].querySelector('[data-f=takenOut]'), b.takenOut));
+  if (f.payToday && $('#s3PayToday')) val($('#s3PayToday'), f.payToday);   // setup3's own question (lane/setupfix), when it has it
 }
 /* "Use any AI": the setup questions as one request to copy; the answer pasted back goes through the same draft checks,
    section by section (CHAT3C.draftEdit), and then the same draft card and Fill */
@@ -306,4 +333,4 @@ async function startChat3() {
   if (ACT3 && typeof ACT3.onChange === 'function') ACT3.onChange(() => { if (E3.held()) E3.release().then(() => renderChat3()); });
   if (!E3.book) renderHome3(); else renderChat3();
 }
-root3.BurrowApp3.CHAT3 = CHAT3;   // for the page tests (start3.js)
+root3.BurrowApp3.chat = { CHAT3, redraw: chat3Redraw, save: chat3Save };   // for the page tests (start3.js)

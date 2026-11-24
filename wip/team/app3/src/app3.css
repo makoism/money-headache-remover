@@ -174,11 +174,16 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
 .a3-vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .a3-chat-lines { margin: 4px 0 0; padding-left: 18px; font-size: var(--t-sm); }
 .a3-chat-figs li { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; }
-body.a3-has-chat .a3 { padding-bottom: 150px; }
+/* below the wide screen the page is a column: the page scrolls on its own above the bar, so the bar never sits on top of
+   anything (as the message band, screens/messages.js BAND_CSS) */
+@media (max-width: 999px) {
+  body.a3-has-chat { height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+  body.a3-has-chat .a3 { flex: 1 1 auto; min-height: 0; overflow-y: auto; scroll-padding-top: 72px; width: 100%; max-width: none; margin: 0; padding: 16px max(16px, calc((100% - 608px) / 2)) 24px; }
+  body.a3-has-chat .a3-chat { position: static; flex: none; }
+}
 @media (min-width: 1000px) {
   .a3-chat { left: auto; top: 0; width: 360px; border-top: 0; border-left: 1px solid var(--hair); height: 100vh; height: 100dvh; padding: 16px; }
   .a3-chat[data-open] { height: 100vh; height: 100dvh; box-shadow: none; }
   .a3-chat:not([data-open]) .a3-chat-body, .a3-chat:not([data-open]) .a3-chat-head { display: flex; }
   body.a3-has-chat { padding-right: 360px; }
-  body.a3-has-chat .a3 { padding-bottom: 96px; }
 }
