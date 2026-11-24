@@ -51,11 +51,15 @@ export async function onRequestPost({ request, env }) {
   const tier = body.tier || 'default', model = env[TIERS[tier]] || MODEL_DEF[tier];
   const req = {
     model, max_tokens: Math.min(MAX_OUT, num(body.max_tokens, tier === 'quick' ? 2048 : 4096) || 2048),
-    system: PREFIX + (body.system ? '\n\n' + body.system : '') + (body.json ? '\n\nReply with only the JSON value asked for, no words before or after it.' : ''),
+    /* prompt caching: the system text and the tool list are the same round after round, so both carry a cache mark
+       (tools render before system; a prefix under the model's minimum is simply not cached, never an error) */
+    system: [{ type: 'text', text: PREFIX + (body.system ? '\n\n' + body.system : '') + (body.json ? '\n\nReply with only the JSON value asked for, no words before or after it.' : ''), cache_control: { type: 'ephemeral' } }],
     messages: body.messages,
   };
   /* Sonnet 5.5 and Opus 5.5 refuse a forced tool (tool_choice any or tool, a 400), so the choice is always auto: the page asks for the tool in the prompt and reads a text answer as the fallback */
-  if (body.tools && body.tools.length) { req.tools = body.tools; if (body.tool_choice) req.tool_choice = { type: body.tool_choice.type === 'none' ? 'none' : 'auto' }; }
+  if (body.tools && body.tools.length) {
+    req.tools = body.tools.map((t, i, all) => { const c = Object.assign({}, t); delete c.cache_control; if (i === all.length - 1) c.cache_control = { type: 'ephemeral' }; return c; }); if (body.tool_choice) req.tool_choice = { type: body.tool_choice.type === 'none' ? 'none' : 'auto' };
+  }
   if (EFFORTS.indexOf(body.effort) >= 0) req.output_config = { effort: body.effort }; /* less thinking for plain extraction jobs */
   const stream = !!body.stream && !req.tools;
   if (stream) req.stream = true;
@@ -79,9 +83,9 @@ export async function onRequestPost({ request, env }) {
 
   if (!stream) {
     let data; try { data = await up.json(); } catch (e) { return fail(502, 'upstream_error', 'Unreadable answer.'); }
-    const usage = data.usage || {}; await count(usage.input_tokens, usage.output_tokens);
+    const usage = data.usage || {}, inAll = promptTokens(usage); await count(inAll, usage.output_tokens);
     const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
-    return json({ text, truncated: data.stop_reason === 'max_tokens', stop_reason: data.stop_reason, content: data.content || [], usage: { input: usage.input_tokens || 0, output: usage.output_tokens || 0 }, model: data.model || model });
+    return json({ text, truncated: data.stop_reason === 'max_tokens', stop_reason: data.stop_reason, content: data.content || [], usage: { input: inAll, output: usage.output_tokens || 0 }, model: data.model || model });
   }
   /* streaming: pass the text deltas through as simple SSE lines and count the tokens at the end */
   let inTok = 0, outTok = 0, stopReason = null, buf = '', ended = false;
@@ -94,7 +98,7 @@ export async function onRequestPost({ request, env }) {
         const block = buf.slice(0, i); buf = buf.slice(i + 2);
         const line = block.split('\n').find(l => l.startsWith('data:')); if (!line) continue;
         let ev; try { ev = JSON.parse(line.slice(5).trim()); } catch (e) { continue; }
-        if (ev.type === 'message_start' && ev.message && ev.message.usage) inTok = ev.message.usage.input_tokens || 0;
+        if (ev.type === 'message_start' && ev.message && ev.message.usage) inTok = promptTokens(ev.message.usage);
         else if (ev.type === 'content_block_delta' && ev.delta && ev.delta.type === 'text_delta') ctl.enqueue(enc.encode('data: ' + JSON.stringify({ t: ev.delta.text }) + '\n\n'));
         else if (ev.type === 'message_delta') { if (ev.usage) outTok = ev.usage.output_tokens || outTok; if (ev.delta && ev.delta.stop_reason) stopReason = ev.delta.stop_reason; }
         else if (ev.type === 'error') ctl.enqueue(enc.encode('data: ' + JSON.stringify({ error: { code: 'upstream_error', message: (ev.error && ev.error.message) || 'Claude stopped.' } }) + '\n\n'));
@@ -117,6 +121,9 @@ async function callerKey(env, body, ip) {
   if (typeof body.device === 'string') return { k: 'u:d:' + body.device.toLowerCase(), name: 'this device' };
   return { k: 'u:ip:' + ip, name: 'this connection' };
 }
+/* with caching, input_tokens is only the uncached rest: the whole prompt is input + cache write + cache read, and the caps
+   count the whole prompt as before */
+const promptTokens = u => (u.input_tokens || 0) + (u.cache_creation_input_tokens || 0) + (u.cache_read_input_tokens || 0);
 const corsHeaders = () => ({ 'access-control-allow-origin': '*', 'access-control-allow-headers': 'content-type, x-app' });
 
 /* every field the page sends is checked; anything odd is refused with a reason */

@@ -5,7 +5,7 @@
    B. exactly what app3 sends (wip-38.31: wip/team/app3/src/ask3.js ask3Relay, src/stmt3_ai.js viaRelay).
    C. the per-day call cap (USER_DAILY_CALLS): keyed to the invite code when INVITE_CODES is set, else to the page's
       device id, else to the client IP; never to `anon`. The global token cap and the per-minute cap stay.
- */
+   D. prompt caching: cache_control on the system prompt and on the last tool; model and the rest unchanged. */
 import worker from '../../worker/index.js';
 import { makeD1 } from '../vault_server/d1_stub.mjs';
 import { randomBytes } from 'node:crypto';
@@ -174,6 +174,36 @@ const APP3 = {
   const db4 = makeD1(), env4 = envOf(db4, { USER_DAILY_CALLS: '1' });
   r = await post(env4, OLD.plain(anonOf())); r = await post(env4, OLD.plain(anonOf()));
   ck('C17 the cap message is plain words and the code stays rate_limited', r.status === 429 && r.j.error.code === 'rate_limited' && /today|tomorrow/i.test(r.j.error.message), r.j);
+}
+
+// ---------------- D. prompt caching ----------------
+{
+  const db = makeD1(), env = envOf(db);
+  await post(env, Object.assign(OLD.plain(anonOf()), { system: 'Page rules here.' }));
+  let q = lastSent();
+  ck('D1 the system prompt goes up as one text block with cache_control ephemeral, same words as before', Array.isArray(q.system) && q.system.length === 1 && q.system[0].type === 'text' && /^You are the assistant built into The Burrow/.test(q.system[0].text) && /\n\nPage rules here\.$/.test(q.system[0].text) && JSON.stringify(q.system[0].cache_control) === '{"type":"ephemeral"}', q.system);
+  ck('D2 no tools sent means no tools field', q.tools === undefined && q.tool_choice === undefined, q);
+  await post(env, OLD.tools(anonOf()));
+  q = lastSent();
+  ck('D3 only the last tool carries cache_control ephemeral', q.tools.length === 2 && q.tools[0].cache_control === undefined && JSON.stringify(q.tools[1].cache_control) === '{"type":"ephemeral"}', q.tools);
+  const sentTools = q.tools.map(t => { const c = Object.assign({}, t); delete c.cache_control; return c; });
+  ck('D4 the tools are otherwise exactly what the page sent', JSON.stringify(sentTools) === JSON.stringify(OLD.tools('x').tools), sentTools);
+  await post(env, Object.assign(APP3.ask(anonOf()), { tools: [Object.assign({ cache_control: { type: 'ephemeral' } }, APP3.ask('x').tools[0]), { name: 'second', description: 'x', input_schema: { type: 'object' } }] }));
+  q = lastSent();
+  ck('D5 a cache_control the page put on an earlier tool is dropped (at most two marks)', q.tools[0].cache_control === undefined && q.tools[1].cache_control.type === 'ephemeral', q.tools);
+  await post(env, OLD.stream(anonOf()));
+  q = lastSent();
+  ck('D6 a streamed call carries the system cache mark too', q.stream === true && q.system[0].cache_control.type === 'ephemeral', q);
+  ck('D7 the request has only the fields it had before (model, max_tokens, system, messages, tools, tool_choice, output_config, stream)', sent.every(s => Object.keys(s.req).every(k => ['model', 'max_tokens', 'system', 'messages', 'tools', 'tool_choice', 'output_config', 'stream'].includes(k))), sent.map(s => Object.keys(s.req)));
+  const db5 = makeD1(), env5 = envOf(db5);
+  usageNext = { input_tokens: 10, cache_creation_input_tokens: 50, cache_read_input_tokens: 30, output_tokens: 20 };
+  let r = await post(env5, OLD.plain(anonOf()));
+  ck('D9 usage counts cached tokens too: input, cache write, cache read, output (10+50+30+20); input reported as the whole prompt', r.status === 200 && usageRows(db5).find(x => x.k === 'all').tokens === 110 && r.j.usage.input === 90 && r.j.usage.output === 20, [usageRows(db5), r.j.usage]);
+  usageNext = { input_tokens: 5, cache_creation_input_tokens: 0, cache_read_input_tokens: 70, output_tokens: 33 };
+  r = await post(env5, Object.assign(OLD.stream(anonOf()), { device: hex(16) }));
+  await new Promise(res => setTimeout(res, 20));
+  ck('D10 a streamed call counts its cached tokens too and is keyed to the device', usageRows(db5).find(x => x.k === 'all').tokens === 218 && usageRows(db5).some(x => /^u:d:/.test(x.k) && x.tokens === 108), usageRows(db5));
+  ck('D8 the messages are never given a cache mark', sent.every(s => !JSON.stringify(s.req.messages).includes('cache_control')), '');
 }
 
 globalThis.fetch = realFetch;

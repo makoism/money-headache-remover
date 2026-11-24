@@ -5,6 +5,8 @@ const port = +process.argv[2] || 8790;
 const srv = http.createServer((req, res) => {
   let body = ''; req.on('data', c => body += c); req.on('end', () => {
     let j; try { j = JSON.parse(body || '{}'); } catch (e) { j = {}; }
+    /* the relay sends the system prompt as text blocks with a cache mark; the checks below read it as one string */
+    if (Array.isArray(j.system)) j.system = j.system.map(b => b.text || '').join('');
     if (!Array.isArray(j.messages) || !j.messages.length) { res.writeHead(400, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ error: { type: 'invalid_request_error', message: 'messages: field required' } })); }
     const last = j.messages[j.messages.length - 1];
     const lastText = typeof last.content === 'string' ? last.content : last.content.map(c => c.type === 'text' ? c.text : c.type === 'tool_result' ? '[tool_result ' + JSON.stringify(c.content) + ']' : '[' + c.type + ']').join(' ');
