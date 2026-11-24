@@ -8715,7 +8715,7 @@ function afterCards3(r, yr) {
 /* money coming in (a pay) or going out, by the schedule an item belongs to (a lookup) */
 const isIncome3 = item => (E3.book.schedules || []).some(s => s.kind === 'income' && s.id === BurrowEngine.ids.scheduleOf(item));
 /* the safe to spend heading, by that pay's state: a late or not seen pay is not counted until it is ticked [BH1, BH3] */
-function safeUntil3(r, yr) {
+function safeUntil3(r, yr, home) {
   /* [slice 6, B4] no fixed pay: no next pay to run to; the walk looks ahead at the bills to come and the plan by the day */
   if (!r.period) return ' with no fixed pay';
   const n = nextPay3(r);
@@ -8724,8 +8724,12 @@ function safeUntil3(r, yr) {
   if (n.state === 'notSeen') return `, not counting the ${d} pay (not seen yet)`;
   if (n.state === 'late') return `, not counting the ${d} pay yet (late)`;
   /* [S1] on its day the pay is counted (G4), so safe to spend runs to the pay after it: the engine's safeToSpend.until */
-  if (n.days === 0 && r.safeToSpend.until) return ` until next pay on ${esc3(day3(r.safeToSpend.until, yr))}${r.safeToSpend.notCounting ? ', not counting today\'s pay (not in at your check today)' : ''}`;
-  return ` until next pay on ${d}`;
+  /* [BV2.13, M37] today's pay counted but not seen in the bank yet (on the check-in list, not ticked): said in plain
+     words with the engine's own amount for it */
+  const np = r.daysToNextPay || {}, notIn = np.days === 0 && !r.safeToSpend.notCounting && ((r.checkIn || {}).toConfirm || []).find(o => o.item === np.item);
+  const notInWords = notIn ? `, includes today's pay of ${esc3(money3(notIn.amount, home))}, not in your bank yet` : '';
+  if (n.days === 0 && r.safeToSpend.until) return ` until next pay on ${esc3(day3(r.safeToSpend.until, yr))}${r.safeToSpend.notCounting ? ', not counting today\'s pay (not in at your check today)' : ''}${notInWords}`;
+  return ` until next pay on ${d}${notInWords}`;
 }
 /* [LISTFIX B2, I4, BP2] right after setup, Free to spend counts only its share for the days left in the period, and it
    caps safe to spend: Home says why the figure is small, with the full amount and when it counts (the engine's counts
@@ -8751,7 +8755,8 @@ function nextPayWords3(r, yr) {
   const d = esc3(day3(n.day, yr));
   if (n.state === 'notSeen') return `<p class="a3-warn" data-fig="nextpay" data-state="notSeen">Pay due ${d} has not been seen yet. Check your bank when it lands</p>`;
   if (n.state === 'late') return `<p class="a3-warn" data-fig="nextpay" data-state="late">Pay due ${d} is late. Check your bank when it lands</p>`;
-  return `<p class="a3-sub" data-fig="nextpay" data-state="coming">${esc3(label3('nextPay'))} ${d}, ${dueWords3(n.days)}</p>`;
+  /* on pay day the engine counts today's pay, so it gives no day count to the one after: the day alone, never "in null days" */
+  return `<p class="a3-sub" data-fig="nextpay" data-state="coming">${esc3(label3('nextPay'))} ${d}${n.days == null ? '' : `, ${dueWords3(n.days)}`}</p>`;
 }
 function renderHome3() { screen3(drawHome3); }
 function drawHome3() {
@@ -8786,7 +8791,7 @@ function drawHome3() {
       <p class="a3-sub" data-fig="age">${bankParts3(a, yr)}</p></section>`);
   }
   /* safe to spend until next pay, with the sum behind it */
-  const until = safeUntil3(r, yr);
+  const until = safeUntil3(r, yr, home);
   /* [BJ5] when Free to spend caps the headline, the engine's sum ends with the cap, so the two figures agree */
   /* [S6] Free to spend over: that part says by how much (the engine's `over`), so the sum never hides the overspend */
   /* [BM3] each part names its own amount: a cap that takes everything (the headline is 0) says "all of it" */

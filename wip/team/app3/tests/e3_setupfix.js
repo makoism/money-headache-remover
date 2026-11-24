@@ -244,6 +244,7 @@ async function openSetup(day) {
       ck('landed: safe to spend 0 (the pay is inside the 40,000; rent leaves it 40,000 short)', safe === 0, safe);
       ck('landed: no "not in your bank yet" words', !/not in your bank yet/.test(home), home);
     }
+    ck(answer + ': the next pay never reads "in null days"', !/null/.test(home), home);
     await c.close();
   }
   await L.finish();
