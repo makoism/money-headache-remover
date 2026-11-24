@@ -7,6 +7,7 @@
    and Receipts is the same after a reload. Run in Tokyo, Kiritimati, Los Angeles and UTC, early morning, mid morning
    and late at night. */
 'use strict';
+const { finishSetup: finishSetup3 } = require('./setup_sections.js');   // setup is saved one section at a time (item 14)
 const fs = require('fs'), os = require('os'), path = require('path');
 const { chromium } = require(process.env.TOOLS_PLAYWRIGHT || '/opt/node-tools/node_modules/playwright');
 const PAGE = 'file://' + path.join(__dirname, '../index.html');
@@ -54,7 +55,7 @@ async function one(browser, tz, off, hhmm) {
   await typeIn('#s3Bank', 150000); await typeIn('#s3PayAmt', 240000); await p.selectOption('#s3PayDay', '10');
   await p.click('#s3AddCard'); await typeIn('[data-row=card1] [data-f=name]', 'Card A'); await typeIn('[data-row=card1] [data-f=owed]', 35000);
   await p.selectOption('[data-row=card1] [data-f=payDay]', '10');
-  await p.click('#a3SetupSave'); await w(700);
+  await finishSetup3(p); await w(700);
   await p.click('[data-tab=receipts]'); await w(150); await p.click('[data-mode=spend]'); await w(100);
   await p.fill('#rcAmt', '5000');
   const v = await p.$eval('#rcAcct', s => [...s.options].find(o => o.textContent.trim() === 'Card A').value); await p.selectOption('#rcAcct', v);

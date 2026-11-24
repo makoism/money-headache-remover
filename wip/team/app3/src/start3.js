@@ -42,6 +42,8 @@ async function leaveTry3() {
   if (E3.mode === 'try') tryBand3();
   BurrowScreens.messages.mount($('#a3Msg'), MSG3);
   renderHome3();
+  /* [item 14] a setup left half way: back into it, with what was saved (src/setup3.js, the draft) */
+  if (!E3.book && E3.mode === 'none' && await E3.rec('setup')) openSetup3();
   document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; if (!$('#a3Check').hidden) closeCheck3(); });
   if (typeof startCloud3 === 'function') startCloud3();   // the cloud copy, when on: taken on opening (backup lane)
   /* another tab saved (E3 joined it in): draw it again; a receipt being typed keeps what was typed */

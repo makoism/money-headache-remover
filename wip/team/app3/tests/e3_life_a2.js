@@ -13,6 +13,7 @@
           1 Jan +160,000 - 90,000 rent - 40,000 (the next period's Free to spend) = 347,500. Spare 317,500 + 9,200 =
           326,700, so safe to spend is Free to spend left: 40,000. */
 'use strict';
+const { finishSetup: finishSetup3 } = require('./setup_sections.js');   // setup is saved one section at a time (item 14)
 const L = require('./lives3.js').make('e3_life_a2');
 const { ck, go, tab, typeIn, log, checkin, home, w } = L;
 (async () => {
@@ -30,7 +31,7 @@ const { ck, go, tab, typeIn, log, checkin, home, w } = L;
     k++; await p.click('#s3AddBill'); const r = `[data-row=bill${k}] `;
     await typeIn(p, r + '[data-f=name]', name); await typeIn(p, r + '[data-f=amount]', amt); await p.selectOption(r + '[data-f=day]', day);
   }
-  await p.click('#a3SetupSave'); await w(700);
+  await finishSetup3(p); await w(700);
   await home(p, '7 Dec after setup with the next pay given', 31428, { Checking: 185000, Cash: 12000 });
   ck('7 Dec: the period is 4 Dec to 17 Dec', (await p.$eval('[data-fig=period]', e => e.textContent).catch(() => '')) === '4 Dec to 17 Dec');
   await tab(p, 'plan');

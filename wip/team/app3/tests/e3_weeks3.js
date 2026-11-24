@@ -8,6 +8,7 @@
    spend as the same money a year: 60,000 x 52 / 3 / 12 = 86,666.67, rounded half up 86,667, and says so. Every 3 weeks
    is also offered for a second income in setup. */
 'use strict';
+const { finishSetup: finishSetup3 } = require('./setup_sections.js');   // setup is saved one section at a time (item 14)
 const L = require('./lives3.js').make('e3_weeks3');
 const { ck, go, tab, typeIn, home, w } = L;
 const num = v => Number(String(v).replace(/[^\d.]/g, ''));
@@ -22,7 +23,7 @@ const num = v => Number(String(v).replace(/[^\d.]/g, ''));
   await typeIn(p, '#s3BankName', 'Bank'); await typeIn(p, '#s3Bank', '500000');
   await typeIn(p, '#s3PayAmt', '240000'); await p.selectOption('#s3PayEvery', 'weeks3'); await p.fill('#s3PayStart', '2026-12-18');
   await typeIn(p, '#s3Free', '60000');
-  await p.click('#a3SetupSave'); await w(700);
+  await finishSetup3(p); await w(700);
   const bk = await L.readBook(p), s = bk.schedules.find(x => x.kind === 'income');
   ck('saved every 3 weeks from Fri 27 Nov', JSON.stringify(s.rules[0].rule) === '{"every":"weeks","n":3,"from":"2026-11-27"}' && s.startsPeriod === true, JSON.stringify(s.rules));
   await home(p, '1 Dec after setup', 48571, { Bank: 500000 });

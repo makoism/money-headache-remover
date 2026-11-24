@@ -6,6 +6,7 @@
    safe to spend and the main bank's figure must be the hand-worked ones of the walk 4 report. Made-up yen only; no real
    AI (a stand-in for the viewer's Claude answers with recorded made-up replies). */
 'use strict';
+const { finishSetup: finishSetup3 } = require('./setup_sections.js');   // setup is saved one section at a time (item 14)
 const fs = require('fs'), os = require('os'), path = require('path');
 const { chromium } = require(process.env.TOOLS_PLAYWRIGHT || '/opt/node-tools/node_modules/playwright');
 const PAGE = 'file://' + path.join(__dirname, '../index.html');
@@ -121,7 +122,7 @@ async function home(p, label, safe, bank) {
     k++; await p.click('#s3AddBill'); const r = `[data-row=bill${k}] `;
     await typeIn(p, r + '[data-f=name]', name); await typeIn(p, r + '[data-f=amount]', amt); await p.selectOption(r + '[data-f=day]', day);
   }
-  await p.click('#a3SetupSave'); await w(700);
+  await finishSetup3(p); await w(700);
   await home(p, '24 Nov after setup', 201400, 286000);
   /* s2: November */
   await spend(p, 3000, 'Main bank', { note: 'groceries' });

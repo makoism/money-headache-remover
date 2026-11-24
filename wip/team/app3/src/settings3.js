@@ -64,15 +64,17 @@ function openSet3() {
       <div id="a3BkAsk"></div>
       <div id="a3BkKept"></div></div>`;
   const cloud = typeof cloudCard3 === 'function' ? cloudCard3() : '';
+  const word = '<div class="a3-card" data-card="word" id="a3SetWord"></div>';   // the code word for the AI: a device thing, shown for a try book too
   sheet.innerHTML = `<div class="a3-sheet-in">
       <h1 id="a3SetT">Settings</h1>
       <p class="a3-warn" id="a3SetMsg" role="status" hidden></p>
-      ${money}${tryBook ? tryNote : `${device}${backup}${cloud}`}
+      ${money}${tryBook ? tryNote : `${device}${backup}${cloud}`}${word}
       <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3SetClose">Done</button></div></div>`;
   /* over whatever shows (the panels and the tab bar), put back as they were on Done */
   SET3.was = [...document.querySelectorAll('[data-panel], .a3-tabs, #a3Check, #a3StmtBar, #a3Stmt')].map(el => [el, el.hidden]);
   SET3.was.forEach(([el]) => { el.hidden = true; }); sheet.hidden = false;
   $('#a3SetClose').addEventListener('click', closeSet3);
+  paintWord3();
   if (!tryBook) {
     paintSpace3();
     $('#a3Persist').addEventListener('click', async () => { await BurrowPersist.askToKeep(); paintSpace3(); });
@@ -99,6 +101,24 @@ async function fromOther3() {
   $('#a3SetT').insertAdjacentHTML('afterend', `<p class="a3-next" data-set="other">Type the cloud code from your other device, or restore a backup file you saved there</p>`);
   for (let i = 0; i < 40 && SET3.open && !$('#a3CloudHave'); i++) await new Promise(r => setTimeout(r, 25));   // the cloud card paints after it reads its state
   if (SET3.open && $('#a3CloudHave') && typeof haveCode3 === 'function') haveCode3();
+}
+/* the code word for the AI (stmt3_ai.js keeps it on this device only): change it or clear it */
+function paintWord3() {
+  const el = $('#a3SetWord'); if (!el) return;
+  const w = STMT3_AI.word();
+  el.innerHTML = `<h2>Code word for the AI</h2>
+    <p class="a3-next" data-set="word">${w ? 'A code word is kept on this device only. It is never in your backup file or cloud copy, and goes only to this page\'s own server.' : 'No code word is kept on this device. One is needed only when the page\'s owner asks for it.'}</p>
+    <div class="a3-field"><label for="a3SetWordIn">${w ? 'New code word' : 'Code word'}</label>
+      <input class="a3-in a3-text" id="a3SetWordIn" type="text" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+    <div class="a3-actions"><button type="button" class="a3-btn" id="a3SetWordKeep">${w ? 'Change it' : 'Keep it'}</button>${w ? '<button type="button" class="a3-btn" id="a3SetWordClear">Clear it</button>' : ''}</div>`;
+  const keep = () => {
+    const v = $('#a3SetWordIn').value.trim();
+    if (!v) { setMsg3('Type the code word first.', true); $('#a3SetWordIn').focus(); return; }
+    STMT3_AI.setWord(v); paintWord3(); setMsg3('The code word is kept on this device.');
+  };
+  $('#a3SetWordKeep').addEventListener('click', keep);
+  $('#a3SetWordIn').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); keep(); } });
+  if (w) $('#a3SetWordClear').addEventListener('click', () => { STMT3_AI.setWord(''); paintWord3(); setMsg3('The code word is cleared from this device.'); });
 }
 async function paintSpace3() {
   const el = $('#a3Space'); if (!el || typeof BurrowPersist !== 'object') return;

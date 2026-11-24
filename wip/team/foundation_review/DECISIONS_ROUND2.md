@@ -552,3 +552,33 @@ The five corrections at the end of STAGE2_PLAN.md are accepted. The most importa
 ## BT. Second plan review (24 Nov morning JST)
 The corrections 1prime, 2prime and 5prime at the end of STAGE2_PLAN.md are accepted. Each person's Free to spend is a people map inside the plan.shares entry, and the entry keeps the household total. The rate in force is the latest in either direction. The S1 walk uses steps converted by each line's per, and leaves out goal set-asides.
 BT2. The people-map rules (1'' in STAGE2_PLAN.md) passed a narrow qc-foundation review. Lane A and the merge of S1 may go ahead.
+
+## BU. How the AI-first slice is built (efficiency review, 24 Nov late morning JST)
+BU1. Slice 1 runs as three lanes:
+- **A:** the pure core (chat3_core.js, fake_ai.js, recorded replies).
+- **B:** the panel and e3_chatwalk, built against A's interface, which is fixed on day one.
+- **C:** a relay branch off main.
+
+addPay, changePay and addAccount go to slice 4.
+BU2. No `figures` or `draft` read tools. Fresh figures and the draft go with every round.
+BU3. Relay, before real use, on a main-relay branch with Mako's yes:
+- the per-day call cap is keyed to the invite code or a device id, never a random `anon`
+- prompt caching on the system prompt and tools
+BU4. One scripted real-AI walk (about $0.50 a run) replays the setup answers and checks the end figure 201,400. It is not a gate.
+BU5. Running cost, estimated at Sonnet prices: about $0.60 per setup, about $10 to $17 a month for daily use. To Mako: a spend limit in the Anthropic console.
+
+## BV. AI-first plan review (24 Nov late morning JST)
+The seven corrections at the end of AI_FIRST_PLAN.md are accepted:
+- one shared answers-to-book function
+- undoing the fill throws away the store
+- figures in the draft keep their day
+- fill refused until the asked answers are given
+- actions specified, with changePay as the existing changeBill
+- privacy lines
+- the side job question
+
+## BW. How the assistant changes money (Mako, 24 Nov 11:30 JST, "full steam ahead")
+The assistant makes the change, shows what changed, and Undo is one tap. A confirm step comes first only for deleting something, or for any change larger than the safe-to-spend figure. This is marked for his run. The setup chat follows the 15-step draft. It asks how many banks (one is fine for now), and he can ask anything about the app at any point. The site's AI and invite word were live from 11:30 JST.
+BV2. The five extra rules from the confirming review (items 8 to 13 in AI_FIRST_PLAN.md) are accepted, along with the pay-day question. The end-of-slice review checks them. There is no further plan round (BN, lesson 4).
+
+BX. Order of merges (24 Nov midday JST): lane/s2b (stage 2: runway, rates, conversions) merges into wip-38.31 only after the republish candidate for Mako is cut. The candidate is setupfix, invite, listfix2, cloudwords and the pay patterns, so stage 2 does not ride along to his link before it is checked.

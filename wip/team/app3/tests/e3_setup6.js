@@ -6,6 +6,7 @@
      into another account; a card paid from the second bank; bills from the account they leave and once a year.
    What is saved is read back from the store (IndexedDB burrow3) and checked against the answers. */
 'use strict';
+const { finishSetup: finishSetup3 } = require('./setup_sections.js');   // setup is saved one section at a time (item 14)
 const T = require('./lib3.js'), { ck } = T;
 const typeIn = async (p, sel, v) => { await p.click(sel, { clickCount: 3 }); await p.keyboard.press('Backspace'); await p.type(sel, String(v)); };
 /* the kept book, as the store holds it */
@@ -23,6 +24,7 @@ const sel = (p, s, v) => p.select(s, v);
 async function fresh(day) {
   const o = await T.open({ profile: require('fs').mkdtempSync(require('os').tmpdir() + '/a3setup6-') });
   await o.p.goto(T.URL0 + '?today=' + day); await T.w(400);
+  await o.p.waitForSelector('#a3SetupGo', { timeout: 10000 });   // under load the first screen can take longer than 400 ms
   await o.p.click('#a3SetupGo'); await T.w(300);
   return o;
 }
@@ -71,7 +73,7 @@ const shown = (p, s) => p.$eval(s, e => !e.closest('[hidden]')).catch(() => fals
       await p.click('#s3AddBill'); await T.w(100); const r = `[data-row=bill${k}] `;
       await typeIn(p, r + '[data-f=name]', name); await typeIn(p, r + '[data-f=amount]', amt); await sel(p, r + '[data-f=day]', day); await sel(p, r + '[data-f=from]', from);
     }
-    await p.click('#a3SetupSave'); await T.w(700);
+    await finishSetup3(p); await T.w(700);
     ck('Lia: saved', await p.$eval('#a3Setup', e => e.hidden), await p.$eval('#a3SetupErr', e => e.textContent).catch(() => ''));
     const bk = await readBook(p), acc = n => bk.accounts.find(a => a.name === n), sch = n => bk.schedules.find(s => s.name === n);
     ck('Lia: the country chosen is saved', bk.home.country.v === 'PH');
@@ -99,10 +101,10 @@ const shown = (p, s) => p.$eval(s, e => !e.closest('[hidden]')).catch(() => fals
     await sel(p, '[data-row=bill1] [data-f=every]', 'year'); await T.w(100);
     ck('once a year: its month is asked', await shown(p, '[data-row=bill1] [data-f=month]'));
     await sel(p, '[data-row=bill1] [data-f=month]', '03'); await sel(p, '[data-row=bill1] [data-f=day]', '1');
-    await p.click('#a3SetupSave'); await T.w(400);
-    ck('Sam: the day of one pay is asked before saving', (await p.$eval('#a3SetupErr', e => e.textContent)) === 'Type the day of one pay, the last one or the next one' && !(await p.$eval('#a3Setup', e => e.hidden)));
+    await finishSetup3(p); await T.w(400);
+    ck('Sam: the day of one pay is asked before saving', (await p.$eval('[data-err-for=s3PayStart]', e => e.textContent).catch(() => '')) === 'Type the day of one pay, the last one or the next one' && !(await p.$eval('#a3Setup', e => e.hidden)));
     await p.$eval('#s3PayStart', e => { e.value = '2026-12-04'; e.dispatchEvent(new Event('change', { bubbles: true })); });
-    await p.click('#a3SetupSave'); await T.w(700);
+    await finishSetup3(p); await T.w(700);
     ck('Sam: saved', await p.$eval('#a3Setup', e => e.hidden), await p.$eval('#a3SetupErr', e => e.textContent).catch(() => ''));
     const bk = await readBook(p), sch = n => bk.schedules.find(s => s.name === n);
     ck('Sam: the pay every 2 weeks from Fri 4 Dec', JSON.stringify(sch('Pay').rules[0].rule) === '{"every":"weeks","n":2,"from":"2026-12-04"}' && sch('Pay').startsPeriod === true);
@@ -119,7 +121,7 @@ const shown = (p, s) => p.$eval(s, e => !e.closest('[hidden]')).catch(() => fals
     await typeIn(p, '#s3Bank', '420000'); await typeIn(p, '#s3PayName', 'Client work');
     await sel(p, '#s3PayEvery', 'none'); await T.w(100);
     ck('no fixed pay: no day, no weekend rule, and words on what happens instead', !(await shown(p, '#s3PayDay')) && !(await shown(p, '#s3PayShift')) && /Receipts/.test(await p.$eval('[data-card=pay] [data-q=none]', e => e.textContent)));
-    await p.click('#a3SetupSave'); await T.w(700);
+    await finishSetup3(p); await T.w(700);
     ck('Kai: saved with the amount blank', await p.$eval('#a3Setup', e => e.hidden), await p.$eval('#a3SetupErr', e => e.textContent).catch(() => ''));
     const bk = await readBook(p), s = bk.schedules.find(x => x.name === 'Client work');
     ck('Kai: no fixed day, no amount, not starting a period', JSON.stringify(s.rules[0].rule) === '{"every":"none"}' && s.steps[0].amount === null && !s.startsPeriod);

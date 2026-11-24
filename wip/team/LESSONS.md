@@ -126,3 +126,34 @@ The engine passed 779 hand-worked asks, 817 rule cases and 2,000 checker seeds. 
 
 ### Addendum (24 Nov early JST): an order nobody owned
 A card figure typed at Check your bank showed one number and another after a reload. The engine read records in whatever order it was given. The page kept them in the order written, and the store returned them sorted by an id with a random part. It looked like a time zone fault, because it came and went. Every engine test built its book in one order, so none of them saw it. A rule's answer must never depend on the order records arrive in. The engine now sorts records itself, in one place, and a test feeds the same book in nine orders. Warning sign: a result that changes after a reload, or between runs, with the same data.
+
+---
+
+## Lesson 5: The assistant that became a side feature (found 24 Nov 2026, Mako's first run of version one)
+
+### What happened
+Mako used the live version one for the first time and said: "it needs to all be AI first." He wants to set up by talking to an assistant that explains the app, asks the questions, says where to find a figure, takes uploads, and then fills in the app. Day to day he wants to mostly talk to it. The screens are for seeing and checking. Version one was built the other way round: forms first, with "Ask" as a small link in the header and the site's AI switched off.
+
+### It was not unknown. It was buried.
+- DECISIONS (16 to 17 Nov): "He wants an in-app money assistant that knows the whole financial picture, answers questions, changes what the app shows, and carries out decisions once agreed."
+- The old app had an assistant with checked actions. The rebuild plan listed it as "rewritten to the new shape in stage 1a" (E8), one item among many.
+- A rule from the QC rounds, U1 ("every task can be done through the screens alone"), was read as "build the screens first". The site's API key was never set, so the assistant could never be tried on the live site.
+- The rebuild was driven by finding the calendar-month fault. Every review after that judged whether the numbers were true and never asked how the person wants to use the app. The assistant was built last, by one lane, as "Ask and Reminders".
+
+### Why nobody saw it
+1. **The foundation reviews checked correctness, not the way in.** Lesson 1 made "is the number true for real lives" the gate. Nothing made "is this how the owner wants to use it" a gate. A correct app nobody wants to use is still a setback.
+2. **A safety rule became a design rule.** U1 said the screens must be able to do everything, so that nothing depends on the AI. It never said the screens come first.
+3. **A decision about how the app feels was filed as a feature.** "An assistant that carries out decisions" was the main way Mako wanted to use the app. It sat in a list beside burrow art and streaks.
+4. **What he would see first was never shown to him.** He saw screenshots of forms, not a description of how setup would feel, before it was built.
+5. **The server switch hid the gap.** With "ai":false the assistant could not be tried end to end, so no review ever saw it as the main way in.
+
+### What changed
+- AI first is the top priority (new foundation item 12). The plan (AI_FIRST_PLAN.md) goes through efficiency and qc-foundation, then a thin slice: the setup chat for Mako's own shape, end to end.
+- Every plan now names the main way the owner uses the feature, quoting DECISIONS, and qc-foundation checks the plan against it as well as against real lives.
+- Mako sees how a new flow will feel (a short script of the conversation, or a click-through) before it is built, sent through the coordinator.
+- Before a flow is called done, every server setting it depends on is listed and switched on, or the gap is shown to Mako.
+
+### Warning signs
+- A decision in DECISIONS about how the owner wants to use the app that no plan mentions.
+- A feature that can't be tried on the live site because a setting is off.
+- A rule written for safety ("must also work without X") being used to put off building X.

@@ -9,7 +9,8 @@
      MODEL_DEFAULT       default claude-sonnet-5-5     (the assistant)
      MODEL_COMPLEX       default claude-sonnet-5-5
      DAILY_TOKEN_CAP     default 3000000  tokens a day across everyone (in + out); the relay stops at the cap
-     USER_DAILY_CALLS    default 150      calls a day for one browser
+     USER_DAILY_CALLS    calls a day for one caller: the invite code when INVITE_CODES is set (the owner's whole household
+                         shares one count; default 400), else the page's device id (`device`), else the client IP (default 150)
      IP_PER_MINUTE       default 30
      INVITE_CODES        optional "word1, word2": when set, a call must carry a matching invite
      ANTHROPIC_BASE_URL  default https://api.anthropic.com (tests point it at a stub) */
@@ -34,13 +35,14 @@ export async function onRequestPost({ request, env }) {
   if (!inviteOk(env, body.invite)) return fail(401, 'invite_required', 'This page needs the code word from its owner.');
 
   const db = env.DB || null, ip = clientIp(request), day = dayKey();
+  const who = await callerKey(env, body, ip);
   try {
     if (db) {
       await ensureSchema(db);
       const perMin = await bump(db, `m:${ip}:${minuteKey()}`, 1, 0, day);
       if (perMin.calls > num(env.IP_PER_MINUTE, 30)) return fail(429, 'rate_limited', 'Too many requests. Wait a minute.');
-      const user = await readUsage(db, `u:${body.anon}`, day);
-      if (user.calls >= num(env.USER_DAILY_CALLS, 150)) return fail(429, 'rate_limited', 'Daily limit for this browser reached. Try again tomorrow.');
+      const user = await readUsage(db, who.k, day);
+      if (user.calls >= num(env.USER_DAILY_CALLS, who.cap)) return fail(429, 'rate_limited', `Daily limit for ${who.name} reached. Try again tomorrow.`);
       const all = await readUsage(db, 'all', day);
       if (all.tokens >= num(env.DAILY_TOKEN_CAP, 3000000)) return fail(429, 'rate_limited', 'The page\'s daily AI budget is used up. Try again tomorrow.');
     }
@@ -49,11 +51,15 @@ export async function onRequestPost({ request, env }) {
   const tier = body.tier || 'default', model = env[TIERS[tier]] || MODEL_DEF[tier];
   const req = {
     model, max_tokens: Math.min(MAX_OUT, num(body.max_tokens, tier === 'quick' ? 2048 : 4096) || 2048),
-    system: PREFIX + (body.system ? '\n\n' + body.system : '') + (body.json ? '\n\nReply with only the JSON value asked for, no words before or after it.' : ''),
+    /* prompt caching: the system text and the tool list are the same round after round, so both carry a cache mark
+       (tools render before system; a prefix under the model's minimum is simply not cached, never an error) */
+    system: [{ type: 'text', text: PREFIX + (body.system ? '\n\n' + body.system : '') + (body.json ? '\n\nReply with only the JSON value asked for, no words before or after it.' : ''), cache_control: { type: 'ephemeral' } }],
     messages: body.messages,
   };
   /* Sonnet 5.5 and Opus 5.5 refuse a forced tool (tool_choice any or tool, a 400), so the choice is always auto: the page asks for the tool in the prompt and reads a text answer as the fallback */
-  if (body.tools && body.tools.length) { req.tools = body.tools; if (body.tool_choice) req.tool_choice = { type: body.tool_choice.type === 'none' ? 'none' : 'auto' }; }
+  if (body.tools && body.tools.length) {
+    req.tools = body.tools.map((t, i, all) => { const c = Object.assign({}, t); delete c.cache_control; if (i === all.length - 1) c.cache_control = { type: 'ephemeral' }; return c; }); if (body.tool_choice) req.tool_choice = { type: body.tool_choice.type === 'none' ? 'none' : 'auto' };
+  }
   if (EFFORTS.indexOf(body.effort) >= 0) req.output_config = { effort: body.effort }; /* less thinking for plain extraction jobs */
   const stream = !!body.stream && !req.tools;
   if (stream) req.stream = true;
@@ -73,13 +79,13 @@ export async function onRequestPost({ request, env }) {
     if (up.status === 413) return fail(413, 'prompt_too_large', 'Too much text, or too many pages or images.');
     return fail(502, 'upstream_error', 'Claude answered with an error.' + (up.status >= 500 ? '' : ' ' + msg.slice(0, 200)));
   }
-  const count = (inTok, outTok) => { if (!db) return Promise.resolve(); const t = (inTok || 0) + (outTok || 0); return Promise.all([bump(db, `u:${body.anon}`, 1, t, day), bump(db, 'all', 1, t, day)]).catch(() => {}); };
+  const count = (inTok, outTok) => { if (!db) return Promise.resolve(); const t = (inTok || 0) + (outTok || 0); return Promise.all([bump(db, who.k, 1, t, day), bump(db, 'all', 1, t, day)]).catch(() => {}); };
 
   if (!stream) {
     let data; try { data = await up.json(); } catch (e) { return fail(502, 'upstream_error', 'Unreadable answer.'); }
-    const usage = data.usage || {}; await count(usage.input_tokens, usage.output_tokens);
+    const usage = data.usage || {}, inAll = promptTokens(usage); await count(inAll, usage.output_tokens);
     const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
-    return json({ text, truncated: data.stop_reason === 'max_tokens', stop_reason: data.stop_reason, content: data.content || [], usage: { input: usage.input_tokens || 0, output: usage.output_tokens || 0 }, model: data.model || model });
+    return json({ text, truncated: data.stop_reason === 'max_tokens', stop_reason: data.stop_reason, content: data.content || [], usage: { input: inAll, output: usage.output_tokens || 0 }, model: data.model || model });
   }
   /* streaming: pass the text deltas through as simple SSE lines and count the tokens at the end */
   let inTok = 0, outTok = 0, stopReason = null, buf = '', ended = false;
@@ -92,7 +98,7 @@ export async function onRequestPost({ request, env }) {
         const block = buf.slice(0, i); buf = buf.slice(i + 2);
         const line = block.split('\n').find(l => l.startsWith('data:')); if (!line) continue;
         let ev; try { ev = JSON.parse(line.slice(5).trim()); } catch (e) { continue; }
-        if (ev.type === 'message_start' && ev.message && ev.message.usage) inTok = ev.message.usage.input_tokens || 0;
+        if (ev.type === 'message_start' && ev.message && ev.message.usage) inTok = promptTokens(ev.message.usage);
         else if (ev.type === 'content_block_delta' && ev.delta && ev.delta.type === 'text_delta') ctl.enqueue(enc.encode('data: ' + JSON.stringify({ t: ev.delta.text }) + '\n\n'));
         else if (ev.type === 'message_delta') { if (ev.usage) outTok = ev.usage.output_tokens || outTok; if (ev.delta && ev.delta.stop_reason) stopReason = ev.delta.stop_reason; }
         else if (ev.type === 'error') ctl.enqueue(enc.encode('data: ' + JSON.stringify({ error: { code: 'upstream_error', message: (ev.error && ev.error.message) || 'Claude stopped.' } }) + '\n\n'));
@@ -107,13 +113,30 @@ export async function onRequestPost({ request, env }) {
   up.body.pipeTo(out.writable).catch(() => {});
   return new Response(out.readable, { status: 200, headers: Object.assign({ 'content-type': 'text/event-stream; charset=utf-8', 'cache-control': 'no-store', 'x-accel-buffering': 'no' }, corsHeaders()) });
 }
+/* whose count a call goes on (USER_DAILY_CALLS). Never the page's `anon`: that is drawn fresh on each page open, so it
+   would reset the count. The code word is stored only as an HMAC-SHA-256 keyed with the API key (already a server secret),
+   so the word cannot be found from the table by trying words. */
+async function callerKey(env, body, ip) {
+  const coded = String(env.INVITE_CODES || '').split(',').some(s => s.trim());
+  if (coded) return { k: 'u:i:' + (await hmacHex(env.ANTHROPIC_API_KEY, String(body.invite || '').trim().toLowerCase())).slice(0, 32), name: 'this code word', cap: 400 };
+  if (typeof body.device === 'string') return { k: 'u:d:' + body.device.toLowerCase(), name: 'this device', cap: 150 };
+  return { k: 'u:ip:' + ip, name: 'this connection', cap: 150 };
+}
+async function hmacHex(secret, msg) {
+  const enc = new TextEncoder(), key = await crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  return Array.from(new Uint8Array(await crypto.subtle.sign('HMAC', key, enc.encode(msg))), x => x.toString(16).padStart(2, '0')).join('');
+}
+/* with caching, input_tokens is only the uncached rest: the whole prompt is input + cache write + cache read, and the caps
+   count the whole prompt as before */
+const promptTokens = u => (u.input_tokens || 0) + (u.cache_creation_input_tokens || 0) + (u.cache_read_input_tokens || 0);
 const corsHeaders = () => ({ 'access-control-allow-origin': '*', 'access-control-allow-headers': 'content-type, x-app' });
 
 /* every field the page sends is checked; anything odd is refused with a reason */
 function validate(b) {
   if (!b || typeof b !== 'object') return 'Body must be an object.';
   if (b.v !== 1) return 'Unknown protocol version.';
-  if (typeof b.anon !== 'string' || !/^[A-Za-z0-9_-]{8,64}$/.test(b.anon)) return 'anon id missing.';
+  if (b.anon !== undefined && (typeof b.anon !== 'string' || !/^[A-Za-z0-9_-]{8,64}$/.test(b.anon))) return 'anon id missing.';
+  if (b.device !== undefined && (typeof b.device !== 'string' || !/^[0-9a-fA-F]{16,64}$/.test(b.device))) return 'Bad device id: 16 to 64 hex characters.';
   if (b.tier !== undefined && !TIERS[b.tier]) return 'Unknown tier.';
   if (b.system !== undefined && (typeof b.system !== 'string' || b.system.length > 80000)) return 'system too long.';
   if (!Array.isArray(b.messages) || !b.messages.length || b.messages.length > MAX_MSGS) return 'messages must be a non-empty list.';
@@ -124,6 +147,7 @@ function validate(b) {
     if (!Array.isArray(m.content) || !m.content.length) return 'Bad message content.';
     for (const c of m.content) {
       if (!c || typeof c !== 'object') return 'Bad content block.';
+      if (c.cache_control !== undefined) return 'cache_control is set by the server, not the page.'; /* the marks stay within the limit of 4 */
       if (c.type === 'text') { if (typeof c.text !== 'string') return 'Bad text block.'; text += c.text.length; }
       else if (c.type === 'image') {
         const s = c.source; if (!s || s.type !== 'base64' || IMG_TYPES.indexOf(s.media_type) < 0 || typeof s.data !== 'string' || s.data.length > MAX_IMG_B64) return 'Bad image.';

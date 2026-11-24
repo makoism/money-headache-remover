@@ -4,6 +4,105 @@ Written 2026-11-18 on branch `wip-38.31`. Read this whole file before touching a
 
 ## 0. Handoff (latest first)
 
+**2026-11-24 18:55 JST, MAIN 16 (Fable), state.** Read wip/team/MAKO_SAYS.md first. Report to Coordinator 11 (session_01BFpKEXW1AERpCVxch4xuXD). LANE B is session_01BFpKEZBRWqdY7tLMMx4sDU.
+- **Lost time:** every session was stopped by the 5-hour usage limit from about 14:40 to 17:50 JST.
+- **Candidate 2:** wip-38.31 at c2bea7d = 9c65e8d + lane/blockers fd3e020 + two setup fixes. check3 full ALL GOOD.
+  - The comma fault (coordinator's first job): a setup part was compared by box text; now by value (setup3.js amountText3, snap3). Tests: e3_setupfix part 7, and e3_amounts types commas, a space, full-width digits and a yen sign into every amount box.
+  - The bill Remove shift: a row's questions are reworded while typing (shapeSoon3), not on leaving the box. Test: e3_setupfix part 6.
+  - Round folder qc_reports/2026-11-24_candidate2 (check3.txt, screens, scope.txt). Running: qc-controls, qc-novice, qc-north-star, qc-layout-touch.
+  - The main commit is prepared in the worktree .claude/worktrees/republish (branch republish-c2bea7d, from origin/main, same private path; the path is in the scratchpad file app3_path.txt and on origin/republish-9c65e8d). Make it again after any fix, then send the hash to the coordinator with the scope list.
+- **lane/homefix is NOT merged.** qc-novice FAILED it (qc_reports/2026-11-24_homefix_3a4f514). It needs foundation_review/TWO_FIGURES_PLAN.md (on lane/next): two named figures when the everyday budget is the limit ("Everyday money left until pay", "Your bank can spare", agreed with the coordinator, MAKO_SAYS not settled 8), the pay-day headline, and a later-dated pay change shown on Plan. qc-foundation is on the plan. Then qc-novice part 4 and qc-numbers.
+- **M67 (a spend on phone two waits for Send now) is NOT fixed.** Cause: nothing takes the cloud copy while the page stays open, and a send waits 90 s after any sync (cloud3_page.js). foundation_review/SYNC_PULL_PLAN.md (on lane/next) failed qc-foundation once (qc_reports/2026-11-24_sync_pull_plan); version 2 at the end of that file takes the three faults in and needs qc-foundation again before building.
+- **Branches of mine:**
+  - lane/next (worktree .claude/worktrees/next): wip-38.31 + homefix + blockers + the two setup fixes, plus the two plans. Local only so far.
+  - lane/cand2: the candidate; the same as wip-38.31.
+  - lane/ai-merge (a helper's worktree, running): lane/ai-core + lane/ai-panel joined onto lane/next, setup3.js by hand. Needs a row in back3.js LAYERS for any new sheet (LANE B's note). When green: qc-assistant and qc-foundation, then merge. This is queue item 2, the top priority after the candidate.
+- **Then:** lane/controls-base (full check3 and a qc-foundation confirm), CONTROLS_PLAN slices, lane/restore fixes (with LANE B), lane/s2b, SORTED "no queue" items.
+- **While reviewers run** the main checkout must stay on the candidate (they open wip/team/app3/index.html there). Work in worktrees.
+
+**2026-11-24 13:45 JST, MAIN 15 handoff to MAIN 16 (Fable).** Read wip/team/MAKO_SAYS.md first.
+- **Candidate:**
+  - wip-38.31 at 9c65e8d: setupfix, install, invite, checkspeed, candfix. check3 ALL GOOD.
+  - Main commit f773b80 is on branch republish-9c65e8d. It touches only public/n/<path>/, now 5 files (index.html, sw3.js, the manifest and two icons for M33).
+  - Round folder: qc_reports/2026-11-24_candidate_9c65e8d. qc-north-star FAILed (expected: AI first and M13 are not in this candidate). qc-controls is running.
+  - Screenshots are in the MAIN 15 scratchpad.
+- **New finding for MAIN 16 (qc-north-star blocker 4, M67):** a spend logged on phone two reached phone one only after "Send now". Check the pull timer and visibility pull in cloud3_page.js.
+- **Branches to merge, and what each still owes:**
+  - **lane/blockers:** LANE B owns it (session_01BFpKEZBRWqdY7tLMMx4sDU). MAIN 15 does not message or merge it. MAIN 16 merges it after its check3 and reviews.
+  - **lane/restore (e6e7034):** qc-foundation narrow FAIL (qc_reports/2026-11-24_restore_confirm): a setting added after the backup returns; Put it back and Drop it must ask first; pull before a restore when online. Not restarted here (refused), so MAIN 16 takes it.
+  - **lane/homefix:** Fable, running here. It needs qc-novice part 4 before it merges.
+  - **lane/controls-base (9fcbf91):** all 4 base items and BZ2 are done. It needs a full check3 and a qc-foundation confirm, then merge. It includes ai-core b59f994.
+  - **lane/ai-core (cc12d71) and lane/ai-panel (7dd019d):** both finished. They merge together after the candidate. setup3.js is joined by hand with setupfix (both rewrite form3; take setupfix's sections plus ai-panel's answers3 path).
+  - **lane/s2b (87965d5):** done. It merges after the candidate (BX).
+- **First for MAIN 16:** in setup, leaving a bill's name box moves its Remove button down about 25 px, so a tap on Remove right after typing misses (found by LANE B, setup3.js).
+- **lane/homefix (3a4f514):** all 10 items done; qc-novice is reviewing it (qc_reports/2026-11-24_homefix_3a4f514).
+- **Queue after those:**
+  - the CONTROLS_PLAN slices 1 to 14
+  - SORTED.md "no queue" items
+  - the layout faults seen in the screenshots: drop-downs clip at 390, the Saved band covers the section title, the tab bar shows over setup
+  - LANE B's jobs: qcscripts, webkit, the ENDPERIOD plan, and reminders once controls-base is merged
+
+**2026-11-24 12:30 JST, MAIN 15, Mako (NF19, M82): helpers and reviewers run on Fable.** Pass model "fable" on every Agent call. Lanes that are mid-task are not restarted. After the candidate is sent, MAIN 15 writes this handoff and Coordinator 11 starts MAIN 16 on Fable.
+- **Open lanes and what each owes:**
+  - **setupfix** (worktree agent-ae677ae9ec4601481, not pushed): the pay-landed question, the Home note for today's pay (F1 conditions), and its report.
+  - **install** (lane/install): the manifest (M33), the two-incomes test (M28), and the Receipts doors (M22).
+  - **controls-base** (lane/controls-base): CONTROLS_PLAN BZ corrections, the Undo journal, the dated startsPeriod (with endBill moving it), revive-on-live-record, and the sync a.kind fix.
+  - **ai-core** (lane/ai-core, b59f994 and on): the landed, bank-figure and card-figure actions, addBill rhythm, the F3 same-day case, and moved-from any bank.
+  - **ai-panel** (lane/ai-panel, 7dd019d): done. It merges after the candidate, together with ai-core, and setup3.js is joined by hand with setupfix.
+  - **restore** (lane/restore): the data-safety FAIL fixes.
+  - **s2b** (87965d5): done. It merges after the candidate (BX).
+  - **The back-test sort:** the three live-build reports go into qc_reports/2026-11-24_backtest_live_build/SORTED.md.
+- **lane/homefix** (on Fable): SORTED C3, C10, C11, C13, C8, C2, C9, S23, C5 and N26.
+- **Queue after the candidate**, from qc_reports/2026-11-24_backtest_live_build/SORTED.md:
+  - C4: the chat log keeps the left-out note
+  - C7: send the open screen and Keep at least
+  - A12, A24, A25: plain refusal words
+  - A17: reminders, backup and cloud by asking (CONTROLS rows)
+  - C6: "?" on every screen (M18)
+  - N25: setup hints
+  - N12, S3, S27: a picture on Home, with Mako and the art
+- **Candidate:** wip-38.31 plus setupfix plus install. Then full check3, then qc-controls and qc-north-star, then the main commit for public/n/<path>/ only, with the NOT BUILT list for scope.txt.
+
+**2026-11-24 12:15 JST, MAIN 15:** report to Coordinator 11 (session_01BFpKEXW1AERpCVxch4xuXD). Read wip/team/MAKO_SAYS.md first. Every brief for a helper starts with that line.
+- **Merged:**
+  - checkspeed: full check3 takes about 6 minutes; `./check3.sh quick` takes 1.
+  - CONTROLS_PLAN.md (decision 17: add, change, remove and Undo for everything; 14 slices). qc-foundation is reviewing it into qc_reports/2026-11-24_controls_plan.
+- **F1 from the ai-core review is not taken:** X3 and ny-01 stand. It goes into BY.
+- **QC (QC_ROLES.md, qc/QC_COMMON.md):**
+  - Reviewers get only their agent file, the build path and a round folder.
+  - A slice gets check3 plus the one or two reviewers it touches.
+  - A candidate needs all five gates (north-star, numbers, controls, assistant, foundation). Start them after check3, at most four at a time.
+  - Any M lines left on purpose go to the coordinator for scope.txt.
+- **Queue after the controls table**, one commit each, test first:
+  - a walker for every box and sheet: empty, wrong value, message, way out
+  - the assistant one tap away everywhere; no page errors; no network calls with cloud and the assistant off
+  - no cut-off text and no tap target under 44 at 320, 390 and 1300
+  - every M line named by a test, a brief or a scope file
+  - a wording lint
+- **Coordinator agreed (12:20 JST), queue:**
+  - M24 and M46: the end-of-period question, as a screen card plus an assistant action. It comes after controls slice 1, and goes through qc-foundation first.
+  - M21: a WebKit run, if the container allows one.
+  - M62: kept as a rule, plus the wording lint.
+  - Already in lane/install: M33 (manifest), M28 (test), M22 (Receipts reads "Money went out" and "Money came in").
+  - Keep foundation_review/M_COVERAGE.md current. The coordinator checks it every hour.
+- **Running:**
+  - setupfix and ai-panel: they conflict on setup3.js; merge setupfix first, then ai-panel by one hand
+  - invite
+  - ai-core: F2 to F4 fixes; merge the LOCAL branch tip
+  - restore
+  - the planner: M_COVERAGE.md
+- **lane/s2b:** done at 87965d5. It merges after the candidate is cut (BX).
+
+**2026-11-24 11:55 JST, MAIN 15:** report to **Coordinator 11, session_01BFpKEXW1AERpCVxch4xuXD**. Coordinator 10 has handed over.
+- **Live on main:** app3 at the private path, the vault changes (4ab1f49), and the relay cap and caching (6740469). The site's AI and invite word are on.
+- **Next for Mako:** the republish candidate. It is wip-38.31 once setupfix and invite are merged and green, prepared as a main commit that changes only public/n/<private path>/ (2 files), with 3 or 4 phone screenshots of the new setup and the invite box.
+- **Running:**
+  - lane/setupfix and lane/invite
+  - lane/ai-core and lane/ai-panel: AI first, slice 1, the setup chat
+  - lane/restore
+  - lane/checkspeed
+  - lane/s2b: stage 2, finishing its fixes, then paused
+
 **2026-11-24 09:50 JST, standing rule (Mako, DECISIONS new foundation item 10):** never ask Mako anything in a build chat. Every question, approval and result goes to the coordinator (send_message to session_01BFpKEWtR1vrLMuizJWTGpk), who asks him and relays his words. One known limit: this session's safety check refused a push to main on relayed approval. It went through only after Mako answered in this chat. The coordinator has been told.
 
 **2026-11-24 09:45 JST, MAIN 15: non-stop again (Mako asked why it stopped).**

@@ -2,6 +2,8 @@
 
 Read `wip/team/RESUME.md` section 0 (top entry) and section 7 before doing anything else.
 
+Then read `wip/team/MAKO_SAYS.md` in full (Mako, 2026-11-24: "anything I send you here, if it doesn't trickle down into every part of what we're doing, then there's no point"). It is everything Mako has said the app must be and do. The coordinator owns it and nobody else edits it. Read it again whenever the coordinator says it changed, and answer the coordinator with what the change means for your work. Every plan names the lines it serves. Every brief you write for a helper or a reviewer starts with "read wip/team/MAKO_SAYS.md first". If you hear Mako's words from anywhere else, send them to the coordinator.
+
 Then read `wip/team/LESSONS.md` (Mako, 2026-11-23: "keep this as reference ... to help ensure that this never happens again"). Before any plan or build step, check it against the warning signs there, and run the qc-foundation agent on the plan before building.
 
 ## Never stop and wait (Mako, 2026-11-21, "make sure this doesn't happen again. ever")
@@ -20,4 +22,4 @@ Then read `wip/team/LESSONS.md` (Mako, 2026-11-23: "keep this as reference ... t
 - Mako is in Japan (JST, UTC+9). Give times in Japan time.
 - Every update starts with two rough percentages (first version ready for him, everything checked; and including the art and the 3D world) and what is being worked on.
 - Plain words, no em dashes. No real figures in the repo. Nothing deploys and nothing is pushed to `main` without Mako.
-- Test first, one item per commit, `./check.sh` after each. Kill leftover test browsers first: `pkill -f chrome-linux64/chrome`.
+- Test first, one item per commit, then the check for the new app: `wip/team/app3/check3.sh` (quick level after each small change, full before each merge). It cleans up its own test browsers. Never `pkill` browsers: that kills every other lane's and reviewer's tests at once.

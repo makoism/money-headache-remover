@@ -7,6 +7,8 @@ ENGINE="dates.js units.js ids.js schedules.js ledger.js lookahead.js periods.js 
 SCREENS="money.js names.js status.js inputs.js provenance.js messages.js help.js"
 STORE="clock.js guard.js idb.js persist.js"
 OUT=index.html
+set -e   # a part that cannot be read (a full disk, a missing file) stops the build before it replaces the page
+trap 'rm -f "$OUT.tmp.$$" sw3.js.tmp.$$' EXIT
 {
 cat <<'HEAD'
 <!DOCTYPE html>
@@ -16,6 +18,9 @@ cat <<'HEAD'
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>the burrow (new engine, try)</title>
 <link rel="icon" href="data:,">
+<meta name="theme-color" content="#0c1a15">
+<script id="a3install">/* installing to the home screen (M33): the manifest and icon beside the page, only when it is served (a page opened as a plain file cannot read them) */
+if (/^https?:$/.test(location.protocol)) document.head.insertAdjacentHTML('beforeend', '<link rel="manifest" href="manifest3.webmanifest"><link rel="apple-touch-icon" href="icon3-192.png">');</script>
 <style>
 HEAD
 # the tokens: from the first :root block to the line before "* { box-sizing", both palettes included
@@ -44,11 +49,13 @@ cat src/money3.js src/e3.js src/act3.js src/plan3_write.js src/home3.js src/chec
 cat src/stmt3_ai.js src/stmt3.js   # statements lane
 cat src/ask3_core.js src/ask3.js   # Ask (ask lane): after stmt3_ai.js, whose route it uses
 cat src/remind3.js src/remind3_page.js   # Reminders (ask lane)
+cat src/back3.js   # which sheet is open: the back button, typing kept, one message at a time (after every sheet's file)
 echo '})();'
 echo '</script>'
 echo '</body>'
 echo '</html>'
-} > "$OUT"
+} > "$OUT.tmp.$$"; mv "$OUT.tmp.$$" "$OUT"   # in one step: a test reading the page while another builds never sees half a file
 wc -c "$OUT"
 # the service worker beside it (D6, backup lane): its cache is named by this build, so a new build is a new worker
-sed "s/@@BUILD@@/$(sha1sum "$OUT" | cut -c1-12)/" src/sw3.js > sw3.js
+node make_icons3.js   # the home screen icons beside the page, named in manifest3.webmanifest (M33)
+sed "s/@@BUILD@@/$(sha1sum "$OUT" | cut -c1-12)/" src/sw3.js > sw3.js.tmp.$$; mv sw3.js.tmp.$$ sw3.js
