@@ -13,7 +13,8 @@
    6. With a book: a bar at the foot of a phone that opens to a sheet; a column on the right at 1280.
    7. Cards: a change made shows its lines and the engine's figures before and after with Undo; one that asks first has
       Do it and Not now; the fill card has Undo while the fill can be undone and Start over (asked first) after.
-   8. Before a file: the upload notice. No page errors; no sideways scroll at 320. */
+   8. Before a file: the upload notice. No page errors; no sideways scroll at 320.
+   9. The code word (stmt3_ai's box, reused): asked before the first message when none is kept; a wrong one asked again. */
 'use strict';
 const T = require('./lib3.js'), { ck } = T;
 const fs = require('fs'), os = require('os');
@@ -53,17 +54,18 @@ function fake() {
 }
 const shows = (p, sel) => p.$eval(sel, e => getComputedStyle(e).display !== 'none' && e.getClientRects().length > 0).catch(() => false);
 const turns = p => p.$$eval('#a3ChatLog > [data-turn]', e => e.map(x => x.textContent.trim().replace(/\s+/g, ' ')));
-async function relay(p, fail) {
+async function relay(p, fail, word) {
   await p.evaluateOnNewDocument(() => { window.STMT3_RELAY = 'https://relay.example'; });
   await p.setRequestInterception(true);
   p.__sent = [];
   p.on('request', rq => {
     const u = rq.url();
-    if (u === 'https://relay.example/api/health') return rq.respond({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ ai: true }) });
+    if (u === 'https://relay.example/api/health') return rq.respond({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ ai: true, invite: !!word }) });
     if (u === 'https://relay.example/api/ai') {
       if (rq.method() === 'OPTIONS') return rq.respond({ status: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': 'content-type, x-app' } });
       const body = JSON.parse(rq.postData()); p.__sent.push({ body, headers: rq.headers() });
       const msg = body.messages[0].content[0].text;
+      if (word && body.invite !== word) return rq.respond({ status: 401, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ error: { code: 'invite_required' } }) });
       if (fail.on) return rq.respond({ status: 500, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: '{}' });
       return rq.respond({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ stop_reason: 'end_turn', content: [{ type: 'text', text: 'Heard: ' + msg }] }) });
     }
@@ -121,7 +123,7 @@ async function say(p, text) { await p.$eval('#a3ChatIn', (e, v) => { e.value = v
     ck('the person\'s words and the answer show', JSON.stringify(await turns(p)) === '["hi there","Heard: hi there"]', JSON.stringify(await turns(p)));
     fail.on = true;
     await say(p, 'are you there');
-    ck('a relay that fails says so, puts the message back and shows the ways', /didn't go through: the assistant did not answer \(500\)/.test(await p.$eval('#a3ChatLog', e => e.textContent)) && (await p.$eval('#a3ChatIn', e => e.value)) === 'are you there' && await shows(p, '#a3ChatAny'));
+    ck('a relay that fails says so, puts the message back and shows the ways', /didn't go through: the AI did not answer \(500\)/.test(await p.$eval('#a3ChatLog', e => e.textContent)) && (await p.$eval('#a3ChatIn', e => e.value)) === 'are you there' && await shows(p, '#a3ChatAny'));
     fail.on = false;
     /* 5 */
     await p.reload(); await T.w(600); await p.evaluate(fake);
@@ -168,7 +170,23 @@ async function say(p, text) { await p.$eval('#a3ChatIn', (e, v) => { e.value = v
     ck('at 1280 a column on the right, beside the page', col.w === 360 && col.left === 920 && col.h === 800 && main <= 920 && await shows(p, '#a3Chat #a3ChatLog'), JSON.stringify([col, main]));
     all.push(...errs); await b.close();
   }
-  const bad = all.filter(e => !/status of 500/.test(e));   // the relay made to fail on purpose
+  /* ---- 9: the relay asks for a code word (the word box is stmt3_ai's, reused) ---- */
+  {
+    const { b, p, errs } = await T.open({ profile: fs.mkdtempSync(os.tmpdir() + '/a3chat3-') });
+    await relay(p, { on: false }, 'acorn');
+    await p.goto(T.URL0 + '?today=' + DAY); await T.w(600);
+    await p.evaluate(fake);
+    await say(p, 'hello');
+    ck('with no word kept: the word box shows, nothing is sent, the message stays', !!(await p.$('#a3ChatWord #a3WordIn')) && p.__sent.length === 0 && (await p.$eval('#a3ChatIn', e => e.value)) === 'hello');
+    await p.type('#a3WordIn', 'oak'); await p.click('#a3WordKeep'); await T.w(100);
+    await p.click('#a3ChatSend'); await T.w(500);
+    ck('a word that does not match: its box again, said, the message back, nothing kept in the chat', p.__sent.length === 1 && p.__sent[0].body.invite === 'oak' && /didn't match/.test(await p.$eval('#a3WordErr', e => e.textContent)) && (await p.$eval('#a3ChatIn', e => e.value)) === 'hello' && (await turns(p)).length === 0, JSON.stringify(await turns(p)));
+    await p.type('#a3WordIn', 'acorn'); await p.click('#a3WordKeep'); await T.w(100);
+    await p.click('#a3ChatSend'); await T.w(500);
+    ck('the right word: sent in invite and answered', p.__sent.length === 2 && p.__sent[1].body.invite === 'acorn' && JSON.stringify(await turns(p)) === '["hello","Heard: hello"]', JSON.stringify(await turns(p)));
+    all.push(...errs); await b.close();
+  }
+  const bad = all.filter(e => !/status of (500|401)/.test(e));   // the relay made to fail on purpose
   ck('no page errors', !bad.length, bad.join(' | '));
   T.done('e3_chat');
 })().catch(e => { console.log('FAIL crashed ' + (e && e.stack || e)); process.exit(1); });

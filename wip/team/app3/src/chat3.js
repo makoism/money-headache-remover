@@ -56,20 +56,20 @@ async function chat3Anon() {
   return (CHAT3.anon = a);
 }
 const chat3Save = () => chat3Put('state', CHAT3.state);
-/* the code word, from the invite box (lane/invite, STMT3_AI): '' when none is kept */
-const chat3Invite = () => (typeof STMT3_AI === 'object' && typeof STMT3_AI.invite === 'function' ? STMT3_AI.invite() || '' : '');
+/* the code word: kept on this device by STMT3_AI (stmt3_ai.js), its box shown here when the relay asks for one */
+const chat3Invite = () => STMT3_AI.word();
+function chat3Word(bad) {
+  const slot = $('#a3ChatWord'); if (!slot) return;
+  STMT3_AI.wordBox(slot, bad, () => { const q = $('#a3ChatIn'); if (q) q.focus(); });
+  const w = $('#a3WordIn'); if (w) w.focus();
+}
 
 /* ---- the relay: the core's body as is, one round ---- */
 async function chat3Send(body) {
   const r0 = CHAT3.route;
   if (!r0 || r0.how !== 'relay') throw new Error('the assistant can\'t be reached from this copy of the page');
-  let r;
-  try { r = await fetch(r0.base + '/api/ai', { method: 'POST', headers: { 'content-type': 'application/json', 'x-app': 'mhr2000' }, body: JSON.stringify(body) }); }
-  catch (e) { throw new Error('no connection. Check the internet and try again'); }
-  if (r.status === 401) { CHAT3.needInvite = true; throw new Error('this page needs the code word from its owner'); }
-  if (r.status === 429) throw new Error('the daily limit is reached, or too many messages at once. Try again later, or use the screens');
-  if (!r.ok) throw new Error('the assistant did not answer (' + r.status + ')');
-  return r.json();
+  try { return await STMT3_AI.post(r0.base, body, 'the daily limit is reached, or too many messages at once. Try again later, or use the screens'); }   // the one place a relay call is sent, with the code word
+  catch (e) { if (e && e.word) CHAT3.word = e.message; throw e; }
 }
 function chat3Deps() {
   return {
@@ -138,6 +138,7 @@ function chat3Inner() {
   const live = !E3.book && st.draft && (!lastCard || JSON.stringify(lastCard.card) !== JSON.stringify(CHAT3C.draftCard(st.draft, E3.today())))
     ? chat3Card({ id: 'live', who: 'card', card: CHAT3C.draftCard(st.draft, E3.today()) }) : '';
   return `<div class="a3-chat-log" id="a3ChatLog" aria-live="polite">${welcome}${st.turns.map(chat3Turn).join('')}${live}</div>${off}
+    <div id="a3ChatWord"></div>
     <div class="a3-chat-row"><label class="a3-vh" for="a3ChatIn">Ask or tell me something</label>
       <textarea class="a3-in a3-text" id="a3ChatIn" rows="1" maxlength="1000" placeholder="Ask or tell me something"></textarea>
       <button type="button" class="a3-btn solid" id="a3ChatSend">Send</button></div>
@@ -202,8 +203,11 @@ async function chat3Go() {
   const box = $('#a3ChatIn'), q = (box.value || '').trim();
   if (CHAT3.busy) return;
   if (!q) { box.focus(); return; }
+  await chat3Route();
+  /* the relay asks for a code word and none is kept: its box first, the message stays in the box */
+  if (!CHAT3.off && await STMT3_AI.needWord()) { chat3Word('Type the code word first, then send again'); return; }
   CHAT3.busy = true; $('#a3ChatSend').disabled = true;
-  await chat3Route(); await chat3Anon();
+  await chat3Anon();
   box.value = '';
   const log = $('#a3ChatLog');
   log.insertAdjacentHTML('beforeend', `<p class="a3-ask-me">${esc3(q)}</p><p class="a3-ask-ai a3-ask-wait" id="a3ChatWait">Working</p>`);
@@ -214,8 +218,16 @@ async function chat3Go() {
     try { res = await CHAT3C.turn(CHAT3.state, q, chat3Deps()); } catch (e) { res = { state: CHAT3.state, shown: [], stop: 'error', error: String((e && e.message) || e) }; }
   }
   CHAT3.state = res.state || CHAT3.state;
+  if (CHAT3.word) {   // the word did not match: nothing of this message is kept; its box again, the message back in the box
+    const added = new Set((res.shown || []).map(t => t.id));
+    CHAT3.state = Object.assign({}, CHAT3.state, { turns: CHAT3.state.turns.filter(t => !added.has(t.id)) });
+  }
   await chat3Save();
   CHAT3.busy = false;
+  if (CHAT3.word) {
+    const bad = CHAT3.word; CHAT3.word = null;
+    chat3Redraw(); const b = $('#a3ChatIn'); if (b) b.value = q; chat3Word(bad); return;
+  }
   if (res.stop === 'error') {
     CHAT3.off = true;   // the ways that always finish show beside the words
     chat3Redraw();
