@@ -15,3 +15,6 @@ M10 M52          A picture on Home: waits for Mako and the art.
 M21              iPhone browser not tested: the WebKit download is blocked by the environment's network rules.
 Known fault, not scope: a spend logged on a second phone may wait for "Send now" before the first phone sees it (M67). Cause found; its plan failed qc-foundation once and is being reworked; next update.
 Known fault, not scope: spending on a card that was not logged, found when the card is checked at Check your bank, is all counted on the day of that check. So the first check after a pay day puts the last period's card spending into the new period: the everyday figure is too low at the start of a period, and the period before looks better than it was (M36, M38, M30). The same on the live build. LANE B is fixing it in the engine (lane/cardgap); next update.
+M53 M17          Setup one question at a time, and the assistant answering during setup: the setup chat on lane/ai-core and lane/ai-panel, merged next (with M1, M2).
+M56              A new word for "Everyday spending": waits for Mako (not settled 6). Home's one figure for it becomes two named figures (not settled 8): planned, engine part with LANE B.
+M57              Money as a place that feels like home: the art step, with Mako (M58).
