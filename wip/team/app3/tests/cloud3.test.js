@@ -111,7 +111,10 @@ const canon = x => S.canon(x);
   {
     const v2 = makeVault(), api2 = C.client({ fetch: v2.fetch, base: () => 'http://vault.test' });
     const env = await pack.pack(Object.assign(clone(BOOK), { v: 4 }), { key: keys.key });
-    await api2.put(keys, Object.assign(C.wrap(env), { rev: 9 }));
+    const p = await api2.put(keys, Object.assign(C.wrap(env), { rev: 9 }));
+    ck('the vault itself refuses a copy of a newer shape (422 newer_shape)', p.status === 422 && p.j.error.code === 'newer_shape' && !v2.rows.size, JSON.stringify(p));
+    // a newer version's copy already there (written by a server that knows v 4): planted as that server would hold it
+    v2.rows.set(keys.id, Object.assign({ token_hash: require('crypto').createHash('sha256').update(keys.token).digest('hex'), rev: 9, updated: 1, created: 1, versions: [] }, C.wrap(env)));
     const mine = clone(BOOK);
     r = await C.syncOnce({ api: api2, pack, S, keys, device: {}, copy: mine });
     ck('a copy saved by a newer version is refused and nothing is sent over it', !r.ok && r.why === 'newer' && v2.rows.get(keys.id).rev === 9 && canon(mine) === canon(BOOK), JSON.stringify(r).slice(0, 200));
