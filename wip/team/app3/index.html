@@ -1333,6 +1333,9 @@ html { scroll-padding-top: 72px; }
 .a3-seg { flex: 1 1 auto; min-width: 0; padding: 0 10px; min-height: 44px; border: 0; border-radius: var(--r-ctl); background: var(--track); color: var(--ink2); font: inherit; font-weight: 600; cursor: pointer; }
 .a3-seg[aria-pressed=true] { background: var(--accent); color: var(--on-accent); }
 .a3-seg:disabled { opacity: .5; cursor: default; }
+.a3-doors { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.a3-door { min-height: 56px; padding: 6px 8px; font-size: var(--t-body); line-height: 1.2; }
+.a3-seg-s { flex: 0 1 auto; padding: 0 16px; font-size: var(--t-sm); font-weight: 600; }
 .a3-sel, .a3-date, .a3-text { text-align: left; }
 .a3-was { display: block; font-size: var(--t-cap); color: var(--ink2); text-align: right; }
 .a3-pernav { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; margin-top: 12px; }
@@ -9160,9 +9163,11 @@ function rcFormHtml3() {
   }
   const amt = e ? SM.toInput(e.a, E3.curOf(e.acct)) : '';
   const word = { spend: 'Log spend', refund: 'Log refund', moved: 'Log money moved', in: 'Log money in' }[m];
-  const modes = [['spend', 'Spend'], ['refund', 'Refund'], ['in', 'Money in'], ['moved', 'Moved']].map(([k, n]) => `<button type="button" class="a3-seg" data-mode="${k}" aria-pressed="${k === m}"${e ? ' disabled' : ''}>${n}</button>`).join('');
+  /* M22: two main doors, Money went out and Money came in; Refund and Moved under them as smaller choices (same modes) */
+  const seg = (k, n, main) => `<button type="button" class="a3-seg${main ? ' a3-door' : ' a3-seg-s'}" data-mode="${k}"${main ? ' data-door="main"' : ''} aria-pressed="${k === m}"${e ? ' disabled' : ''}>${n}</button>`;
+  const modes = `<div class="a3-doors">${seg('spend', 'Money went out', true)}${seg('in', 'Money came in', true)}</div><div class="a3-segs">${seg('refund', 'Refund')}${seg('moved', 'Moved')}</div>`;
   return `<h2>${e ? 'Change this' : { spend: 'Log a spend', refund: 'Log a refund', moved: 'Log money moved between your accounts', in: 'Log money that came in, like a client payment or a gift' }[m]}</h2>
-    <div class="a3-segs" role="group" aria-label="What happened">${modes}</div>
+    <div role="group" aria-label="What happened">${modes}</div>
     <div class="a3-field"><label for="rcAmt">Amount</label><input class="a3-in" data-amount type="text" inputmode="decimal" autocomplete="off" id="rcAmt" value="${esc3(amt)}" placeholder="${esc3(SM.symbol(E3.home()).trim())}"></div>
     ${fields}
     <div class="a3-field"><label for="rcDate">Day</label><input class="a3-in a3-date" type="date" id="rcDate" value="${esc3(e ? e.date : today)}" max="${esc3(today)}"></div>
