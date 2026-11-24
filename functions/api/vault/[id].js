@@ -36,7 +36,10 @@ async function gate({ request, env, params }) {
   } catch (e) { /* counting never blocks */ }
   const row = await env.DB.prepare('SELECT id, token_hash, blob, iv, rev, updated_at, created_at, prev_blob, prev_iv, prev_rev, size, writes_day, writes FROM vault WHERE id = ?1').bind(id).first();
   if (row && !timingSafeEqual(row.token_hash, await sha256hex(token))) return { err: fail(403, 'forbidden', 'Wrong recovery code for this vault.') };
-  return { id, token, row };
+  /* [change 4] no copy: was an app3 copy deleted here? */
+  const gone = row ? null : await env.DB.prepare('SELECT token_hash, rev, deleted_at FROM vault_gone WHERE id = ?1').bind(id).first();
+  if (gone && !timingSafeEqual(gone.token_hash, await sha256hex(token))) return { err: fail(403, 'forbidden', 'Wrong recovery code for this vault.') };
+  return { id, token, row, gone };
 }
 
 /* [change 2] the newest shape this server takes (store/pack.js pageV: 3). Raised by the VAULT_MAX_V variable, no code change. */
@@ -50,6 +53,7 @@ function shapeRefusal(e, env) {
 
 export async function onRequestGet(ctx) {
   const g = await gate(ctx); if (g.err) return g.err;
+  if (!g.row && g.gone) return fail(410, 'deleted', 'This cloud copy was deleted.', { deleted: g.gone.deleted_at });
   if (!g.row) return fail(404, 'not_found', 'No cloud copy with this code.');
   const q = new URL(ctx.request.url).searchParams, db = ctx.env.DB, r = g.row;
   /* [change 3] ?versions=1 lists the earlier versions kept, newest first; ?rev=N reads one of them (or the current one) */
@@ -80,9 +84,17 @@ export async function onRequestPut(ctx) {
   const incoming = envelopeOf(b.blob);
   if (incoming) { const no = shapeRefusal(incoming, ctx.env); if (no) return no; }
   else if (g.row && envelopeOf(g.row.blob)) return fail(422, 'unknown_format', 'This copy is not in a format this server takes.');
+  /* [change 4] an app3 copy deleted here is never sent back by a device that still holds it; only a fresh turn-on
+     (fresh: true, which app3 sends only when it starts a copy, never from a copy it synced) starts it again */
+  if (!g.row && g.gone && b.fresh !== true) return fail(410, 'deleted', 'This cloud copy was deleted.', { deleted: g.gone.deleted_at });
   if (!g.row) {
-    await db.prepare('INSERT INTO vault (id, token_hash, blob, iv, rev, updated_at, created_at, size, writes_day, writes) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?6, ?7, ?8, 1)')
-      .bind(g.id, await sha256hex(g.token), b.blob, b.iv, rev, now, b.blob.length, today).run();
+    /* two first writes at once: the second stores nothing and is told to take the latest */
+    const out = await db.batch([
+      db.prepare('DELETE FROM vault_gone WHERE id = ?1').bind(g.id),
+      db.prepare('INSERT INTO vault (id, token_hash, blob, iv, rev, updated_at, created_at, size, writes_day, writes) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?6, ?7, ?8, 1) ON CONFLICT(id) DO NOTHING RETURNING rev')
+        .bind(g.id, await sha256hex(g.token), b.blob, b.iv, rev, now, b.blob.length, today),
+    ]);
+    if (!(out[1] && out[1].results && out[1].results.length)) return fail(409, 'conflict', 'The server has a newer copy.', {});
     return json({ rev, updated: now, created: true });
   }
   const r = g.row, isNew = !!(envelopeOf(b.blob) || envelopeOf(r.blob));
@@ -117,9 +129,13 @@ export async function onRequestPut(ctx) {
 
 export async function onRequestDelete(ctx) {
   const g = await gate(ctx); if (g.err) return g.err;
-  if (g.row) await ctx.env.DB.batch([   /* [change 3] its earlier versions go with it */
-    ctx.env.DB.prepare('DELETE FROM vault WHERE id = ?1').bind(g.id),
-    ctx.env.DB.prepare('DELETE FROM vault_versions WHERE id = ?1').bind(g.id),
-  ]);
+  const db = ctx.env.DB;
+  if (g.row) await db.batch([   /* [change 3] its earlier versions go with it */
+    db.prepare('DELETE FROM vault WHERE id = ?1').bind(g.id),
+    db.prepare('DELETE FROM vault_versions WHERE id = ?1').bind(g.id),
+  ].concat(envelopeOf(g.row.blob) ? [   /* [change 4] an app3 copy leaves a marker; the old app's copies do not (today's rules) */
+    db.prepare('INSERT INTO vault_gone (id, token_hash, rev, deleted_at) VALUES (?1, ?2, ?3, ?4) ON CONFLICT(id) DO UPDATE SET token_hash = ?2, rev = ?3, deleted_at = ?4')
+      .bind(g.id, g.row.token_hash, g.row.rev, Date.now()),
+  ] : []));
   return json({ deleted: !!g.row });
 }

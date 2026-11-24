@@ -32,6 +32,8 @@ export const SCHEMA = [
      carried over from vault.prev_blob, whose date was never kept) */
   `CREATE TABLE IF NOT EXISTS vault_versions (id TEXT NOT NULL, rev INTEGER NOT NULL, blob TEXT NOT NULL, iv TEXT NOT NULL, size INTEGER NOT NULL DEFAULT 0, updated_at INTEGER)`,
   `CREATE INDEX IF NOT EXISTS vault_versions_id ON vault_versions (id, rev)`,
+  /* an app3 cloud copy that was deleted: a later write is refused until a fresh turn-on (fresh: true) */
+  `CREATE TABLE IF NOT EXISTS vault_gone (id TEXT PRIMARY KEY, token_hash TEXT NOT NULL, rev INTEGER NOT NULL, deleted_at INTEGER NOT NULL)`,
 ];
 const schemaReady = new WeakMap();
 export async function ensureSchema(db) {

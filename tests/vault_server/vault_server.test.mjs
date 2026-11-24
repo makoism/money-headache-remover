@@ -197,5 +197,47 @@ import { SCHEMA } from '../../functions/_lib.js';
   ck('E16 a write that lost the race is refused 409 and changes nothing (no version added, the other write kept)', r.status === 409 && (await call(env, 'GET', id, token)).j.blob === other.blob && g.j.versions.length === 0, [r, g.j]);
 }
 
+// ---------------- F. change 4: a deleted marker ----------------
+{
+  const { db, env, id, token } = fresh();
+  await call(env, 'PUT', id, token, Object.assign(envBlob(), { rev: 7 }));
+  let r = await call(env, 'DELETE', id, token);
+  ck('F1 deleting an app3 copy: 200 { deleted: true }', r.status === 200 && r.j.deleted === true, r);
+  r = await call(env, 'GET', id, token);
+  ck('F2 GET after: 410 deleted, with when (cloud3 sends nothing on an answer that is not 200 or 404)', r.status === 410 && r.j.error.code === 'deleted' && typeof r.j.deleted === 'number', r);
+  r = await call(env, 'PUT', id, token, Object.assign(envBlob(), { rev: 8, base: 7 }));
+  ck('F3 a device that still has the old copy cannot send it back (base 7): 410', r.status === 410 && r.j.error.code === 'deleted', r);
+  r = await call(env, 'PUT', id, token, Object.assign(envBlob(), { rev: 8 }));
+  ck('F4 nor with no base: 410', r.status === 410, r);
+  r = await call(env, 'PUT', id, token, { blob: oldBlob(), iv: ivOf(), rev: 9, force: true });
+  ck('F5 nor any other blob, force or not: 410', r.status === 410, r);
+  r = await call(env, 'GET', id, hex(32));
+  ck('F6 a wrong token gets 403, not the marker', r.status === 403, r);
+  r = await call(env, 'DELETE', id, token);
+  ck('F7 deleting again: { deleted: false } and the marker stays', r.j.deleted === false && (await call(env, 'GET', id, token)).status === 410, r);
+  r = await call(env, 'PUT', id, token, Object.assign(envBlob({ v: 4 }), { rev: 8, fresh: true }));
+  ck('F8 a fresh turn-on still passes the shape check', r.status === 422, r);
+  r = await call(env, 'PUT', id, token, Object.assign(envBlob(), { rev: 8, fresh: true }));
+  ck('F9 a fresh turn-on (fresh: true) starts the copy again and lifts the marker', r.status === 200 && r.j.created === true && (await call(env, 'GET', id, token)).status === 200, r);
+  ck('F10 the marker is gone', db.raw.prepare('SELECT COUNT(*) c FROM vault_gone WHERE id = ?').get(id).c === 0);
+}
+{
+  const { db, env, id, token } = fresh();
+  await call(env, 'PUT', id, token, { blob: oldBlob(), iv: ivOf(), rev: 7 });
+  await call(env, 'DELETE', id, token);
+  ck('F11 deleting an old-app copy leaves no marker (the old app keeps today\'s rules: 404, and a later send is taken)', db.raw.prepare('SELECT COUNT(*) c FROM vault_gone').get().c === 0 && (await call(env, 'GET', id, token)).status === 404);
+}
+{
+  /* two first writes at once */
+  const { db, env, id, token } = fresh();
+  const other = envBlob();
+  const sneaky = Object.assign(Object.create(db), { batch: async list => {
+    if (list.length === 2) db.raw.prepare('INSERT INTO vault (id, token_hash, blob, iv, rev, updated_at, created_at) VALUES (?,?,?,?,1,1,1)').run(id, sha(token), other.blob, other.iv);
+    return db.batch(list);
+  } });
+  const r = await call(envOf(sneaky), 'PUT', id, token, Object.assign(envBlob(), { rev: 1 }));
+  ck('F12 a first write that lost the race to another first write is refused 409, not a server error', r.status === 409 && (await call(env, 'GET', id, token)).j.blob === other.blob, r);
+}
+
 console.log(bad ? `vault_server: ${bad} FAIL of ${n}` : `vault_server: ALL PASS (${n})`);
 process.exit(bad ? 1 : 0);
