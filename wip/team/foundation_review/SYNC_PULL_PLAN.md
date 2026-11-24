@@ -62,3 +62,21 @@ The review found no engine or saved-data fault, and three faults in the plan. Ea
 - Settings shows when this device last checked with the cloud, moved by a take as well as a send (M36).
 - A test with two tabs on one device, both syncing.
 - The test hook that shortens timers cannot be reached from the address bar on the live page.
+
+## Version 3 (after the second qc-foundation FAIL, 24 Nov 19:50 JST; report in qc_reports/2026-11-24_sync_pull_plan2/foundation.md). It adds to version 2 and wins where they differ.
+
+**F1. The base is never saved ahead of the book (M61, M20). Two of these paths lose a change on the live build today.**
+- One rule in src/cloud3_page.js: `base` and `baseRev` are saved only together with the book that holds them. If the book is not replaced, for any reason (an open layer, a save that failed, a write refused and the retry failed), the base does not move and the device keeps the base it started with.
+- A take put off for an open layer is thrown away, and a fresh sync runs when the layer closes. That fresh join is also what pairs a statement line with a spend typed on the other device.
+- Tests, each failing on today's code. In each, the other device changed one spend and removed another, and both survive on both devices: (a) a reload with a statement review open after a take; (b) the device refuses the save during a take; (c) a write is refused and the retry fails.
+
+**F2. A burst, then close (M67, M11, M4: his weekly way is several entries in a minute).**
+- A send goes at once for the first change, and again 5 seconds after the last change of a burst. D5's "at most every 1 to 2 minutes" is the team's line, not the owner's; recommended to the coordinator: at most one send every 10 seconds, which is still under the server's 1,500 writes a day for any real use (a guard stops sends for the day at 1,200 and says so in Settings).
+- On leaving, when the copy is too big for a send that outlives the page, a plain send is tried.
+- Test: three spends in 20 seconds, the page hidden at 25, a copy over 64 KB, the other device shows all three.
+
+**F3. Which open layers hold a take back.** A statement review, setup, Check your bank, a Plan form and a receipt being changed hold it back. The assistant, Reminders and Settings do not (the write door reads the book fresh at each step, so the chat is safe, and AI first means the chat is open most of the time). Test: chat open, the other device logs a spend, Home under the chat shows it.
+
+**Builder notes taken in.** The cloud state is read fresh at each timed sync, so a second tab cannot turn the cloud copy back on after "Stop here" (in the two-tab test). When the timer stops ("code not accepted", "newer version") Home says so once through the one message queue. The revision-only call treats "deleted on another device" as a full sync does.
+
+**Scope notes for the owner.** iPhone timers and leaving sends are not tested (Chrome only). A phone closed with no signal sends on its next open.
