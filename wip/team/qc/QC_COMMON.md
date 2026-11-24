@@ -52,4 +52,15 @@ NOT CHECKED: everything in your brief you did not get to, and why.
 ```
 
 ## 6. The assistant
-Sessions cannot reach the live site or a real AI. Where a test needs the assistant, the page talks to a made-up one (`wip/team/app3/tests/fake_ai.js` once it exists; until then the stub at the top of `wip/team/app3/tests/e3_ask.js`). A made-up AI proves the doors work (what the assistant can change, what it shows, Undo). It does not prove the real one talks well. Say which of the two you tested.
+Sessions cannot reach the live site or a real AI. You test the assistant against a made-up one that the page talks to as if it were real. Never write COULD NOT TELL for an assistant line because "no AI was reachable": use this.
+```
+const Q = require('/home/user/money-headache-remover/wip/team/qc/qc3.js');
+const { openWithFakeAI, tell, MAKO_SETUP } = require('/home/user/money-headache-remover/wip/team/app3/tests/fake_ai_page.js');
+const d = await Q.open({ today: '2026-11-24' });
+const ai = await openWithFakeAI(d.p, { steps: MAKO_SETUP.steps });   // no steps: it echoes, so you can type anything
+for (const line of MAKO_SETUP.lines) await tell(d.p, line);          // a whole setup by talking
+// options: echo: false (the relay fails when the steps run out), invite: 'word', url (from Q.serve()). ai.bodies = everything the page sent.
+// on a phone, tap a card's button with d.p.$eval('[data-chatok]', e => e.click())
+```
+The head of `wip/team/app3/tests/README.md` says more. If `fake_ai_page.js` is missing in the build you were given, say so in your first line: that is a finding about the round, and you then use the stub at the top of `wip/team/app3/tests/e3_ask.js`.
+A made-up AI proves the doors work: what the assistant can change, what it shows, what it is sent, Undo. It does not prove the real one talks well. Say which you tested. The words the assistant is told to say and ask are in its own files, and you judge those as written.
