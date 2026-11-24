@@ -29,8 +29,67 @@ const KINDS3 = [['bank', 'A bank'], ['cash', 'Cash'], ['ewallet', 'An e-wallet']
 const MONTHS3 = [['01', 'January'], ['02', 'February'], ['03', 'March'], ['04', 'April'], ['05', 'May'], ['06', 'June'], ['07', 'July'], ['08', 'August'], ['09', 'September'], ['10', 'October'], ['11', 'November'], ['12', 'December']];
 const KIND_NAME3 = { bank: 'Second bank', cash: 'Cash', ewallet: 'E-wallet' };
 const shiftOptions3 = (list, sel) => list.map(([v, t]) => `<option value="${v}"${v === sel ? ' selected' : ''}>${t}</option>`).join('');
+/* the rows a person adds: a second income, a card, a bill, another account. Each is built here by its key (pay2,
+   card1, bill3, acct2), so a row taken out can be put back with the same key, and each has its own Remove. */
+const ROWS_IN3 = { pay: '#s3Pays', card: '#s3Cards', bill: '#s3Bills', acct: '#s3Accts' };
+const REMOVE3 = { pay: 'Remove this income', card: 'Remove this card', bill: 'Remove this bill', acct: 'Remove this account' };
+const ROW_NAME3 = { pay: 'Second income', card: 'Card', bill: 'Bill' };
+const removeBtn3 = kind => `<div class="a3-actions"><button type="button" class="a3-btn" data-remove>${REMOVE3[kind]}</button></div>`;
+const ROW3 = {
+  pay: k => `<div class="a3-group" data-row="${k}"><div class="a3-row3">
+      <div class="a3-field"><label for="s3-${k}-n">Called</label><input class="a3-in a3-txt" id="s3-${k}-n" data-f="name" placeholder="Second income" autocomplete="off"></div>
+      <div class="a3-field"><label for="s3-${k}-a">How much lands each time, after tax?</label><input class="a3-in" id="s3-${k}-a" data-f="amount" data-amount data-money></div></div>
+      <div class="a3-field"><label for="s3-${k}-e">When it lands</label><select class="a3-in a3-sel" id="s3-${k}-e" data-f="every"><option value="same">On the same days as your pay</option>${EVERY2_3.map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}</select></div>
+      <div class="a3-field" data-q="day" hidden><label for="s3-${k}-d">Day of the month it lands</label><select class="a3-in a3-sel" id="s3-${k}-d" data-f="day">${dayOptions3('5')}</select></div>
+      <div class="a3-field" data-q="day2" hidden><label for="s3-${k}-d2">And on day</label><select class="a3-in a3-sel" id="s3-${k}-d2" data-f="day2">${dayOptions3('20', [['last', 'the last day']])}</select></div>
+      <div class="a3-field" data-q="start" hidden><label for="s3-${k}-st">The day of one of them (the last one or the next one)</label><input class="a3-in a3-date" type="date" id="s3-${k}-st" data-f="start"></div>
+      <div class="a3-field" data-q="acct" hidden><label for="s3-${k}-ac">It lands in</label><select class="a3-in a3-sel" id="s3-${k}-ac" data-f="acct" data-acctsel="bank,cash,ewallet"></select></div>${removeBtn3('pay')}</div>`,
+  card: k => `<div class="a3-group" data-row="${k}">
+      <div class="a3-row3"><div class="a3-field"><label for="s3-${k}-n">Called</label><input class="a3-in a3-txt" id="s3-${k}-n" data-f="name" placeholder="Card" autocomplete="off"></div>
+      <div class="a3-field"><label for="s3-${k}-o">On it now</label><input class="a3-in" id="s3-${k}-o" data-f="owed" data-amount data-money></div></div>
+      <div class="a3-field"><label for="s3-${k}-p">Day of the month it is paid from your bank</label><select class="a3-in a3-sel" id="s3-${k}-p" data-f="payDay">${dayOptions3('10')}</select></div>
+      <div class="a3-field" data-q="acct" hidden><label for="s3-${k}-pf">Paid from</label><select class="a3-in a3-sel" id="s3-${k}-pf" data-f="payFrom" data-acctsel="bank"></select></div>
+      <div class="a3-field"><label for="s3-${k}-s">When that day is a weekend or holiday, it comes out</label><select class="a3-in a3-sel" id="s3-${k}-s" data-f="shift">${shiftOptions3(SHIFT3.out, 'after')}</select></div>
+      <div class="a3-field"><label for="s3-${k}-c">Day its statement closes</label><select class="a3-in a3-sel" id="s3-${k}-c" data-f="closeDay" aria-describedby="s3-${k}-ch">${dayOptions3('not sure', [['last', 'the last day'], ['not sure', 'not sure']])}</select>
+        <p class="a3-sub" id="s3-${k}-ch" data-hint="closeDay">Spends after this day go on the next payment</p></div>
+      <div class="a3-field" data-q="stmt" hidden><label for="s3-${k}-st">How much of it was on the statement that closed?</label><input class="a3-in" id="s3-${k}-st" data-f="statement" data-amount data-money data-optional aria-describedby="s3-${k}-sth">
+        <p class="a3-sub" id="s3-${k}-sth" data-hint="stmt"></p></div>${removeBtn3('card')}</div>`,
+  bill: k => `<div class="a3-group" data-row="${k}"><div class="a3-row3">
+      <div class="a3-field"><label for="s3-${k}-n">Called</label><input class="a3-in a3-txt" id="s3-${k}-n" data-f="name" placeholder="Bill" autocomplete="off"></div>
+      <div class="a3-field"><label for="s3-${k}-a">Amount</label><input class="a3-in" id="s3-${k}-a" data-f="amount" data-amount data-money></div></div>
+      <div class="a3-field"><label for="s3-${k}-e">How often</label><select class="a3-in a3-sel" id="s3-${k}-e" data-f="every"><option value="month">Each month</option><option value="year">Once a year</option></select></div>
+      <div class="a3-field" data-q="month" hidden><label for="s3-${k}-m">Month it leaves</label><select class="a3-in a3-sel" id="s3-${k}-m" data-f="month">${MONTHS3.map(([v, m]) => `<option value="${v}">${m}</option>`).join('')}</select></div>
+      <div class="a3-field"><label for="s3-${k}-d">Day of the month it leaves</label><select class="a3-in a3-sel" id="s3-${k}-d" data-f="day">${dayOptions3('27')}</select></div>
+      <div class="a3-field" data-q="acct" hidden><label for="s3-${k}-f">Leaves from</label><select class="a3-in a3-sel" id="s3-${k}-f" data-f="from" data-acctsel="bank,cash,ewallet"></select></div>
+      <div class="a3-field" data-q="takenOut" hidden><label for="s3-${k}-t">Did it leave your bank?</label><select class="a3-in a3-sel" id="s3-${k}-t" data-f="takenOut"><option value="yes" selected>Yes</option><option value="no">No, not yet</option></select></div>${removeBtn3('bill')}</div>`,
+  /* [slice 6] another account: a second bank, cash or an e-wallet, with what it holds today */
+  acct: k => `<div class="a3-group" data-row="${k}"><div class="a3-row3">
+      <div class="a3-field"><label for="s3-${k}-n">Called</label><input class="a3-in a3-txt" id="s3-${k}-n" data-f="name" placeholder="Cash, an e-wallet, a second bank" autocomplete="off"></div>
+      <div class="a3-field"><label for="s3-${k}-a">What it holds today</label><input class="a3-in" id="s3-${k}-a" data-f="amount" data-amount data-money></div></div>
+      <div class="a3-field"><label for="s3-${k}-t">What it is</label><select class="a3-in a3-sel" id="s3-${k}-t" data-f="type">${KINDS3.map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}</select></div>${removeBtn3('acct')}</div>`,
+};
+/* adds a row of that kind (a new key, or the key given to put one back); gives the row */
+function addRow3(kind, key) {
+  let k = key;
+  if (!k) { setup3.n[kind]++; k = kind + setup3.n[kind]; }
+  const n = Number(k.slice(kind.length));
+  if (n > setup3.n[kind]) setup3.n[kind] = n;
+  $(ROWS_IN3[kind]).insertAdjacentHTML('beforeend', ROW3[kind](k));
+  const row = $(`#a3Setup [data-row="${k}"]`);
+  row.querySelectorAll('[data-money]').forEach(el => bindMoney3(el));
+  rowsShown3(); shape3(); askTaken3();
+  return row;
+}
+/* one second income at most: its Add shows again once it is taken out */
+function rowsShown3() { $('#s3AddPay').hidden = $$('#s3Pays [data-row]').length > 0; }
+/* [item 14] a row taken out of setup */
+function removeRow3(row) {
+  if (!row) return;
+  row.remove();
+  rowsShown3(); shape3(); askTaken3();
+}
 function openSetup3() {
-  setup3 = { pays: 1, cards: 0, bills: 0, accts: 1, countryPicked: false };
+  setup3 = { n: { pay: 1, card: 0, bill: 0, acct: 1 }, countryPicked: false };
   const cur = 'JPY';
   const host = $('#a3Setup');
   host.innerHTML = `<div class="a3-sheet-in">
@@ -82,58 +141,12 @@ function openSetup3() {
   host.hidden = false; $('#a3Home').hidden = true; scrollTo(0, 0);
   host.querySelectorAll('[data-money]').forEach(el => bindMoney3(el));
   host.addEventListener('input', () => { $('#a3SetupErr').textContent = ''; });
-  $('#s3AddPay').addEventListener('click', () => {
-    setup3.pays++; const k = 'pay' + setup3.pays;
-    $('#s3Pays').insertAdjacentHTML('beforeend', `<div class="a3-row3" data-row="${k}">
-      <div class="a3-field"><label for="s3-${k}-n">Called</label><input class="a3-in a3-txt" id="s3-${k}-n" data-f="name" placeholder="Second income" autocomplete="off"></div>
-      <div class="a3-field"><label for="s3-${k}-a">How much lands each time, after tax?</label><input class="a3-in" id="s3-${k}-a" data-f="amount" data-amount data-money></div>
-      <div class="a3-field"><label for="s3-${k}-e">When it lands</label><select class="a3-in a3-sel" id="s3-${k}-e" data-f="every"><option value="same">On the same days as your pay</option>${EVERY2_3.map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}</select></div>
-      <div class="a3-field" data-q="day" hidden><label for="s3-${k}-d">Day of the month it lands</label><select class="a3-in a3-sel" id="s3-${k}-d" data-f="day">${dayOptions3('5')}</select></div>
-      <div class="a3-field" data-q="day2" hidden><label for="s3-${k}-d2">And on day</label><select class="a3-in a3-sel" id="s3-${k}-d2" data-f="day2">${dayOptions3('20', [['last', 'the last day']])}</select></div>
-      <div class="a3-field" data-q="start" hidden><label for="s3-${k}-st">The day of one of them (the last one or the next one)</label><input class="a3-in a3-date" type="date" id="s3-${k}-st" data-f="start"></div>
-      <div class="a3-field" data-q="acct" hidden><label for="s3-${k}-ac">It lands in</label><select class="a3-in a3-sel" id="s3-${k}-ac" data-f="acct" data-acctsel="bank,cash,ewallet"></select></div></div>`);
-    bindMoney3($(`#s3-${k}-a`));
-    $('#s3AddPay').hidden = true;
-    shape3();
-  });
-  $('#s3AddCard').addEventListener('click', () => {
-    setup3.cards++; const k = 'card' + setup3.cards;
-    $('#s3Cards').insertAdjacentHTML('beforeend', `<div class="a3-group" data-row="${k}">
-      <div class="a3-row3"><div class="a3-field"><label for="s3-${k}-n">Called</label><input class="a3-in a3-txt" id="s3-${k}-n" data-f="name" placeholder="Card" autocomplete="off"></div>
-      <div class="a3-field"><label for="s3-${k}-o">On it now</label><input class="a3-in" id="s3-${k}-o" data-f="owed" data-amount data-money></div></div>
-      <div class="a3-field"><label for="s3-${k}-p">Day of the month it is paid from your bank</label><select class="a3-in a3-sel" id="s3-${k}-p" data-f="payDay">${dayOptions3('10')}</select></div>
-      <div class="a3-field" data-q="acct" hidden><label for="s3-${k}-pf">Paid from</label><select class="a3-in a3-sel" id="s3-${k}-pf" data-f="payFrom" data-acctsel="bank"></select></div>
-      <div class="a3-field"><label for="s3-${k}-s">When that day is a weekend or holiday, it comes out</label><select class="a3-in a3-sel" id="s3-${k}-s" data-f="shift">${shiftOptions3(SHIFT3.out, 'after')}</select></div>
-      <div class="a3-field"><label for="s3-${k}-c">Day its statement closes</label><select class="a3-in a3-sel" id="s3-${k}-c" data-f="closeDay" aria-describedby="s3-${k}-ch">${dayOptions3('not sure', [['last', 'the last day'], ['not sure', 'not sure']])}</select>
-        <p class="a3-sub" id="s3-${k}-ch" data-hint="closeDay">Spends after this day go on the next payment</p></div>
-      <div class="a3-field" data-q="stmt" hidden><label for="s3-${k}-st">How much of it was on the statement that closed?</label><input class="a3-in" id="s3-${k}-st" data-f="statement" data-amount data-money data-optional aria-describedby="s3-${k}-sth">
-        <p class="a3-sub" id="s3-${k}-sth" data-hint="stmt"></p></div></div>`);
-    bindMoney3($(`#s3-${k}-o`)); bindMoney3($(`#s3-${k}-st`));
-    shape3(); askTaken3();
-  });
-  $('#s3AddBill').addEventListener('click', () => {
-    setup3.bills++; const k = 'bill' + setup3.bills;
-    $('#s3Bills').insertAdjacentHTML('beforeend', `<div class="a3-group" data-row="${k}"><div class="a3-row3">
-      <div class="a3-field"><label for="s3-${k}-n">Called</label><input class="a3-in a3-txt" id="s3-${k}-n" data-f="name" placeholder="Bill" autocomplete="off"></div>
-      <div class="a3-field"><label for="s3-${k}-a">Amount</label><input class="a3-in" id="s3-${k}-a" data-f="amount" data-amount data-money></div></div>
-      <div class="a3-field"><label for="s3-${k}-e">How often</label><select class="a3-in a3-sel" id="s3-${k}-e" data-f="every"><option value="month">Each month</option><option value="year">Once a year</option></select></div>
-      <div class="a3-field" data-q="month" hidden><label for="s3-${k}-m">Month it leaves</label><select class="a3-in a3-sel" id="s3-${k}-m" data-f="month">${MONTHS3.map(([v, m]) => `<option value="${v}">${m}</option>`).join('')}</select></div>
-      <div class="a3-field"><label for="s3-${k}-d">Day of the month it leaves</label><select class="a3-in a3-sel" id="s3-${k}-d" data-f="day">${dayOptions3('27')}</select></div>
-      <div class="a3-field" data-q="acct" hidden><label for="s3-${k}-f">Leaves from</label><select class="a3-in a3-sel" id="s3-${k}-f" data-f="from" data-acctsel="bank,cash,ewallet"></select></div>
-      <div class="a3-field" data-q="takenOut" hidden><label for="s3-${k}-t">Did it leave your bank?</label><select class="a3-in a3-sel" id="s3-${k}-t" data-f="takenOut"><option value="yes" selected>Yes</option><option value="no">No, not yet</option></select></div></div>`);
-    bindMoney3($(`#s3-${k}-a`));
-    shape3(); askTaken3();
-  });
-  /* [slice 6] another account: a second bank, cash or an e-wallet, with what it holds today */
-  $('#s3AddAcct').addEventListener('click', () => {
-    setup3.accts++; const k = 'acct' + setup3.accts;
-    $('#s3Accts').insertAdjacentHTML('beforeend', `<div class="a3-group" data-row="${k}"><div class="a3-row3">
-      <div class="a3-field"><label for="s3-${k}-n">Called</label><input class="a3-in a3-txt" id="s3-${k}-n" data-f="name" placeholder="Cash, an e-wallet, a second bank" autocomplete="off"></div>
-      <div class="a3-field"><label for="s3-${k}-a">What it holds today</label><input class="a3-in" id="s3-${k}-a" data-f="amount" data-amount data-money></div></div>
-      <div class="a3-field"><label for="s3-${k}-t">What it is</label><select class="a3-in a3-sel" id="s3-${k}-t" data-f="type">${KINDS3.map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}</select></div></div>`);
-    bindMoney3($(`#s3-${k}-a`));
-    shape3();
-  });
+  $('#s3AddPay').addEventListener('click', () => addRow3('pay'));
+  $('#s3AddCard').addEventListener('click', () => addRow3('card'));
+  $('#s3AddBill').addEventListener('click', () => addRow3('bill'));
+  $('#s3AddAcct').addEventListener('click', () => addRow3('acct'));
+  /* [item 14] any row added here can be taken out */
+  host.addEventListener('click', e => { const b = e.target.closest('[data-remove]'); if (b) removeRow3(b.closest('[data-row]')); });
   $('#s3Cur').addEventListener('change', () => { if (!setup3.countryPicked) $('#s3Country').value = COUNTRY_OF3[$('#s3Cur').value] || 'XX'; });
   $('#s3Country').addEventListener('change', () => { setup3.countryPicked = true; });
   /* [BI3] whenever a day or an amount changes, ask again which bills were due since the last pay */
