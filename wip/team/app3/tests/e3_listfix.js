@@ -100,6 +100,16 @@ const rows = p => p.$$eval('#rcList li', es => es.map(e => ({ gap: e.dataset.gap
   ck('C1: and says where from: Move ¥20,000 from Main bank to Bank B by 15 Dec. Main bank can spare it', mv === 'Move ¥20,000 from Main bank to Bank B by 15 Dec. Main bank can spare it', mv);
   await T.shot(p, 'listfix_c1');
 
+  /* C1, second case (qc-foundation): the same two banks, and a Trip goal of 30,000 kept in Main bank. Main bank can
+     spare only 35,000 - 30,000 = 5,000 (what it can spare counts the money set aside), so it is never advised to move
+     20,000 from it: no move line, the warning stays. */
+  { const bkG = JSON.parse(JSON.stringify(bkB)), main = bkG.home.main.v.acct, st = { at: '2026-11-21T20:00+09:00', by: 'k7m2qa', told: '2026-11-21T20:00+09:00' };
+    bkG.places.push(Object.assign({ id: 'k7m2qa-f3n8p1x6wd-91', name: 'Trip', kind: 'goal', target: 400000, cur: 'JPY', keptIn: { acct: main, mode: 'inBank' } }, st));
+    bkG.events.push(Object.assign({ id: 'k7m2qa-f3n8p1x6wd-92', k: 'move', date: '2026-11-21', a: 30000, acct: main, place2: 'k7m2qa-f3n8p1x6wd-91', src: { type: 'typed' } }, st));
+    await fresh(bkG); await go('2026-12-12');
+    const mvG = await txt(p, '#a3Home [data-fig="move-from"]');
+    const warnG = await p.$$eval('#a3Home [data-warn]', es => es.map(e => e.textContent));
+    ck('C1b: with 30,000 set aside in Main bank, no advice to move 20,000 from it', !mvG && warnG.some(x => /Bank B goes ¥5,000 below zero on 15 Dec/.test(x)), mvG + ' / ' + warnG.join(' | ')); }
 
 
   /* B1: the same check as A1 on a fresh device, saved while "Was Card A's payment ¥54,000?" is still showing: the gap

@@ -221,7 +221,8 @@
   }
   /* [LISTFIX C1] an account going under while another can spare the money: which one to move it from, how much (the
      lowest it goes, its later low when there is one) and by which day. The account that can spare the most is named,
-     from the engine's real-money walk (accounts[].real.headroom, BM2), only when it can spare all of it; '' otherwise.
+     from the engine's full walk (accounts[].headroom: money set aside for goals and plan lines are not spare;
+     LISTFIX2), only when it can spare all of it; '' otherwise.
      ctx: { currency, names, accounts (the engine's) } */
   function moveText(w, ctx) {
     ctx = ctx || {};
@@ -231,8 +232,8 @@
     let best = null;
     for (const id of Object.keys(accounts)) {
       const a = accounts[id];
-      if (id === w.account || !a.spendFrom || a.currency !== own.currency || !a.real || a.real.headroom < amount) continue;
-      if (!best || a.real.headroom > accounts[best].real.headroom) best = id;
+      if (id === w.account || !a.spendFrom || a.currency !== own.currency || !(a.headroom >= amount)) continue;
+      if (!best || a.headroom > accounts[best].headroom) best = id;
     }
     if (!best) return '';
     return fill('next.move_from', { amount, from: best, account: w.account, day: w.day, currency: own.currency || ctx.currency }, ctx);
