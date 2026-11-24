@@ -185,11 +185,11 @@ async function openSetup(day) {
     ck('after a reload half way, setup opens again by itself', !(await p.$eval('#a3Setup', e => e.hidden)));
     ck('what was saved is back: the bank 286,000 and the pay 180,000', (await val(p, '#s3Bank')) === '286000' && (await val(p, '#s3PayAmt')) === '180000' && (await val(p, '#s3PayDay')) === '10', (await val(p, '#s3Bank')) + ' ' + (await val(p, '#s3PayAmt')));
     ck('with Saved beside them', (await savedWords(p, 'bank')) === 'Saved' && (await savedWords(p, 'pay')) === 'Saved');
-    ck('what was not saved is not: no bill', !(await p.$('[data-row^=bill]')));
+    /* [SORTED C1] what was typed and not saved comes back too, still not saved (not counted) */
+    ck('what was typed but not saved is back, still Not saved yet', (await val(p, '[data-row=bill1] [data-f=name]')) === 'Rent' && (await stateOf(p, 'bills')) === 'changed', await stateOf(p, 'bills'));
     d = await device(p);
     ck('still no book after the reload', d && !d.book);
-    await p.click('#s3AddBill'); await w(100);
-    await typeIn(p, '[data-row=bill1] [data-f=name]', 'Rent'); await typeIn(p, '[data-row=bill1] [data-f=amount]', '72000'); await p.selectOption('[data-row=bill1] [data-f=day]', '27');
+    await p.selectOption('[data-row=bill1] [data-f=day]', '27');
     const e = await saveSections(p);
     ck('every section saves', e === '', e);
     await p.click('#a3SetupSave'); await w(700);
@@ -199,6 +199,33 @@ async function openSetup(day) {
     ck('the draft is cleared once the book is kept', d && d.book && !(d.device && d.device.setup), JSON.stringify(d && d.device));
     await p.reload(); await w(600);
     ck('after a reload Home shows, not setup', await p.$eval('#a3Setup', e => e.hidden) && (await homeBank(p)) === 286000);
+    await c.close();
+  }
+  /* 5c (SORTED C1, M16, M61): a section typed but not saved is not lost on a reload: what was typed comes back, still
+     "Not saved yet" (not counted until its Save) */
+  {
+    const { c, p } = await openSetup('2026-11-24');
+    await typeIn(p, '#s3Bank', '286000'); await saveSec(p, 'bank');
+    await typeIn(p, '#s3PayAmt', '180000'); await p.selectOption('#s3PayDay', '10');
+    await p.click('#s3AddBill'); await w(100); await typeIn(p, '[data-row=bill1] [data-f=name]', 'Rent');
+    await w(800);
+    await p.reload(); await w(700);
+    ck('C1: after a reload, setup is back', !(await p.$eval('#a3Setup', e => e.hidden)));
+    ck('C1: the pay typed but not saved is still there, with its day', (await val(p, '#s3PayAmt')) === '180000' && (await val(p, '#s3PayDay')) === '10', await val(p, '#s3PayAmt'));
+    ck('C1: the bill typed is still there', (await val(p, '[data-row=bill1] [data-f=name]')) === 'Rent');
+    ck('C1: those sections still say Not saved yet; the bank says Saved', (await stateOf(p, 'pay')) === 'changed' && (await savedWords(p, 'pay')) === 'Not saved yet' && (await stateOf(p, 'bills')) === 'changed' && (await savedWords(p, 'bank')) === 'Saved', await savedWords(p, 'pay'));
+    const d = await device(p);
+    ck('C1: what was typed is not counted: still no book, and the pay is not among the saved sections', d && !d.book && !(d.device.setup.sections || {}).pay, JSON.stringify(d && d.device && d.device.setup && Object.keys(d.device.setup.sections || {})));
+    await p.click('#a3SetupSave'); await w(300);
+    ck('C1: See my money still asks for the pay to be saved first', /Your pay/.test(await txt(p, '#a3SetupErr')), await txt(p, '#a3SetupErr'));
+    await typeIn(p, '[data-row=bill1] [data-f=amount]', '72000');
+    const e = await saveSections(p);
+    ck('C1: every section saves', e === '', e);
+    await p.click('#a3SetupSave'); await w(700);
+    ck('C1: Home shows', await p.$eval('#a3Setup', e => e.hidden) && (await homeBank(p)) === 286000);
+    await w(800);
+    const d2 = await device(p);
+    ck('C1: the draft is cleared, nothing typed left behind', d2 && d2.book && !(d2.device && d2.device.setup), JSON.stringify(d2 && d2.device));
     await c.close();
   }
   /* 5b: a draft left on one day and picked up on a later day. The bank, an account, a card's amount on it now and which

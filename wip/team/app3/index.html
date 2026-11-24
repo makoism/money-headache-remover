@@ -9843,13 +9843,13 @@ function removeRow3(row) {
   const v = {}; row.querySelectorAll('input[id], select[id]').forEach(x => { v[x.id] = x.value; });
   const name = (row.querySelector('[data-f=name]').value || '').trim() || (kind === 'acct' ? KIND_NAME3[row.querySelector('[data-f=type]').value] : ROW_NAME3[kind]);
   row.remove();
-  rowsShown3(); shape3(); askTaken3(); markAll3();
+  rowsShown3(); shape3(); askTaken3(); markAll3(); typedSoon3();
   MSG3.post({ kind: 'undo', key: 'act3', text: `${name} removed`, action: { label: 'Undo', run: () => {
     if (!setup3 || !parent.isConnected || $(`#a3Setup [data-row="${key}"]`)) return;
     const back = addRow3(kind, key);
     parent.insertBefore(back, next && next.isConnected ? next : null);
     const fill = () => { for (const id of Object.keys(v)) { const x = document.getElementById(id); if (x) x.value = v[id]; } };
-    fill(); shape3(); fill(); rowsShown3(); askTaken3(); markAll3();
+    fill(); shape3(); fill(); rowsShown3(); askTaken3(); markAll3(); typedSoon3();
     MSG3.post({ kind: 'toast', key: 'act3', text: 'Undone' });
   } } });
 }
@@ -9918,7 +9918,7 @@ async function openSetup3() {
   /* the sheet's own listeners, once: the sheet stays, only its inside is drawn again on each open */
   if (!host.dataset.wired) {
     host.dataset.wired = '1';
-    host.addEventListener('input', e => { if (!setup3) return; $('#a3SetupErr').textContent = ''; clearErr3(e.target); markAll3(); });
+    host.addEventListener('input', e => { if (!setup3) return; $('#a3SetupErr').textContent = ''; clearErr3(e.target); markAll3(); typedSoon3(); });
     /* [item 14] any row added here can be taken out; each section has its own Save */
     host.addEventListener('click', e => {
       if (!setup3) return;
@@ -9930,7 +9930,7 @@ async function openSetup3() {
     host.addEventListener('change', e => {
       if (!setup3) return;
       if (e.target.tagName === 'SELECT') { const sec = e.target.closest('[data-sec]'); if (sec) sec.querySelectorAll('[data-err-for]').forEach(p => clearErr3(document.getElementById(p.dataset.errFor))); }
-      shape3(); askTaken3(); markAll3();
+      shape3(); askTaken3(); markAll3(); typedSoon3();
     });
     host.addEventListener('focusout', () => { if (!setup3) return; shape3(); askTaken3(); markAll3(); });
   }
@@ -9949,7 +9949,7 @@ async function openSetup3() {
   $('#s3Bank').focus();
   /* [item 14] the sections saved before on this device come back */
   const me = setup3, draft = await E3.rec('setup');
-  if (setup3 === me && draft && draft.sections) { restoreDraft3(draft); $('#a3SetupBack').hidden = false; $('#s3Bank').focus(); }
+  if (setup3 === me && draft && (draft.sections || draft.typed)) { restoreDraft3(draft); $('#a3SetupBack').hidden = false; $('#s3Bank').focus(); }
 }
 /* one input behaviour (screens/inputs.js) in the chosen currency */
 /* [item 14] a box that can't be read says why next to it when it is left; a blank one is asked for only on Save */
@@ -9980,8 +9980,8 @@ function clearErr3(el) {
   if (d.length) el.setAttribute('aria-describedby', d.join(' ')); else el.removeAttribute('aria-describedby');
 }
 /* Back: setup closes; every saved section stays in the draft on this device */
-function closeSetup3() { endSetup3(); renderHome3(); }
-function endSetup3() { $('#a3Setup').hidden = true; $('#a3Setup').innerHTML = ''; setup3 = null; $('#a3Home').hidden = false; $('#a3').classList.remove('a3-setup-open'); }
+function closeSetup3() { if (setup3 && setup3.base) { clearTimeout(setup3.typedT); keepDraft3(setup3.saved, setup3.days); } endSetup3(); renderHome3(); }
+function endSetup3() { if (setup3) clearTimeout(setup3.typedT); $('#a3Setup').hidden = true; $('#a3Setup').innerHTML = ''; setup3 = null; $('#a3Home').hidden = false; $('#a3').classList.remove('a3-setup-open'); }
 /* the answers as build_book takes them. strict: a missing amount is asked for next to its box, which is focused
    (throws 'asked'); else it counts as 0, for a draft book that only says which bills were due since the last pay.
    sec (a setup section): only the boxes in it are asked for; the others count as 0 */
@@ -10190,8 +10190,26 @@ function put3(sec, snap) {
   secEl3(sec).querySelectorAll('[data-err-for]').forEach(p => clearErr3(document.getElementById(p.dataset.errFor)));
   rowsShown3(); shape3(); askTaken3(); markAll3();
 }
-/* the draft on this device: { v: 1, sections: { <sec>: snapshot }, days: { <sec>: the day it was saved } }, or nothing */
-const keepDraft3 = (sections, days) => E3.rec('setup', Object.keys(sections).length ? { v: 1, sections, days } : null);
+/* the draft on this device: { v: 1, sections: { <sec>: snapshot }, days: { <sec>: the day it was saved },
+   typed: { <sec>: snapshot } }, or nothing. [SORTED C1] `typed` keeps what is typed in a section not saved yet, as it is
+   typed, so Back, closing the tab or a reload never loses it; it is never counted: the section still says Not saved yet
+   and See my money still asks for its Save */
+function typedNow3(sections) {
+  const out = {};
+  if (!setup3 || !setup3.base) return out;
+  for (const [sec] of SEC3) { const now = snap3(sec), was = sections[sec] || setup3.base[sec]; if (!same3(now, was)) out[sec] = now; }
+  return out;
+}
+const keepDraft3 = (sections, days) => {
+  const typed = typedNow3(sections);
+  return E3.rec('setup', Object.keys(sections).length || Object.keys(typed).length ? { v: 1, sections, days, typed } : null);
+};
+/* what is typed is kept a moment after the typing stops, and at once on Back */
+function typedSoon3() {
+  if (!setup3) return;
+  clearTimeout(setup3.typedT);
+  setup3.typedT = setTimeout(() => { if (!setup3) return; if (setup3.busy) { typedSoon3(); return; } keepDraft3(setup3.saved, setup3.days); }, 300);
+}
 async function saveSec3(sec) {
   if (!setup3 || setup3.busy) return;
   const el = secEl3(sec);
@@ -10222,9 +10240,12 @@ async function undoSec3(sec, before, beforeDay, now) {
 }
 /* opening setup again: every saved section comes back, in order (the accounts first: the others choose from them) */
 function restoreDraft3(draft) {
-  if (!setup3 || !draft || !draft.sections) return;
+  if (!setup3 || !draft) return;
+  const sections = draft.sections || {}, typed = draft.typed || {};
   setup3.saved = {}; setup3.days = Object.assign({}, draft.days);
-  for (const [sec] of SEC3) if (draft.sections[sec]) { setup3.saved[sec] = draft.sections[sec]; put3(sec, draft.sections[sec]); }
+  for (const [sec] of SEC3) if (sections[sec]) { setup3.saved[sec] = sections[sec]; put3(sec, sections[sec]); }
+  /* [SORTED C1] then what was typed and not saved, still not saved */
+  for (const [sec] of SEC3) if (typed[sec]) put3(sec, typed[sec]);
   markAll3();
 }
 /* See my money: only when every section is as saved (a section never touched counts as its start); the book is then
