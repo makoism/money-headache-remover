@@ -266,7 +266,8 @@ function answers3(strict, sec) {
     if (ev === 'none') return { every: 'none' };
     const start = startBox.value;
     if (!start && asks(startBox)) ask(startBox, 'Type the day of one pay, the last one or the next one');
-    return { every: 'weeks', n: Number(ev.slice(5)), start: start || ans.day };
+    /* a draft with no day of one yet: today stands in, marked, so it is never taken as a pay landing today */
+    return Object.assign({ every: 'weeks', n: Number(ev.slice(5)), start: start || ans.day }, start ? {} : { noStart: true });
   };
   const rhythm = rhythmOf(every, day, $('#s3PayDay2').value, $('#s3PayStart'));
   $$('#a3Setup [data-row^=pay]').forEach((row, i) => {
@@ -313,7 +314,7 @@ function answers3(strict, sec) {
 function payToday3(built, ans) {
   const S = BurrowEngine.schedules, D = BurrowEngine.dates, cal = S.calendar(ans.country || 'XX'), d0 = D.dayNum(ans.day), out = [];
   for (const p of ans.pays) {
-    if (p.every === 'none') continue;
+    if (p.every === 'none' || p.noStart) continue;
     const sch = built.book.schedules.find(x => x.id === built.ids[p.key]);
     for (const o of S.occurrences(sch, cal, D.addMonths(d0, -1), D.addMonths(d0, 1))) if (o.land === d0) out.push({ bank: p.bank, id: o.id });
   }
