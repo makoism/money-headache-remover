@@ -1837,7 +1837,14 @@ html:has(.a3-setup-open) { scroll-padding-top: 150px; }
     return due => { const sh = monthShare(sch, cal, due, stepOn(sch, dayIn(ymOf(due)[0], 1, 1)), cache); return sh ? sh.amount : stepOn(sch, due); };
   }
 
-  const api = { calendar, holidays, bankClosed, easter, keyLive, keyAmount, dueDays, occurrences, stepOn, monthShare };
+  // [CARDGAP slice 5] which pay starts the periods when more than one is marked: the one marked most recently, by its
+  // record's clock `at`, then its id. Never the order of the list (SCHEMA_V3 2.3: a list's order means nothing).
+  // `list` is the marked pays that can start a period today; gives one of them, or undefined.
+  function periodPay(list) {
+    return list.slice().sort((x, y) => { const a = String(x.at || ''), b = String(y.at || ''); return a !== b ? (a < b ? 1 : -1) : String(x.id) < String(y.id) ? 1 : String(x.id) > String(y.id) ? -1 : 0; })[0];
+  }
+
+  const api = { calendar, holidays, bankClosed, easter, keyLive, keyAmount, dueDays, occurrences, stepOn, monthShare, periodPay };
   if (node) module.exports = api;
   else (root.BurrowEngine = root.BurrowEngine || {}).schedules = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
@@ -2351,7 +2358,7 @@ html:has(.a3-setup-open) { scroll-padding-top: 150px; }
     const wasNone = s => ((rulesByFrom(s)[0] || {}).rule || {}).every === 'none';
     // the days (up to today) on which a pay changed from a fixed day to no fixed pay
     const noneDays = s => { const l = rulesByFrom(s), out = []; l.forEach((x, k) => { if (k && x.f <= today && x.rule.every === 'none' && l[k - 1].rule.every !== 'none') out.push(x.f); }); return out; };
-    let periodStream = schedules.find(s => s.kind === 'income' && s.startsPeriod && ruleToday(s) && ruleToday(s).every !== 'none');
+    let periodStream = S.periodPay(schedules.filter(s => s.kind === 'income' && s.startsPeriod && ruleToday(s) && ruleToday(s).every !== 'none'));   // the latest marked, never list order
     const windowEnd = o => calOf(o.acct).addWorking(o.land, postingDays(o.acct));
     const stillExpected = o => isNotYet(o) && windowEnd(o) < openDay(o.acct);             // [Z2]
     const lateExpected = o => o.land < today && (today <= windowEnd(o) || stillExpected(o));   // [G3, H8]
@@ -3550,7 +3557,7 @@ html:has(.a3-setup-open) { scroll-padding-top: 150px; }
     // [BQ4] the rule in force by `from` (ties by `at`), never by the order saved
     const ruleOn = s => { let rule = null; (s.rules || []).filter(x => x && !x.gone).map((x, i) => ({ f: i === 0 || x.from == null ? -Infinity : D.dayNum(x.from), at: x.at || '', rule: x.rule }))
       .sort((p, q) => p.f - q.f || (p.at < q.at ? -1 : p.at > q.at ? 1 : 0)).forEach(x => { if (x.f <= today) rule = x.rule; }); return rule || {}; };
-    const stream = live.find(s => s.kind === 'income' && s.startsPeriod && ruleOn(s).every !== 'none');
+    const stream = S.periodPay(live.filter(s => s.kind === 'income' && s.startsPeriod && ruleOn(s).every !== 'none'));   // the same pick as the look ahead
     const AHEAD = { year: 1, monthsList: 1, once: 1 };
     const out = [];
     for (const s of live.filter(x => x.kind === 'bill')) {
@@ -9387,7 +9394,11 @@ function rcGaps3(per) {
     if (f.held || f.apart) continue;   // [LISTFIX2] held for its question, or never spending (the engine's marks)
     for (const pt of f.parts || []) if (pt.amount && inPer(pt.from)) out.push({ acct: id, check: f.to, from: pt.from, to: pt.to, amount: pt.amount, on: onWhat(f.place) });
   }
-  for (const id of Object.keys(r.cards || {})) for (const f of r.cards[id].fillers || []) if (f.amount && !f.apart && inPer(f.day)) out.push({ acct: id, check: f.day, from: f.day, to: f.day, amount: f.amount, on: { line: 'free' } });
+  /* [CARDGAP] a card's gap by its parts too (the engine cuts it by days at each period start, as a bank's) */
+  for (const id of Object.keys(r.cards || {})) for (const f of r.cards[id].fillers || []) {
+    if (f.apart) continue;
+    for (const pt of f.parts || []) if (pt.amount && inPer(pt.from)) out.push({ acct: id, check: f.day, from: pt.from, to: pt.to, amount: pt.amount, on: { line: 'free' } });
+  }
   return out;
 }
 function rcGapLi3(g, yr) {

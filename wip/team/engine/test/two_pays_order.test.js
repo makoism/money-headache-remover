@@ -36,4 +36,17 @@ for (const day of ['2026-12-05', '2026-12-20', '2027-01-12']) {
     eq(LA.lookahead(swapped(b), day).safeToSpend.headline, LA.lookahead(b, day).safeToSpend.headline);
   });
 }
+t('the pay marked most recently starts the period: mark the second pay later and the period follows it, then the first again', () => {
+  const b = book(), inc = b.schedules.filter(s => s.kind === 'income');
+  const first = inc.find(s => s.name === 'Pay'), second = inc.find(s => s.name === 'Second pay');
+  second.at = String(first.at) + '~';   // a later clock than the first pay's
+  const follows = x => IDS.scheduleOf(LA.lookahead(x, '2026-12-27').period.nextPay.occ);   // the pay the period runs to
+  for (const x of [b, swapped(b)]) eq(follows(x), second.id);
+  first.at = String(second.at) + '~';
+  for (const x of [b, swapped(b)]) eq(follows(x), first.id);
+});
+t('with the same clock on both, the id decides, the same in both orders', () => {
+  const b = book(); b.schedules.filter(s => s.kind === 'income').forEach(s => { s.at = 'same'; });
+  eq(shape(swapped(b), '2026-12-20'), shape(b, '2026-12-20'));
+});
 done('two_pays_order.test.js');

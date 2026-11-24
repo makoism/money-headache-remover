@@ -342,7 +342,7 @@
     const wasNone = s => ((rulesByFrom(s)[0] || {}).rule || {}).every === 'none';
     // the days (up to today) on which a pay changed from a fixed day to no fixed pay
     const noneDays = s => { const l = rulesByFrom(s), out = []; l.forEach((x, k) => { if (k && x.f <= today && x.rule.every === 'none' && l[k - 1].rule.every !== 'none') out.push(x.f); }); return out; };
-    let periodStream = schedules.find(s => s.kind === 'income' && s.startsPeriod && ruleToday(s) && ruleToday(s).every !== 'none');
+    let periodStream = S.periodPay(schedules.filter(s => s.kind === 'income' && s.startsPeriod && ruleToday(s) && ruleToday(s).every !== 'none'));   // the latest marked, never list order
     const windowEnd = o => calOf(o.acct).addWorking(o.land, postingDays(o.acct));
     const stillExpected = o => isNotYet(o) && windowEnd(o) < openDay(o.acct);             // [Z2]
     const lateExpected = o => o.land < today && (today <= windowEnd(o) || stillExpected(o));   // [G3, H8]

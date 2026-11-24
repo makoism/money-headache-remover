@@ -121,7 +121,7 @@
     // [BQ4] the rule in force by `from` (ties by `at`), never by the order saved
     const ruleOn = s => { let rule = null; (s.rules || []).filter(x => x && !x.gone).map((x, i) => ({ f: i === 0 || x.from == null ? -Infinity : D.dayNum(x.from), at: x.at || '', rule: x.rule }))
       .sort((p, q) => p.f - q.f || (p.at < q.at ? -1 : p.at > q.at ? 1 : 0)).forEach(x => { if (x.f <= today) rule = x.rule; }); return rule || {}; };
-    const stream = live.find(s => s.kind === 'income' && s.startsPeriod && ruleOn(s).every !== 'none');
+    const stream = S.periodPay(live.filter(s => s.kind === 'income' && s.startsPeriod && ruleOn(s).every !== 'none'));   // the same pick as the look ahead
     const AHEAD = { year: 1, monthsList: 1, once: 1 };
     const out = [];
     for (const s of live.filter(x => x.kind === 'bill')) {

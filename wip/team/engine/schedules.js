@@ -206,7 +206,14 @@
     return due => { const sh = monthShare(sch, cal, due, stepOn(sch, dayIn(ymOf(due)[0], 1, 1)), cache); return sh ? sh.amount : stepOn(sch, due); };
   }
 
-  const api = { calendar, holidays, bankClosed, easter, keyLive, keyAmount, dueDays, occurrences, stepOn, monthShare };
+  // [CARDGAP slice 5] which pay starts the periods when more than one is marked: the one marked most recently, by its
+  // record's clock `at`, then its id. Never the order of the list (SCHEMA_V3 2.3: a list's order means nothing).
+  // `list` is the marked pays that can start a period today; gives one of them, or undefined.
+  function periodPay(list) {
+    return list.slice().sort((x, y) => { const a = String(x.at || ''), b = String(y.at || ''); return a !== b ? (a < b ? 1 : -1) : String(x.id) < String(y.id) ? 1 : String(x.id) > String(y.id) ? -1 : 0; })[0];
+  }
+
+  const api = { calendar, holidays, bankClosed, easter, keyLive, keyAmount, dueDays, occurrences, stepOn, monthShare, periodPay };
   if (node) module.exports = api;
   else (root.BurrowEngine = root.BurrowEngine || {}).schedules = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
