@@ -1,0 +1,28 @@
+the burrow
+Settings
+Reminders
+Ask
+
+Settings
+Money
+
+The currency is chosen in setup.
+
+This device
+
+The browser may clear your money if this device runs low on space. Keep the cloud copy on or save a backup file. Space used: 4 KB of 11 GB.
+
+Ask the browser to keep it
+Backup file
+
+A backup file is your own copy of your money, to keep anywhere. Restoring one replaces the money on this device; what is here now is kept first, so Put it back can bring it back.
+
+Lock it with a code
+Save a backup file
+Restore from a file
+Cloud copy
+
+Off. Your money is on this device only. A cloud copy is locked with a code only you have, and keeps your phone and computer the same.
+
+I have a code
+Done

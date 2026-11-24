@@ -1,0 +1,19 @@
+the burrow
+Settings
+Reminders
+Ask
+
+Made-up numbers shaped like a real month. Nothing you do here is saved
+Show the page as on
+Set up with my own numbers
+Ask
+
+Your question and a short summary of today's figures go to Claude, the AI made by Anthropic: through this page's own server when it is opened from its own address, or through your own Claude account inside Claude. Your notes, shops and single spends are never sent. Nothing changes until you tap Apply.
+
+See what is sent
+Your question
+Ask
+Close
+How much can I spend before pay day?
+What is due before next pay?
+I spent 1,200 on lunch today
