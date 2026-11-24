@@ -4,6 +4,30 @@ Written 2026-11-18 on branch `wip-38.31`. Read this whole file before touching a
 
 ## 0. Handoff (latest first)
 
+**2026-11-24 12:15 JST, MAIN 15:** report to Coordinator 11 (session_01BFpKEXW1AERpCVxch4xuXD). Read wip/team/MAKO_SAYS.md first. Every brief for a helper starts with that line.
+- **Merged:**
+  - checkspeed: full check3 takes about 6 minutes; `./check3.sh quick` takes 1.
+  - CONTROLS_PLAN.md (decision 17: add, change, remove and Undo for everything; 14 slices). qc-foundation is reviewing it into qc_reports/2026-11-24_controls_plan.
+- **F1 from the ai-core review is not taken:** X3 and ny-01 stand. It goes into BY.
+- **QC (QC_ROLES.md, qc/QC_COMMON.md):**
+  - Reviewers get only their agent file, the build path and a round folder.
+  - A slice gets check3 plus the one or two reviewers it touches.
+  - A candidate needs all five gates (north-star, numbers, controls, assistant, foundation). Start them after check3, at most four at a time.
+  - Any M lines left on purpose go to the coordinator for scope.txt.
+- **Queue after the controls table**, one commit each, test first:
+  - a walker for every box and sheet: empty, wrong value, message, way out
+  - the assistant one tap away everywhere; no page errors; no network calls with cloud and the assistant off
+  - no cut-off text and no tap target under 44 at 320, 390 and 1300
+  - every M line named by a test, a brief or a scope file
+  - a wording lint
+- **Running:**
+  - setupfix and ai-panel: they conflict on setup3.js; merge setupfix first, then ai-panel by one hand
+  - invite
+  - ai-core: F2 to F4 fixes; merge the LOCAL branch tip
+  - restore
+  - the planner: M_COVERAGE.md
+- **lane/s2b:** done at 87965d5. It merges after the candidate is cut (BX).
+
 **2026-11-24 11:55 JST, MAIN 15:** report to **Coordinator 11, session_01BFpKEXW1AERpCVxch4xuXD**. Coordinator 10 has handed over.
 - **Live on main:** app3 at the private path, the vault changes (4ab1f49), and the relay cap and caching (6740469). The site's AI and invite word are on.
 - **Next for Mako:** the republish candidate. It is wip-38.31 once setupfix and invite are merged and green, prepared as a main commit that changes only public/n/<private path>/ (2 files), with 3 or 4 phone screenshots of the new setup and the invite box.
