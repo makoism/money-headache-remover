@@ -1052,10 +1052,13 @@
         const sa = splitAt(lineId), moved = sa && sa !== acctId;
         const atOpening = moved ? (lineId === 'free' ? openEv[sa].split.free : openEv[sa].split.lines[lineId])
           : lineId === 'free' ? openingShares(acctId).free : openingShares(acctId).lines[lineId];
-        const lp = byDay ? countFrom(moved ? sa : acctId) : lastPay;   // [BQ3]
+        const addedOn = lineId === 'free' ? freeSrc.from : (lineSrcs.find(x => x.id === lineId) || {}).from;
+        // [BQ3, CA10] with no fixed pay the spends count from the same day as the share: the day the amount was added
+        // (coordinator 16, 26 Nov); earlier spends stay in the bank figure and on Receipts, before the plan
+        const lp = byDay ? shareFrom(moved ? sa : acctId, addedOn) : lastPay;
         const fromOpening = !byDay && (lastPay === null || lastPay <= openDay(moved ? sa : acctId));
         const perOf = lineId === 'free' ? fPer : (lineSrcs.find(x => x.id === lineId) || {}).per;
-        const start = byDay ? monthShare(amount, perOf, moved ? sa : acctId, lineId === 'free' ? freeSrc.from : (lineSrcs.find(x => x.id === lineId) || {}).from) : fromOpening ? (atOpening != null ? atOpening : amount) : amount;
+        const start = byDay ? monthShare(amount, perOf, moved ? sa : acctId, addedOn) : fromOpening ? (atOpening != null ? atOpening : amount) : amount;
         const inLine = e => lineOfSpend(e) === lineId && e.account && openEv[e.account] && !inside(e, openingOf(e.account), e.account) && (fromOpening || e.day >= lp) && e.day <= upTo;
         const counts = e => inLine(e) && cur(e.account) === cur(acctId);   // [T5] only spends in the line's own currency
         if (!past) for (const e of live().filter(x => x.k === 'spend' && !isFeeRecord(x) && inLine(x) && cur(x.account) !== cur(acctId)))

@@ -102,4 +102,38 @@ t('Free to spend set before this month and changed on 18 Dec keeps its whole mon
   x.b.plan.shares.push({ id: 'q8w3hz-n4k7c2m9xs-52', from: '2026-12-18', cur: 'JPY', per: { free: 'month' }, free: 60000, goals: {}, told: '2026-12-18T20:00:00.000+09:00', at: '2026-12-18T20:00:00.000+09:00', by: 'q8w3hz' });
   eq(LA.lookahead(x.b, '2026-12-18').everyday.counts, 60000);
 });
+// [CA10, coordinator 16, 26 Nov, from qc-foundation F1 on the build] a plan amount added partway through a month counts
+// its spends from the same day as its share: the day it was added. Earlier spends stay in the bank figure and in
+// Receipts, shown as before the plan, never lost. Kai: no fixed pay, bank 2,000,000, logs 50,000 of everyday spends
+// from 1 to 17 Dec with no Free to spend set; on 18 Dec he sets Free to spend at 60,000 a month.
+// Share: 60,000 x 14 / 31 = 27,096 (27,096.7, rounded down). Spent from 18 Dec: nothing. Left 27,096 (before: 50,000
+// counted from the 1st, "22,904 over" seconds after typing it).
+function kai() {
+  const newId = IDS.idMaker('k4i9pz');
+  const out = BB.buildBook({ day: '2026-11-01', told: '2026-11-01T09:00:00.000+09:00', currency: 'JPY', country: 'JP',
+    banks: [{ key: 'bank1', name: 'Main bank', amount: 2000000, main: true, min: null }],
+    pays: [{ key: 'pay1', name: 'Work', bank: 'bank1', amount: null, every: 'none' }], cards: [], bills: [], free: null }, { newId });
+  const b = out.book || out, bank = b.accounts.find(a => a.type === 'bank').id;
+  const st = (r, told) => Object.assign(r, { told, at: told, by: 'k4i9pz' });
+  for (const [d, a] of [['2026-12-01', 10000], ['2026-12-05', 15000], ['2026-12-10', 12000], ['2026-12-17', 13000]])
+    b.events.push(st({ id: newId(), k: 'spend', date: d, a, acct: bank, src: { type: 'typed' } }, d + 'T19:00:00.000+09:00'));
+  b.plan.shares = (b.plan.shares || []).filter(x => x.free == null).concat([st({ id: newId(), from: '2026-12-18', cur: 'JPY', per: { free: 'month' }, free: 60000, goals: {} }, '2026-12-18T20:00:00.000+09:00')]);
+  return { b, bank, newId, st };
+}
+t('[CA10] Kai sets Free to spend at 60,000 on 18 Dec after 50,000 of spends: 27,096 left, never 22,904 over', () => {
+  const { b } = kai(), r = LA.lookahead(b, '2026-12-18');
+  eq([r.month.free.amount, r.month.free.counts, r.month.free.left], [60000, 27096, 27096]);
+  eq(r.safeToSpend.headline, 27096);
+  eq(r.accounts[Object.keys(r.accounts)[0]].bank, 1950000);   // the earlier spends stay in the bank figure
+});
+t('[CA10] a spend on 20 Dec comes off it: 2,000, 25,096 left', () => {
+  const k = kai(); k.b.events.push(k.st({ id: k.newId(), k: 'spend', date: '2026-12-20', a: 2000, acct: k.bank, src: { type: 'typed' } }, '2026-12-20T19:00:00.000+09:00'));
+  eq(LA.lookahead(k.b, '2026-12-20').month.free.left, 25096);
+});
+t('[CA10] a Food line added on 18 Dec: a Food receipt of 5 Dec does not use up its share (31,000 x 14 / 31 = 14,000 held)', () => {
+  const x = life(); const food = x.add('2026-12-18', 'Food', 31000); x.spend('2026-12-05', 10000, food);
+  const r = LA.lookahead(x.b, '2026-12-18');
+  eq(part(r, 'Food left this month'), [14000]);
+  eq(r.month.lines.find(l => l.name === 'Food').left, 14000);
+});
 done('month_added.test.js');
