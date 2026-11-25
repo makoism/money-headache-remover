@@ -9562,7 +9562,7 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     if (id === mainOf(w)) bad('Your main bank is where pay lands, so it cannot be closed here yet');
     if (a.closed) bad(a.name + ' is already closed');
     const k = keptIn(w, id);
-    if (k.length) bad(k.join(' and ') + (k.length > 1 ? ' are' : ' is') + ' kept in ' + a.name + '. Change or remove ' + (k.length > 1 ? 'them' : 'it') + ' first');
+    if (k.length) bad(`${k.join(' and ')} ${k[1] ? 'are' : 'is'} kept in ${a.name}. Change or remove ${k[1] ? 'them' : 'it'} first`);
     const spent = x && x.to === 'spent', to = spent ? mainOf(w) : x && x.to;
     const dest = !spent && (w.book.accounts || []).find(y => live(y) && y.id === to && y.id !== id && !y.closed && OWN_KINDS[y.type] && (y.cur || home(w)) === (a.cur || home(w)));
     if (!spent && !dest) bad('Pick where its money goes: another account of yours, or "it is not there any more"');
@@ -9588,7 +9588,7 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     if (!OWN_KINDS[a.type]) bad('Remove a card or a loan on its own sheet');
     if (id === mainOf(w)) bad('Your main bank is where pay lands, so it cannot be removed');
     const uses = linksTo(w, id).map(l => l.rec.name).concat(keptIn(w, id));
-    if (uses.length) bad(uses.join(' and ') + ' use' + (uses.length > 1 ? '' : 's') + ' ' + a.name + '. Change ' + (uses.length > 1 ? 'them' : 'it') + ' first, or close ' + a.name + ' instead');
+    if (uses.length) bad(uses.join(' and ') + ' use' + (uses[1] ? '' : 's') + ' ' + a.name + '. Change ' + (uses[1] ? 'them' : 'it') + ' first, or close ' + a.name + ' instead');
     const on = (w.book.events || []).filter(e => live(e) && (e.acct === id || e.acct2 === id));
     if (on.some(e => e.grp !== a.grp || !(e.k === 'open' || e.k === 'check' || e.k === 'transfer'))) bad(a.name + ' has history. Close it instead: its history stays');
     for (const e of on) w.remove('events', e.id);
@@ -13688,7 +13688,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     /* [E2] closed accounts keep a ref after every open one, so "reopen it" can name one */
     let a = Math.max(0, ...Object.keys(refs).filter(k => /^A\d+$/.test(k)).map(k => Number(k.slice(1))));
     const closed = (book.accounts || []).filter(x => live(x) && x.closed && x.type !== 'card' && x.type !== 'loan').map(x => { const ref = 'A' + (++a); refs[ref] = x.id; return `${ref} | ${x.name} | closed ${day1(x.closed)}`; });
-    if (closed.length) out.push('Closed accounts (ref | name | closed on; reopen_account opens one again):\n' + closed.join('\n'));
+    if (closed.length) out.push('Closed accounts, reopen_account opens one again (ref | name | closed on):\n' + closed.join('\n'));
     return { text: out.join('\n'), refs };
   }
   function ruleWords(r) {

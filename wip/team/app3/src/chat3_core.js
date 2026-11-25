@@ -241,7 +241,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     /* [E2] closed accounts keep a ref after every open one, so "reopen it" can name one */
     let a = Math.max(0, ...Object.keys(refs).filter(k => /^A\d+$/.test(k)).map(k => Number(k.slice(1))));
     const closed = (book.accounts || []).filter(x => live(x) && x.closed && x.type !== 'card' && x.type !== 'loan').map(x => { const ref = 'A' + (++a); refs[ref] = x.id; return `${ref} | ${x.name} | closed ${day1(x.closed)}`; });
-    if (closed.length) out.push('Closed accounts (ref | name | closed on; reopen_account opens one again):\n' + closed.join('\n'));
+    if (closed.length) out.push('Closed accounts, reopen_account opens one again (ref | name | closed on):\n' + closed.join('\n'));
     return { text: out.join('\n'), refs };
   }
   function ruleWords(r) {

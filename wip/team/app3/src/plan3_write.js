@@ -511,7 +511,7 @@
     if (id === mainOf(w)) bad('Your main bank is where pay lands, so it cannot be closed here yet');
     if (a.closed) bad(a.name + ' is already closed');
     const k = keptIn(w, id);
-    if (k.length) bad(k.join(' and ') + (k.length > 1 ? ' are' : ' is') + ' kept in ' + a.name + '. Change or remove ' + (k.length > 1 ? 'them' : 'it') + ' first');
+    if (k.length) bad(`${k.join(' and ')} ${k[1] ? 'are' : 'is'} kept in ${a.name}. Change or remove ${k[1] ? 'them' : 'it'} first`);
     const spent = x && x.to === 'spent', to = spent ? mainOf(w) : x && x.to;
     const dest = !spent && (w.book.accounts || []).find(y => live(y) && y.id === to && y.id !== id && !y.closed && OWN_KINDS[y.type] && (y.cur || home(w)) === (a.cur || home(w)));
     if (!spent && !dest) bad('Pick where its money goes: another account of yours, or "it is not there any more"');
@@ -537,7 +537,7 @@
     if (!OWN_KINDS[a.type]) bad('Remove a card or a loan on its own sheet');
     if (id === mainOf(w)) bad('Your main bank is where pay lands, so it cannot be removed');
     const uses = linksTo(w, id).map(l => l.rec.name).concat(keptIn(w, id));
-    if (uses.length) bad(uses.join(' and ') + ' use' + (uses.length > 1 ? '' : 's') + ' ' + a.name + '. Change ' + (uses.length > 1 ? 'them' : 'it') + ' first, or close ' + a.name + ' instead');
+    if (uses.length) bad(uses.join(' and ') + ' use' + (uses[1] ? '' : 's') + ' ' + a.name + '. Change ' + (uses[1] ? 'them' : 'it') + ' first, or close ' + a.name + ' instead');
     const on = (w.book.events || []).filter(e => live(e) && (e.acct === id || e.acct2 === id));
     if (on.some(e => e.grp !== a.grp || !(e.k === 'open' || e.k === 'check' || e.k === 'transfer'))) bad(a.name + ' has history. Close it instead: its history stays');
     for (const e of on) w.remove('events', e.id);
