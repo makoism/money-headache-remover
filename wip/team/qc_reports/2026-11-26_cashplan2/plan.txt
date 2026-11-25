@@ -1,0 +1,2 @@
+Plan review 2 (plan mode). The plan: wip/team/foundation_review/CASH_PLAN.md on lane/cashplan 77e89276, checkout /home/user/cashplan. Sections 11 and 12 win over the text above them. The first review of this plan (qc_reports/2026-11-26_cashplan/foundation.md) may be read: say for each of its findings F1 to F4 and its owner-line table whether the plan now answers it, then look for anything new.
+Related: git show origin/lane/cardsplan:wip/team/foundation_review/CARDS_IN_HEADLINE_PLAN.md ; git show origin/lane/endperiod:wip/team/foundation_review/ENDPERIOD_PLAN.md
