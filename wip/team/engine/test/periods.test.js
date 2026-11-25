@@ -38,17 +38,27 @@ t('a period gone by: its dates, named by its pay [T1]', () => {
   eq([r.past[0].start, r.past[0].end, r.past[0].startsWith], ['2026-11-25', '2026-12-24', 'pay@2026-11-25']);
   eq([r.current.start, r.current.startsWith], ['2026-12-25', 'pay@2026-12-25']);
 });
-t('a line in a period gone by counts what is dated inside it, a spend logged late too', () => {
-  const food = periods(base(), '2027-01-05', opt).past[0].lines.find(l => l.id === 'food');
-  // the opening share typed 30,000; 5,000 + 8,000 spent
+t('a line in a period gone by counts what is dated inside it, a spend logged late too, before a check holds it', () => {
+  // f2 (20 Dec) told on 26 Dec at 15:00, before the 26 Dec check: the old period's, by its date: 5,000 + 8,000 spent
+  const b = base(x => { x.events.find(e => e.id === 'f2').told = '2026-12-26T15:00' + TZ; });
+  const food = periods(b, '2027-01-05', opt).past[0].lines.find(l => l.id === 'food');
   eq([food.start, food.spent, food.left], [30000, 13000, 17000]);
 });
-t('the check-in gap is spending, split by days at the pay [T2, A4]', () => {
+t('[CHECKGAP] a spend told after the check that holds it counts in the check\'s period: the closed period keeps what it had', () => {
+  // f2 (20 Dec) told on 27 Dec, after the 26 Dec check (in the period from 25 Dec) whose figure already holds it: it
+  // explains part of that check's gap, so it counts with it; the old period's food stays 5,000
   const r = periods(base(), '2027-01-05', opt);
-  // 4,000 over 25 days: 23 days (2 to 24 Dec) to the first period, 3,680; the rest, 320, to the second
-  eq(r.past[0].free.spent, 3680);
-  eq(r.past[0].free.left, 46320);
-  eq(r.current.free.spent, 3320);
+  const food = r.past[0].lines.find(l => l.id === 'food');
+  eq([food.start, food.spent, food.left], [30000, 5000, 25000]);
+  eq(r.current.lines.find(l => l.id === 'food').spent, 8000);
+});
+t('[CHECKGAP] the check-in gap is spending, whole in the period the check is in (no longer split by days at the pay)', () => {
+  const r = periods(base(), '2027-01-05', opt);
+  // the 26 Dec check: the app has 634,000, the bank shows 630,000: 4,000, all the period from 25 Dec's; the old period
+  // has none of it (by days it had 3,680)
+  eq(r.past[0].free.spent, 0);
+  eq(r.past[0].free.left, 50000);
+  eq(r.current.free.spent, 3000 + 4000);   // x1 3,000 and the gap
 });
 t('the period running now agrees with the look ahead (one engine)', () => {
   const b = base(), r = periods(b, '2027-01-05', opt), la = lookahead(b, '2027-01-05', opt).period;

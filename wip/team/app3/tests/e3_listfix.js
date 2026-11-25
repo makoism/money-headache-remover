@@ -2,10 +2,10 @@
 /* The LISTFIX lane's fixes (app3/LISTFIX.md), each on the real page, on the made-up Mako book.
    A1. A gap found at Check your bank is spending (T2), so Receipts lists it in the period it counts in, beside what was
        logged, and the list never says "Nothing logged" while the spent figure holds a gap. Hand-worked: the bank was
-       checked at 286,000 on 20 Nov and the app expects 387,400 on 10 Dec; typed 386,550, the gap is 850. The stretch is
-       21 Nov to 10 Dec (20 days), cut at the period start of 10 Dec: 19 days in the period before (850 x 19 / 20 = 807.5,
-       808) and 1 day in this one (850 - 808 = 42). Receipts shows the 42 in this period and the 808 under Earlier, each
-       named as found at the bank check of 10 Dec, on Free to spend, and not a button (it changes only at a check).
+       checked at 286,000 on 20 Nov and the app expects 387,400 on 10 Dec; typed 386,550, the gap is 850, covering 21 Nov
+       to 10 Dec. [CHECKGAP, coordinator 15, 26 Nov] It is the period the check is in (from 10 Dec), whole: Receipts
+       shows the 850 in this period, named as found at the bank check of 10 Dec with the days it covers, on Free to
+       spend, not a button (it changes only at a check), and nothing of it under Earlier (by days it was 42 and 808).
    A2. Plan lines alone needing more than the bank can spare: Home says so, by how much, and what to do (worked below).
    C1. A second bank going below zero while the main one can spare it: Home says to move the money, how much and from where.
    A2b, C1b and A1b: the three cases qc-foundation found (the day named, money set aside, gaps that are not spending).
@@ -45,13 +45,13 @@ const rows = p => p.$$eval('#rcList li', es => es.map(e => ({ gap: e.dataset.gap
   await p.tap('[data-tab="receipts"]'); await T.w(300);
   let rs = await rows(p);
   const now = rs.filter(r => r.gap);
-  ck('A1: this period lists the gap found at the check, ¥42, on Free to spend', now.length === 1 && /Found at your bank check on 10 Dec/.test(now[0].text) && /Free to spend/.test(now[0].text) && /¥42$/.test(now[0].text), JSON.stringify(rs));
+  ck('A1: this period lists the gap found at the check, all ¥850, the days it covers, on Free to spend', now.length === 1 && /Found at your bank check on 10 Dec/.test(now[0].text) && /21 Nov to 10 Dec/.test(now[0].text) && /Free to spend/.test(now[0].text) && /¥850$/.test(now[0].text), JSON.stringify(rs));
   ck('A1: the gap row is not a button (it changes only at a check)', now.length === 1 && !now[0].button, JSON.stringify(now));
   ck('A1: never "Nothing logged" beside a gap', !/Nothing logged/.test(await txt(p, '#rcList')), await txt(p, '#rcList'));
   await p.click('#rcOlder'); await T.w(300);
   rs = await rows(p);
   const before = rs.filter(r => r.gap);
-  ck('A1: the period before lists its part, ¥808, from the same check', before.length === 1 && /Found at your bank check on 10 Dec/.test(before[0].text) && /¥808$/.test(before[0].text), JSON.stringify(rs));
+  ck('A1: the period before lists no part of it: a closed period never changes by a later check [CHECKGAP]', before.length === 0, JSON.stringify(rs));
   await T.shot(p, 'listfix_a1');
 
   /* A2: a fresh copy of the made-up book on 12 Dec: safe to spend 35,000 until pay on 8 Jan. The 10 Dec pay is not
