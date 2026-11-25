@@ -44,6 +44,7 @@ node|tests/ask3_core.test.js|ask3_core: ALL PASS||300|Ask, the pure half (the su
 node|tests/remind3.test.js|remind3: ALL PASS||300|reminders, the pure half (days from the engine's calendar, the calendar file, Google and Outlook links)
 node|tests/no_maths.js|NO MATHS PASS||300|no money maths in screens
 node|tests/m_lines.test.js|m_lines: ALL PASS||300|every line of MAKO_SAYS.md is named by a test, a reviewer brief or a scope file (QC_ROLES scripts e); its KNOWN gaps are in tests/QCSCRIPTS_FOUND.md
+node|tests/wording_lint.test.js|wording_lint: ALL PASS||300|a wording lint over the words a person sees (QC_ROLES scripts f): no em dash, VOICE.md's full stop rules, none of the words or marks VOICE.md forbids, no real figures (M54, M55, M62); its KNOWN lines are in tests/QCSCRIPTS_FOUND.md
 page|../screens/test/run_all.sh|every file passed||900|the shared screen pieces (screens/test/run_all.sh)
 page|tests/e3_try.js|e3_try: ALL PASS||300|the try book
 page|tests/e3_home.js|e3_home: ALL PASS||300|Home, the new top

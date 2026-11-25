@@ -17,7 +17,20 @@
       project stay under a million yen, so a longer number is either a constant listed in NUMBERS_OK with what it is, or
       a figure nobody made up. The team's notes (wip/team/*.md) are not read: they hold commit ids and big made-up
       examples; the count found there is printed so it is not hidden.
-   A real fault found is not fixed here: it is in KNOWN with its reason, and in tests/QCSCRIPTS_FOUND.md. */
+   4. None of the words the project forbids, in the words a person sees (VOICE.md, read from it so a word added there is
+      checked with no change here): the words "Counted in studies of AI text" (A9), what Mako never says ("What he never
+      does": "please", "however" and the rest, and his praise words), the chat leftovers of A14 ("Oops", "Let's", "We're
+      excited", "I hope this helps"), and from Part C "Everywhere": no exclamation mark, no en dash or semicolon used as
+      punctuation, no ellipsis, no "e.g.", "i.e." or "etc". Read in every string and template of app3/src and the shared
+      screen pieces that looks like words for a person (two words or more, no code), and in the page shell's own words.
+      Left out, as words for the team or for the AI and not the app's own words: a thrown error, the team's notes in
+      screens/names.js (source, note, state, choices), and what is written only for the AI (the assistant's
+      instructions SYSTEM, GUIDE and TOOLS, a statement's prompt, the tools' descriptions, a "bad" answer sent back
+      to the AI). "Use any AI"
+      shows the instructions to the person to copy: qc-voice reads those.
+   A real fault found is not fixed here: it is in KNOWN with its reason, and in tests/QCSCRIPTS_FOUND.md.
+   WLINT_SRC=<a folder> reads that folder instead of app3/src for rules 2 and 4 (to prove the lint on a planted copy;
+   never in check3). */
 'use strict';
 const fs = require('fs'), path = require('path');
 const TOOLS = process.env.TOOLS || '/home/claude/work/tools/node_modules/';
@@ -28,8 +41,15 @@ const files = (dir, re) => fs.readdirSync(dir).filter(f => re.test(f) && fs.stat
 const rel = f => path.relative(TEAM, f);
 
 /* real faults in the app's words this lint found (the check stays failing; see tests/QCSCRIPTS_FOUND.md) */
+/* each key is "<rule>: <file> <what>", with no line number, so a line moving in its file keeps its row */
 const KNOWN = {
+  'toast: cloud3_page.js "Your devices changed the same thing. Open Settings to choose which to keep."': 'a toast of two sentences with full stops (VOICE: one line, no full stop)',
+  'toast: settings3_sw.js "A new version of the app is ready. It opens the next time you come back to the app."': 'a toast of two sentences with full stops (VOICE: one line, no full stop)',
+  'note: settings3.js "It stays the same once money is written down."': 'a one line note under the currency in Settings ends with a full stop',
+  'note: stmt3_ai.js "Kept on this device only, and sent only to this page\'s own server."': 'a one line note under the code word box ends with a full stop',
+  'words: settings3.js a semicolon in "A backup file is your own copy of your money, to keep anywhere. Restoring one replaces the money on this device; what is"': 'a semicolon in the Backup file note in Settings (VOICE Part C: never a semicolon)',
 };
+const unline = x => x.replace(/^(\S+?\.(?:js|html)):\d+/, '$1');   // a finding without its line number, for KNOWN
 /* numbers of 7 digits or more that are not money: what each one is */
 const NUMBERS_OK = {
   86400000: 'the milliseconds in a day', 3600000: 'the milliseconds in an hour', '0123456789': 'the ten digits, for making ids and reading text',
@@ -47,7 +67,7 @@ const ck = (name, ok, extra) => {
 const lineOf = (text, i) => text.slice(0, i).split('\n').length;
 
 /* ---- 1. no em dash ---- */
-const SRC = files(path.join(APP, 'src'), /\.(js|css|html)$/), SCREENS = files(path.join(TEAM, 'screens'), /\.js$/);
+const SRC = files(process.env.WLINT_SRC || path.join(APP, 'src'), /\.(js|css|html)$/), SCREENS = files(path.join(TEAM, 'screens'), /\.js$/);
 {
   const hits = [];
   for (const f of SRC.concat(SCREENS)) { const t = rd(f); for (const m of t.matchAll(/\u2014/g)) hits.push(`${rel(f)}:${lineOf(t, m.index)}`); }
@@ -106,12 +126,13 @@ for (const s of scripts) {
     for (const m of src.matchAll(/<(label|h1|h2|h3)\b[^>]*>([^<]*)<\/\1>/g)) { const t = plain(m[2]); if (!t) continue; counted.label++; if (/[.:]$/.test(t)) finds.label.push(`${where(m.index)} "${t}"`); }
   }
   /* the page shell's own buttons */
-  for (const m of rd(path.join(APP, 'src/shell.html')).matchAll(/<button\b[^>]*>([^<]*)<\/button>/g)) { counted.button++; if (/\.$/.test(plain(m[1]))) finds.button.push(`shell.html "${plain(m[1])}"`); }
+  for (const m of rd(path.join(process.env.WLINT_SRC || path.join(APP, 'src'), 'shell.html')).matchAll(/<button\b[^>]*>([^<]*)<\/button>/g)) { counted.button++; if (/\.$/.test(plain(m[1]))) finds.button.push(`shell.html "${plain(m[1])}"`); }
   const RULES = { toast: 'a toast has no full stop at the end (VOICE: "Toasts: One line, no full stop")', note: 'a one line note has no full stop at the end (VOICE: "One line notes: No full stop at the end")',
     button: 'a button has no full stop (VOICE: "Buttons: no punctuation at all")', label: 'a label or heading has no full stop or colon at the end (VOICE: "Labels, headings, tabs")' };
   for (const k of Object.keys(RULES)) {
-    ck(`${RULES[k]}: ${counted[k]} read in app3/src`, counted[k] > 0 && finds[k].filter(x => !(`${k}: ${x}` in KNOWN)).length === 0, finds[k].filter(x => !(`${k}: ${x}` in KNOWN)).join(' | ') || 'none were read: the lint no longer sees them');
-    for (const x of finds[k]) if (`${k}: ${x}` in KNOWN) ck(`${k}: ${x}`, false);
+    const fresh = finds[k].filter(x => !(`${k}: ${unline(x)}` in KNOWN));
+    ck(`${RULES[k]}: ${counted[k]} read in app3/src`, counted[k] > 0 && fresh.length === 0, fresh.join(' | ') || 'none were read: the lint no longer sees them');
+    for (const x of finds[k]) if (`${k}: ${unline(x)}` in KNOWN) ck(`${k}: ${unline(x)}`, false, x);
   }
   console.log(`\nWORDS READ: ${counted.toast} toasts, ${counted.note} notes, ${counted.button} buttons, ${counted.label} labels and headings; ending in a full stop against VOICE: ${Object.values(finds).reduce((a, b) => a + b.length, 0)}`);
 }
@@ -136,6 +157,51 @@ for (const s of scripts) {
   ck('a planted long figure is caught, written plainly or with commas, and a colour and a listed constant are not', scan(path.join(TEAM, 'x.js'), 'const bank = 4812345;\nconst pay = "1,234,567";\nconst c = "rgba(255,255,255,0.5)"; const d = 86400000;').length === 2);
   let notes = 0; for (const f of files(TEAM, /\.md$/)) notes += scan(f, rd(f)).length;
   console.log(`LONG NUMBERS: 0 wanted in ${own.length} files; ${Object.keys(NUMBERS_OK).length} constants listed. NOT CHECKED: the team's notes (wip/team/*.md) hold ${notes} long numbers (commit ids, time stamps and big made-up examples)`);
+}
+/* ---- 4. none of the words the project forbids, in the words a person sees ---- */
+{
+  const voice = rd(path.join(TEAM, 'VOICE.md'));
+  const a9 = (voice.match(/^Counted in studies of AI text: ([^\n]*)\.$/m) || [])[1] || '';
+  const never = (voice.match(/### What he never does[^\n]*\n((?:- [^\n]*\n)+)/) || [])[1] || '';
+  const a14 = (voice.match(/### A14\.[^\n]*\n([^\n]*)/) || [])[1] || '';
+  const WORDS = [...new Set([].concat(
+    a9.split(',').map(x => x.trim()),
+    [...never.matchAll(/"([^"]+)"/g)].map(m => m[1]),
+    ((never.match(/praise words[^(]*\(([^)]*)\)/) || [])[1] || '').split(',').map(x => x.trim()),
+    [...a14.matchAll(/"([^"]+)"/g)].map(m => m[1]).filter(x => x !== 'Great'),   // "Great" alone is a plain word too ("a great deal"): qc-voice judges it
+  ).filter(Boolean).map(x => x.toLowerCase()))];
+  ck(`VOICE.md still lists the words this lint forbids (A9, "What he never does", A14): ${WORDS.length} read`, a9.split(',').length >= 20 && /please/.test(never) && /however/.test(never) && /Oops/.test(a14), 'VOICE.md changed where these lists are: read it and change this lint to match');
+  const esc = x => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  /* a word and its plain forms (ensure, ensures, ensured, ensuring; navigate, navigating) */
+  const RE = new RegExp('(?<![A-Za-z])(' + WORDS.map(x => esc(x).replace(/e$/, 'e?') + (/[a-z]$/.test(x) ? '(?:s|es|d|ed|ing)?' : '')).join('|') + ')(?![A-Za-z])', 'i');
+  const MARKS = [[/!(?![=\[(])/, 'an exclamation mark'], [/\s\u2013\s/, 'an en dash used as punctuation'], [/;/, 'a semicolon'], [/\.\.\.|\u2026/, 'an ellipsis'], [/\b(?:e\.g\.|i\.e\.|etc\b)/i, '"e.g.", "i.e." or "etc"']];
+  /* words for a person: letters, two words or more, and nothing that only code has */
+  const prose = t => /[A-Za-z]{2,}[ ,]+[A-Za-z]{2,}/.test(t) && !/[{}<>=]|=>|\bfunction\b|\breturn\b|\bconst\b|\bvar\(|^[#.][\w-]+[ ,]|\[data-|:not\(|rgba?\(|\d(?:px|ms|rem|vh|vw)\b/.test(t);
+  const pieces = [];
+  for (const f of SRC.filter(f => f.endsWith('.js')).concat(SCREENS)) {
+    const src = rd(f);
+    let tree; try { tree = acorn.parse(src, { ecmaVersion: 2022 }); } catch (e) { ck(`${rel(f)} can be read`, false, e.message); continue; }
+    const add = (t, at) => { if (typeof t !== 'string') return;
+      /* a template's HTML: the words between its tags are what a person sees */
+      for (const part of t.split(/<[^>]*>|\$\{|\}/)) { const x = part.replace(/\s+/g, ' ').trim(); if (x && prose(x)) pieces.push({ where: `${path.basename(f)}:${lineOf(src, at)}`, text: x }); } };
+    const META = /^(source|note|state|choices|description|bad)$/, FOR_AI = /^(SYSTEM|TOOLS|[A-Z_]*GUIDE|[A-Za-z_]*(?:PROMPT|Prompt)[A-Za-z_]*)$/;
+    const skip = anc => anc.some(a => a.type === 'ThrowStatement' || (a.type === 'NewExpression' && a.callee.name === 'Error')
+      || (a.type === 'Property' && a.key && META.test(a.key.name || a.key.value || '')) || ((a.type === 'VariableDeclarator' || a.type === 'FunctionDeclaration') && a.id && FOR_AI.test(a.id.name || '')));
+    walk.ancestor(tree, {
+      Literal(x, anc) { if (typeof x.value === 'string' && !skip(anc)) add(x.value, x.start); },
+      TemplateLiteral(x, anc) { if (!skip(anc)) add(x.quasis.map(q => q.value.cooked == null ? q.value.raw : q.value.cooked).join('${}'), x.start); },
+    });
+  }
+  for (const part of rd(path.join(process.env.WLINT_SRC || path.join(APP, 'src'), 'shell.html')).split(/<[^>]*>/)) { const x = part.replace(/\s+/g, ' ').trim(); if (x && prose(x)) pieces.push({ where: 'shell.html', text: x }); }
+  const hits = [];
+  for (const pc of pieces) {
+    const m = RE.exec(pc.text); if (m) hits.push(`${pc.where} "${m[1]}" in "${pc.text.slice(0, 120)}"`);
+    for (const [re, what] of MARKS) if (re.test(pc.text)) hits.push(`${pc.where} ${what} in "${pc.text.slice(0, 120)}"`);
+  }
+  const fresh = hits.filter(h => !(`words: ${unline(h)}` in KNOWN));
+  ck(`no word the project forbids and no forbidden mark in the words a person sees (${pieces.length} pieces of words read in app3/src and screens, ${WORDS.length} words)`, pieces.length > 300 && fresh.length === 0, fresh.join(' | ') || 'too few words were read: the lint no longer sees them');
+  for (const h of hits) if (`words: ${unline(h)}` in KNOWN) ck(`words: ${unline(h)}`, false, h);
+  console.log(`FORBIDDEN WORDS: ${WORDS.join(', ')}; found ${hits.length} in ${pieces.length} pieces of words`);
 }
 for (const k of Object.keys(KNOWN)) if (!seen.has(k)) { bad++; console.log('FAIL ' + k + ' (listed in KNOWN but no check has that name any more)'); }
 console.log(bad ? `wording_lint: ${bad} FAIL of ${n}` + (known ? ` (and ${known} KNOWN FAIL)` : '') : `wording_lint: ALL PASS (${n - known})` + (known ? ` and ${known} KNOWN FAIL (the lines in this test's KNOWN table, each in tests/QCSCRIPTS_FOUND.md)` : ''));
