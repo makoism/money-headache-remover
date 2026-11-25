@@ -2,7 +2,7 @@ Draft by MAIN 17, 25 Nov 2026 17:00 JST. Checked and corrected by coordinator 13
 Scope for the AI-first candidate, built from lane/ai-join (hash filled in at the full check).
 Lines of MAKO_SAYS.md this build leaves for later on purpose. The same list goes to Mako with the candidate.
 
-Now built and taken out of the list: the assistant as the main way in and setup by chat (M1 M2 M3 M4), Undo after a reload (M14), Home's clearer figure words (M7 M12 M47), the bank after the cards with up to three cards and the gap a card leaves (M40), a card with a known close day (M41), a life with no fixed pay (M38), commas typed into an amount box.
+Now built and taken out of the list: the assistant as the main way in and setup by chat (M1 M2 M3 M4), Undo after a reload for changes the assistant made (M14), Home's clearer figure words (M7 M12 M47), the bank after the cards with up to three cards and the gap a card leaves (M40), a card with a known close day (M41), a life with no fixed pay (M38), commas typed into an amount box.
 
 M2 M4 M9         Reading files in the chat (a payslip, a statement, a photo of a receipt): not built. The assistant never offers it. Statements can still be added on the screens after setup. Next assistant slice.
 M3               23 things the assistant cannot yet do by asking (loans, goals, cards and accounts added or removed, statements, reminders, backup): it says which screen does each. The controls slices.
@@ -25,4 +25,9 @@ M38 (no fixed pay)   A life with no fixed pay is built, but its month rule is be
 M36 M51 (plan change) A plan amount changed partway through a month: the Plan screen says the change counts from today, the engine counts it from the 1st. A truth fault, not a taste question; its own small plan goes through qc-foundation. Can touch Mako's own money if he changes a plan amount mid-period.
 M67 M20 (two devices) Only if lane/cloudtake is NOT merged at the full check: with cloud copy on two devices there is a rare overwrite, and the second phone sees a spend only after "Send now". Also on the live build. Mako is told to save a backup file after each session if he uses two devices with real numbers.
 M6                   Change then Undo, asking first only for removes, changes over safe to spend, and amounts the person never typed: built this way, not yet confirmed by Mako (not settled 1). Not a fault; do not raise it.
+M14 (screens)        After a reload, a change made on the screens has no Undo button (the saved journal is there; the assistant's cards do offer Undo after a reload). A screens door onto the journal: a controls slice. Also on the live build.
+M61 (two tabs)       Two tabs changing the SAME box of the same item: the last save wins with no question (Undo is in the tab that saved). A sheet changing a different box no longer overwrites (cured in this build; still on the live build). The write-door rule is planned on a side branch.
+M61 (typing lost)    Typing in a sheet is dropped without a word when the person leaves it (Add a bill then Back; an amount in Receipts then another tab). Setup does it right. Queued at the cause: one shared sheet behaviour. Also on the live build.
+M36 (cloud behind)   TO CONFIRM after the cloud copy branch merges: Home says once when the cloud copy is behind. If not merged: only Settings says so.
+M20 (which to keep)  TO CONFIRM after the cloud copy branch merges: the "which to keep" question shows the amount and the device on each row. If still two identical rows, this is a BLOCKER, not a known fault.
 
