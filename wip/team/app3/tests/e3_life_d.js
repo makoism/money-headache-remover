@@ -17,42 +17,42 @@
    10 Dec the pay changes to no fixed pay from 10 Dec. The form proposes each line as the same money a year, a month:
           Food $200 twice a month is $400 a month; Free to spend $500 twice a month is $1,000 a month (BP3; whole dollars
           are written without cents on that screen, BL4).
-          From now: no pay period, each line comes off by the day (B4), and Free to spend starts again each calendar
-          month (BQ3); in December it counts from the change day, its share by days left: 100,000 x 22 / 31 = 70,967
-          (10 to 31 Dec, rounded down). By the day: Food 40,000 x 12 / 365 = 1,315 a day, a 31-day month's share 40,767, so
-          2 more on its last day; Free to spend 3,287 a day, a 31-day month 101,917, so 20 more on its last day.
+          From now: no pay period. Free to spend starts again each calendar month (BQ3); in December it counts from
+          the change day, its share by days left: 100,000 x 22 / 31 = 70,967 (10 to 31 Dec, rounded down). Food the
+          same: 40,000 x 22 / 31 = 28,387 for December, nothing spent on it since the change.
+          [The month rule, CA4 and CA5, 25 Nov: every figure from here on was reworked by hand.] This month the walk
+          holds what is left of each line (Food 28,387) and Free to spend left caps the headline; a later month comes
+          off by the day at the month's amount over its days, rounded down, its last day carrying the rest, so each
+          month is charged exactly the amount typed. January (31 days): Food 1,290 a day, Free to spend 3,225.
+          February (28 days): Food 1,428 a day, Free to spend 3,571. A whole later month: Food 40,000, Free 100,000.
+          (Before: 40,000 x 12 / 365 = 1,315 and 3,287 a day in every month, from tomorrow, whatever was spent.)
           The walk runs to its horizon: 45 days, or the second coming one of each bill if later. 10 Dec + 45 = 24 Jan;
           rent's second is Mon 1 Feb: horizon 1 Feb. Bills: phone 21 Dec 5,000, rent 1 Jan 120,000, phone 20 Jan
-          5,000, rent 1 Feb 120,000 = 250,000. Food 11 to 31 Dec 21 x 1,315 + 2 = 27,617, January 40,767, 1 Feb 1,315 =
-          69,699; Free to spend 21 x 3,287 + 20 = 69,047, 101,917, 3,287 = 174,251; together 243,950.
-          [THREE_VALUES, 24 Nov] This month's Free to spend is not taken off by the day as well as being the cap (that
-          counted December's everyday money twice: the old figure here was 543,000 - 250,000 - 243,950 = 49,050).
-          What Checking can spare leaves December's 69,047 out: 543,000 - 250,000 - (243,950 - 69,047) = 118,097,
-          over Free to spend left (70,967): safe to spend 70,967.
-   12 Dec spend $25.00 on Free to spend: Checking 540,500; Free to spend left 70,967 - 2,500 = 68,467. Horizon 1 Feb. By the day 13 Dec
-          to 1 Feb: Food 19 x 1,315 + 2 + 40,767 + 1,315 = 67,069; Free 19 x 3,287 + 20 + 101,917 + 3,287 = 167,677;
-          together 234,746, less December's own Free to spend by the day (19 x 3,287 + 20 = 62,473) is 172,273.
-          540,500 - 250,000 - 172,273 = 118,227, over Free to spend left: safe 68,467 (it read 55,754 before).
-   15 Dec check-in (no pay is expected now): Checking shows $5,405.00. Horizon 1 Feb. By the day 16 Dec to 1 Feb:
-          Food 16 x 1,315 + 2 + 40,767 + 1,315 = 63,124; Free 16 x 3,287 + 20 + 101,917 + 3,287 = 157,816; together
-          220,940. 540,500 - 250,000 - 220,940 = 69,560, over Free to spend left: safe 68,467.
-   18 Dec money in: a client payment $900.00 to Checking: 630,500. Horizon 1 Feb. By the day 19 Dec to 1 Feb: Food 13 x
-          1,315 + 2 + 40,767 + 1,315 = 59,179; Free 13 x 3,287 + 20 + 101,917 + 3,287 = 147,955; together 207,134.
-          630,500 - 250,000 - 207,134 = 173,366, over Free to spend left: safe 68,467.
+          5,000, rent 1 Feb 120,000 = 250,000. Held: Food left in December 28,387, January 40,000, 1 Feb 1,428 =
+          69,815; Free to spend January 100,000, 1 Feb 3,571 = 103,571; together 173,386.
+          What Checking can spare: 543,000 - 250,000 - 173,386 = 119,614, over Free to spend left (70,967): safe to
+          spend 70,967.
+   12 Dec spend $25.00 on Free to spend: Checking 540,500; Free to spend left 70,967 - 2,500 = 68,467. Horizon 1 Feb,
+          the same 173,386 held. 540,500 - 250,000 - 173,386 = 117,114, over Free to spend left: safe 68,467.
+   15 Dec check-in (no pay is expected now): Checking shows $5,405.00. Horizon 1 Feb, nothing spent on Food, the same
+          173,386 held: 117,114, over Free to spend left: safe 68,467.
+   18 Dec money in: a client payment $900.00 to Checking: 630,500. Horizon 1 Feb. 630,500 - 250,000 - 173,386 =
+          207,114, over Free to spend left: safe 68,467.
    22 Dec check-in: phone (21 Dec) ticked; Checking shows $6,255.00 (630,500 - 5,000). 22 Dec + 45 = 5 Feb; phone's
           second is Mon 22 Feb: horizon 22 Feb. Bills: rent 1 Jan, phone 20 Jan, rent 1 Feb, phone 22 Feb = 250,000.
-          By the day 23 Dec to 22 Feb: Food 9 x 1,315 + 2 + 40,767 + 22 x 1,315 = 81,534; Free 9 x 3,287 + 20 + 101,917
-          + 22 x 3,287 = 203,834; together 285,368. 625,500 - 250,000 - 285,368 = 90,132, over Free to spend left:
-          safe 68,467.
-          Lasts about: from 625,500, 4,602 a day (22 more on a 31-day month's last day; February's shares 36,821 and
-          92,054): end of December 584,060; January - 120,000 - 142,684 - 5,000 = 316,376; February - 120,000 - 128,875
-          - 5,000 = 62,501; 1 Mar rent 120,000: below zero on 1 Mar, 69 days away: 9 weeks.
+          Held: Food 28,387 + 40,000 + 22 x 1,428 = 99,803; Free to spend 100,000 + 22 x 3,571 = 178,562; together
+          278,365. 625,500 - 250,000 - 278,365 = 97,135, over Free to spend left: safe 68,467.
+          Lasts about (every day of Free to spend counted, December's too: 23 to 30 Dec 8 x 3,225 and 3,250 on the
+          31st = 29,050): from 625,500, Food left 28,387 and 29,050: end of December 568,063; January - 120,000 -
+          140,000 - 5,000 = 303,063; February - 120,000 - 140,000 - 5,000 = 38,063; 1 Mar rent 120,000: below zero
+          on 1 Mar, 69 days away: 9 weeks.
    2 Jan  money in: a client payment $1,200.00: Checking 745,500.
    4 Jan  check-in: rent (1 Jan) ticked; Checking shows $6,255.00 (745,500 - 120,000). 4 Jan + 45 = 18 Feb; rent's
-          second is Mon 1 Mar: horizon 1 Mar. Bills: phone 20 Jan, rent 1 Feb, phone 22 Feb, rent 1 Mar = 250,000. By
-          the day 5 Jan to 1 Mar: Food 27 x 1,315 + 2 + 36,821 + 1,315 = 73,643; Free 27 x 3,287 + 20 + 92,054 + 3,287
-          = 184,110; together 257,753. 625,500 - 250,000 - 257,753 = 117,747, over Free to spend left, which starts
-          again in January (BQ3): 100,000, nothing spent on it yet: safe 100,000. */
+          second is Mon 1 Mar: horizon 1 Mar. Bills: phone 20 Jan, rent 1 Feb, phone 22 Feb, rent 1 Mar = 250,000.
+          Held: Food left in January 40,000 (nothing spent on it), February 40,000, 1 Mar 1,290 = 81,290; Free to
+          spend February 100,000, 1 Mar 3,225 = 103,225; together 184,515. 625,500 - 250,000 - 184,515 = 190,985,
+          over Free to spend left, which starts again in January (BQ3): 100,000, nothing spent on it yet: safe
+          100,000. */
 'use strict';
 const { finishSetup: finishSetup3 } = require('./setup_sections.js');   // setup is saved one section at a time (item 14)
 const L = require('./lives3.js').make('e3_life_d');
