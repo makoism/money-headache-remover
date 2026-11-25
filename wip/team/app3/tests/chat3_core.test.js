@@ -511,7 +511,7 @@ const steps = list => [].concat(...list.map(([, r]) => r));
      sheet, told to the assistant, and the open sheet's own name with each message */
   await t('[M17] one table says what every screen and sheet is for; the open screen and sheet go with each message', async () => {
     const want = ['home', 'plan', 'receipts', 'settings', 'check', 'stmt', 'reminders', 'setup', 'welcome',
-      'free', 'addLine', 'line', 'addBill', 'bill', 'pay', 'addGoal', 'goal', 'addCard', 'card', 'addLoan', 'loan', 'record'];
+      'free', 'addLine', 'line', 'addBill', 'bill', 'pay', 'addGoal', 'goal', 'addCard', 'card', 'addLoan', 'loan', 'addAccount', 'account', 'record'];
     eq(Object.keys(K.SCREENS).sort(), want.slice().sort(), 'the rows');
     for (const k of want) {
       const row = K.SCREENS[k];

@@ -17,6 +17,8 @@ function plRow3(attrs, left, right, after) {
 function overdueWords3(o, cur, yr, path) {
   return `${fig3(path, o.amount, cur)} due ${esc3(day3(o.payment_date, yr))} ${o.state === 'late' ? 'is late' : 'has not been seen'}. Tick it at Check your bank when it has gone`;
 }
+const PL_OWN3 = { bank: 1, cash: 1, ewallet: 1, wallet: 1 };
+const PL_KIND3 = { bank: 'Bank', cash: 'Cash', ewallet: 'E-wallet', wallet: 'Wallet' };
 function plAccounts3(kinds) { return ((E3.book && E3.book.accounts) || []).filter(a => plLive3(a) && kinds[a.type] && !a.closed); }
 
 /* [slice 6, B4] no fixed pay: no pay periods. Each line and Free to spend is an amount a month that comes off by the day;
@@ -109,6 +111,19 @@ function drawPlan3() {
   });
   out.push(`<section class="a3-card" data-card="plan-goals"><h2>Goals</h2>${goals.length ? `<ul class="a3-rows a3-rclist">${goals.join('')}</ul>` : '<p class="a3-sub">No goals yet. A goal is money set aside for something, kept in your bank or in an account of its own</p>'}
     <div class="a3-actions"><button type="button" class="a3-btn" id="plAddGoal">Add a goal</button></div></section>`);
+  /* [E1, M13, M23] accounts: every bank, cash and e-wallet with what it holds today (the engine's figure); tap one to rename
+     it or set its own Keep at least; Add an account after setup (the same step the assistant uses) */
+  const mainId = ((book.home || {}).main || {}).v ? book.home.main.v.acct : null;
+  const acctRows = plAccounts3(PL_OWN3).map(a => {
+    const k = r.accounts[a.id];
+    const kind = a.id === mainId ? 'Your main bank, where pay lands' : PL_KIND3[a.type] || 'Account';
+    const min = a.minBank ? `<br><span class="when">Keep at least ${plFig3('accounts.*.minimum', a.minBank.a, a.minBank.cur || a.cur)}</span>` : '';
+    return plRow3(`data-acct="${esc3(a.id)}"`, `${esc3(a.name)}<br><span class="when">${esc3(kind)}</span>${min}`,
+      k && k.bank != null ? `<span data-fig="acct-bank">${plFig3('accounts.*.bank', k.bank, a.cur)}</span><br><span class="when">${esc3(label3('bankToday')).toLowerCase()}</span>` : '');
+  });
+  out.push(`<section class="a3-card" data-card="plan-accounts"><h2>Accounts</h2>${acctRows.length ? `<ul class="a3-rows a3-rclist">${acctRows.join('')}</ul>` : '<p class="a3-sub">No accounts</p>'}
+    <p class="a3-sub">What each holds changes at Check your bank</p>
+    <div class="a3-actions"><button type="button" class="a3-btn" id="plAddAcct">Add an account</button></div></section>`);
   /* cards and loans */
   const owedRows = plAccounts3({ card: 1, loan: 1 }).map(a => {
     const k = a.type === 'card' ? r.cards[a.id] : r.owed[a.id];
@@ -143,6 +158,8 @@ function drawPlan3() {
   on('#plAddGoal', () => plGoalForm3(null));
   on('#plAddCard', () => plCardForm3());
   on('#plAddLoan', () => plLoanForm3());
+  on('#plAddAcct', () => plAcctAddForm3());
+  host.querySelectorAll('[data-acct]').forEach(b => b.addEventListener('click', () => plAcctForm3(b.dataset.acct)));
   host.querySelectorAll('[data-line]').forEach(b => b.addEventListener('click', () => plLineForm3(b.dataset.line)));
   host.querySelectorAll('[data-bill]').forEach(b => b.addEventListener('click', () => plBillForm3(b.dataset.bill)));
   host.querySelectorAll('[data-pay]').forEach(b => b.addEventListener('click', () => plBillForm3(b.dataset.pay)));
@@ -356,6 +373,33 @@ function plOwedForm3(id) {
   plForm3(a.name, fields, [{ label: 'Save', solid: true, step: v => ['changeOwed', w => PLAN3W.changeOwed(w, id, card ? { name: v.name, payDay: v.payDay, cutDay: v.cutDay } : { name: v.name, payDay: v.payDay, amount: v.amount }), a.name + ' changed'] }]
     .concat(card ? [] : [{ label: 'Close this loan', sure: [`Close ${a.name}? It leaves your plan`, 'Yes, close it'], step: () => ['closeLoan', w => PLAN3W.closeLoan(w, id), a.name + ' closed'] }]),
     card ? '' : 'A loan closes once it is paid off');
+}
+/* [E1, M13] an account's own sheet: its name, and its own Keep at least (the main bank's is in Settings) */
+function plAcctForm3(id) {
+  PL3.sheet = 'account';
+  const a = E3.book.accounts.find(x => x.id === id), main = ((E3.book.home || {}).main || {}).v, isMain = main && main.acct === id;
+  const fields = [{ key: 'name', label: 'Name', kind: 'text', value: a.name }];
+  if (!isMain) fields.push({ key: 'min', label: 'Keep at least', kind: 'amount', optional: true, value: a.minBank ? a.minBank.a : null, hint: 'Leave it empty for none. Safe to spend never counts this part' });
+  plForm3(a.name, fields, [{ label: 'Save', solid: true, step: v => ['changeAccount', w => PLAN3W.changeAccount(w, id, isMain ? { name: v.name } : { name: v.name, min: v.min }), a.name + ' changed'] }],
+    isMain ? 'Your main bank, where pay lands. What it holds changes at Check your bank' : 'What it holds changes at Check your bank');
+}
+/* [E1, M13, M23] a bank, cash or e-wallet after setup: what it holds today, and whether that money was taken from the
+   main bank since its last figure (then it moves from there, never counted twice) [qc-foundation F3] */
+function plAcctAddForm3() {
+  PL3.sheet = 'addAccount';
+  const book = E3.book, day = E3.today(), main = ((book.home || {}).main || {}).v, from = main && main.acct, fromName = E3.nameOf(from);
+  const last = (book.events || []).filter(e => plLive3(e) && e.k === 'check' && !e.stmt && e.acct === from && e.date <= day).map(e => e.date).sort().pop() || day;
+  const since = last === day ? 'today' : day3(last, day.slice(0, 4));
+  const fields = [{ key: 'name', label: 'Name', kind: 'text', hint: 'Like Savings, Cash or PayPay' },
+    { key: 'type', label: 'What it is', kind: 'pick', value: 'bank', options: [{ v: 'bank', name: 'A bank account' }, { v: 'cash', name: 'Cash' }, { v: 'ewallet', name: 'An e-wallet' }] },
+    { key: 'amount', label: 'What it holds today', kind: 'amount', hint: 'Type 0 if it is empty' },
+    { key: 'source', label: 'Where that money came from', kind: 'pick', value: 'new', options: [{ v: 'new', name: `Not taken from ${fromName} since its figure of ${since}` }, { v: 'moved', name: `Moved from ${fromName} after its figure of ${since}` }],
+      hint: `New money, or money moved before that figure, is added as it is. Money moved after it comes out of ${fromName}, so it is not counted twice` }];
+  if (last < day) fields.push({ key: 'date', label: 'If it was moved, the day', kind: 'date', value: day });
+  fields.push({ key: 'min', label: 'Keep at least', kind: 'amount', optional: true, hint: 'Leave it empty for none' });
+  plForm3('Add an account', fields, [{ label: 'Add', solid: true, step: v => ['addAccount', w => PLAN3W.addAccount(w, Object.assign({ name: v.name, type: v.type, amount: v.amount, min: v.min, moved: v.source === 'moved' },
+    v.source === 'moved' ? { date: v.date || day, afterFigure: true } : {})), 'Account added'] }],
+  'A card or a loan: add it under Cards and loans');
 }
 /* a card after setup (QC F1): the same questions setup asks, written through ACT3 */
 function plCardForm3() {
