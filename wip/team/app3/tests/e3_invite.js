@@ -151,7 +151,7 @@ const idbText = p => p.evaluate(async () => {
     const errs1 = errs.filter(e => !/status of 401 \(Unauthorized\)/.test(e));   // the browser's own line for the relay's 401, not a page error
     ck('no page errors (the browser\'s line for the 401 aside)', errs1.length === 0, errs1.join(' | '));
     await p.setViewport({ width: 320, height: 700, isMobile: true, hasTouch: true }); await T.w(200);
-    ck('no sideways scroll at 320 with the box', await p.evaluate(() => document.documentElement.scrollWidth <= 320));
+    ck('no sideways scroll at 320 with the box', await p.evaluate(() => Math.max(document.documentElement.scrollWidth, document.getElementById('a3').scrollWidth) <= 320));
     await T.shot(p, 'invite_box');
     await b.close();
   }

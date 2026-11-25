@@ -29,7 +29,7 @@ const saved = p => p.evaluate(async () => { const s = await BurrowStore.open(); 
   ck('320: Refund and Moved sit under them', d.refund && d.refund.text === 'Refund' && d.moved && d.moved.text === 'Moved' && d.refund.y > d.spend.y + d.spend.h - 1 && d.moved.y > d.in.y + d.in.h - 1 && d.moved.right <= vw && !d.refund.cut && !d.moved.cut, JSON.stringify(d));
   ck('320: Refund and Moved are smaller choices', d.refund.font < d.spend.font && d.refund.h < d.spend.h, JSON.stringify([d.spend, d.refund]));
   ck('320: every one is at least 44 px to tap', Object.values(d).every(x => x.h >= 44 && x.w >= 44), JSON.stringify(d));
-  ck('320: the page does not scroll sideways', await p.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth));
+  ck('320: the page does not scroll sideways', await p.evaluate(() => Math.max(document.documentElement.scrollWidth, document.getElementById('a3').scrollWidth) <= document.documentElement.clientWidth));
   ck('Money went out is chosen when the form opens', (await p.$eval('[data-mode=spend]', e => e.getAttribute('aria-pressed'))) === 'true');
 
   /* Money went out: 1,800 from the main bank */
