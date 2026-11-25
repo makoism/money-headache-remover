@@ -235,6 +235,8 @@ The ledger's places: Waiting, Bills left (with one "for the card" line per card 
   note, gone, goneBy, at }
 ```
 
+- **`was`** [AMOUNT_HISTORY_PLAN, coordinators 15 and 16, 26 Nov 2026]: optional, on an event: `[ { a, a2?, told } ]`, oldest first. Written only by the write door: when an edit changes `a` or `a2` (the amount it had, and the step's `told`), and when a remove marks it gone (the amount it had: a removal is a correction to 0). An Undo puts the list back as it was and adds no entry. The engine reads the amount an event had at the first bank or card check that holds it (the first entry told after that check, else `a`) on the event's own day, and the change since on the check's day. Absent on events never corrected; removals saved before this field keep the old meaning (never happened).
+
 ### 6.2 Kinds (`k`)
 The ledger's kinds and its one rule stand: `open`, `in`, `borrow`, `move`, `spend`, `hand`, `transfer`, `convert`, `repay`, `check`, `adjust`. Added:
 - `skip`: an occurrence that did not happen this time (no pay this month, a bill waived, a self-logged spend someone else paid). It carries `settles`. Written by removing a self-logged spend, its id is `skip:<occurrence>` [Q5] (section 5).

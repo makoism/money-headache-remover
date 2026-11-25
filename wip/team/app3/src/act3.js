@@ -121,6 +121,11 @@
         if (r.gone) throw new Bad('That was removed. Undo the removal first');
         fresh(list, r); mine.add(id);
         const before = {};
+        /* [AMOUNT_HISTORY_PLAN] an event's amount changed: the amount it had and this step's `told` (the device's own clock,
+           as checks are ordered) are kept in its `was`, so the engine counts the change with the bank check that held it.
+           An Undo writes `was` back itself (it is in its fields), so it adds no entry */
+        const amountMoved = list === 'events' && !('was' in fields) && (('a' in fields && fields.a !== r.a) || ('a2' in fields && fields.a2 !== r.a2));
+        if (amountMoved) { before.was = r.was === undefined ? null : clone(r.was); r.was = (r.was || []).concat([Object.assign({ a: r.a }, r.a2 != null ? { a2: r.a2 } : {}, { told: s.told })]); }
         for (const k of Object.keys(fields)) {
           if (k === 'id' || k === 'told' || k === 'at' || k === 'by' || k === 'gone' || k === 'goneBy') throw new Error('act3: ' + k + ' is not edited');
           before[k] = k in r ? clone(r[k]) : undefined;
@@ -137,6 +142,9 @@
         if (r.gone) return r;
         fresh(list, r); mine.add(id);
         const before = { at: r.at, by: r.by };
+        /* [AMOUNT_HISTORY_PLAN] removing an event is a correction to 0 at this step's `told`: the amount it had is kept in
+           `was`, so a removal after a bank check agrees with correcting it down; Undo puts `was` back as it was */
+        if (list === 'events') { before.was = r.was === undefined ? null : clone(r.was); r.was = (r.was || []).concat([Object.assign({ a: r.a }, r.a2 != null ? { a2: r.a2 } : {}, { told: s.told })]); }
         r.gone = s.day; r.goneBy = s.id; stamp(r);
         log.removed.push({ list, id, before });
         return r;
@@ -151,10 +159,11 @@
         log.edited.push({ list, id, before: { at: now.at, by: now.by } });
         return r;
       },
-      restore(list, id) {   // put back a removed record [H6]: both marks cleared, `at` moved
+      restore(list, id, removedBefore) {   // put back a removed record [H6]: both marks cleared, `at` moved
         const r = listOf(book, list).find(x => x && x.id === id);
         if (!r || !r.gone) return r;
         const before = { gone: r.gone, goneBy: r.goneBy, at: r.at, by: r.by };
+        if (removedBefore && 'was' in removedBefore) { before.was = r.was === undefined ? null : clone(r.was); if (removedBefore.was === undefined || removedBefore.was === null) delete r.was; else r.was = clone(removedBefore.was); }   // [AMOUNT_HISTORY_PLAN] the Undo of a removal takes back its `was` entry
         delete r.gone; delete r.goneBy; stamp(r);
         log.edited.push({ list, id, before });
         return r;
@@ -336,7 +345,7 @@
         for (const x of added) w.remove(x.list, x.id);
         for (const x of revived) w.putBack(x.list, x.id, x.before);
         for (const x of removed) {
-          if (recOf(x).goneBy === stepId) w.restore(x.list, x.id);
+          if (recOf(x).goneBy === stepId) w.restore(x.list, x.id, x.before);
         }
         for (const x of edited) {
           const back = {};

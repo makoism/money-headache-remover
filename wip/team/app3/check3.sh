@@ -31,6 +31,7 @@ trap on_exit EXIT; trap 'echo "check3 stopped"; exit 130' INT TERM
 TESTS=$(cat <<'EOF'
 node|tests/checkin_book.test.js|CHECKIN BOOK PASS||300|the try book through the engine check-in writer
 node|tests/e3_act_unit.js|e3_act_unit: ALL PASS||300|act3, the one write door (pure)
+node|tests/act3_amount.test.js|act3_amount: ALL PASS||300|the write door keeps an event's amount history (was): a changed amount and a removal, with the step's told; Undo takes it back (AMOUNT_HISTORY_PLAN, M61, M36)
 node|tests/cloud3.test.js|cloud3: ALL PASS||300|the cloud copy's core, two devices on a local fake vault
 node|../../../tests/vault_server/vault_server.test.mjs|vault_server: ALL PASS||300|the vault server itself in node (the five changes, the old app's calls, today's database)
 node|../../../tests/vault_server/fake_parity.test.mjs|fake_parity: ALL PASS||300|the fake vault answers as the server does
