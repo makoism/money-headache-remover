@@ -57,9 +57,11 @@ const STMT3_AI = (() => {
       /* [C5] the server words each refusal itself (the daily limit, no key, no credit, a refused request): its message is
          shown as it is, less its last full stop (the callers add their own). With no message, the old plain words */
       const j = await r.json().catch(() => null), said = j && j.error && typeof j.error.message === 'string' ? j.error.message.trim().replace(/\.$/, '') : '';
-      if (said && (r.status === 400 || r.status === 429 || r.status === 503)) throw new Error(said);
-      if (r.status === 429) throw new Error(busy || 'too many requests right now, try again in a minute');
-      throw new Error('the AI did not answer (' + r.status + ')');
+      /* each Error carries the server's status and its own code (relay_unconfigured is the relay's "off") */
+      const fail = m => Object.assign(new Error(m), { status: r.status, code: (j && j.error && typeof j.error.code === 'string') ? j.error.code : '' });
+      if (said && (r.status === 400 || r.status === 429 || r.status === 503)) throw fail(said);
+      if (r.status === 429) throw fail(busy || 'too many requests right now, try again in a minute');
+      throw fail('the AI did not answer (' + r.status + ')');
     }
     return r.json();
   }

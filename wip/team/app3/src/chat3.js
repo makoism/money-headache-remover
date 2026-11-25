@@ -9,10 +9,11 @@
    or sent; after that it says how to change things (AI_JOIN_FIXES D). When the site's AI is off or the relay fails, two ways always finish setup:
    "Set up on the screens" (setup3, filled from the draft) and "Use any AI" (copy the questions, paste the answer back).
    This file chooses, writes and places; it never adds, takes away or rounds. Words are drafts for Mako's copy pass. */
-const CHAT3 = { state: null, busy: false, open: false, route: null, anon: null, db: null, off: null, any: false };
+const CHAT3 = { state: null, busy: false, open: false, route: null, anon: null, db: null, off: null, failed: false, lastErr: null, any: false };
 const CHAT3_WORDS = {
   privacy: 'What you type, today\'s figures with the names of your accounts, bills and income, and the setup answers so far go to Claude, the AI made by Anthropic, through this page\'s own server. Your notes, shops and single spends are not sent unless you type them. The chat stays on this device.',
   off: 'The assistant is off right now. You can still finish everything:',
+  failed: 'That didn\'t go through. Send it again, or finish another way:',
   /* why a change card asks first (M6): the core's card.ask; its card.why is the AI's own words, not shown here */
   ask: { delete: 'This takes something away. Do it?', large: 'This is more than safe to spend. Do it?', guess: 'You didn\'t type this amount, it\'s the AI\'s guess. Is it right?' },
   upload: 'The whole file goes to the AI, with your name, address, employer and account number. On a payslip, crop out your My Number.',
@@ -70,8 +71,9 @@ function chat3Word(bad) {
 async function chat3Send(body) {
   const r0 = CHAT3.route;
   if (!r0 || r0.how !== 'relay') throw new Error('the assistant can\'t be reached from this copy of the page');
+  CHAT3.lastErr = null;
   try { return await STMT3_AI.post(r0.base, body, 'the daily limit is reached, or too many messages at once. Try again later, or use the screens'); }   // the one place a relay call is sent, with the code word
-  catch (e) { if (e && e.word) CHAT3.word = e.message; throw e; }
+  catch (e) { if (e && e.word) CHAT3.word = e.message; CHAT3.lastErr = { status: (e && e.status) || 0, code: (e && e.code) || '' }; throw e; }
 }
 function chat3Deps() {
   return {
@@ -135,7 +137,7 @@ function chat3Turn(t) {
 function chat3Inner() {
   const st = CHAT3.state || CHAT3C.fresh();
   const welcome = chat3Full() && !st.turns.length ? CHAT3_WORDS.welcome.map(w => `<p class="a3-ask-ai">${esc3(w)}</p>`).join('') : '';
-  const off = CHAT3.off ? `<div class="a3-card" data-card="chat-off"><p class="a3-sub">${esc3(CHAT3_WORDS.off)}</p><div class="a3-chat-ways">
+  const off = CHAT3.off || CHAT3.failed ? `<div class="a3-card" data-card="chat-off"><p class="a3-sub">${esc3(CHAT3.off ? CHAT3_WORDS.off : CHAT3_WORDS.failed)}</p><div class="a3-chat-ways">
       ${chat3Full() ? '<button type="button" class="a3-btn" id="a3ChatScreens">Set up on the screens</button>' : ''}
       <button type="button" class="a3-btn" id="a3ChatAny">Use any AI</button></div><div id="a3ChatAnyBox"></div></div>` : '';
   const lastCard = st.turns.filter(t => t.who === 'card' && t.card && t.card.kind === 'draft').pop();
@@ -234,7 +236,11 @@ async function chat3Go() {
     chat3Redraw(); const b = $('#a3ChatIn'); if (b) b.value = q; chat3Word(bad); return;
   }
   if (res.stop === 'error') {
-    CHAT3.off = true;   // the ways that always finish show beside the words
+    /* [AI_JOIN_FIXES E] only a clear "off" from the server turns the assistant off for this visit (health said no AI, or
+       the relay's own relay_unconfigured). No connection, too many requests or a daily limit leave the next send free to
+       try; the ways that always finish show beside the words either way */
+    if (CHAT3.lastErr && CHAT3.lastErr.code === 'relay_unconfigured') CHAT3.off = true;
+    else CHAT3.failed = true;
     chat3Redraw();
     if (!res.shown.length) {   // nothing was kept by the core (the AI is off here): the message goes back in the box
       const b = $('#a3ChatIn'); if (b) b.value = q;
@@ -242,6 +248,7 @@ async function chat3Go() {
     }
     return;
   }
+  CHAT3.failed = false;
   chat3Redraw();
 }
 async function chat3Act(fn) {

@@ -4,7 +4,8 @@
    this (AI_JOIN_FIXES: each lane's tests had faked the other side). No real AI, made-up amounts only.
      const R = require('./chat_real.js');
      const ai = await R.relay(p, { steps });      before the first goto. ai.bodies, ai.mode, ai.health, ai.calls
-        ai.mode = 'ok' | 'down' (the connection drops) | 429 | 503 | 500   how the next /api/ai calls are answered
+        ai.mode = 'ok' | 'down' (the connection drops) | 429 | 503 | 500 | 'off'   how the next /api/ai calls are answered
+                                                 ('off': the relay's own 503 relay_unconfigured, the AI switched off)
         ai.health = { ok, ai }                   what /api/health says (asked once per page open)
         ai.push(...steps)                        more recorded replies
      await R.tell(p, words)                      type, Send, wait for the answer
@@ -36,6 +37,7 @@ async function relay(p, opts = {}) {
       if (ai.mode === 429) return json(429, { error: { message: 'Too many requests. Wait a minute.' } });
       if (ai.mode === 503) return json(503, { error: { message: 'Daily limit for this device reached. Try again tomorrow.' } });
       if (ai.mode === 500) return json(500, { error: {} });
+      if (ai.mode === 'off') return json(503, { error: { code: 'relay_unconfigured', message: 'The relay has no API key yet.' } });
       try { return json(200, await next(JSON.parse(rq.postData()))); } catch (e) { return json(502, { error: { message: String(e.message) } }); }
     }
     if (opts.other && (await opts.other(rq))) return;

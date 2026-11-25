@@ -14,7 +14,10 @@
    7. Cards: a change made shows its lines and the engine's figures before and after with Undo; one that asks first has
       Do it and Not now; the fill card has Undo while the fill can be undone, and after that says how to change things.
    8. Before a file: the upload notice. No page errors; no sideways scroll at 320.
-   9. The code word (stmt3_ai's box, reused): asked before the first message when none is kept; a wrong one asked again. */
+   9. The code word (stmt3_ai's box, reused): asked before the first message when none is kept; a wrong one asked again.
+   11. One failed call does not turn the assistant off (AI_JOIN_FIXES E), with the real core: the connection dropped for
+      one message, then back: the next send makes a call; the same after a 429 and after a daily limit (503). Only the
+      relay's own "off" answer (503 relay_unconfigured) shows "the assistant is off", and then nothing more is sent. */
 'use strict';
 const T = require('./lib3.js'), { ck } = T;
 const fs = require('fs'), os = require('os');
@@ -237,7 +240,36 @@ async function say(p, text) { await p.$eval('#a3ChatIn', (e, v) => { e.value = v
     ck('at 1280 the column holds no history entry', (await depth()) === 0, await depth());
     all.push(...errs); await b.close();
   }
-  const bad = all.filter(e => !/status of (500|401)/.test(e));   // the relay made to fail on purpose
+  /* ---- 11: one failed call never turns the assistant off (AI_JOIN_FIXES E); the real core (tests/chat_real.js) ---- */
+  {
+    const R = require('./chat_real.js');
+    const { b, p, errs } = await T.open({ profile: fs.mkdtempSync(os.tmpdir() + '/a3chat5-') });
+    const ai = await R.relay(p, { steps: [R.say('Hi. Which country do you bank in?')] });
+    await p.goto(T.URL0 + '?today=' + DAY); await T.w(600);
+    await R.tell(p, 'hello');
+    ck('E: a first message is answered', /Which country do you bank in/.test(await R.log(p)) && ai.calls === 1, ai.calls);
+    const offShown = () => p.evaluate(() => /assistant is off/.test(document.body.innerText));   // what shows, not the page's own script
+    for (const [mode, name] of [['down', 'no connection'], [429, 'a 429'], [503, 'a daily limit (503)']]) {
+      ai.mode = mode;
+      const before = ai.calls;
+      await R.tell(p, 'Japan');
+      ck('E: ' + name + ': the call was made and failed in words', ai.calls === before + 1 && /did not answer/.test(await R.log(p)), String(ai.calls));
+      ck('E: after ' + name + ' the page does not say the assistant is off', !(await offShown()));
+      ai.mode = 'ok'; ai.push(R.say('Got it.'));
+      const n = (await R.log(p)).split('Got it.').length;
+      await R.tell(p, 'Japan');
+      ck('E: after ' + name + ' the next send makes a call and is answered', ai.calls === before + 2 && (await R.log(p)).split('Got it.').length === n + 1, String(ai.calls - before));
+    }
+    ai.mode = 'off';
+    let before = ai.calls;
+    await R.tell(p, 'Japan');
+    ck('E: the relay\'s own "off" answer: the page says the assistant is off', ai.calls === before + 1 && await offShown());
+    before = ai.calls; ai.mode = 'ok';
+    await R.tell(p, 'Japan');
+    ck('E: once it is off, nothing more is sent this visit', ai.calls === before);
+    all.push(...errs); await b.close();
+  }
+  const bad = all.filter(e => !/status of (500|401|429|503)|ERR_INTERNET_DISCONNECTED/.test(e));   // the relay made to fail on purpose
   ck('no page errors', !bad.length, bad.join(' | '));
   T.done('e3_chat');
 })().catch(e => { console.log('FAIL crashed ' + (e && e.stack || e)); process.exit(1); });
