@@ -109,6 +109,7 @@ async function openSetup3() {
     <h1 id="a3SetupT">Set up with your own numbers</h1>
     <p class="a3-sub">Press Save under each part as you go. What you save stays on this device, so you can leave and come back. See my money at the end puts it together</p>
     <p class="a3-sub" id="a3SetupBack" hidden>What you saved before is back below. Carry on where you left off</p>
+    <p class="a3-warn" id="a3SetupTodo" role="status" hidden></p>
     <section class="a3-card" data-sec="bank"><h2>Your bank</h2>
       <div class="a3-field"><label for="s3BankName">Its name</label><input class="a3-in a3-txt" id="s3BankName" placeholder="Main bank" autocomplete="off"></div>
       <div class="a3-field"><label for="s3Bank">What does your bank show today?</label><input class="a3-in" id="s3Bank" data-amount data-money></div>
@@ -431,7 +432,17 @@ function markAll3() {
     el.dataset.state = st;
     el.querySelector(`[data-saved="${sec}"]`).textContent = STATE_WORDS3[st](sec);
   }
+  /* [AI_JOIN_FIXES I3] filled in from the chat ("Set up on the screens"): one line at the top names the sections that
+     still need Save, and why */
+  const todo = $('#a3SetupTodo');
+  if (todo) {
+    const open = setup3.fromChat ? SEC3.filter(([sec]) => state3(sec) === 'changed' || state3(sec) === 'stale').map(([, name]) => name) : [];
+    todo.hidden = !open.length;
+    todo.textContent = open.length ? `Filled in from the chat, not saved yet: ${open.join(', ')}. Press Save under each` : '';
+  }
 }
+/* "Set up on the screens" filled the boxes from the chat's answers (chat3.js) */
+function setupFromChat3() { if (setup3) { setup3.fromChat = true; markAll3(); } }
 /* puts a section back as a snapshot holds it: its rows, then every box (the account choices need the rows first) */
 function put3(sec, snap) {
   const kind = SEC_ROWS3[sec];

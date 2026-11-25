@@ -111,6 +111,12 @@ async function say(p, text) { await p.$eval('#a3ChatIn', (e, v) => { e.value = v
     ck('"Set up on the screens" opens setup filled from the draft', await shows(p, '#a3Setup') && (await p.$eval('#s3BankName', e => e.value)) === 'Main bank' && /^286,?000$/.test(await p.$eval('#s3Bank', e => e.value))
       && /^240,?000$/.test(await p.$eval('#s3PayAmt', e => e.value)) && (await p.$eval('#s3PayDay', e => e.value)) === '10'
       && (await p.$eval('[data-row=bill1] [data-f=name]', e => e.value)) === 'Rent' && /^72,?000$/.test(await p.$eval('[data-row=bill1] [data-f=amount]', e => e.value)), await p.$eval('#s3Bank', e => e.value));
+    /* [AI_JOIN_FIXES I3] which sections still need Save, and why, in one line at the top */
+    const todo = () => p.$eval('#a3SetupTodo', e => (e.hidden ? '(hidden) ' : '') + e.textContent).catch(() => '(none)');
+    ck('I3: one line at the top says which sections still need Save, and why', (await todo()) === 'Filled in from the chat, not saved yet: Your bank, Your pay, Your bills. Press Save under each'
+      && await p.evaluate(() => { const t = document.querySelector('#a3SetupTodo'), s = document.querySelector('#a3Setup [data-sec]'); return !!t && !!(t.compareDocumentPosition(s) & Node.DOCUMENT_POSITION_FOLLOWING); }), await todo());
+    await p.$eval('#a3Setup [data-save=bank]', e => e.click()); await T.w(500);
+    ck('I3: a section saved leaves the line', (await todo()) === 'Filled in from the chat, not saved yet: Your pay, Your bills. Press Save under each', await todo());
     all.push(...errs); await b.close();
   }
   /* ---- 4 to 7: the relay on ---- */
