@@ -140,6 +140,64 @@ const rentAmount = b => b.schedules.find(x => x.id === RENT).steps.slice(-1)[0].
     const u2 = await door(clone(h.book)).A.undo(r2.step.id);
     eq([u2.ok, /only until the app is closed/.test(u2.text)], [false, true]);
   });
+  /* [qc-foundation confirm on lane/whichdoor; coordinator 15 ruled 26 Nov] the chain the first report asked for: the
+     answer, then the other device logs a spend and the two join. A record left out stays gone and no question comes back. */
+  await t('[F1 chain] a whole copy answered, then the other device logs a spend and joins: the record left out stays gone, nothing asked again', async () => {
+    const mine = mako(), cloud = clone(mine), SP = DEV_A + '-q7k2m9x4ws-1';
+    cloud.events = cloud.events.concat([{ id: SP, k: 'spend', date: '2026-12-08', a: 1200, acct: 'k7m2qa-f3n8p1x6wd-1', line: 'free', src: { type: 'typed' }, told: T1, at: T1, by: DEV_A }]);
+    const h = door(S.syncDevice({ copy: mine, base: null }, { rev: 3, copy: cloud }).device.copy);
+    const own = keptOf(h.book, 'copy').versions.findIndex(v => !v.events.some(e => e.id === SP));
+    const r = await h.A.answerSync('Kept', answerWith('copy', own));
+    ok(r.ok, JSON.stringify(r));
+    const other = clone(cloud), SP2 = DEV_A + '-q7k2m9x4ws-2';
+    other.events.push({ id: SP2, k: 'spend', date: '2026-12-10', a: 800, acct: 'k7m2qa-f3n8p1x6wd-1', line: 'free', src: { type: 'typed' }, told: T2, at: T2, by: DEV_A });
+    const joined = S.sync(cloud, h.book, other);
+    ok(joined.events.find(e => e.id === SP).gone, 'still gone after the join');
+    ok(joined.events.find(e => e.id === SP2) && !joined.events.find(e => e.id === SP2).gone, 'the other device\'s new spend joins');
+    eq(S.afterSync(joined).questions.filter(q => q.q === 'which').length, 0, 'nothing asked again');
+  });
+  /* The person (coordinator 15's ruling): set up on two devices, picks the phone's copy at "which to keep"; settings the
+     phone's copy does not have (a spending ceiling of 20,000 on the cloud copy, a shared screen choice) must not come back
+     at the next join. The door writes a "not set" marker { v: null, at, by, gone } (SCHEMA_V3 2.1), never a delete. */
+  await t('[marker] a whole copy without a settings item: the item is marked not set, never deleted, and stays not set after the other device joins', async () => {
+    const mine = mako(), cloud = clone(mine);
+    cloud.plan.limits = Object.assign({}, cloud.plan.limits, { ceiling: { v: { a: 20000, cur: 'JPY', per: 'month' }, at: T1, by: DEV_A } });
+    cloud.ui = Object.assign({}, cloud.ui, { sb: { v: 'cards', at: T1, by: DEV_A } });
+    cloud.events = cloud.events.concat([{ id: DEV_A + '-q7k2m9x4ws-1', k: 'spend', date: '2026-12-08', a: 1200, acct: 'k7m2qa-f3n8p1x6wd-1', line: 'free', src: { type: 'typed' }, told: T1, at: T1, by: DEV_A }]);
+    ok(!(mine.plan.limits || {}).ceiling && !(mine.ui || {}).sb, 'the phone copy has neither');
+    const h = door(S.syncDevice({ copy: mine, base: null }, { rev: 3, copy: cloud }).device.copy);
+    const own = keptOf(h.book, 'copy').versions.findIndex(v => !(v.plan.limits || {}).ceiling);
+    const r = await h.A.answerSync('Kept', answerWith('copy', own));
+    ok(r.ok, JSON.stringify(r));
+    for (const [path, x] of [['plan.limits.ceiling', h.book.plan.limits.ceiling], ['ui.sb', h.book.ui.sb]]) {
+      ok(x && x.v === null && x.gone && x.by && Date.parse(x.at) > Date.parse(T1), path + ' marked not set: ' + JSON.stringify(x));
+    }
+    const L2 = L.lookahead(h.book, DAY);
+    ok(L2 && L2.safeToSpend, 'the engine reads the marked book');
+    const other = clone(cloud);
+    other.events.push({ id: DEV_A + '-q7k2m9x4ws-2', k: 'spend', date: '2026-12-10', a: 800, acct: 'k7m2qa-f3n8p1x6wd-1', line: 'free', src: { type: 'typed' }, told: T2, at: T2, by: DEV_A });
+    const joined = S.sync(cloud, h.book, other);
+    eq([joined.plan.limits.ceiling.v, joined.ui.sb.v], [null, null], 'the cloud\'s values do not come back');
+    eq(S.afterSync(joined).questions.filter(q => q.q === 'which').length, 0, 'nothing asked');
+    const u = await h.A.undo(r.step.id);
+    ok(u.ok, JSON.stringify(u));
+    eq([h.book.plan.limits.ceiling.v.a, h.book.ui.sb.v], [20000, 'cards'], 'Undo puts the values back');
+  });
+  await t('[WATCH] a whole copy leaving out a record that was already removed does not mark it again (its own Undo still works)', async () => {
+    const mine = mako(), cloud = clone(mine), SP = DEV_A + '-q7k2m9x4ws-1';
+    const gone = { id: SP, k: 'spend', date: '2026-12-08', a: 1200, acct: 'k7m2qa-f3n8p1x6wd-1', line: 'free', src: { type: 'typed' }, told: T1, at: T1, by: DEV_A, gone: '2026-12-08', goneBy: 'stepold1' };
+    cloud.events = cloud.events.concat([gone]);
+    cloud.home.country = { v: 'GB', at: T1, by: DEV_A };   // something else differs, so the copy is asked
+    const h = door(S.syncDevice({ copy: mine, base: null }, { rev: 3, copy: cloud }).device.copy);
+    const k = keptOf(h.book, 'copy');
+    if (!k) return;   // nothing asked: nothing to check
+    const own = k.versions.findIndex(v => !v.events.some(e => e.id === SP));
+    if (own < 0 || !h.book.events.find(e => e.id === SP)) return;
+    const r = await h.A.answerSync('Kept', answerWith('copy', own));
+    ok(r.ok, JSON.stringify(r));
+    const e = h.book.events.find(x => x.id === SP);
+    eq([e.gone, e.goneBy, e.at], ['2026-12-08', 'stepold1', T1], 'left as it was');
+  });
   await t('an answer the engine refuses is not saved, in plain words', async () => {
     const h = door(clash(rentTo)), before = clone(h.book);
     h.A2 = A3.make({ book: () => h.book, put: async x => { h.book = x; return true; }, told: () => DAY + 'T12:00:00.000+09:00',

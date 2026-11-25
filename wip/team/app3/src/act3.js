@@ -168,9 +168,17 @@
         /* [qc-foundation on WHICH_DOOR_PLAN, F1] a record is never taken out of its list (a delete does not last: the store
            keeps it and a join brings it back): it is marked gone, as Remove does */
         const marked = value === undefined && sl.list && !!old;
+        /* [qc-foundation confirm on lane/whichdoor, WATCH] a record already removed stays as its Remove left it, so that
+           Remove's own Undo still works */
+        if (marked && old.gone) return old;
         if (marked) value = Object.assign(clone(old), { gone: s.day, goneBy: s.id });
+        /* [coordinator 15, 26 Nov; SCHEMA_V3 2.1] a settings item ({ v, at, by }) is never deleted either: a delete does
+           not last (the next join brings the other copy's value back). It is marked not set, { v: null, at, by, gone },
+           and every reader takes v null as not set */
+        const unset = value === undefined && !sl.list && fieldValue(old);
+        if (unset) value = Object.assign({}, old, { v: null, gone: s.day });
         const v = value === undefined ? undefined : clone(value);
-        if ((marked || (opts && opts.stamp)) && v && typeof v === 'object' && !Array.isArray(v)) stamp(v);
+        if ((marked || unset || (opts && opts.stamp)) && v && typeof v === 'object' && !Array.isArray(v)) stamp(v);
         sl.set(v);
         log.swapped.push({ where, of, had: old !== undefined, before: old === undefined ? null : clone(old), after: v && v.at ? v.at : null });
         return v;
@@ -217,7 +225,7 @@
         if ((Array.isArray(x) || Array.isArray(y)) && (x === undefined || isRecs(x)) && (y === undefined || isRecs(y))) {
           const X = index(x), Y = index(y);
           for (const id of [...new Set([...X.keys(), ...Y.keys()])].sort()) if (!sameJ(X.get(id), Y.get(id))) out.push({ where: p, of: id, value: Y.get(id) });
-        } else if (isMapV(x) && isMapV(y) && !fieldValue(x) && !fieldValue(y)) walk(x, y, p);
+        } else if ((isMapV(x) || x === undefined) && (isMapV(y) || y === undefined) && !fieldValue(x) && !fieldValue(y)) walk(x, y, p);   // a holder one copy lacks is walked into too, so each settings item in it is swapped (and marked) on its own
         else if (!sameJ(x, y)) out.push({ where, of: p, value: y });
       }
     })(cur, next, '');
