@@ -516,22 +516,16 @@ function paintOther3() {
       <div class="a3-actions"><button type="button" class="a3-btn" data-useother="${n}:${o.i}">Use the other one</button></div></div>`).join('')).join('');
   for (const b of box.querySelectorAll('[data-useother]')) b.addEventListener('click', () => { const [n, i] = b.dataset.useother.split(':').map(Number); useOther3(lines[n], i); });
 }
-/* the other version back: the engine's own answer (every version stays kept), with an Undo that puts the one before back */
-async function pickVersion3(of, matches) {
-  const S = BurrowEngine.sync, k = (E3.book.keptVersions || []).find(r => r.of === of);
-  const i = k ? k.versions.findIndex(matches) : -1;
-  if (i < 0) return false;
-  let next;
-  try { next = S.answer({ copy: E3.book, of, pick: i, now: nowIso3(), by: deviceBy3() }); } catch (e) { return false; }
-  return (await E3.put(next)) === true;
-}
+/* [WHICH_DOOR_PLAN] the other version back: the engine's own answer (every version stays kept), written through the one
+   write door (ACT3.answerSync), so it has the door's check, the saved Undo journal and its Undo bar like every write */
 async function useOther3(x, i) {
-  const S = BurrowEngine.sync, before = x.inUse, want = x.k.versions[i], name = x.cur.name || nameOf3(x.k);
-  if (!(await pickVersion3(x.k.of, v => S.same(v, want)))) { setMsg3('That choice could not be made, so nothing changed', true); return; }
-  renderHome3(); if (SET3.open) paintQuestions3();
-  MSG3.post({ kind: 'undo', key: 'act3', text: `${name}: the other one is back`, action: { label: 'Undo', run: async () => {
-    if (await pickVersion3(x.k.of, v => S.same(v, before))) { renderHome3(); if (SET3.open) paintQuestions3(); }
-  } } });
+  const S = BurrowEngine.sync, want = x.k.versions[i], name = x.cur.name || nameOf3(x.k), of = x.k.of;
+  const r = await ACT3.answerSync('Use the other one', (b, o) => {
+    const k = (b.keptVersions || []).find(y => y.of === of), j = k ? k.versions.findIndex(v => S.same(v, want)) : -1;
+    if (j < 0) throw new BurrowAct3.Bad(STALE3);
+    return S.answer({ copy: b, of, pick: j, now: o.now, by: o.by });
+  }, { undo: `${name}: the other one is back` });
+  if (!r.ok) setMsg3(r.why === 'bad' && r.text ? r.text : 'That choice could not be made, so nothing changed', true);
 }
 function paintQuestions3() {
   const box = $('#a3CloudQs'); if (!box || !E3.book) { if (box) box.innerHTML = ''; return; }
@@ -565,42 +559,18 @@ function stampsOf3(book, of) {
   return { ask: !!(k && k.ask), k: k ? k.at || '' : '', item: it && it.at ? it.at : '' };
 }
 const STALE3 = 'This was already chosen or changed somewhere else, so nothing changed';
-/* Undo right after Keep: the item and its kept versions as they were before the answer, written with a newer time so the
-   other devices take the Undo too. Refused when either changed since the answer */
-async function undoAnswer3(of, before, answered) {
-  const now = stampsOf3(E3.book, of), was = stampsOf3(answered, of);
-  if (now.k !== was.k || now.item !== was.item) { setMsg3(STALE3, true); return; }
-  const clock = BurrowClock.makeClock(); clock.see(E3.book);
-  const stamp = { at: clock.stamp(), by: deviceBy3() };
-  const kb = (before.keptVersions || []).find(r => r.of === of);
-  let out;
-  if (of === 'copy') out = JSON.parse(JSON.stringify(before));
-  else {
-    out = JSON.parse(JSON.stringify(E3.book));
-    const holder = pathOf3(out, kb.in), it = itemOf3(before, kb);
-    if (Array.isArray(holder)) { const i = holder.findIndex(r => r && r.id === of); if (it && i >= 0) holder[i] = Object.assign(JSON.parse(JSON.stringify(it)), stamp); }
-    else if (holder && it) holder[of.split('.').pop()] = Object.assign(JSON.parse(JSON.stringify(it)), stamp);
-  }
-  out.keptVersions = (out.keptVersions || []).map(r => (r.of === of ? Object.assign(JSON.parse(JSON.stringify(kb)), stamp) : r));
-  const ok = await E3.put(out);
-  if (ok !== true) { setMsg3('This could not be saved on this device, so nothing changed', true); return; }
-  renderHome3(); if (SET3.open) paintQuestions3();
-}
 async function answer3(q, pick, drawn) {
   if (drawn) {
     const now = stampsOf3(E3.book, q.of);
     if (!now.ask || now.k !== drawn.k || now.item !== drawn.item) { setMsg3(STALE3, true); paintQuestions3(); return; }
   }
-  const S = BurrowEngine.sync, before = E3.book, base = { copy: E3.book, now: nowIso3(), by: deviceBy3() };
-  let next;
-  try {
-    if (q.q === 'which') next = S.answer(Object.assign(base, { of: q.of, pick: pick === 'both' ? 'both' : +pick }));
-    else next = S.answerCheck(Object.assign(base, { question: q, pick }));
-  } catch (e) { setMsg3('That choice could not be made, so nothing changed', true); return; }
-  const ok = await E3.put(next);   // an edit with this device's clock; every version stays kept
-  if (ok !== true) { setMsg3(ok && ok.text ? ok.text : 'This could not be saved on this device, so nothing changed', true); paintQuestions3(); return; }
-  renderHome3();
-  if (q.q === 'which') MSG3.post({ kind: 'undo', key: 'act3', text: 'Kept - the other version can still come back', action: { label: 'Undo', run: () => undoAnswer3(q.of, before, next) } });
-  else setMsg3('Kept - the other version can still come back');
-  paintQuestions3();
+  /* [WHICH_DOOR_PLAN] the engine makes the answer on the book as it is in the step; the one write door writes what differs,
+     with its check, the saved Undo journal (Undo after a reload) and its Undo bar; every version stays kept */
+  const S = BurrowEngine.sync;
+  const r = await ACT3.answerSync(q.q === 'which' ? 'Kept' : 'Chosen', (b, o) => (q.q === 'which'
+    ? S.answer({ copy: b, of: q.of, pick: pick === 'both' ? 'both' : +pick, now: o.now, by: o.by })
+    : S.answerCheck({ copy: b, question: q, pick, now: o.now, by: o.by })), { undo: 'Kept - the other version can still come back' });
+  if (!r.ok) { setMsg3(r.why === 'save' ? r.text || 'This could not be saved on this device, so nothing changed' : 'That choice could not be made, so nothing changed', true); paintQuestions3(); }
 }
+/* every write through the door redraws the questions while Settings is open (an answer, its Undo, a change elsewhere) */
+if (typeof ACT3 === 'object' && ACT3) ACT3.onChange(() => { if (typeof SET3 === 'object' && SET3.open) { try { paintQuestions3(); } catch (e) { /* drawn next time */ } } });
