@@ -43,7 +43,10 @@ const until = async (f, ms) => { for (let i = 0; i < (ms || 8000) / 100; i++) { 
     ck('it is marked as a fill that can still be undone', await A.p.evaluate(() => BurrowApp3.E3.held() && BurrowApp3.E3.mode === 'kept'));
     ck('a second fill over a kept book is refused', await fill(A.p) === false);
     await A.p.reload(); await T.w(200);
-    ck('Home shows the filled book', (await A.p.$eval('[data-fig=safe] [data-amt]', e => Number(e.dataset.amt))) === 201400);
+    // old 201,400; now 124,400 because free is null (no play amount), so everything on the cards comes off now (M90, R1):
+    // 286,000 - 84,600 due before the pay of Thu 10 Dec (Power 7,400 Thu 26 Nov, Rent 72,000 and Internet 5,200 Fri 27 Nov;
+    // Phone on 20 Nov is already out) - 54,000 Card A - 23,000 Card B = 124,400. After the pay the bank only rises above it
+    ck('Home shows the filled book', (await A.p.$eval('[data-fig=safe] [data-amt]', e => Number(e.dataset.amt))) === 124400);
     /* 3 (the cloud copy is off) */
     await A.p.evaluate(async () => { const { E3 } = BurrowApp3; await E3.rec('copy', { copy: E3.book, why: 'made-up kept copy' }); await E3.rec('madeUpDeviceThing', { on: true }); });
     const Bp = await A.b.newPage(); const bErr = [];
