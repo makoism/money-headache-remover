@@ -1,6 +1,6 @@
 {
   "life": "no_fixed_pay_by_day",
-  "title": "No fixed pay: a monthly line is spread by day, rounded down, the rest of each month's share on its last day (M10); a weekly line gets a seventh a day, rounded down, the rest on the seventh day counted from the day the line started (M9, N4, AS9)",
+  "title": "No fixed pay: this month a monthly line holds what is left of it (CA5); a later month comes off by the day, the month's amount over its days rounded down, the rest on its last day, so each month adds up to the amount typed (CA4, replaces M10); a weekly line gets a seventh a day, rounded down, the rest on the seventh day counted from the day the line started (M9, N4, AS9)",
   "story": "Bea has no fixed pay day. Set up Mon 4 Jan 2027: the bank holds 300,000 and a commute e-wallet 100,000. Food is 31,000 a month, on the bank. Transport is 7,500 a week, on the e-wallet, a line she added on Sun 10 Jan (its `from`), so its weeks run Sunday to Saturday. Nothing is expected in, so each account only goes down by its planned spending, a day at a time. Every amount is made up.",
   "currency": "JPY",
   "window": { "from": "2027-01-04", "to": "2027-01-31" },
@@ -19,9 +19,9 @@
   ] },
   "events": [],
   "asks": [
-    { "id": "nfd-01", "date": "2027-01-15", "question": "safe_to_spend", "account": "b", "expected": 254136,
-      "why": "300,000 (bank today) - 15,285 (Food 16 to 30 Jan: 15 days at 1,019, which is 31,000 x 12 / 365 rounded down) - 1,024 (Food 31 Jan, the month's last day: January's share 31,000 x 12 x 31 / 365 is 31,594 rounded down, less 30 days at 1,019) - 28,536 (Food in February: its share 31,000 x 12 x 28 / 365 rounded down, 27 days at 1,019 and 1,023 on 28 Feb) - 1,019 (Food 1 Mar, the last day of the 45-day look ahead) = 254,136",
-      "note": "Spread with the remainder carried day to day (the plain form) the 45 days take 45,863." },
+    { "id": "nfd-01", "date": "2027-01-15", "question": "safe_to_spend", "account": "b", "expected": 240000,
+      "why": "300,000 (bank today) - 28,000 (Food left this month: January counts from the setup day, 4 Jan, its share by days left 31,000 x 28 / 31 = 28,000, and nothing was spent on it) - 31,000 (Food in February, the amount typed: 27 days at 1,107, which is 31,000 / 28 rounded down, and 1,111 on 28 Feb) - 1,000 (Food 1 Mar, the last day of the 45-day look ahead: 31,000 / 31 rounded down) = 240,000",
+      "note": "Reworked by hand on 25 Nov 2026 under CA4 and CA5 (the month rule). Under the rule before (M10: 31,000 x 12 / 365 = 1,019 a day from tomorrow, whatever was spent) this read 254,136; the frozen reference model still gives that figure for this one ask and is left as it is." },
     { "id": "nfd-02", "date": "2027-01-15", "question": "safe_to_spend", "account": "t", "expected": 51784,
       "why": "100,000 (e-wallet today) - 48,195 (Transport 16 Jan to 1 Mar: 45 days at 1,071, a seventh of 7,500 rounded down) - 21 (the remainder, 3 more on the seventh day of each week counted from the line's start on Sun 10 Jan: 16, 23 and 30 Jan, 6, 13, 20 and 27 Feb) = 51,784",
       "note": "Weeks counted from the ask day instead would put only 6 week ends in the 45 days: 51,787." }
