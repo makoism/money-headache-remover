@@ -5,37 +5,31 @@
    check with no change here. A line counts as named when its id is written in:
      a test       wip/team/app3/tests, wip/team/engine/test, wip/team/screens/test, wip/team/store/test,
                   tests/vault_server, or a row of app3/FEATURES.json (each row names its test)
-     a brief      .claude/agents/*.md, by its id, or by its section: QC_COMMON rule 2 gives each reviewer whole sections
-                  ("sections A to F"), and a reviewer marks every line of its sections on every build
+     a brief      .claude/agents/*.md, by its own id
      a scope file wip/team/qc_reports/<round>/scope*.txt (the lines a build leaves for later on purpose)
+     the cover page wip/team/M_COVERAGE.md, by its own id (the main build session keeps it: who checks each line)
+     the runbook  wip/team/RUNBOOK.md section 8, for section G only (how the team works with him: the coordinator
+                  keeps those lines, no app test or reviewer can see them)
+   [coordinator, 25 Nov 2026] A section handed whole to a reviewer (QC_COMMON rule 2, "sections A to F") no longer
+   covers a line: a line added later would pass unseen. Every id must be found by its own id. The sections are still
+   printed, for the reader.
    It prints, for every line, who names it; then the lines only a reviewer's section holds (no script checks them yet),
    and the lines nobody names. A line nobody names fails, unless it is in KNOWN below with its reason (the failure is
    kept and counted, and written in tests/QCSCRIPTS_FOUND.md for the coordinator, who owns MAKO_SAYS and the briefs).
    This file and wording_lint.test.js's own M62 check aside, a file that only lists ids proves nothing: this file is
    never counted.
-   MLINES_SAYS=<a copy of MAKO_SAYS.md> reads that copy instead (to prove the check on a planted line; never in check3). */
+   MLINES_SAYS=<a copy of MAKO_SAYS.md> reads that copy instead (to prove the check on a planted line; never in check3).
+   MLINES_COVER=<a made-up M_COVERAGE.md> the same, for the cover page. */
 'use strict';
 const fs = require('fs'), path = require('path');
 const ROOT = path.join(__dirname, '../../../..');
 const rd = f => fs.readFileSync(path.join(ROOT, f), 'utf8');
 const ls = (d, re) => (fs.existsSync(path.join(ROOT, d)) && fs.statSync(path.join(ROOT, d)).isDirectory() ? fs.readdirSync(path.join(ROOT, d)).filter(f => re.test(f)).map(f => d + '/' + f) : []);
 
-/* lines nobody names: a real gap in the process, kept failing here until a test, a brief or a scope file names them */
-const G = 'section G, how the team works with him: no test, no brief and no scope file names it (no reviewer is given section G; CLAUDE.md and RESUME carry the rule)';
-const KNOWN = {
-  'M70 is named by a test, a brief or a scope file': G,
-  'M71 is named by a test, a brief or a scope file': G,
-  'M72 is named by a test, a brief or a scope file': G,
-  'M73 is named by a test, a brief or a scope file': G,
-  'M74 is named by a test, a brief or a scope file': G,
-  'M75 is named by a test, a brief or a scope file': G,
-  'M76 is named by a test, a brief or a scope file': G,
-  'M78 is named by a test, a brief or a scope file': G,
-  'M79 is named by a test, a brief or a scope file': G,
-  'M80 is named by a test, a brief or a scope file': G,
-  'M81 is named by a test, a brief or a scope file': G,
-  'M82 is named by a test, a brief or a scope file': G,
-};
+/* lines nobody names by id: kept failing here until a test, a brief, a scope file or M_COVERAGE.md names them */
+const SEC = 'held only by a reviewer\'s whole section, no test, brief, scope file or M_COVERAGE.md names it by its id (the coordinator has the count; M_COVERAGE.md is the place to name it)';
+const KNOWN = {};
+for (const id of 'M49 M59 M68'.split(' ')) KNOWN[id + ' is named by a test, a brief or a scope file'] = SEC;
 /* an "M1" that is not MAKO_SAYS's M1: the old plan's own numbering, written before MAKO_SAYS existed */
 const NOT_OURS = { 'wip/team/app3/tests/e3_try.js': ['M1'], 'wip/team/engine/test/move.test.js': ['M1'] };
 
@@ -92,21 +86,29 @@ const scopes = [], byScope = {};
   for (const d of fs.existsSync(path.join(ROOT, base)) ? fs.readdirSync(path.join(ROOT, base)) : []) for (const f of ls(base + '/' + d, /^scope.*\.(txt|md)$/)) { scopes.push(f); for (const id of ids(rd(f))) (byScope[id] = byScope[id] || []).push(f.replace(base + '/', '')); }
 }
 
+/* M_COVERAGE.md: a line of it that says "no cover yet" names a gap, not a cover: its ids are counted apart and still fail */
+const coverLines = fs.existsSync(path.join(ROOT, 'wip/team/M_COVERAGE.md')) ? (process.env.MLINES_COVER ? fs.readFileSync(process.env.MLINES_COVER, 'utf8') : rd('wip/team/M_COVERAGE.md')).split('\n') : process.env.MLINES_COVER ? fs.readFileSync(process.env.MLINES_COVER, 'utf8').split('\n') : [];
+const noCover = new Set(), cover = new Set();
+for (const l of coverLines) for (const id of ids(l)) (/no cover yet/i.test(l) ? noCover : cover).add(id);
+for (const id of noCover) cover.delete(id);
+const book8 = (() => { const t = fs.existsSync(path.join(ROOT, 'wip/team/RUNBOOK.md')) ? rd('wip/team/RUNBOOK.md') : '', i = t.search(/^## 8\. /m); if (i < 0) return new Set(); const rest = t.slice(i + 3), j = rest.search(/^## /m); return ids(j < 0 ? rest : rest.slice(0, j)); })();
 const onlySection = [], nobody = [];
 for (const l of lines) {
   const t = byTest[l.id] || [], b = byBrief[l.id] || [], s = bySection[l.sec] || [], sc = byScope[l.id] || [];
-  const who = [].concat(t.length ? ['tests: ' + t.join(', ')] : [], b.length ? ['briefs by id: ' + b.join(', ')] : [], s.length ? ['reviewers by section ' + l.sec + ': ' + s.join(', ')] : [], sc.length ? ['scope: ' + sc.join(', ')] : []);
-  if (!t.length && !b.length && !sc.length && s.length) onlySection.push(l);
+  const cv = cover.has(l.id), rb = l.sec === 'G' && book8.has(l.id);
+  const who = [].concat(t.length ? ['tests: ' + t.join(', ')] : [], b.length ? ['briefs by id: ' + b.join(', ')] : [], sc.length ? ['scope: ' + sc.join(', ')] : [], cv ? ['M_COVERAGE.md'] : [], rb ? ['RUNBOOK.md section 8'] : []);
+  if (!who.length && s.length) onlySection.push(l);
   if (!who.length) nobody.push(l);
-  ck(`${l.id} is named by a test, a brief or a scope file`, who.length > 0, `nobody names it: "${l.text.slice(0, 90)}"`);
-  if (who.length) console.log('     ' + who.join('; '));
+  ck(`${l.id} is named by a test, a brief or a scope file`, who.length > 0, `nobody names it by its id: "${l.text.slice(0, 90)}"`);
+  if (who.length || s.length) console.log('     ' + who.concat(s.length ? ['(its section ' + l.sec + ' is also given whole to: ' + s.join(', ') + ')'] : []).join('; '));
 }
 for (const k of Object.keys(KNOWN)) if (!seen.has(k)) { bad++; console.log('FAIL ' + k + ' (listed in KNOWN but no check has that name any more)'); }
 
 const named = lines.filter(l => byTest[l.id]).map(l => l.id);
 console.log(`\nM LINES: ${lines.length} in MAKO_SAYS.md (${lines[0].id} to ${lines[lines.length - 1].id}); ${tests.length} test files, ${briefs.length} briefs and ${scopes.length} scope files read`);
 console.log(`NAMED BY A TEST (${named.length}): ${named.join(' ') || 'none'}`);
-console.log(`HELD ONLY BY A REVIEWER'S SECTION, no script checks them (${onlySection.length}): ${onlySection.map(l => l.id).join(' ') || 'none'}`);
+console.log(`HELD ONLY BY A REVIEWER'S WHOLE SECTION, not named by id (${onlySection.length}): ${onlySection.map(l => l.id).join(' ') || 'none'}`);
+console.log(`NO COVER YET, written so in M_COVERAGE.md (${lines.filter(l => noCover.has(l.id)).length}): ${lines.filter(l => noCover.has(l.id)).map(l => l.id).join(' ') || 'none'}`);
 console.log(`NOBODY NAMES (${nobody.length}): ${nobody.map(l => l.id).join(' ') || 'none'}`);
 for (const l of nobody) console.log(`  ${l.id}. ${l.text}`);
 console.log(bad ? `m_lines: ${bad} FAIL of ${n}` + (known ? ` (and ${known} KNOWN FAIL)` : '') : `m_lines: ALL PASS (${n - known})` + (known ? ` and ${known} KNOWN FAIL (the lines in this test's KNOWN table, each in tests/QCSCRIPTS_FOUND.md)` : ''));

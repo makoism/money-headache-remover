@@ -20,9 +20,7 @@ const fs = require('fs');
 const Q = require('./qc_places.js'), { w } = Q;
 
 /* real faults in the app this check found (the check stays failing; see tests/QCSCRIPTS_FOUND.md) */
-const KNOWN = {
-  'the way to the assistant stays on screen when a long place is scrolled to its end (M1 "always on screen")': 'before setup (setup, Settings on a new device, the first screen with Use any AI open) and with the made-up numbers there is no bar at the foot: the way in is the small Ask link in the header, and it scrolls away with the page (src/chat3.js renderChat3 hides the bar then; src/shell.html)',
-};
+const KNOWN = {};
 const T = Q.make('e3_always', KNOWN), { ck } = T;
 const OWN = /^(file|data|blob|about|chrome-extension):/;
 const ASSISTANT = /^(The assistant|First screen: the assistant|Add statements)/;   // the places that are the assistant itself

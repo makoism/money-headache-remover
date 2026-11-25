@@ -56,11 +56,11 @@
   // ---------- the server ----------
   function client(opts) {
     const f = opts.fetch || ((...a) => root.fetch(...a)), base = opts.base, wait = opts.timeout || 20000;
-    async function req(k, method, body, keepalive) {
+    async function req(k, method, body, keepalive, query) {
       const ctl = typeof AbortController === 'function' ? new AbortController() : null;
       const timer = ctl ? setTimeout(() => ctl.abort(), wait) : 0;
       try {
-        const r = await f(base() + '/api/vault/' + k.id, { method, cache: 'no-store', keepalive: !!keepalive,
+        const r = await f(base() + '/api/vault/' + k.id + (query ? '?' + query : ''), { method, cache: 'no-store', keepalive: !!keepalive,
           headers: Object.assign({ 'x-vault-token': k.token }, body ? { 'content-type': 'application/json' } : {}),
           body: body ? JSON.stringify(body) : undefined, signal: ctl ? ctl.signal : undefined });
         let j = null; try { j = await r.json(); } catch (e) { j = null; }
@@ -68,7 +68,8 @@
       } catch (e) { return { status: 0, ok: false, j: {} }; }   // no connection, or the 20 seconds ran out
       finally { clearTimeout(timer); }
     }
-    return { get: k => req(k, 'GET'), put: (k, b, keepalive) => req(k, 'PUT', b, keepalive), del: k => req(k, 'DELETE') };
+    return { get: k => req(k, 'GET'), put: (k, b, keepalive) => req(k, 'PUT', b, keepalive), del: k => req(k, 'DELETE'),
+      versions: k => req(k, 'GET', null, false, 'versions=1'), rev: (k, n) => req(k, 'GET', null, false, 'rev=' + encodeURIComponent(n)) };
   }
   // 410: the cloud copy was deleted on another device; it stays gone until a fresh turn-on (a new code), so the device stops
   const WHY = { net: 'net', code: 'code', busy: 'busy', server: 'server', deleted: 'deleted' };
@@ -77,8 +78,17 @@
   // ---------- one sync [AQ1, AW2, AW5] ----------
   // the store's own marks on a saved book (its revision and save time, store/idb.js meta) are never part of the shared copy [BD2]
   const noRev = c => { if (!c || typeof c !== 'object') return c; const o = Object.assign({}, c); delete o.rev; delete o.at; return o; };
+  // [M4, AI1] Every copy that arrives from the cloud is held against this device's own now (store/clock.js holdArriving)
+  // before anything sees it: an `at` more than a day ahead (another device's clock far ahead) is written as just after now,
+  // with a `held` mark, so it never moves this device's clock. `mine` (the copy last synced, or this device's copy) gives
+  // the marks already made, so the same copy is held the same way each time it is pulled.
+  function hold(copy, mine, now) {
+    const Ck = root.BurrowClock;
+    if (!copy || !Ck) return copy;
+    return Ck.holdArriving(copy, mine || null, now || Ck.nowIso()).copy;
+  }
   // What the cloud holds now: { ok, rev, copy } (rev 0 and no copy when nothing is stored), or { ok: false, why }.
-  async function fetchCloud({ api, pack, keys }) {
+  async function fetchCloud({ api, pack, keys, now, mine }) {
     const g = await api.get(keys);
     if (g.status === 404) return { ok: true, rev: 0, copy: null };
     if (!g.ok) return { ok: false, why: failOf(g.status) };
@@ -86,17 +96,39 @@
     if (!env) return { ok: false, why: 'damaged' };
     const u = await pack.unpack(env, { key: keys.key });
     if (!u.ok) return { ok: false, why: u.why };   // 'newer' (a later shape: refused, nothing changed), 'key', 'damaged', 'fmt'
-    return { ok: true, rev: +g.j.rev || 0, copy: noRev(u.copy), updated: g.j.updated || null };
+    return { ok: true, rev: +g.j.rev || 0, copy: hold(noRev(u.copy), mine, now), updated: g.j.updated || null };
+  }
+  // The server's earlier versions (its last 10, newest first): { ok, versions: [{ rev, updated, size }] } or { ok: false, why }.
+  // `updated` is the server's time in ms, or null for one kept before the server noted times.
+  async function fetchVersions({ api, keys }) {
+    const g = await api.versions(keys);
+    if (!g.ok) return { ok: false, why: g.status === 404 ? 'none' : failOf(g.status) };
+    const vs = (Array.isArray(g.j.versions) ? g.j.versions : []).filter(v => v && typeof v.rev === 'number')
+      .map(v => ({ rev: v.rev, updated: typeof v.updated === 'number' ? v.updated : null, size: +v.size || 0 }));
+    return { ok: true, rev: +g.j.rev || 0, versions: vs };
+  }
+  // One of them: { ok, rev, copy } (opened like the cloud copy, a newer shape refused) or { ok: false, why } ('gone' when not kept).
+  async function fetchRev({ api, pack, keys, rev, now, mine }) {
+    const g = await api.rev(keys, rev);
+    if (g.status === 404) return { ok: false, why: 'gone' };
+    if (!g.ok) return { ok: false, why: failOf(g.status) };
+    const env = unwrap(g.j.blob);
+    if (!env) return { ok: false, why: 'damaged' };
+    const u = await pack.unpack(env, { key: keys.key });
+    if (!u.ok) return { ok: false, why: u.why };
+    return { ok: true, rev: +g.j.rev || 0, copy: hold(noRev(u.copy), mine, now), updated: typeof g.j.updated === 'number' ? g.j.updated : null };
   }
   // device: { base, baseRev } as kept on this device (SCHEMA_V3 2.2 `sync`); copy: this device's shared copy.
   // Gives { ok, copy, device: { base, baseRev }, pushed, merged, questions, firstJoin } or { ok: false, why, device }.
   // A refused write is retried from the copy it took as its base (AW5), up to three times.
-  async function syncOnce({ api, pack, S, keys, device, copy, keepalive }) {
+  async function syncOnce({ api, pack, S, keys, device, copy, keepalive, now }) {
     let dev = { base: device && device.base != null ? device.base : null, baseRev: device && device.baseRev != null ? device.baseRev : null };
-    let cur = noRev(copy), merged = false;
+    // this device's own copy is judged the same way as the cloud's, so a time far ahead in it (a clock set wrong earlier)
+    // is held once and sent held, and the two never differ only by the hold (which would send on every pull)
+    let cur = hold(noRev(copy), dev.base, now), merged = false;
     const firstJoin = dev.base === null && S.hasData(cur);
     for (let i = 0; i < TRIES; i++) {
-      const cloud = await fetchCloud({ api, pack, keys });
+      const cloud = await fetchCloud({ api, pack, keys, now, mine: dev.base || cur });
       if (!cloud.ok) return { ok: false, why: cloud.why, device: dev, copy: cur };
       const r = S.syncDevice({ copy: cur, base: dev.base === null ? undefined : dev.base, baseRev: dev.baseRev === null ? undefined : dev.baseRev }, { rev: cloud.rev, copy: cloud.copy });
       merged = merged || r.merged;
@@ -118,7 +150,7 @@
     return { ok: false, why: WHY.busy, device: dev, copy: cur };
   }
 
-  const api = { SALT, ROUNDS, INFO, newCode, codeShow, codeClean, codeValid, keysFor, wrap, unwrap, client, fetchCloud, syncOnce, noRev };
+  const api = { SALT, ROUNDS, INFO, newCode, codeShow, codeClean, codeValid, keysFor, wrap, unwrap, client, hold, fetchCloud, fetchVersions, fetchRev, syncOnce, noRev };
   root.CLOUD3 = api;
   if (typeof module === 'object' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -112,7 +112,10 @@ const E3 = (() => {
     return r.ok;
   }
   /* backup lane: what the store keeps beside the book (store/idb.js):
-       rec('copy', { copy, why })  keeps a whole copy before a big replace in the store's `kept` store [D2]; gives its id
+       rec('copy', { copy, why, pin })  keeps a whole copy before a big replace in the store's `kept` store [D2]; gives its id;
+                                   pin keeps it outside the store's newest 5 until rec('drop', id); with pin, `at` keeps a
+                                   dropped copy again under the time it was first kept (Undo of Drop it)
+       rec('drop', id)             drops one kept whole copy
        rec('copies')               the kept whole copies, newest first: [{ id, why, at, events }]
        rec('copy:<at>')            one kept copy { id, why, at, copy }
        rec('cloud') / rec('cloud', v)   the cloud copy's device-only state, in the store's `device` record (SCHEMA_V3 2.2)
@@ -120,8 +123,9 @@ const E3 = (() => {
   async function rec(key, value) {
     if (mode === 'try' || !store) return value === undefined ? null : false;
     try {
-      if (key === 'copy') return await store.keepCopy(value.copy, value.why);
-      if (key === 'copies') return (await store.keptCopies()).sort((x, y) => (x.id < y.id ? 1 : -1));
+      if (key === 'copy') return await store.keepCopy(value.copy, value.why, value.pin ? Object.assign({ pin: true }, value.at ? { at: value.at } : {}) : undefined);
+      if (key === 'drop') return await store.removeCopy(value);
+      if (key === 'copies') return (await store.keptCopies()).sort((x, y) => (Date.parse(y.at) || 0) - (Date.parse(x.at) || 0) || (x.id < y.id ? 1 : -1));   // by moment: each `at` carries its own offset
       if (key.startsWith('copy:')) return await store.keptCopy(key);
       const d = (await store.getDevice()) || {};
       if (value === undefined) return d[key] === undefined ? null : d[key];

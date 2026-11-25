@@ -44,10 +44,6 @@ const rel = f => path.relative(TEAM, f);
 /* each key is "<rule>: <file> <what>", with no line number, so a line moving in its file keeps its row */
 const KNOWN = {
   'toast: cloud3_page.js "Your devices changed the same thing. Open Settings to choose which to keep."': 'a toast of two sentences with full stops (VOICE: one line, no full stop)',
-  'toast: settings3_sw.js "A new version of the app is ready. It opens the next time you come back to the app."': 'a toast of two sentences with full stops (VOICE: one line, no full stop)',
-  'note: settings3.js "It stays the same once money is written down."': 'a one line note under the currency in Settings ends with a full stop',
-  'note: stmt3_ai.js "Kept on this device only, and sent only to this page\'s own server."': 'a one line note under the code word box ends with a full stop',
-  'words: settings3.js a semicolon in "A backup file is your own copy of your money, to keep anywhere. Restoring one replaces the money on this device; what is"': 'a semicolon in the Backup file note in Settings (VOICE Part C: never a semicolon)',
 };
 const unline = x => x.replace(/^(\S+?\.(?:js|html)):\d+/, '$1');   // a finding without its line number, for KNOWN
 /* numbers of 7 digits or more that are not money: what each one is */
