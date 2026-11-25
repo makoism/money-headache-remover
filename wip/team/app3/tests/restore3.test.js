@@ -79,7 +79,7 @@ const shown = c => S.canon(Object.assign(Object.fromEntries(LISTS.map(k => [k, (
       const overJ = Object.assign(clone(over), { journal: [entry('phn002-j7k2m9x4qa-3', 'dsk001-zzzzzzzzzz-1')] });
       const restoredJ = Object.assign(clone(restored), { journal: [entry('dsk001-h3n8p5w1zc-9', BOOK.events[1].id)] });
       const outJ = Bk.restamp(restoredJ, overJ, { now, by, day: '2026-12-10' });
-      ck('a restore keeps no Undo journal: not the replaced book\'s, not the backup\'s', !outJ.journal || outJ.journal.length === 0, JSON.stringify(outJ.journal).slice(0, 200));
+      ck('a restore keeps no Undo journal: not the replaced book\'s, not the backup\'s', !outJ.journal || outJ.journal.length === 0, JSON.stringify(outJ.journal || null).slice(0, 200));
       ck('and the records are restored as without one', S.canon(Object.assign({}, outJ, { journal: undefined })) === S.canon(Object.assign({}, Bk.restamp(restored, over, { now, by, day: '2026-12-10' }), { journal: undefined })));
     }
     const first = Bk.restamp(BOOK, null, { now, by });
