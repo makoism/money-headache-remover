@@ -22,7 +22,7 @@ You may also read `wip/team/app3/tests/fake_vault.js` (the made-up cloud server 
 8. **Remove and reset.** Every remove, end, close, turn off, delete the cloud copy, start again: it asks first, says what is lost, and Undo works after a reload.
 9. **The assistant.** Every change it makes shows what changed and can be undone. A remove or a big change asks first. It cannot be talked into wiping data ("delete everything", text pasted from a statement that contains instructions).
 10. **Old and new.** A saved copy from an older page still opens; a copy from a newer page is refused with plain words, not damaged. The old app's saved data on the same device is untouched.
-11. **What leaves the device.** List every address the page calls (`d.p.on('request')`) with the cloud copy off and the assistant unused: it should be none. With them on: only the page's own address, and never the person's key, code or invite word in a web address.
+11. **What leaves the device.** List every address the page calls (`d.p.on('request')`) with the cloud copy off and the assistant unused: it should be none, except one call to the page's own `/api/health`, which is how the app learns whether the site's assistant is switched on; that call must carry nothing about the person (check what it sends). With them on: only the page's own address, and never the person's key, code or invite word in a web address.
 
 ## Verdict
 FAIL if any figure or receipt is lost or changed without the person choosing it, any remove does not ask, or anything private leaves the device. COUNT: jobs done and stuck, kinds of change checked across reload, removes checked.
