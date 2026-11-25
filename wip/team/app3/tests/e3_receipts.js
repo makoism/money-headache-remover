@@ -95,7 +95,7 @@ async function figsMatch(p, book, what) {
 
   /* remove, with Undo */
   await p.tap(`[data-rc="${spend.id}"] button`); await T.w(200);
-  await p.tap('#rcRemove'); await T.w(400);
+  await p.tap('#rcRemove'); await T.w(400); if (await p.$('[data-sureyes]')) { await p.$eval('[data-sureyes]', e => e.click()); await T.w(400); }
   bk = await saved(p);
   ck('remove marks it gone', bk.events.find(e => e.id === spend.id).gone === DAY);
   m = await bar(p);
@@ -259,7 +259,7 @@ async function figsMatch(p, book, what) {
     await p.$eval('[data-rcahead="' + CLOCK + '"] button', e => e.click()); await T.w(200);
     ck('B2: a tap opens it', await p.$eval('#rcAmt', e => e.value.replace(/,/g, '')) === '6060');
     await p.$eval('#rcRemove', e => e.click()); await T.w(300);
-    if (await p.$('[data-rcsure]')) { await p.$eval('[data-rcsure]', e => e.click()); await T.w(300); }
+    await p.$eval('[data-sureyes]', e => e.click()); await T.w(300);
     let sv = await saved(p);
     ck('B2: Remove marks it gone in the book', !!sv.events.find(e => e.id === CLOCK).gone, JSON.stringify(sv.events.find(e => e.id === CLOCK)));
     await p.$eval('#rcSearch', e => { e.value = ''; e.dispatchEvent(new Event('input', { bubbles: true })); }); await T.w(200);

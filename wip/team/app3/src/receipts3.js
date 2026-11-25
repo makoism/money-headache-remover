@@ -49,6 +49,15 @@ function rcRows3() {
   return rcCounted3().filter(e => rcLive3(e) && rcKnown3(e) && !e.of && !(e.settles && e.settles.length)
     && (e.k === 'spend' || e.k === 'transfer' || (e.k === 'in' && e.sub === 'refund') || rcMoneyIn3(e)));
 }
+/* [M6, M61; qc-data-safety B1] the one question before a remove on the screens (Receipts and Plan use it; tests/e3_removes.js
+   counts every removing button). The first tap writes nothing: `host` shows what goes, with a yes and a no */
+function sure3(host, words, yes, run) {
+  if (!host) return;
+  host.innerHTML = `<div class="a3-sure" data-sure><p class="a3-warn">${esc3(words)}</p><div class="a3-actions"><button type="button" class="a3-btn solid" data-sureyes>${esc3(yes)}</button><button type="button" class="a3-btn" data-sureno>No, keep it</button></div></div>`;
+  host.querySelector('[data-sureyes]').addEventListener('click', () => { host.innerHTML = ''; run(); });
+  host.querySelector('[data-sureno]').addEventListener('click', () => { host.innerHTML = ''; });
+  host.querySelector('[data-sureno]').focus();
+}
 /* [M7, M61; qc-data-safety B2] what the book holds that is dated or told after today (a backup or another device whose
    clock was ahead): not counted yet by the engine's rule, and never hidden. Listed apart, found by search, opened and
    removed like any row */
@@ -158,7 +167,7 @@ function rcFormHtml3() {
     <div class="a3-field"><label for="rcDate">Day</label><input class="a3-in a3-date" type="date" id="rcDate" value="${esc3(e ? e.date : today)}" max="${esc3(today)}"></div>
     <div class="a3-field"><label for="rcNote">Note</label><input class="a3-in a3-text" type="text" id="rcNote" autocomplete="off" value="${esc3(e && e.note ? e.note : '')}" placeholder="Optional"></div>
     <p class="a3-sub" id="rcAfter" aria-live="polite"></p>
-    <p class="a3-err" id="rcErr" role="alert"></p>
+    <p class="a3-err" id="rcErr" role="alert"></p><div id="rcSure"></div>
     <div class="a3-warn" id="rcAsk" role="alert" hidden><p id="rcAskText"></p><div class="a3-actions"><button type="button" class="a3-btn solid" id="rcAskYes">Save it anyway</button><button type="button" class="a3-btn" id="rcAskNo">Change the amount</button></div></div>
     <div class="a3-actions"><button type="button" class="a3-btn solid" id="rcSave">${e ? 'Save change' : word}</button>${e ? '<button type="button" class="a3-btn" id="rcRemove">Remove</button><button type="button" class="a3-btn" id="rcCancel">Cancel</button>' : ''}</div>`;
 }
@@ -278,7 +287,11 @@ function rcLook3(r) {
   RC3.edit = JSON.parse(JSON.stringify(now));
   if (typeof rcList3 === 'function') rcList3();
 }
-async function rcRemove3() {
+function rcRemove3() {
+  const e = RC3.edit; if (!e) return;
+  sure3($('#rcSure'), `Remove ${money3(e.a, E3.curOf(e.acct))}, ${rcWhat3(e)}? Undo can bring it back until you reload`, 'Yes, remove it', rcRemoveGo3);
+}
+async function rcRemoveGo3() {
   const e = RC3.edit; if (!e) return;
   const before = rcFigs3(E3.book);
   const r = await ACT3.remove(e.id, { undo: `Removed ${money3(e.a, E3.curOf(e.acct))}, ${rcWhat3(e)}`, seen: rcSeen3() });

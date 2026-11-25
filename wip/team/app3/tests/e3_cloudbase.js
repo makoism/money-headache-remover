@@ -18,7 +18,7 @@ const until = async (f, ms) => { for (let i = 0; i < (ms || 8000) / 100; i++) { 
 async function type(p, sel, text) { await p.tap(sel); await T.w(60); await p.keyboard.type(text); }
 async function log(p, amt, note) { await type(p, '#rcAmt', amt); await type(p, '#rcNote', note); await p.tap('#rcSave'); await T.w(400); }
 async function change(p, id, amt) { await p.tap(`#rcList [data-rc="${id}"]`); await T.w(200); await p.$eval('#rcAmt', e => { e.value = ''; }); await type(p, '#rcAmt', amt); await p.tap('#rcSave'); await T.w(400); }
-async function remove(p, id) { await p.tap(`#rcList [data-rc="${id}"]`); await T.w(200); await p.tap('#rcRemove'); await T.w(400); }
+async function remove(p, id) { await p.tap(`#rcList [data-rc="${id}"]`); await T.w(200); await p.tap('#rcRemove'); await T.w(300); await p.$eval('[data-sureyes]', e => e.click()); await T.w(400); }
 /* a device that can be made to refuse every save of the book (as when its space ran out); its own small device record still saves */
 const NO_SAVE = () => {
   const put = IDBObjectStore.prototype.put;

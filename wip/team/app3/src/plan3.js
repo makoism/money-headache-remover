@@ -174,7 +174,7 @@ function plForm3(title, fields, buttons, note) {
   };
   host.innerHTML = `<section class="a3-card" data-card="plan-form"><h2>${esc3(title)}</h2>${note ? `<p class="a3-sub">${note}</p>` : ''}
     ${fields.map(f => `<div class="a3-field"><label for="pl-${f.key}">${esc3(f.label)}</label>${input(f)}${f.hint ? `<p class="a3-sub">${esc3(f.hint)}</p>` : ''}</div>`).join('')}
-    <p class="a3-err" id="plErr" role="alert"></p><div class="a3-actions" id="plAsk" hidden></div>
+    <p class="a3-err" id="plErr" role="alert"></p><div id="plSure"></div><div class="a3-actions" id="plAsk" hidden></div>
     <div class="a3-actions">${buttons.map((b, i) => `<button type="button" class="a3-btn${b.solid ? ' solid' : ''}" data-plbtn="${i}">${esc3(b.label)}</button>`).join('')}<button type="button" class="a3-btn" id="plBack">Back</button></div></section>`;
   for (const f of fields) if (f.kind === 'amount') BurrowScreens.inputs.bind($('#pl-' + f.key), { kind: 'amount', code: cur, optional: true });
   const read = () => {
@@ -192,7 +192,11 @@ function plForm3(title, fields, buttons, note) {
   host.querySelectorAll('[data-plbtn]').forEach(btn => btn.addEventListener('click', async () => {
     const got = read(), err = $('#plErr');
     if (got.bad) { err.textContent = got.bad; got.el.focus(); return; }
-    const b = buttons[Number(btn.dataset.plbtn)], [label, fn, undo] = b.step(got.vals);
+    const b = buttons[Number(btn.dataset.plbtn)];
+    /* [M6, M61] a button that removes asks first (sure3): nothing is written until the yes */
+    if (b.sure && !btn.dataset.yes) { sure3($('#plSure'), b.sure[0], b.sure[1], () => { btn.dataset.yes = '1'; btn.click(); }); return; }
+    delete btn.dataset.yes;
+    const [label, fn, undo] = b.step(got.vals);
     const res = await ACT3.run(label, fn, { undo, seen });
     if (elsewhere(res)) return;
     const ask = $('#plAsk'); ask.hidden = true; ask.innerHTML = '';
@@ -245,7 +249,7 @@ function plLineForm3(id) {
   const l = p ? p.lines.find(x => x.id === id) : { amount: BurrowEngine.schedules.stepOn(rec, BurrowEngine.dates.dayNum(E3.today())) };
   plForm3(rec.name, [{ key: 'name', label: 'Name', kind: 'text', value: rec.name }, { key: 'amount', label: each, kind: 'amount', value: l ? l.amount : null }].concat(p ? [plWhen3('next')] : []),
     [{ label: 'Save', solid: true, step: v => ['changeLine', w => PLAN3W.changeLine(w, id, { name: v.name, amount: l && v.amount === l.amount ? null : v.amount, when: v.when }), 'Line changed'] },
-     { label: 'End this line', step: () => ['endLine', w => PLAN3W.endLine(w, id), rec.name + ' ends after this pay period'] }],
+     { label: 'End this line', sure: [`End ${rec.name}?${p ? ' It stays for this pay period and stops after it' : ''}`, 'Yes, end it'], step: () => ['endLine', w => PLAN3W.endLine(w, id), rec.name + ' ends after this pay period'] }],
     'A change never changes a pay period gone by');
 }
 const PL_EVERY3 = [{ v: 'month', name: 'On a day each month' }, { v: 'days', name: 'On two days each month' }, { v: 'weeks1', name: 'Every week' }, { v: 'weeks2', name: 'Every 2 weeks' },
@@ -285,7 +289,7 @@ function plBillForm3(id) {
   [{ label: 'Save', solid: true, step: v => ['changeBill', w => PLAN3W.changeBill(w, id, { name: v.name, amount: v.amount, day: v.day, from: v.from,
     ...(every.length ? { every: v.every, day2: v.day2 === 'last' ? 'last' : Number(v.day2), start: v.start, lines: Object.fromEntries(perPay.map(l => [l.key, v['ln-' + l.key] == null ? l.amount : v['ln-' + l.key]])) } : {}) }), pay ? 'Pay changed' : 'Bill changed'] }]
     .concat(pay || !v0.next ? [] : [{ label: 'Change the next one only', step: v => ['changeOnce', w => PLAN3W.changeOnce(w, id, { due: v0.next.due, amount: v.amount }), s.name + ' on ' + day3(v0.next.land, 'any') + ' changed'] },
-      { label: 'End this bill', step: v => ['endBill', w => PLAN3W.endBill(w, id, { last: v.from }), s.name + ' ends'] }]),
+      { label: 'End this bill', sure: [`End ${s.name}? Nothing is due after the day in "Changes from"`, 'Yes, end it'], step: v => ['endBill', w => PLAN3W.endBill(w, id, { last: v.from }), s.name + ' ends'] }]),
   pay ? 'A change starts from the day in "Changes from". Pay periods before it stay as they were' : `"Change the next one only" changes the amount of the one on ${esc3(day3(v0.next ? v0.next.land : v0.changeFrom, 'any'))}. End this bill: nothing is due after the day in "Changes from"`);
   if (every.length) plPropose3(perPay, r0, everyNow);
 }
@@ -345,7 +349,7 @@ function plOwedForm3(id) {
   if (card) fields.push({ key: 'cutDay', label: 'Day the statement closes', kind: 'day', value: a.cutDay, hint: 'Leave it empty if you are not sure: then all that is owed is due on each payment day' });
   else fields.push({ key: 'amount', label: 'Usual payment', kind: 'amount', value: a.amount });
   plForm3(a.name, fields, [{ label: 'Save', solid: true, step: v => ['changeOwed', w => PLAN3W.changeOwed(w, id, card ? { name: v.name, payDay: v.payDay, cutDay: v.cutDay } : { name: v.name, payDay: v.payDay, amount: v.amount }), a.name + ' changed'] }]
-    .concat(card ? [] : [{ label: 'Close this loan', step: () => ['closeLoan', w => PLAN3W.closeLoan(w, id), a.name + ' closed'] }]),
+    .concat(card ? [] : [{ label: 'Close this loan', sure: [`Close ${a.name}? It leaves your plan`, 'Yes, close it'], step: () => ['closeLoan', w => PLAN3W.closeLoan(w, id), a.name + ' closed'] }]),
     card ? '' : 'A loan closes once it is paid off');
 }
 /* a card after setup (QC F1): the same questions setup asks, written through ACT3 */

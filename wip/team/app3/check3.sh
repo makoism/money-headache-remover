@@ -126,6 +126,7 @@ page|tests/e3_cloudbase.js|e3_cloudbase: ALL PASS||300|the cloud copy's base is 
 page|tests/e3_cloudtake.js|e3_cloudtake: ALL PASS||300|the cloud copy taken by itself: a timed check of the revision, coming back into view, two tabs, the timer stopped and said once, a killed page (CS2, B1, B3)
 page|tests/e3_cloudsend.js|e3_cloudsend: ALL PASS||600|the cloud copy sent by itself: at once, a burst 5 seconds after, never two in 10 seconds, leaving with a big copy, the day's guard (CS1)
 page|tests/e3_cloudhold.js|e3_cloudhold: ALL PASS||300|the cloud copy held back while a form is open or covered by the chat, taken when it closes, and "Last checked" (CS4, B2, B4)
+page|tests/e3_removes.js|e3_removes: ALL PASS||300|every remove on the screens asks first: counted in src, and the four that change money walked (M6, M61)
 page|tests/e3_cloudwhich.js|e3_cloudwhich: ALL PASS||300|"which to keep": each row says its amount and which device, and the pick ends on both devices (M20)
 page|tests/e3_cloudwhich2.js|e3_cloudwhich2: ALL PASS||600|"which to keep": a stale answer from a second tab is refused, a newer change is never overwritten, and Undo right after Keep for a plan item, a setting and a whole copy (M20, M61, M14)
 page|tests/e3_cloudstatus.js|e3_cloudstatus: ALL PASS||300|the cloud copy's one status on Settings and Home: never in step while a change waits or after a refusal, a reload too (M36, M61, M67)
@@ -155,8 +156,8 @@ page_tests_for() {   # page_tests_for <changed path, relative to app3/>
     tests/*.js)               [ -f "$1" ] && basename "$1" .js ;;   # a test file removed on purpose has no test to run
     src/home3.js)             echo e3_cloudstatus e3_home e3_ns e3_homeplan e3_warnwords e3_cardline e3_bankparts e3_names e3_payday ;;
     src/checkin3.js)          echo e3_checkin e3_checkgap e3_cardfig e3_reload e3_bankparts e3_payday e3_overdrawn e3_cardpay ;;
-    src/receipts3.js)         echo e3_receipts e3_listfix e3_moneyin e3_bigspend e3_stmt_once e3_period e3_names e3_doors e3_moved1 e3_cardgap ;;
-    src/plan3.js|src/plan3_write.js) echo e3_aijoin e3_plan e3_rhythms e3_lineshare e3_homeplan e3_paychange e3_names ;;
+    src/receipts3.js)         echo e3_removes e3_receipts e3_listfix e3_moneyin e3_bigspend e3_stmt_once e3_period e3_names e3_doors e3_moved1 e3_cardgap ;;
+    src/plan3.js|src/plan3_write.js) echo e3_removes e3_aijoin e3_plan e3_rhythms e3_lineshare e3_homeplan e3_paychange e3_names ;;
     src/setup3.js|src/answers3.js) echo e3_fillcard e3_setup e3_setupfix e3_setup6 e3_income2 e3_weeks3 e3_first e3_onepay e3_overdrawn e3_paytoday e3_chatwalk e3_chat ;;
     src/chat3*.js)            echo e3_ailog e3_aiwords e3_fillcard e3_cloudfirst e3_aijoin e3_chat e3_chatwalk e3_fakeai_page e3_fillundo e3_invite e3_back e3_cloudhold ;;
     src/start3.js)            echo e3_first e3_file e3_try e3_chat e3_cloudtake ;;
