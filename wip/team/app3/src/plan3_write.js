@@ -472,7 +472,26 @@
     return id;
   }
 
-  const api = { addPay, addAccount, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan };
+  /* [E1, M13] a bank, cash or e-wallet renamed, and its own Keep at least (minBank: blank clears it). The main bank's
+     Keep at least lives in home.main and is changed in Settings (E5). Its figure changes at Check your bank. x: { name?, min? } */
+  function changeAccount(w, id, x) {
+    const a = find(w, 'accounts', id), ch = {};
+    if (!OWN_KINDS[a.type]) bad(a.type === 'card' || a.type === 'loan' ? 'Change a card or a loan on Plan, under Cards and loans' : 'That account cannot be changed here');
+    if (a.closed) bad(a.name + ' is closed');
+    if (x.name != null && String(x.name).trim() !== a.name) { ch.name = nameOk(x.name); sameName(w.book.accounts || [], ch.name, id); }
+    if (x.min !== undefined) {
+      const was = a.minBank ? a.minBank.a : null, now = x.min === '' || x.min === null || x.min === 0 ? null : x.min;
+      if (now !== was) {
+        if (id === mainOf(w)) bad('Keep at least for your main bank is in Settings');
+        ch.minBank = now === null ? null : { a: amountOk(now, 'the amount to keep'), cur: a.cur || home(w) };
+      }
+    }
+    if (!Object.keys(ch).length) bad('Nothing changed');
+    w.edit('accounts', id, ch);
+    return id;
+  }
+
+  const api = { addPay, addAccount, changeAccount, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan };
   if (node) module.exports = api;
   else root.PLAN3W = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
