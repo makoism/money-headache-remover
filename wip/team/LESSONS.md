@@ -157,3 +157,22 @@ Mako used the live version one for the first time and said: "it needs to all be 
 - A decision in DECISIONS about how the owner wants to use the app that no plan mentions.
 - A feature that can't be tried on the live site because a setting is off.
 - A rule written for safety ("must also work without X") being used to put off building X.
+
+---
+
+## Lesson 6: Recording the words, not the moment (found 26 Nov 2026)
+
+### What happened
+Mako described how he uses the app: play money in cash, everything else on the card, receipts sent to the assistant, which asks when it cannot tell. It was written down as "when a receipt's kind is unclear the assistant asks: is this play money?". He caught it within minutes: a receipt "could be a grocery receipt, it could be a car receipt, it could be anything." He said: "get the context in between what I'm saying ... the context of a user actually using it."
+
+### Why
+His words were copied literally and grouped by structure (what the engine or the assistant must do). Nobody stood in the moment: a person, a receipt in hand, the app not knowing what it was for. In that moment the only sensible question is "what was this for?".
+
+### What changed
+- The coordinator walks every idea as a person before it becomes a line (RUNBOOK section 1 step 0, MAKO_SAYS M98).
+- Every plan for a new feature carries a short "a person's month" walk, and qc-novice reads the plan as that person before building.
+
+### Warning signs
+- A line that names only the case he used as an example.
+- A question the app asks that has only one possible answer in mind.
+- A plan that lists what the engine does but never what the person is doing at that moment.
