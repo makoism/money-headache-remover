@@ -39,10 +39,15 @@ const T = Q.make('e3_boxwalk', KNOWN), { ck } = T;
    emptyQuiet  why pressing the button with the box empty may say nothing (the box must take the focus)
    atOnce      there is no Save: a change counts at once
    noValid     why the last step (every box right, then Save) is not done here, and the test that does it */
-const SETUP = { save: null, fill: { 'The day of one': '2026-11-27' }, mayBeEmpty: [/^Called/, /^Its name/], noValid: 'the made-up book every other row walks is this form saved with every box right (qc_places.js buildBook)' };
+const SETUP = { save: null, fill: { 'The day of one': '2026-11-27' }, mayBeEmpty: [/^Called/, /^Its name/], minusOk: [/^What does your bank show today/, /^What it holds today/],   // a bank below zero is typed as it is (M47, tests/e3_overdrawn.js)
+  noValid: 'the made-up book every other row walks is this form saved with every box right (qc_places.js buildBook)' };
 const PL = extra => Object.assign({ save: '[data-plbtn="0"]' }, extra);
 const RCF = extra => Object.assign({ save: '#rcSave', only: /^(?!Search)/ }, extra);
+const CHAT = { save: '#a3ChatSend', emptyQuiet: 'a chat box: Send with nothing typed sends nothing and puts the cursor in the box', noValid: 'a message goes to the AI (tests/e3_chat.js, tests/e3_chatwalk.js)' };
 const FORMS = {
+  'First screen': Object.assign({ only: /^Your answer/ }, CHAT),
+  'First screen: the assistant off, Use any AI and Send a file': { save: '#a3ChatAnyCheck', only: /^The AI's answer/, wrongText: ['', 'abc'], noValid: 'a right answer from another AI fills the setup (tests/e3_chat.js)' },
+  'The assistant': Object.assign({ only: /^Ask or tell me something/ }, CHAT),
   'Setup': SETUP,
   /* the same sheet with other choices made: only the boxes those choices bring are walked again */
   'Setup: pay on two days, a second income every 2 weeks, a card with its close day, a bill once a year': Object.assign({}, SETUP, { only: /^(And on day|The day of one|How much of it was on the statement|Which month|Day of the month it leaves|Day its statement closes)/ }),
@@ -57,18 +62,16 @@ const FORMS = {
   'Plan: Free to spend': PL(), 'Plan: Add a line': PL(), 'Plan: a line': PL(), 'Plan: the pay': PL(), 'Plan: a bill': PL(), 'Plan: Add a bill': PL(),
   'Plan: Add a goal': PL(), 'Plan: a goal': PL({ save: '[data-plbtn="1"]' }), 'Plan: a goal, Set aside': PL({ only: /Set aside now/, fill: { 'Set aside now': '1000' }, noValid: 'how much can be set aside depends on what the bank can spare that day (tests/e3_plan.js)' }),
   'Plan: a card': PL({ mayBeEmpty: [/^Day the statement closes/] }), 'Plan: Add a card': PL(), 'Plan: Add a loan': PL(), 'Plan: a loan': PL(),
-  'Check your bank': { save: '#a3CheckSave', mayBeEmpty: [/^What is on .* now\?/] },   // a card's figure is asked, never needed: left empty it is not checked
+  'Check your bank': { save: '#a3CheckSave', mayBeEmpty: [/^What is on .* now\?/], minusOk: [/^What does .* show today\?/] },   // a bank below zero (M47, tests/e3_overdrawn.js)   // a card's figure is asked, never needed: left empty it is not checked
   'Settings': { save: '#a3SetWordKeep', only: /ode word/, fill: { 'ode word': 'walkword' } },
   'Settings: a backup file locked with a code': { save: '#a3BkSave', only: /Code for this file/, wrongText: ['', 'abc'], noValid: 'a right code saves a file to the device (tests/e3_backup.js)' },
   'Settings: I have a code': { save: '#a3CloudUse', only: /cloud code/, wrongText: ['', 'abc'], noValid: 'a right code calls the cloud (tests/e3_cloud.js)' },
   'Reminders': { atOnce: true, noValid: 'nothing is saved by Reminders: it makes a calendar file (tests/e3_remind.js)' },
-  'Ask': { save: '#a3AskSend', emptyQuiet: 'a chat box: Ask with nothing typed sends nothing and puts the cursor in the box', noValid: 'a question calls the AI (tests/e3_ask.js)' },
   'Add statements': { save: null, noValid: 'only files to choose here (tests/e3_stmt.js)' },
   'Add statements: any AI instead': { save: '#a3StmtCheck', only: /answer/, wrongText: ['', 'abc'], noValid: 'a right answer needs a statement read first (tests/e3_stmt.js)' },
 };
 /* boxes written in app3/src that this walk never meets, each with why and the test that covers it */
 const NOT_WALKED = {
-  'ask3.js data-askstep': 'a tick beside each change the assistant proposes: needs a reply from the AI (tests/e3_ask.js)',
   'checkin3.js #a3l${i}': 'the day a late pay landed: shown only for a pay that was not seen on its day (tests/e3_walk.js)',
   'checkin3.js data-gapspend': 'a tick, shown once the bank figure typed is lower than expected (tests/e3_checkgap.js)',
   'checkin3.js data-gapline': 'a list, shown once the bank figure typed is lower than expected (tests/e3_checkgap.js)',
@@ -153,6 +156,7 @@ const leave = p => p.evaluate(() => { const a = document.activeElement; if (a &&
     const mine = bs => bs.filter(b => !form || !form.only || form.only.test(b.label));
     let boxes = mine(all);
     if (place.sheet) walkedIn[place.sheet] = true;
+    if (place.root === '#a3Chat') walkedIn.a3Chat = true;
     if (!all.length) { console.log(`     ${place.name}: no boxes`); }
     else if (!ck(`${place.name}: its ${all.length} boxes have a row in the walker (FORMS)`, !!form)) continue;
     /* every box right: the values a box already holds are right; an empty one gets a made-up right value */
@@ -226,7 +230,7 @@ const leave = p => p.evaluate(() => { const a = document.activeElement; if (a &&
         else await tap(p, place.out, 300);
       } catch (e) { out = 'the way out could not be pressed: ' + e.message.split('\n')[0]; }
       const s = await Q.seen(p), after = await snap(p);
-      const gone = place.out === 'tab' ? s.panels.length === 1 && s.sheets.length === 0 : place.sheet ? !s.sheets.includes(place.sheet) : !(await p.$(place.out));
+      const gone = place.out === 'tab' ? s.panels.length === 1 && s.sheets.length === 0 : place.sheet ? !s.sheets.includes(place.sheet) : place.closed ? await p.evaluate(place.closed) : !(await p.$(place.out));
       const somewhere = s.panels.length + s.sheets.length === 1;
       ck(`${place.name}: the way out (${place.out === 'tab' ? 'another tab' : await wordsOf(p, place, ctx)}) works${form && !form.atOnce && boxes.some(b => TYPED.includes(b.kind)) ? ' with a message showing' : ''}, saves nothing and lands on one screen`,
         !out && gone && somewhere && before === after, out || JSON.stringify(s) + (before === after ? '' : ' and something was saved'));
@@ -251,7 +255,8 @@ const leave = p => p.evaluate(() => { const a = document.activeElement; if (a &&
   /* ---- the counts ---- */
   const sheets = await (async () => { const o = await T.open(); await Q.go(o.p, Q.DAY0); const s = await Q.shellSheets(o.p); await o.c.close(); return s; })();
   for (const s of sheets) ck(`the sheet #${s} of the page shell has a row in the walker and was walked`, !!walkedIn[s]);
-  ck('the page shell has sheets to walk', sheets.length >= 6, sheets.join());
+  ck('the page shell has sheets to walk', sheets.length >= 5, sheets.join());
+  ck('the assistant\'s panel (#a3Chat, the bar at the foot) has a row in the walker and was walked', !!walkedIn.a3Chat);
   /* every box written in app3/src is met on the walk, or is in NOT_WALKED with its reason */
   const SRC = path.join(__dirname, '../src'), tags = [];
   for (const f of fs.readdirSync(SRC).filter(f => /\.(js|html)$/.test(f))) {
@@ -274,4 +279,4 @@ const leave = p => p.evaluate(() => { const a = document.activeElement; if (a &&
 })().catch(e => { console.log('FAIL crashed ' + e.stack); process.exit(1); });
 
 /* the words on the way-out button, for the check's name */
-async function wordsOf(p, place) { return ({ '#plBack': 'Back', '#a3SetupX': 'Back', '#a3CheckX': 'Back', '#a3StmtX': 'Back', '#a3SetClose': 'Done', '#a3RemClose': 'Close', '#a3AskClose': 'Close' })[place.out] || place.out; }
+async function wordsOf(p, place) { return ({ '#plBack': 'Back', '#a3SetupX': 'Back', '#a3CheckX': 'Back', '#a3StmtX': 'Back', '#a3SetClose': 'Done', '#a3RemClose': 'Close', '#a3ChatClose': 'Close' })[place.out] || place.out; }

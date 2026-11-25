@@ -1,37 +1,38 @@
 #!/usr/bin/env node
 /* Three things that must hold on every screen and sheet (QC_ROLES.md "Scripts beat reviewers" c), walked on the built
    page over every place of tests/qc_places.js, on a phone (390 wide, Mako's: M33):
-   1. The assistant is one tap away (M1 "always on screen", M17 "Ask the assistant anything, any time"): the way to it
-      (#a3AskGo, "Ask") shows at the top of the place, nothing covers it, and one tap opens the assistant with its box
-      ready to type in. And it stays on screen when a long place is scrolled to its end.
+   1. The assistant is one tap away (M1 "always on screen", M17 "Ask the assistant anything, any time"): its box
+      (#a3ChatIn: the bar at the foot after setup, the first screen itself before) is on screen with nothing over it,
+      or else "Ask" (#a3AskGo) shows at the top, nothing covers it, and one tap brings the box on screen with the cursor
+      in it. And one of the two stays on screen when a long place is scrolled to its end.
    2. No page errors on any place (QC_COMMON: "Reports of page errors are always findings").
    3. With the cloud copy off and the assistant not used, the page makes no network calls at all (M61, M63, M69: the
       numbers stay on the device unless the person turns the cloud copy on or asks the assistant). Every request that
       is not the page's own file is listed, with the place it came from. Then the page served from a local made-up
       server (tests/fake_vault.js), cloud copy off: it may fetch only its own files (the page, the manifest, its
       icons, the worker), never the vault, the AI, or another site.
-   The assistant's own sheets (Ask, and Add statements with its "Read with the AI") may ask the page's server whether
-   the AI is on: those calls are counted apart and must go only to the page's own server, to /api/health, sending nothing.
+   The assistant (its panel is on every screen, and Add statements with its "Read with the AI") may ask the page's server
+   whether the AI is on: those calls are counted apart and must go only to the page's own server, to /api/health, as a
+   GET sending nothing.
    A real fault found here is not fixed here: it is in KNOWN with its reason, and in tests/QCSCRIPTS_FOUND.md. */
 'use strict';
 const fs = require('fs');
 const Q = require('./qc_places.js'), { w } = Q;
 
 /* real faults in the app this check found (the check stays failing; see tests/QCSCRIPTS_FOUND.md) */
-const NEW = 'on a new device a tap on Ask only says "Set up first": the assistant cannot be asked anything before or during setup (M1, M2, M17; the setup chat is on lane/ai-panel, not on this base)';
+const AWAY = 'from setup or Settings on a new device, a tap on Ask closes them and puts the cursor in the first screen\'s answer box, but the page stays at its top: on a phone (390 by 844) the box is below the bottom of the screen, so the tap seems to do nothing (from the first screen itself the page does scroll to the box) (src/chat3.js chat3Ask; M1, M2, M17)';
 const KNOWN = {
-  'First screen: one tap on Ask opens the assistant, its box ready': NEW,
-  'Setup: one tap on Ask opens the assistant, its box ready': NEW,
-  'Setup: pay on two days, a second income every 2 weeks, a card with its close day, a bill once a year: one tap on Ask opens the assistant, its box ready': NEW,
-  'Setup: pay every 2 weeks, a second income on two days: one tap on Ask opens the assistant, its box ready': NEW,
-  'Setup: pay lands today: one tap on Ask opens the assistant, its box ready': NEW,
-  'Settings from "I already use the burrow on another device": one tap on Ask opens the assistant, its box ready': NEW,
-  'Settings (new device): one tap on Ask opens the assistant, its box ready': NEW,
-  'the way to the assistant stays on screen when a long place is scrolled to its end (M1 "always on screen")': 'Ask is a small link in the header, and the header scrolls away with the page: on a long screen it takes a scroll back to the top to reach it (the panel on every screen is on lane/ai-panel)',
+  'Setup: one tap on Ask opens the assistant, its box ready': AWAY,
+  'Setup: pay on two days, a second income every 2 weeks, a card with its close day, a bill once a year: one tap on Ask opens the assistant, its box ready': AWAY,
+  'Setup: pay every 2 weeks, a second income on two days: one tap on Ask opens the assistant, its box ready': AWAY,
+  'Setup: pay lands today: one tap on Ask opens the assistant, its box ready': AWAY,
+  'Settings from "I already use the burrow on another device": one tap on Ask opens the assistant, its box ready': AWAY,
+  'Settings (new device): one tap on Ask opens the assistant, its box ready': AWAY,
+  'the way to the assistant stays on screen when a long place is scrolled to its end (M1 "always on screen")': 'before setup (setup, Settings on a new device, the first screen with Use any AI open) and with the made-up numbers there is no bar at the foot: the way in is the small Ask link in the header, and it scrolls away with the page (src/chat3.js renderChat3 hides the bar then; src/shell.html)',
 };
 const T = Q.make('e3_always', KNOWN), { ck } = T;
 const OWN = /^(file|data|blob|about|chrome-extension):/;
-const ASSISTANT = /^(Ask|Add statements)/;   // the places that are the assistant itself
+const ASSISTANT = /^(The assistant|First screen: the assistant|Add statements)/;   // the places that are the assistant itself
 
 (async () => {
   const ctx = {}, calls = [], away = [];
@@ -45,28 +46,40 @@ const ASSISTANT = /^(Ask|Add statements)/;   // the places that are the assistan
     const o = ctx[place.state], p = o.p, e0 = T.errs.length;
     o.at = place.name; places++;
     try { await Q.reach(p, place); } catch (e) { ck(`${place.name}: can be reached`, false, e.message.split('\n')[0]); continue; }
-    const ask = await p.evaluate(() => {
-      const b = document.querySelector('#a3AskGo'), box = document.querySelector('#a3AskIn');
+    /* the assistant's box (#a3ChatIn): after setup the bar at the foot of every screen, before setup the first screen
+       itself. "One tap away" is the box on screen with nothing over it (a tap on it is the tap), or else Ask at the top
+       with nothing over it and one tap on Ask brings the box on screen, uncovered, with the cursor in it */
+    const look = () => p.evaluate(() => {
       const shows = e => !!e && e.getClientRects().length > 0 && e.checkVisibility({ visibilityProperty: true });
       const inView = e => { const r = e.getBoundingClientRect(); return r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth; };
       const free = e => { const r = e.getBoundingClientRect(), t = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!t && (t === e || e.contains(t)); };
+      const ready = e => shows(e) && inView(e) && free(e) && !e.disabled;
+      const box = () => [...document.querySelectorAll('#a3ChatIn')].find(ready);
+      const b = document.querySelector('#a3AskGo'), m = document.querySelector('#a3');
+      const tall = () => Math.max(document.documentElement.scrollHeight - innerHeight, m ? m.scrollHeight - m.clientHeight : 0);
       scrollTo(0, 0);
-      const out = { open: shows(box), there: shows(b), top: shows(b) && inView(b) && free(b), long: document.documentElement.scrollHeight > innerHeight + 8 };
-      scrollTo(0, document.documentElement.scrollHeight);
-      out.end = out.open ? inView(box) || (shows(b) && inView(b)) : shows(b) && inView(b) && free(b);
+      const out = { box: !!box(), there: shows(b), top: shows(b) && inView(b) && free(b), long: tall() > 8 };
+      scrollTo(0, 1e7);
+      out.end = !!box() || (shows(b) && inView(b) && free(b));
       scrollTo(0, 0);
       return out;
     });
-    if (ask.open) ck(`${place.name}: the assistant is open here, its box ready`, true);
+    const ask = await look();
+    if (ask.box) ck(`${place.name}: the assistant's box is on screen, nothing over it`, true);
     else {
       ck(`${place.name}: Ask shows at the top, with nothing over it`, ask.top, JSON.stringify(ask));
       let opened = false, said = '';
       try {
-        await p.click('#a3AskGo'); await w(350);
-        opened = await p.evaluate(() => { const s = document.querySelector('#a3Ask'), b = document.querySelector('#a3AskIn'); return !!s && !s.hidden && !!b && b.getClientRects().length > 0 && !b.disabled; });
+        await p.click('#a3AskGo'); await w(400);
+        opened = await p.evaluate(() => {
+          const e = document.activeElement;
+          if (!e || e.id !== 'a3ChatIn' || e.disabled || !e.getClientRects().length) return false;
+          const r = e.getBoundingClientRect(), t = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+          return r.bottom > 0 && r.top < innerHeight && !!t && (t === e || e.contains(t));
+        });
         said = await p.$eval('#a3Msg', e => e.textContent.replace(/\s+/g, ' ').trim()).catch(() => '');
       } catch (e) { said = e.message.split('\n')[0]; }
-      ck(`${place.name}: one tap on Ask opens the assistant, its box ready`, opened, said ? `the page says "${said}"` : 'nothing opened');
+      ck(`${place.name}: one tap on Ask opens the assistant, its box ready`, opened, said ? `the page says "${said}"` : 'no box on screen with the cursor in it');
     }
     if (ask.long && !ask.end) away.push(place.name);
     ck(`${place.name}: no page errors`, T.errs.length === e0, T.errs.slice(e0).join(' | '));
@@ -105,15 +118,16 @@ const ASSISTANT = /^(Ask|Add statements)/;   // the places that are the assistan
     const { makeVault, serve } = require('./fake_vault.js');
     const vault = makeVault(), s = await serve(vault, () => fs.readFileSync(Q.FILE));
     const o = await T.open({ touch: true }), got = [];
-    o.c.on('request', r => { if (!OWN.test(r.url())) got.push({ url: r.url(), method: r.method() }); });
+    o.c.on('request', r => { if (!OWN.test(r.url())) got.push({ url: r.url(), method: r.method(), body: r.postData() || '' }); });
     const base = `http://127.0.0.1:${s.port}/`;
     await o.p.goto(base + '?today=' + Q.DAY0); await w(600);
     for (const go3 of ['#a3SetGo', '#a3SetClose', '[data-tab=receipts]', '[data-tab=plan]', '[data-tab=home]', '#a3TryGo', '#a3CheckGo', '#a3CheckX', '#a3RemGo', '#a3RemClose', '[data-tab=receipts]', '[data-tab=plan]']) { await o.p.click(go3).catch(() => {}); await w(200); }
     await w(1200);
     await o.c.close(); await s.close();
     const ownFile = g => g.method === 'GET' && g.url.startsWith(base) && /^\/(index\.html|sw3\.js|manifest3\.webmanifest|icon3-(192|512)\.png)?$/.test(new URL(g.url).pathname);
-    const bad = got.filter(g => !ownFile(g));
-    ck(`served from a local server, cloud copy off, the assistant never opened: only the page's own files are fetched (${got.length} requests), never the vault or the AI`, got.length > 0 && bad.length === 0, bad.map(g => g.method + ' ' + g.url).join(' | ') || 'the page was not fetched');
+    const health = g => g.method === 'GET' && !g.body && g.url.startsWith(base) && new URL(g.url).pathname === '/api/health';   // the panel asks once a page open whether the AI is on
+    const bad = got.filter(g => !ownFile(g) && !health(g));
+    ck(`served from a local server, cloud copy off, the assistant never opened: only the page's own files and "is the AI on" from its own server are fetched (${got.length} requests), never the vault or the AI itself`, got.length > 0 && bad.length === 0, bad.map(g => g.method + ' ' + g.url).join(' | ') || 'the page was not fetched');
     ck('nothing reached the made-up vault', vault.log.length === 0, JSON.stringify(vault.log).slice(0, 300));
   }
   console.log(`\nPLACES: ${places} walked (Ask one tap away, page errors, network calls); the assistant's own "is the AI on" calls: ${calls.filter(isAi).length}; other calls: ${other.length}`);

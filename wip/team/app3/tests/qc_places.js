@@ -7,6 +7,8 @@
      sheet  the id of the .a3-sheet it lives in, or null for a tab panel
      root   where its boxes are (a selector)
      out    the button that leaves it, or 'tab' when it is a tab panel (the way out is another tab)
+     closed a check, in the page, that the place is closed after its way out (for a place that is neither a tab panel
+            nor a sheet: the assistant's panel stays in the page as the bar at the foot, only its sheet closes)
    Made-up amounts only. Playwright, one browser per state, closed and its profile removed by finish(). */
 'use strict';
 const fs = require('fs'), os = require('os'), path = require('path');
@@ -122,7 +124,13 @@ const PLACES = [
   sheet('Settings: a backup file locked with a code', 'book', 'a3Set', '#a3SetGo', '#a3SetClose', async p => { await p.check('#a3BkLock'); await w(120); }),
   sheet('Settings: I have a code', 'book', 'a3Set', '#a3SetGo', '#a3SetClose', async p => { await p.waitForSelector('#a3CloudHave', { timeout: 3000 }); await tap(p, '#a3CloudHave'); }),
   sheet('Reminders', 'book', 'a3Rem', '#a3RemGo', '#a3RemClose'),
-  sheet('Ask', 'book', 'a3Ask', '#a3AskGo', '#a3AskClose'),
+  /* the assistant (AI_JOIN_FIXES G): before setup it is the first screen itself (the welcome, its box "Your answer");
+     with the site's AI off, as on a plain file, it offers "Use any AI" (copy the questions, paste the answer back) and
+     "Send a file". After setup it is the bar at the foot of every screen, opened by a tap on it or on Ask */
+  { name: 'First screen: the assistant off, Use any AI and Send a file', state: 'empty', sheet: null, root: '#a3Home', out: 'tab',
+    open: async p => { await tap(p, '#a3ChatAny', 250); await tap(p, '#a3ChatFile', 200); } },
+  { name: 'The assistant', state: 'book', sheet: null, root: '#a3Chat', out: '#a3ChatClose', closed: () => !document.querySelector('#a3Chat').hasAttribute('data-open'),
+    open: async p => { await tap(p, '#a3AskGo', 350); } },
   sheet('Add statements', 'book', 'a3Stmt', '#a3StmtGo', '#a3StmtX'),
   sheet('Add statements: any AI instead', 'book', 'a3Stmt', '#a3StmtGo', '#a3StmtX', async p => { await tap(p, '#a3Stmt summary'); }),
 ];

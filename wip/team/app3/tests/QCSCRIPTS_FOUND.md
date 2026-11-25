@@ -1,4 +1,4 @@
-# What the QC scripts found (lane/qcscripts, 24 Nov 2026)
+# What the QC scripts found (lane/qcscripts, 24 Nov 2026; walked again on lane/ai-join 25 Nov)
 
 Real faults in the app that the scripts of QC_ROLES.md "Scripts beat reviewers" found. None is fixed here: the scripts
 may not touch the app. Each one is a failing check kept in the KNOWN table at the top of its test, so the check stays
@@ -20,12 +20,19 @@ Seen on the walk, not counted as faults (for Mako's eye, a wording choice):
 
 ## tests/e3_always.js (the assistant one tap away, page errors, network calls)
 
-- src/ask3.js, a new device: tap Ask on the first screen, in setup, or in Settings before setup. The page only says
-  "Set up first". The assistant cannot be asked anything before or during setup (M1, M2, M17). Seven places, one cause.
-  The setup chat is on lane/ai-panel, not on this base.
-- src/shell.html and src/app3.css, every long screen: Ask is a small link in the header and the header scrolls away
-  with the page. Scrolled to the end of 25 of the 35 places (setup, Home, Receipts, Plan and most of its forms, Check
-  your bank, Settings, Reminders, Add statements), Ask is off the screen (M1 "always on screen").
+Walked on lane/ai-join (the assistant panel and the setup chat). Fixed there and taken out: a tap on Ask before or
+during setup now opens the assistant (the welcome is the chat), and after setup the assistant's box is a bar at the
+foot of every screen, so it no longer scrolls away there.
 
-Not faults: no page error on any of the 35 places, and no network call at all with the cloud copy off, also when Ask
-is opened from every place.
+- src/chat3.js (chat3Ask), a new device: open setup, or Settings, then tap Ask. Setup or Settings closes and the cursor
+  goes into the first screen's answer box, but the page stays at its top: on a phone (390 by 844) the box is below the
+  bottom of the screen, so the tap seems to do nothing. From the first screen itself the page does scroll to the box.
+  Six places, one cause (M1, M2, M17).
+- src/chat3.js (renderChat3) and src/shell.html: before setup (setup, Settings on a new device, the first screen with
+  Use any AI open) and with the made-up numbers there is no bar at the foot. The way in is the small Ask link in the
+  header, and it scrolls away with the page: scrolled to the end of those 8 places, it is off the screen (M1 "always on
+  screen").
+
+Not faults: no page error on any of the 36 places, and no network call at all with the cloud copy off, also when Ask
+is opened from every place. Served from a server, the page asks its own server once whether the AI is on
+(GET /api/health, nothing sent); that is allowed and counted apart.
