@@ -468,6 +468,28 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     eq([row.before, row.after], [54000, 54900]);
     ok(!c.rows.some(x => x.key === 'card:' + cardB), 'a card that did not change has no row');
   });
+  /* [M30, M77; the coordinator's ruling 26 Nov] Mako's shape, worked by hand: Main bank 286,000, less Power 7,400, Rent
+     72,000 and Internet 5,200 before pay on 10 Dec = 201,400. Card A is paid on the 10th, the pay day, so lunch 900 on it
+     leaves the headline at 201,400 when Free to spend is not set: the card says why, in one true line. With Free to
+     spend at 30,000 (16,000 counts for the days left) the same lunch takes 900 off both at once, and no such line */
+  await t('[M30, M77] lunch 900 on Card A: with no Free to spend the headline stays 201,400 and the card says why; with it set, 16,000 to 15,100', async () => {
+    const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
+    const lunch = say('', [call('change', { steps: [{ do: 'log_spend', amount: 900, account: 'A2' }] })]);
+    const r = await K.turn(state, 'lunch 900 on card A', hp.deps(FAKE.make([lunch, say('Logged.')])));
+    const c = r.shown.find(x => x.who === 'card').card;
+    eq(c.rows.map(x => [x.label, x.before, x.after]), [['Safe to spend', 201400, 201400], ['Card A, still owed', 54000, 54900]]);
+    eq(c.note, 'Safe to spend stays the same: Card A is paid from your bank on or after your next pay');
+    const hq = page('2026-11-24'); const q = await runSetup(hq, FAKE.make(steps(SETUP)));
+    const d = hq.deps(FAKE.make([say('', [call('change', { steps: [{ do: 'set_free', amount: 30000 }] })]), say('Set.'), lunch, say('Logged.')]));
+    const q1 = await K.turn(q.state, 'set Free to spend to 30,000', d);
+    const q2 = await K.turn(q1.state, 'lunch 900 on card A', d);
+    const c2 = q2.shown.find(x => x.who === 'card').card;
+    eq(c2.rows.map(x => [x.label, x.before, x.after]), [['Safe to spend', 16000, 15100], ['Free to spend left', 16000, 15100], ['Card A, still owed', 54000, 54900]]);
+    ok(!c2.note, 'no line when the headline moved: ' + c2.note);
+    /* a spend from the bank moves the headline: no line */
+    const r3 = await K.turn(r.state, 'coffee 400 from Main bank', hp.deps(FAKE.make([say('', [call('change', { steps: [{ do: 'log_spend', amount: 400, account: 'A1' }] })]), say('Logged.')])));
+    ok(!r3.shown.find(x => x.who === 'card').card.note, 'bank spend');
+  });
   /* [qc-assistant, confusing] two steps asked, one left out: the card says which was not done, never without a word */
   await t('two steps asked and one left out: the card says which one was not done', async () => {
     const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));

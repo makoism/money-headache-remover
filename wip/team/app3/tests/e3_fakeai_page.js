@@ -109,6 +109,19 @@ const fig = (p, sel) => p.$eval(sel, e => Number((e.dataset.amt !== undefined ? 
     all.push(...d.errs); await d.close();
   }
   {
+    /* [M30, M77] lunch 900 on Card A with no Free to spend set: the card shows Card A's row and says why safe to spend stays */
+    const d = await open('2026-11-24');
+    const refIn = (body, name) => { const m = new RegExp('(?:^|\\n)([A-Z]\\d+) \\| ' + name + ' \\|').exec(JSON.stringify(body.messages).replace(/\\n/g, '\n')); return m ? m[1] : null; };
+    await openWithFakeAI(d.p, { steps: MAKO_SETUP.steps.concat([body => ({ calls: [{ name: 'change', input: { steps: [{ do: 'log_spend', amount: 900, account: refIn(body, 'Card A') }] } }] }), { words: 'Logged.' }]) });
+    for (const line of MAKO_SETUP.lines) await tell(d.p, line);
+    await tell(d.p, 'lunch 900 on Card A');
+    const card = '[data-card=chat-change][data-status=done]';
+    const words = await d.p.$eval(card, e => e.innerText).catch(() => '');
+    const note = await d.p.$eval(card + ' [data-chat=note]', e => e.textContent).catch(() => null);
+    ck('a card spend that leaves safe to spend at 201,400: the card shows Card A still owed 54,000 to 54,900 and says why', note === 'Safe to spend stays the same: Card A is paid from your bank on or after your next pay' && /Card A, still owed\s*¥54,000\s*¥54,900/.test(words) && (await fig(d.p, '#a3Home [data-fig=safe]')) === 201400, JSON.stringify([note, words]));
+    all.push(...d.errs); await d.close();
+  }
+  {
     const d = await open('2026-11-24');
     const ai = await openWithFakeAI(d.p, { invite: 'acorn' });
     await d.p.fill('#a3ChatIn', 'hi'); await d.p.click('#a3ChatSend'); await d.p.waitForTimeout(400);

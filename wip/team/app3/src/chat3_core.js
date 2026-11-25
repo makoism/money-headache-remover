@@ -655,6 +655,17 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     }
     return rows;
   }
+  /* [M30; the coordinator's ruling 26 Nov] a spend on a card that leaves the headline where it was: one true line says
+     why, from the engine's own dates (the card's next payment is on or after the next pay, so it is not due before it).
+     No day is promised: with a close day not sure, the statement it falls in is not known */
+  function noteOf(b0, b1, today) {
+    const r0 = LA.lookahead(b0, today), r1 = LA.lookahead(b1, today), pay = (r1.daysToNextPay || {}).next_pay;
+    if (!pay || r0.safeToSpend.headline !== r1.safeToSpend.headline) return null;
+    const ids = Object.keys(r1.cards || {}).filter(id => { const c0 = (r0.cards || {})[id], c1 = r1.cards[id]; return c0 && c1.owedNow > c0.owedNow && c1.next && c1.next.payment_date && c1.next.payment_date >= pay; });
+    if (!ids.length) return null;
+    const names = ids.map(id => ((b1.accounts || []).find(x => x.id === id) || {}).name);
+    return `${SN.label('safeToSpend')} stays the same: ${names.join(' and ')} ${names.length > 1 ? 'are' : 'is'} paid from your bank on or after your next pay`;
+  }
   async function carryOut(state, card, deps) {
     const door = deps.door, before = deps.book(), today = deps.today(), done = [];
     /* [STALE_SHEET_PLAN, M61] the card was made on the book as it was then (card.ver, the door's short mark: no figures in
@@ -672,7 +683,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       }
       done.push(res.step);
     }
-    card.status = 'done'; card.steps = done.map(s => s.id); card.rows = rowsOf(before, deps.book(), today, card.plan);
+    card.status = 'done'; card.steps = done.map(s => s.id); card.rows = rowsOf(before, deps.book(), today, card.plan); card.note = noteOf(before, deps.book(), today);
     return { ok: true };
   }
   const resultOf = card => card.status === 'done' ? 'Done, with Undo on the card. ' + card.rows.map(r => `${r.label}: ${r.before == null ? '-' : r.before} to ${r.after == null ? '-' : r.after} (minor units)`).join('; ')

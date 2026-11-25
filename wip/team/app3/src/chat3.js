@@ -126,7 +126,7 @@ function chat3Card(t) {
       : c.status === 'ask' ? `<p class="a3-sub" data-chat="status" data-ask="${esc3(c.ask || '')}">${esc3(CHAT3_WORDS.ask[c.ask] || CHAT3_WORDS.ask.large)}</p><div class="a3-actions"><button type="button" class="a3-btn solid" data-chatok="${id}">Do it</button><button type="button" class="a3-btn" data-chatnot="${id}">Not now</button></div>`
       : `<p class="a3-sub" data-chat="status">${esc3(c.status === 'undone' ? 'Taken back' : c.status === 'not now' ? 'Not done' : (c.why || 'The app refused it'))}</p>`;
     return `<div class="a3-card a3-chat-card" data-card="chat-change" data-turn="${id}" data-status="${esc3(c.status)}"><h3>${c.status === 'ask' ? 'A change to check' : c.status === 'refused' || c.status === 'not now' ? 'Not changed' : 'Changed'}</h3>
-      <ul class="a3-chat-lines">${(c.lines || []).map(l => `<li>${esc3(l)}</li>`).join('')}</ul>${(c.left || []).length ? `<p class="a3-warn" data-chat="left">Not done: ${esc3(c.left.join(', and '))}. Say that part again on its own</p>` : ''}${chat3Figs(c.rows)}${foot}</div>`;
+      <ul class="a3-chat-lines">${(c.lines || []).map(l => `<li>${esc3(l)}</li>`).join('')}</ul>${(c.left || []).length ? `<p class="a3-warn" data-chat="left">Not done: ${esc3(c.left.join(', and '))}. Say that part again on its own</p>` : ''}${chat3Figs(c.rows)}${c.note && c.status === 'done' ? `<p class="a3-sub" data-chat="note">${esc3(c.note)}</p>` : ''}${foot}</div>`;
   }
   if (c.kind === 'draft') {
     return `<div class="a3-card a3-chat-card" data-card="chat-draft" data-turn="${id}"><h3>Your answers so far</h3>

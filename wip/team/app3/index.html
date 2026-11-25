@@ -13943,6 +13943,17 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     }
     return rows;
   }
+  /* [M30; the coordinator's ruling 26 Nov] a spend on a card that leaves the headline where it was: one true line says
+     why, from the engine's own dates (the card's next payment is on or after the next pay, so it is not due before it).
+     No day is promised: with a close day not sure, the statement it falls in is not known */
+  function noteOf(b0, b1, today) {
+    const r0 = LA.lookahead(b0, today), r1 = LA.lookahead(b1, today), pay = (r1.daysToNextPay || {}).next_pay;
+    if (!pay || r0.safeToSpend.headline !== r1.safeToSpend.headline) return null;
+    const ids = Object.keys(r1.cards || {}).filter(id => { const c0 = (r0.cards || {})[id], c1 = r1.cards[id]; return c0 && c1.owedNow > c0.owedNow && c1.next && c1.next.payment_date && c1.next.payment_date >= pay; });
+    if (!ids.length) return null;
+    const names = ids.map(id => ((b1.accounts || []).find(x => x.id === id) || {}).name);
+    return `${SN.label('safeToSpend')} stays the same: ${names.join(' and ')} ${names.length > 1 ? 'are' : 'is'} paid from your bank on or after your next pay`;
+  }
   async function carryOut(state, card, deps) {
     const door = deps.door, before = deps.book(), today = deps.today(), done = [];
     /* [STALE_SHEET_PLAN, M61] the card was made on the book as it was then (card.ver, the door's short mark: no figures in
@@ -13960,7 +13971,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       }
       done.push(res.step);
     }
-    card.status = 'done'; card.steps = done.map(s => s.id); card.rows = rowsOf(before, deps.book(), today, card.plan);
+    card.status = 'done'; card.steps = done.map(s => s.id); card.rows = rowsOf(before, deps.book(), today, card.plan); card.note = noteOf(before, deps.book(), today);
     return { ok: true };
   }
   const resultOf = card => card.status === 'done' ? 'Done, with Undo on the card. ' + card.rows.map(r => `${r.label}: ${r.before == null ? '-' : r.before} to ${r.after == null ? '-' : r.after} (minor units)`).join('; ')
@@ -14402,7 +14413,7 @@ function chat3Card(t) {
       : c.status === 'ask' ? `<p class="a3-sub" data-chat="status" data-ask="${esc3(c.ask || '')}">${esc3(CHAT3_WORDS.ask[c.ask] || CHAT3_WORDS.ask.large)}</p><div class="a3-actions"><button type="button" class="a3-btn solid" data-chatok="${id}">Do it</button><button type="button" class="a3-btn" data-chatnot="${id}">Not now</button></div>`
       : `<p class="a3-sub" data-chat="status">${esc3(c.status === 'undone' ? 'Taken back' : c.status === 'not now' ? 'Not done' : (c.why || 'The app refused it'))}</p>`;
     return `<div class="a3-card a3-chat-card" data-card="chat-change" data-turn="${id}" data-status="${esc3(c.status)}"><h3>${c.status === 'ask' ? 'A change to check' : c.status === 'refused' || c.status === 'not now' ? 'Not changed' : 'Changed'}</h3>
-      <ul class="a3-chat-lines">${(c.lines || []).map(l => `<li>${esc3(l)}</li>`).join('')}</ul>${(c.left || []).length ? `<p class="a3-warn" data-chat="left">Not done: ${esc3(c.left.join(', and '))}. Say that part again on its own</p>` : ''}${chat3Figs(c.rows)}${foot}</div>`;
+      <ul class="a3-chat-lines">${(c.lines || []).map(l => `<li>${esc3(l)}</li>`).join('')}</ul>${(c.left || []).length ? `<p class="a3-warn" data-chat="left">Not done: ${esc3(c.left.join(', and '))}. Say that part again on its own</p>` : ''}${chat3Figs(c.rows)}${c.note && c.status === 'done' ? `<p class="a3-sub" data-chat="note">${esc3(c.note)}</p>` : ''}${foot}</div>`;
   }
   if (c.kind === 'draft') {
     return `<div class="a3-card a3-chat-card" data-card="chat-draft" data-turn="${id}"><h3>Your answers so far</h3>
