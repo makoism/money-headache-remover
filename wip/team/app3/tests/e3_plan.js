@@ -148,7 +148,7 @@ const view = bk => T.L.lookahead(bk, DAY);
   ck('Cards and loans offers Add a card', /Add a card/.test(await p.$eval('[data-card=plan-owed]', e => e.textContent)));
   await p.click('#plAddCard'); await T.w(200);
   const asks = await p.$$eval('[data-card=plan-form] label', ls => ls.map(l => l.textContent));
-  ck('it asks the name, what is on it now, the payment day, the close day or not sure, and the weekend rule', JSON.stringify(asks) === JSON.stringify(['Name', 'What is on it now', 'Day of the month it is paid from your bank', 'Day its statement closes', 'When that day is a weekend or holiday, it comes out']), JSON.stringify(asks));
+  ck('it asks the name, what is on it now, the payment day, the close day or not sure, the paying account [E1b] and the weekend rule', JSON.stringify(asks) === JSON.stringify(['Name', 'What is on it now', 'Day of the month it is paid from your bank', 'Day its statement closes', 'Paid from', 'When that day is a weekend or holiday, it comes out']), JSON.stringify(asks));
   await fill(p, { name: 'Card C', owed: '12000', payDay: '27' }); await save(p);
   bk = await saved(p); r = view(bk);
   const cardC = bk.accounts.find(a => a.name === 'Card C');
