@@ -98,7 +98,7 @@ const until = async (f, ms) => { for (let i = 0; i < (ms || 8000) / 100; i++) { 
     await rename(B.p, sid, 'Main job', '2026-12-10T10:00:00.000+09:00', 'phn002');
     await B.p.reload(); await T.w(300);
     await B.p.click('#a3SetGo');
-    ck('a refused send is said, and the money here stays', await until(async () => /did not take the copy/.test(await state(B.p))) && (await stored(B.p)).schedules.find(x => x.id === sid).name === 'Main job');
+    ck('a refused send is said, and the money here stays', await until(async () => /did not take your last change/.test(await state(B.p))) && (await stored(B.p)).schedules.find(x => x.id === sid).name === 'Main job');
     ck('it says what is on this device only', !!(await B.p.$('[data-cloud=behind]')));
     vault.handle = realHandle;
 

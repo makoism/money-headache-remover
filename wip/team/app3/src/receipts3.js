@@ -49,6 +49,25 @@ function rcRows3() {
   return rcCounted3().filter(e => rcLive3(e) && rcKnown3(e) && !e.of && !(e.settles && e.settles.length)
     && (e.k === 'spend' || e.k === 'transfer' || (e.k === 'in' && e.sub === 'refund') || rcMoneyIn3(e)));
 }
+/* [M6, M61; qc-data-safety B1] the one question before a remove on the screens (Receipts and Plan use it; tests/e3_removes.js
+   counts every removing button). The first tap writes nothing: `host` shows what goes, with a yes and a no */
+function sure3(host, words, yes, run) {
+  if (!host) return;
+  host.innerHTML = `<div class="a3-sure" data-sure><p class="a3-warn">${esc3(words)}</p><div class="a3-actions"><button type="button" class="a3-btn solid" data-sureyes>${esc3(yes)}</button><button type="button" class="a3-btn" data-sureno>No, keep it</button></div></div>`;
+  host.querySelector('[data-sureyes]').addEventListener('click', () => { host.innerHTML = ''; run(); });
+  host.querySelector('[data-sureno]').addEventListener('click', () => { host.innerHTML = ''; });
+  host.querySelector('[data-sureno]').focus();
+}
+/* [M7, M61; qc-data-safety B2] what the book holds that is dated or told after today (a backup or another device whose
+   clock was ahead): not counted yet by the engine's rule, and never hidden. Listed apart, found by search, opened and
+   removed like any row */
+function rcAhead3(book) {
+  book = book || E3.book;
+  if (!book) return [];
+  return (book.events || []).filter(e => e && rcLive3(e) && !rcKnown3(e) && !e.of && !(e.settles && e.settles.length)
+    && (e.k === 'spend' || e.k === 'transfer' || (e.k === 'in' && e.sub === 'refund') || rcMoneyIn3(e)))
+    .sort((x, y) => (x.date < y.date ? -1 : x.date > y.date ? 1 : 0));
+}
 /* [slice 6] money in typed on Receipts (a client payment, a gift): `in` with no `sub` */
 function rcMoneyIn3(e) { return e.k === 'in' && !e.sub && !!e.src && e.src.type === 'typed';
 }
@@ -148,7 +167,7 @@ function rcFormHtml3() {
     <div class="a3-field"><label for="rcDate">Day</label><input class="a3-in a3-date" type="date" id="rcDate" value="${esc3(e ? e.date : today)}" max="${esc3(today)}"></div>
     <div class="a3-field"><label for="rcNote">Note</label><input class="a3-in a3-text" type="text" id="rcNote" autocomplete="off" value="${esc3(e && e.note ? e.note : '')}" placeholder="Optional"></div>
     <p class="a3-sub" id="rcAfter" aria-live="polite"></p>
-    <p class="a3-err" id="rcErr" role="alert"></p>
+    <p class="a3-err" id="rcErr" role="alert"></p><div id="rcSure"></div>
     <div class="a3-warn" id="rcAsk" role="alert" hidden><p id="rcAskText"></p><div class="a3-actions"><button type="button" class="a3-btn solid" id="rcAskYes">Save it anyway</button><button type="button" class="a3-btn" id="rcAskNo">Change the amount</button></div></div>
     <div class="a3-actions"><button type="button" class="a3-btn solid" id="rcSave">${e ? 'Save change' : word}</button>${e ? '<button type="button" class="a3-btn" id="rcRemove">Remove</button><button type="button" class="a3-btn" id="rcCancel">Cancel</button>' : ''}</div>`;
 }
@@ -250,23 +269,38 @@ async function rcSave3(sure) {
     both = RC3.mode === 'spend' && x.line === 'free' && df && df.capped ? 'Safe to spend goes down with it, it\'s what\'s left of your Free to spend' : null;
   } catch (e) { ov = null; }
   const said = [rcWords3(x), onCard, ov, both].filter(Boolean).join('. ');
-  const r = RC3.edit ? await ACT3.edit(RC3.edit.id, rcFields3(x), { undo: said }) : await ACT3[RC_KIND3[RC3.mode]](x, { undo: said });
-  if (!r.ok) { $('#rcErr').textContent = r.text; return; }   // the form may have been drawn again meanwhile (another tab)
+  const r = RC3.edit ? await ACT3.edit(RC3.edit.id, rcFields3(x), { undo: said, seen: rcSeen3() }) : await ACT3[RC_KIND3[RC3.mode]](x, { undo: said });
+  if (!r.ok) { $('#rcErr').textContent = r.text; rcLook3(r); return; }   // the form may have been drawn again meanwhile (another tab)
   RC3.last = before;
   if (RC3.edit) { RC3.edit = null; RC3.mode = 'spend'; }
   renderRc3();
   const a = $('#rcAmt'); if (a) a.focus();
 }
-async function rcRemove3() {
+/* [STALE_SHEET_PLAN, M61] the receipt being changed, as it was when it was opened: the door refuses a save or a remove
+   if it changed somewhere else since. Refused, the list is shown as it is now, what was typed stays in the boxes, and the
+   receipt is looked at again, so a second Save is a choice made knowing it changed */
+const rcSeen3 = () => ({ [RC3.edit.id]: (RC3.edit.at || '') + '|' + (RC3.edit.by || '') });
+function rcLook3(r) {
+  if (r.why !== 'other' || !RC3.edit) return;
+  const now = ((E3.book && E3.book.events) || []).find(e => e.id === RC3.edit.id && !e.gone);
+  if (!now) { const t = $('#rcErr').textContent; RC3.edit = null; RC3.mode = 'spend'; renderRc3(); $('#rcErr').textContent = t; return; }
+  RC3.edit = JSON.parse(JSON.stringify(now));
+  if (typeof rcList3 === 'function') rcList3();
+}
+function rcRemove3() {
+  const e = RC3.edit; if (!e) return;
+  sure3($('#rcSure'), `Remove ${money3(e.a, E3.curOf(e.acct))}, ${rcWhat3(e)}? Undo can bring it back until you reload`, 'Yes, remove it', rcRemoveGo3);
+}
+async function rcRemoveGo3() {
   const e = RC3.edit; if (!e) return;
   const before = rcFigs3(E3.book);
-  const r = await ACT3.remove(e.id, { undo: `Removed ${money3(e.a, E3.curOf(e.acct))}, ${rcWhat3(e)}` });
-  if (!r.ok) { $('#rcErr').textContent = r.text; return; }
+  const r = await ACT3.remove(e.id, { undo: `Removed ${money3(e.a, E3.curOf(e.acct))}, ${rcWhat3(e)}`, seen: rcSeen3() });
+  if (!r.ok) { $('#rcErr').textContent = r.text; rcLook3(r); return; }
   RC3.last = before; RC3.edit = null; RC3.mode = 'spend';
   renderRc3();
 }
 function rcOpen3(id) {
-  const e = rcRows3().find(x => x.id === id); if (!e) return;
+  const e = rcRows3().concat(rcAhead3()).find(x => x.id === id); if (!e) return;
   RC3.edit = JSON.parse(JSON.stringify(e)); RC3.mode = e.k === 'transfer' ? 'moved' : rcMoneyIn3(e) ? 'in' : e.k === 'in' ? 'refund' : 'spend';
   $('#rcForm').innerHTML = rcFormHtml3(); rcWire3();
   $('#rcForm').scrollIntoView({ block: 'start' }); $('#rcAmt').focus();
@@ -338,14 +372,19 @@ function rcList3() {
     .sort((x, y) => (x.date !== y.date ? (x.date < y.date ? 1 : -1) : 0));
   const rcLi3 = e => `<li data-rc="${esc3(e.id)}" data-k="${esc3(e.k)}"><button type="button" class="a3-rcrow" aria-label="Change ${esc3(rcWhat3(e))}, ${esc3(money3(e.a, E3.curOf(e.acct)))}"><span>${esc3(rcWhat3(e))}<br><span class="when">${esc3(day3(e.date, yr))}, ${esc3(E3.nameOf(e.acct))}${rcNote3(e) ? ', ' + esc3(rcNote3(e)) : ''}${held[e.id] ? `<br><span data-fig="rc-held">already in your bank figure of ${esc3(day3(held[e.id], yr))}</span>` : ''}</span></span><span class="amt${e.k === 'in' ? ' a3-in-amt' : ''}">${e.k === 'in' ? 'back ' : ''}${money3(e.a, E3.curOf(e.acct))}</span></button></li>`;
   const li = items.map(x => (x.g ? rcGapLi3(x.g, yr) : rcLi3(x.e))).join('');
+  const ahead = rcAhead3().filter(e => !q || text(e).includes(q));
+  const toldDay = e => String(e.told || e.date).slice(0, 10);
+  const aheadLi = e => `<li data-rcahead="${esc3(e.id)}" data-k="${esc3(e.k)}"><button type="button" class="a3-rcrow" aria-label="Open ${esc3(rcWhat3(e))}, ${esc3(money3(e.a, E3.curOf(e.acct)))}"><span>${esc3(rcWhat3(e))}<br><span class="when">${esc3(day3(e.date, 'any'))}, ${esc3(E3.nameOf(e.acct))}${e.date <= E3.today() ? ', logged when a device said it was ' + esc3(day3(toldDay(e), 'any')) : ''}</span></span><span class="amt">${money3(e.a, E3.curOf(e.acct))}</span></button></li>`;
+  const aheadHtml = ahead.length ? `<div class="a3-ahead" data-fig="rc-ahead"><p class="a3-warn">${ahead.length === 1 ? '1 thing is' : ahead.length + ' things are'} dated after today. They do not count until their day. If a day is wrong, tap it, remove it and log it again</p><ul class="a3-rows a3-rclist">${ahead.map(aheadLi).join('')}</ul></div>` : '';
   host.innerHTML = `<h2>What you logged</h2>
     <div class="a3-field"><label for="rcSearch">Search</label><input class="a3-in a3-text" type="search" id="rcSearch" autocomplete="off" value="${esc3(RC3.search)}" placeholder="A note, a line, an amount"></div>
-    ${head}${items.length ? `<ul class="a3-rows a3-rclist">${li}</ul>${rows.length ? '<p class="a3-sub" data-hint="rc-tap">Tap a spend to change it</p>' : ''}` : `<p class="a3-sub">${q ? 'Nothing matches' : 'Nothing logged in this stretch'}</p>`}`;
+    ${aheadHtml}${head}${items.length ? `<ul class="a3-rows a3-rclist">${li}</ul>${rows.length ? '<p class="a3-sub" data-hint="rc-tap">Tap a spend to change it</p>' : ''}` : `<p class="a3-sub">${q ? (ahead.length ? '' : 'Nothing matches') : 'Nothing logged in this stretch'}</p>`}`;
   const s = $('#rcSearch');
   s.addEventListener('input', () => { RC3.search = s.value; rcList3(); const n = $('#rcSearch'); n.focus(); n.setSelectionRange(n.value.length, n.value.length); });
   if ($('#rcOlder')) $('#rcOlder').addEventListener('click', () => { RC3.at = per.older; rcList3(); });
   if ($('#rcNewer')) $('#rcNewer').addEventListener('click', () => { RC3.at = per.newer === 'now' ? null : per.newer; rcList3(); });
   for (const r of host.querySelectorAll('[data-rc] button')) r.addEventListener('click', () => rcOpen3(r.parentNode.dataset.rc));
+  for (const r of host.querySelectorAll('[data-rcahead] button')) r.addEventListener('click', () => rcOpen3(r.parentNode.dataset.rcahead));
 }
 
 /* [NS-FIX 3] Home's "Log a spend": Receipts' own log form, in spend mode, with the amount box ready (no second form) */
@@ -358,7 +397,7 @@ function rcLogFromHome3() {
 /* every saved write and Undo draws Home and Receipts again */
 if (ACT3) ACT3.onChange((step, opts) => {
   if (opts && opts.isUndo) RC3.last = null;   // "was" figures belong to the step just taken back
-  if (RC3.edit && !rcRows3().some(e => e.id === RC3.edit.id)) { RC3.edit = null; RC3.mode = 'spend'; }
+  if (RC3.edit && !rcRows3().concat(rcAhead3()).some(e => e.id === RC3.edit.id)) { RC3.edit = null; RC3.mode = 'spend'; }
   try { renderHome3(); } catch (e) { /* Home draws itself next time */ }
   renderRc3();
 });

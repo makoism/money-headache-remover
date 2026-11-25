@@ -28,4 +28,4 @@ One row per kind of thing the app keeps (accounts, cards, loans, pay, bills, bud
 List every server setting the assistant needs (from the two server files) and say, for each, how a person would know it is off. A feature that cannot be tried on the live site because a setting is off is a finding (LESSONS lesson 5).
 
 ## Verdict
-FAIL if job 1, 2, 5 or 7 is STUCK, if any change was made without showing it or without Undo, or if the grid has a NO on something the screens can do. Say at the top whether you tested with the made-up AI only. Your COUNT line: jobs done and stuck, grid cells YES / NO / BROKEN, questions setup never asked. Under 1,200 words.
+FAIL if job 1, 2, 5 or 7 is STUCK, if any change was made without showing it or without Undo, or if the grid has a NO on something the screens can do that `scope.txt` does not list (a NO that scope.txt lists is marked IN SCOPE FILE and does not fail the build: QC_COMMON wins). Say at the top whether you tested with the made-up AI only. Your COUNT line: jobs done and stuck, grid cells YES / NO / BROKEN, questions setup never asked. Under 1,200 words.

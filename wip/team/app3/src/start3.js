@@ -49,13 +49,15 @@ async function leaveTry3() {
   /* [item 14] a setup left half way: back into it, with what was saved (src/setup3.js, the draft) */
   if (!E3.book && E3.mode === 'none' && await E3.rec('setup')) openSetup3();
   document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; if (!$('#a3Check').hidden) closeCheck3(); });
-  if (typeof startCloud3 === 'function') startCloud3();
-  if (typeof startChat3 === 'function') startChat3();   // the assistant panel (AI first)   // the cloud copy, when on: taken on opening (backup lane)
-  /* another tab saved (E3 joined it in): draw it again; a receipt being typed keeps what was typed */
-  addEventListener('burrow3:other', () => {
-    renderHome3();
-    if (typeof renderChat3 === 'function') renderChat3();
-    if (typeof renderRc3 === 'function') { const k = rcKeep3(); renderRc3(); rcPut3(k); }
-    if (typeof renderPlan3 === 'function') renderPlan3();
-  });
+  if (typeof startCloud3 === 'function') startCloud3();   // the cloud copy, when on: taken on opening (backup lane)
+  if (typeof startChat3 === 'function') startChat3();   // the assistant panel (AI first)
+  addEventListener('burrow3:other', redraw3);   // another tab saved (E3 joined it in): the one redraw; a receipt being typed keeps what was typed
 })();
+/* the one redraw after the book changed under the page (another tab saved, or the cloud copy was taken): Home, Receipts
+   and Plan are drawn again; a receipt being typed keeps what was typed */
+function redraw3() {
+  renderHome3();
+  if (typeof renderRc3 === 'function') { const k = rcKeep3(); renderRc3(); rcPut3(k); }
+  if (typeof renderPlan3 === 'function') renderPlan3();
+  if (typeof renderChat3 === 'function') renderChat3();
+}

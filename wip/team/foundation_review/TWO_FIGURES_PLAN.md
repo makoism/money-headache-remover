@@ -44,3 +44,23 @@ The engine's rule (the smaller of A and B is what the status judges on), the sav
 - Freelance, no fixed pay, no Free to spend set: one figure, "Your bank can spare".
 - Overspent the everyday budget (B is 0 or below) with money in the bank: both shown; the line says the everyday money for this period is used up and how much the bank can still spare. Never red (M47).
 - Bank below zero: A is negative; the amber line from lane/blockers stays the headline.
+
+## Version 2 (after qc-foundation FAIL and the coordinator's answer, 24 Nov 19:40 JST; report in qc_reports/2026-11-24_two_figures_plan/foundation.md). It wins over the sections above where they differ.
+
+Also serves **M24, M46** (money with no job gets a next step), **M13, M14** (a later-dated pay change can be taken away), **M6** (the assistant's ask-first line reads the same headline as Home).
+
+**One headline, one smaller figure that adds up with it (coordinator, MAKO_SAYS not settled 8, choice a).**
+- The headline is the everyday money left until pay, named "Everyday money left until pay". The old name "Free to spend left" goes from screens/names.js in the same commit: one name per figure (M51).
+- Under it, smaller: the money with no job yet. The two add up to what the bank can spare, and the card says so in one line.
+- One next step on the money with no job, using writes that exist: put it in a goal, add some to this period's everyday money, or decide later.
+- M7: the card must answer "can I afford this today?" in one look. Draft line: "Up to ¥X fits your everyday money. More than that comes from the ¥Y with no job yet: give it a job first." qc-novice part 4 tests exactly that question.
+- The verdict (screens/status.js), the assistant's ask-first threshold (chat3_core.js on lane/ai-merge) and Receipts keep reading the headline. Nothing reads the smaller figure as money to spend.
+- (b), spare money spendable as it is, is Mako's call at his run and would be an engine rule change. Not built.
+
+**The three figures come from the engine, never from a screen (F1).** LANE B adds them to engine/lookahead.js with or right after the card gap fix: what the accounts can spare (the same meaning with and without a fixed pay), everyday money left with the day it runs to and what was spent of it, and the money with no job. names.js points each name at its engine path. No screen subtracts. No saved-data change. This plan's "no engine change" is withdrawn: it is one addition to the engine's answer.
+
+**Lives walked, a test each, before the screen is built (F3):** set up one day before pay; mid period after spending; pay ticked on pay day; pay day not ticked, and the day after; a pay three weeks late; paid every two weeks; no fixed pay with an everyday amount ("until pay" becomes "until the end of the month"); everyday amount 0 against none set; several accounts (the name says "your accounts" when there is more than one); a second currency (the line does not claim to cover it).
+
+**A pay change dated later (step 9), with its missing door.** Plan shows the coming change, and the pay form gets "Take this change away" (one more step back to the amount in force, saved shape unchanged, Undo). The same through the assistant's change step on lane/ai-merge. Tests: add, change, take away on a later day, Undo of each.
+
+**Order and branches.** Engine fields (LANE B) first. Then screens on lane/homefix, merged with lane/next. Step 7 (the assistant's summary and its ask-first line) lands after lane/ai-merge is merged, on the same branch. Then qc-numbers (every sum behind the three figures by hand), qc-novice part 4, and a fresh qc-foundation on this version before building.

@@ -19,7 +19,7 @@ async function fill(p, vals) {
     await p.$eval('#pl-' + k, (e, v) => { if (e.tagName === 'SELECT') { e.value = v; e.dispatchEvent(new Event('change', { bubbles: true })); } else { e.focus(); e.value = v; e.dispatchEvent(new Event('input', { bubbles: true })); e.blur(); } }, String(v));
   }
 }
-const save = async (p, i) => { await p.click(`[data-plbtn="${i || 0}"]`); await T.w(400); };
+const save = async (p, i) => { await p.click(`[data-plbtn="${i || 0}"]`); await T.w(400); if (await p.$('[data-sureyes]')) { await p.$eval('[data-sureyes]', e => e.click()); await T.w(400); } };   // a remove asks first (tests/e3_removes.js walks the question)
 const err = p => p.$eval('#plErr', e => e.textContent).catch(() => null);
 const formOpen = p => p.$('[data-card=plan-form]').then(Boolean);
 const view = bk => T.L.lookahead(bk, DAY);
@@ -167,7 +167,7 @@ const view = bk => T.L.lookahead(bk, DAY);
   ck('every figure on the Plan tab is marked typed or worked out', audit.length === 0 && (await p.$$('#a3Plan [data-figure]')).length > 10, JSON.stringify(audit).slice(0, 300));
   await T.shot(p, 'plan_filled_' + DAY);
   await p.setViewport({ width: 320, height: 700, deviceScaleFactor: 1, isMobile: true, hasTouch: true }); await T.w(200);
-  ck('no sideways scroll at 320', await p.evaluate(() => document.documentElement.scrollWidth <= 320), await p.evaluate(() => document.documentElement.scrollWidth));
+  ck('no sideways scroll at 320', await p.evaluate(() => Math.max(document.documentElement.scrollWidth, document.getElementById('a3').scrollWidth) <= 320), await p.evaluate(() => Math.max(document.documentElement.scrollWidth, document.getElementById('a3').scrollWidth)));
   await T.shot(p, 'plan_320_' + DAY);
   await p.setViewport({ width: 390, height: 844, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
 
@@ -201,7 +201,7 @@ const view = bk => T.L.lookahead(bk, DAY);
   await p.tap('[data-tab="plan"]'); await T.w(300);
   /* a loan that still owes does not close */
   await p.click(`#a3Plan [data-owed="${loanId}"]`); await T.w(200);
-  await p.click('[data-plbtn="1"]'); await T.w(300);
+  await save(p, 1);
   ck('closing a loan that still owes is refused', /still owes/.test(await err(p)), await err(p));
   await p.click('#plBack'); await T.w(200);
   /* the main pay changed from a date: a new step; this pay period keeps its start */

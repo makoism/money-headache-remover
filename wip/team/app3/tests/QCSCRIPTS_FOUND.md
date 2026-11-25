@@ -41,8 +41,8 @@ A section handed whole to a reviewer covers nothing by itself, so a line added l
 
 ## tests/wording_lint.test.js (the words a person sees, against VOICE.md)
 
-- src/cloud3_page.js, a toast when two devices changed the same thing: "Your devices changed the same thing. Open
-  Settings to choose which to keep." Two sentences with full stops (VOICE: a toast is one line, no full stop).
+(none open: the "Your devices changed the same thing" toast was reworded on lane/cloudtake, 25 Nov, to "Your devices
+changed the same thing - choose which to keep in Settings")
 
 Fixed since (MAIN 17, 25 Nov): the new-version toast, the two one line notes that ended in a full stop and the semicolon in
 the Backup file note.

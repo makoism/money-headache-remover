@@ -178,6 +178,67 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     eq([c.status, c.ask, c.lines], ['ask', 'guess', ['Log ¥1,500 on Free to spend from Main bank, today (my guess)']]);
   });
 
+  /* [M6, ruled 26 Nov; qc-assistant blocker 1] an amount counts as typed by the person only from their own messages since
+     the assistant's last written change, and an amount a written change already used is not counted again */
+  await t('[M6] "another lunch today" with the AI sending the old 900 again is asked first, never written', async () => {
+    const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
+    const lunch = { do: 'log_spend', amount: 900, account: 'A2' };
+    const f = FAKE.make([say('', [call('change', { steps: [lunch] })]), say('Logged.'), say('', [call('change', { steps: [lunch] })]), say('Is 900 right?')]);
+    const d = hp.deps(f);
+    const r1 = await K.turn(state, 'I bought lunch, 900 on card A', d);
+    eq(r1.shown.find(x => x.who === 'card').card.status, 'done');
+    const before = JSON.stringify(hp.book);
+    const r2 = await K.turn(r1.state, 'another lunch today', d);
+    const c = r2.shown.find(x => x.who === 'card').card;
+    eq([c.status, c.ask], ['ask', 'guess']); ok(/\(my guess\)$/.test(c.lines[0]), c.lines[0]);
+    eq(JSON.stringify(hp.book), before, 'nothing written');
+    /* typed again, it goes in at once */
+    const f3 = FAKE.make([say('', [call('change', { steps: [lunch] })]), say('Logged.')]);
+    const r3 = await K.turn(r2.state, 'another lunch, 900 again on card A', Object.assign(hp.deps(f3), { door: d.door }));
+    eq(r3.shown.find(x => x.who === 'card').card.status, 'done');
+  });
+  await t('[M6] a goal amount reused from an earlier bank figure is asked first', async () => {
+    const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
+    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'add_account', name: 'Savings', type: 'bank', amount: 100000, moved: false }] })]), say('Added.'),
+      say('', [call('change', { steps: [{ do: 'add_goal', name: 'Trip', target: 100000 }] })]), say('Is 100,000 right?')]);
+    const d = hp.deps(f);
+    const r1 = await K.turn(state, 'Add a bank called Savings with 100,000 in it, new money', d);
+    eq(r1.shown.find(x => x.who === 'card').card.status, 'done');
+    const before = JSON.stringify(hp.book);
+    const r2 = await K.turn(r1.state, 'add a goal called Trip', d);
+    const c = r2.shown.find(x => x.who === 'card').card;
+    eq([c.status, c.ask], ['ask', 'guess']); eq(JSON.stringify(hp.book), before, 'nothing written');
+  });
+  await t('[M6] an answer to a follow-up question ("from when?") still counts the amount typed just before', async () => {
+    const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
+    const f = FAKE.make([say('From when: this one, or the next one?'),
+      say('', [call('list', { what: 'bills' })]), body => { const b = FAKE.results(body)[0].text.split('\n').find(l => /Rent/.test(l)).split(' | ')[0]; return say('', [call('change', { steps: [{ do: 'change_bill', ref: b, amount: 75000, when: 'next' }] })]); }, say('Changed.')]);
+    const d = hp.deps(f);
+    const r1 = await K.turn(state, 'my rent goes up to 75,000', d);
+    const r2 = await K.turn(r1.state, 'from the next one', d);
+    const c = r2.shown.find(x => x.who === 'card').card;
+    eq(c.status, 'done', JSON.stringify(c.lines) + ' ' + c.why);
+  });
+  await t('[M6] in one turn an amount is used once: 900 and 400 typed go in, a third change with 900 again is asked', async () => {
+    const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
+    const sp = x => say('', [call('change', { steps: [{ do: 'log_spend', amount: x, account: 'A2' }] })]);
+    const r = await K.turn(state, 'lunch 900 and a coffee 400, both on card A', hp.deps(FAKE.make([sp(900), sp(400), sp(900), say('Is the second 900 right?')])));
+    eq(r.shown.filter(x => x.who === 'card').map(x => [x.card.status, x.card.ask || '']), [['done', ''], ['done', ''], ['ask', 'guess']]);
+    /* typed twice, it is used twice */
+    const hq = page('2026-11-24'); const q = await runSetup(hq, FAKE.make(steps(SETUP)));
+    const r2 = await K.turn(q.state, 'lunch 900 and dinner 900, both on card A', hq.deps(FAKE.make([sp(900), sp(900), say('Logged both.')])));
+    eq(r2.shown.filter(x => x.who === 'card').map(x => x.card.status), ['done', 'done']);
+  });
+  await t('[M6] a change made by tapping OK uses its amount too: "the same again" is asked as a guess', async () => {
+    const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
+    const sofa = say('', [call('change', { steps: [{ do: 'log_spend', amount: 300000, account: 'A1' }] })]);
+    const d = hp.deps(FAKE.make([sofa, say('Tap OK if it is right.'), sofa, say('Is that right?')]));
+    const r1 = await K.turn(state, 'I spent 300,000 on a sofa', d);
+    const c1 = await K.confirm(r1.state, r1.shown.find(x => x.who === 'card').id, d); ok(c1.ok, JSON.stringify(c1.text));
+    const r2 = await K.turn(c1.state, 'and the same again for a bed', d);
+    const c = r2.shown.find(x => x.who === 'card').card;
+    eq(c.status, 'ask'); ok(/\(my guess\)$/.test(c.lines[0]), c.lines[0]);
+  });
   await t('a new pay, new money, a goal or a card with a figure nobody typed asks first (qc-foundation F2)', async () => {
     const cases = [
       ['I have some cash in my wallet', { do: 'add_account', name: 'Wallet', type: 'cash', amount: 30000, moved: false }],
@@ -393,6 +454,78 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const f = await K.fillNow(st, h.deps(FAKE.make([])));
     ok(!f.ok && h.book === null && /Which country/.test(f.text), f.text);
   });
+  /* [qc-assistant run 2 blocker 1; M30, M5] a spend on a card shows the card's own figure before and after, never only
+     two equal safe to spend figures */
+  await t('[M30] a spend on a card: the change card has a row for that card, Still owed before and after (the engine\'s)', async () => {
+    const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
+    const cardA = hp.book.accounts.find(a => a.name === 'Card A').id, cardB = hp.book.accounts.find(a => a.name === 'Card B').id;
+    const owed0 = L.lookahead(hp.book, hp.day).cards[cardA].owedNow;
+    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'log_spend', amount: 900, account: 'A2' }] })]), say('Logged.')]);
+    const r = await K.turn(state, 'I bought lunch, 900 on card A', hp.deps(f));
+    const c = r.shown.find(x => x.who === 'card').card;
+    const row = c.rows.find(x => x.key === 'card:' + cardA);
+    eq(row, { key: 'card:' + cardA, label: 'Card A, still owed', before: owed0, after: L.lookahead(hp.book, hp.day).cards[cardA].owedNow });
+    eq([row.before, row.after], [54000, 54900]);
+    ok(!c.rows.some(x => x.key === 'card:' + cardB), 'a card that did not change has no row');
+  });
+  /* [M30, M77; the coordinator's ruling 26 Nov] Mako's shape, worked by hand: Main bank 286,000, less Power 7,400, Rent
+     72,000 and Internet 5,200 before pay on 10 Dec = 201,400. Card A is paid on the 10th, the pay day, so lunch 900 on it
+     leaves the headline at 201,400 when Free to spend is not set: the card says why, in one true line. With Free to
+     spend at 30,000 (16,000 counts for the days left) the same lunch takes 900 off both at once, and no such line */
+  await t('[M30, M77] lunch 900 on Card A: with no Free to spend the headline stays 201,400 and the card says why; with it set, 16,000 to 15,100', async () => {
+    const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
+    const lunch = say('', [call('change', { steps: [{ do: 'log_spend', amount: 900, account: 'A2' }] })]);
+    const r = await K.turn(state, 'lunch 900 on card A', hp.deps(FAKE.make([lunch, say('Logged.')])));
+    const c = r.shown.find(x => x.who === 'card').card;
+    eq(c.rows.map(x => [x.label, x.before, x.after]), [['Safe to spend', 201400, 201400], ['Card A, still owed', 54000, 54900]]);
+    eq(c.note, 'Safe to spend stays the same: Card A is paid from your bank on or after your next pay');
+    const hq = page('2026-11-24'); const q = await runSetup(hq, FAKE.make(steps(SETUP)));
+    const d = hq.deps(FAKE.make([say('', [call('change', { steps: [{ do: 'set_free', amount: 30000 }] })]), say('Set.'), lunch, say('Logged.')]));
+    const q1 = await K.turn(q.state, 'set Free to spend to 30,000', d);
+    const q2 = await K.turn(q1.state, 'lunch 900 on card A', d);
+    const c2 = q2.shown.find(x => x.who === 'card').card;
+    eq(c2.rows.map(x => [x.label, x.before, x.after]), [['Safe to spend', 16000, 15100], ['Free to spend left', 16000, 15100], ['Card A, still owed', 54000, 54900]]);
+    ok(!c2.note, 'no line when the headline moved: ' + c2.note);
+    /* a spend from the bank moves the headline: no line */
+    const r3 = await K.turn(r.state, 'coffee 400 from Main bank', hp.deps(FAKE.make([say('', [call('change', { steps: [{ do: 'log_spend', amount: 400, account: 'A1' }] })]), say('Logged.')])));
+    ok(!r3.shown.find(x => x.who === 'card').card.note, 'bank spend');
+  });
+  /* [qc-assistant, confusing] two steps asked, one left out: the card says which was not done, never without a word */
+  await t('two steps asked and one left out: the card says which one was not done', async () => {
+    const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
+    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'add_goal', name: 'Trip', target: 100000 }, { do: 'set_aside', goal: 'G1', amount: 5000 }] })]), say('Added the goal.')]);
+    const r = await K.turn(state, 'add a goal called Trip for 100,000 and set aside 5,000 for it', hp.deps(f));
+    const c = r.shown.find(x => x.who === 'card').card;
+    eq([c.status, c.lines.length, c.left], ['done', 1, ['money set aside for a goal']]);
+    /* a step that waits on a question says so in plain words, never the note written for the AI */
+    const f2 = FAKE.make([say('', [call('change', { steps: [{ do: 'log_spend', amount: 700, account: 'A1' }, { do: 'log_spend', amount: 800 }] })]), say('Card or bank for the 800?')]);
+    const r2 = await K.turn(r.state, 'I spent 700 from Main bank and 800 on a taxi', hp.deps(f2));
+    const c2 = r2.shown.find(x => x.who === 'card').card;
+    eq([c2.status, c2.left], ['done', ['one step that needs an answer from you first']]);
+    /* nothing left out: no such line */
+    const f3 = FAKE.make([say('', [call('change', { steps: [{ do: 'log_spend', amount: 600, account: 'A1' }] })]), say('Logged.')]);
+    const r3 = await K.turn(r2.state, 'I spent 600 from Main bank', hp.deps(f3));
+    eq(r3.shown.find(x => x.who === 'card').card.left, []);
+  });
+  /* [qc-assistant blocker 3; M17] "what does this screen do?": one table with a plain line for every screen and every
+     sheet, told to the assistant, and the open sheet's own name with each message */
+  await t('[M17] one table says what every screen and sheet is for; the open screen and sheet go with each message', async () => {
+    const want = ['home', 'plan', 'receipts', 'settings', 'check', 'stmt', 'reminders', 'setup', 'welcome',
+      'free', 'addLine', 'line', 'addBill', 'bill', 'pay', 'addGoal', 'goal', 'addCard', 'card', 'addLoan', 'loan', 'record'];
+    eq(Object.keys(K.SCREENS).sort(), want.slice().sort(), 'the rows');
+    for (const k of want) {
+      const row = K.SCREENS[k];
+      ok(row && row.name && row.does && row.does.split(' ').length >= 6, k + ' has a name and a plain line');
+      ok(K.SYSTEM.includes(row.name + ': ' + row.does), k + ' is in what the assistant is told');
+    }
+    const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
+    const sent = (screen, sheet) => { const b = K.request(state, 'what does this screen do?', [], { book: hp.book, today: hp.day, screen, sheet }); return b.messages[b.messages.length - 1].content[0].text; };
+    ok(sent('plan', { key: 'addCard', title: 'Add a card' }).includes('SCREEN: the person has Plan open, with the sheet "Add a card" on top. ' + K.SCREENS.addCard.does), sent('plan', { key: 'addCard', title: 'Add a card' }).split('\n').find(l => /^SCREEN/.test(l)));
+    /* a sheet named after the person's own record says what kind of sheet it is */
+    ok(sent('plan', { key: 'card', title: 'Card A' }).includes('with the sheet "Card A" (' + K.SCREENS.card.name + ') on top. ' + K.SCREENS.card.does), 'a card\'s own sheet');
+    ok(sent('home', null).includes('SCREEN: the person has Home open. ' + K.SCREENS.home.does), 'no sheet');
+    ok(!/SCREEN:/.test(sent(null, null)), 'no screen told, none said');
+  });
   await t('[C] a whole answer with "no fixed pay", everyday money skipped and no minimum can be filled', async () => {
     const h = page('2026-11-24'), st = edits(h, [['country', 'XX'], ['currency', 'USD'], ['banks', [{ name: 'Main bank', amount: '1234.56' }]], ['pays', [{ name: 'Work', every: 'none' }]], ['free', null], ['min', null]]);
     eq(K.draftCard(st.draft, h.day).need, []);
@@ -532,6 +665,57 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const r2 = await K.turn(r.state, 'new money', D(f2));
     const c = r2.shown.find(x => x.who === 'card' && x.card.kind === 'change');
     ok(c && c.card.status === 'done', JSON.stringify(c && c.card));
+  });
+  /* [STALE_SHEET_PLAN, M61] the assistant's changes are made on the book as it was when the figures were sent */
+  await t('[stale] a card waiting for OK is not carried out when the book changed somewhere else since it was offered', async () => {
+    const h = page('2026-11-24'); const { state, deps: d0 } = await runSetup(h, FAKE.make(steps(SETUP)));
+    const refIn = (body, name) => { const m = new RegExp('(?:^|\\n)([A-Z]\\d+) \\| ' + name + ' \\|').exec(JSON.stringify(body.messages).replace(/\\n/g, '\n')); return m ? m[1] : null; };
+    const main = h.book.home.main.v.acct, bank = () => L.lookahead(h.book, h.day).accounts[main].bank;
+    const f = FAKE.make([body => say('', [call('change', { steps: [{ do: 'bank_figure', account: refIn(body, 'Main bank'), amount: 3000000 }] })]), say('ok')]);
+    const r = await K.turn(state, 'my bank shows 3,000,000', Object.assign(h.deps(f), { door: d0.door }));
+    const c = r.shown.find(x => x.who === 'card' && x.card.kind === 'change');
+    ok(c && c.card.status === 'ask' && typeof c.card.ver === 'string' && c.card.ver.length < 24, JSON.stringify(c && c.card).slice(0, 200));
+    ok(!JSON.stringify(f.bodies).includes(c.card.ver), 'the mark is never sent');
+    ok((await d0.door.logSpend({ date: h.day, a: 1200, acct: main, note: 'lunch' })).ok, 'meanwhile, a spend on the screen');
+    const before = JSON.stringify(h.book);
+    const res = await K.confirm(r.state, c.id, Object.assign(h.deps(FAKE.make([])), { door: d0.door }));
+    eq([res.ok, JSON.stringify(h.book) === before, bank()], [false, true, 284800]);
+    ok(/changed somewhere else/.test(res.text), res.text);
+  });
+  await t('[stale] the book changes while the AI is answering: its change is not carried out and the person is told to say it again', async () => {
+    const h = page('2026-11-24'); const { state, deps: d0 } = await runSetup(h, FAKE.make(steps(SETUP)));
+    const main = h.book.home.main.v.acct;
+    const f = FAKE.make([body => say('', [call('change', { steps: [{ do: 'log_spend', amount: 900, account: 'A1', note: 'tea' }] })]), say('ok')]);
+    const send = async body => { if (f.bodies.length === 0) await d0.door.logSpend({ date: h.day, a: 1200, acct: main, note: 'lunch' }); return f.send(body); };   // another tab or device, during the wait
+    const r = await K.turn(state, 'I spent 900 on tea', Object.assign(h.deps(f), { door: d0.door, send }));
+    ok(!h.book.events.some(e => e.note === 'tea'), 'nothing carried out');
+    ok(lastNote(r).some(x => /Nothing was changed, because something changed somewhere else while I was answering/.test(x)), JSON.stringify(lastNote(r)));
+    const f2 = FAKE.make([body => say('', [call('change', { steps: [{ do: 'log_spend', amount: 900, account: 'A1', note: 'tea' }] })]), say('ok')]);
+    await K.turn(r.state, 'I spent 900 on tea', Object.assign(h.deps(f2), { door: d0.door }));
+    ok(h.book.events.some(e => e.a === 900 && !e.gone), 'said again, it goes in');
+  });
+  await t('[stale] one card, two steps: its own first step never refuses its second', async () => {
+    const h = page('2026-11-24'); const { state, deps: d0 } = await runSetup(h, FAKE.make(steps(SETUP)));
+    const f = FAKE.make([body => say('', [call('change', { steps: [{ do: 'log_spend', amount: 900, account: 'A1', note: 'tea' }, { do: 'log_spend', amount: 700, account: 'A1', note: 'bun' }] })]), say('ok')]);
+    const r = await K.turn(state, 'I spent 900 on tea and 700 on a bun', Object.assign(h.deps(f), { door: d0.door }));
+    const c = r.shown.find(x => x.who === 'card' && x.card.kind === 'change');
+    eq([c.card.status, h.book.events.filter(e => e.k === 'spend' && !e.gone && (e.a === 900 || e.a === 700)).length], ['done', 2]);
+  });
+  await t('[one figure, one source] the pay and bill amounts sent to the AI are the engine\'s own (its schedule view): a change dated later is not quoted as today\'s', async () => {
+    const h = page('2026-11-24'); await runSetup(h, FAKE.make(steps(SETUP)));
+    const P = require(E + 'periods.js');
+    for (const kind of ['income', 'bill']) {
+      const x = h.book.schedules.find(s => s && !s.gone && s.kind === kind && (s.steps || []).length);
+      ok(x, 'the setup book has a ' + kind);
+      const first = x.steps[0];
+      /* a change dated later (a rise from June): the last step in the list is not the one in force today */
+      x.steps = [first, Object.assign({}, first, { id: first.id + 'z', from: '2027-06-01', amount: first.amount + 11100, at: '2026-11-24T12:00:00.000+09:00' })];
+      const view = P.scheduleView(h.book, h.day)[x.id];
+      eq(view.amount, first.amount, 'the engine reads the step in force today');
+      const line = K.figures(h.book, h.day).text.split('\n').find(l => l.includes('| ' + x.name + ' |'));
+      const SMn = require('../../screens/money.js');
+      ok(line && line.includes('| ' + SMn.format(view.amount, x.cur || 'JPY') + ' |'), kind + ': the line sent is ' + line + ', the engine says ' + view.amount);
+    }
   });
   console.log(bad ? `chat3_core: ${bad} of ${n} FAILED` : `chat3_core: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);

@@ -61,7 +61,7 @@ const DAYS = ['2026-11-23', '2026-12-09', '2026-12-10', '2026-12-11', '2026-12-1
   /* the phone width: no sideways scroll at 320 */
   await p.setViewport({ width: 320, height: 700, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
   await p.goto(T.URL0 + '?try=mako&today=2026-12-10'); await T.w(300);
-  ck('no sideways scroll at 320 px', await p.evaluate(() => document.documentElement.scrollWidth <= 320), await p.evaluate(() => document.documentElement.scrollWidth));
+  ck('no sideways scroll at 320 px', await p.evaluate(() => Math.max(document.documentElement.scrollWidth, document.getElementById('a3').scrollWidth) <= 320), await p.evaluate(() => Math.max(document.documentElement.scrollWidth, document.getElementById('a3').scrollWidth)));
   /* every label beside a figure is the name table's name for that figure */
   const SN = require('../../screens/names.js');
   const shown = await p.evaluate(() => [['[data-card=safe] h2', 'safeToSpend.headline'], ['[data-card=due] h2', 'dueBeforeNextPay.total'], ['[data-card=period] h2', 'period.start']].map(([s, f]) => ({ label: document.querySelector(s) ? document.querySelector(s).textContent : '', figure: f })));
@@ -120,6 +120,14 @@ const DAYS = ['2026-11-23', '2026-12-09', '2026-12-10', '2026-12-11', '2026-12-1
     await o.b.close();
   }
   const old = await T.readOld(p);
+  /* [M36; qc-data-safety run 2] a bank figure dated after this device's day (another device a day ahead): never a
+     negative age. It says the day it was checked and nothing untrue */
+  {
+    const AH = '2026-11-19';   // the made-up book's bank figure is dated 20 Nov
+    await p.goto(T.URL0 + '?try=mako&today=' + AH); await T.w(400);
+    const txt = await p.$eval('#a3Home', e => e.textContent);
+    ck('a figure dated after today: no negative age on Home', !/checked -\d/.test(txt) && !/-\d+ days ago/.test(txt), (txt.match(/checked[^.]{0,40}/) || [''])[0]);
+  }
   ck('the old app\'s copy is byte for byte the same', old.ls === T.OLD_TEXT && old.idb === T.OLD_IDB, JSON.stringify(old).slice(0, 200));
   ck('no page errors', errs.length === 0, errs.join(' | '));
   ck('no outside requests', requests.length === 0, requests.join(' '));

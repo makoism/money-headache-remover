@@ -95,7 +95,7 @@ async function figsMatch(p, book, what) {
 
   /* remove, with Undo */
   await p.tap(`[data-rc="${spend.id}"] button`); await T.w(200);
-  await p.tap('#rcRemove'); await T.w(400);
+  await p.tap('#rcRemove'); await T.w(400); if (await p.$('[data-sureyes]')) { await p.$eval('[data-sureyes]', e => e.click()); await T.w(400); }
   bk = await saved(p);
   ck('remove marks it gone', bk.events.find(e => e.id === spend.id).gone === DAY);
   m = await bar(p);
@@ -195,7 +195,7 @@ async function figsMatch(p, book, what) {
   ({ b, p, errs } = await T.open({ w: 320, h: 700 }));
   await p.goto(T.URL0 + '?try=mako&today=2026-12-10'); await T.w(400);
   await p.tap('[data-tab="receipts"]'); await T.w(200);
-  const wide = await p.evaluate(() => document.documentElement.scrollWidth);
+  const wide = await p.evaluate(() => Math.max(document.documentElement.scrollWidth, document.getElementById('a3').scrollWidth));
   ck('at 320 wide nothing runs off the side', wide <= 320, wide);
   await type(p, '#rcAmt', '900'); await p.tap('#rcSave'); await T.w(300);
   ck('the try book logs in memory', (await rows(p)).length === 1);
@@ -231,6 +231,43 @@ async function figsMatch(p, book, what) {
     ck('S3: the 24 Nov row says it is already in the 28 Nov bank figure', one && /already in your bank figure of 28 Nov/.test(one.text), JSON.stringify(rs));
     ck('S3: the 28 Nov row told after the check says nothing of it', two && !/already in/.test(two.text), JSON.stringify(two));
     ck('no page errors (S3)', errs.length === 0, errs.join(' | '));
+    await b.close();
+  }
+  /* [M7, M61; qc-data-safety B2] a record dated or told after today (a backup from a phone whose clock was ahead) is in
+     the book and does not count yet: Receipts shows it under "Dated after today", search finds it, and it can be opened
+     and removed, with Undo. Nothing the book holds is hidden */
+  {
+    const prof2 = require('fs').mkdtempSync(require('os').tmpdir() + '/a3rc2-');
+    const { b, p, errs } = await T.open({ profile: prof2 });
+    const bk = actBook(), CLOCK = 'k7m2qa-f3n8p1x6wd-9901';
+    bk.events.push({ id: CLOCK, date: '2027-03-15', told: '2027-03-15T10:00+09:00', at: '2027-03-15T10:00:00.000+09:00', by: 'zzclok', k: 'spend', acct: bank, a: 6060, line: 'free' });
+    await p.goto(T.URL0 + '?today=' + DAY); await T.w(300);
+    await p.evaluate(async bk => { const s = await BurrowStore.open(); const r = await s.save(bk, { full: true }); if (s.db) s.db.close(); return r; }, bk);
+    await p.reload(); await T.w(400);
+    await p.tap('[data-tab=receipts]'); await T.w(300);
+    const ahead = () => p.$$eval('#rcList [data-rcahead]', rs => rs.map(r => ({ id: r.dataset.rcahead, text: r.textContent.replace(/\s+/g, ' ').trim() })));
+    const head = () => p.$eval('#rcList [data-fig=rc-ahead]', e => e.textContent.replace(/\s+/g, ' ').trim()).catch(() => '');
+    let a = await ahead();
+    ck('B2: Receipts lists what is dated after today: the 4 in this book', a.length === 4 && /4 things are dated after today/.test(await head()), (await head()) + ' ' + JSON.stringify(a));
+    const one = a.find(x => x.id === CLOCK);
+    ck('B2: the spend from the phone whose clock was ahead is there, with its amount and day', one && /¥6,060/.test(one.text) && /15 Mar 2027/.test(one.text), JSON.stringify(one));
+    ck('B2: the words say they do not count yet and what to do', /do not count until their day/.test(await head()) && /remove it and log it again/.test(await head()), await head());
+    ck('B2: the usual rows are as before (none dated ahead among them)', (await rows(p)).every(x => x.id !== CLOCK));
+    await type(p, '#rcSearch', '6060'); await T.w(200);
+    a = await ahead();
+    ck('B2: search finds it', a.length === 1 && a[0].id === CLOCK, JSON.stringify(a));
+    await p.$eval('[data-rcahead="' + CLOCK + '"] button', e => e.click()); await T.w(200);
+    ck('B2: a tap opens it', await p.$eval('#rcAmt', e => e.value.replace(/,/g, '')) === '6060');
+    await p.$eval('#rcRemove', e => e.click()); await T.w(300);
+    await p.$eval('[data-sureyes]', e => e.click()); await T.w(300);
+    let sv = await saved(p);
+    ck('B2: Remove marks it gone in the book', !!sv.events.find(e => e.id === CLOCK).gone, JSON.stringify(sv.events.find(e => e.id === CLOCK)));
+    await p.$eval('#rcSearch', e => { e.value = ''; e.dispatchEvent(new Event('input', { bubbles: true })); }); await T.w(200);
+    ck('B2: and it leaves the list', (await ahead()).length === 3, JSON.stringify(await ahead()));
+    await p.evaluate(() => { const x = [...document.querySelectorAll('#a3Msg button')].find(y => /Undo/.test(y.textContent)); if (x) x.click(); }); await T.w(400);
+    sv = await saved(p);
+    ck('B2: Undo brings it back', !sv.events.find(e => e.id === CLOCK).gone && (await ahead()).length === 4);
+    ck('no page errors (B2)', errs.length === 0, errs.join(' | '));
     await b.close();
   }
   T.done('e3_receipts');

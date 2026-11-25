@@ -44,7 +44,7 @@ const RCF = extra => Object.assign({ save: '#rcSave', only: /^(?!Search)/ }, ext
 const CHAT = { save: '#a3ChatSend', emptyQuiet: 'a chat box: Send with nothing typed sends nothing and puts the cursor in the box', noValid: 'a message goes to the AI (tests/e3_chat.js, tests/e3_chatwalk.js)' };
 const FORMS = {
   'First screen': Object.assign({ only: /^Your answer/ }, CHAT),
-  'First screen: the assistant off, Use any AI and Send a file': { save: '#a3ChatAnyCheck', only: /^The AI's answer/, wrongText: ['', 'abc'], noValid: 'a right answer from another AI fills the setup (tests/e3_chat.js)' },
+  'First screen: the assistant off, Use any AI': { save: '#a3ChatAnyCheck', only: /^The AI's answer/, wrongText: ['', 'abc'], noValid: 'a right answer from another AI fills the setup (tests/e3_chat.js)' },
   'The assistant': Object.assign({ only: /^Ask or tell me something/ }, CHAT),
   'Setup': SETUP,
   /* the same sheet with other choices made: only the boxes those choices bring are walked again */
