@@ -202,12 +202,12 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
   /* ---- the tools (BU2: no figures or draft read tool) ---- */
   const num = { type: 'number', description: 'A plain number in the currency, no symbol.' };
   const str = d => ({ type: 'string', description: d });
-  const DO = ['landed', 'bank_figure', 'card_figure', 'log_spend', 'refund', 'money_in', 'move_money', 'remove', 'add_bill', 'change_bill', 'end_bill', 'add_pay', 'add_line', 'change_line', 'end_line', 'set_free', 'add_goal', 'set_aside', 'add_card', 'add_account', 'change_account', 'close_account', 'reopen_account', 'remove_account', 'pay_off', 'change_card', 'change_loan', 'add_loan', 'set_keep', 'set_country'];
+  const DO = ['landed', 'bank_figure', 'card_figure', 'log_spend', 'refund', 'money_in', 'move_money', 'remove', 'add_bill', 'change_bill', 'end_bill', 'add_pay', 'add_line', 'change_line', 'end_line', 'set_free', 'add_goal', 'set_aside', 'add_card', 'add_account', 'change_account', 'close_account', 'reopen_account', 'remove_account', 'pay_off', 'change_card', 'change_loan', 'add_loan', 'set_keep', 'set_country', 'change_goal', 'take_out', 'remove_goal'];
   /* a step that was asked for and left out, in words for the person (the card says which was not done) */
   const DO_WORDS = { landed: 'ticking off a pay or bill', bank_figure: 'a bank figure', card_figure: 'a card figure', log_spend: 'a spend', refund: 'a refund', money_in: 'money that came in',
     move_money: 'money moved between accounts', remove: 'removing a record', add_bill: 'a new bill', change_bill: 'a change to a bill or pay', end_bill: 'ending a bill', add_pay: 'a new pay',
     add_line: 'a new line', change_line: 'a change to a line', end_line: 'ending a line', set_free: 'a change to Free to spend', add_goal: 'a new goal', set_aside: 'money set aside for a goal',
-    add_card: 'a new card', add_account: 'a new account', change_account: 'a change to an account', close_account: 'closing an account', reopen_account: 'reopening an account', remove_account: 'removing an account', pay_off: 'paying off a card or loan', change_card: 'a change to a card', change_loan: 'a change to a loan', add_loan: 'a new loan', set_keep: 'Keep at least for your main bank', set_country: 'where you bank' };
+    add_card: 'a new card', add_account: 'a new account', change_account: 'a change to an account', close_account: 'closing an account', reopen_account: 'reopening an account', remove_account: 'removing an account', pay_off: 'paying off a card or loan', change_card: 'a change to a card', change_loan: 'a change to a loan', add_loan: 'a new loan', set_keep: 'Keep at least for your main bank', set_country: 'where you bank', change_goal: 'a change to a goal', take_out: 'money taken out of a goal', remove_goal: 'removing a goal' };
   const CURS = ['JPY', 'PHP', 'USD', 'EUR'];
   const SECTIONS = ['country', 'currency', 'banks', 'pays', 'cards', 'bills', 'asked', 'statements', 'payToday', 'free', 'min'];
   const TOOLS = [
@@ -665,6 +665,23 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     }
     if (what === 'set_free') { const x = amt(a.amount, null, true); if (x == null) return { bad: 'Free to spend I could not read' }; return { kind: 'setFree', args: [{ amount: x, when: when(a.when) }], text: `Free to spend: ${m(x)} each pay period`, amount: x }; }
     if (what === 'add_goal') { const x = amt(a.target != null ? a.target : a.amount); if (!x || !a.name) return { bad: 'a goal I could not read' }; return { kind: 'addGoal', args: [{ name: clean(a.name, 60), target: x, due: a.due || undefined }], text: `Add a goal, ${clean(a.name, 60)}: ${m(x)}${a.due ? ' by ' + day1(a.due) : ''}`, amount: 0, figs: [x] }; }
+    /* [E7, M13, M43, M46] a goal changed, money taken out (back to spending money), or the goal removed: with money in it,
+       where the money goes is asked first ('spend' or another goal's G ref); a remove asks before it is done (del) */
+    if (what === 'change_goal' || what === 'take_out' || what === 'remove_goal' || (what === 'remove' && ref(a.ref, 'G'))) {
+      const id = ref(a.goal || a.ref, 'G'), g = id && (book.places || []).find(x => x.id === id);
+      if (!g) return { bad: 'a goal I do not know' };
+      if (what === 'take_out') { const x = amt(a.amount); if (!x) return { bad: 'an amount I could not read' }; return { kind: 'takeOut', args: [id, { amount: x }], text: `Take ${m(x)} out of ${g.name}, back to spending money`, amount: x, ref: a.goal || a.ref }; }
+      if (what === 'change_goal') {
+        const ch = {}; if (a.name) ch.name = clean(a.name, 60); if (a.target != null) { ch.target = amt(a.target); if (!ch.target) return { bad: 'a goal amount I could not read' }; } if (a.due !== undefined) ch.due = a.due || '';
+        if (!Object.keys(ch).length) return { bad: 'a change to a goal with nothing to change' };
+        return { kind: 'changeGoal', args: [id, ch], text: `${g.name}: ` + [ch.name ? 'called ' + ch.name : '', ch.target ? m(ch.target) : '', ch.due !== undefined ? (ch.due ? 'by ' + day1(ch.due) : 'no date') : ''].filter(Boolean).join(', '), amount: 0, figs: ch.target ? [ch.target] : [] };
+      }
+      const held = (LA.lookahead(book, today).places[id] || {}).kept || 0;
+      const to = a.to === 'spend' ? 'spend' : a.to ? ref(a.to, 'G') : null;
+      if (held > 0 && !to) return { bad: `ask: "${g.name} holds ${m(held)}. Where should it go: back to spending money, or into another goal?" Then change again with to ("spend" or the G ref)` };
+      const where = held > 0 ? (to === 'spend' ? `, its ${m(held)} back to spending money` : `, its ${m(held)} into ${((book.places || []).find(x => x.id === to) || {}).name}`) : '';
+      return { kind: 'removeGoal', args: [id, held > 0 ? { to } : {}], text: `Remove the goal ${g.name}${where}`, del: true, amount: 0, ref: a.goal || a.ref };
+    }
     if (what === 'set_aside') {
       const id = ref(a.goal || a.ref, 'G'), x = amt(a.amount); if (!id || !x) return { bad: 'money for a goal I could not read' };
       return { kind: 'setAside', args: [id, { amount: x }], text: `Set aside ${m(x)} for ${((book.places || []).find(g => g.id === id) || {}).name}, today`, amount: x, ref: a.goal || a.ref };

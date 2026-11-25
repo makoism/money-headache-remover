@@ -356,6 +356,37 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const r3 = await K.turn(u.state || r2.state, 'add a bike loan, 90,000 owed, 10,000 on the 5th from Savings', d);
     eq([r3.shown.find(x => x.who === 'card').card.status, (hp.book.accounts.find(a => a.name === 'Bike loan') || {}).payFrom], ['done', sv]);
   });
+  await t('[E7, M3, M13, M43, M46] goals by asking: change_goal, take_out, remove_goal (asks where the money goes first; asks before removing; Undo); "remove" of a goal ref does the same', async () => {
+    const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
+    const L = require(E + 'lookahead.js'), kept = id => (L.lookahead(hp.book, '2026-11-24').places[id] || {}).kept;
+    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'add_goal', name: 'Trip', target: 100000 }] })]), say('Added.'),
+      say('', [call('change', { steps: [{ do: 'set_aside', goal: 'G1', amount: 20000 }] })]), say('Set aside.'),
+      say('', [call('change', { steps: [{ do: 'change_goal', goal: 'G1', target: 120000, name: 'Big trip' }] })]), say('Changed.'),
+      say('', [call('change', { steps: [{ do: 'take_out', goal: 'G1', amount: 5000 }] })]), say('Taken out.'),
+      say('', [call('change', { steps: [{ do: 'remove_goal', goal: 'G1' }] })]), body => say(FAKE.results(body)[0].text.slice(0, 200)),
+      say('', [call('change', { steps: [{ do: 'remove_goal', goal: 'G1', to: 'spend' }] })]), say('Tap OK.')]);
+    const d = hp.deps(f);
+    const r0 = await K.turn(state, 'save for a trip, 100,000', d);
+    const r1 = await K.turn(r0.state, 'put 20,000 in it now', d);
+    const g = hp.book.places.find(x => x.name === 'Trip');
+    eq([r1.shown.find(x => x.who === 'card').card.status, kept(g.id)], ['done', 20000], JSON.stringify(r1.shown.find(x => x.who === 'card').card.lines));
+    const r2 = await K.turn(r1.state, 'call it Big trip and make it 120,000', d);
+    eq([r2.shown.find(x => x.who === 'card').card.status, hp.book.places[0].name, hp.book.places[0].target], ['done', 'Big trip', 120000]);
+    const r3 = await K.turn(r2.state, 'take 5,000 out of it', d);
+    eq([r3.shown.find(x => x.who === 'card').card.status, kept(g.id)], ['done', 15000]);
+    const before = JSON.stringify(hp.book.places);
+    const r4 = await K.turn(r3.state, 'remove the trip goal', d);
+    const c4 = r4.shown.find(x => x.who === 'card');
+    ok(!c4 || c4.card.status !== 'done', 'with money and no answer: nothing done'); eq(JSON.stringify(hp.book.places), before, 'nothing written');
+    ok(/15,000/.test(JSON.stringify(f.bodies.slice(-1)[0])) && /spending money/.test(JSON.stringify(f.bodies.slice(-1)[0])), 'the assistant is told to ask where the 15,000 goes');
+    const r5 = await K.turn(r4.state, 'back to my spending money', d);
+    const c5 = r5.shown.find(x => x.who === 'card');
+    eq([c5.card.status, c5.card.ask], ['ask', 'delete'], JSON.stringify(c5.card));
+    const k5 = await K.confirm(r5.state, c5.id, d); ok(k5.ok, JSON.stringify(k5));
+    ok(hp.book.places.find(x => x.id === g.id).gone, 'removed');
+    const u = await K.undo(k5.state, c5.id, d); ok(u.ok, JSON.stringify(u));
+    eq([!!hp.book.places.find(x => x.id === g.id).gone, kept(g.id)], [false, 15000], 'Undo puts it back with its money');
+  });
   await t('[M6] an answer to a follow-up question ("from when?") still counts the amount typed just before', async () => {
     const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
     const f = FAKE.make([say('From when: this one, or the next one?'),
@@ -738,13 +769,13 @@ const steps = list => [].concat(...list.map(([, r]) => r));
   });
   await t('[H4] it is told which screen is open and what the screens can do that it cannot; a refusal says where', async () => {
     const h = page('2026-11-24'); const { state, deps: d0 } = await runSetup(h, FAKE.make(steps(SETUP)));
-    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'take_out', goal: 'G1', amount: 5000 }] })]), say('ok'), say('ok')]);
+    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'change_spend', ref: 'S1', amount: 5000 }] })]), say('ok'), say('ok')]);
     const deps = Object.assign(h.deps(f), { door: d0.door, screen: () => 'plan' });
-    const r = await K.turn(state, 'take 5,000 out of the trip goal', deps);
+    const r = await K.turn(state, 'that coffee was 5,000', deps);
     const sent = JSON.stringify(f.bodies[0].messages);
     ok(/SCREEN: the person has Plan open/.test(sent), 'the open screen is sent');
     const res = FAKE.results(f.bodies[1])[0].text;
-    ok(/^Nothing changed: /.test(res) && /Plan, tap the goal/.test(res), res);
+    ok(/^Nothing changed: /.test(res) && /Receipts, tap it/.test(res), res);
     ok(/WHERE ON THE SCREENS/.test(K.SYSTEM) && /Receipts, tap it/.test(K.SYSTEM) && /Settings/.test(K.SYSTEM), 'the map of the screens');
     eq(r.shown.filter(x => x.who === 'card' && x.card.kind === 'change').length, 0, 'nothing changed, no change card');
     const f2 = FAKE.make([say('ok')]);
