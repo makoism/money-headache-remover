@@ -474,6 +474,23 @@ const steps = list => [].concat(...list.map(([, r]) => r));
      amount is set = 124,400. Lunch 900 on Card A comes off at once: 123,500, and Card A owes 54,900; no line is needed.
      With Free to spend at 30,000 (16,000 counts for the days left) nothing changes from before: the same lunch takes 900
      off play money left and the headline, 16,000 to 15,100, and no line */
+  /* [CASH_PLAN 17 F1, M91] the assistant stops play money with Undo. Free to spend 30,000 set on 24 Nov: 16 of the 30
+     days to 10 Dec count, floor(30,000 x 16 / 30) = 16,000, the headline. Stopped from this period: no play amount, so
+     the cards come off now, 124,400 (286,000 - 84,600 - 54,000 - 23,000). Undo: 16,000 again */
+  await t('[F1] "stop my play money": a set_free stop step, safe to spend 16,000 to 124,400, Undo puts 16,000 back', async () => {
+    const hq = page('2026-11-24'); const q = await runSetup(hq, FAKE.make(steps(SETUP)));
+    const d = hq.deps(FAKE.make([say('', [call('change', { steps: [{ do: 'set_free', amount: 30000 }] })]), say('Set.'),
+      say('', [call('change', { steps: [{ do: 'set_free', stop: true }] })]), say('Stopped.')]));
+    const q1 = await K.turn(q.state, 'set Free to spend to 30,000', d);
+    eq(L.lookahead(hq.book, hq.day).safeToSpend.headline, 16000);
+    const q2 = await K.turn(q1.state, 'stop my play money', d);
+    const c = q2.shown.find(x => x.who === 'card');
+    eq([c.card.status, c.card.lines], ['done', ['Stop play money (Free to spend) from this pay period']]);
+    eq([L.lookahead(hq.book, hq.day).safeToSpend.headline, L.lookahead(hq.book, hq.day).everyday], [124400, null]);
+    const u = await K.undo(q2.state, c.id, { door: hq.deps(FAKE.make([])).door, told: () => '2026-11-24T12:00:00.000+09:00', book: () => hq.book });
+    ok(u.ok, JSON.stringify(u));
+    eq(L.lookahead(hq.book, hq.day).safeToSpend.headline, 16000);
+  });
   await t('[M30, M77] lunch 900 on Card A: with no Free to spend the headline drops 124,400 to 123,500 at once; with it set, 16,000 to 15,100', async () => {
     const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
     const lunch = say('', [call('change', { steps: [{ do: 'log_spend', amount: 900, account: 'A2' }] })]);

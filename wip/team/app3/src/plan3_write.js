@@ -80,11 +80,14 @@
     stampNew(r, 'steps');
     return id;
   }
+  /* [CASH_PLAN 17 F1, M91] x.stop: no play amount from this period ('now') or the next ('next'): an entry free 'none',
+     read by the engine as no amount from its period on; the periods before keep theirs; Undo removes it */
   function setFree(w, x) {
-    const a = x.amount === 0 ? 0 : amountOk(x.amount, 'an amount'), shares = A3.listOf(w.book, 'shares').filter(s => live(s) && s.free != null);
+    if (x.stop && x.when === 'once') bad('Stopping play money counts from this pay period or the next');
+    const a = x.stop ? 'none' : x.amount === 0 ? 0 : amountOk(x.amount, 'an amount'), shares = A3.listOf(w.book, 'shares').filter(s => live(s) && s.free != null);
     if (x.when === 'once') {
       const p = period(w), s = shares.slice(-1)[0];
-      if (!s) bad('Set Free to spend first');
+      if (!s || !LA.lookahead(w.book, w.today).period.free) bad('Set Free to spend first');
       if (!p.startsWith) bad('This pay period has no pay to name it by yet. Change it from the next one');
       const r = w.edit('shares', s.id, { once: Object.assign({}, s.once || {}, { [p.startsWith]: { free: a } }) });
       Object.assign(r.once[p.startsWith], { at: r.at, by: r.by });

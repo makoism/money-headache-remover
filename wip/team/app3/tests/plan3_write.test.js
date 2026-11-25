@@ -87,6 +87,23 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     r = await h.go('setFree', { amount: 20000, when: 'once' }); ok(r.ok, JSON.stringify(r));
     eq(view(h.book).period.free.amount, 20000);
   });
+  /* [CASH_PLAN 17 F1, M91] stop play money from this period: a dated entry free 'none'; the engine reads no play amount
+     from that period (everyday null), the past keeps its amounts; Undo brings the amount back. Mako's book (set up
+     20 Nov), seen 25 Nov, no play amount: 124,400 (286,000 - 84,600 - 54,000 - 23,000). With 60,000 set, 20 of the
+     period's 30 days count from the setup day: floor(60,000 x 20 / 30) = 40,000; the headline is min(201,400, 40,000) */
+  await t('stop play money: a free none entry from this period, safe to spend with the cards off, Undo brings it back', async () => {
+    const h = setup();
+    let r = await h.go('setFree', { amount: 60000 }); ok(r.ok, JSON.stringify(r));
+    eq(view(h.book).safeToSpend.headline, 40000);
+    r = await h.go('setFree', { stop: true, when: 'now' }); ok(r.ok, JSON.stringify(r));
+    const s = h.book.plan.shares.slice(-1)[0]; stamped(s, r.step);
+    eq([s.from, s.free], ['2026-11-10', 'none']);
+    eq([view(h.book).period.free, view(h.book).everyday, view(h.book).safeToSpend.headline], [null, null, 124400]);
+    ok(!view(h.book).playOn(DAY), 'no play amount today');
+    const once = await h.go('setFree', { amount: 5000, when: 'once' }); ok(!once.ok && /Set Free to spend first/.test(once.text || JSON.stringify(once)), JSON.stringify(once));
+    ok((await h.A.undo(r.step.id)).ok);
+    eq([view(h.book).everyday.left, view(h.book).safeToSpend.headline], [40000, 40000]);
+  });
   await t('a bill: a schedule from today, due on its day; its next one shows; due before next pay counts it', async () => {
     const h = setup();
     const r = await h.go('addBill', { name: 'Gym', amount: 8000, day: 1 }); ok(r.ok, JSON.stringify(r));
