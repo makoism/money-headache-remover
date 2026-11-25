@@ -11,7 +11,9 @@
    C. After the screens' Save the chat is told 270,000: the fill writes 270,000; opening the screens shows 270,000 with
       "Not saved yet", and the line at the top names Your bank as filled in from the chat.
    D. The same as A in US dollars: 2,500.00 told, 2,600.50 saved on the screens, Home shows 2,600.50.
-   E. A pay typed by hand on the screens is "Not saved yet: Your pay", never "Filled in from the chat". */
+   E. A pay typed by hand on the screens is "Not saved yet: Your pay", never "Filled in from the chat".
+   F. [found by check3 full, 26 Nov] a draft write already on its way when See my money clears the draft never lands
+      after the clear: no setup draft is left behind once the book exists (the store's writes made slow on purpose). */
 'use strict';
 const T = require('./lib3.js'), { ck } = T;
 const fs = require('fs'), os = require('os');
@@ -125,6 +127,25 @@ async function fill(p, ai) { ai.push(R.say('', [R.call('fill_book', {})]), R.say
       ck('E: a pay typed by hand is "Not saved yet: Your pay", the bank "Filled in from the chat"', todo === 'Filled in from the chat, not saved yet: Your bank. Not saved yet: Your pay. Press Save under each', todo);
       ck('E: no page errors', !o.errs.length, o.errs.join(' | '));
     } catch (e) { ck('E: the check ran to its end', false, e.stack); }
+    finally { await o.b.close(); }
+  }
+  /* F */
+  {
+    const o = await T.open({ profile: fs.mkdtempSync(os.tmpdir() + '/a3twodraftsF-') });
+    try {
+      await o.p.goto(T.URL0 + '?today=' + DAY); await T.w(700);
+      await o.p.$eval('#a3SetupGo', e => e.click()); await T.w(500);
+      await typeIn(o.p, '#s3Bank', '250000'); await o.p.$eval('[data-save=bank]', e => e.click()); await T.w(300);
+      await typeIn(o.p, '#s3PayAmt', '240000'); await o.p.$eval('[data-save=pay]', e => e.click()); await T.w(300);
+      /* a typed-keeping write that takes 600 ms, started just before See my money */
+      await o.p.evaluate(() => { const E = BurrowApp3.E3, rec = E.rec; E.rec = async (k, v) => { if (k === 'setup' && v) await new Promise(r => setTimeout(r, 600)); return rec(k, v); }; });
+      await typeIn(o.p, '#s3Bank', '250000'); await T.w(350);
+      await o.p.$eval('#a3SetupSave', e => e.click()); await T.w(1500);
+      const d = await o.p.evaluate(() => new Promise(res => { const rq = indexedDB.open('burrow3'); rq.onsuccess = () => { const db = rq.result, tx = db.transaction(['device', 'book']), out = {};
+        tx.objectStore('device').get('device').onsuccess = e => { out.setup = (e.target.result || {}).setup || null; }; tx.objectStore('book').get('book').onsuccess = e => { out.book = !!e.target.result; }; tx.oncomplete = () => { db.close(); res(out); }; }; }));
+      ck('F: the book is kept and no setup draft is left behind', d.book && !d.setup, JSON.stringify(d).slice(0, 200));
+      ck('F: no page errors', !o.errs.length, o.errs.join(' | '));
+    } catch (e) { ck('F: the check ran to its end', false, e.stack); }
     finally { await o.b.close(); }
   }
   T.done('e3_twodrafts');

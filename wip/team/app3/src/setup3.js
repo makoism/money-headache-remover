@@ -473,10 +473,14 @@ function typedNow3(sections, skip) {
 }
 /* skip: a section about to be put back as `sections` holds it (Undo), so what its boxes show now is not kept as typed */
 /* kept: with setup closed there are no boxes to read, so the typed sections already in the draft are carried over */
+/* [found by check3 full, 26 Nov] every write of the draft goes through one queue, in the order asked, so a write already
+   on its way never lands after a later one (See my money's clear above all: E3.rec reads, then writes the device record) */
+let draftQ3 = Promise.resolve();
+const draftWrite3 = v => (draftQ3 = draftQ3.then(() => E3.rec('setup', v), () => E3.rec('setup', v)));
 const keepDraft3 = (sections, days, skip, kept) => {
   const typed = setup3 && setup3.base ? typedNow3(sections, skip) : Object.assign({}, kept);
   if (skip) delete typed[skip];
-  return E3.rec('setup', Object.keys(sections).length || Object.keys(typed).length ? { v: 1, sections, days, typed } : null);
+  return draftWrite3(Object.keys(sections).length || Object.keys(typed).length ? { v: 1, sections, days, typed } : null);
 };
 /* what is typed is kept a moment after the typing stops, and at once on Back */
 /* what a row shows (its questions and their words) is worked out while the person types, not only when the box is left:
@@ -564,7 +568,7 @@ async function saveSetup3() {
   try { built = ANSWERS3.build(ans, { day: E3.today(), told: E3.told(), newId: E3.newId, currency: $('#s3Cur').value }); } catch (e) { err.textContent = e.message; return; }
   const ok = await E3.start(built.book);
   if (!ok) { err.textContent = 'This could not be saved on this device. Nothing changed'; return; }
-  await E3.rec('setup', null);
-  endSetup3();
+  endSetup3();   // first: no typed-keeping write is asked after this
+  await draftWrite3(null);
   renderHome3(); msg3('Saved on this device');
 }

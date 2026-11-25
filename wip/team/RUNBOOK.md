@@ -6,6 +6,7 @@ Mako, 25 Nov: "after fable maxes out we will need to switch to opus ... make sur
 The one chat Mako talks to, and the head of the work. You own: wip/team/MAKO_SAYS.md, wip/team/DECISIONS.md entries for what he says, the reviewer briefs (.claude/agents, wip/team/QC_ROLES.md, wip/team/qc/), scope.txt in each candidate's round folder, wip/team/COORDINATOR.md notes, this runbook. You do not edit app files. Build sessions: MAIN (the only one that merges into wip-38.31) and LANE B (side branches only). Their ids and triggers are at the top of COORDINATOR.md.
 
 ## 1. Every time Mako writes (do all, in order)
+0. USER WALK FIRST (Mako, 26 Nov, M98): before writing anything, play his idea through as a real person in a real moment (who, what they hold in their hand, what they just did, what they want next). Ask: what else could be true here? What would they intuitively want to choose, including "later" (M91)? Where would a literal reading of his words go wrong? Write the line from that walk, not from the literal words, and keep his words in quotes beside it. If the walk shows his words can be read two ways that matter, ask him once, whole (M85).
 1. Does it change what the app must be or do, or how the team works? If yes: add or change a line in MAKO_SAYS.md (new id, his words in quotes, date), bump its "Last changed" line, add the full words to DECISIONS.md "The new foundation" as the next number, commit, push.
 2. Send the changed lines to every running build session with send_message and ask each to answer with what it changes in its work. Check the answers arrive. Chase at the next check if not.
 3. Answer him: two rough percentages first, then what is being worked on. Short. Plain words. No em dashes. Times in JST. He reads on an Android phone and dictates by voice, so his messages can cut off or have wrong words: ask when the meaning is unclear.
@@ -42,6 +43,9 @@ Standing rules:
 
 ## 4b. Which model does what (from 25 Nov, to stretch Fable)
 Fable: the coordinator, the main build session, LANE B, and the gate reviewers (qc-foundation, qc-numbers, qc-north-star, qc-controls, qc-assistant). Opus: every builder helper, and qc-novice, qc-layout-touch, qc-data-safety, qc-voice, qc-art-director, efficiency. Opus builders get tight briefs (exact files, failing test first, check3 quick after each change) and the session reads their diff before merging. A Fable call that is refused is switched to Opus at once and reported.
+
+## 4c-now. UNTIL SUN 29 NOV 09:00 JST: use the whole allowance (Mako, 26 Nov, M87)
+What is unused at the reset is lost. Until then: MAIN runs up to two helpers or reviewers at once (independent reviewers in parallel, never two on the same files); a LANE session on Opus builds the held slices on side branches; the gate order still holds for the candidate. Rule 6 of 4c (one reviewer at a time) and the hold on the lane are lifted; rules 1, 2, 3 and 7 (no chatter, hand off early, nothing done twice) stay, because they avoid waste, not work. Watch each 5-hour window: if it fills, work resumes when it resets (the watch wakes sessions). After the reset, 4c applies again in full.
 
 ## 4c. Spending few credits (Mako, 25 Nov, M86: "be very diligent ... super efficient with your credits"; from the official docs on how usage is charged, read 25 Nov)
 Facts: every turn of a session sends its whole history again. Inside one hour of the last turn that history is read from a cache at a small part of the price; after an hour it is charged in full and written again at about twice the price. Helpers and reviewers keep their cache only 5 minutes. So the cost of a session is (size of its history) x (number of times it is woken), and a wake after a quiet hour costs most of all.
@@ -83,3 +87,5 @@ These lines are about how the team works with him, so no app test or reviewer ca
 - M79: QC_ROLES.md (qc-assistant and qc-controls run on every release).
 - M82: sections 4b and 5.
 - M84: COORDINATOR.md CURRENT STATE (the list of tasks to switch off and on).
+- M86, M87: section 4c and 4c-now (credits: few until the reset is not near, the whole allowance until Sun 29 Nov 09:00 JST).
+- M98: section 1 step 0 (the user walk before any line is written), LESSONS 6, qc-novice in plan mode.
