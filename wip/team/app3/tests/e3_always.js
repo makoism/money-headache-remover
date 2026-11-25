@@ -20,14 +20,7 @@ const fs = require('fs');
 const Q = require('./qc_places.js'), { w } = Q;
 
 /* real faults in the app this check found (the check stays failing; see tests/QCSCRIPTS_FOUND.md) */
-const AWAY = 'from setup or Settings on a new device, a tap on Ask closes them and puts the cursor in the first screen\'s answer box, but the page stays at its top: on a phone (390 by 844) the box is below the bottom of the screen, so the tap seems to do nothing (from the first screen itself the page does scroll to the box) (src/chat3.js chat3Ask; M1, M2, M17)';
 const KNOWN = {
-  'Setup: one tap on Ask opens the assistant, its box ready': AWAY,
-  'Setup: pay on two days, a second income every 2 weeks, a card with its close day, a bill once a year: one tap on Ask opens the assistant, its box ready': AWAY,
-  'Setup: pay every 2 weeks, a second income on two days: one tap on Ask opens the assistant, its box ready': AWAY,
-  'Setup: pay lands today: one tap on Ask opens the assistant, its box ready': AWAY,
-  'Settings from "I already use the burrow on another device": one tap on Ask opens the assistant, its box ready': AWAY,
-  'Settings (new device): one tap on Ask opens the assistant, its box ready': AWAY,
   'the way to the assistant stays on screen when a long place is scrolled to its end (M1 "always on screen")': 'before setup (setup, Settings on a new device, the first screen with Use any AI open) and with the made-up numbers there is no bar at the foot: the way in is the small Ask link in the header, and it scrolls away with the page (src/chat3.js renderChat3 hides the bar then; src/shell.html)',
 };
 const T = Q.make('e3_always', KNOWN), { ck } = T;

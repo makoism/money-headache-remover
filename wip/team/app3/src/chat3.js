@@ -379,7 +379,8 @@ async function chat3Ask() {
   if (!E3.book) {
     if ($('#a3Setup') && !$('#a3Setup').hidden) closeSetup3();
     showTab3('home');
-    const b = $('#a3Home #a3ChatIn'); if (b) b.focus();
+    /* the first screen's answer box can sit below a phone's screen: bring it into view, or the tap seems to do nothing */
+    const b = $('#a3Home #a3ChatIn'); if (b) { b.focus(); setTimeout(() => b.scrollIntoView({ block: 'center' }), 0); }
     return;
   }
   if ($('#a3Chat').hidden) renderChat3();
