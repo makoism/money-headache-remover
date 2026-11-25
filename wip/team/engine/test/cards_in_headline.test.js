@@ -65,7 +65,7 @@ const base = o => life(Object.assign({ day: '2026-11-24', told: '2026-11-24T09:0
   pays: o.pays || [{ key: 'pay', name: 'Pay', bank: 'main', amount: 300000, every: 'month', day: 10, shift: 'none', startsPeriod: true }],
   cards: (o.cards || []).map(c => (typeof c === 'string' ? CARD[c] : c)), bills: o.bills || [], free: o.free }, {}));
 /* Mako's made-up shape (mako_madeup.js), set up Tue 24 Nov 2026: Phone (20 Nov) is already out of the 286,000 */
-const mako = free => life(Object.assign({}, ANSWERS, { day: '2026-11-24', told: '2026-11-24T21:00+09:00' }, free != null ? { free } : {}));
+const mako = free => life(Object.assign({}, ANSWERS, { day: '2026-11-24', told: '2026-11-24T09:00+09:00' }, free != null ? { free } : {}));
 /* Ben (CASH_PLAN scene 3, cut down): set up Sun 20 Dec 2026 on his pay day; Main bank 300,000; pay 230,000 on the 20th;
    Rent 80,000 on the 27th; Card A 30,000, paid in full on the 25th, close day not sure; play money 40,000 each pay */
 const ben = () => life({ day: '2026-12-20', told: '2026-12-20T09:00:00.000+09:00', currency: 'JPY', country: 'JP',
