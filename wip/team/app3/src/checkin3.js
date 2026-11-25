@@ -8,7 +8,15 @@ function openCheck3() {
   /* [BI1] an item left unticked at an earlier check-in did not land before that check: the sheet asks the day it landed,
      the day after that check by default (the engine's landedFrom gives it) */
   const from = {}; for (const o of list) { const f = BurrowEngine.checkin.landedFrom(E3.book, { day }, o.item); if (f && o.lands < f) from[o.item] = f > day ? day : f; }
-  check3 = { day, list, from, sure: {}, ver: ACT3.ver() };   // [STALE_SHEET_PLAN] the book as this sheet saw it
+  /* [monthrule2 1b, coordinator's ruling way c; M31, M38, M44] a pay ticked after its due day: when did it come in? The due
+     day is picked, so one tap goes on as before; Today, or another day in a date box. Asked once per pay, on this sheet */
+  const isPay = it => (E3.book.schedules || []).some(s => s && !s.gone && s.kind === 'income' && s.id === BurrowEngine.ids.scheduleOf(it));
+  const came = {}; for (const o of list) if (!from[o.item] && o.lands < day && isPay(o.item)) came[o.item] = { pick: 'due', min: BurrowEngine.checkin.landedFrom(E3.book, { day }, o.item) || '' };
+  check3 = { day, list, from, came, sure: {}, ver: ACT3.ver() };   // [STALE_SHEET_PLAN] the book as this sheet saw it
+  const wd = d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date(d + 'T00:00:00Z').getUTCDay()] + ' ' + day3(d, yr);
+  const cameRow = (o, i) => (came[o.item] ? `<fieldset class="a3-field a3-came" data-camein="${esc3(o.item)}"><legend class="a3-q">When did it come in?</legend>
+      <div class="a3-segs"><button type="button" class="a3-seg a3-seg-s" data-came="due" aria-pressed="true">${esc3(wd(o.lands))} (the due day)</button><button type="button" class="a3-seg a3-seg-s" data-came="today" aria-pressed="false">Today, ${esc3(wd(day))}</button><button type="button" class="a3-seg a3-seg-s" data-came="other" aria-pressed="false">Another day</button></div>
+      <input class="a3-in" type="date" id="a3cm${i}" aria-label="The day ${esc3(E3.occName(o.item))} came in" data-cameday="${esc3(o.item)}" value="${esc3(o.lands)}"${came[o.item].min ? ` min="${esc3(came[o.item].min)}"` : ''} max="${esc3(day)}" hidden></fieldset>` : '');
   const landedRow = (o, i) => (from[o.item] ? `<div class="a3-field a3-landed"><label for="a3l${i}">Landed on</label>
       <input class="a3-in" type="date" id="a3l${i}" data-landed="${esc3(o.item)}" value="${esc3(from[o.item])}" min="${esc3(from[o.item])}" max="${esc3(day)}"></div>` : '');
   const rows = list.map((o, i) => `<div class="a3-tick" data-item="${esc3(o.item)}">
@@ -16,6 +24,7 @@ function openCheck3() {
       <label for="a3t${i}"><span>${esc3(E3.occName(o.item))}</span><span class="when" id="a3d${i}">${esc3(day3(o.lands, yr))}, ${esc3(E3.nameOf(o.account))}</span></label>
       <input class="a3-in" data-amount type="text" inputmode="decimal" autocomplete="off" aria-label="Amount for ${esc3(E3.occName(o.item))}" data-amt="${esc3(o.item)}" value="${SM.toInput(o.amount, E3.curOf(o.account))}">
       ${landedRow(o, i)}
+      ${cameRow(o, i)}
     </div>`).join('');
   const figs = Object.keys(r.accounts).map(id => `<div class="a3-field"><label for="a3f-${esc3(id)}">What does ${esc3(E3.nameOf(id))} show today?</label>
       <input class="a3-in" data-amount type="text" inputmode="decimal" autocomplete="off" id="a3f-${esc3(id)}" data-bankfig="${esc3(id)}" placeholder="${esc3(SM.symbol(r.accounts[id].currency).trim())}">
@@ -48,6 +57,13 @@ function openCheck3() {
     const o = (check3.payAsk || {})[el.dataset.payyes]; if (!o) return;
     const row = [...sheet.querySelectorAll('.a3-tick')].find(x => x.dataset.item === o.item), box = row && row.querySelector('input[type=checkbox]');
     if (box && !box.checked) { box.checked = true; box.dispatchEvent(new Event('change', { bubbles: true })); }
+    checkPreview3();
+  }));
+  sheet.querySelectorAll('[data-came]').forEach(el => el.addEventListener('click', () => {
+    const box = el.closest('[data-camein]'), c = check3.came[box.dataset.camein];
+    c.pick = el.dataset.came;
+    box.querySelectorAll('[data-came]').forEach(x => x.setAttribute('aria-pressed', String(x === el)));
+    const d = box.querySelector('[data-cameday]'); d.hidden = c.pick !== 'other'; if (!d.hidden) d.focus();
     checkPreview3();
   }));
   checkPreview3();
@@ -84,6 +100,13 @@ function readCheck3(strict) {
     if (ld) {
       if (!ld.value || ld.value < check3.from[o.item] || ld.value > check3.day) { if (strict) return bad(`${E3.occName(o.item)} was not in your last check, so it landed between ${day3(check3.from[o.item], check3.day.slice(0, 4))} and today`, ld); continue; }
       landed[o.item] = ld.value;
+    }
+    const c = (check3.came || {})[o.item];
+    if (c && c.pick === 'today') landed[o.item] = check3.day;
+    if (c && c.pick === 'other') {
+      const cd = row.querySelector('[data-cameday]');
+      if (!cd.value || cd.value > check3.day || (c.min && cd.value < c.min)) { if (strict) return bad(`Pick the day ${E3.occName(o.item)} came in, ${c.min ? `between ${day3(c.min, check3.day.slice(0, 4))} and today` : 'today or before'}`, cd); continue; }
+      landed[o.item] = cd.value;
     }
   }
   return { figures, ticked, amounts, expected, lands, landed };

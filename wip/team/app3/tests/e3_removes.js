@@ -21,6 +21,7 @@ const TABLE = {
   'Remove this account': 'sure (tests/e3_acctclose.js)',
   'Stop here': 'its own question in Settings (tests/e3_cloud.js)',
   'Delete the cloud copy': 'its own question in Settings (tests/e3_cloud.js)',
+  'Delete it for good': 'the second step of Delete the cloud copy, after its own question with Keep it first (tests/e3_cloud.js)',
   'Drop it': 'its own question in Settings (tests/e3_restore.js, e3_backup.js)',
   'Clear': 'the assistant\'s error log, not money; Undo on the bar (tests/e3_ailog.js)',
   'Clear it': 'the code word kept on this device, not money (settings3.js)',
