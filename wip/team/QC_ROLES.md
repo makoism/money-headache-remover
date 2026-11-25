@@ -25,7 +25,7 @@ Mako, 24 Nov 2026, after his first run of version one: "the fact that we missed 
 | qc-numbers (gate) | Is every figure right, worked out by hand? | Every release, and whenever a figure can change. |
 | qc-controls (gate) | Can a person add, change, remove and undo everything, and get out of every box? | Every release, and every slice that adds or changes a screen. |
 | qc-assistant (gate) | Is the assistant the main way in, and can it do everything with Undo? | Every release, and every slice that touches the assistant or setup. |
-| qc-novice | A first run by someone who never learned about money, used the way Mako used it. | Every release, and every slice that changes what a person sees. |
+| qc-novice | A first run by someone who never learned about money, used the way Mako used it. On a plan: walk the plan as that person living a month (M98). | Every release, every slice that changes what a person sees, and every plan for a new feature before building (with qc-foundation). |
 | qc-data-safety | Can a person lose their numbers by any ordinary accident? | Every release, and whenever saving, cloud copy, backup or the assistant's changes are touched. |
 | qc-layout-touch | Every screen at every size, reachable and readable. | Every release, and every slice that changes a screen. |
 | qc-voice | Does any line sound like AI, does it sound like Mako, does the person know what to do next? | Any words before Mako sees them, the assistant's own lines included. |

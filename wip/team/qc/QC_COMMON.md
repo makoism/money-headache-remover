@@ -24,6 +24,7 @@ Your scripts and pictures go in `/tmp/qc/<your role>/`. Pictures a person will s
 Read in full before you start:
 - `wip/team/NORTH_STAR.md` (what the app is for).
 - `wip/team/MAKO_SAYS.md` (what the owner has said the app must be and do, each line with an id like M12). This is not the builder's reasoning. It is what the build is judged against.
+- Section H of MAKO_SAYS.md (M92 to M97) is how the owner means the app to be used: cash envelopes once a month, play money as cash in the wallet, everything else on the card with receipts sent to the assistant. Judge the build as that person living a month with it, not only as a structure (M97).
 - This page and your own brief.
 Do not read anything else unless your brief names it: not RESUME.md, plans, DECISIONS files, `app3/FOR_MAKO.md`, other reviewers' reports, test files, commit messages, `git log` or `git diff`. You judge like someone who never saw how or why the build was made. If you need the builder's reasons to understand a screen, that is a finding: the build does not explain itself.
 
