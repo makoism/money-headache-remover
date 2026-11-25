@@ -31,7 +31,18 @@ Files most touched: app3/src/plan3.js, plan3_write.js, chat3_core.js, settings3.
 ## Branches
 | Branch | Hash | State | Owes |
 |---|---|---|---|
-| lane/e-state | (this commit) | state page | keep current |
+| lane/e-state | this page | state page | keep current |
+| lane/controls-1 | ecfbad9e | slice 1 built: controls3.js + tests/controls3.test.js (a1671887), Plan > Accounts + Add an account + account sheet (1f040bdb), assistant change_account (661a70c0), ai-join b54ace71 merged | check3 full (run 1: only e3_stmt failed, a timing flake that passes alone 3 times; run 2 going), round folder qc_reports/2026-11-26_controls1 (scope.txt asked of the coordinator), then qc-controls + qc-assistant, then ready report |
+| lane/controls-2 | 072668a3 (+ uncommitted in .claude/worktrees/c2) | slice 2: closeAccount, reopenAccount, removeAccount steps committed; screens (Close this account sheet, Closed list with Reopen, Remove this account) and assistant close_account / reopen_account / remove_account written, node tests pass | page tests e3_acctclose (passes alone), e3_removes, e3_fakeai_page, e3_names, e3_layout; commit; then check3 full, qc-controls + qc-foundation + qc-data-safety |
+
+## Notes for the next session
+- Worktrees: main checkout on lane/controls-1; .claude/worktrees/c2 on lane/controls-2; .claude/worktrees/estate on lane/e-state.
+- Fresh machine: tools line in RESUME (npm install puppeteer-core acorn acorn-walk in /home/claude/work/tools), `git fetch --unshallow origin lane/ai-join wip-38.31 main`. check3 quick without named tests runs almost everything (ai-join differs a lot from wip-38.31): name the page tests.
+- In page tests, scope selectors to #a3Plan: Home has its own [data-acct] rows.
+- Assistant tests: K.confirm does not call the model; refs of closed accounts come after the open ones (chat3_core figures).
+- Slice 3 notes: a pay-off is a `repay` event { k: 'repay', acct: payFrom, acct2: card, to: card, a }; trace a worked example (card owed 23,000 paid off today: the next payment day shows 0, bank falls 23,000 today, safe to spend unchanged or up) before building.
 
 ## Next steps
-1. lane/controls-1 from origin/lane/ai-join: controls3.js and its test first.
+1. Slice 1: when check3 full is ALL GOOD, copy it to the round folder, screen pack, ask for scope.txt if not there, run qc-controls and qc-assistant (opus, brief opens with "read wip/team/MAKO_SAYS.md first", agent file + build path + round folder only).
+2. Slice 2: page tests, commit, merge ai-join, full check, reviewers.
+3. Slice 3 (cards and loans).
