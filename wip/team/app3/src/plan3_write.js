@@ -38,6 +38,12 @@
   const period = w => { const p = LA.lookahead(w.book, w.today).period; if (!p) bad('Your plan needs a pay day first'); return p; };
   /* [slice 6, B4] with no fixed pay there are no pay periods: lines and Free to spend are each month, by the day */
   const noPay = w => !LA.lookahead(w.book, w.today).period;
+  /* [E1b, M13, M23] the account that pays a card, a loan or a bill: a live bank, cash or e-wallet of your own (a bill may be
+     paid from a card too), not closed */
+  const payerOk = (w, acct, card) => { const y = (w.book.accounts || []).find(z => live(z) && z.id === acct); if (!y || y.closed || !(OWN_KINDS[y.type] || (card && y.type === 'card'))) bad('Pick the account it is paid from'); return acct; };
+  /* [E1b] a new paying account (or weekend rule) counts from the next payment on. One gone by and not ticked off would
+     move with it, though it may already have left the old account: it is ticked off first */
+  const notTicked = day => { if (day) bad(`The payment of ${SN3.dayLabel(day, false)} is not ticked off yet. Tick it at Check your bank first: a change of account counts from the next one`); };
   const sameName = (list, name, id) => { if (list.some(x => live(x) && x.id !== id && String(x.name).toLowerCase() === name.toLowerCase())) bad('There is already one called ' + name); };
 
   /* ---- budget lines and Free to spend ---- */
@@ -168,11 +174,20 @@
     }
     const toNone = !!rhythm && rhythm.every === 'none', fromNone = !!rhythm && wasNone;
     if (x.name != null && x.name !== s.name) { ch.name = nameOk(x.name); sameName(A3.listOf(w.book, 'schedules').filter(y => y.kind === s.kind), ch.name, id); }
+    /* [E1b, M13] a bill's paying account, from its next one */
+    if (s.kind === 'bill' && x.acct != null && x.acct !== '' && x.acct !== s.acct) { ch.acct = payerOk(w, x.acct, true); notTicked(((v.outstanding || [])[0] || {}).land); }
     let from = x.from || v.changeFrom;
     if (s.kind === 'income' && x.amount === 0) bad(PAY_NEEDS_AMOUNT);   // [BL1] a pay always has an amount
     if (fromNone && x.amount == null && v.amount == null) bad(PAY_NEEDS_AMOUNT);
-    const dayMoved = x.every == null && x.day != null && !(v.rule && v.rule.every === 'month' && v.rule.days.length === 1 && v.rule.days[0] === x.day);
-    if ((x.amount != null && x.amount !== v.amount) || dayMoved || rhythm) {
+    /* [E1b, M13] a yearly bill: its month and day change from a date, a new rule as a monthly bill's day */
+    const yearly = s.kind === 'bill' && !!(v.rule && v.rule.every === 'year');
+    let yearRule = null;
+    if (yearly && (x.month != null || x.day != null)) {
+      const r = billRule({ every: 'year', month: x.month != null ? x.month : Number(v.rule.date.slice(0, 2)), day: x.day != null ? x.day : Number(v.rule.date.slice(3)) });
+      if (r.date !== v.rule.date) yearRule = r;
+    }
+    const dayMoved = !yearly && x.every == null && x.day != null && !(v.rule && v.rule.every === 'month' && v.rule.days.length === 1 && v.rule.days[0] === x.day);
+    if ((x.amount != null && x.amount !== v.amount) || dayMoved || rhythm || yearRule) {
       if (!DAY.test(from)) bad('Pick the day the change starts');
       if (from < v.changeFrom) bad('The change can start on ' + v.changeFrom + ' at the earliest: an earlier one is already paid or noted');
       /* [slice 6b] from no fixed pay: the new rule and the pay's amount start with its first pay on or after `from` */
@@ -188,6 +203,7 @@
       if ((x.amount != null && x.amount !== v.amount) || (fromNone && x.amount != null)) ch.steps = (s.steps || []).concat([{ from, amount: amountOk(x.amount, 'the amount') }]);
       if (dayMoved) ch.rules = (s.rules || []).concat([{ from, rule: { every: 'month', days: [dayOfMonth(x.day)] } }]);
       if (rhythm) ch.rules = (s.rules || []).concat([{ from, rule: rhythm }]);
+      if (yearRule) ch.rules = (s.rules || []).concat([{ from, rule: yearRule }]);
     }
     if (!Object.keys(ch).length) bad('Nothing changed');
     /* [slice 6] the pay that starts the period changes how often it lands: each line counted each pay is asked about;
@@ -357,7 +373,7 @@
   /* ---- loans, and the days of a card (each owns its payment day [B5, E6]) ---- */
   function addLoan(w, x) {
     const name = nameOk(x.name), owed = amountOk(x.owed, 'what is owed'), pay = amountOk(x.amount, 'the usual payment'), d = dayOfMonth(x.payDay);
-    const payFrom = x.payFrom || mainOf(w);
+    const payFrom = payerOk(w, x.payFrom || mainOf(w));
     sameName((w.book.accounts || []), name);
     const id = w.add('accounts', { name, type: 'loan', cur: home(w), owner: null, payDay: d, shift: x.shift || 'after', payFrom, amount: pay });
     w.add('events', { k: 'open', acct: id, date: w.today, a: owed });
@@ -365,7 +381,7 @@
     return id;
   }
   /* a card added after setup (QC F1), the same shape setup writes (engine/build_book.js): it owns its payment day, is
-     paid in full from the main bank, and opens with what is on it today; close day null is "not sure" (all that is owed
+     paid in full from the account chosen (the main bank by default) [E1b], and opens with what is on it today; close day null is "not sure" (all that is owed
      is due on each payment day) [H4] */
   const SHIFTS = { after: 1, before: 1, none: 1 };
   function addCard(w, x) {
@@ -374,7 +390,7 @@
     const cutDay = x.cutDay == null || x.cutDay === '' || x.cutDay === 'not sure' ? null : x.cutDay === 'last' ? 'last' : dayOfMonth(x.cutDay);
     const shift = x.shift == null ? 'after' : x.shift;
     if (!SHIFTS[shift]) bad('Pick what happens on a weekend or holiday');
-    const payFrom = x.payFrom || mainOf(w);
+    const payFrom = payerOk(w, x.payFrom || mainOf(w));
     sameName((w.book.accounts || []), name);
     const id = w.add('accounts', { name, type: 'card', cur: home(w), owner: null, inFull: true, cutDay, payDay: d, payMonths: 1, shift, payFrom });
     w.add('events', { k: 'open', acct: id, date: w.today, a: x.owed });
@@ -388,6 +404,10 @@
     if (x.payDay != null && x.payDay !== a.payDay) ch.payDay = dayOfMonth(x.payDay);
     if (a.type === 'loan' && x.amount != null && x.amount !== a.amount) ch.amount = amountOk(x.amount, 'the usual payment');
     if (a.type === 'card' && x.cutDay !== undefined && x.cutDay !== a.cutDay) ch.cutDay = x.cutDay === null ? null : dayOfMonth(x.cutDay);
+    /* [E1b, M13, M23] the account that pays it and its weekend rule, from the next payment on */
+    if (x.payFrom != null && x.payFrom !== '' && x.payFrom !== (a.payFrom || mainOf(w))) ch.payFrom = payerOk(w, x.payFrom);
+    if (x.shift != null && x.shift !== '' && x.shift !== (a.shift || 'after')) { if (!SHIFTS[x.shift]) bad('Pick what happens on a weekend or holiday'); ch.shift = x.shift; }
+    if (ch.payFrom || ch.shift) { const r = LA.lookahead(w.book, w.today), k = (a.type === 'card' ? r.cards : r.owed)[id] || {}; notTicked(((k.overdue || [])[0] || {}).payment_date); }
     if (!Object.keys(ch).length) bad('Nothing changed');
     w.edit('accounts', id, ch);
     return id;
@@ -482,7 +502,7 @@
     if (x.min !== undefined) {
       const was = a.minBank ? a.minBank.a : null, now = x.min === '' || x.min === null || x.min === 0 ? null : x.min;
       if (now !== was) {
-        if (id === mainOf(w)) bad('Keep at least for your main bank is in Settings');
+        if (id === mainOf(w)) bad('Keep at least for your main bank is in Settings');   // [E5] Settings, Money
         ch.minBank = now === null ? null : { a: amountOk(now, 'the amount to keep'), cur: a.cur || home(w) };
       }
     }

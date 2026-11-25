@@ -315,6 +315,47 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const r3 = await K.turn(u.state || r2.state, 'no minimum please', d);
     eq([r3.shown.find(x => x.who === 'card').card.status, hp.book.home.main.v.min], ['done', null]);
   });
+  await t('[E1b, M3, M13, M23] "add a card paid from Savings" and "pay rent from Savings": add_card and change_bill take the paying account (and a card its weekend rule), each with a card and Undo', async () => {
+    const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
+    const sv = () => hp.book.accounts.find(a => a.name === 'Savings' && !a.gone);
+    const refOf = (body, re) => FAKE.results(body)[0].text.split('\n').find(l => re.test(l)).split(' | ')[0];
+    let rentRef = null;
+    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'add_account', name: 'Savings', type: 'bank', amount: 40000, moved: false }] })]), say('Added.'),
+      say('', [call('list', { what: 'accounts' })]), body => say('', [call('change', { steps: [{ do: 'add_card', name: 'Shop card', owed: 0, payDay: 15, closeDay: 'not sure', account: refOf(body, /Savings/), shift: 'before' }] })]), say('Added.'),
+      say('', [call('list', { what: 'bills' })]), body => { rentRef = refOf(body, /Rent/); return say('', [call('list', { what: 'accounts' })]); },
+      body => say('', [call('change', { steps: [{ do: 'change_bill', ref: rentRef, account: refOf(body, /Savings/) }] })]), say('Changed.')]);
+    const d = hp.deps(f);
+    const r1 = await K.turn(state, 'Add a bank called Savings with 40,000 in it, new money', d);
+    const r2 = await K.turn(r1.state, 'add a card called Shop card, 0 on it now, paid on the 15th from Savings, the working day before', d);
+    const c2 = r2.shown.find(x => x.who === 'card'), sc = hp.book.accounts.find(a => a.name === 'Shop card');
+    eq([c2.card.status, !!sc && sc.payFrom === sv().id, sc && sc.shift], ['done', true, 'before'], JSON.stringify(c2.card) + JSON.stringify(sc));
+    ok(/Savings/.test(c2.card.lines.join(' ')), 'the card says Savings: ' + c2.card.lines.join(' | '));
+    const rent = hp.book.schedules.find(x => x.name === 'Rent'), main = hp.book.home.main.v.acct;
+    const r3 = await K.turn(r2.state, 'pay rent from Savings from now on', d);
+    const c3 = r3.shown.find(x => x.who === 'card');
+    eq([c3 && c3.card.status, hp.book.schedules.find(x => x.id === rent.id).acct === sv().id], ['done', true], JSON.stringify(c3 && c3.card));
+    ok(/Savings/.test(c3.card.lines.join(' ')), 'the card says Savings: ' + c3.card.lines.join(' | '));
+    const u = await K.undo(r3.state, c3.id, d); ok(u.ok, JSON.stringify(u));
+    eq(hp.book.schedules.find(x => x.id === rent.id).acct, main, 'Undo puts the main bank back');
+  });
+  await t('[E1b, M13, M23] "card A is paid from Savings now, the working day before": change_card takes payFrom and shift; add_loan takes payFrom; Undo', async () => {
+    const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
+    const refOf = (body, re) => FAKE.results(body)[0].text.split('\n').find(l => re.test(l)).split(' | ')[0];
+    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'add_account', name: 'Savings', type: 'bank', amount: 40000, moved: false }] })]), say('Added.'),
+      say('', [call('list', { what: 'accounts' })]), body => say('', [call('change', { steps: [{ do: 'change_card', account: 'A2', payFrom: refOf(body, /Savings/), shift: 'before' }] })]), say('Changed.'),
+      say('', [call('list', { what: 'accounts' })]), body => say('', [call('change', { steps: [{ do: 'add_loan', name: 'Bike loan', owed: 90000, amount: 10000, payDay: 5, payFrom: refOf(body, /Savings/) }] })]), say('Added.')]);
+    const d = hp.deps(f), card = hp.book.accounts.find(a => a.type === 'card').id, main = hp.book.home.main.v.acct;
+    const r1 = await K.turn(state, 'Add a bank called Savings with 40,000 in it, new money', d);
+    const sv = hp.book.accounts.find(a => a.name === 'Savings').id;
+    const r2 = await K.turn(r1.state, 'card A is paid from Savings now, the working day before a weekend', d);
+    const c2 = r2.shown.find(x => x.who === 'card'), ca = hp.book.accounts.find(a => a.id === card);
+    eq([c2.card.status, ca.payFrom, ca.shift], ['done', sv, 'before'], JSON.stringify(c2.card));
+    ok(/paid from Savings/.test(c2.card.lines.join(' ')), c2.card.lines.join(' | '));
+    const u = await K.undo(r2.state, c2.id, d); ok(u.ok, JSON.stringify(u));
+    eq(hp.book.accounts.find(a => a.id === card).payFrom, main, 'Undo puts the main bank back');
+    const r3 = await K.turn(u.state || r2.state, 'add a bike loan, 90,000 owed, 10,000 on the 5th from Savings', d);
+    eq([r3.shown.find(x => x.who === 'card').card.status, (hp.book.accounts.find(a => a.name === 'Bike loan') || {}).payFrom], ['done', sv]);
+  });
   await t('[M6] an answer to a follow-up question ("from when?") still counts the amount typed just before', async () => {
     const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
     const f = FAKE.make([say('From when: this one, or the next one?'),

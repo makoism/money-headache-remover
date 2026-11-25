@@ -666,7 +666,7 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     ok((await h.go('addAccount', { name: 'Cash', type: 'cash', amount: 12000, moved: false })).ok);
     const cash = h.book.accounts.find(a => a.name === 'Cash').id, bankName = h.book.accounts.find(a => a.id === BANK).name;
     for (const [id, x, words] of [[cash, { name: bankName }, 'There is already one called'], [cash, { name: '  ' }, 'Type a name'], [cash, { name: 'Cash' }, 'Nothing changed'],
-      [CARD_A, { name: 'New' }, 'Plan, under Cards and loans'], [BANK, { name: bankName, min: 5000 }, 'Keep at least for your main bank']]) {
+      [CARD_A, { name: 'New' }, 'Plan, under Cards and loans'], [BANK, { name: bankName, min: 5000 }, 'Keep at least for your main bank is in Settings']]) {
       const z = await h.go('changeAccount', id, x); ok(!z.ok && z.text.includes(words), JSON.stringify([x, z.text]));
     }
     const r = await h.go('changeAccount', BANK, { name: 'Everyday bank' }); ok(r.ok, 'the main bank renames ' + JSON.stringify(r));
