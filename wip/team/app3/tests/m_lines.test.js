@@ -18,7 +18,8 @@
    kept and counted, and written in tests/QCSCRIPTS_FOUND.md for the coordinator, who owns MAKO_SAYS and the briefs).
    This file and wording_lint.test.js's own M62 check aside, a file that only lists ids proves nothing: this file is
    never counted.
-   MLINES_SAYS=<a copy of MAKO_SAYS.md> reads that copy instead (to prove the check on a planted line; never in check3). */
+   MLINES_SAYS=<a copy of MAKO_SAYS.md> reads that copy instead (to prove the check on a planted line; never in check3).
+   MLINES_COVER=<a made-up M_COVERAGE.md> the same, for the cover page. */
 'use strict';
 const fs = require('fs'), path = require('path');
 const ROOT = path.join(__dirname, '../../../..');
@@ -85,7 +86,11 @@ const scopes = [], byScope = {};
   for (const d of fs.existsSync(path.join(ROOT, base)) ? fs.readdirSync(path.join(ROOT, base)) : []) for (const f of ls(base + '/' + d, /^scope.*\.(txt|md)$/)) { scopes.push(f); for (const id of ids(rd(f))) (byScope[id] = byScope[id] || []).push(f.replace(base + '/', '')); }
 }
 
-const cover = fs.existsSync(path.join(ROOT, 'wip/team/M_COVERAGE.md')) ? ids(rd('wip/team/M_COVERAGE.md')) : new Set();
+/* M_COVERAGE.md: a line of it that says "no cover yet" names a gap, not a cover: its ids are counted apart and still fail */
+const coverLines = fs.existsSync(path.join(ROOT, 'wip/team/M_COVERAGE.md')) ? (process.env.MLINES_COVER ? fs.readFileSync(process.env.MLINES_COVER, 'utf8') : rd('wip/team/M_COVERAGE.md')).split('\n') : process.env.MLINES_COVER ? fs.readFileSync(process.env.MLINES_COVER, 'utf8').split('\n') : [];
+const noCover = new Set(), cover = new Set();
+for (const l of coverLines) for (const id of ids(l)) (/no cover yet/i.test(l) ? noCover : cover).add(id);
+for (const id of noCover) cover.delete(id);
 const book8 = (() => { const t = fs.existsSync(path.join(ROOT, 'wip/team/RUNBOOK.md')) ? rd('wip/team/RUNBOOK.md') : '', i = t.search(/^## 8\. /m); if (i < 0) return new Set(); const rest = t.slice(i + 3), j = rest.search(/^## /m); return ids(j < 0 ? rest : rest.slice(0, j)); })();
 const onlySection = [], nobody = [];
 for (const l of lines) {
@@ -103,6 +108,7 @@ const named = lines.filter(l => byTest[l.id]).map(l => l.id);
 console.log(`\nM LINES: ${lines.length} in MAKO_SAYS.md (${lines[0].id} to ${lines[lines.length - 1].id}); ${tests.length} test files, ${briefs.length} briefs and ${scopes.length} scope files read`);
 console.log(`NAMED BY A TEST (${named.length}): ${named.join(' ') || 'none'}`);
 console.log(`HELD ONLY BY A REVIEWER'S WHOLE SECTION, not named by id (${onlySection.length}): ${onlySection.map(l => l.id).join(' ') || 'none'}`);
+console.log(`NO COVER YET, written so in M_COVERAGE.md (${lines.filter(l => noCover.has(l.id)).length}): ${lines.filter(l => noCover.has(l.id)).map(l => l.id).join(' ') || 'none'}`);
 console.log(`NOBODY NAMES (${nobody.length}): ${nobody.map(l => l.id).join(' ') || 'none'}`);
 for (const l of nobody) console.log(`  ${l.id}. ${l.text}`);
 console.log(bad ? `m_lines: ${bad} FAIL of ${n}` + (known ? ` (and ${known} KNOWN FAIL)` : '') : `m_lines: ALL PASS (${n - known})` + (known ? ` and ${known} KNOWN FAIL (the lines in this test's KNOWN table, each in tests/QCSCRIPTS_FOUND.md)` : ''));
