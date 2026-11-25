@@ -69,6 +69,7 @@
   { "name": "Walk 2: setup asks whether each bill due since the last pay has gone out yet (BI3); Home lists what may still go through (BI4a); a late or not seen pay is named by the day it lands (BI4b)", "test": "tests/e3_walk2.js", "passes": true },
   { "name": "Walk 4: Plan shows an outstanding pay with its own amount; Receipts shows the typed note beside a statement row and search finds it", "test": "tests/e3_walk4.js", "passes": true },
   { "name": "The real-page walk (walk 4 run A) as a gate: Mako's made-up shape from setup on 24 Nov to 15 Feb through the page, safe to spend and the bank at every step are the hand-worked figures", "test": "tests/e3_walk.js", "passes": true },
-  { "name": "Setup, short (setup3): bank today, pay with a second income, cards with a close day or not sure, bills, the minimum; through build_book and the store", "test": "tests/e3_setup.js", "passes": true }
+  { "name": "Setup, short (setup3): bank today, pay with a second income, cards with a close day or not sure, bills, the minimum; through build_book and the store", "test": "tests/e3_setup.js", "passes": true },
+  { "name": "The layout holds at 320, 390, 412 and 1300 wide (M52, M33): a long unbroken word or a very big figure wraps inside its card, a drop-down wraps its words instead of cutting them, a date box shows its whole date, the help mark and every other thing to tap is at least 44 by 44, and no screen scrolls sideways; counted on every main screen and sheet with a stress book and on a new device", "test": "tests/e3_layout.js", "passes": true }
  ]
 }

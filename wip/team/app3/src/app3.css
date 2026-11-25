@@ -112,7 +112,7 @@ html { scroll-padding-top: 72px; }
 .a3-stmt-rows label { display: flex; gap: 10px; align-items: flex-start; }
 .a3-stmt-rows li[data-status=repeat] { opacity: .6; }
 .a3-tick2 { grid-template-columns: 28px 1fr auto; }
-details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
+details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 44px; }
 .a3-tick2 > span:not(.amt) { display: flex; flex-direction: column; }
 /* Plan (plan lane) */
 #a3Plan { display: flex; flex-direction: column; gap: var(--gap-card); }
@@ -229,3 +229,7 @@ details summary { display: flex; align-items: center; }
 .burrow-help[aria-expanded="true"] { background: radial-gradient(circle closest-side, var(--accent) 14px, transparent 14.5px); color: var(--on-accent); }
 details summary { min-height: 44px; }
 .a3-rem-go { flex-wrap: wrap; }
+/* a date box always shows its whole date: it has a least width, and a field that sits in a tick row (Check your bank's
+   "Landed on") takes the row's full width instead of the tick's narrow column (qc-layout blocker 1) */
+.a3-in[type="date"] { min-width: min(100%, 10.5em); }
+.a3-tick > .a3-field { grid-column: 1 / -1; }

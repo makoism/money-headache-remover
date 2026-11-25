@@ -13,6 +13,7 @@
    On every main screen and sheet (the list is printed with the result) these four hold:
      1. no sideways scroll (the page, the scrolling area #a3, the assistant's panel) and nothing runs off its card;
      2. no drop-down cuts its own words: the longest option fits the box, on as many lines as the box shows;
+        where the box wraps its words, the longest option is picked for a moment and the box must hold it;
      3. no date box is too narrow to show its date;
      4. nothing to tap is under 44 by 44, except a tick box whose label is 44 high (the label is the target).
    The header's "Ask" link is left out of 4: it is being replaced (the assistant is the bar and the panel now).
@@ -84,7 +85,11 @@ function audit() {
     const lh = px(cs.lineHeight) || px(cs.fontSize) * 1.2, lines = Math.max(1, Math.floor((s.clientHeight - px(cs.paddingTop) - px(cs.paddingBottom) + 2) / lh));
     const wraps = cs.whiteSpace !== 'nowrap' && cs.whiteSpace !== 'pre';
     const fits = need <= room + 1 || (wraps && need <= room * lines * 0.8 && !words.split(/\s+/).some(x => cv.measureText(x).width > room + 1 && cs.overflowWrap === 'normal' && cs.wordBreak === 'normal'));
-    if (!fits) out.push(`drop-down cuts its words: ${name(s)} needs ${Math.round(need)} for "${words.slice(0, 30)}", has ${Math.round(room)} on ${lines} line${lines > 1 ? 's' : ''}`);
+    /* a drop-down whose own box wraps (app3.css: appearance base-select) grows when a longer choice is picked: pick the
+       longest for a moment (no change event, put back at once) and measure the box itself */
+    let grown = false;
+    if (!fits && wraps && cs.appearance === 'base-select') { const was = s.selectedIndex; s.selectedIndex = [...s.options].findIndex(o => o.textContent.trim() === words); grown = s.scrollWidth <= s.clientWidth + 1 && s.getBoundingClientRect().right <= innerWidth + 1; s.selectedIndex = was; }
+    if (!fits && !grown) out.push(`drop-down cuts its words: ${name(s)} needs ${Math.round(need)} for "${words.slice(0, 30)}", has ${Math.round(room)} on ${lines} line${lines > 1 ? 's' : ''}`);
   }
   for (const d of document.querySelectorAll('input[type=date]')) {
     if (!vis(d)) continue;
