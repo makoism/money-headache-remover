@@ -295,7 +295,7 @@ async function chat3Screens() {
   if (!$('#a3SetupBack') || !$('#a3SetupBack').hidden) return;
   const d = CHAT3.state && CHAT3.state.draft;
   if (!d || !(d.banks || []).length || typeof ANSWERS3 !== 'object') return;
-  try { chat3FormFill(ANSWERS3.toForm(d, { day: E3.today() })); } catch (e) { /* the form stays as it was: every box can still be typed */ }
+  try { chat3FormFill(ANSWERS3.toForm(d, { day: E3.today() })); setupFromChat3(); } catch (e) { /* the form stays as it was: every box can still be typed */ }
 }
 function chat3FormFill(f) {
   const cur = f.cur || 'JPY';

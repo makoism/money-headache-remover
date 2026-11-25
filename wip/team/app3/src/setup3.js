@@ -109,6 +109,7 @@ async function openSetup3() {
     <h1 id="a3SetupT">Set up with your own numbers</h1>
     <p class="a3-sub">Press Save under each part as you go. What you save stays on this device, so you can leave and come back. See my money at the end puts it together</p>
     <p class="a3-sub" id="a3SetupBack" hidden>What you saved before is back below. Carry on where you left off</p>
+    <p class="a3-warn" id="a3SetupTodo" role="status" hidden></p>
     <section class="a3-card" data-sec="bank"><h2>Your bank</h2>
       <div class="a3-field"><label for="s3BankName">Its name</label><input class="a3-in a3-txt" id="s3BankName" placeholder="Main bank" autocomplete="off"></div>
       <div class="a3-field"><label for="s3Bank">What does your bank show today?</label><input class="a3-in" id="s3Bank" data-amount data-money></div>
@@ -250,6 +251,10 @@ function form3(strict, sec) {
   const maybe = (el, words) => (el.value.trim() ? amount(el, words) : null);
   const text = (el, dflt) => (el.value || '').trim() || dflt;
   const dayOf = v => (v === 'last' ? 'last' : Number(v));
+  /* [AI_JOIN_FIXES I1] two rows of one kind with the same name (two left blank are both "Bill"): said next to the second
+     one at its own section's Save, in the words the book's build uses, never only at See my money */
+  const names = {};
+  const oneName = (sec, box, name) => { const k = sec + ':' + ANSWERS3.keyOf(sec, name); if (names[k] && asks(box)) ask(box, 'There are two called ' + name + '. Give each its own name'); names[k] = 1; };
   const bankName = text($('#s3BankName'), 'Main bank');
   /* [M1] the minimum: blank is none */
   const min = maybe($('#s3Min'), 'Type the amount to keep at least, or leave it blank');
@@ -262,6 +267,8 @@ function form3(strict, sec) {
   const place = { bank1: 'bank1' }, seats = ['bank1'];
   $$('#a3Setup [data-row^=acct]').forEach(row => {
     const type = row.querySelector('[data-f=type]').value, name = text(row.querySelector('[data-f=name]'), KIND_NAME3[type]);
+    if (!names['banks:' + ANSWERS3.keyOf('banks', bankName)]) names['banks:' + ANSWERS3.keyOf('banks', bankName)] = 1;
+    oneName('banks', row.querySelector('[data-f=name]'), name);
     place[row.dataset.row] = 'acct' + seats.push(row.dataset.row);   // how many accounts so far, this one counted: acct2, acct3, ...
     f.accts.push({ name, type, amount: amount(row.querySelector('[data-f=amount]'), `Type what ${name} holds today, or 0`) });
   });
@@ -272,6 +279,7 @@ function form3(strict, sec) {
   const every = $('#s3PayEvery').value, start = startOf(every, $('#s3PayStart'));
   $$('#a3Setup [data-row^=pay]').forEach((row, i) => {
     const name = text(row.querySelector('[data-f=name]'), i ? 'Second income' : 'Pay');
+    oneName('pays', row.querySelector('[data-f=name]'), name);
     const ev = i ? row.querySelector('[data-f=every]').value : every, r = ev === 'same' ? every : ev;
     const st = !i || ev === 'same' ? start : startOf(ev, row.querySelector('[data-f=start]'));
     const box = row.querySelector('[data-f=amount]');
@@ -284,6 +292,7 @@ function form3(strict, sec) {
   });
   $$('#a3Setup [data-row^=card]').forEach(row => {
     const name = text(row.querySelector('[data-f=name]'), 'Card'), cd = row.querySelector('[data-f=closeDay]').value;
+    oneName('cards', row.querySelector('[data-f=name]'), name);
     const owed = amount(row.querySelector('[data-f=owed]'), `Type what is on ${name} now, or 0`);
     /* [BL6] asked only between the close and its payment day (askTaken3 shows it); blank: all of it was on that statement */
     const q = row.querySelector('[data-q=stmt]'), st = row.querySelector('[data-f=statement]');
@@ -293,6 +302,7 @@ function form3(strict, sec) {
   });
   $$('#a3Setup [data-row^=bill]').forEach(row => {
     const name = text(row.querySelector('[data-f=name]'), 'Bill'), q = row.querySelector('[data-q=takenOut]');
+    oneName('bills', row.querySelector('[data-f=name]'), name);
     /* [K32] a bill of 0 is refused with Plan's own words (plan3_write amountOk), as Plan refuses it */
     const box = row.querySelector('[data-f=amount]'), amt = amount(box, `Type the amount of ${name}`);
     if (amt === 0 && asks(box)) ask(box, 'Type the amount above zero');
@@ -340,7 +350,16 @@ function shape3() {
 function askTaken3() {
   if (!setup3) return;
   let q = { asked: {}, statements: {}, payToday: false };
-  try { q = ANSWERS3.questions(answers3(false), { day: E3.today(), currency: $('#s3Cur').value }); } catch (e) { /* not yet a whole set of answers */ }
+  /* [AI_JOIN_FIXES I2] a pay every n weeks with the day of one still blank: today stands in for that day so the day's
+     questions are still asked (fromForm itself refuses a blank day); marked, so today is never taken as a pay landing
+     today, and See my money still asks for the day */
+  try {
+    const f = form3(false), today = E3.today();
+    let noStart = false;
+    for (const p of [f.pay].concat(f.pays)) if (p && String(p.every).startsWith('weeks') && !p.start) { p.start = today; noStart = true; }
+    q = ANSWERS3.questions(ANSWERS3.fromForm(f, { day: today }), { day: today, currency: $('#s3Cur').value });
+    if (noStart) q.payToday = false;
+  } catch (e) { /* not yet a whole set of answers */ }
   const yr = (E3.today() || '').slice(0, 4), key = (sec, row, dflt) => ANSWERS3.keyOf(sec, (row.querySelector('[data-f=name]').value || '').trim() || dflt);
   /* [BV2.13] the pay lands today: is it in the figure typed? */
   $('#a3Setup [data-q=payToday]').hidden = !q.payToday;
@@ -413,7 +432,17 @@ function markAll3() {
     el.dataset.state = st;
     el.querySelector(`[data-saved="${sec}"]`).textContent = STATE_WORDS3[st](sec);
   }
+  /* [AI_JOIN_FIXES I3] filled in from the chat ("Set up on the screens"): one line at the top names the sections that
+     still need Save, and why */
+  const todo = $('#a3SetupTodo');
+  if (todo) {
+    const open = setup3.fromChat ? SEC3.filter(([sec]) => state3(sec) === 'changed' || state3(sec) === 'stale').map(([, name]) => name) : [];
+    todo.hidden = !open.length;
+    todo.textContent = open.length ? `Filled in from the chat, not saved yet: ${open.join(', ')}. Press Save under each` : '';
+  }
 }
+/* "Set up on the screens" filled the boxes from the chat's answers (chat3.js) */
+function setupFromChat3() { if (setup3) { setup3.fromChat = true; markAll3(); } }
 /* puts a section back as a snapshot holds it: its rows, then every box (the account choices need the rows first) */
 function put3(sec, snap) {
   const kind = SEC_ROWS3[sec];

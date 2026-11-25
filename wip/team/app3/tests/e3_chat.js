@@ -111,6 +111,12 @@ async function say(p, text) { await p.$eval('#a3ChatIn', (e, v) => { e.value = v
     ck('"Set up on the screens" opens setup filled from the draft', await shows(p, '#a3Setup') && (await p.$eval('#s3BankName', e => e.value)) === 'Main bank' && /^286,?000$/.test(await p.$eval('#s3Bank', e => e.value))
       && /^240,?000$/.test(await p.$eval('#s3PayAmt', e => e.value)) && (await p.$eval('#s3PayDay', e => e.value)) === '10'
       && (await p.$eval('[data-row=bill1] [data-f=name]', e => e.value)) === 'Rent' && /^72,?000$/.test(await p.$eval('[data-row=bill1] [data-f=amount]', e => e.value)), await p.$eval('#s3Bank', e => e.value));
+    /* [AI_JOIN_FIXES I3] which sections still need Save, and why, in one line at the top */
+    const todo = () => p.$eval('#a3SetupTodo', e => (e.hidden ? '(hidden) ' : '') + e.textContent).catch(() => '(none)');
+    ck('I3: one line at the top says which sections still need Save, and why', (await todo()) === 'Filled in from the chat, not saved yet: Your bank, Your pay, Your bills. Press Save under each'
+      && await p.evaluate(() => { const t = document.querySelector('#a3SetupTodo'), s = document.querySelector('#a3Setup [data-sec]'); return !!t && !!(t.compareDocumentPosition(s) & Node.DOCUMENT_POSITION_FOLLOWING); }), await todo());
+    await p.$eval('#a3Setup [data-save=bank]', e => e.click()); await T.w(500);
+    ck('I3: a section saved leaves the line', (await todo()) === 'Filled in from the chat, not saved yet: Your pay, Your bills. Press Save under each', await todo());
     all.push(...errs); await b.close();
   }
   /* ---- 4 to 7: the relay on ---- */
@@ -171,7 +177,14 @@ async function say(p, text) { await p.$eval('#a3ChatIn', (e, v) => { e.value = v
     ck('before a file: the whole file goes, with name, address, employer, account number; crop out My Number', /whole file goes to the AI, with your name, address, employer and account number/.test(await p.$eval('[data-privacy=upload]', e => e.textContent)) && /My Number/.test(await p.$eval('[data-privacy=upload]', e => e.textContent)));
     await p.setViewport({ width: 320, height: 700, isMobile: true, hasTouch: true }); await T.w(200);
     ck('no sideways scroll at 320', await p.evaluate(() => document.documentElement.scrollWidth <= 320));
-    await p.setViewport({ width: 1280, height: 800 }); await T.w(200);
+    /* the desktop check on a fresh page: leaving the phone size makes puppeteer reload the page, and a reload of the app with
+       the file notice open (its file box) timed out once under load. The notice is closed and the size changed on a blank
+       page, then the app opens at 1280 with the same book and chat kept on this device */
+    await p.click('#a3ChatFileX'); await T.w(100);
+    ck('the file notice closes', !(await p.$('#a3ChatFileBox [data-privacy=upload]')));
+    await p.goto('about:blank');
+    await p.setViewport({ width: 1280, height: 800 });
+    await p.goto(T.URL0 + '?today=' + DAY); await T.w(700);
     const col = await p.$eval('#a3Chat', e => { const r = e.getBoundingClientRect(); return { left: r.left, w: r.width, h: r.height }; });
     const main = await p.$eval('#a3', e => e.getBoundingClientRect().right);
     ck('at 1280 a column on the right, beside the page', col.w === 360 && col.left === 920 && col.h === 800 && main <= 920 && await shows(p, '#a3Chat #a3ChatLog'), JSON.stringify([col, main]));
