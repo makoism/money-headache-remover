@@ -29,7 +29,7 @@ const ls = (d, re) => (fs.existsSync(path.join(ROOT, d)) && fs.statSync(path.joi
 /* lines nobody names by id: kept failing here until a test, a brief, a scope file or M_COVERAGE.md names them */
 const SEC = 'held only by a reviewer\'s whole section, no test, brief, scope file or M_COVERAGE.md names it by its id (the coordinator has the count; M_COVERAGE.md is the place to name it)';
 const KNOWN = {};
-for (const id of 'M5 M8 M20 M25 M29 M34 M35 M39 M42 M43 M49 M50 M57 M58 M59 M64 M65 M66 M68'.split(' ')) KNOWN[id + ' is named by a test, a brief or a scope file'] = SEC;
+for (const id of 'M49 M59 M68'.split(' ')) KNOWN[id + ' is named by a test, a brief or a scope file'] = SEC;
 /* an "M1" that is not MAKO_SAYS's M1: the old plan's own numbering, written before MAKO_SAYS existed */
 const NOT_OURS = { 'wip/team/app3/tests/e3_try.js': ['M1'], 'wip/team/engine/test/move.test.js': ['M1'] };
 
