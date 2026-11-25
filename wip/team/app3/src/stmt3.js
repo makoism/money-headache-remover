@@ -177,7 +177,7 @@ function stmt3Review() {
   const said = [c.settles ? c.settles + ' are bills, pay or card payments you expected' : '', c.typed ? `${c.typed} ${c.typed === 1 ? 'is one you typed' : 'are ones you typed'}` : '',
     c.meets ? c.meets + ' read twice, from your bank and your card' : '', c.repeat ? c.repeat + ' already here, left out' : '', c.pick ? `${c.pick} ${c.pick === 1 ? 'card payment needs' : 'card payments need'} you to say which card` : '', c.askmove ? `${c.askmove} sent out: ${c.askmove === 1 ? 'is it' : 'are they'} a move to your own account?` : ''].filter(Boolean);
   const sheet = stmt3Show(`<h1 id="a3StmtT">What was read</h1>
-    <section class="a3-card"><h2>${c.read} ${c.read === 1 ? 'line' : 'lines'}</h2><p class="a3-sub" data-fig="stmtsum">${esc3(said.join('. ') || 'All new')}</p>
+    <section class="a3-card"><h2>${c.read} ${c.read === 1 ? 'line' : 'lines'}</h2><p class="a3-sub" data-fig="stmtsum">${esc3(said.join('. ') || 'All new')}</p>${(p.moved || []).map(m => `<p class="a3-warn" data-fig="stmtmoved">${esc3(STMT3P.movedWords(m, E3.nameOf, d => day3(d, yr)))}</p>`).join('')}
       <ul class="a3-rows">${readRows}</ul></section>
     ${asks ? `<section class="a3-card" id="a3StmtMoves"><h2>Is this a move to one of your accounts?</h2><p class="a3-sub">Money moved between your own accounts is not spending. It is added once you answer</p>${asks}</section>` : ''}
     ${picks ? `<section class="a3-card" id="a3StmtPicks"><h2>Which card does this pay?</h2><p class="a3-sub">These left your bank as a card payment, and more than one card could be the one. It is added once you choose</p>${picks}</section>` : ''}

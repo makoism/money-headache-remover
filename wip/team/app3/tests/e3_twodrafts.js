@@ -13,7 +13,9 @@
    D. The same as A in US dollars: 2,500.00 told, 2,600.50 saved on the screens, Home shows 2,600.50.
    E. A pay typed by hand on the screens is "Not saved yet: Your pay", never "Filled in from the chat".
    F. [found by check3 full, 26 Nov] a draft write already on its way when See my money clears the draft never lands
-      after the clear: no setup draft is left behind once the book exists (the store's writes made slow on purpose). */
+      after the clear: no setup draft is left behind once the book exists (the store's writes made slow on purpose).
+   G. [coordinator's ruling 26 Nov, M61] the device record (the setup draft, the cloud copy's state, the fill mark ...)
+      is read and written whole: ten keys written at once through E3.rec are all kept, and the same after a reload. */
 'use strict';
 const T = require('./lib3.js'), { ck } = T;
 const fs = require('fs'), os = require('os');
@@ -146,6 +148,21 @@ async function fill(p, ai) { ai.push(R.say('', [R.call('fill_book', {})]), R.say
       ck('F: the book is kept and no setup draft is left behind', d.book && !d.setup, JSON.stringify(d).slice(0, 200));
       ck('F: no page errors', !o.errs.length, o.errs.join(' | '));
     } catch (e) { ck('F: the check ran to its end', false, e.stack); }
+    finally { await o.b.close(); }
+  }
+  /* G */
+  {
+    const o = await T.open({ profile: fs.mkdtempSync(os.tmpdir() + '/a3twodraftsG-') });
+    try {
+      await o.p.goto(T.URL0 + '?today=' + DAY); await T.w(700);
+      const keys = [...Array(10).keys()].map(i => 'qcG' + i);
+      const r = await o.p.evaluate(async ks => { const E = BurrowApp3.E3; const ok = await Promise.all(ks.map((k, i) => E.rec(k, { n: i }))); const back = await Promise.all(ks.map(k => E.rec(k))); return { ok, back }; }, keys);
+      ck('G: ten device keys written at once are all kept', r.ok.every(x => x === true) && r.back.every((x, i) => x && x.n === i), JSON.stringify(r));
+      await o.p.reload(); await T.w(700);
+      const back2 = await o.p.evaluate(ks => Promise.all(ks.map(k => BurrowApp3.E3.rec(k))), keys);
+      ck('G: and after a reload', back2.every((x, i) => x && x.n === i), JSON.stringify(back2));
+      ck('G: no page errors', !o.errs.length, o.errs.join(' | '));
+    } catch (e) { ck('G: the check ran to its end', false, e.stack); }
     finally { await o.b.close(); }
   }
   T.done('e3_twodrafts');

@@ -71,6 +71,7 @@ const FORMS = {
 /* boxes written in app3/src that this walk never meets, each with why and the test that covers it */
 const NOT_WALKED = {
   'checkin3.js #a3l${i}': 'the day a late pay landed: shown only for a pay that was not seen on its day (tests/e3_walk.js)',
+  'checkin3.js #a3cm${i}': 'the day a pay ticked after its due day came in: shown only for such a pay (tests/e3_paycame.js)',
   'checkin3.js data-gapspend': 'a tick, shown once the bank figure typed is lower than expected (tests/e3_checkgap.js)',
   'checkin3.js data-gapline': 'a list, shown once the bank figure typed is lower than expected (tests/e3_checkgap.js)',
   'settings3.js #a3BkFile': 'the hidden file chooser behind Restore from a file (tests/e3_backup.js)',
