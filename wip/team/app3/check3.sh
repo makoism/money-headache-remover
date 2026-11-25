@@ -38,6 +38,7 @@ node|../../../tests/vault_server/relay_cap.test.mjs|relay_cap: ALL PASS||300|the
 node|tests/e3_stmt_read.js|e3_stmt_read: ALL PASS||300|statements, the reading half (pure)
 node|tests/e3_stmt_plan.js|e3_stmt_plan: ALL PASS||300|statements, the writing half (pure): lines, matching, records
 node|tests/plan3_write.test.js|plan3_write: ALL PASS||300|the Plan tab's steps (pure)
+node|tests/endperiod3.test.js|endperiod3: ALL PASS||300|what waits after a pay period and the one answer step (pure, ENDPERIOD slice 1, M24, M46): offers capped by the period, noJob and canSetAside, fresh figures only, Take back, nine record orders
 node|tests/backup3.test.js|backup3: ALL PASS||300|the backup file's core
 node|tests/answers3.test.js|answers3: ALL PASS||300|answers3, the one answers-to-book function (BV1): same answers, same book
 node|tests/chat3_core.test.js|chat3_core: ALL PASS||300|the assistant's core with the fake model: Mako's setup chat to 201,400, before tax, a side job, a stale draft, a skipped question, changes with Undo (BU, BV, BW)
@@ -146,6 +147,7 @@ page_tests_for() {   # page_tests_for <changed path, relative to app3/>
     src/home3.js)             echo e3_home e3_ns e3_homeplan e3_warnwords e3_cardline e3_bankparts e3_names e3_payday ;;
     src/checkin3.js)          echo e3_checkin e3_checkgap e3_cardfig e3_reload e3_bankparts e3_payday e3_overdrawn e3_cardpay ;;
     src/receipts3.js)         echo e3_receipts e3_listfix e3_moneyin e3_bigspend e3_stmt_once e3_period e3_names e3_doors e3_moved1 e3_cardgap ;;
+    src/endperiod3.js)        echo e3_try e3_plan ;;   # in the page, read by no screen yet (slice 2): the page still loads
     src/plan3.js|src/plan3_write.js) echo e3_aijoin e3_plan e3_rhythms e3_lineshare e3_homeplan e3_paychange e3_names ;;
     src/setup3.js|src/answers3.js) echo e3_fillcard e3_setup e3_setupfix e3_setup6 e3_income2 e3_weeks3 e3_first e3_onepay e3_overdrawn e3_paytoday e3_chatwalk e3_chat ;;
     src/chat3*.js)            echo e3_ailog e3_aiwords e3_fillcard e3_cloudfirst e3_aijoin e3_chat e3_chatwalk e3_fakeai_page e3_fillundo e3_invite e3_back ;;

@@ -299,15 +299,25 @@ const pe = (h, id) => h.book.events.filter(e => e.id === id);
     h.check('2026-12-13', { [h.bank]: 400000, [h.cardA]: 0, [h.cardB]: 0 });
     eq(EP3.waiting(h.book, '2026-12-13'), []);
   });
-  /* A line removed after its period: Food's 9,000 went to Trip, then Food is removed. The period's lines come from live
-     lines only, so Free is its one place: it can give 11,000, and Food's 9,000 still counts (by its record): 2,000 left. */
+  /* A line removed after its period: the main timeline with a line Gym 10,000 a pay, never spent, so 10 Nov to 9 Dec
+     can give 9,000 + 11,000 + 10,000 = 30,000. Gym's 10,000 goes to Trip on 13 Dec, then Gym is removed. A removed
+     line no spend names drops out of the period's lines (the engine keeps one a live spend names, ledger.js revive), so
+     the places are Food and Free: they can give 20,000, and Gym's 10,000 still counts by its record: 10,000 still to
+     give. Free is offered 10,000 of its 11,000, Food its 9,000. */
   await t('(i) a line removed after the period still counts its answer', async () => {
-    const h = await mako('2026-12-13');
-    ok((await h.answer({ period: h.occ('2026-11-10'), place: h.food, to: h.trip, a: 9000 })).ok);
-    const rm = await h.A.remove(h.food);
+    const h = await mako('2026-12-04');
+    h.gym = await h.on('2026-11-10').plan('addLine', { name: 'Gym', amount: 10000 });
+    h.check('2026-12-10', { [h.bank]: 594000 });
+    h.spend('2026-12-05', 10000, h.cardA, h.food, '2026-12-12');
+    h.check('2026-12-13', { [h.bank]: 580000, [h.cardA]: 19000, [h.cardB]: 9000 });
+    let p = EP3.waiting(h.book, '2026-12-13')[0];
+    eq([p.can, place(p, h.gym).left, place(p, h.gym).offer], [30000, 10000, 10000]);
+    ok((await h.answer({ period: h.occ('2026-11-10'), place: h.gym, to: h.trip, a: 10000 })).ok);
+    const rm = await h.A.remove(h.gym);
     ok(rm.ok, JSON.stringify(rm));
-    const p = EP3.waiting(h.book, '2026-12-13')[0];
-    eq([p.places.map(x => x.place), p.can, p.sent, place(p, 'free').offer], [['free'], 11000, 9000, 2000]);
+    eq(h.see('2026-12-13').places[h.trip].kept, 10000, 'Trip still holds it');
+    p = EP3.waiting(h.book, '2026-12-13')[0];
+    eq([p.places.map(x => x.place), p.can, p.sent, place(p, 'free').offer, place(p, h.food).offer], [['free', h.food], 20000, 10000, 10000, 9000]);
   });
 
   /* ---- rule 1: the order an over comes off ----
