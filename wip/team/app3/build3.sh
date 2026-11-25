@@ -45,9 +45,11 @@ cat ../art.js ../pixel.js
 printf 'const TRY_BOOKS = { mako: '; cat fixtures/mako_madeup_book.json; echo '};'
 printf 'const RELAY3 = "%s";\n' "$(tr -d '\n\r\"' < ../RELAY)"   # the site's address, for the cloud copy when opened as a file (backup lane)
 cat src/stmt3_read.js src/stmt3_plan.js
+cat src/answers3.js   # the one answers-to-book function (BV1): before setup3 and the chat
 cat src/money3.js src/e3.js src/act3.js src/plan3_write.js src/home3.js src/checkin3.js src/receipts3.js src/plan3.js src/setup3.js src/backup3.js src/cloud3.js src/cloud3_page.js src/settings3.js src/settings3_sw.js src/start3.js
 cat src/stmt3_ai.js src/stmt3.js   # statements lane
 cat src/ask3_core.js src/ask3.js   # Ask (ask lane): after stmt3_ai.js, whose route it uses
+cat src/chat3_core.js   # the assistant's pure core (lane A, BU1): after ask3_core.js and answers3.js
 cat src/remind3.js src/remind3_page.js   # Reminders (ask lane)
 cat src/back3.js   # which sheet is open: the back button, typing kept, one message at a time (after every sheet's file)
 echo '})();'

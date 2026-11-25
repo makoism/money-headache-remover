@@ -5,7 +5,7 @@
 'use strict';
 const path = require('path');
 const { spawnSync } = require('child_process');
-const runs = ['dates.test.js', 'units.test.js', 'ids.test.js', 'schedules.test.js', 'ledger.test.js', 'lookahead.test.js', 'checkin.test.js', 'build_book.test.js', 'mako_walk.test.js', 'periods.test.js', 'move.test.js', 'match.test.js', 'count_once.test.js', 'sync.test.js', 'speed.test.js', 'platform.test.js', 'reload_order.test.js', 'card_gap_period.test.js', 'card_gap_lives.test.js', 'card_gap_first_check.test.js', 'two_pays_order.test.js', 'three_values.test.js', 'bank_after_cards.test.js', 'held_by_opening.test.js', 'run_against_ref.js'];
+const runs = ['dates.test.js', 'units.test.js', 'ids.test.js', 'schedules.test.js', 'ledger.test.js', 'lookahead.test.js', 'checkin.test.js', 'build_book.test.js', 'mako_walk.test.js', 'periods.test.js', 'starts_period.test.js', 'move.test.js', 'match.test.js', 'count_once.test.js', 'sync.test.js', 'revive.test.js', 'speed.test.js', 'platform.test.js', 'reload_order.test.js', 'card_gap_period.test.js', 'card_gap_lives.test.js', 'card_gap_first_check.test.js', 'two_pays_order.test.js', 'three_values.test.js', 'bank_after_cards.test.js', 'held_by_opening.test.js', 'run_against_ref.js'];
 let bad = 0;
 for (const f of runs) {
   const r = spawnSync(process.execPath, [path.join(__dirname, f)].concat(f === 'run_against_ref.js' ? ['--fails'] : []), { encoding: 'utf8' });

@@ -15,6 +15,7 @@
   const D = node ? require('./dates.js') : root.BurrowEngine.dates;
   const IDS = node ? require('./ids.js') : root.BurrowEngine.ids;
   const SC = node ? require('./schedules.js') : root.BurrowEngine.schedules;
+  const LG = node ? require('./ledger.js') : root.BurrowEngine.ledger;
   const { dayNum, dayStr } = D;
   const { ORDINARY, MOVED: MOVED_TEXT, REF, DATE } = IDS;
 
@@ -233,6 +234,7 @@
     for (const k of new Set(Object.keys(m).concat(Object.keys(t)))) {
       if (top && k === 'keptVersions') continue;
       const x = m[k], y = t[k], z = b[k], p = path ? path + '.' + k : k;
+      if (top && k === 'journal') { out[k] = joinJournal(x, y); continue; }
       if (top && (k === 'rev' || k === 'v') && (typeof x === 'number' || typeof y === 'number')) out[k] = Math.max(...[x, y].filter(n => typeof n === 'number'));
       else if (top && k === 'at' && (typeof x === 'string' || typeof y === 'string')) out[k] = newest(x, y);   // when the copy was saved
       else if (Array.isArray(x) || Array.isArray(y)) out[k] = isRecords(x, y, z) ? records(p, z, x, y, conflicts) : item(p, path, z, x, y, false, conflicts);
@@ -241,6 +243,22 @@
       else out[k] = plain(z, x, y);
     }
     return out;
+  }
+  // [BZ1] The Undo journal (app3/src/act3.js): one entry per step a device made. Joined by id from both copies, never a
+  // question; the same entry on both: the one marked undone (then the one with more records moved since); the latest
+  // JOURNAL_KEEP by moment, so a step dropped on both sides is not brought back by the base.
+  const JOURNAL_KEEP = 200;
+  function joinJournal(x, y) {
+    const by = new Map();
+    for (const j of [].concat(Array.isArray(x) ? x : [], Array.isArray(y) ? y : [])) {
+      if (!isMap(j) || typeof j.id !== 'string') continue;
+      const had = by.get(j.id);
+      if (!had) { by.set(j.id, j); continue; }
+      const score = e => (e.undone ? 2e9 : 0) + Object.keys(e.moved || {}).length;
+      if (score(j) > score(had) || (score(j) === score(had) && canon(j) > canon(had))) by.set(j.id, j);
+    }
+    const mMs = j => { const v = ms(j.moment); return isNaN(v) ? -Infinity : v; };
+    return [...by.values()].sort((a, b) => mMs(a) - mMs(b) || (a.id < b.id ? -1 : 1)).slice(-JOURNAL_KEEP).map(C);
   }
   function sync(base, mine, theirs) {
     const conflicts = [];
@@ -286,7 +304,7 @@
     const ids = c => new Set(((c || {}).events || []).map(e => e.id));
     const Mi = ids(mine), Ti = ids(theirs);
     const accts = new Map((out.accounts || []).map(a => [a.id, a]));
-    const win = id => { const a = accts.get(id) || {}; return a.postingDays != null ? a.postingDays : a.kind === 'card' ? 7 : 1; };
+    const win = id => { const a = accts.get(id) || {}; return a.postingDays != null ? a.postingDays : a.type === 'card' ? 7 : 1; };   // [BZ4] an account's kind is its `type`
     const fits = (t, a) => (t.est ? Math.abs(a - t.a) * 10 <= Math.max(a, t.a) : a === t.a);
     const imps = evs.filter(e => !e.gone && isImp(e) && dirOf(e) && e.acct2 == null && typeof e.date === 'string')
       .sort((x, y) => (x.date < y.date ? -1 : x.date > y.date ? 1 : x.id < y.id ? -1 : 1));
@@ -422,7 +440,7 @@
   const OWED = { card: 1, loan: 1, paylater: 1 };
   const names = (e, id) => [e.acct, e.acct2, e.card].includes(id);
   function delta(e, a) {
-    const sign = OWED[a.kind] ? -1 : 1, amt = Number(e.a) || 0;
+    const sign = OWED[a.type] ? -1 : 1, amt = Number(e.a) || 0;   // [BZ4] `type`, never `kind`
     let d = 0;
     if (e.k === 'in' || e.k === 'refund') { if (e.acct === a.id) d += amt; }
     else if (e.k === 'spend') { if (e.acct === a.id) d -= amt; }
@@ -512,6 +530,8 @@
   }
   function afterSync(copy) {
     const c = closedChecks(copy);
+    // [BZ3] a removed account, line or schedule a live record names is back (ledger.js revive, the look ahead's rule)
+    for (const x of LG.revive(copy).revived) c.notices.push({ [x.kind]: x.id, notice: 'revived', by: x.by });
     let which = (copy.keptVersions || []).filter(k => k.ask).map(k => ({ q: 'which', of: k.of, kept: k.id }));
     let mins = minimumQuestions(copy);
     // [AW4, AT3] A main-bank switch and a minimum change meeting at a sync are one question: the `which` about `home.main`, the
