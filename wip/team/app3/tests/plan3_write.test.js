@@ -793,6 +793,27 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     const ol = h.book.accounts.find(a => a.name === 'Oops loan').id;
     ok((await h.go('removeAccount', ol)).ok, 'a loan added by mistake');
   });
+  /* [E5, M13, M42] Keep at least for the main bank and the country, after setup */
+  await t('[E5] setKeep: Keep at least for the main bank set, changed and cleared (never set for the person); safe to spend leaves room for it; Undo after a reload', async () => {
+    const h = setup(), safe0 = view(h.book).safeToSpend.headline;
+    const r = await h.go('setKeep', { min: 20000 }); ok(r.ok, JSON.stringify(r));
+    eq(h.book.home.main.v, { acct: BANK, min: { a: 20000, cur: 'JPY' } });
+    ok(view(h.book).safeToSpend.headline <= safe0, 'safe to spend never rises when a minimum is set');
+    const z = await h.go('setKeep', { min: 20000 }); ok(!z.ok && /Nothing changed/.test(z.text), z.text);
+    const c = await h.go('setKeep', { min: null }); ok(c.ok);
+    eq(h.book.home.main.v.min, null);
+    eq(view(h.book).safeToSpend.headline, safe0, 'cleared: as before');
+    const h2 = reloadOf(h); ok((await h2.A.undo(c.step.id)).ok); eq(h2.book.home.main.v.min, { a: 20000, cur: 'JPY' });
+    const b = await h.go('setKeep', { min: -5 }); ok(!b.ok, 'a negative amount is refused');
+  });
+  await t('[E5] setCountry: Japan, the Philippines or somewhere else; anything else refused; Undo', async () => {
+    const h = setup();
+    const r = await h.go('setCountry', { country: 'PH' }); ok(r.ok, JSON.stringify(r));
+    eq(h.book.home.country.v, 'PH');
+    const z = await h.go('setCountry', { country: 'FR' }); ok(!z.ok && /Pick/.test(z.text), z.text);
+    const y = await h.go('setCountry', { country: 'PH' }); ok(!y.ok && /Nothing changed/.test(y.text));
+    ok((await h.A.undo(r.step.id)).ok); eq(h.book.home.country.v, 'JP');
+  });
   console.log(bad ? `plan3_write: ${bad} FAIL of ${n}` : `plan3_write: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })();

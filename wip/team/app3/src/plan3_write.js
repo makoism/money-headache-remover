@@ -491,6 +491,24 @@
     return id;
   }
 
+  /* [E5, M13, M42] Keep at least for the main bank (home.main.min: blank or 0 clears it; never set for the person), and
+     the country (its weekends and holidays move pay and bills: a correction, the past follows it, CONTROLS_PLAN 3) */
+  const COUNTRIES = { JP: 1, PH: 1, XX: 1 };
+  function setKeep(w, x) {
+    const main = G.fieldValue((w.book.home || {}).main) || {};
+    if (!main.acct) bad('Set up first');
+    const now = x.min === '' || x.min === null || x.min === undefined || x.min === 0 ? null : { a: amountOk(x.min, 'the amount to keep'), cur: ((w.book.accounts || []).find(a => a.id === main.acct) || {}).cur || home(w) };
+    w.setField('main', Object.assign({}, main, { min: now }));
+    if (!w.log.edited.length) bad('Nothing changed');
+    return main.acct;
+  }
+  function setCountry(w, x) {
+    if (!COUNTRIES[x.country]) bad('Pick Japan, the Philippines or somewhere else');
+    w.setField('country', x.country);
+    if (!w.log.edited.length) bad('Nothing changed');
+    return x.country;
+  }
+
   /* [E2, M13, M45, M61] closing a bank, cash or e-wallet that is not the main bank (CONTROLS_PLAN section 3, P6, R3, R4).
      x.to: the account its money goes to (one of your own, open, same currency), or 'spent' when the money is not there
      any more. One step: each bill, pay, card and loan paid from it or into it moves to x.to (the main bank when its money
@@ -572,7 +590,7 @@
     return id;
   }
 
-  const api = { addPay, addAccount, changeAccount, closeAccount, reopenAccount, removeAccount, payOff, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan };
+  const api = { addPay, addAccount, changeAccount, closeAccount, reopenAccount, removeAccount, payOff, setKeep, setCountry, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan };
   if (node) module.exports = api;
   else root.PLAN3W = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
