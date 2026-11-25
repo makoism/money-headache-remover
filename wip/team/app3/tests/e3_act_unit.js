@@ -301,6 +301,24 @@ const ev = (b, id) => b.events.find(e => e.id === id);
     ok((await h.A.undo(b.step.id)).ok);
     eq([h.book.journal.length, !!h.book.journal[1].undone], [2, true]);
   });
+  await t('[E5, M13, M42] setField writes a home field value (Keep at least in home.main, the country) with its own at and by, journaled; Undo puts it back, after a reload too; any other field is refused', async () => {
+    const h = setup();
+    const main0 = clone(h.book.home.main), c0 = clone(h.book.home.country);
+    const a = await h.A.run('setKeep', w => w.setField('main', Object.assign({}, main0.v, { min: { a: 20000, cur: 'JPY' } })), { undo: 'Keep at least changed' });
+    ok(a.ok, JSON.stringify(a));
+    eq(h.book.home.main.v.min, { a: 20000, cur: 'JPY' }); eq([h.book.home.main.at, h.book.home.main.by], [a.step.at, a.step.id.split('-')[0]]);
+    eq(h.book.journal.slice(-1)[0].edited.map(x => [x.list, x.id, JSON.stringify(x.before.v)]), [['home', 'main', JSON.stringify(main0.v)]]);
+    const b = await h.A.run('setCountry', w => w.setField('country', 'PH'), { undo: 'Country changed' }); ok(b.ok);
+    eq(h.book.home.country.v, 'PH');
+    const h2 = reload(h);
+    ok((await h2.A.undo(b.step.id)).ok, 'undo the country after a reload'); eq(h2.book.home.country.v, c0.v);
+    ok((await h2.A.undo(a.step.id)).ok, 'undo Keep at least after a reload'); eq(h2.book.home.main.v, main0.v);
+    const z = await h.A.run('x', w => w.setField('curs', [])); ok(!z.ok, 'the currency is never set this way');
+    const h3 = setup(); await h3.A.run('setKeep', w => w.setField('main', Object.assign({}, main0.v, { min: { a: 1, cur: 'JPY' } })));
+    const c = await h3.A.run('setKeep', w => w.setField('main', Object.assign({}, main0.v, { min: { a: 2, cur: 'JPY' } })));
+    const u = await h3.A.undo(h3.book.journal[0].id); ok(!u.ok && /Something changed it since/.test(u.text), 'an older change a later one touched is refused: ' + u.text);
+    ok(c.ok);
+  });
   await t('[BZ1] a step that only edits, then a reload, then Undo: the old value is back', async () => {
     const h = setup();
     const a = await h.A.logSpend({ date: DAY, a: 1000, acct: bank }), sp = a.step.added[0].id;

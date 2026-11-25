@@ -33,6 +33,7 @@
   const C = node ? require('../../store/clock.js') : root.BurrowClock;
   const PATHS = { events: ['events'], checkins: ['checkins'], accounts: ['accounts'], schedules: ['schedules'], places: ['places'],
     people: ['people'], budgets: ['plan', 'budgets'], shares: ['plan', 'shares'] };
+  const HOME_FIELDS = { main: 1, country: 1 };   // [E5] the home field values a step may set (writer.setField)
   const SPEND_FROM = { bank: 1, cash: 1, ewallet: 1, wallet: 1, card: 1, paylater: 1 };   // where a spend can be paid from
   const OWN = { bank: 1, cash: 1, ewallet: 1, wallet: 1 };                                 // money moved between these
   const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -139,6 +140,17 @@
         const before = { at: r.at, by: r.by };
         r.gone = s.day; r.goneBy = s.id; stamp(r);
         log.removed.push({ list, id, before });
+        return r;
+      },
+      /* [E5, M13, M42] a home field value (SCHEMA AL1 `{ v, at, by }`): Keep at least lives in home.main, the country in
+         home.country. Only these two; the currency is never set this way (O6). Journaled as an edit of list 'home' */
+      setField(key, value) {
+        if (!HOME_FIELDS[key]) throw new Bad('That cannot be changed here');
+        const home = book.home || (book.home = {}), r = home[key] && typeof home[key] === 'object' && 'v' in home[key] ? home[key] : (home[key] = { v: home[key] === undefined ? null : home[key] });
+        const before = { v: clone(r.v === undefined ? null : r.v), at: r.at, by: r.by };
+        if (JSON.stringify(before.v) === JSON.stringify(value)) return r;
+        r.v = clone(value); stamp(r);
+        log.edited.push({ list: 'home', id: key, before });
         return r;
       },
       /* Undo of a revived record: the gone record it replaced comes back whole, with a new `at` (BD4) */
@@ -331,7 +343,7 @@
         const removed = mem ? mem.removed : [].concat(...all.map(([n, l]) => l.filter(r => r && r.goneBy === stepId).map(r => ({ list: n, id: r.id }))));
         const edited = mem ? mem.edited : [];
         const revived = mem ? mem.revived || [] : [];   // after a reload a revived record is found by grp with the added ones, and marked gone
-        const recOf = x => listOf(w.book, x.list).find(r => r && r.id === x.id);
+        const recOf = x => (x.list === 'home' ? ((w.book.home || {})[x.id] || null) : listOf(w.book, x.list).find(r => r && r.id === x.id));
         const later = x => { const r = recOf(x); return !r || (mem && r.at !== mem.own[x.id]); };
         if (added.concat(removed, edited, revived).some(later)) { const e = new Bad('Something changed it since. Undo that change first'); e.why = 'later'; throw e; }
         for (const x of added) w.remove(x.list, x.id);
@@ -340,6 +352,7 @@
           if (recOf(x).goneBy === stepId) w.restore(x.list, x.id);
         }
         for (const x of edited) {
+          if (x.list === 'home') { w.setField(x.id, x.before.v === undefined ? null : x.before.v); continue; }
           const back = {};
           for (const k of Object.keys(x.before)) if (k !== 'at' && k !== 'by') back[k] = x.before[k] === undefined ? null : x.before[k];
           w.edit(x.list, x.id, back);
