@@ -76,8 +76,18 @@
   }
 
   /* ---- one step on a copy of the book: what it added, changed and removed ---- */
-  function writer(book, s) {
+  /* [STALE_SHEET_PLAN, M61] what a caller saw: `seen` is id -> stamp (`at` and `by`) of every record when its sheet
+     opened. An edit or a remove of a record whose stamp moved since is refused, and so is an add to a list whose newest
+     entry is "the amount now" (REPLACES) when any entry of it is new or moved. Nothing is written. */
+  const OTHER = 'Nothing was saved, because this changed somewhere else while it was open';
+  const REPLACES = { shares: 1 };
+  const sig = r => (r.at || '') + '|' + (r.by || '');
+  const other = () => { const e = new Bad(OTHER); e.why = 'other'; return e; };
+  function writer(book, s, seen) {
     const log = { added: [], edited: [], removed: [], revived: [] };
+    const mine = new Set();   // records this step itself wrote: never refused by the note
+    const fresh = (list, r) => { if (seen && !mine.has(r.id) && seen[r.id] !== sig(r)) throw other(); };
+    const wholeList = list => { if (seen && REPLACES[list]) for (const r of listOf(book, list)) if (r && !mine.has(r.id) && seen[r.id] !== sig(r)) throw other(); };
     const stamp = r => { r.at = s.at; r.by = s.by; };
     return {
       log,
@@ -85,6 +95,7 @@
         if (!rec || typeof rec !== 'object') throw new Error('act3: add needs a record');
         const r = Object.assign({}, rec);
         if (!r.id) r.id = s.newId();
+        wholeList(list); mine.add(r.id);
         if (!r.told) r.told = s.told;
         if (r.grp == null) r.grp = s.id;
         stamp(r);
@@ -99,7 +110,7 @@
           log.revived.push({ list, id: r.id, before });
           return r.id;
         }
-        if (had) throw new Error('act3: there is already a record ' + r.id);
+        if (had) throw new Bad('That is there already. It may have been added somewhere else');
         listOf(book, list, true).push(r);
         log.added.push({ list, id: r.id });
         return r.id;
@@ -108,6 +119,7 @@
         const r = listOf(book, list).find(x => x && x.id === id);
         if (!r) throw new Bad('That is not there any more');
         if (r.gone) throw new Bad('That was removed. Undo the removal first');
+        fresh(list, r); mine.add(id);
         const before = {};
         for (const k of Object.keys(fields)) {
           if (k === 'id' || k === 'told' || k === 'at' || k === 'by' || k === 'gone' || k === 'goneBy') throw new Error('act3: ' + k + ' is not edited');
@@ -123,6 +135,7 @@
         const r = listOf(book, list).find(x => x && x.id === id);
         if (!r) throw new Bad('That is not there any more');
         if (r.gone) return r;
+        fresh(list, r); mine.add(id);
         const before = { at: r.at, by: r.by };
         r.gone = s.day; r.goneBy = s.id; stamp(r);
         log.removed.push({ list, id, before });
@@ -239,14 +252,15 @@
     let queue = Promise.resolve(), by = null;
 
     /* plan a step on a copy; returns { book, step } or throws Bad */
-    function plan(label, fn, dry, undoing) {
+    function plan(label, fn, dry, undoing, guard) {
       const cur = o.book();
       if (!cur) throw new Bad('Set up first');
+      if (guard && guard.ver != null && guard.ver !== ver(cur)) throw other();
       if (clock) clock.see(cur);
       const book = clone(cur), id = o.newId();
       if (!by) by = String(id).split('-')[0];
       const s = { id, label, at: nowAt(), by, told: o.told(), day: o.today(), newId: o.newId };
-      const w = writer(book, s);
+      const w = writer(book, s, guard && guard.seen);
       w.today = s.day;
       const out = fn(w);
       if (!w.log.added.length && !w.log.edited.length && !w.log.removed.length && !w.log.revived.length) throw new Bad('Nothing changed');
@@ -264,7 +278,7 @@
       opts = opts || {};
       const p = queue.then(async () => {
         let planned;
-        try { planned = plan(label, fn, false, opts.journalUndo); } catch (e) {
+        try { planned = plan(label, fn, false, opts.journalUndo, opts.isUndo ? null : { seen: opts.seen, ver: opts.ver }); } catch (e) {
           if (e instanceof Bad) return { ok: false, why: e.why || 'bad', text: e.message };
           throw e;
         }
@@ -273,6 +287,7 @@
         if (clock) clock.see(planned.step.at);
         const st = planned.step;
         st.own = {}; for (const x of st.added.concat(st.edited, st.removed, st.revived)) st.own[x.id] = st.at;   // the `at` this step left on each record
+        if (opts.seen && !opts.isUndo) for (const x of st.added.concat(st.edited, st.removed, st.revived)) { const f = findIn(planned.book, x.id); if (f) opts.seen[x.id] = sig(f.rec); }   // the caller's own step: its note follows
         if (opts.after) opts.after(st);
         if (!opts.isUndo) steps.push(st);
         if (o.queue && !opts.quiet && !opts.isUndo) {
@@ -334,7 +349,24 @@
         return r;
       });
     }
-    const api = { run, undo, steps: () => steps.slice(), onChange: f => listeners.push(f) };
+    /* the note for a sheet on one item, and the short mark of the whole book (order-free: a sum over every change time) */
+    function seen() { const cur = o.book(), out = {}; if (cur) for (const n of Object.keys(PATHS)) for (const r of listOf(cur, n)) if (r && r.id) out[r.id] = sig(r); return out; }
+    function ver(b) {
+      b = b || o.book(); if (!b) return '';
+      let sum = 0, n = 0;
+      (function walk(x, top) {
+        if (Array.isArray(x)) { for (const y of x) walk(y, false); return; }
+        if (!x || typeof x !== 'object') return;
+        for (const k of Object.keys(x)) {
+          if (top && (k === 'rev' || k === 'journal')) continue;   // the cloud's revision and the Undo journal are not the book's content
+          const v = x[k];
+          if (k === 'at' && typeof v === 'string' && !top) { let h = 0; const t = v + '|' + (x.by || '') + '|' + (x.id || ''); for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) >>> 0; sum = (sum + h) >>> 0; n++; }
+          else walk(v, false);
+        }
+      })(b, true);
+      return n + '.' + sum.toString(36);
+    }
+    const api = { run, undo, seen, ver: () => ver(), steps: () => steps.slice(), onChange: f => listeners.push(f) };
     for (const name of Object.keys(ACTIONS)) {
       const n = ARGS[name];   // the action's own arguments, before the options
       api[name] = (...args) => {
@@ -351,7 +383,7 @@
     return api;
   }
 
-  const api = { make, PATHS, listOf, Bad };
+  const api = { make, PATHS, listOf, Bad, OTHER };
   if (node) module.exports = api;
   else root.BurrowAct3 = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
