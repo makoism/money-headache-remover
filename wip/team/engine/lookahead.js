@@ -445,6 +445,7 @@
       };
       const span = moves.map(e => { const ds = [e.day].concat([e.posted, e.posted2].filter(Boolean).map(dayNum)); return [Math.min(...ds), Math.max(...ds)]; });
       let wasIn = moves.map(e => inside(e, base, id));
+      const inOpening = wasIn.slice();   // [S3 for the opening] named below when still inside at the end
       // [AP1] the closing's final check: the last check dated on the closing day
       const closingCheck = closedOn(id) === null ? null : checks.filter(c => c.day === closedOn(id)).pop() || null;
       for (const c of checks) {
@@ -466,6 +467,9 @@
         base = cc;
         lastGap = { day: c.day, had: computed, gain: c.a - computed, answer: c.gain || null };
       }
+      // [S3 for the opening; qc-numbers 25 Nov] a record inside the opening figure and still inside the last check is
+      // named too, with the opening's day, so its row can say the bank figure already has it
+      moves.forEach((e, k) => { if (inOpening[k] && wasIn[k] && !heldBy.some(h => h.id === e.id)) heldBy.push({ id: e.id, account: id, check: dayStr(openingOf(id).day) }); });
       // [QC F4] bank today in its parts: the last check, and what was logged in and out after it
       const since = moves.filter((e, k) => !wasIn[k]).map(e => delta(e, id));
       const loggedIn = since.filter(d => d > 0).reduce((t, d) => t + d, 0), loggedOut = since.filter(d => d < 0).reduce((t, d) => t - d, 0);
