@@ -388,6 +388,54 @@ const ev = (b, id) => b.events.find(e => e.id === id);
     eq(h.book.journal.length, 200);
     ok(!h.book.journal.some(j => j.id === first.step.id) && h.book.journal[199].id === last.step.id, 'the oldest dropped');
   });
+  /* ---- a sheet left open (STALE_SHEET_PLAN; M61): the door takes a note of what was seen, and refuses an edit or a
+     remove of a record that changed since the note. Rent is 72,000 in the made-up book. ---- */
+  const RENT = actBook().schedules.find(x => x.name === 'Rent').id, POWER = actBook().schedules.find(x => x.name === 'Power').id;
+  const rentOf = b => b.schedules.find(x => x.id === RENT);
+  const setAmount = (w, id, a) => w.edit('schedules', id, { steps: [{ from: null, amount: a }] });
+  await t('[stale sheet] a note, then the record changes, then an edit with the old note: refused, why other, nothing written', async () => {
+    const h = setup(), seen = h.A.seen();
+    ok((await h.A.run('changeBill', w => setAmount(w, RENT, 76000))).ok, 'the other change is kept');
+    const before = JSON.stringify(h.book), saves = h.saves;
+    const r = await h.A.run('changeBill', w => w.edit('schedules', RENT, { name: 'Rent flat', steps: [{ from: null, amount: 72000 }] }), { seen });
+    eq([r.ok, r.why], [false, 'other']); ok(/changed somewhere else/.test(r.text), r.text);
+    eq([JSON.stringify(h.book) === before, h.saves, rentOf(h.book).steps[0].amount, rentOf(h.book).name], [true, saves, 76000, 'Rent']);
+  });
+  await t('[stale sheet] with a fresh note the same edit is kept', async () => {
+    const h = setup();
+    await h.A.run('changeBill', w => setAmount(w, RENT, 76000));
+    const r = await h.A.run('changeBill', w => w.edit('schedules', RENT, { name: 'Rent flat' }), { seen: h.A.seen() });
+    eq([r.ok, rentOf(h.book).name, rentOf(h.book).steps[0].amount], [true, 'Rent flat', 76000]);
+  });
+  await t('[stale sheet] a remove with an old note is refused; an edit of another record with the same note is kept', async () => {
+    const h = setup(), seen = h.A.seen();
+    await h.A.run('changeBill', w => setAmount(w, RENT, 76000));
+    const r = await h.A.run('endBill', w => w.remove('schedules', RENT), { seen });
+    eq([r.ok, r.why, !!rentOf(h.book).gone], [false, 'other', false]);
+    const r2 = await h.A.run('changeBill', w => setAmount(w, POWER, 7900), { seen });
+    eq([r2.ok, h.book.schedules.find(x => x.id === POWER).steps[0].amount], [true, 7900]);
+  });
+  await t('[stale sheet] a record made after the note was taken: an edit of it with that note is refused; adding is never refused', async () => {
+    const h = setup(), seen = h.A.seen();
+    const s = await h.A.logSpend({ date: DAY, a: 1200, acct: bank, note: 'coffee' });
+    const id = s.step.added[0].id;
+    const r = await h.A.edit(id, { a: 1300 }, { seen });
+    eq([r.ok, r.why, ev(h.book, id).a], [false, 'other', 1200]);
+    const add = await h.A.logSpend({ date: DAY, a: 450, acct: bank, note: 'bun' }, { seen });
+    eq(add.ok, true);
+  });
+  await t('[stale sheet] no note: as before; and the note does not depend on the order of the lists', async () => {
+    const h = setup(), b2 = clone(h.book); b2.schedules.reverse(); b2.events.reverse();
+    const h2 = setup({ book: b2 });
+    eq(Object.keys(h.A.seen()).sort().map(k => [k, h.A.seen()[k]]), Object.keys(h2.A.seen()).sort().map(k => [k, h2.A.seen()[k]]));
+    await h.A.run('changeBill', w => setAmount(w, RENT, 76000));
+    eq((await h.A.run('changeBill', w => setAmount(w, RENT, 72000))).ok, true);
+  });
+  await t('[stale sheet] Undo is not touched by a note: the step that changed Rent can still be undone', async () => {
+    const h = setup();
+    const r = await h.A.run('changeBill', w => setAmount(w, RENT, 76000));
+    eq((await h.A.undo(r.step.id)).ok, true); eq(rentOf(h.book).steps[0].amount, 72000);
+  });
   console.log(bad ? `e3_act_unit: ${bad} FAIL of ${n}` : `e3_act_unit: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })();
