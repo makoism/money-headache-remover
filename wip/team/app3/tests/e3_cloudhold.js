@@ -74,7 +74,7 @@ const FAST = sp => { window.__burrow3CloudSpeed = sp; };
     await T.w(TICK + 500);   // a timed check while the form is open and the cloud has not moved: in step
     await settingsOpen(A.p);
     const c0 = await checked(A.p);
-    ck('(Settings over the form says when A last checked)', c0 > 0 && /Last checked with the cloud at/.test(await A.p.$eval('#a3CloudState', e => e.textContent)), await A.p.$eval('#a3CloudState', e => e.textContent));
+    ck('(Settings over the form says when A last checked)', c0 > 0 && /last checked at/.test(await A.p.$eval('#a3CloudState', e => e.textContent)), await A.p.$eval('#a3CloudState', e => e.textContent));
     await A.p.click('#a3SetClose'); await T.w(300);
     await A.p.click('#a3AskGo'); await T.w(300);
     const tSent = await bLogs('700', 'tea two');

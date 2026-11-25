@@ -106,6 +106,7 @@ page|tests/e3_cloudtake.js|e3_cloudtake: ALL PASS||300|the cloud copy taken by i
 page|tests/e3_cloudsend.js|e3_cloudsend: ALL PASS||600|the cloud copy sent by itself: at once, a burst 5 seconds after, never two in 10 seconds, leaving with a big copy, the day's guard (CS1)
 page|tests/e3_cloudhold.js|e3_cloudhold: ALL PASS||300|the cloud copy held back while a form is open or covered by the chat, taken when it closes, and "Last checked" (CS4, B2, B4)
 page|tests/e3_cloudwhich.js|e3_cloudwhich: ALL PASS||300|"which to keep": each row says its amount and which device, and the pick ends on both devices (M20)
+page|tests/e3_cloudstatus.js|e3_cloudstatus: ALL PASS||300|the cloud copy's one status on Settings and Home: never in step while a change waits or after a refusal, a reload too (M36, M61, M67)
 page|tests/e3_sw.js|e3_sw: ALL PASS||300|the service worker (precache, offline, 3 s timeout, a new build)
 EOF
 )
@@ -119,10 +120,10 @@ page_tests_for() {   # page_tests_for <changed path, relative to app3/>
                               echo e3_try e3_home e3_checkin e3_receipts e3_plan e3_panels e3_amounts e3_names ;;
     tests/lives3.js)          echo e3_life_a e3_life_a2 e3_life_b e3_life_c e3_life_d ;;
     tests/e3_act_book.js)     echo e3_home e3_checkin ;;
-    tests/fake_vault.js)      echo e3_cloud e3_cloudbase e3_cloudtake e3_cloudsend e3_cloudhold e3_cloudwhich e3_listfix ;;
+    tests/fake_vault.js)      echo e3_cloud e3_cloudbase e3_cloudtake e3_cloudsend e3_cloudhold e3_cloudwhich e3_cloudstatus e3_listfix ;;
     tests/setup_sections.js)  echo e3_setup e3_setupfix e3_setup6 e3_income2 e3_weeks3 e3_walk2 ;;   # a helper (setup saved section by section), not a test
     tests/*.js)               basename "$1" .js ;;
-    src/home3.js)             echo e3_home e3_ns e3_homeplan e3_warnwords e3_cardline e3_bankparts e3_names e3_payday ;;
+    src/home3.js)             echo e3_cloudstatus e3_home e3_ns e3_homeplan e3_warnwords e3_cardline e3_bankparts e3_names e3_payday ;;
     src/checkin3.js)          echo e3_checkin e3_checkgap e3_cardfig e3_reload e3_bankparts e3_payday e3_overdrawn ;;
     src/receipts3.js)         echo e3_receipts e3_listfix e3_moneyin e3_bigspend e3_stmt_once e3_period e3_names e3_doors e3_moved1 ;;
     src/plan3.js|src/plan3_write.js) echo e3_plan e3_rhythms e3_lineshare e3_homeplan e3_paychange e3_names ;;
@@ -133,7 +134,7 @@ page_tests_for() {   # page_tests_for <changed path, relative to app3/>
     src/ask3*.js)             echo e3_ask e3_invite ;;
     src/backup3.js|src/settings3.js) echo e3_backup e3_tabs ;;
     src/sw3.js|src/settings3_sw.js|sw3.js) echo e3_sw offline e3_install ;;
-    src/cloud3*.js)           echo e3_cloud e3_cloudbase e3_cloudtake e3_cloudsend e3_cloudhold e3_cloudwhich ;;
+    src/cloud3*.js)           echo e3_cloud e3_cloudbase e3_cloudtake e3_cloudsend e3_cloudhold e3_cloudwhich e3_cloudstatus ;;
     src/remind3*.js)          echo e3_remind ;;
     publish3.sh)              echo e3_publish e3_install ;;
     manifest3.webmanifest|make_icons3.js|icon3-*.png) echo e3_install ;;

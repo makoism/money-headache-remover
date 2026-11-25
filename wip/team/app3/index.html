@@ -8822,6 +8822,9 @@ function drawHome3() {
   const names = {}; for (const id of ids.concat(Object.keys(r.cards), Object.keys(r.owed || {}))) names[id] = E3.nameOf(id);
   const st = BurrowScreens.status.statusOf(r, { currency: home, origin, names });
   if (origin !== 'sample') out.push(`<section class="a3-card a3-status" data-card="status" data-level="${esc3(st.level)}">${helpHead3(`<h2>${esc3(st.text.state)}</h2>`, 'status')}<p class="a3-sub">${esc3(st.text.reason)}</p>${st.state === 'plan_over' ? `<p class="a3-next" data-fig="status-next">${esc3(st.text.next)}</p>` : ''}${st.state === 'no_free' ? `<div class="a3-actions"><button type="button" class="a3-btn solid" id="a3FreeGo">${esc3(st.text.next)}</button></div>` : ''}</section>`);
+  /* the cloud copy's one status (cloud3_page.js cloudStatus3): one plain line, only when it is not in step */
+  const cloudLine = origin !== 'sample' && typeof cloudHome3 === 'function' ? cloudHome3() : '';
+  if (cloudLine) out.push(`<p class="a3-warn" data-cloud="home">${esc3(cloudLine)}</p>`);
   /* bank today, one figure per account, with its age */
   for (const id of ids) {
     const a = r.accounts[id];
@@ -10719,8 +10722,10 @@ async function failed3(st, why, waiting) {
     return;
   }
   C3.why = why;
-  if (waiting && !st.failAt) await keepCloud3(st, { failAt: Date.now() });
+  /* a send that did not land: since when, and why (kept on the device, so a reload still says it was not taken) */
+  if (waiting && (!st.failAt || st.failWhy !== why)) await keepCloud3(st, { failAt: st.failAt || Date.now(), failWhy: why });
   if (STOP3[why]) stop3(why);
+  homeSay3();
 }
 async function reachable3() {
   const b = cloudBase3(); if (!b) return false;
@@ -10788,13 +10793,14 @@ async function syncNow3(opts) {
       }
     }
     C3.checkedAt = Date.now();
-    await keepCloud3(st, Object.assign({ base: r.device.base, baseRev: r.device.baseRev, sentAt: r.pushed || !st.sentAt ? Date.now() : st.sentAt, failAt: 0 }, sends));
+    await keepCloud3(st, Object.assign({ base: r.device.base, baseRev: r.device.baseRev, sentAt: r.pushed || !st.sentAt ? Date.now() : st.sentAt, failAt: 0, failWhy: null }, sends));
     const qs = r.questions.length;
     if (qs && !SET3.open) msg3('Your devices changed the same thing - choose which to keep in Settings');
     return r;
   } finally {
     C3.busy = false;
     if (SET3.open) paintCloud3();
+    homeSay3();
     after3();
   }
 }
@@ -10818,6 +10824,7 @@ function changed3() {
   if (C3.applying || !C3.st || !C3.st.on || C3.stop) return;
   const quiet = Date.now() - CT3.soon > C3.lastChange;   // no change in the last 5 seconds: this one starts a burst
   C3.dirty = true; C3.lastChange = Date.now();
+  homeSay3();
   if (guard3(C3.st)) return;   // the day's guard: kept here, sent tomorrow or by Send now
   if (!quiet && C3.first) return;   // the at-once send of this burst has not left yet: it carries this change too
   C3.first = quiet;
@@ -10847,7 +10854,7 @@ async function take3() {
     }
   } finally {
     C3.busy = false;
-    if (!full) { if (SET3.open) paintCloud3(); after3(); }
+    if (!full) { if (SET3.open) paintCloud3(); homeSay3(); after3(); }
   }
   if (full) await syncNow3();
 }
@@ -10873,6 +10880,37 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) { cle
 addEventListener('pagehide', leaving3);
 addEventListener('pageshow', cameBack3);
 addEventListener('online', cameBack3);
+
+/* ---------- the cloud copy's one status (coordinator item 8; M36, M61, M67) ----------
+   Worked out here only, and read by Settings (its state line) and Home (one plain line when it is not in step). Never
+   "in step" while anything saved is not yet sent (waiting3: the saved book against the base) or after the cloud refused a
+   send, until a send lands. Gives { key, settings, home }; home is '' when in step or off */
+const REFUSED3 = { server: 'The cloud did not take your last change. It tries again by itself.', busy: 'The cloud is busy and did not take your last change. It tries again by itself.', code: WHY3.code };
+const HOME3_REFUSED = 'The cloud copy did not take your last change - it tries again by itself';
+function cloudStatus3(st) {
+  st = st || C3.st;
+  if (E3.mode === 'try' || !st || !st.on) return { key: 'off', settings: '', home: '' };
+  const waiting = waiting3(st);
+  const checked = Math.max(C3.checkedAt || 0, st.sentAt || 0);
+  if (C3.stop) return { key: 'stopped', settings: WHY3[C3.stop] || WHY3.server, home: 'The cloud copy has stopped on this device - open Settings to see why' };
+  if (guard3(st)) return { key: 'refused', settings: WHY3.day, home: waiting ? 'This device has sent its most for today, so your changes go to the cloud copy tomorrow' : '' };
+  const why = C3.why && C3.why !== 'net' ? C3.why : waiting && st.failAt ? st.failWhy : null;
+  if (why && waiting) return { key: 'refused', settings: REFUSED3[why] || WHY3[why] || REFUSED3.server, home: HOME3_REFUSED };
+  if (C3.why && C3.why !== 'net') return { key: 'trouble', settings: WHY3[C3.why] || WHY3.server, home: '' };
+  if (C3.heldMiss) return { key: 'held', settings: 'On. Your other device changed something. It comes in when you finish what is open here.', home: '' };
+  if (C3.busy && !st.sentAt) return { key: 'sending', settings: 'On. Sending the first copy.', home: '' };
+  if (waiting) return { key: 'waiting', settings: C3.why === 'net' ? WHY3.net : 'On. A change made here is waiting to be sent. It goes by itself.', home: 'A change is waiting to go to the cloud copy' };
+  if (C3.why === 'net') return { key: 'trouble', settings: WHY3.net, home: '' };
+  return { key: 'instep', checked, settings: checked ? `On. In step with the cloud, last checked at ${when3(checked)}.` : 'On.', home: '' };
+}
+/* Home's one cloud line (home3.js reads it); Home is drawn again only when the line changes */
+const cloudHome3 = () => cloudStatus3().home;
+function homeSay3() {
+  const now = cloudHome3();
+  if (now === C3.homeSaid) return;
+  C3.homeSaid = now;
+  try { if (E3.book) renderHome3(); } catch (e) { /* a screen's own fault */ }
+}
 
 /* ---------- the card in Settings ---------- */
 function cloudCard3() {
@@ -10909,17 +10947,12 @@ async function paintCloud3() {
     paintQuestions3();
     return;
   }
-  const busy = C3.busy && !st.sentAt;
-  /* [B4, M36] when this device last checked with the cloud and its book showed what was there: a take or a send, never
-     a take that was held and thrown away */
-  const checked = Math.max(C3.checkedAt || 0, st.sentAt || 0);
-  state.dataset.checked = String(checked);
-  state.textContent = C3.why ? WHY3[C3.why] || WHY3.server
-    : guard3(st) ? WHY3.day
-    : C3.heldMiss ? 'On. Your other device changed something. It comes in when you finish what is open here.'
-    : busy ? 'On. Sending the first copy.'
-    : waiting3(st) ? 'On. A change made here is waiting to be sent. It goes by itself.'
-    : checked ? `On. Last checked with the cloud at ${when3(checked)}.` : 'On.';
+  /* the one status. [B4, M36] "last checked" is when this device last checked with the cloud and its book showed what
+     was there: a take or a send, never a take that was held and thrown away */
+  const cs = cloudStatus3(st);
+  state.dataset.checked = String(Math.max(C3.checkedAt || 0, st.sentAt || 0));
+  state.dataset.status = cs.key;
+  state.textContent = cs.settings;
   const behind = st.failAt ? `<p class="a3-warn" data-cloud="behind">Changes made since ${esc3(when3(st.failAt))} are on this device only for now.</p>` : '';
   /* the buttons are drawn once: a timed check that ends while the person reads "Turn off" or the code never wipes it */
   if (body.dataset.mode !== 'on') {
