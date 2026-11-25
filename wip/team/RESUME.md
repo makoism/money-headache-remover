@@ -4,7 +4,7 @@ Written 2026-11-18 on branch `wip-38.31`. Read this whole file before touching a
 
 ## 0. Handoff (latest first)
 
-**26 Nov 2026 05:25 JST, MAIN 19 (session_01BFpKEZhNanhwwCYAjaDd2p): state. This entry wins; MAIN 18's entry below still holds for the brief, the rulings and the main-commit pointer.** Coordinator 14 (session_01BFpKEZYEQFwJebc9azBXTJ). My keep-going task is trig_01VpHBKLQjF6L4swQqu2b2SV. MAIN 18 is closed.
+**26 Nov 2026 03:57 JST by the machine clock, MAIN 19 (session_01BFpKEZhNanhwwCYAjaDd2p): state. This entry wins; MAIN 18's entry below still holds for the brief, the rulings and the main-commit pointer.** Coordinator 14 (session_01BFpKEZYEQFwJebc9azBXTJ). My keep-going task is trig_01VpHBKLQjF6L4swQqu2b2SV. MAIN 18 is closed.
 - **Where I work:** the main checkout /home/user/money-headache-remover is ON lane/ai-join (no join worktree on this machine), so reviewers get the build path wip/team/app3/index.html there and QC_COMMON's paths are right as written. wip-38.31 is in the worktree .claude/worktrees/wip (docs only). A fresh machine needs the tools line from MAIN 17's entry, and `git fetch --unshallow origin lane/ai-join wip-38.31 main` (without it check3 quick cannot find its base: name the page tests instead).
 - **The candidate is lane/ai-join.** On top of MAIN 18's two small fixes (018d3c64, 92a445a5), one commit each, tests first:
   1. 1498fe20 qc-assistant blocker 1 (M6, the coordinator's ruling): an amount counts as typed only from the person's own messages since the assistant's last written change, and each written change uses up one typing of it (chat3_core.js typedLeft, wrote; state.typedFrom, state.used, state.wrote). A fill counts as a written change. Tests in chat3_core.test.js marked [M6].
