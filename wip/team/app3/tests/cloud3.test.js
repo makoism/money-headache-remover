@@ -160,6 +160,158 @@ const canon = x => S.canon(x);
     ck('a write refused because the copy was just deleted is said as deleted too', !r.ok && r.why === 'deleted' && !v4.rows.size, JSON.stringify(r).slice(0, 200));
   }
 
+  // ---- CS3: the base is never ahead of the book. A write is refused, then the retry fails: the device keeps the base it
+  //      started with, so the next sync joins again. The other device changed one spend, removed another, and renamed
+  //      the pay this device renamed too (M20): all of it survives on both, and the question is asked ----
+  {
+    const v5 = makeVault(), api5 = C.client({ fetch: v5.fetch, base: () => 'http://vault.test' });
+    const bank = BOOK.accounts[0].id, sid = BOOK.schedules[0].id;
+    const sp = (id, a, at) => ({ id, k: 'spend', acct: bank, date: '2026-12-06', a, told: at.slice(0, 16) + '+09:00', at, by: 'dsk001' });
+    const start = clone(BOOK); start.events.push(sp('dsk001-q4w8e2r6t1-1', 1200, '2026-12-06T10:00:00.000+09:00'), sp('dsk001-q4w8e2r6t1-2', 800, '2026-12-06T10:05:00.000+09:00'));
+    let a = await C.syncOnce({ api: api5, pack, S, keys, device: {}, copy: start });
+    let Aa = { copy: a.copy, dev: a.device };
+    let b = await C.syncOnce({ api: api5, pack, S, keys, device: {}, copy: null });
+    let Bb = { copy: b.copy, dev: b.device };
+    // the other device: one spend changed, one removed, the pay renamed
+    const x = Bb.copy.events.find(e => e.id === 'dsk001-q4w8e2r6t1-1'); Object.assign(x, { a: 2100, at: '2026-12-07T09:00:00.000+09:00', by: 'phn002' });
+    const y = Bb.copy.events.find(e => e.id === 'dsk001-q4w8e2r6t1-2'); Object.assign(y, { gone: '2026-12-07', at: '2026-12-07T09:01:00.000+09:00', by: 'phn002' });
+    Object.assign(Bb.copy.schedules.find(s => s.id === sid), { name: 'Main job (phone)', at: '2026-12-07T09:02:00.000+09:00', by: 'phn002' });
+    b = await C.syncOnce({ api: api5, pack, S, keys, device: Bb.dev, copy: Bb.copy }); Bb = { copy: b.copy, dev: b.device };
+    // this device renamed the same pay; its write is refused once (as when another write lands first), then the cloud cannot be reached
+    Object.assign(Aa.copy.schedules.find(s => s.id === sid), { name: 'Main job (desk)', at: '2026-12-07T08:00:00.000+09:00', by: 'dsk001' });
+    let refusedOnce = false, down = false;
+    const apiA = { del: k => api5.del(k), versions: k => api5.versions(k), rev: (k, n) => api5.rev(k, n),
+      get: k => (down ? Promise.resolve({ status: 0, ok: false, j: {} }) : api5.get(k)),
+      put: async (k, body, ka) => { if (!refusedOnce) { refusedOnce = true; down = true; return { status: 409, ok: false, j: { error: { code: 'conflict' } } }; } return api5.put(k, body, ka); } };
+    const mine = clone(Aa.copy);
+    const f = await C.syncOnce({ api: apiA, pack, S, keys, device: Aa.dev, copy: mine });
+    ck('CS3: a refused write then a failed retry is a failed sync', !f.ok && f.why === 'net');
+    ck('CS3: the device keeps the base it started with, never the one it took on the way', f.device.baseRev === Aa.dev.baseRev && canon(f.device.base) === canon(Aa.dev.base), 'baseRev ' + f.device.baseRev + ' started ' + Aa.dev.baseRev);
+    // the page keeps its book and whatever base the failed sync handed it; the next sync, online again
+    down = false;
+    a = await C.syncOnce({ api: api5, pack, S, keys, device: f.device, copy: mine }); Aa = { copy: a.copy, dev: a.device };
+    b = await C.syncOnce({ api: api5, pack, S, keys, device: Bb.dev, copy: Bb.copy }); Bb = { copy: b.copy, dev: b.device };
+    const amt = c => c.events.find(e => e.id === 'dsk001-q4w8e2r6t1-1').a, gone = c => !!c.events.find(e => e.id === 'dsk001-q4w8e2r6t1-2').gone;
+    ck('CS3: the other device\'s changed spend survives on both', amt(Aa.copy) === 2100 && amt(Bb.copy) === 2100, amt(Aa.copy) + ' ' + amt(Bb.copy));
+    ck('CS3: the other device\'s removed spend stays removed on both', gone(Aa.copy) && gone(Bb.copy));
+    const kp = c => (c.keptVersions || []).find(k => k.id === 'kept:' + sid);
+    ck('CS3: the pay renamed on both is still asked, both names kept (M20)', [Aa.copy, Bb.copy].every(c => kp(c) && kp(c).ask === true && kp(c).versions.map(v => v.name).sort().join('|') === 'Main job (desk)|Main job (phone)'), JSON.stringify(kp(Aa.copy)));
+    ck('CS3: both devices hold the same copy', canon(Aa.copy) === canon(Bb.copy));
+  }
+
+  // ---- CS2: asking only for the revision (no copy comes back), for the timed take ----
+  {
+    const v6 = makeVault(), api6 = C.client({ fetch: v6.fetch, base: () => 'http://vault.test' });
+    let rv = await C.revOnly({ api: api6, keys });
+    ck('revOnly: nothing stored reads as revision 0', rv.ok && rv.rev === 0, JSON.stringify(rv));
+    const ra = await C.syncOnce({ api: api6, pack, S, keys, device: {}, copy: clone(BOOK) });
+    const before = v6.log.length;
+    rv = await C.revOnly({ api: api6, keys });
+    ck('revOnly: after a send the cloud\'s revision is this device\'s baseRev', rv.ok && rv.rev === ra.device.baseRev, JSON.stringify(rv));
+    const call = v6.log[v6.log.length - 1];
+    ck('revOnly: one call, asking for versions only, and no copy in the answer', v6.log.length === before + 1 && call.method === 'GET' && call.query === 'versions=1' && !('blob' in v6.handle('GET', keys.id, keys.token, null, new URLSearchParams('versions=1')).j));
+    const rb = await C.syncOnce({ api: api6, pack, S, keys, device: {}, copy: null });
+    ck('revOnly: after a take too', (await C.revOnly({ api: api6, keys })).rev === rb.device.baseRev);
+    rv = await C.revOnly({ api: api6, keys: Object.assign({}, keys, { token: 'ab'.repeat(32) }) });
+    ck('revOnly: a token the vault does not accept is a code problem', !rv.ok && rv.why === 'code', JSON.stringify(rv));
+    await api6.del(keys);
+    rv = await C.revOnly({ api: api6, keys });
+    ck('revOnly: a copy deleted on another device is said as deleted (410), as a full sync says it', !rv.ok && rv.why === 'deleted', JSON.stringify(rv));
+    const off = C.client({ fetch: async () => { throw new TypeError('Failed to fetch'); }, base: () => 'http://vault.test' });
+    rv = await C.revOnly({ api: off, keys });
+    ck('revOnly: no connection is said as such', !rv.ok && rv.why === 'net');
+  }
+
+  // ---- CS1, B3: a book as the store loads it (an empty keptVersions list, its revision and save time) with nothing
+  //      changed is not a change: no write. Found by e3_cloudsend: every reload sent one copy and counted one send ----
+  {
+    const v9 = makeVault(), api9 = C.client({ fetch: v9.fetch, base: () => 'http://vault.test' });
+    const b0 = clone(BOOK); delete b0.keptVersions;
+    const first = await C.syncOnce({ api: api9, pack, S, keys, device: {}, copy: b0 });
+    const loaded = Object.assign(clone(first.copy), { keptVersions: [], rev: 7, at: '2026-12-01T10:00:00.000+09:00' });
+    const puts9 = v9.log.filter(x => x.method === 'PUT').length;
+    const again = await C.syncOnce({ api: api9, pack, S, keys, device: first.device, copy: loaded });
+    ck('a book loaded from the store with an empty keptVersions list and nothing changed is not sent', again.ok && !again.pushed && v9.log.filter(x => x.method === 'PUT').length === puts9, JSON.stringify({ pushed: again.pushed }));
+    ck('and noRev drops an empty keptVersions list, as it drops the store\'s marks', !('keptVersions' in C.noRev({ keptVersions: [], rev: 1 })) && C.noRev({ keptVersions: [{ id: 'kept:x' }] }).keptVersions.length === 1);
+  }
+
+  // ---- CS4, B1: a sync while a form is open (hold) asks only for the revision, joins nothing, and writes this book as it
+  //      is only when the cloud has not moved ----
+  {
+    const vh = makeVault(), apih = C.client({ fetch: vh.fetch, base: () => 'http://vault.test' });
+    const b0 = clone(BOOK); delete b0.keptVersions;
+    const one = await C.syncOnce({ api: apih, pack, S, keys, device: {}, copy: b0 });
+    const mine = clone(one.copy); mine.events.push({ id: 'dsk001-b7n3k9s2x4-77', k: 'spend', acct: BOOK.accounts[0].id, date: '2026-12-08', a: 410, told: '2026-12-08T09:30:00.000+09:00', at: '2026-12-08T09:30:00.000+09:00', by: 'dsk001' });
+    let from = vh.log.length;
+    const h1 = await C.syncOnce({ api: apih, pack, S, keys, device: one.device, copy: mine, holdBack: true });
+    const got = vh.log.slice(from);
+    ck('hold, the cloud not moved: this book is written as it is', h1.ok && !h1.held && h1.pushed && S.canon(h1.copy) === S.canon(C.noRev(mine)) && S.canon(h1.device.base) === S.canon(C.noRev(mine)));
+    ck('hold: no copy is fetched, only the revision', got.filter(x => x.method === 'GET' && !x.query).length === 0 && got.some(x => x.method === 'GET' && x.query === 'versions=1'), JSON.stringify(got.map(x => x.method + ' ' + x.query)));
+    // the other device moves the cloud
+    const other = await C.syncOnce({ api: apih, pack, S, keys, device: {}, copy: null });
+    other.copy.events.push({ id: 'phn002-m2c8v5z1q7-77', k: 'spend', acct: BOOK.accounts[0].id, date: '2026-12-08', a: 520, told: '2026-12-08T09:40:00.000+09:00', at: '2026-12-08T09:40:00.000+09:00', by: 'phn002' });
+    await C.syncOnce({ api: apih, pack, S, keys, device: other.device, copy: other.copy });
+    const mine2 = clone(h1.copy); mine2.events.push({ id: 'dsk001-b7n3k9s2x4-78', k: 'spend', acct: BOOK.accounts[0].id, date: '2026-12-08', a: 230, told: '2026-12-08T09:50:00.000+09:00', at: '2026-12-08T09:50:00.000+09:00', by: 'dsk001' });
+    from = vh.log.length;
+    const h2 = await C.syncOnce({ api: apih, pack, S, keys, device: h1.device, copy: mine2, holdBack: true });
+    const got2 = vh.log.slice(from);
+    ck('hold, the cloud moved: held, nothing written, no copy fetched', h2.ok && h2.held && !h2.pushed && got2.every(x => x.method === 'GET' && x.query === 'versions=1'), JSON.stringify(got2.map(x => x.method + ' ' + x.query)));
+    ck('hold, held: the book and the base handed back are the ones given', S.canon(h2.copy) === S.canon(C.noRev(mine2)) && h2.device.baseRev === h1.device.baseRev);
+    const after = await C.syncOnce({ api: apih, pack, S, keys, device: h2.device, copy: h2.copy });
+    ck('after the close a full sync joins both spends', after.ok && after.copy.events.some(e => e.id === 'phn002-m2c8v5z1q7-77') && after.copy.events.some(e => e.id === 'dsk001-b7n3k9s2x4-78'));
+  }
+
+  // ---- CS1: a leaving send too big to outlive the page goes as a plain send; a take that must not send ----
+  {
+    const v7 = makeVault();
+    const seen = [];
+    // as the browser does: a send that outlives the page (keepalive) is refused at once when its body is over 64 KB
+    const fetch7 = async (url, o) => { o = o || {}; if (o.method === 'PUT') seen.push({ keepalive: !!o.keepalive, size: (o.body || '').length }); if (o.keepalive && (o.body || '').length > 65536) throw new TypeError('Failed to fetch'); return v7.fetch(url, o); };
+    const api7 = C.client({ fetch: fetch7, base: () => 'http://vault.test' });
+    const big = clone(BOOK);
+    const rnd = n => require('crypto').randomBytes(n).toString('hex');
+    for (let i = 1; i <= 900; i++) big.events.push({ id: 'dsk001-b7n3k9s2x4-' + i, k: 'spend', acct: BOOK.accounts[0].id, date: '2026-12-01', a: 100 + i, note: rnd(40), told: '2026-12-01T10:00:00.000+09:00', at: '2026-12-01T10:00:00.000+09:00', by: 'dsk001' });
+    let r7 = await C.syncOnce({ api: api7, pack, S, keys, device: {}, copy: big, keepalive: true });
+    ck('a leaving send over 64 KB is sent as a plain send, and lands', r7.ok && r7.pushed && seen.length === 1 && seen[0].size > 65536 && seen[0].keepalive === false && v7.rows.size === 1, JSON.stringify(seen));
+    const small = makeVault(), seen2 = [];
+    const api8 = C.client({ fetch: async (url, o) => { if (o && o.method === 'PUT') seen2.push(!!o.keepalive); return small.fetch(url, o); }, base: () => 'http://vault.test' });
+    let r8 = await C.syncOnce({ api: api8, pack, S, keys, device: {}, copy: clone(BOOK), keepalive: true });
+    ck('a small leaving send still goes as one that outlives the page', r8.ok && seen2.length === 1 && seen2[0] === true);
+    // a take that must not send (the day's guard is reached): the cloud's news comes in, this device's change stays here
+    const other = await C.syncOnce({ api: api8, pack, S, keys, device: {}, copy: null });
+    other.copy.events.push({ id: 'phn002-m2c8v5z1q7-1', k: 'spend', acct: BOOK.accounts[0].id, date: '2026-12-08', a: 640, told: '2026-12-08T09:00:00.000+09:00', at: '2026-12-08T09:00:00.000+09:00', by: 'phn002' });
+    const o2 = await C.syncOnce({ api: api8, pack, S, keys, device: other.device, copy: other.copy });
+    const mine = clone(r8.copy); mine.events.push({ id: 'dsk001-b7n3k9s2x4-901', k: 'spend', acct: BOOK.accounts[0].id, date: '2026-12-08', a: 310, told: '2026-12-08T09:30:00.000+09:00', at: '2026-12-08T09:30:00.000+09:00', by: 'dsk001' });
+    const putsBefore = small.log.filter(x => x.method === 'PUT').length;
+    const t = await C.syncOnce({ api: api8, pack, S, keys, device: r8.device, copy: mine, take: true });
+    ck('a take that must not send: nothing is written to the cloud', t.ok && !t.pushed && small.log.filter(x => x.method === 'PUT').length === putsBefore);
+    ck('it brings the other device\'s spend and keeps this device\'s own', t.copy.events.some(e => e.id === 'phn002-m2c8v5z1q7-1') && t.copy.events.some(e => e.id === 'dsk001-b7n3k9s2x4-901'));
+    ck('its base is the cloud\'s copy, so this device\'s spend is still waiting', t.device.baseRev === o2.device.baseRev && !t.device.base.events.some(e => e.id === 'dsk001-b7n3k9s2x4-901') && t.waiting === true);
+    const later = await C.syncOnce({ api: api8, pack, S, keys, device: t.device, copy: t.copy });
+    ck('and it is sent by the next sync that may send', later.ok && later.pushed && later.copy.events.some(e => e.id === 'dsk001-b7n3k9s2x4-901'));
+    // [B5] the server's daily limit is its own answer, not "busy"
+    const full = { get: k => api8.get(k), versions: k => api8.versions(k), rev: (k, n) => api8.rev(k, n), del: k => api8.del(k), put: async () => ({ status: 429, ok: false, j: { error: { code: 'rate_limited', message: 'Too many saves today for this vault.' } } }) };
+    const m2 = clone(later.copy); m2.schedules[0].name = 'Main job again'; m2.schedules[0].at = '2026-12-08T10:00:00.000+09:00';
+    let rd = await C.syncOnce({ api: full, pack, S, keys, device: later.device, copy: m2 });
+    ck('B5: "too many saves today" from the server is said as the day\'s limit', !rd.ok && rd.why === 'day', JSON.stringify(rd).slice(0, 120));
+    const minute = Object.assign({}, full, { put: async () => ({ status: 429, ok: false, j: { error: { code: 'rate_limited', message: 'Too many requests. Wait a minute.' } } }) });
+    rd = await C.syncOnce({ api: minute, pack, S, keys, device: later.device, copy: m2 });
+    ck('B5: the per-minute limit is still "busy"', !rd.ok && rd.why === 'busy');
+  }
+
+  // ---- VOICE.md: every toast and Home notice in cloud3_page.js is one line, with no full stop at the end and no semicolon ----
+  {
+    const src = require('fs').readFileSync(path.join(__dirname, '../src/cloud3_page.js'), 'utf8');
+    const said = [];
+    for (const m of src.matchAll(/(?:msg3|setMsg3)\((?:[^'`]*\? )?'((?:[^'\\]|\\.)*)'(?: : '((?:[^'\\]|\\.)*)')?/g)) said.push(m[1], m[2]);
+    const stopAt = src.indexOf('const STOP3 = {'), stopEnd = src.indexOf('};', stopAt);
+    for (const m of src.slice(stopAt, stopEnd).matchAll(/: '((?:[^'\\]|\\.)*)'/g)) said.push(m[1]);
+    const deleted = /const GONE3 = '((?:[^'\\]|\\.)*)'/.exec(src); said.push(deleted && deleted[1]);
+    const words = said.filter(x => typeof x === 'string' && x);
+    const badOnes = words.filter(t => /[.;]$/.test(t) || /;/.test(t) || /\. /.test(t));
+    ck('VOICE: ' + words.length + ' toasts and notices, each one line with no full stop at the end and no semicolon', words.length >= 12 && !badOnes.length, badOnes.join(' | '));
+  }
+
   console.log(bad ? `cloud3: ${bad} FAIL of ${n}` : `cloud3: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })().catch(e => { console.log('FAIL crashed ' + e.stack); process.exit(1); });

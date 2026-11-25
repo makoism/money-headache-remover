@@ -19,7 +19,7 @@
   const SALT = 'mhr2000-vault-v1', ROUNDS = 150000;
   const INFO = { id: 'burrow3:id', token: 'burrow3:token', enc: 'burrow3:enc' };
   const ALPHA = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-  const TRIES = 3;
+  const TRIES = 3, KEEP_MAX = 60000;
 
   // ---------- the code ----------
   function newCode(rand) {
@@ -68,16 +68,34 @@
       } catch (e) { return { status: 0, ok: false, j: {} }; }   // no connection, or the 20 seconds ran out
       finally { clearTimeout(timer); }
     }
-    return { get: k => req(k, 'GET'), put: (k, b, keepalive) => req(k, 'PUT', b, keepalive), del: k => req(k, 'DELETE'),
+    /* rev: one earlier revision (?rev=n); versions: the list of revisions, and the current one alone (?versions=1 answers
+       with `rev` and no copy), which the timed take asks [CS2] */
+    /* [CS1] a send on leaving is one that outlives the page (keepalive). The browser refuses those over about 64 KB,
+       so a bigger copy, or one the browser refused at once, goes as a plain send: it lands whenever the page lives
+       long enough, which a page only put in the background does */
+    const put = async (k, b, keepalive) => {
+      if (keepalive && JSON.stringify(b).length <= KEEP_MAX) { const r = await req(k, 'PUT', b, true); if (r.status !== 0) return r; }
+      return req(k, 'PUT', b, false);
+    };
+    return { get: k => req(k, 'GET'), put, del: k => req(k, 'DELETE'),
       versions: k => req(k, 'GET', null, false, 'versions=1'), rev: (k, n) => req(k, 'GET', null, false, 'rev=' + encodeURIComponent(n)) };
   }
   // 410: the cloud copy was deleted on another device; it stays gone until a fresh turn-on (a new code), so the device stops
-  const WHY = { net: 'net', code: 'code', busy: 'busy', server: 'server', deleted: 'deleted' };
+  const WHY = { net: 'net', code: 'code', busy: 'busy', server: 'server', deleted: 'deleted', day: 'day' };
+  // [B5] a write refused because this copy has had its saves for the day (the server's own words) is 'day', not 'busy'
+  const putFail = p => (p.status === 429 && /today/i.test(String((p.j && p.j.error && p.j.error.message) || '')) ? WHY.day : failOf(p.status));
   const failOf = st => (st === 0 ? WHY.net : st === 403 ? WHY.code : st === 410 ? WHY.deleted : st === 429 ? WHY.busy : WHY.server);
 
   // ---------- one sync [AQ1, AW2, AW5] ----------
   // the store's own marks on a saved book (its revision and save time, store/idb.js meta) are never part of the shared copy [BD2]
-  const noRev = c => { if (!c || typeof c !== 'object') return c; const o = Object.assign({}, c); delete o.rev; delete o.at; return o; };
+  // The store also hands back an empty keptVersions list on every load, where the engine leaves the field out when nothing
+  // is kept: the same book both ways, so an empty list is dropped too (else every reload looks like a change and sends)
+  const noRev = c => {
+    if (!c || typeof c !== 'object') return c;
+    const o = Object.assign({}, c); delete o.rev; delete o.at;
+    if (Array.isArray(o.keptVersions) && !o.keptVersions.length) delete o.keptVersions;
+    return o;
+  };
   // [M4, AI1] Every copy that arrives from the cloud is held against this device's own now (store/clock.js holdArriving)
   // before anything sees it: an `at` more than a day ahead (another device's clock far ahead) is written as just after now,
   // with a `held` mark, so it never moves this device's clock. `mine` (the copy last synced, or this device's copy) gives
@@ -118,18 +136,40 @@
     if (!u.ok) return { ok: false, why: u.why };
     return { ok: true, rev: +g.j.rev || 0, copy: hold(noRev(u.copy), mine, now), updated: typeof g.j.updated === 'number' ? g.j.updated : null };
   }
+  // [CS2] Only the cloud copy's revision: { ok, rev } (0 when nothing is stored) or { ok: false, why }, said as a full sync
+  // says it (a copy deleted on another device is 'deleted'). No copy is fetched, so a timed check costs one small call.
+  async function revOnly({ api, keys }) {
+    const g = await api.versions(keys);
+    if (g.status === 404) return { ok: true, rev: 0 };
+    if (!g.ok) return { ok: false, why: failOf(g.status) };
+    return { ok: true, rev: +g.j.rev || 0 };
+  }
   // device: { base, baseRev } as kept on this device (SCHEMA_V3 2.2 `sync`); copy: this device's shared copy.
   // Gives { ok, copy, device: { base, baseRev }, pushed, merged, questions, firstJoin } or { ok: false, why, device }.
   // A refused write is retried from the copy it took as its base (AW5), up to three times.
-  async function syncOnce({ api, pack, S, keys, device, copy, keepalive, now }) {
+  // [CS3] A base goes only with the copy that holds it. A sync that fails hands back the copy and the base it was given,
+  // never a base it took on the way: a caller that keeps its book then keeps the base that book was joined from.
+  // take: true never sends (the day's guard): the cloud's news is joined in and the base is the cloud's copy, so what
+  // this device changed is still waiting (`waiting: true`) for the next sync that may send.
+  // holdBack: true while a form or a review is open on the page [CS4, B1]: nothing is joined in. When the cloud has not
+  // moved since this device's base, this book is written as it is (book and base stay together); when it has, nothing is
+  // written and the answer is `held: true`, so the page takes it after the form closes.
+  async function syncOnce({ api, pack, S, keys, device, copy, keepalive, take, holdBack, now }) {
     let dev = { base: device && device.base != null ? device.base : null, baseRev: device && device.baseRev != null ? device.baseRev : null };
     // this device's own copy is judged the same way as the cloud's, so a time far ahead in it (a clock set wrong earlier)
     // is held once and sent held, and the two never differ only by the hold (which would send on every pull)
-    let cur = hold(noRev(copy), dev.base, now), merged = false;
+    const dev0 = dev, copy0 = hold(noRev(copy), dev.base, now);
+    let cur = copy0, merged = false;
     const firstJoin = dev.base === null && S.hasData(cur);
     for (let i = 0; i < TRIES; i++) {
-      const cloud = await fetchCloud({ api, pack, keys, now, mine: dev.base || cur });
-      if (!cloud.ok) return { ok: false, why: cloud.why, device: dev, copy: cur };
+      let cloud;
+      if (holdBack) {   // only the revision is asked; the cloud's copy is this device's base when it has not moved
+        const v = await revOnly({ api, keys });
+        if (!v.ok) return { ok: false, why: v.why, device: dev0, copy: copy0 };
+        if (dev.base === null || v.rev !== dev.baseRev) return { ok: true, held: true, pushed: false, device: dev0, copy: copy0, questions: [] };
+        cloud = { ok: true, rev: v.rev, copy: dev.base };
+      } else cloud = await fetchCloud({ api, pack, keys, now, mine: dev.base || cur });
+      if (!cloud.ok) return { ok: false, why: cloud.why, device: dev0, copy: copy0 };
       const r = S.syncDevice({ copy: cur, base: dev.base === null ? undefined : dev.base, baseRev: dev.baseRev === null ? undefined : dev.baseRev }, { rev: cloud.rev, copy: cloud.copy });
       merged = merged || r.merged;
       const out = noRev(r.device.copy);
@@ -137,20 +177,25 @@
         dev = { base: noRev(r.device.base), baseRev: r.rev };
         return { ok: true, copy: out, device: dev, pushed: false, merged, firstJoin, questions: S.afterSync(out).questions };
       }
+      if (take) {
+        dev = { base: cloud.copy ? JSON.parse(JSON.stringify(cloud.copy)) : null, baseRev: cloud.copy ? cloud.rev : null };
+        return { ok: true, copy: out, device: dev, pushed: false, waiting: true, merged, firstJoin, questions: S.afterSync(out).questions };
+      }
       const env = await pack.pack(out, { key: keys.key });
       const p = await api.put(keys, Object.assign(wrap(env), { rev: r.rev }, cloud.rev ? { base: cloud.rev } : {}), keepalive);
       if (p.ok) {
         dev = { base: JSON.parse(JSON.stringify(out)), baseRev: r.rev };   // its own object: the copy is edited later, the base never
         return { ok: true, copy: out, device: dev, pushed: true, merged, firstJoin, questions: S.afterSync(out).questions };
       }
-      if (p.status !== 409) return { ok: false, why: failOf(p.status), device: dev, copy: cur };
+      if (p.status !== 409) return { ok: false, why: putFail(p), device: dev0, copy: copy0 };
+      if (holdBack) return { ok: true, held: true, pushed: false, device: dev0, copy: copy0, questions: [] };   // moved meanwhile: after the close
       // [AW5] refused: keep the joined copy, with the copy it took as its base, and join again on the latest
       cur = out; dev = { base: JSON.parse(JSON.stringify(cloud.copy)), baseRev: cloud.rev };
     }
-    return { ok: false, why: WHY.busy, device: dev, copy: cur };
+    return { ok: false, why: WHY.busy, device: dev0, copy: copy0 };
   }
 
-  const api = { SALT, ROUNDS, INFO, newCode, codeShow, codeClean, codeValid, keysFor, wrap, unwrap, client, hold, fetchCloud, fetchVersions, fetchRev, syncOnce, noRev };
+  const api = { SALT, ROUNDS, INFO, newCode, codeShow, codeClean, codeValid, keysFor, wrap, unwrap, client, hold, fetchCloud, fetchVersions, fetchRev, revOnly, syncOnce, noRev };
   root.CLOUD3 = api;
   if (typeof module === 'object' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

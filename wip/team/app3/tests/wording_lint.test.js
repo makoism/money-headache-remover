@@ -43,7 +43,6 @@ const rel = f => path.relative(TEAM, f);
 /* real faults in the app's words this lint found (the check stays failing; see tests/QCSCRIPTS_FOUND.md) */
 /* each key is "<rule>: <file> <what>", with no line number, so a line moving in its file keeps its row */
 const KNOWN = {
-  'toast: cloud3_page.js "Your devices changed the same thing. Open Settings to choose which to keep."': 'a toast of two sentences with full stops (VOICE: one line, no full stop)',
 };
 const unline = x => x.replace(/^(\S+?\.(?:js|html)):\d+/, '$1');   // a finding without its line number, for KNOWN
 /* numbers of 7 digits or more that are not money: what each one is */
