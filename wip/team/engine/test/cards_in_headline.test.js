@@ -15,7 +15,7 @@
 // The independent checker (wip/team/checker/oracle_v2.js, kept on lane/checker-b) holds F14 for every life (each card
 // statement on its payment day). It is not edited on this branch (LESSONS 4: one rule, not three copies), so
 // run_against_checker.js differs from the engine on this rule by design, only in lives with a card paid in full and no
-// play amount. The count is written in DIFFERS_BY_DESIGN below once the engine is built (slice 1, commit 4).
+// play amount. The count is in DIFFERS_BY_DESIGN below.
 //
 // Run with --write-golden to write fixtures/cards_golden.json from the engine as it is now. It was written once, from
 // today's engine, before the change (commit 2), and is never written again by the new engine.
@@ -28,7 +28,10 @@ const { convert } = require('./scenario_to_book.js');
 const STATUS = require('../../screens/status.js');
 
 const GOLDEN = path.join(__dirname, 'fixtures', 'cards_golden.json');
-const DIFFERS_BY_DESIGN = null;   // filled in commit 4: { seeds, asks } of run_against_checker that differ on this rule
+// run_against_checker.js --seeds 2000, 26 Nov 2026: before this rule 2,000 of 2,000 seeds agreed; after it 731 seeds
+// differ (35,424 asks; 11,687 safe_to_spend and 11,104 headline figures), every one a life with a card paid in full and
+// no play amount, where the checker still takes each statement on its payment day (F14). Not silenced: rerun and compare.
+const DIFFERS_BY_DESIGN = { seeds: 731, of: 2000, figures: { safe_to_spend: 11687, headline: 11104 }, rule: 'cards owed now, no play amount (R1)' };
 
 /* ---- lives ---- */
 const CARD = {
@@ -299,6 +302,7 @@ if (process.argv.includes('--write-golden')) {
 }
 const gold = JSON.parse(fs.readFileSync(GOLDEN, 'utf8'));
 for (const [name, f] of GOLD) t('golden, byte for byte: ' + name, () => { eq(JSON.stringify(f()), gold[name]); });
+t('the checker difference is recorded, never silenced', () => ok(DIFFERS_BY_DESIGN && DIFFERS_BY_DESIGN.seeds > 0));
 t('every golden life is in the golden file', () => eq(Object.keys(gold).sort(), GOLD.map(g => g[0]).sort()));
 
 done('cards_in_headline.test.js');

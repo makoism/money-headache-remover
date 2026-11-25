@@ -976,16 +976,12 @@
   }
  ],
  "asks": [
-  {
-   "id": "cau131-01",
-   "date": "2027-04-10",
-   "question": "safe_to_spend",
-   "account": "zliaq3-p7knzvymlp-1",
-   "expected": 187504,
-   "why": "197,504 (Main bank today) + 0 (Trip: 21,000 - 22,000 - 41,000 + 15,000 + 7,000 = -20,000, below zero, so it holds nothing) - 10,000 (minimum) = 187,504",
-   "decisions": [
-    "AU2"
-   ]
-  }
+  { "id": "cau131-01", "date": "2027-04-10", "question": "safe_to_spend", "account": "zliaq3-p7knzvymlp-1",
+      "expected": 144103,
+      "why": "197,504 (Main bank today) + 0 (Trip below zero holds nothing) - 43,401 (Card 1 owed now: 92,000 at setup, its spends, the 8,800 refund and its payments since) - 10,000 (minimum) = 144,103",
+      "decisions": ["AU2"],
+      "note": "Cards in the headline (CASH_PLAN slice 1, M90, ruling R1): this life has no play amount (Free to spend), so everything owed now on a card paid in full comes off today, in place of its dated payment steps; a bill charged to the card and still to come stays on its payment day. With a play amount the walk stays as F14 decided. Owed now summed from the records by hand (opening 92,000, card spends, the 8,800 refund of 24 Feb, card payments). Before (F14) 187,504: the card waited for its payment day after a pay.",
+      "rule_questions": ["F14"],
+      "alt": {"F14": {"expected": 187504, "why": "197,504 (Main bank today) + 0 (Trip: 21,000 - 22,000 - 41,000 + 15,000 + 7,000 = -20,000, below zero, so it holds nothing) - 10,000 (minimum) = 187,504", "rule": "each card statement on its payment day (F14); still the reading for lives with a play amount (Free to spend), the bank after the cards and the dated warnings"}} }
  ]
 }

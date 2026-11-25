@@ -422,6 +422,9 @@ The expected figures use the reading in rules 1 to 14. Where the rule could reas
 - **Q23. Items landing today.** At end of day, an item that lands today and has not been seen is "due" (in due before next pay), not "not seen yet" (used). Bank debits in some countries post late in the day or the next morning, so this is linked to Q4.
 - **Q24. Bank today after a long gap.** Rina opens the app after three weeks. Bank today stays at the last figure with nothing assumed (used), shown with its age, and the late items are asked about. Should the app instead show a projected figure that assumes the late bills went out?
 
+## Cards in the headline (CASH_PLAN slice 1, M90, ruling R1, 26 Nov 2026)
+In a life with no play amount (Free to spend) in force, everything owed now on a card paid in full comes off safe to spend today, in place of its dated payment steps (a bill charged to the card and still to come stays on its payment day; a card that carries a balance stays dated). With a play amount the walk stays as F14 decided. 27 asks changed, every one in a life with no Free to spend: the 18 that carried `alt.Q14` take it as `expected` (away-04, couple-06, biweekly-02, -08, -13, -18, halves-05, -13, -19, -27, mako-02, -10, -22, -31, -35, weekly-05, -11, -17), and 9 are worked again by hand in their `why` (cad-02, cad-05, cbp-02, cbp-05, notsure-04, jp-03, jp-07, cau131-01, cau1692-01). Each keeps its F14 figure in `alt.F14`. The cards plan's other 7 (line-01, -02, -04, -05, cmi-03, cau2-01, cau2-02) have Free to spend and do not change. The reference model (`../ref/lookahead_ref.js`) is frozen and still gives F14 for these 27.
+
 ## Running the checker
 
 ```

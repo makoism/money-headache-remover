@@ -1326,16 +1326,12 @@
   }
  ],
  "asks": [
-  {
-   "id": "cau1692-01",
-   "date": "2027-09-24",
-   "question": "safe_to_spend",
-   "account": "4mvnli-m2hqlag4kf-1",
-   "expected": 231829,
-   "why": "442,617 (Main bank today) - 8,288 (Card 1 2 Aug, on 24 Sep) + 81,000 (Pay 1 Oct) - 15,000 (Power and water 1 Oct) - 89,100 (Card 1 2 Oct, on 4 Oct) - 54,000 (Rent 5 Oct) - 75,400 (Card 2 6 Oct) - 50,000 (minimum) = 231,829",
-   "decisions": [
-    "AU3"
-   ]
-  }
+  { "id": "cau1692-01", "date": "2027-09-24", "question": "safe_to_spend", "account": "4mvnli-m2hqlag4kf-1",
+      "expected": 175129,
+      "why": "442,617 (Main bank today) - 142,088 (Card 1 owed now: 8,288 + 89,100 on its statements + 44,700 not yet billed) - 75,400 (Card 2 owed now) - 50,000 (minimum) = 175,129",
+      "decisions": ["AU3"],
+      "note": "Cards in the headline (CASH_PLAN slice 1, M90, ruling R1): this life has no play amount (Free to spend), so everything owed now on a card paid in full comes off today, in place of its dated payment steps; a bill charged to the card and still to come stays on its payment day. With a play amount the walk stays as F14 decided. Owed now summed from the records by hand; the 18,700 of 24 Sep is told on 27 Sep, so not known yet. After today: pay 1 Oct +81,000, power -15,000, rent 5 Oct -54,000, never lower than today. Before (F14) 231,829.",
+      "rule_questions": ["F14"],
+      "alt": {"F14": {"expected": 231829, "why": "442,617 (Main bank today) - 8,288 (Card 1 2 Aug, on 24 Sep) + 81,000 (Pay 1 Oct) - 15,000 (Power and water 1 Oct) - 89,100 (Card 1 2 Oct, on 4 Oct) - 54,000 (Rent 5 Oct) - 75,400 (Card 2 6 Oct) - 50,000 (minimum) = 231,829", "rule": "each card statement on its payment day (F14); still the reading for lives with a play amount (Free to spend), the bank after the cards and the dated warnings"}} }
  ]
 }

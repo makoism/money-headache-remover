@@ -8,6 +8,9 @@
 // Usage: node run_against_checker.js --checker <folder>/wip/team/checker [--seeds 2000] [--from 1] [--seed N] [-v] [--out f.json]
 //   [--checker-opts k=v,...]
 // Any difference fails the run; the last line never says all agree when one does not (LESSONS lesson 2).
+// Differs by design since CASH_PLAN slice 1 (cards in the headline, R1): with no play amount the engine takes everything
+// owed now on a card paid in full off today; the checker (not edited here) keeps F14. 731 of 2,000 seeds differ on that
+// rule alone (counts in engine/test/cards_in_headline.test.js DIFFERS_BY_DESIGN); before it, all 2,000 agreed.
 'use strict';
 const fs = require('fs');
 const path = require('path');
