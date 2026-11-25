@@ -203,5 +203,26 @@ const log = p => p.$eval('#a3ChatLog', e => e.textContent.replace(/\s+/g, ' '));
     ck('only the relay was asked, nothing else outside the page', requests.every(u => u.startsWith('https://relay.example/')), JSON.stringify(requests.filter(u => !u.startsWith('https://relay.example/'))));
     ck('no page errors', !errs.length, errs.join(' | '));
   } finally { await b.close(); }
+  /* [AI_JOIN_FIXES F] the bank and a card told on Mon 23 Nov; on Tue 24 Nov the AI is off and "Set up on the screens"
+     opens: those boxes are empty (yesterday's figure is not today's, M37), the names are kept. With the real core (tests/chat_real.js) */
+  {
+    const R = require('./chat_real.js');
+    const o = await T.open({ profile: fs.mkdtempSync(os.tmpdir() + '/a3chatwalkF-') });
+    try {
+      const ai = await R.relay(o.p);
+      await o.p.goto(T.URL0 + '?today=2026-11-23'); await T.w(700);
+      ai.push(R.say('', [R.call('draft_set', { section: 'banks', value: [{ name: 'Main bank', amount: 286000 }] }), R.call('draft_set', { section: 'cards', value: [MAKO.cards[0]] })]), R.say('Got it.'));
+      await R.tell(o.p, 'Main bank 286,000, Card A 54,000 paid on the 10th');
+      ai.health = { ok: true, ai: false };
+      await o.p.goto(T.URL0 + '?today=2026-11-24'); await T.w(800);
+      await o.p.$eval('#a3ChatScreens', e => e.click()); await T.w(500);
+      const f = await o.p.evaluate(() => ({ name: document.querySelector('#s3BankName').value, bank: document.querySelector('#s3Bank').value,
+        cards: [...document.querySelectorAll('#a3Setup [data-row^=card]')].map(r => [r.querySelector('[data-f=name]').value, r.querySelector('[data-f=owed]').value]) }));
+      ck('F: on a later day "Set up on the screens" leaves the bank box empty, its name kept', f.name === 'Main bank' && f.bank === '', JSON.stringify(f));
+      ck('F: and the card figure told yesterday empty, its name kept', JSON.stringify(f.cards) === '[["Card A",""]]', JSON.stringify(f.cards));
+      ck('F: no page errors', !o.errs.length, o.errs.join(' | '));
+    } catch (e) { ck('F: the check ran to its end', false, e.stack); }
+    finally { await o.b.close(); }
+  }
   T.done('e3_chatwalk');
 })().catch(e => { console.log('FAIL crashed ' + (e && e.stack || e)); process.exit(1); });
