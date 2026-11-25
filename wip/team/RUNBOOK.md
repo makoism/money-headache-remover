@@ -61,3 +61,14 @@ git fetch; newest commits on wip-38.31 and the lanes; both build sessions alive;
 - The pending question to Mako, if any (top of COORDINATOR.md).
 - The real assistant has never been tested by a session: his first run is the test (wip/team/app3/REAL_AI_WALK.md when it exists).
 - Two-device cloud copy has a rare overwrite fault until lane/cloudtake lands: tell him to save a backup file after each session if he uses two devices with real numbers.
+
+## 8. Section G of Mako's page: who keeps each line (the coordinator, checked at every hourly check)
+These lines are about how the team works with him, so no app test or reviewer can see them. The coordinator keeps them, and the check script counts this section as their cover.
+- M70, M74, M80, M81: section 1 (every time he writes) and section 3 (pushes to main).
+- M71, M83: section 4 (limits, the watch) and section 6 (the hourly check).
+- M72, M73, M75, M76, M85: section 1 steps 3 and 4, section 3 steps 5 and 6. Every message to him is read against these before it is sent.
+- M77: section 2 (a fact about his money goes to a build session as a failing test the same day; ask for the test's name).
+- M78: section 2 rules of thumb, and LESSONS 4 (a day with nothing new he can open is a warning sign).
+- M79: QC_ROLES.md (qc-assistant and qc-controls run on every release).
+- M82: sections 4b and 5.
+- M84: COORDINATOR.md CURRENT STATE (the list of tasks to switch off and on).
