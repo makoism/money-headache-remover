@@ -13419,7 +13419,7 @@ SETUP (when FIGURES says there is no book yet). Ask these in order, one per mess
 ${GUIDE.map(g => g.n + '. ' + g.ask).join('\n')}
 After each answer, save it with draft_set (that section's whole list each time; nothing is in the app until fill_book). A pay needs afterTax true: only save a pay once the person said the amount is after tax. A second income needs same: true or false. Never fill in a minimum or a figure the person did not give. NEEDED lists what fill_book still needs; ask for those. fill_book only when the person says to fill it in.
 
-AFTER SETUP. When a pay, bill or card payment the app expects has come in or gone out ("my pay came in", "rent came out"), use change with landed and its P, B or A ref: never money_in or log_spend for it, which would count it twice. When they say what their bank app or card app shows today, use bank_figure or card_figure with that figure. When the person says they spent, got or moved money, or asks to change a bill, pay, line, goal or card, use change. The app makes the change at once and shows what changed with Undo; a delete, or a change larger than safe to spend, waits for their OK. Refs (A1, L1, G1, B1, P1, S1) come from FIGURES or list; never invent one. Not a licensed adviser: for investments, loans or taxes, say so in one line.
+AFTER SETUP. When a pay, bill or card payment the app expects has come in or gone out ("my pay came in", "rent came out"), use change with landed and its P, B or A ref: never money_in or log_spend for it, which would count it twice. When they say what their bank app or card app shows today, use bank_figure or card_figure with that figure. When the person says they spent, got or moved money, or asks to change a bill, pay, line, goal or card, use change. The app makes the change at once and shows what changed with Undo; a delete, or a change larger than safe to spend, waits for their OK. An amount you send must be one the person typed since your last change; for a repeat ("another lunch") ask how much, never send the old amount again. Refs (A1, L1, G1, B1, P1, S1) come from FIGURES or list; never invent one. Not a licensed adviser: for investments, loans or taxes, say so in one line.
 
 Adding a bank: ask both of its questions in one message: is it new money or moved from their bank, and if moved, before or after they looked at that bank today.
 
@@ -13925,6 +13925,30 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     }
     return far;
   }
+  /* ---- [M6, ruled 26 Nov 2026] which amounts the person typed ----
+     An amount counts as typed by the person only if it is in their own messages since the assistant's last written
+     change (state.typedFrom: the turn count when the first message after that change came in), and each time a written
+     change uses an amount, one typing of it is used up (state.used). So "another lunch" never writes an old amount
+     again without a question, and an answer to "from when?" still counts the amount typed just before. */
+  const plainOf = (book, today) => a => SM.format(a, G.homeOn(book, today)).replace(/[^\d.]/g, '').replace(/\.0+$/, '');
+  const figsOf = s => (s.figs || (s.amount ? [s.amount] : []));
+  function typedFrom(state) {
+    if (state.typedFrom != null) return state.typedFrom;
+    /* a chat saved before this rule: from the last change the assistant made */
+    const last = state.turns.filter(t => t.who === 'card' && t.card && t.card.status === 'done').slice(-1)[0];
+    return last ? +String(last.id).slice(1) : 0;
+  }
+  function typedLeft(state) {
+    const from = typedFrom(state);
+    const text = state.turns.filter(t => t.who === 'person' && +String(t.id).slice(1) > from).slice(-TURNS).map(t => t.text).join(' ').normalize('NFKC').replace(/[,，]/g, '');
+    return f => (text.match(new RegExp('(^|[^\\d.])' + f.replace('.', '\\.') + '(?![\\d])', 'g')) || []).length - (state.used || []).filter(u => u === f).length;
+  }
+  function wrote(state, card, book, today) {
+    const plain = plainOf(book, today);
+    state.typedFrom = typedFrom(state);
+    state.used = (state.used || []).concat(...card.plan.map(s => figsOf(s).map(plain)));
+    state.wrote = true;
+  }
   /* ---- one tool call ---- */
   function addTurn(state, t, shown) {
     const turn = Object.assign({ id: 't' + (++state.seq) }, t);
@@ -13933,7 +13957,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     if (shown) shown.push(turn);
     return turn;
   }
-  async function handle(state, call, deps, shown, said, frame) {
+  async function handle(state, call, deps, shown, frame) {
     const today = deps.today(), book = deps.book ? deps.book() : null, x = call.input || {};
     if (call.name === 'list') return list(book, today, x);
     if (call.name === 'explain') return explain(x.topic);
@@ -13973,11 +13997,10 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       const safe = LA.lookahead(book, today).safeToSpend.headline;
       /* [qc-foundation F2] the size is the step's real figure: a new pay and new money count too */
       const big = plan.some(s => s.amount && s.amount > safe), del = plan.some(s => s.del);
-      const typed = String(said || '').normalize('NFKC').replace(/[,，]/g, '');
-      const plain = a => SM.format(a, G.homeOn(book, today)).replace(/[^\d.]/g, '').replace(/\.0+$/, '');
-      /* every figure in a step (an amount, a target, what is owed, even 0) must be one the person typed */
-      const figsOf = s => (s.figs || (s.amount ? [s.amount] : []));
-      const guess = plan.filter(s => figsOf(s).some(f => !new RegExp('(^|[^\\d.])' + plain(f) + '(?![\\d])').test(typed)));
+      /* every figure in a step (an amount, a target, what is owed, even 0) must be one the person typed, in their own
+         messages since the last written change, and not used up by a change already written [M6] */
+      const plain = plainOf(book, today), left = typedLeft(state);
+      const guess = plan.filter(s => figsOf(s).some(f => left(plain(f)) < 1));
       /* [AI_JOIN_FIXES H5; M6's third reason] a bank figure far from what the app expected (the engine's own gap for that
          check, on the book the step would make, larger than safe to spend) asks first, with the gap in words: an extra
          zero never goes in silently */
@@ -13990,6 +14013,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
         return resultOf(card) + (dropped.length ? ' Left out: ' + dropped.join('; ') : '');
       }
       const res = await carryOut(state, card, deps);
+      if (res.ok) wrote(state, card, book, today);
       if (frame && typeof deps.door.ver === 'function') frame.ver = deps.door.ver();   // the turn's own steps
       addTurn(state, { who: 'card', text: card.lines.join('. '), at: deps.told(), card }, shown);
       return (res.ok ? resultOf(card) : 'Not changed: ' + res.text) + (dropped.length ? ' Left out: ' + dropped.join('; ') : '');
@@ -14000,7 +14024,8 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
   /* ---- one turn ---- */
   async function turn(state0, message, deps) {
     const state = clone(state0), shown = [];
-    const said = state.turns.filter(t => t.who === 'person').slice(-TURNS).map(t => t.text).join(' ') + ' ' + message;
+    /* [M6] the first message after a written change starts the typed amounts again */
+    if (state.wrote || state.typedFrom == null) { state.typedFrom = state.wrote ? state.seq : typedFrom(state); state.used = []; state.wrote = false; }
     addTurn(state, { who: 'person', text: clean(message, 4000), at: deps.told() }, shown);
     const rounds = [];
     const draftWas = JSON.stringify(state.draft);
@@ -14031,7 +14056,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       const results = [];
       for (const c of r.calls) {
         let out;
-        try { out = await handle(state, c, deps, shown, said, frame); } catch (e) { out = 'That did not work: ' + (e && e.message); }
+        try { out = await handle(state, c, deps, shown, frame); } catch (e) { out = 'That did not work: ' + (e && e.message); }
         results.push({ type: 'tool_result', tool_use_id: c.id, content: String(out) });
       }
       rounds.push({ content: r.content, results });
@@ -14046,6 +14071,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     const state = clone(state0), t = findCard(state, id), shown = [];
     if (!t || t.card.kind !== 'change' || t.card.status !== 'ask') return { state, shown, ok: false, text: 'Nothing to confirm' };
     const res = await carryOut(state, t.card, deps);
+    if (res.ok) wrote(state, t.card, deps.book(), deps.today());
     t.text = t.card.lines.join('. ');
     addTurn(state, { who: 'note', text: res.ok ? 'Done' : 'Not changed: ' + res.text, at: deps.told() }, shown);
     return { state, shown, ok: res.ok, text: res.text };
@@ -14110,6 +14136,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     if (!(await deps.start(built.book))) return { state, shown, ok: false, text: 'This could not be saved on this device. Nothing changed' };
     const v = LA.lookahead(built.book, today), main = built.ids.bank1;
     state.fill = { at: told, told, day: today };
+    state.wrote = true;   // [M6] what was typed for setup is not typed for a later change
     const figs = { safe: v.safeToSpend.headline, bank: v.accounts[main].bank };
     addTurn(state, { who: 'card', text: 'Your Burrow is filled in', at: told, card: { kind: 'fill', status: 'done', figures: figs } }, shown);
     const cur = curOf(state.draft);
@@ -14174,7 +14201,7 @@ ${card.need.length && state.draft ? 'STILL NEEDED: ' + card.need.join(' ') : ''}
     fillNow: (s, deps) => fillNow(s, deps),
     copyPrompt, pasteBack,
     request, read, figures, draftCard: (d, today) => draftCard(d, today), fillCheck, sentText,
-    handle: async (state0, call, deps) => { const state = clone(state0), shown = []; const result = await handle(state, call, deps, shown, ''); return { state, shown, result }; },
+    handle: async (state0, call, deps) => { const state = clone(state0), shown = []; const result = await handle(state, call, deps, shown); return { state, shown, result }; },
   };
   if (node) module.exports = api;
   else root.CHAT3C = api;
