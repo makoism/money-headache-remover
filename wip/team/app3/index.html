@@ -10879,7 +10879,7 @@ function cloudCard3() {
   return `<div class="a3-card" data-card="cloud"><h2>Cloud copy</h2>
     <p class="a3-next" id="a3CloudState">Checking.</p>
     <div id="a3CloudBody"></div>
-    <div id="a3CloudQs"></div></div>`;
+    <div id="a3CloudQs"></div><div id="a3CloudKept"></div></div>`;
 }
 function wireCloud3() { paintCloud3(); }
 async function paintCloud3() {
@@ -11029,22 +11029,66 @@ function amountNow3(v) {
 }
 const daysOf3 = v => (Array.isArray(v.rules) && v.rules.length ? [].concat(...v.rules.map(r => (r && r.rule && r.rule.days) || [])) : []).join(', ');
 const fromWhom3 = v => (!v.by ? '' : v.by === deviceBy3() ? 'from this device' : 'from your other device');
+/* what tells one version apart from the others kept with it: its amount, and its days and account when they differ */
+function apart3(k, v) {
+  const all = k.versions.filter(x => !x.gone);
+  const differ = f => new Set(all.map(f)).size > 1;
+  const amt = amountNow3(v), cur = v.cur || (v.acct ? E3.curOf(v.acct) : null), parts = [];
+  if (amt !== null && cur) parts.push(money3(amt, cur));
+  if (daysOf3(v) && differ(daysOf3)) parts.push(`day ${daysOf3(v)}`);
+  if (v.acct && differ(x => x.acct || '')) parts.push(`from ${E3.nameOf(v.acct)}`);
+  return parts;
+}
 function versionLine3(k, v) {
   const at = v.at ? when3(Date.parse(v.at)) : 'an unknown time';
   if (k.of === 'copy') return `The copy saved ${at}, with ${(v.events || []).filter(e => e && !e.gone).length} records`;
   const who = fromWhom3(v);
   if (v.gone) return ['Removed', who, `changed ${at}`].filter(Boolean).join(', ');
-  const all = k.versions.filter(x => !x.gone);
-  const differ = f => new Set(all.map(f)).size > 1;
-  const amt = amountNow3(v), cur = v.cur || (v.acct ? E3.curOf(v.acct) : null);
-  const parts = [v.name ? `"${v.name}"` : 'Changed'];
-  if (amt !== null && cur) parts.push(money3(amt, cur));
-  if (daysOf3(v) && differ(daysOf3)) parts.push(`day ${daysOf3(v)}`);
-  if (v.acct && differ(x => x.acct || '')) parts.push(`from ${E3.nameOf(v.acct)}`);
-  return [parts.join(' '), who, `changed ${at}`].filter(Boolean).join(', ');
+  return [[v.name ? `"${v.name}"` : 'Changed'].concat(apart3(k, v)).join(' '), who, `changed ${at}`].filter(Boolean).join(', ');
+}
+/* [M20] after a choice the other version stays for Undo: each record kept two ways that is no longer asked shows which
+   one is in use and what the other was, with "Use the other one". Read from keptVersions, so a reload keeps it */
+const pathOf3 = (b, p) => String(p || '').split('.').reduce((o, x) => (o && x ? o[x] : o), b);
+function otherLines3() {
+  const S = BurrowEngine.sync, out = [];
+  for (const k of (E3.book && E3.book.keptVersions) || []) {
+    if (k.ask || k.of === 'copy' || !k.in) continue;
+    const list = pathOf3(E3.book, k.in); if (!Array.isArray(list)) continue;
+    const cur = list.find(r => r && r.id === k.of); if (!cur) continue;
+    const inUse = k.versions.find(v => S.same(v, cur)); if (!inUse) continue;
+    const others = k.versions.map((v, i) => ({ v, i })).filter(x => !S.same(x.v, cur));
+    if (others.length) out.push({ k, cur, inUse, others });
+  }
+  return out;
+}
+const sayVersion3 = (k, v) => (v.gone ? ['removed'] : apart3(k, v)).concat(fromWhom3(v) ? [fromWhom3(v)] : []).join(' ');
+function paintOther3() {
+  const box = $('#a3CloudKept'); if (!box) return;
+  const lines = otherLines3();
+  box.innerHTML = lines.map((x, n) => x.others.map(o => `<div class="a3-q" data-cloudkept="${n}"><p class="a3-next"><b>${esc3(x.cur.name || nameOf3(x.k))}</b>: you kept ${esc3(sayVersion3(x.k, x.inUse))} - the other was ${esc3(sayVersion3(x.k, o.v))}</p>
+      <div class="a3-actions"><button type="button" class="a3-btn" data-useother="${n}:${o.i}">Use the other one</button></div></div>`).join('')).join('');
+  for (const b of box.querySelectorAll('[data-useother]')) b.addEventListener('click', () => { const [n, i] = b.dataset.useother.split(':').map(Number); useOther3(lines[n], i); });
+}
+/* the other version back: the engine's own answer (every version stays kept), with an Undo that puts the one before back */
+async function pickVersion3(of, matches) {
+  const S = BurrowEngine.sync, k = (E3.book.keptVersions || []).find(r => r.of === of);
+  const i = k ? k.versions.findIndex(matches) : -1;
+  if (i < 0) return false;
+  let next;
+  try { next = S.answer({ copy: E3.book, of, pick: i, now: nowIso3(), by: deviceBy3() }); } catch (e) { return false; }
+  return (await E3.put(next)) === true;
+}
+async function useOther3(x, i) {
+  const S = BurrowEngine.sync, before = x.inUse, want = x.k.versions[i], name = x.cur.name || nameOf3(x.k);
+  if (!(await pickVersion3(x.k.of, v => S.same(v, want)))) { setMsg3('That choice could not be made, so nothing changed', true); return; }
+  renderHome3(); if (SET3.open) paintQuestions3();
+  MSG3.post({ kind: 'undo', key: 'act3', text: `${name}: the other one is back`, action: { label: 'Undo', run: async () => {
+    if (await pickVersion3(x.k.of, v => S.same(v, before))) { renderHome3(); if (SET3.open) paintQuestions3(); }
+  } } });
 }
 function paintQuestions3() {
   const box = $('#a3CloudQs'); if (!box || !E3.book) { if (box) box.innerHTML = ''; return; }
+  paintOther3();
   const S = BurrowEngine.sync, qs = S.afterSync(E3.book).questions;
   if (!qs.length) { box.innerHTML = ''; return; }
   const kept = id => (E3.book.keptVersions || []).find(k => k.id === id);

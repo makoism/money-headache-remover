@@ -69,6 +69,24 @@ const amountOf = (b, id) => b.schedules.find(x => x.id === id).steps.slice(-1)[0
     await A.p.reload();
     ck('A ends with the pick too', await until(async () => { const b = await stored(A.p); return b && amountOf(b, rent) === 75000; }));
     ck('and both are the same', amountOf(await stored(A.p), rent) === amountOf(await stored(B.p), rent));
+
+    /* ---- 6b. the other stays for Undo (M20): after a reload it is still offered, and it comes back on both ---- */
+    if (await B.p.$('#a3SetClose')) { await B.p.click('#a3SetClose'); await T.w(200); }
+    await B.p.reload(); await T.w(500);
+    await B.p.click('#a3SetGo');
+    ck('6b. after a reload Settings still offers the other Rent', await until(async () => !!(await B.p.$('[data-cloudkept]'))), 'no kept line');
+    const line = await B.p.$eval('[data-cloudkept]', e => e.textContent.replace(/\s+/g, ' ').trim()).catch(() => '');
+    ck('6b. it says which was kept and what the other was, with amounts and devices', /Rent/.test(line) && /you kept ¥75,000 from your other device/.test(line) && /other was ¥78,000 from this device/.test(line), line);
+    const r3 = rev();
+    await B.p.click('[data-cloudkept] [data-useother]');
+    ck('6b. "Use the other one" brings back 78,000 here', await until(async () => amountOf(await stored(B.p), rent) === 78000));
+    ck('6b. with its own Undo message', await until(async () => /Undo/.test(await B.p.$eval('#a3Msg', e => e.textContent).catch(() => '')), 3000), await B.p.$eval('#a3Msg', e => e.textContent).catch(() => ''));
+    ck('(it is sent by itself)', await until(() => rev() > r3, 15000));
+    await A.p.reload();
+    ck('6b. A ends with 78,000 too', await until(async () => amountOf(await stored(A.p), rent) === 78000));
+    ck('6b. and A now offers 75,000 back', await (async () => { await A.p.click('#a3SetGo'); return until(async () => /other was ¥75,000/.test(await A.p.$eval('[data-cloudkept]', e => e.textContent).catch(() => ''))); })());
+    await B.p.evaluate(() => { const b = [...document.querySelectorAll('#a3Msg button')].find(x => /Undo/.test(x.textContent)); if (b) b.click(); });
+    ck('6b. Undo on B takes it back to 75,000', await until(async () => amountOf(await stored(B.p), rent) === 75000));
     const errs = A.errs.concat(B.errs).filter(e => !/Failed to load resource/.test(e));
     ck('no page errors', errs.length === 0, errs.join(' | '));
   } finally { await A.b.close(); await B.b.close(); await s.close(); }
