@@ -289,6 +289,27 @@ const canon = x => S.canon(x);
     ck('its base is the cloud\'s copy, so this device\'s spend is still waiting', t.device.baseRev === o2.device.baseRev && !t.device.base.events.some(e => e.id === 'dsk001-b7n3k9s2x4-901') && t.waiting === true);
     const later = await C.syncOnce({ api: api8, pack, S, keys, device: t.device, copy: t.copy });
     ck('and it is sent by the next sync that may send', later.ok && later.pushed && later.copy.events.some(e => e.id === 'dsk001-b7n3k9s2x4-901'));
+    // [B5] the server's daily limit is its own answer, not "busy"
+    const full = { get: k => api8.get(k), rev: k => api8.rev(k), del: k => api8.del(k), put: async () => ({ status: 429, ok: false, j: { error: { code: 'rate_limited', message: 'Too many saves today for this vault.' } } }) };
+    const m2 = clone(later.copy); m2.schedules[0].name = 'Main job again'; m2.schedules[0].at = '2026-12-08T10:00:00.000+09:00';
+    let rd = await C.syncOnce({ api: full, pack, S, keys, device: later.device, copy: m2 });
+    ck('B5: "too many saves today" from the server is said as the day\'s limit', !rd.ok && rd.why === 'day', JSON.stringify(rd).slice(0, 120));
+    const minute = Object.assign({}, full, { put: async () => ({ status: 429, ok: false, j: { error: { code: 'rate_limited', message: 'Too many requests. Wait a minute.' } } }) });
+    rd = await C.syncOnce({ api: minute, pack, S, keys, device: later.device, copy: m2 });
+    ck('B5: the per-minute limit is still "busy"', !rd.ok && rd.why === 'busy');
+  }
+
+  // ---- VOICE.md: every toast and Home notice in cloud3_page.js is one line, with no full stop at the end and no semicolon ----
+  {
+    const src = require('fs').readFileSync(path.join(__dirname, '../src/cloud3_page.js'), 'utf8');
+    const said = [];
+    for (const m of src.matchAll(/(?:msg3|setMsg3)\((?:[^'`]*\? )?'((?:[^'\\]|\\.)*)'(?: : '((?:[^'\\]|\\.)*)')?/g)) said.push(m[1], m[2]);
+    const stopAt = src.indexOf('const STOP3 = {'), stopEnd = src.indexOf('};', stopAt);
+    for (const m of src.slice(stopAt, stopEnd).matchAll(/: '((?:[^'\\]|\\.)*)'/g)) said.push(m[1]);
+    const deleted = /const GONE3 = '((?:[^'\\]|\\.)*)'/.exec(src); said.push(deleted && deleted[1]);
+    const words = said.filter(x => typeof x === 'string' && x);
+    const badOnes = words.filter(t => /[.;]$/.test(t) || /;/.test(t) || /\. /.test(t));
+    ck('VOICE: ' + words.length + ' toasts and notices, each one line with no full stop at the end and no semicolon', words.length >= 12 && !badOnes.length, badOnes.join(' | '));
   }
 
   console.log(bad ? `cloud3: ${bad} FAIL of ${n}` : `cloud3: ALL PASS (${n})`);

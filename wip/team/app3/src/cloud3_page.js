@@ -65,22 +65,29 @@ const held3 = () => typeof BACK3 === 'object' && !!BACK3.holding && BACK3.holdin
 function heldClosed3() { if (C3.heldMiss && !held3()) { C3.heldMiss = false; syncNow3(); } }
 /* a sync that cannot get better by trying again: the timer stops until the person acts, and Home says so once */
 const STOP3 = {
-  code: 'The cloud copy has stopped on this device. The cloud does not accept this code any more. Open Settings to start a new one.',
-  newer: 'The cloud copy has stopped on this device until the app is updated. Your money here is as it was.',
-  fmt: 'The cloud copy has stopped on this device until the app is updated. Your money here is as it was.',
-  key: 'The cloud copy has stopped on this device. It could not be opened with this code. Open Settings to see more.',
-  save: 'What your other device changed could not be saved on this device, so the cloud copy has stopped here. Free some space, then open the app again.',
+  code: 'The cloud copy has stopped here because the cloud does not accept this code any more - open Settings to start a new one',
+  newer: 'The cloud copy has stopped on this device until the app is updated, and your money here is as it was',
+  fmt: 'The cloud copy has stopped on this device until the app is updated, and your money here is as it was',
+  key: 'The cloud copy has stopped on this device because this code could not open it - open Settings to see more',
+  save: 'What your other device changed could not be saved on this device, so the cloud copy has stopped here - free some space, then open the app again',
 };
+/* the Home notice when the copy was deleted on another device (Settings says it at more length, WHY3.deleted) */
+const GONE3 = 'The cloud copy was deleted on another device and this device keeps its money - turn it on again in Settings with a new code';
 function stop3(why) {
   C3.stop = why; C3.why = why; clearTimeout(C3.tick); clearTimeout(C3.timer);
   if (!C3.said) { C3.said = true; MSG3.post({ kind: 'notice', key: 'cloud', text: STOP3[why] }); }
 }
 /* a sync or a check that failed. waiting: something here has not been sent, so Settings says since when */
 async function failed3(st, why, waiting) {
+  if (why === 'day') {   // [B5] the server has had this copy's saves for the day: the guard's own state and words, not "busy"
+    C3.why = null;
+    await keepCloud3(st, { sends: { day: cloudDay3(), n: CLOUD_DAY3 } });
+    return;
+  }
   if (why === 'deleted') {   // 410: deleted on another device; this device stops until it is turned on again
     C3.why = null; C3.dirty = false; clearTimeout(C3.tick);
     await putCloud3({ on: false, gone: Date.now() });
-    if (!SET3.open) MSG3.post({ kind: 'notice', key: 'cloud', text: WHY3.deleted });
+    if (!SET3.open) MSG3.post({ kind: 'notice', key: 'cloud', text: GONE3 });
     return;
   }
   C3.why = why;
@@ -155,7 +162,7 @@ async function syncNow3(opts) {
     C3.checkedAt = Date.now();
     await keepCloud3(st, Object.assign({ base: r.device.base, baseRev: r.device.baseRev, sentAt: r.pushed || !st.sentAt ? Date.now() : st.sentAt, failAt: 0 }, sends));
     const qs = r.questions.length;
-    if (qs && !SET3.open) msg3('Your devices changed the same thing. Open Settings to choose which to keep.');
+    if (qs && !SET3.open) msg3('Your devices changed the same thing - choose which to keep in Settings');
     return r;
   } finally {
     C3.busy = false;
@@ -337,7 +344,7 @@ async function useCode3(sure) {
   await putCloud3({ on: true, code, base: null, baseRev: null, sentAt: 0, failAt: 0 });
   err.textContent = '';
   await syncNow3({ act: true }); tick3(CT3.take);
-  setMsg3(E3.book ? 'This device now shares the cloud copy.' : '');
+  setMsg3(E3.book ? 'This device now shares the cloud copy' : '');
   paintCloud3();
 }
 function offAsk3() {
@@ -356,10 +363,10 @@ async function turnOff3(del) {
   clearTimeout(C3.timer); clearTimeout(C3.tick); C3.dirty = false; C3.why = null; C3.stop = null; C3.said = false;
   if (del && st.code) {
     const r = await cloudApi3().del(await CLOUD3.keysFor(st.code));
-    if (!r.ok) { setMsg3('The cloud copy could not be deleted right now, so it is still on. Try again when you are online.', true); return; }
+    if (!r.ok) { setMsg3('The cloud copy could not be deleted right now, so it is still on - try again when you are online', true); return; }
   }
   await putCloud3({ on: false });
-  setMsg3(del ? 'The cloud copy is deleted. Your money is on this device only.' : 'The cloud copy is off on this device. Your money is on this device only.');
+  setMsg3(del ? 'The cloud copy is deleted and your money is on this device only' : 'The cloud copy is off on this device and your money is on this device only');
   paintCloud3();
 }
 
@@ -410,10 +417,10 @@ async function answer3(q, pick) {
   try {
     if (q.q === 'which') next = S.answer(Object.assign(base, { of: q.of, pick: pick === 'both' ? 'both' : +pick }));
     else next = S.answerCheck(Object.assign(base, { question: q, pick }));
-  } catch (e) { setMsg3('That choice could not be made. Nothing changed.', true); return; }
+  } catch (e) { setMsg3('That choice could not be made, so nothing changed', true); return; }
   const ok = await E3.put(next);   // an edit with this device's clock; every version stays kept
-  if (ok !== true) { setMsg3(ok && ok.text ? ok.text : 'This could not be saved on this device. Nothing changed.', true); paintQuestions3(); return; }
+  if (ok !== true) { setMsg3(ok && ok.text ? ok.text : 'This could not be saved on this device, so nothing changed', true); paintQuestions3(); return; }
   renderHome3();
-  setMsg3('Kept. The other version can still come back.');
+  setMsg3('Kept - the other version can still come back');
   paintQuestions3();
 }

@@ -79,7 +79,9 @@
     return { get: k => req(k, 'GET'), rev: k => req(k, 'GET', null, false, '?versions=1'), put, del: k => req(k, 'DELETE') };
   }
   // 410: the cloud copy was deleted on another device; it stays gone until a fresh turn-on (a new code), so the device stops
-  const WHY = { net: 'net', code: 'code', busy: 'busy', server: 'server', deleted: 'deleted' };
+  const WHY = { net: 'net', code: 'code', busy: 'busy', server: 'server', deleted: 'deleted', day: 'day' };
+  // [B5] a write refused because this copy has had its saves for the day (the server's own words) is 'day', not 'busy'
+  const putFail = p => (p.status === 429 && /today/i.test(String((p.j && p.j.error && p.j.error.message) || '')) ? WHY.day : failOf(p.status));
   const failOf = st => (st === 0 ? WHY.net : st === 403 ? WHY.code : st === 410 ? WHY.deleted : st === 429 ? WHY.busy : WHY.server);
 
   // ---------- one sync [AQ1, AW2, AW5] ----------
@@ -152,7 +154,7 @@
         dev = { base: JSON.parse(JSON.stringify(out)), baseRev: r.rev };   // its own object: the copy is edited later, the base never
         return { ok: true, copy: out, device: dev, pushed: true, merged, firstJoin, questions: S.afterSync(out).questions };
       }
-      if (p.status !== 409) return { ok: false, why: failOf(p.status), device: dev0, copy: copy0 };
+      if (p.status !== 409) return { ok: false, why: putFail(p), device: dev0, copy: copy0 };
       if (hold) return { ok: true, held: true, pushed: false, device: dev0, copy: copy0, questions: [] };   // moved meanwhile: after the close
       // [AW5] refused: keep the joined copy, with the copy it took as its base, and join again on the latest
       cur = out; dev = { base: JSON.parse(JSON.stringify(cloud.copy)), baseRev: cloud.rev };
