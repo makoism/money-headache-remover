@@ -41,10 +41,34 @@ function afterSetup3() { return typeof BurrowPersist === 'object' ? BurrowPersis
 /* the Money card's words, in one place: drawn when the sheet opens and again when the book changes under it [S23] */
 function setMoney3() {
   const cur = E3.book ? E3.home() : null;
+  /* [E5, M13, M42] after setup: Keep at least for the main bank (empty for none, never set for the person) and where you
+     bank (its weekends and holidays move pay and bills), each saved as one step with Undo */
+  const live = cur && E3.mode !== 'try', main = live ? ((E3.book.home || {}).main || {}).v || {} : {}, country = live ? ((E3.book.home || {}).country || {}).v : null;
+  const keep = live ? `<div class="a3-field"><label for="a3Keep">Keep at least in ${esc3(E3.nameOf(main.acct))}</label>
+      <input class="a3-in" id="a3Keep" data-amount type="text" inputmode="decimal" autocomplete="off" value="${main.min ? SM.toInput(main.min.a, main.min.cur || cur) : ''}" placeholder="${esc3(SM.symbol(cur).trim())}">
+      <p class="a3-sub">Leave it empty for none. Safe to spend never counts this part</p></div>
+      <div class="a3-field"><label for="a3Country">Where you bank</label><select class="a3-in a3-sel" id="a3Country">${[['JP', 'Japan'], ['PH', 'The Philippines'], ['XX', 'Somewhere else (weekends only)']].map(([v, t]) => `<option value="${v}"${v === country ? ' selected' : ''}>${t}</option>`).join('')}</select>
+      <p class="a3-sub">Its weekends and holidays move pay and bills to a working day</p></div>
+      <p class="a3-err" id="a3MoneyErr" role="alert"></p>
+      <div class="a3-actions"><button type="button" class="a3-btn" id="a3MoneySave">Save</button></div>` : '';
   return `<h2>Money</h2>
       <p class="a3-next">${cur ? `Amounts are shown in <b data-set="cur">${esc3(cur)}</b>.` : 'The currency is chosen in setup.'}</p>
-      ${cur ? '<p class="a3-sub">It stays the same once money is written down</p>' : ''}`;
+      ${cur ? '<p class="a3-sub">It stays the same once money is written down</p>' : ''}${keep}`;
 }
+const bindKeep3 = () => { const el = $('#a3Keep'); if (el && E3.book) BurrowScreens.inputs.bind(el, { kind: 'amount', code: E3.home(), optional: true }); };
+/* [E5] Save on the Money card: Keep at least and the country, each a step only when it changed */
+async function setMoneySave3() {
+  const err = $('#a3MoneyErr'), t = $('#a3Keep').value.trim(), cur = E3.home();
+  const min = t ? typed3(t, cur) : null;
+  if (t && (min === null || !(min > 0))) { err.textContent = 'Type Keep at least as an amount above zero, or leave it empty'; $('#a3Keep').focus(); return; }
+  const main = ((E3.book.home || {}).main || {}).v || {}, was = main.min ? main.min.a : null, country = $('#a3Country').value, wasC = ((E3.book.home || {}).country || {}).v;
+  err.textContent = '';
+  if (min === was && country === wasC) { err.textContent = 'Nothing changed'; return; }
+  if (min !== was) { const r = await ACT3.run('setKeep', w => PLAN3W.setKeep(w, { min }), { undo: 'Keep at least changed' }); if (!r.ok) { err.textContent = r.text; return; } }
+  if (country !== wasC) { const r = await ACT3.run('setCountry', w => PLAN3W.setCountry(w, { country }), { undo: 'Where you bank changed' }); if (!r.ok) { err.textContent = r.text; return; } }
+  setMsg3('Saved');
+}
+document.addEventListener('click', e => { if (e.target.closest && e.target.closest('#a3MoneySave')) setMoneySave3(); });
 function openSet3() {
   if (SET3.open) return;
   SET3.open = true; SET3.restore = null;
@@ -85,6 +109,7 @@ function openSet3() {
   SET3.was.forEach(([el]) => { el.hidden = true; }); sheet.hidden = false;
   $('#a3SetClose').addEventListener('click', closeSet3);
   paintWord3();
+  bindKeep3();
   if (!tryBook) {
     $('#a3AiLogCopy').addEventListener('click', async () => {
       const log = (await E3.rec('aiLog')) || [];
@@ -305,7 +330,7 @@ E3.onSaved(() => {
   if (!SET3.open) return;
   SET3.stale = true;
   const m = $('#a3Set [data-card=money]'), save = $('#a3BkSave');
-  if (m) m.innerHTML = setMoney3();
+  if (m) { m.innerHTML = setMoney3(); bindKeep3(); }
   if (save) save.disabled = !E3.book;
   paintChanges3();   // [E4] the list follows a change saved while Settings is open (another tab, the cloud copy)
 });
