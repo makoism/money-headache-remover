@@ -22,3 +22,4 @@ cloud3_page.js :: sentToday3(st) + 1 :: how many times this device sent to the c
 cloud3_page.js :: Math.max(0, C3.lastChange + CT3.soon - Date.now(), C3.lastPush + CT3.gap - Date.now()) :: how long until a waiting change is sent (CS1 timing); a clock, not money
 cloud3_page.js :: Date.now() - CT3.soon :: whether a change came in the last 5 seconds (CS1 timing); a clock, not money
 cloud3_page.js :: Math.max(0, C3.lastPush + CT3.gap - Date.now()) :: how long until the next cloud send may go (CS1 timing); a clock, not money
+cloud3_page.js :: Math.max(C3.checkedAt || 0, st.sentAt || 0) :: the later of two times this device was last in step with the cloud (B4); a clock, not money

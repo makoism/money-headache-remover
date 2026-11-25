@@ -56,6 +56,13 @@ function waiting3(st) {
   if (!st || !st.on || !E3.book) return false;
   return st.base == null ? true : S3same(E3.book, st.base) === false;
 }
+/* [CS4, B2] the layers that hold a take back: while one is open, or covered by the assistant, Reminders or Settings, the
+   book is not replaced under it. Only the revision is asked; a change here is still sent when the cloud has not moved.
+   A take that would have brought something is thrown away (heldMiss) and a fresh sync runs when the layer closes.
+   What is open is asked of back3.js, the one piece that knows */
+const HOLD3 = ['stmt', 'setup', 'check', 'plan-form', 'rc-edit'];
+const held3 = () => typeof BACK3 === 'object' && !!BACK3.holding && BACK3.holding().some(k => HOLD3.includes(k));
+function heldClosed3() { if (C3.heldMiss && !held3()) { C3.heldMiss = false; syncNow3(); } }
 /* a sync that cannot get better by trying again: the timer stops until the person acts, and Home says so once */
 const STOP3 = {
   code: 'The cloud copy has stopped on this device. The cloud does not accept this code any more. Open Settings to start a new one.',
@@ -118,11 +125,13 @@ async function syncNow3(opts) {
     if (opts.act) { C3.stop = null; C3.said = false; }
     else if (C3.stop) return null;
     const snap = E3.book, wasWaiting = waiting3(st), take = !opts.act && guard3(st);
+    const hold = st.base != null && held3();   // a first join is the person's own act and is never held
     const keys = await CLOUD3.keysFor(st.code);
-    const r = await CLOUD3.syncOnce({ api: cloudApi3(), pack: BurrowPack, S: BurrowEngine.sync, keys, device: { base: st.base, baseRev: st.baseRev }, copy: snap, keepalive: !!opts.leaving, take });
+    const r = await CLOUD3.syncOnce({ api: cloudApi3(), pack: BurrowPack, S: BurrowEngine.sync, keys, device: { base: st.base, baseRev: st.baseRev }, copy: snap, keepalive: !!opts.leaving, take, hold });
     C3.lastCheck = Date.now();
     if (wasWaiting && !take) C3.lastPush = Date.now();   // a send was tried: the next one keeps its distance, sent or not
     if (!r.ok) { C3.failed = true; await failed3(st, r.why, wasWaiting || C3.dirty); return r; }   // [CS3] the book was not replaced: the base stays
+    if (r.held) { C3.heldMiss = true; C3.why = null; return r; }   // [B4] thrown away: "Last checked" does not move
     const sends = r.pushed ? { sends: countSend3(st) } : {};
     C3.why = null; C3.dirty = false;
     let next = r.copy;
@@ -130,6 +139,7 @@ async function syncNow3(opts) {
     /* [CS3] the base is saved only together with the book that holds it: after the book was replaced, or when the book
        here already is that copy. A book that could not be saved keeps the base it started with, so the next sync joins
        again from the same place and nothing the other device changed or removed is undone */
+    if (S3same(next, E3.book) === false && hold) { C3.heldMiss = true; C3.dirty = true; return r; }   // never replaced under a held layer, so the base stays too
     if (S3same(next, E3.book) === false) {
       if (r.firstJoin && E3.book) await keepCopy3('Before this device joined the cloud copy');
       C3.applying = true;
@@ -158,6 +168,8 @@ async function syncNow3(opts) {
 function after3() {
   const again = C3.again; C3.again = false;
   if (C3.stop) return;
+  if (again === 'leaving' && C3.heldMiss) { syncNow3({ leaving: true }); return; }
+  if (C3.heldMiss) return;   // the cloud moved under a held layer: nothing more until it closes (heldClosed3)
   if (again === 'leaving') { syncNow3({ leaving: true }); return; }
   if ((again || C3.dirty) && !C3.failed && !guard3(C3.st)) later3(C3.first ? gapIn3() : sendIn3());   // a first change that met a running sync still goes at once
 }
@@ -188,12 +200,14 @@ async function take3() {
   try {
     st = await freshCloud3();
     if (!st.on) return;
-    full = st.base == null || (waiting3(st) && !guard3(st));   // past the day's guard a waiting change is not a reason to fetch the copy
+    const hold = st.base != null && held3();
+    full = st.base == null || (waiting3(st) && !guard3(st) && !hold);   // past the day's guard a waiting change is not a reason to fetch the copy
     if (!full) {
       const v = await CLOUD3.revOnly({ api: cloudApi3(), keys: await CLOUD3.keysFor(st.code) });
       C3.lastCheck = Date.now();
       if (!v.ok) await failed3(st, v.why, false);
-      else if (v.rev !== st.baseRev) full = true;
+      else if (v.rev !== st.baseRev) { if (hold) C3.heldMiss = true; else full = true; }   // [CS4] held: thrown away, taken after the close
+      else if (hold && waiting3(st) && !guard3(st)) full = true;   // the cloud has not moved: this book is sent as it is
       else { C3.checkedAt = Date.now(); C3.why = null; }   // in step: the book shows what was checked
     }
   } finally {
@@ -213,6 +227,7 @@ function cameBack3() { if (C3.started && inView3()) tick3(Math.max(0, C3.lastChe
 async function startCloud3() {
   if (E3.mode === 'try') return;
   E3.onSaved(changed3);
+  if (typeof BACK3 === 'object' && BACK3.onChange) BACK3.onChange(heldClosed3);
   const st = await freshCloud3();
   if (st.on) await syncNow3();
   C3.started = true;   // from here coming back into view takes too (the page's own first showing is the opening sync above)
@@ -260,10 +275,16 @@ async function paintCloud3() {
     return;
   }
   const busy = C3.busy && !st.sentAt;
+  /* [B4, M36] when this device last checked with the cloud and its book showed what was there: a take or a send, never
+     a take that was held and thrown away */
+  const checked = Math.max(C3.checkedAt || 0, st.sentAt || 0);
+  state.dataset.checked = String(checked);
   state.textContent = C3.why ? WHY3[C3.why] || WHY3.server
     : guard3(st) ? WHY3.day
+    : C3.heldMiss ? 'On. Your other device changed something. It comes in when you finish what is open here.'
     : busy ? 'On. Sending the first copy.'
-    : st.sentAt ? `On. Last in step with the cloud at ${when3(st.sentAt)}.` : 'On.';
+    : waiting3(st) ? 'On. A change made here is waiting to be sent. It goes by itself.'
+    : checked ? `On. Last checked with the cloud at ${when3(checked)}.` : 'On.';
   const behind = st.failAt ? `<p class="a3-warn" data-cloud="behind">Changes made since ${esc3(when3(st.failAt))} are on this device only for now.</p>` : '';
   /* the buttons are drawn once: a timed check that ends while the person reads "Turn off" or the code never wipes it */
   if (body.dataset.mode !== 'on') {

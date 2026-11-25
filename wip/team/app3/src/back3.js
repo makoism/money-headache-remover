@@ -9,6 +9,9 @@
       Settings (codes) and statements (files) are never kept.
    3. One message at a time [K37]: an Undo bar from before never sits over a layer opened after it. It is held back
       while the layer shows and comes back when the layer closes, if its time is not up.
+   4. Which layers are open or covered [SYNC_PULL_PLAN B2]: the assistant, Reminders and Settings hide what is under them,
+      so a layer that was open when one of them came over it still counts as there (`holding`) until that sheet closes.
+      Whoever needs to know when that changes asks with onChange (the cloud copy holds a take back while a form is there).
    A new sheet needs a row in LAYERS (tests/e3_back.js counts the page's sheets against its own list).
    No money here: `held` and `skip` are lists of markers, so nothing is counted with sums. */
 const BACK3 = (() => {
@@ -27,7 +30,8 @@ const BACK3 = (() => {
   ];
   const open = () => LAYERS.filter(l => l.root());
   const held = [], skip = [];
-  let was = [];
+  let was = [], covered = [];
+  const COVERS = ['ask', 'rem', 'set'], fns = [];
   /* ---- what was typed, by layer ---- */
   const nameOf = el => el.id || [...el.attributes].filter(a => a.name.startsWith('data-') && a.name !== 'data-input' && a.name !== 'data-error').map(a => `${a.name}=${a.value}`).join(';');
   const fields = root => [...root.querySelectorAll('input, select, textarea')].filter(el => el.type !== 'password' && el.type !== 'file' && nameOf(el));
@@ -62,6 +66,7 @@ const BACK3 = (() => {
   function sync() {
     const on = open(), keys = on.map(l => l.key);
     const fresh = on.filter(l => !was.includes(l.key));
+    covered = keys.some(k => COVERS.includes(k)) ? [...new Set(covered.concat(was.filter(k => !COVERS.includes(k))))] : [];
     was = keys;
     /* [K37] an Undo bar from before a layer opened is held back while that layer shows (each layer remembers the
        newest message at the moment it was drawn; the latest of the open layers' marks is the cover). An Undo made
@@ -79,6 +84,7 @@ const BACK3 = (() => {
       putBack(l);
     }
     entries();
+    for (const f of fns) { try { f(); } catch (e) { /* a listener's own fault */ } }
   }
   /* one history entry per open layer. Stepping back off a closed layer's entry takes a moment (the browser does it
      after this code ends), so nothing is pushed until it has landed: a sheet swapped for another (Ask over Reminders)
@@ -109,6 +115,7 @@ const BACK3 = (() => {
     new MutationObserver(sync).observe($('#a3'), { subtree: true, childList: true, attributes: true, attributeFilter: ['hidden'] });
     sync();
   }
-  return { start, open: () => open().map(l => l.key), forget };
+  const holding = () => [...new Set(open().map(l => l.key).concat(covered))];
+  return { start, open: () => open().map(l => l.key), holding, onChange: f => fns.push(f), forget };
 })();
 BACK3.start();

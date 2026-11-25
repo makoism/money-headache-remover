@@ -235,6 +235,32 @@ const canon = x => S.canon(x);
     ck('and noRev drops an empty keptVersions list, as it drops the store\'s marks', !('keptVersions' in C.noRev({ keptVersions: [], rev: 1 })) && C.noRev({ keptVersions: [{ id: 'kept:x' }] }).keptVersions.length === 1);
   }
 
+  // ---- CS4, B1: a sync while a form is open (hold) asks only for the revision, joins nothing, and writes this book as it
+  //      is only when the cloud has not moved ----
+  {
+    const vh = makeVault(), apih = C.client({ fetch: vh.fetch, base: () => 'http://vault.test' });
+    const b0 = clone(BOOK); delete b0.keptVersions;
+    const one = await C.syncOnce({ api: apih, pack, S, keys, device: {}, copy: b0 });
+    const mine = clone(one.copy); mine.events.push({ id: 'dsk001-b7n3k9s2x4-77', k: 'spend', acct: BOOK.accounts[0].id, date: '2026-12-08', a: 410, told: '2026-12-08T09:30:00.000+09:00', at: '2026-12-08T09:30:00.000+09:00', by: 'dsk001' });
+    let from = vh.log.length;
+    const h1 = await C.syncOnce({ api: apih, pack, S, keys, device: one.device, copy: mine, hold: true });
+    const got = vh.log.slice(from);
+    ck('hold, the cloud not moved: this book is written as it is', h1.ok && !h1.held && h1.pushed && S.canon(h1.copy) === S.canon(C.noRev(mine)) && S.canon(h1.device.base) === S.canon(C.noRev(mine)));
+    ck('hold: no copy is fetched, only the revision', got.filter(x => x.method === 'GET' && !x.query).length === 0 && got.some(x => x.method === 'GET' && x.query === 'versions=1'), JSON.stringify(got.map(x => x.method + ' ' + x.query)));
+    // the other device moves the cloud
+    const other = await C.syncOnce({ api: apih, pack, S, keys, device: {}, copy: null });
+    other.copy.events.push({ id: 'phn002-m2c8v5z1q7-77', k: 'spend', acct: BOOK.accounts[0].id, date: '2026-12-08', a: 520, told: '2026-12-08T09:40:00.000+09:00', at: '2026-12-08T09:40:00.000+09:00', by: 'phn002' });
+    await C.syncOnce({ api: apih, pack, S, keys, device: other.device, copy: other.copy });
+    const mine2 = clone(h1.copy); mine2.events.push({ id: 'dsk001-b7n3k9s2x4-78', k: 'spend', acct: BOOK.accounts[0].id, date: '2026-12-08', a: 230, told: '2026-12-08T09:50:00.000+09:00', at: '2026-12-08T09:50:00.000+09:00', by: 'dsk001' });
+    from = vh.log.length;
+    const h2 = await C.syncOnce({ api: apih, pack, S, keys, device: h1.device, copy: mine2, hold: true });
+    const got2 = vh.log.slice(from);
+    ck('hold, the cloud moved: held, nothing written, no copy fetched', h2.ok && h2.held && !h2.pushed && got2.every(x => x.method === 'GET' && x.query === 'versions=1'), JSON.stringify(got2.map(x => x.method + ' ' + x.query)));
+    ck('hold, held: the book and the base handed back are the ones given', S.canon(h2.copy) === S.canon(C.noRev(mine2)) && h2.device.baseRev === h1.device.baseRev);
+    const after = await C.syncOnce({ api: apih, pack, S, keys, device: h2.device, copy: h2.copy });
+    ck('after the close a full sync joins both spends', after.ok && after.copy.events.some(e => e.id === 'phn002-m2c8v5z1q7-77') && after.copy.events.some(e => e.id === 'dsk001-b7n3k9s2x4-78'));
+  }
+
   // ---- CS1: a leaving send too big to outlive the page goes as a plain send; a take that must not send ----
   {
     const v7 = makeVault();

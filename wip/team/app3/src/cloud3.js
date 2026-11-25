@@ -118,13 +118,22 @@
   // never a base it took on the way: a caller that keeps its book then keeps the base that book was joined from.
   // take: true never sends (the day's guard): the cloud's news is joined in and the base is the cloud's copy, so what
   // this device changed is still waiting (`waiting: true`) for the next sync that may send.
-  async function syncOnce({ api, pack, S, keys, device, copy, keepalive, take }) {
+  // hold: true while a form or a review is open on the page [CS4, B1]: nothing is joined in. When the cloud has not moved
+  // since this device's base, this book is written as it is (book and base stay together); when it has, nothing is
+  // written and the answer is `held: true`, so the page takes it after the form closes.
+  async function syncOnce({ api, pack, S, keys, device, copy, keepalive, take, hold }) {
     let dev = { base: device && device.base != null ? device.base : null, baseRev: device && device.baseRev != null ? device.baseRev : null };
     const dev0 = dev, copy0 = noRev(copy);
     let cur = copy0, merged = false;
     const firstJoin = dev.base === null && S.hasData(cur);
     for (let i = 0; i < TRIES; i++) {
-      const cloud = await fetchCloud({ api, pack, keys });
+      let cloud;
+      if (hold) {   // only the revision is asked; the cloud's copy is this device's base when it has not moved
+        const v = await revOnly({ api, keys });
+        if (!v.ok) return { ok: false, why: v.why, device: dev0, copy: copy0 };
+        if (dev.base === null || v.rev !== dev.baseRev) return { ok: true, held: true, pushed: false, device: dev0, copy: copy0, questions: [] };
+        cloud = { ok: true, rev: v.rev, copy: dev.base };
+      } else cloud = await fetchCloud({ api, pack, keys });
       if (!cloud.ok) return { ok: false, why: cloud.why, device: dev0, copy: copy0 };
       const r = S.syncDevice({ copy: cur, base: dev.base === null ? undefined : dev.base, baseRev: dev.baseRev === null ? undefined : dev.baseRev }, { rev: cloud.rev, copy: cloud.copy });
       merged = merged || r.merged;
@@ -144,6 +153,7 @@
         return { ok: true, copy: out, device: dev, pushed: true, merged, firstJoin, questions: S.afterSync(out).questions };
       }
       if (p.status !== 409) return { ok: false, why: failOf(p.status), device: dev0, copy: copy0 };
+      if (hold) return { ok: true, held: true, pushed: false, device: dev0, copy: copy0, questions: [] };   // moved meanwhile: after the close
       // [AW5] refused: keep the joined copy, with the copy it took as its base, and join again on the latest
       cur = out; dev = { base: JSON.parse(JSON.stringify(cloud.copy)), baseRev: cloud.rev };
     }
