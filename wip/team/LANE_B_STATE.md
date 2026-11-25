@@ -1,15 +1,24 @@
 # LANE B state (for whoever takes this lane over, on any model)
 
-Kept by LANE B (session_01BFpKEZBRWqdY7tLMMx4sDU). Last written 25 Nov 2026, 10:50 JST. Updated after every push. Read CLAUDE.md, MAKO_SAYS.md, LESSONS.md, RUNBOOK.md sections 4, 4b and 5 first. LANE B never merges into wip-38.31 or main: it pushes its own branches and tells MAIN 16 (session_01BFpKEXwwdFrqMuakSKhAF2) and the coordinator (session_01BFpKEXW1AERpCVxch4xuXD) by send_message. Never ask Mako anything.
+**PAUSED BY MAKO, 25 Nov 2026 about 11:10 JST** (his words relayed by the coordinator: "pause for a bit ... wrap it up so we don't lose progress"). Nothing is running: no helper, no reviewer, no reminder set by LANE B. Every branch below is pushed. Do not resume until the coordinator sends "go". On "go", start at "The exact next step".
+
+Kept by LANE B (session_01BFpKEZBRWqdY7tLMMx4sDU). Last written 25 Nov 2026, 11:10 JST. Read CLAUDE.md, MAKO_SAYS.md, LESSONS.md, RUNBOOK.md sections 4, 4b and 5 first. LANE B never merges into wip-38.31 or main: it pushes its own branches and tells the main build session (MAIN 16, session_01BFpKEXwwdFrqMuakSKhAF2) and the coordinator by send_message. The pause came from a coordinator session with a new id (session_01BFpKEZhy3Va2Px9ZqnUfCG, "Coordinator 12"); the one before was session_01BFpKEXW1AERpCVxch4xuXD. Never ask Mako anything.
+
+## The exact next step (on "go")
+qc-foundation finished on lane/twofig-engine (94af457): FAIL, narrow, one finding that this branch did not cause (report in qc_reports/2026-11-24_engine4/foundation.md on that branch). A card with a KNOWN close day and spending not logged: the gap found at a check is put on the statement of the check's day, so spending before the close lands after it and the next payment reads too low (56,000 where 64,000 is real). Mako's cards are "not sure" and are not touched. In engine/lookahead.js, the card loop: `lines.push({ day: e.day, amount: g2, what: 'filler' })` puts the whole gap on the check day; the parts made by `stretch()` just below already hold the days.
+1. Ask the coordinator one thing first (not yet asked): merge lane/twofig-engine and lane/cardpay-ask now with this as a known fault in scope.txt (my recommendation: the branch fixes Mako's own numbers and the fault is older than the branch), or hold them for the fix.
+2. Either way, the fix is next, test first: engine/test/card_gap_statement.test.js in the reviewer's shape (one card, closes the 15th, paid the 10th, 2,000 a day on it, nothing logged, figure typed weekly; the next payment must equal the real statement). Then push one filler line per part (cut the stretch at each close day as well as at period starts) instead of one line on the check day. No saved-shape change. Then the engine suite (25 runs), check3 full, and a fresh qc-foundation on the build (Fable, 150k token cap, one reviewer at a time).
+3. Then the list under "Next steps, in order" below, from its step 2.
 
 ## Branches, in the order they should be merged
 
 | Branch | Hash | State | Owes |
 | --- | --- | --- | --- |
 | lane/blockers | fd3e020 | MERGED into wip-38.31 with candidate 2 | nothing |
-| lane/twofig-engine | 94af457 | check3 full ALL GOOD. qc-numbers FAIL (part review; blocker 1 fixed in 94af457, blocker 2 is a rule question ruled on, see below). qc-foundation is running on 94af457 | its qc-foundation report into qc_reports/2026-11-24_engine4, then the merge-ready note to MAIN 16 |
-| lane/cardpay-ask | 14b5c28 | on top of lane/twofig-engine. check3 full ALL GOOD at 91c80cd; after merging the engine branch in, only e3_cardpay and the engine suite were rerun (green) | one more full check, then merge-ready with the engine branch |
+| lane/twofig-engine | 89ac989 | check3 full ALL GOOD at 94af457 (89ac989 adds only the review report). qc-numbers FAIL (part review; blocker 1 fixed in 94af457, blocker 2 is a rule question ruled on, see below). qc-foundation FAIL, narrow (see the exact next step) | the known-close card fix, or a merge with it as a known fault: the coordinator's call |
+| lane/cardpay-ask | 14b5c28 | on top of lane/twofig-engine (94af457 merged in). check3 full ALL GOOD at 14b5c28 | merges with, or right after, the engine branch. No reviewer has seen it yet (qc-controls and qc-layout-touch apply: it adds a question to a sheet) |
 | lane/restore | 52cd58b | check3 full ALL GOOD, qc-foundation PASS (report committed) | qc-data-safety (on Opus, one reviewer at a time), then merge-ready |
+| lane/state | this file | one file, wip/team/LANE_B_STATE.md; MAIN 16 was asked to merge it into wip-38.31 | keep it current |
 | lane/qcscripts | 8fac696 | e3_boxwalk and e3_always done and in check3. m_lines.test.js and wording_lint.test.js are committed as work in progress: not in check3's table, not proved against a planted fault. e3_fit.js not written | finish the three, full check, report |
 | lane/endperiod-plan | ffc0f91 | plan only (foundation_review/ENDPERIOD_PLAN.md). Three qc-foundation reviews; the last failed for the card gap, now fixed on lane/twofig-engine. The plan's last section says what changed | a fresh qc-foundation on the plan once lane/twofig-engine is merged, then slice 0 and slice 1 |
 | lane/cardgap, lane/cardgap-tests | 3a829b6, bd662c5 | both are INSIDE lane/twofig-engine | do not merge these alone |
@@ -25,7 +34,7 @@ Files: engine/lookahead.js, engine/schedules.js, engine/periods.js, app3/src/rec
 Two older tests were reworked by hand because they carried the old double count: engine/test/periods.test.js (slice 6b) and app3/tests/e3_life_d.js (10 and 12 Dec). The hand-working is in their comments.
 
 ## Next steps, in order (the coordinator's order of 25 Nov)
-1. When qc-foundation on 94af457 reports: save its answer as qc_reports/2026-11-24_engine4/foundation.md if it wrote no file, fix what it fails (test first), full check, push. Then send MAIN 16 and the coordinator the hashes of lane/twofig-engine and lane/cardpay-ask as merge-ready.
+1. See "The exact next step" above. When the engine branch is settled, send MAIN 16 and the coordinator the hashes of lane/twofig-engine and lane/cardpay-ask as merge-ready.
 2. qc-data-safety on lane/restore, model "opus", brief: "read wip/team/MAKO_SAYS.md first", the build path, the round folder wip/team/qc_reports/2026-11-24_restore_confirm2, and the 150k token stop rule. Then merge-ready note.
 3. The month rule, its own small branch after step 1: a person who types 40,000 a month is charged exactly 40,000 in every calendar month (the last day carries the difference down). Today a 31 day month is charged 40,767 (by the day: amount x 12 / 365). Plan through qc-foundation first; the test sums every month of a year to exactly the amount typed.
 4. End-of-period: a fresh qc-foundation on the plan, then slice 0 (the sync fix in engine/sync.js, on the terms recorded in the plan) and slice 1 (a new file endperiod3.js with its node test).
