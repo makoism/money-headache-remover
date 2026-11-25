@@ -543,10 +543,49 @@ function paintQuestions3() {
     return `<div class="a3-q" data-cloudq="${esc3(q.q)}"><p class="a3-next">${esc3(QWORDS3[q.q] || 'Something needs a choice after joining your devices.')}</p>
       <div class="a3-actions">${picks.map(([p, t]) => `<button type="button" class="a3-btn" data-q="${i}" data-pick="${esc3(p)}">${esc3(t)}</button>`).join('')}</div></div>`;
   }).join('');
-  for (const b of box.querySelectorAll('[data-q]')) b.addEventListener('click', () => answer3(qs[+b.dataset.q], b.dataset.pick));
+  const drawn = qs.map(q => (q.q === 'which' ? stampsOf3(E3.book, q.of) : null));   // what the rows were drawn from
+  for (const b of box.querySelectorAll('[data-q]')) b.addEventListener('click', () => answer3(qs[+b.dataset.q], b.dataset.pick, drawn[+b.dataset.q]));
 }
-async function answer3(q, pick) {
-  const S = BurrowEngine.sync, base = { copy: E3.book, now: nowIso3(), by: deviceBy3() };
+/* [M20, M61] a "which to keep" answer is written only on the book its row was drawn from: the question still open, its
+   kept record and the item unchanged since (another tab answered it, or the item was changed again, and a stale row would
+   otherwise overwrite that newer change) */
+function itemOf3(book, k) {
+  if (!k || k.of === 'copy' || !k.in) return undefined;
+  const holder = pathOf3(book, k.in);
+  return Array.isArray(holder) ? holder.find(r => r && r.id === k.of) : holder ? holder[k.of.split('.').pop()] : undefined;
+}
+function stampsOf3(book, of) {
+  const k = ((book && book.keptVersions) || []).find(r => r.of === of), it = itemOf3(book, k);
+  return { ask: !!(k && k.ask), k: k ? k.at || '' : '', item: it && it.at ? it.at : '' };
+}
+const STALE3 = 'This was already chosen or changed somewhere else, so nothing changed';
+/* Undo right after Keep: the item and its kept versions as they were before the answer, written with a newer time so the
+   other devices take the Undo too. Refused when either changed since the answer */
+async function undoAnswer3(of, before, answered) {
+  const now = stampsOf3(E3.book, of), was = stampsOf3(answered, of);
+  if (now.k !== was.k || now.item !== was.item) { setMsg3(STALE3, true); return; }
+  const clock = BurrowClock.makeClock(); clock.see(E3.book);
+  const stamp = { at: clock.stamp(), by: deviceBy3() };
+  const kb = (before.keptVersions || []).find(r => r.of === of);
+  let out;
+  if (of === 'copy') out = JSON.parse(JSON.stringify(before));
+  else {
+    out = JSON.parse(JSON.stringify(E3.book));
+    const holder = pathOf3(out, kb.in), it = itemOf3(before, kb);
+    if (Array.isArray(holder)) { const i = holder.findIndex(r => r && r.id === of); if (it && i >= 0) holder[i] = Object.assign(JSON.parse(JSON.stringify(it)), stamp); }
+    else if (holder && it) holder[of.split('.').pop()] = Object.assign(JSON.parse(JSON.stringify(it)), stamp);
+  }
+  out.keptVersions = (out.keptVersions || []).map(r => (r.of === of ? Object.assign(JSON.parse(JSON.stringify(kb)), stamp) : r));
+  const ok = await E3.put(out);
+  if (ok !== true) { setMsg3('This could not be saved on this device, so nothing changed', true); return; }
+  renderHome3(); if (SET3.open) paintQuestions3();
+}
+async function answer3(q, pick, drawn) {
+  if (drawn) {
+    const now = stampsOf3(E3.book, q.of);
+    if (!now.ask || now.k !== drawn.k || now.item !== drawn.item) { setMsg3(STALE3, true); paintQuestions3(); return; }
+  }
+  const S = BurrowEngine.sync, before = E3.book, base = { copy: E3.book, now: nowIso3(), by: deviceBy3() };
   let next;
   try {
     if (q.q === 'which') next = S.answer(Object.assign(base, { of: q.of, pick: pick === 'both' ? 'both' : +pick }));
@@ -555,6 +594,7 @@ async function answer3(q, pick) {
   const ok = await E3.put(next);   // an edit with this device's clock; every version stays kept
   if (ok !== true) { setMsg3(ok && ok.text ? ok.text : 'This could not be saved on this device, so nothing changed', true); paintQuestions3(); return; }
   renderHome3();
-  setMsg3('Kept - the other version can still come back');
+  if (q.q === 'which') MSG3.post({ kind: 'undo', key: 'act3', text: 'Kept - the other version can still come back', action: { label: 'Undo', run: () => undoAnswer3(q.of, before, next) } });
+  else setMsg3('Kept - the other version can still come back');
   paintQuestions3();
 }
