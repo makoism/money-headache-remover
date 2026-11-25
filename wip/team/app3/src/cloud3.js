@@ -19,7 +19,7 @@
   const SALT = 'mhr2000-vault-v1', ROUNDS = 150000;
   const INFO = { id: 'burrow3:id', token: 'burrow3:token', enc: 'burrow3:enc' };
   const ALPHA = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-  const TRIES = 3;
+  const TRIES = 3, KEEP_MAX = 60000;
 
   // ---------- the code ----------
   function newCode(rand) {
@@ -69,10 +69,19 @@
       finally { clearTimeout(timer); }
     }
     /* rev: the revision alone (?versions=1 answers with `rev` and no copy), for the timed take [CS2] */
-    return { get: k => req(k, 'GET'), rev: k => req(k, 'GET', null, false, '?versions=1'), put: (k, b, keepalive) => req(k, 'PUT', b, keepalive), del: k => req(k, 'DELETE') };
+    /* [CS1] a send on leaving is one that outlives the page (keepalive). The browser refuses those over about 64 KB,
+       so a bigger copy, or one the browser refused at once, goes as a plain send: it lands whenever the page lives
+       long enough, which a page only put in the background does */
+    const put = async (k, b, keepalive) => {
+      if (keepalive && JSON.stringify(b).length <= KEEP_MAX) { const r = await req(k, 'PUT', b, true); if (r.status !== 0) return r; }
+      return req(k, 'PUT', b, false);
+    };
+    return { get: k => req(k, 'GET'), rev: k => req(k, 'GET', null, false, '?versions=1'), put, del: k => req(k, 'DELETE') };
   }
   // 410: the cloud copy was deleted on another device; it stays gone until a fresh turn-on (a new code), so the device stops
-  const WHY = { net: 'net', code: 'code', busy: 'busy', server: 'server', deleted: 'deleted' };
+  const WHY = { net: 'net', code: 'code', busy: 'busy', server: 'server', deleted: 'deleted', day: 'day' };
+  // [B5] a write refused because this copy has had its saves for the day (the server's own words) is 'day', not 'busy'
+  const putFail = p => (p.status === 429 && /today/i.test(String((p.j && p.j.error && p.j.error.message) || '')) ? WHY.day : failOf(p.status));
   const failOf = st => (st === 0 ? WHY.net : st === 403 ? WHY.code : st === 410 ? WHY.deleted : st === 429 ? WHY.busy : WHY.server);
 
   // ---------- one sync [AQ1, AW2, AW5] ----------
@@ -102,7 +111,9 @@
   // A refused write is retried from the copy it took as its base (AW5), up to three times.
   // [CS3] A base goes only with the copy that holds it. A sync that fails hands back the copy and the base it was given,
   // never a base it took on the way: a caller that keeps its book then keeps the base that book was joined from.
-  async function syncOnce({ api, pack, S, keys, device, copy, keepalive }) {
+  // take: true never sends (the day's guard): the cloud's news is joined in and the base is the cloud's copy, so what
+  // this device changed is still waiting (`waiting: true`) for the next sync that may send.
+  async function syncOnce({ api, pack, S, keys, device, copy, keepalive, take }) {
     let dev = { base: device && device.base != null ? device.base : null, baseRev: device && device.baseRev != null ? device.baseRev : null };
     const dev0 = dev, copy0 = noRev(copy);
     let cur = copy0, merged = false;
@@ -117,13 +128,17 @@
         dev = { base: noRev(r.device.base), baseRev: r.rev };
         return { ok: true, copy: out, device: dev, pushed: false, merged, firstJoin, questions: S.afterSync(out).questions };
       }
+      if (take) {
+        dev = { base: cloud.copy ? JSON.parse(JSON.stringify(cloud.copy)) : null, baseRev: cloud.copy ? cloud.rev : null };
+        return { ok: true, copy: out, device: dev, pushed: false, waiting: true, merged, firstJoin, questions: S.afterSync(out).questions };
+      }
       const env = await pack.pack(out, { key: keys.key });
       const p = await api.put(keys, Object.assign(wrap(env), { rev: r.rev }, cloud.rev ? { base: cloud.rev } : {}), keepalive);
       if (p.ok) {
         dev = { base: JSON.parse(JSON.stringify(out)), baseRev: r.rev };   // its own object: the copy is edited later, the base never
         return { ok: true, copy: out, device: dev, pushed: true, merged, firstJoin, questions: S.afterSync(out).questions };
       }
-      if (p.status !== 409) return { ok: false, why: failOf(p.status), device: dev0, copy: copy0 };
+      if (p.status !== 409) return { ok: false, why: putFail(p), device: dev0, copy: copy0 };
       // [AW5] refused: keep the joined copy, with the copy it took as its base, and join again on the latest
       cur = out; dev = { base: JSON.parse(JSON.stringify(cloud.copy)), baseRev: cloud.rev };
     }

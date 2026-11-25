@@ -12,9 +12,13 @@ cloud3.js :: i + 0x8000 :: text turned into base64 in chunks of bytes; not money
 stmt3_ai.js :: s += abc[b % 36] :: the relay's anonymous id, drawn once per page open; letters, not money
 backup3.js :: i += 0x8000 :: bytes turned into base64 in chunks; not money
 backup3.js :: i + 0x8000 :: bytes turned into base64 in chunks; not money
-cloud3_page.js :: Math.max(CLOUD_SOON3, C3.lastSync + CLOUD_EVERY3 - Date.now()) :: when the next cloud send may go (D5 timing); a clock, not money
 ask3.js :: abc[b % abc.length] :: a random letter of the relay's anonymous id; not money
 e3.js :: Date.now() + (sec === '01' ? 1 : 0) :: a check-in's check told one millisecond after its records; a clock, not money
 cloud3_page.js :: 60000 / k :: the cloud take's 60 seconds, made shorter by a test's number; a clock, not money
 cloud3_page.js :: 10000 / k :: the cloud clocks' 10 seconds, made shorter by a test's number; a clock, not money
 cloud3_page.js :: Math.max(0, C3.lastCheck + CT3.back - Date.now()) :: how long until the next cloud check may run after coming back into view; a clock, not money
+cloud3_page.js :: 5000 / k :: the cloud send's 5 seconds, made shorter by a test's number; a clock, not money
+cloud3_page.js :: sentToday3(st) + 1 :: how many times this device sent to the cloud today (the day's guard); a count, not money
+cloud3_page.js :: Math.max(0, C3.lastChange + CT3.soon - Date.now(), C3.lastPush + CT3.gap - Date.now()) :: how long until a waiting change is sent (CS1 timing); a clock, not money
+cloud3_page.js :: Date.now() - CT3.soon :: whether a change came in the last 5 seconds (CS1 timing); a clock, not money
+cloud3_page.js :: Math.max(0, C3.lastPush + CT3.gap - Date.now()) :: how long until the next cloud send may go (CS1 timing); a clock, not money

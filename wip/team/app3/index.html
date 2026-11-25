@@ -10479,7 +10479,7 @@ async function saveSetup3() {
   const SALT = 'mhr2000-vault-v1', ROUNDS = 150000;
   const INFO = { id: 'burrow3:id', token: 'burrow3:token', enc: 'burrow3:enc' };
   const ALPHA = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-  const TRIES = 3;
+  const TRIES = 3, KEEP_MAX = 60000;
 
   // ---------- the code ----------
   function newCode(rand) {
@@ -10529,10 +10529,19 @@ async function saveSetup3() {
       finally { clearTimeout(timer); }
     }
     /* rev: the revision alone (?versions=1 answers with `rev` and no copy), for the timed take [CS2] */
-    return { get: k => req(k, 'GET'), rev: k => req(k, 'GET', null, false, '?versions=1'), put: (k, b, keepalive) => req(k, 'PUT', b, keepalive), del: k => req(k, 'DELETE') };
+    /* [CS1] a send on leaving is one that outlives the page (keepalive). The browser refuses those over about 64 KB,
+       so a bigger copy, or one the browser refused at once, goes as a plain send: it lands whenever the page lives
+       long enough, which a page only put in the background does */
+    const put = async (k, b, keepalive) => {
+      if (keepalive && JSON.stringify(b).length <= KEEP_MAX) { const r = await req(k, 'PUT', b, true); if (r.status !== 0) return r; }
+      return req(k, 'PUT', b, false);
+    };
+    return { get: k => req(k, 'GET'), rev: k => req(k, 'GET', null, false, '?versions=1'), put, del: k => req(k, 'DELETE') };
   }
   // 410: the cloud copy was deleted on another device; it stays gone until a fresh turn-on (a new code), so the device stops
-  const WHY = { net: 'net', code: 'code', busy: 'busy', server: 'server', deleted: 'deleted' };
+  const WHY = { net: 'net', code: 'code', busy: 'busy', server: 'server', deleted: 'deleted', day: 'day' };
+  // [B5] a write refused because this copy has had its saves for the day (the server's own words) is 'day', not 'busy'
+  const putFail = p => (p.status === 429 && /today/i.test(String((p.j && p.j.error && p.j.error.message) || '')) ? WHY.day : failOf(p.status));
   const failOf = st => (st === 0 ? WHY.net : st === 403 ? WHY.code : st === 410 ? WHY.deleted : st === 429 ? WHY.busy : WHY.server);
 
   // ---------- one sync [AQ1, AW2, AW5] ----------
@@ -10562,7 +10571,9 @@ async function saveSetup3() {
   // A refused write is retried from the copy it took as its base (AW5), up to three times.
   // [CS3] A base goes only with the copy that holds it. A sync that fails hands back the copy and the base it was given,
   // never a base it took on the way: a caller that keeps its book then keeps the base that book was joined from.
-  async function syncOnce({ api, pack, S, keys, device, copy, keepalive }) {
+  // take: true never sends (the day's guard): the cloud's news is joined in and the base is the cloud's copy, so what
+  // this device changed is still waiting (`waiting: true`) for the next sync that may send.
+  async function syncOnce({ api, pack, S, keys, device, copy, keepalive, take }) {
     let dev = { base: device && device.base != null ? device.base : null, baseRev: device && device.baseRev != null ? device.baseRev : null };
     const dev0 = dev, copy0 = noRev(copy);
     let cur = copy0, merged = false;
@@ -10577,13 +10588,17 @@ async function saveSetup3() {
         dev = { base: noRev(r.device.base), baseRev: r.rev };
         return { ok: true, copy: out, device: dev, pushed: false, merged, firstJoin, questions: S.afterSync(out).questions };
       }
+      if (take) {
+        dev = { base: cloud.copy ? JSON.parse(JSON.stringify(cloud.copy)) : null, baseRev: cloud.copy ? cloud.rev : null };
+        return { ok: true, copy: out, device: dev, pushed: false, waiting: true, merged, firstJoin, questions: S.afterSync(out).questions };
+      }
       const env = await pack.pack(out, { key: keys.key });
       const p = await api.put(keys, Object.assign(wrap(env), { rev: r.rev }, cloud.rev ? { base: cloud.rev } : {}), keepalive);
       if (p.ok) {
         dev = { base: JSON.parse(JSON.stringify(out)), baseRev: r.rev };   // its own object: the copy is edited later, the base never
         return { ok: true, copy: out, device: dev, pushed: true, merged, firstJoin, questions: S.afterSync(out).questions };
       }
-      if (p.status !== 409) return { ok: false, why: failOf(p.status), device: dev0, copy: copy0 };
+      if (p.status !== 409) return { ok: false, why: putFail(p), device: dev0, copy: copy0 };
       // [AW5] refused: keep the joined copy, with the copy it took as its base, and join again on the latest
       cur = out; dev = { base: JSON.parse(JSON.stringify(cloud.copy)), baseRev: cloud.rev };
     }
@@ -10606,12 +10621,18 @@ async function saveSetup3() {
    kept beside the book (E3.rec 'cloud'), never in the copy that is sent or in a backup.
    Where the vault is: the page's own address when it is served (the site), else the site's address (RELAY3, from
    wip/team/RELAY at build time). A try book never sends anything. */
-const C3 = { st: null, busy: false, again: false, timer: 0, tick: 0, lastSync: 0, lastCheck: 0, checkedAt: 0, dirty: false, applying: false, shown: null, why: null, stop: null, said: false, reach: null };
+const C3 = { st: null, busy: false, again: false, timer: 0, tick: 0, lastPush: 0, lastChange: 0, failed: false, lastCheck: 0, checkedAt: 0, dirty: false, applying: false, shown: null, why: null, stop: null, said: false, reach: null };
 /* The cloud clocks [CS1, CS2]: a take every 60 seconds while in view, and one on coming back into view unless the last
    check was under 10 seconds ago. Tests run them faster through one number their harness puts in the page before these
    scripts run. It is read once, here: nothing typed in the address bar, and nothing a page already open can set, changes it. */
-const CT3 = (() => { const k = typeof root3.__burrow3CloudSpeed === 'number' && root3.__burrow3CloudSpeed >= 1 && root3.__burrow3CloudSpeed <= 100 ? root3.__burrow3CloudSpeed : 1; return { take: 60000 / k, back: 10000 / k }; })();
-const CLOUD_EVERY3 = 90000, CLOUD_SOON3 = 5000;
+const CT3 = (() => { const k = typeof root3.__burrow3CloudSpeed === 'number' && root3.__burrow3CloudSpeed >= 1 && root3.__burrow3CloudSpeed <= 100 ? root3.__burrow3CloudSpeed : 1; return { take: 60000 / k, back: 10000 / k, soon: 5000 / k, gap: 10000 / k }; })();
+/* [CS1] the day's guard: after this many sends in one day (the server's day, UTC) this device sends no more by itself.
+   The server allows 1,500 a day for one copy; Settings says when the guard is reached. Send now still sends. */
+const CLOUD_DAY3 = 1200;
+const cloudDay3 = () => new Date().toISOString().slice(0, 10);
+const sentToday3 = st => (st && st.sends && st.sends.day === cloudDay3() ? st.sends.n : 0);
+const guard3 = st => sentToday3(st) >= CLOUD_DAY3;
+const countSend3 = st => ({ day: cloudDay3(), n: sentToday3(st) + 1 });
 const cloudBase3 = () => (/^https?:$/.test(location.protocol) ? location.origin : (typeof RELAY3 === 'string' ? RELAY3.replace(/\/$/, '') : ''));
 const cloudApi3 = () => CLOUD3.client({ base: cloudBase3 });
 function deviceBy3() {
@@ -10664,6 +10685,11 @@ async function failed3(st, why, waiting) {
     if (!SET3.open) MSG3.post({ kind: 'notice', key: 'cloud', text: WHY3.deleted });
     return;
   }
+  if (why === 'day') {   // [B5] the server has had this copy's saves for the day: the guard's own state and words
+    C3.why = null;
+    await keepCloud3(st, { sends: { day: cloudDay3(), n: CLOUD_DAY3 } });
+    return;
+  }
   C3.why = why;
   if (waiting && !st.failAt) await keepCloud3(st, { failAt: Date.now() });
   if (STOP3[why]) stop3(why);
@@ -10686,28 +10712,32 @@ const WHY3 = {
   key: 'The cloud copy could not be opened with this code.',
   damaged: 'The cloud copy could not be read. Nothing here was changed.',
   save: 'What your other device changed could not be saved on this device, so the cloud copy has stopped here. Your money here is as it was. Free some space, then open the app again.',
+  day: 'On. This device has sent 1,200 times today, the most it sends in one day. What you change now is safe on this device and is sent tomorrow, or with Send now. Changes from your other devices still arrive.',
   fmt: 'The cloud copy is not one this version can read. Update the app. Nothing here was changed.',
   deleted: 'The cloud copy was deleted on another device. This device keeps its money. Turn the cloud copy on again with a new code to share it.',
 };
 const when3 = ms => { const d = new Date(ms); return d.toDateString() === new Date().toDateString() ? d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : d.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); };
 
 /* one sync; the book here takes what it gives, joined again with any change made while it ran.
-   opts.act: the person asked (Send now, a code typed, turning it on), which also starts a stopped timer again */
+   opts.act: the person asked (Send now, a code typed, turning it on), which also starts a stopped timer again and
+   sends past the day's guard. opts.leaving: the page is going away */
 async function syncNow3(opts) {
   opts = opts || {};
   if (E3.mode === 'try') return null;
-  if (C3.busy) { C3.again = true; return null; }
-  C3.busy = true; clearTimeout(C3.timer);
+  if (C3.busy) { C3.again = opts.leaving ? 'leaving' : C3.again || true; return null; }   // leaving while a sync runs: a real leaving send follows it
+  C3.busy = true; clearTimeout(C3.timer); C3.failed = false; C3.first = false;
   try {
     const st = await freshCloud3();
     if (!st.on) return null;
     if (opts.act) { C3.stop = null; C3.said = false; }
     else if (C3.stop) return null;
-    const snap = E3.book, wasWaiting = waiting3(st);
+    const snap = E3.book, wasWaiting = waiting3(st), take = !opts.act && guard3(st);
     const keys = await CLOUD3.keysFor(st.code);
-    const r = await CLOUD3.syncOnce({ api: cloudApi3(), pack: BurrowPack, S: BurrowEngine.sync, keys, device: { base: st.base, baseRev: st.baseRev }, copy: snap, keepalive: !!opts.leaving });
-    C3.lastSync = C3.lastCheck = Date.now();
-    if (!r.ok) { await failed3(st, r.why, wasWaiting || C3.dirty); return r; }   // [CS3] the book was not replaced: the base stays
+    const r = await CLOUD3.syncOnce({ api: cloudApi3(), pack: BurrowPack, S: BurrowEngine.sync, keys, device: { base: st.base, baseRev: st.baseRev }, copy: snap, keepalive: !!opts.leaving, take });
+    C3.lastCheck = Date.now();
+    if (wasWaiting && !take) C3.lastPush = Date.now();   // a send was tried: the next one keeps its distance, sent or not
+    if (!r.ok) { C3.failed = true; await failed3(st, r.why, wasWaiting || C3.dirty); return r; }   // [CS3] the book was not replaced: the base stays
+    const sends = r.pushed ? { sends: countSend3(st) } : {};
     C3.why = null; C3.dirty = false;
     let next = r.copy;
     if (E3.book !== snap) { next = BurrowEngine.sync.sync(snap, E3.book, r.copy); C3.dirty = true; }   // changed while it ran: joined, sent next time
@@ -10721,13 +10751,13 @@ async function syncNow3(opts) {
       C3.applying = false;
       if (ok) { try { redraw3(); } catch (e) { /* a screen's own fault: the book is saved */ } }   // the one redraw, as when another tab saved
       else {   // [B1] it would write again at every timed sync and still not land: stop, and say so once
-        if (!st.failAt) await keepCloud3(st, { failAt: Date.now() });
+        await keepCloud3(st, Object.assign({ failAt: st.failAt || Date.now() }, sends));
         stop3('save');
         return r;
       }
     }
     C3.checkedAt = Date.now();
-    await keepCloud3(st, { base: r.device.base, baseRev: r.device.baseRev, sentAt: r.pushed || !st.sentAt ? Date.now() : st.sentAt, failAt: 0 });
+    await keepCloud3(st, Object.assign({ base: r.device.base, baseRev: r.device.baseRev, sentAt: r.pushed || !st.sentAt ? Date.now() : st.sentAt, failAt: 0 }, sends));
     const qs = r.questions.length;
     if (qs && !SET3.open) msg3('Your devices changed the same thing. Open Settings to choose which to keep.');
     return r;
@@ -10737,20 +10767,30 @@ async function syncNow3(opts) {
     after3();
   }
 }
-/* when a sync or a check ends: one asked for meanwhile runs, and a change still waiting is sent later */
+/* when a sync or a check ends: a leaving send asked for meanwhile goes now; a change made meanwhile is sent at its time.
+   After a sync that failed nothing is set off here: the timed take tries again, and so does coming back online */
 function after3() {
+  const again = C3.again; C3.again = false;
   if (C3.stop) return;
-  if (C3.again) { C3.again = false; later3(CLOUD_SOON3); }
-  else if (C3.dirty) later3(CLOUD_EVERY3);
+  if (again === 'leaving') { syncNow3({ leaving: true }); return; }
+  if ((again || C3.dirty) && !C3.failed && !guard3(C3.st)) later3(C3.first ? gapIn3() : sendIn3());   // a first change that met a running sync still goes at once
 }
 const S3same = (a, b) => BurrowEngine.sync.canon(CLOUD3.noRev(a || {})) === BurrowEngine.sync.canon(CLOUD3.noRev(b || {}));
 function later3(ms) { clearTimeout(C3.timer); C3.timer = setTimeout(() => syncNow3(), ms); }
-/* after a save: send within 5 seconds, but at most every 90 seconds [D5] */
+/* [CS1] when a waiting change is sent: 5 seconds after the last change, and never inside 10 seconds of the last send */
+const sendIn3 = () => Math.max(0, C3.lastChange + CT3.soon - Date.now(), C3.lastPush + CT3.gap - Date.now());
+/* after a save [CS1]: the first change is sent at once; a burst is sent again 5 seconds after its last change; never
+   more than one send every 10 seconds. (This replaces D5's "at most every 1 to 2 minutes".) */
 function changed3() {
-  if (C3.applying || !C3.st || !C3.st.on) return;
-  C3.dirty = true;
-  later3(Math.max(CLOUD_SOON3, C3.lastSync + CLOUD_EVERY3 - Date.now()));
+  if (C3.applying || !C3.st || !C3.st.on || C3.stop) return;
+  const quiet = Date.now() - CT3.soon > C3.lastChange;   // no change in the last 5 seconds: this one starts a burst
+  C3.dirty = true; C3.lastChange = Date.now();
+  if (guard3(C3.st)) return;   // the day's guard: kept here, sent tomorrow or by Send now
+  if (!quiet && C3.first) return;   // the at-once send of this burst has not left yet: it carries this change too
+  C3.first = quiet;
+  later3(quiet ? gapIn3() : sendIn3());
 }
+const gapIn3 = () => Math.max(0, C3.lastPush + CT3.gap - Date.now());
 /* ---------- the take [CS2]: on coming into view and every 60 seconds while in view ----------
    The timed check asks only for the cloud copy's revision. The copy is fetched (a full sync) only when that revision is
    not the one this device's base has, or a change here is waiting. With nothing changed nothing is written anywhere. */
@@ -10762,7 +10802,7 @@ async function take3() {
   try {
     st = await freshCloud3();
     if (!st.on) return;
-    full = st.base == null || waiting3(st);
+    full = st.base == null || (waiting3(st) && !guard3(st));   // past the day's guard a waiting change is not a reason to fetch the copy
     if (!full) {
       const v = await CLOUD3.revOnly({ api: cloudApi3(), keys: await CLOUD3.keysFor(st.code) });
       C3.lastCheck = Date.now();
@@ -10792,7 +10832,7 @@ async function startCloud3() {
   C3.started = true;   // from here coming back into view takes too (the page's own first showing is the opening sync above)
   tick3(CT3.take);
 }
-const leaving3 = () => { if (C3.st && C3.st.on && C3.dirty) syncNow3({ leaving: true }); };
+const leaving3 = () => { if (C3.st && C3.st.on && !C3.stop && !guard3(C3.st) && (C3.dirty || waiting3(C3.st))) syncNow3({ leaving: true }); };
 document.addEventListener('visibilitychange', () => { if (document.hidden) { clearTimeout(C3.tick); leaving3(); } else cameBack3(); });
 addEventListener('pagehide', leaving3);
 addEventListener('pageshow', cameBack3);
@@ -10835,6 +10875,7 @@ async function paintCloud3() {
   }
   const busy = C3.busy && !st.sentAt;
   state.textContent = C3.why ? WHY3[C3.why] || WHY3.server
+    : guard3(st) ? WHY3.day
     : busy ? 'On. Sending the first copy.'
     : st.sentAt ? `On. Last in step with the cloud at ${when3(st.sentAt)}.` : 'On.';
   const behind = st.failAt ? `<p class="a3-warn" data-cloud="behind">Changes made since ${esc3(when3(st.failAt))} are on this device only for now.</p>` : '';

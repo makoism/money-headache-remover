@@ -103,6 +103,7 @@ page|tests/e3_remind.js|e3_remind: ALL PASS||300|Reminders on the page (check-in
 page|tests/e3_cloud.js|e3_cloud: ALL PASS||300|the cloud copy, two devices through the page (local fake vault)
 page|tests/e3_cloudbase.js|e3_cloudbase: ALL PASS||300|the cloud copy's base is saved only with its book: a refused save, a refused write then no signal (CS3, M61, M20)
 page|tests/e3_cloudtake.js|e3_cloudtake: ALL PASS||300|the cloud copy taken by itself: a timed check of the revision, coming back into view, two tabs, the timer stopped and said once, a killed page (CS2, B1, B3)
+page|tests/e3_cloudsend.js|e3_cloudsend: ALL PASS||600|the cloud copy sent by itself: at once, a burst 5 seconds after, never two in 10 seconds, leaving with a big copy, the day's guard (CS1, B5)
 page|tests/e3_sw.js|e3_sw: ALL PASS||300|the service worker (precache, offline, 3 s timeout, a new build)
 EOF
 )
@@ -116,7 +117,7 @@ page_tests_for() {   # page_tests_for <changed path, relative to app3/>
                               echo e3_try e3_home e3_checkin e3_receipts e3_plan e3_panels e3_amounts e3_names ;;
     tests/lives3.js)          echo e3_life_a e3_life_a2 e3_life_b e3_life_c e3_life_d ;;
     tests/e3_act_book.js)     echo e3_home e3_checkin ;;
-    tests/fake_vault.js)      echo e3_cloud e3_cloudbase e3_cloudtake e3_listfix ;;
+    tests/fake_vault.js)      echo e3_cloud e3_cloudbase e3_cloudtake e3_cloudsend e3_listfix ;;
     tests/setup_sections.js)  echo e3_setup e3_setupfix e3_setup6 e3_income2 e3_weeks3 e3_walk2 ;;   # a helper (setup saved section by section), not a test
     tests/*.js)               basename "$1" .js ;;
     src/home3.js)             echo e3_home e3_ns e3_homeplan e3_warnwords e3_cardline e3_bankparts e3_names e3_payday ;;
@@ -130,7 +131,7 @@ page_tests_for() {   # page_tests_for <changed path, relative to app3/>
     src/ask3*.js)             echo e3_ask e3_invite ;;
     src/backup3.js|src/settings3.js) echo e3_backup e3_tabs ;;
     src/sw3.js|src/settings3_sw.js|sw3.js) echo e3_sw offline e3_install ;;
-    src/cloud3*.js)           echo e3_cloud e3_cloudbase e3_cloudtake ;;
+    src/cloud3*.js)           echo e3_cloud e3_cloudbase e3_cloudtake e3_cloudsend ;;
     src/remind3*.js)          echo e3_remind ;;
     publish3.sh)              echo e3_publish e3_install ;;
     manifest3.webmanifest|make_icons3.js|icon3-*.png) echo e3_install ;;

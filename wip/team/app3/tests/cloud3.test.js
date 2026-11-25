@@ -222,6 +222,44 @@ const canon = x => S.canon(x);
     ck('revOnly: no connection is said as such', !rv.ok && rv.why === 'net');
   }
 
+  // ---- CS1: a leaving send too big to outlive the page goes as a plain send; a take that must not send; "too many saves today" ----
+  {
+    const v7 = makeVault();
+    const seen = [];
+    // as the browser does: a send that outlives the page (keepalive) is refused at once when its body is over 64 KB
+    const fetch7 = async (url, o) => { o = o || {}; if (o.method === 'PUT') seen.push({ keepalive: !!o.keepalive, size: (o.body || '').length }); if (o.keepalive && (o.body || '').length > 65536) throw new TypeError('Failed to fetch'); return v7.fetch(url, o); };
+    const api7 = C.client({ fetch: fetch7, base: () => 'http://vault.test' });
+    const big = clone(BOOK);
+    const rnd = n => require('crypto').randomBytes(n).toString('hex');
+    for (let i = 1; i <= 900; i++) big.events.push({ id: 'dsk001-b7n3k9s2x4-' + i, k: 'spend', acct: BOOK.accounts[0].id, date: '2026-12-01', a: 100 + i, note: rnd(40), told: '2026-12-01T10:00:00.000+09:00', at: '2026-12-01T10:00:00.000+09:00', by: 'dsk001' });
+    let r7 = await C.syncOnce({ api: api7, pack, S, keys, device: {}, copy: big, keepalive: true });
+    ck('a leaving send over 64 KB is sent as a plain send, and lands', r7.ok && r7.pushed && seen.length === 1 && seen[0].size > 65536 && seen[0].keepalive === false && v7.rows.size === 1, JSON.stringify(seen));
+    const small = makeVault(), seen2 = [];
+    const api8 = C.client({ fetch: async (url, o) => { if (o && o.method === 'PUT') seen2.push(!!o.keepalive); return small.fetch(url, o); }, base: () => 'http://vault.test' });
+    let r8 = await C.syncOnce({ api: api8, pack, S, keys, device: {}, copy: clone(BOOK), keepalive: true });
+    ck('a small leaving send still goes as one that outlives the page', r8.ok && seen2.length === 1 && seen2[0] === true);
+    // a take that must not send (the day's guard is reached): the cloud's news comes in, this device's change stays here
+    const other = await C.syncOnce({ api: api8, pack, S, keys, device: {}, copy: null });
+    other.copy.events.push({ id: 'phn002-m2c8v5z1q7-1', k: 'spend', acct: BOOK.accounts[0].id, date: '2026-12-08', a: 640, told: '2026-12-08T09:00:00.000+09:00', at: '2026-12-08T09:00:00.000+09:00', by: 'phn002' });
+    const o2 = await C.syncOnce({ api: api8, pack, S, keys, device: other.device, copy: other.copy });
+    const mine = clone(r8.copy); mine.events.push({ id: 'dsk001-b7n3k9s2x4-901', k: 'spend', acct: BOOK.accounts[0].id, date: '2026-12-08', a: 310, told: '2026-12-08T09:30:00.000+09:00', at: '2026-12-08T09:30:00.000+09:00', by: 'dsk001' });
+    const putsBefore = small.log.filter(x => x.method === 'PUT').length;
+    const t = await C.syncOnce({ api: api8, pack, S, keys, device: r8.device, copy: mine, take: true });
+    ck('a take that must not send: nothing is written to the cloud', t.ok && !t.pushed && small.log.filter(x => x.method === 'PUT').length === putsBefore);
+    ck('it brings the other device\'s spend and keeps this device\'s own', t.copy.events.some(e => e.id === 'phn002-m2c8v5z1q7-1') && t.copy.events.some(e => e.id === 'dsk001-b7n3k9s2x4-901'));
+    ck('its base is the cloud\'s copy, so this device\'s spend is still waiting', t.device.baseRev === o2.device.baseRev && !t.device.base.events.some(e => e.id === 'dsk001-b7n3k9s2x4-901') && t.waiting === true);
+    const later = await C.syncOnce({ api: api8, pack, S, keys, device: t.device, copy: t.copy });
+    ck('and it is sent by the next sync that may send', later.ok && later.pushed && later.copy.events.some(e => e.id === 'dsk001-b7n3k9s2x4-901'));
+    // [B5] the server's daily limit is its own answer, not "busy"
+    const full = { get: k => api8.get(k), rev: k => api8.rev(k), del: k => api8.del(k), put: async () => ({ status: 429, ok: false, j: { error: { code: 'rate_limited', message: 'Too many saves today for this vault.' } } }) };
+    const m2 = clone(later.copy); m2.schedules[0].name = 'Main job again'; m2.schedules[0].at = '2026-12-08T10:00:00.000+09:00';
+    let rd = await C.syncOnce({ api: full, pack, S, keys, device: later.device, copy: m2 });
+    ck('B5: "too many saves today" from the server is said as the day\'s limit', !rd.ok && rd.why === 'day', JSON.stringify(rd).slice(0, 120));
+    const minute = Object.assign({}, full, { put: async () => ({ status: 429, ok: false, j: { error: { code: 'rate_limited', message: 'Too many requests. Wait a minute.' } } }) });
+    rd = await C.syncOnce({ api: minute, pack, S, keys, device: later.device, copy: m2 });
+    ck('B5: the per-minute limit is still "busy"', !rd.ok && rd.why === 'busy');
+  }
+
   console.log(bad ? `cloud3: ${bad} FAIL of ${n}` : `cloud3: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })().catch(e => { console.log('FAIL crashed ' + e.stack); process.exit(1); });
