@@ -89,4 +89,17 @@ t('the same book in reverse order gives the same share', () => {
   const rev = Object.assign({}, x.b, { plan: Object.assign({}, x.b.plan, { budgets: x.b.plan.budgets.slice().reverse() }), events: x.b.events.slice().reverse() });
   eq(part(LA.lookahead(rev, '2026-12-20'), 'Food left this month'), [900]);
 });
+t('Free to spend set for the FIRST time on 18 Dec (none before), no fixed pay: the same by-days share, 60,000 x 14 / 31 = 27,096 (coordinator, 26 Nov)', () => {
+  // 60,000 x 14 = 840,000 / 31 = 27,096.7, rounded down 27,096; nothing spent: 27,096 left this month
+  const x = life(); x.b.plan.shares = [];
+  x.b.plan.shares.push({ id: 'q8w3hz-n4k7c2m9xs-51', from: '2026-12-18', cur: 'JPY', per: { free: 'month' }, free: 60000, goals: {}, told: '2026-12-18T20:00:00.000+09:00', at: '2026-12-18T20:00:00.000+09:00', by: 'q8w3hz' });
+  const r = LA.lookahead(x.b, '2026-12-18');
+  eq([r.everyday.full, r.everyday.counts, r.everyday.left], [60000, 27096, 27096]);
+  eq(LA.lookahead(x.b, '2027-01-01').everyday.counts, 60000);
+});
+t('Free to spend set before this month and changed on 18 Dec keeps its whole month (CA6, unchanged): 40,000 raised to 60,000 counts 60,000', () => {
+  const x = life();
+  x.b.plan.shares.push({ id: 'q8w3hz-n4k7c2m9xs-52', from: '2026-12-18', cur: 'JPY', per: { free: 'month' }, free: 60000, goals: {}, told: '2026-12-18T20:00:00.000+09:00', at: '2026-12-18T20:00:00.000+09:00', by: 'q8w3hz' });
+  eq(LA.lookahead(x.b, '2026-12-18').everyday.counts, 60000);
+});
 done('month_added.test.js');
