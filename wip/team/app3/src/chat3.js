@@ -79,8 +79,19 @@ function chat3Deps() {
     send: chat3Send, today: () => E3.today(), told: () => E3.told(), newId: () => E3.newId(),
     book: () => E3.book, mode: () => E3.mode, door: E3.book ? ACT3 : null,
     start: b => E3.fill(b), discard: () => E3.discard(),
-    anon: CHAT3.anon || '', invite: chat3Invite(),
+    anon: CHAT3.anon || '', invite: chat3Invite(), screen: chat3Screen,
   };
+}
+/* [AI_JOIN_FIXES H4] which screen is open, for the AI: a sheet over the page first, else the tab */
+function chat3Screen() {
+  const open = sel => { const el = $(sel); return !!el && !el.hidden; };
+  if (!E3.book) return open('#a3Setup') ? 'setup' : 'welcome';
+  if (open('#a3Set')) return 'settings';
+  if (open('#a3Rem')) return 'reminders';
+  if (open('#a3Stmt')) return 'stmt';
+  if (open('#a3Check')) return 'check';
+  const t = $('.a3-tabs [aria-current=page]');
+  return t ? t.dataset.tab : 'home';
 }
 /* is the site's AI there (/api/health says ai: true)? Asked once a page open; never from a plain file with no relay */
 async function chat3Route() {
@@ -103,8 +114,8 @@ function chat3Card(t) {
   if (c.kind === 'change') {
     const foot = c.status === 'done' ? `<p class="a3-sub" data-chat="status">Done</p><div class="a3-actions"><button type="button" class="a3-btn" data-chatundo="${id}">Undo</button></div>`
       : c.status === 'ask' ? `<p class="a3-sub" data-chat="status" data-ask="${esc3(c.ask || '')}">${esc3(CHAT3_WORDS.ask[c.ask] || CHAT3_WORDS.ask.large)}</p><div class="a3-actions"><button type="button" class="a3-btn solid" data-chatok="${id}">Do it</button><button type="button" class="a3-btn" data-chatnot="${id}">Not now</button></div>`
-      : `<p class="a3-sub" data-chat="status">${esc3(c.status === 'undone' ? 'Taken back' : c.status === 'not now' ? 'Not done' : 'Not done: ' + (c.why || 'the app refused it'))}</p>`;
-    return `<div class="a3-card a3-chat-card" data-card="chat-change" data-turn="${id}" data-status="${esc3(c.status)}"><h3>${c.status === 'ask' ? 'A change to check' : 'Changed'}</h3>
+      : `<p class="a3-sub" data-chat="status">${esc3(c.status === 'undone' ? 'Taken back' : c.status === 'not now' ? 'Not done' : (c.why || 'The app refused it'))}</p>`;
+    return `<div class="a3-card a3-chat-card" data-card="chat-change" data-turn="${id}" data-status="${esc3(c.status)}"><h3>${c.status === 'ask' ? 'A change to check' : c.status === 'refused' || c.status === 'not now' ? 'Not changed' : 'Changed'}</h3>
       <ul class="a3-chat-lines">${(c.lines || []).map(l => `<li>${esc3(l)}</li>`).join('')}</ul>${chat3Figs(c.rows)}${foot}</div>`;
   }
   if (c.kind === 'draft') {

@@ -46,6 +46,7 @@ function fake() {
       if (msg === 'change') card(st, { kind: 'change', status: 'done', lines: ['Log 1,200 on Free to spend from Main bank, today'], rows: [{ label: 'Safe to spend', before: 201400, after: 200200 }], steps: ['s1'] });
       if (msg === 'big') card(st, { kind: 'change', status: 'ask', ask: 'large', lines: ['Log 300,000 on Free to spend from Main bank, today'], rows: [{ label: 'Safe to spend', before: 201400, after: 0 }] });
       if (msg === 'fill') card(st, { kind: 'fill', status: 'done', figures: { safe: 201400, bank: 286000 } });
+      if (msg === 'refuse') card(st, { kind: 'change', status: 'refused', why: 'Card A: the app refused it', lines: ['Card A paid on the 12th'], rows: [] });
       st.turns.push(Object.assign({ id: tid(st), who: 'ai', text: words }, msg === 'guess' ? { check: ['9,999'] } : {}));
       return { state: st, shown: [], stop: 'words' };
     },
@@ -153,6 +154,8 @@ async function say(p, text) { await p.$eval('#a3ChatIn', (e, v) => { e.value = v
     ck('a large change asks first, with Do it and Not now', /more than safe to spend/.test(await p.$eval('[data-card=chat-change][data-status=ask]', e => e.textContent)) && !!(await p.$('[data-chatok]')) && !!(await p.$('[data-chatnot]')));
     await p.click('[data-chatnot]'); await T.w(300);
     ck('Not now leaves it', /Not done/.test(await p.$eval('[data-card=chat-change][data-status="not now"]', e => e.textContent)));
+    await say(p, 'refuse');
+    ck('H4: a refused card is headed Not changed', (await p.$eval('[data-card=chat-change][data-status=refused] h3', e => e.textContent).catch(() => '')) === 'Not changed');
     await say(p, 'fill');
     ck('the fill card shows safe to spend and the bank', JSON.stringify(await p.$$eval('[data-card=chat-fill] [data-amt]', e => e.map(x => Number(x.dataset.amt)))) === '[201400,286000]');
     ck('while the fill can be undone its button is Undo', (await p.$eval('[data-card=chat-fill] [data-chatundo]', e => e.textContent)) === 'Undo');
@@ -288,6 +291,8 @@ async function say(p, text) { await p.$eval('#a3ChatIn', (e, v) => { e.value = v
     await p.click('#a3AskGo'); await T.w(400);
     ck('G: with a book, the header Ask opens the assistant panel, the cursor in its box', await p.evaluate(() => document.querySelector('#a3Chat').hasAttribute('data-open') && document.activeElement && document.activeElement.id === 'a3ChatIn' && !!document.activeElement.closest('#a3Chat')));
     ck('G: and the tab it was on stays under it', await shows(p, '#a3Plan'));
+    await p.$eval('#a3Chat #a3ChatIn', e => { e.value = 'what is this screen?'; }); await p.$eval('#a3Chat #a3ChatSend', e => e.click()); await T.w(600);
+    ck('H4: the message tells the AI which screen is open (Plan)', /SCREEN: the person has Plan open/.test(JSON.stringify((p.__sent[p.__sent.length - 1] || {}).body || {})));
     await p.click('#a3ChatClose'); await T.w(300);
     await p.click('#a3SetGo'); await T.w(300);
     await p.click('#a3AskGo'); await T.w(400);

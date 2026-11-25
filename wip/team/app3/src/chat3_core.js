@@ -151,7 +151,15 @@ SETUP (when FIGURES says there is no book yet). Ask these in order, one per mess
 ${GUIDE.map(g => g.n + '. ' + g.ask).join('\n')}
 After each answer, save it with draft_set (that section's whole list each time; nothing is in the app until fill_book). A pay needs afterTax true: only save a pay once the person said the amount is after tax. A second income needs same: true or false. Never fill in a minimum or a figure the person did not give. NEEDED lists what fill_book still needs; ask for those. fill_book only when the person says to fill it in.
 
-AFTER SETUP. When a pay, bill or card payment the app expects has come in or gone out ("my pay came in", "rent came out"), use change with landed and its P, B or A ref: never money_in or log_spend for it, which would count it twice. When they say what their bank app or card app shows today, use bank_figure or card_figure with that figure. When the person says they spent, got or moved money, or asks to change a bill, pay, line, goal or card, use change. The app makes the change at once and shows what changed with Undo; a delete, or a change larger than safe to spend, waits for their OK. Refs (A1, L1, G1, B1, P1, S1) come from FIGURES or list; never invent one. Not a licensed adviser: for investments, loans or taxes, say so in one line.`;
+AFTER SETUP. When a pay, bill or card payment the app expects has come in or gone out ("my pay came in", "rent came out"), use change with landed and its P, B or A ref: never money_in or log_spend for it, which would count it twice. When they say what their bank app or card app shows today, use bank_figure or card_figure with that figure. When the person says they spent, got or moved money, or asks to change a bill, pay, line, goal or card, use change. The app makes the change at once and shows what changed with Undo; a delete, or a change larger than safe to spend, waits for their OK. Refs (A1, L1, G1, B1, P1, S1) come from FIGURES or list; never invent one. Not a licensed adviser: for investments, loans or taxes, say so in one line.
+
+SCREEN says which screen the person has open: "this screen" means that one.
+WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line): a loan: Plan, Add a loan. A card's pay day or close day: Plan, tap the card. Change a goal or take money out of it: Plan, tap the goal. Change a spend: Receipts, tap it. Statements: Home, Add statements. Reminders: Reminders at the top. A backup or the cloud copy: Settings.`;
+  /* [AI_JOIN_FIXES H4] a change it can't make says where it is on the screens (the same map as SYSTEM) */
+  const WHERE = [[/loan/, 'Plan, Add a loan'], [/card/, 'Plan, tap the card'], [/goal|take_out/, 'Plan, tap the goal'], [/spend|receipt/, 'Receipts, tap it'],
+    [/statement/, 'Home, Add statements'], [/remind/, 'Reminders at the top'], [/backup|cloud/, 'Settings']];
+  const whereOf = what => { const w = WHERE.find(([re]) => re.test(what)); return w ? 'On the screens: ' + w[1] : 'Say where from WHERE ON THE SCREENS'; };
+  const SCREEN_NAMES = { home: 'Home', plan: 'Plan', receipts: 'Receipts', settings: 'Settings', check: 'Check your bank', stmt: 'Add statements', reminders: 'Reminders', setup: 'setup on the screens', welcome: 'the first screen' };
 
   /* ---- the tools (BU2: no figures or draft read tool) ---- */
   const num = { type: 'number', description: 'A plain number in the currency, no symbol.' };
@@ -366,6 +374,7 @@ AFTER SETUP. When a pay, bill or card payment the app expects has come in or gon
   /* ---- what is sent ---- */
   function stateText(state, ctx) {
     const book = ctx.book, out = ['FIGURES (worked out by the app for today, exact)', figures(book, ctx.today).text];
+    if (ctx.screen && SCREEN_NAMES[ctx.screen]) out.push('', 'SCREEN: the person has ' + SCREEN_NAMES[ctx.screen] + ' open.');
     if (!book) {
       const d = state.draft || emptyDraft(), card = draftCard(d, ctx.today);
       out.push('', 'DRAFT (saved on this device, not in the app yet). Today is ' + SN.dayLabel(ctx.today, true) + '. Currency: ' + curOf(d) + '.');
@@ -405,7 +414,7 @@ AFTER SETUP. When a pay, bill or card payment the app expects has come in or gon
     const body = request(state, message, [], ctxOf(deps));
     return body.system + '\n\n' + body.messages.map(m => (m.role === 'user' ? 'YOU\n' : 'THE AI\n') + m.content.map(c => c.text || '').join('\n')).join('\n\n');
   }
-  const ctxOf = deps => ({ book: deps.book ? deps.book() : null, today: deps.today(), anon: deps.anon, invite: deps.invite });
+  const ctxOf = deps => ({ book: deps.book ? deps.book() : null, today: deps.today(), anon: deps.anon, invite: deps.invite, screen: deps.screen ? deps.screen() : null });
 
   /* ---- the explain topics (help words where they exist; drafts for Mako's copy pass) ---- */
   const EXPLAIN = {
@@ -549,7 +558,7 @@ AFTER SETUP. When a pay, bill or card payment the app expects has come in or gon
       return { kind: 'addAccount', args: [Object.assign({ name: clean(a.name, 60), type: a.type || 'bank', amount: x, moved: a.moved }, a.date ? { date: a.date } : {},
         a.from ? { from: ref(a.from, 'A') || 'none' } : {}, typeof a.afterFigure === 'boolean' ? { afterFigure: a.afterFigure } : {})], text: `Add ${clean(a.name, 60)} with ${m(x)}${a.moved ? ' moved from ' + nm(a.from ? ref(a.from, 'A') : mainAcct) : ''}`, amount: x, figs: [x] };
     }
-    return { bad: what ? 'a change I can\'t make (' + what.slice(0, 30) + ')' : 'a change I could not read' };
+    return { bad: what ? 'a change I can\'t make (' + what.slice(0, 30) + '). ' + whereOf(what) : 'a change I could not read' };
   }
   const ACT = { logSpend: 1, refund: 1, moneyIn: 1, moveMoney: 1, remove: 1 };
   function runOne(door, s, opts, deps) {

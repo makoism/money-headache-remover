@@ -12479,7 +12479,15 @@ SETUP (when FIGURES says there is no book yet). Ask these in order, one per mess
 ${GUIDE.map(g => g.n + '. ' + g.ask).join('\n')}
 After each answer, save it with draft_set (that section's whole list each time; nothing is in the app until fill_book). A pay needs afterTax true: only save a pay once the person said the amount is after tax. A second income needs same: true or false. Never fill in a minimum or a figure the person did not give. NEEDED lists what fill_book still needs; ask for those. fill_book only when the person says to fill it in.
 
-AFTER SETUP. When a pay, bill or card payment the app expects has come in or gone out ("my pay came in", "rent came out"), use change with landed and its P, B or A ref: never money_in or log_spend for it, which would count it twice. When they say what their bank app or card app shows today, use bank_figure or card_figure with that figure. When the person says they spent, got or moved money, or asks to change a bill, pay, line, goal or card, use change. The app makes the change at once and shows what changed with Undo; a delete, or a change larger than safe to spend, waits for their OK. Refs (A1, L1, G1, B1, P1, S1) come from FIGURES or list; never invent one. Not a licensed adviser: for investments, loans or taxes, say so in one line.`;
+AFTER SETUP. When a pay, bill or card payment the app expects has come in or gone out ("my pay came in", "rent came out"), use change with landed and its P, B or A ref: never money_in or log_spend for it, which would count it twice. When they say what their bank app or card app shows today, use bank_figure or card_figure with that figure. When the person says they spent, got or moved money, or asks to change a bill, pay, line, goal or card, use change. The app makes the change at once and shows what changed with Undo; a delete, or a change larger than safe to spend, waits for their OK. Refs (A1, L1, G1, B1, P1, S1) come from FIGURES or list; never invent one. Not a licensed adviser: for investments, loans or taxes, say so in one line.
+
+SCREEN says which screen the person has open: "this screen" means that one.
+WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line): a loan: Plan, Add a loan. A card's pay day or close day: Plan, tap the card. Change a goal or take money out of it: Plan, tap the goal. Change a spend: Receipts, tap it. Statements: Home, Add statements. Reminders: Reminders at the top. A backup or the cloud copy: Settings.`;
+  /* [AI_JOIN_FIXES H4] a change it can't make says where it is on the screens (the same map as SYSTEM) */
+  const WHERE = [[/loan/, 'Plan, Add a loan'], [/card/, 'Plan, tap the card'], [/goal|take_out/, 'Plan, tap the goal'], [/spend|receipt/, 'Receipts, tap it'],
+    [/statement/, 'Home, Add statements'], [/remind/, 'Reminders at the top'], [/backup|cloud/, 'Settings']];
+  const whereOf = what => { const w = WHERE.find(([re]) => re.test(what)); return w ? 'On the screens: ' + w[1] : 'Say where from WHERE ON THE SCREENS'; };
+  const SCREEN_NAMES = { home: 'Home', plan: 'Plan', receipts: 'Receipts', settings: 'Settings', check: 'Check your bank', stmt: 'Add statements', reminders: 'Reminders', setup: 'setup on the screens', welcome: 'the first screen' };
 
   /* ---- the tools (BU2: no figures or draft read tool) ---- */
   const num = { type: 'number', description: 'A plain number in the currency, no symbol.' };
@@ -12694,6 +12702,7 @@ AFTER SETUP. When a pay, bill or card payment the app expects has come in or gon
   /* ---- what is sent ---- */
   function stateText(state, ctx) {
     const book = ctx.book, out = ['FIGURES (worked out by the app for today, exact)', figures(book, ctx.today).text];
+    if (ctx.screen && SCREEN_NAMES[ctx.screen]) out.push('', 'SCREEN: the person has ' + SCREEN_NAMES[ctx.screen] + ' open.');
     if (!book) {
       const d = state.draft || emptyDraft(), card = draftCard(d, ctx.today);
       out.push('', 'DRAFT (saved on this device, not in the app yet). Today is ' + SN.dayLabel(ctx.today, true) + '. Currency: ' + curOf(d) + '.');
@@ -12733,7 +12742,7 @@ AFTER SETUP. When a pay, bill or card payment the app expects has come in or gon
     const body = request(state, message, [], ctxOf(deps));
     return body.system + '\n\n' + body.messages.map(m => (m.role === 'user' ? 'YOU\n' : 'THE AI\n') + m.content.map(c => c.text || '').join('\n')).join('\n\n');
   }
-  const ctxOf = deps => ({ book: deps.book ? deps.book() : null, today: deps.today(), anon: deps.anon, invite: deps.invite });
+  const ctxOf = deps => ({ book: deps.book ? deps.book() : null, today: deps.today(), anon: deps.anon, invite: deps.invite, screen: deps.screen ? deps.screen() : null });
 
   /* ---- the explain topics (help words where they exist; drafts for Mako's copy pass) ---- */
   const EXPLAIN = {
@@ -12877,7 +12886,7 @@ AFTER SETUP. When a pay, bill or card payment the app expects has come in or gon
       return { kind: 'addAccount', args: [Object.assign({ name: clean(a.name, 60), type: a.type || 'bank', amount: x, moved: a.moved }, a.date ? { date: a.date } : {},
         a.from ? { from: ref(a.from, 'A') || 'none' } : {}, typeof a.afterFigure === 'boolean' ? { afterFigure: a.afterFigure } : {})], text: `Add ${clean(a.name, 60)} with ${m(x)}${a.moved ? ' moved from ' + nm(a.from ? ref(a.from, 'A') : mainAcct) : ''}`, amount: x, figs: [x] };
     }
-    return { bad: what ? 'a change I can\'t make (' + what.slice(0, 30) + ')' : 'a change I could not read' };
+    return { bad: what ? 'a change I can\'t make (' + what.slice(0, 30) + '). ' + whereOf(what) : 'a change I could not read' };
   }
   const ACT = { logSpend: 1, refund: 1, moneyIn: 1, moveMoney: 1, remove: 1 };
   function runOne(door, s, opts, deps) {
@@ -13236,8 +13245,19 @@ function chat3Deps() {
     send: chat3Send, today: () => E3.today(), told: () => E3.told(), newId: () => E3.newId(),
     book: () => E3.book, mode: () => E3.mode, door: E3.book ? ACT3 : null,
     start: b => E3.fill(b), discard: () => E3.discard(),
-    anon: CHAT3.anon || '', invite: chat3Invite(),
+    anon: CHAT3.anon || '', invite: chat3Invite(), screen: chat3Screen,
   };
+}
+/* [AI_JOIN_FIXES H4] which screen is open, for the AI: a sheet over the page first, else the tab */
+function chat3Screen() {
+  const open = sel => { const el = $(sel); return !!el && !el.hidden; };
+  if (!E3.book) return open('#a3Setup') ? 'setup' : 'welcome';
+  if (open('#a3Set')) return 'settings';
+  if (open('#a3Rem')) return 'reminders';
+  if (open('#a3Stmt')) return 'stmt';
+  if (open('#a3Check')) return 'check';
+  const t = $('.a3-tabs [aria-current=page]');
+  return t ? t.dataset.tab : 'home';
 }
 /* is the site's AI there (/api/health says ai: true)? Asked once a page open; never from a plain file with no relay */
 async function chat3Route() {
@@ -13260,8 +13280,8 @@ function chat3Card(t) {
   if (c.kind === 'change') {
     const foot = c.status === 'done' ? `<p class="a3-sub" data-chat="status">Done</p><div class="a3-actions"><button type="button" class="a3-btn" data-chatundo="${id}">Undo</button></div>`
       : c.status === 'ask' ? `<p class="a3-sub" data-chat="status" data-ask="${esc3(c.ask || '')}">${esc3(CHAT3_WORDS.ask[c.ask] || CHAT3_WORDS.ask.large)}</p><div class="a3-actions"><button type="button" class="a3-btn solid" data-chatok="${id}">Do it</button><button type="button" class="a3-btn" data-chatnot="${id}">Not now</button></div>`
-      : `<p class="a3-sub" data-chat="status">${esc3(c.status === 'undone' ? 'Taken back' : c.status === 'not now' ? 'Not done' : 'Not done: ' + (c.why || 'the app refused it'))}</p>`;
-    return `<div class="a3-card a3-chat-card" data-card="chat-change" data-turn="${id}" data-status="${esc3(c.status)}"><h3>${c.status === 'ask' ? 'A change to check' : 'Changed'}</h3>
+      : `<p class="a3-sub" data-chat="status">${esc3(c.status === 'undone' ? 'Taken back' : c.status === 'not now' ? 'Not done' : (c.why || 'The app refused it'))}</p>`;
+    return `<div class="a3-card a3-chat-card" data-card="chat-change" data-turn="${id}" data-status="${esc3(c.status)}"><h3>${c.status === 'ask' ? 'A change to check' : c.status === 'refused' || c.status === 'not now' ? 'Not changed' : 'Changed'}</h3>
       <ul class="a3-chat-lines">${(c.lines || []).map(l => `<li>${esc3(l)}</li>`).join('')}</ul>${chat3Figs(c.rows)}${foot}</div>`;
   }
   if (c.kind === 'draft') {
