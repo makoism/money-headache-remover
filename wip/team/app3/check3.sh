@@ -60,6 +60,7 @@ page|tests/e3_period.js|e3_period: ALL PASS||300|the period by its dates
 page|tests/e3_receipts.js|e3_receipts: ALL PASS||300|Receipts
 page|tests/e3_listfix.js|e3_listfix: ALL PASS||300|the LISTFIX fixes on the page (app3/LISTFIX.md): gaps in Receipts and the rest
 page|tests/e3_cardgap.js|e3_cardgap: ALL PASS||300|a card's gap across pay day (CARDGAP): Mako's shape from setup, cards typed 6 and 13 Dec, two rows in Receipts, the rows add up to each period's spent, Plan and Home agree, a reload
+page|tests/e3_cardpay.js|e3_cardpay: ALL PASS||300|Check your bank asks whether a card's unticked payment went out when the card shows far less than the app had; Yes ticks it (M11, M27)
 page|tests/e3_doors.js|e3_doors: ALL PASS||300|Receipts' two doors at 320 (M22): Money went out and Money came in, Refund and Moved under them, one of each door saved
 page|tests/e3_moved1.js|e3_moved1: ALL PASS||300|Moved with one account of your own says a second account is needed, no empty To list and no Save (K18)
 page|tests/e3_moneyin.js|e3_moneyin: ALL PASS||300|Receipts: Money in, a client payment or a gift (slice 6)
@@ -121,7 +122,7 @@ page_tests_for() {   # page_tests_for <changed path, relative to app3/>
     tests/fake_vault.js)      echo e3_cloud e3_listfix ;;
     tests/*.js)               basename "$1" .js ;;
     src/home3.js)             echo e3_home e3_ns e3_homeplan e3_warnwords e3_cardline e3_bankparts e3_names e3_payday ;;
-    src/checkin3.js)          echo e3_checkin e3_checkgap e3_cardfig e3_reload e3_bankparts e3_payday e3_overdrawn ;;
+    src/checkin3.js)          echo e3_checkin e3_checkgap e3_cardfig e3_reload e3_bankparts e3_payday e3_overdrawn e3_cardpay ;;
     src/receipts3.js)         echo e3_receipts e3_listfix e3_moneyin e3_bigspend e3_stmt_once e3_period e3_names e3_doors e3_moved1 e3_cardgap ;;
     src/plan3.js|src/plan3_write.js) echo e3_plan e3_rhythms e3_lineshare e3_homeplan e3_paychange e3_names ;;
     src/setup3.js)            echo e3_setup e3_setupfix e3_setup6 e3_income2 e3_weeks3 e3_first e3_onepay e3_overdrawn ;;
