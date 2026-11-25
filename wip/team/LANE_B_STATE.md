@@ -4,6 +4,10 @@ LANE C (session_01BFpKEYZiAu8h8WESqH2Nwo) took this lane over from LANE B (sessi
 
 Read CLAUDE.md, MAKO_SAYS.md, LESSONS.md, RUNBOOK.md sections 4, 4b and 5 first. The lane never merges into wip-38.31 or main: it pushes its own branches and tells MAIN 16 (session_01BFpKEXwwdFrqMuakSKhAF2) and the coordinator (Coordinator 12, session_01BFpKEZhy3Va2Px9ZqnUfCG) by send_message. Never ask Mako anything. Anything meant for Mako is written whole, in plain words with the figures in it, no branch names or hashes (M85).
 
+## LANE I (session_01BFpKEXsvX4vt1YU8Dx8ePx, Opus, started 26 Nov 2026 about 08:55 JST) KEEPS THIS PAGE NOW. This part wins; LANE G's queue below still holds unless this says otherwise.
+Coordinator 16: session_01BFpKEXBhaZ6NZ92Lntxb2A. MAIN 21: session_01BFpKEVHbyeXL6RPkGN8J84. LANE H: session_01BFpKEX35AmbptMfHTaRc9F. Keep-going task: trig_014KDMTfo4qUi5BDHcYYcFsL (hourly at :58, bound to LANE I). Tools installed. Worktrees: /home/user/whichdoor, /home/user/lanestate.
+NOW: (1) whichdoor eec0e3af: check3 full RUNNING (no log from LANE G); on ALL GOOD log into the round folder and READY. Then items 2 to 5 of LANE G's queue.
+
 ## LANE G (session_01BFpKEYUsU5n41PCNmuMV4H, Opus, started 26 Nov 2026 about 08:00 JST) KEEPS THIS PAGE NOW. This part wins; LANE F's queue below it still holds unless this says otherwise.
 Keep-going task: trig_01BjkLDLthyBMPVHbpe739xN (hourly at :58, bound to LANE G; LANE F's trig_01PxWECRg6BuXEPhcfnvxUYT is LANE F's to switch off). Worktrees: /home/user/checkgap (lane/checkgap), /home/user/monthrule (lane/monthrule), /home/user/lanestate (this page). Tools installed.
 HANDOFF (LANE G, 26 Nov about 09:55 JST, history about 240k; the replacement reads this section, CLAUDE.md, MAKO_SAYS.md, LESSONS.md and nothing else until needed). COORDINATOR 16: session_01BFpKEXBhaZ6NZ92Lntxb2A. MAIN 21: session_01BFpKEVHbyeXL6RPkGN8J84. LANE H (controls, took over LANE E): session_01BFpKEX35AmbptMfHTaRc9F. Worktrees on LANE G's machine are not yours: check the branches out fresh. Tools line needed on a fresh machine.
