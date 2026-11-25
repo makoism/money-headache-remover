@@ -201,7 +201,7 @@ const view = bk => T.L.lookahead(bk, DAY);
   await p.tap('[data-tab="plan"]'); await T.w(300);
   /* a loan that still owes does not close */
   await p.click(`#a3Plan [data-owed="${loanId}"]`); await T.w(200);
-  await save(p, 1);
+  await p.evaluate(() => [...document.querySelectorAll('[data-plbtn]')].find(y => y.textContent.trim() === 'Close this loan').click()); await T.w(300);   // [E3] by its words: Pay it off now sits before it
   ck('closing a loan that still owes is refused', /still owes/.test(await err(p)), await err(p));
   await p.click('#plBack'); await T.w(200);
   /* the main pay changed from a date: a new step; this pay period keeps its start */
