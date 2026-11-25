@@ -212,6 +212,7 @@ t('perPayAcross: an amount each pay under one rhythm, the same money a year unde
 // Sunday) and 27 Jan 160,000; Free to spend by the day 13 Dec to 27 Jan (the horizon, rent's second): 100,000 x 12 / 365
 // = 3,287 a day, December's share 100,000 x 12 x 31 / 365 = 101,917, so 20 more on 31 Dec: 19 x 3,287 + 20 = 62,473,
 // January 27 x 3,287 = 88,749; together 151,222. 493,000 - 160,000 - 151,222 = 181,778; capped at 66,967.
+// (That was the rule before THREE_VALUES and before CA4, the month rule; the figures in force are worked in the test.)
 // [BQ3] On 5 Jan it starts again: 100,000 for January less a 6,000 spend on 3 Jan = 94,000 (without the restart it
 // would be 70,967 - 4,000 - 6,000 = 60,967). The bank can spare less: 487,000 - rent 28 Dec (not ticked, still
 // expected) 80,000 - rent 27 Jan and 1 Mar 160,000 - Free to spend by the day 6 Jan to 1 Mar (horizon, rent's second)
@@ -234,18 +235,23 @@ t('[slice 6b] pay on two days a month changed to no fixed pay mid-period: by day
   eq([r.period, r.daysToNextPay.days, r.horizon, r.accounts[bank].bank], [null, null, '2027-01-27', 493000]);
   eq([r.safeToSpend.headline, r.safeToSpend.cappedByFreeToSpend], [66967, true]);
   // [THREE_VALUES, 24 Nov] "what your accounts can spare" no longer has this month's everyday money taken off by the day
-  // (it caps instead, so it is counted once): the old 181,778 plus 13 to 31 Dec by the day, 19 x 3,287 + 20 = 62,473
-  // (3,287 = floor(100,000 x 12 / 365); the last day carries floor(1,200,000 x 31 / 365) - 31 x 3,287 = 20), is 244,251.
-  // The headline is the same 66,967: Free to spend left was the smaller of the two before and after.
-  eq(r.safeToSpend.whyParts, [{ label: 'what your accounts can spare', amount: 244251 }, { label: 'more than Free to spend left this period', amount: -177284 }]);
-  eq([r.canSpare.amount, r.everyday.left, r.noJob.amount, r.everyday.kind, r.everyday.lastDay], [244251, 66967, 177284, 'month', '2026-12-31']);
+  // (it caps instead, so it is counted once): only January's days are held by the walk.
+  // [CA4, the month rule, 25 Nov; reworked by hand] January is charged by the day at floor(100,000 / 31) = 3,225 (it
+  // was floor(100,000 x 12 / 365) = 3,287). The walk reaches 27 Jan: 27 x 3,225 = 87,075. What the accounts can spare:
+  // 493,000 - rent 28 Dec and 27 Jan 160,000 - 87,075 = 245,925 (it was 244,251). Less Free to spend left 66,967:
+  // 178,958 with no job. The headline is the same 66,967.
+  eq(r.safeToSpend.whyParts, [{ label: 'what your accounts can spare', amount: 245925 }, { label: 'more than Free to spend left this period', amount: -178958 }]);
+  eq([r.canSpare.amount, r.everyday.left, r.noJob.amount, r.everyday.kind, r.everyday.lastDay], [245925, 66967, 178958, 'month', '2026-12-31']);
   b.book.events.push(Object.assign({ id: 'sixb2k-aaaaaaaaaa-5', k: 'spend', acct: bank, a: 6000, date: '2027-01-03' }, at6('2027-01-03')));
   const j = lookahead(b.book, '2027-01-05').safeToSpend;
   // [THREE_VALUES] January starts again with 100,000 less the 6,000 spent: 94,000 left. Before, the walk had already
   // taken January's everyday money off by the day and the headline read 66,177 (the same money off twice). What the
-  // accounts can spare is that 66,177 plus 6 to 31 Jan by the day, 26 x 3,287 + 20 = 85,482: 151,659. Headline 94,000.
+  // accounts can spare was that 66,177 plus 6 to 31 Jan by the day, 26 x 3,287 + 20 = 85,482: 151,659. Headline 94,000.
+  // [CA4, reworked by hand] The walk reaches 1 Mar: all of February is charged the 100,000 typed (it was 92,054) and
+  // 1 Mar floor(100,000 / 31) = 3,225 (it was 3,287): 103,225 held. 487,000 - rent 28 Dec (not ticked) 80,000 - rent
+  // 27 Jan and 1 Mar 160,000 - 103,225 = 143,775.
   eq([j.headline, j.cappedByFreeToSpend], [94000, true], 'January starts again');
-  eq(lookahead(b.book, '2027-01-05').canSpare.amount, 151659);
+  eq(lookahead(b.book, '2027-01-05').canSpare.amount, 143775);
   ok(Number.isInteger(r.lastsAboutWeeks), 'lasts about N weeks: ' + r.lastsAboutWeeks);
   // the period history before the change is not lost from the book: the day before the change still has its period
   eq(lookahead(b.book, '2026-12-09').period.start, '2026-11-30');
