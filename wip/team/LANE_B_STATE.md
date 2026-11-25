@@ -1,24 +1,24 @@
 # LANE B state (for whoever takes this lane over, on any model)
 
-Running again since 25 Nov 2026, 16:00 JST (Mako's "go", relayed by the coordinator). Last written 16:20 JST. If Mako says pause (MAKO_SAYS M84): commit, push, mark this file PAUSED at the top, start nothing, tell the coordinator in one line.
+Running again since 25 Nov 2026, 16:00 JST (Mako's "go", relayed by the coordinator). Last written 18:10 JST. If Mako says pause (MAKO_SAYS M84): commit, push, mark this file PAUSED at the top, start nothing, tell the coordinator in one line.
 
 Kept by LANE B (session_01BFpKEZBRWqdY7tLMMx4sDU). Read CLAUDE.md, MAKO_SAYS.md (M84 and M85 are new), LESSONS.md, RUNBOOK.md sections 4, 4b and 5 first. LANE B never merges into wip-38.31 or main: it pushes its own branches and tells the main build session (MAIN 16, session_01BFpKEXwwdFrqMuakSKhAF2) and the coordinator (Coordinator 12, session_01BFpKEZhy3Va2Px9ZqnUfCG) by send_message. Never ask Mako anything. Anything meant for Mako is written whole, in plain words with the figures in it, no branch names or hashes (M85).
 
-## The exact next step
-1. DONE 16:00: the merge-ready note for lane/twofig-engine (89ac989) and lane/cardpay-ask (14b5c28) is with MAIN 16, by the coordinator's ruling, with the known-close-day card fault worded for the next scope file. Waiting for MAIN 16's merge hash.
-2. IN FLIGHT: branch lane/cardclose (73dd0d5, on top of lane/twofig-engine; worktree /home/user/cardgap is on it). It holds the failing test engine/test/card_gap_statement.test.js (RED on purpose, not in run_all: the 10 Jan payment reads 36,000 where 42,000 is right) and foundation_review/CARDCLOSE_PLAN.md. One qc-foundation reviewer is reading the plan. No engine line has changed yet.
-3. When it reports: amend the plan, then build in the card loop of engine/lookahead.js (one filler line per part, cut at the card's close days, dated the part's last day; a paid statement is never reopened; "not sure" cards unchanged), add the plan's tests, engine suite, check3 full, push, then ONE fresh qc-foundation on the build (150k token cap).
-4. Then the list under "Next steps, in order" below, from its step 2.
+## The exact next step (written 25 Nov 18:10 JST)
+1. DONE: lane/controls-base is merged into lane/twofig-engine (cdb0d1a) by the coordinator's ruling: ONE rule for which pay starts the pay periods, the dated one (schedules.periodHolder, BZ2), with the pay's id as its last tie-break; LANE B's periodPay is removed and its decisions renamed CA1 to CA3 (BK6 stands). lane/cardpay-ask on top is 458fd74. Both: engine 27 runs, check3 full ALL GOOD. The hashes are with MAIN 16, who merges them into its join branch (lane/ai-join). Waiting for its merge hash.
+2. IN FLIGHT: lane/cardclose (5b7f2d2, on top of lane/twofig-engine cdb0d1a; worktree /home/user/cardgap). The known-close card fix is BUILT: engine/lookahead.js card loop, plan foundation_review/CARDCLOSE_PLAN.md (reviewed, amended), test engine/test/card_gap_statement.test.js (14, in run_all). Engine 28 runs, check3 full ALL GOOD (log in qc_reports/2026-11-25_cardclose). ONE qc-foundation reviewer is on the build now.
+3. When it reports: save its answer as qc_reports/2026-11-25_cardclose/foundation.md if it wrote no file; fix what it fails (test first); full check; push; send MAIN 16 and the coordinator the hash as merge-ready (it goes after the two branches of step 1).
+4. Then the list under "Next steps, in order" below, from its step 2 (the data-safety review of lane/restore, on Opus).
 
 ## Branches, in the order they should be merged
 
 | Branch | Hash | State | Owes |
 | --- | --- | --- | --- |
 | lane/blockers | fd3e020 | MERGED into wip-38.31 with candidate 2 | nothing |
-| lane/twofig-engine | 89ac989 | check3 full ALL GOOD at 94af457 (89ac989 adds only the review report). qc-numbers FAIL (part review; blocker 1 fixed in 94af457, blocker 2 is a rule question ruled on, see below). qc-foundation FAIL, narrow (see the exact next step) | merge-ready note sent 25 Nov 16:00 (coordinator's ruling: merge now, the known-close card fault listed as known) |
-| lane/cardpay-ask | 14b5c28 | on top of lane/twofig-engine (94af457 merged in). check3 full ALL GOOD at 14b5c28 | merges with, or right after, the engine branch. No reviewer has seen it yet (qc-controls and qc-layout-touch apply: it adds a question to a sheet) |
+| lane/twofig-engine | cdb0d1a (was 89ac989 before the controls base was merged in) | check3 full ALL GOOD at 94af457 (89ac989 adds only the review report). qc-numbers FAIL (part review; blocker 1 fixed in 94af457, blocker 2 is a rule question ruled on, see below). qc-foundation FAIL, narrow (see the exact next step) | merge-ready note sent 25 Nov 16:00 (coordinator's ruling: merge now, the known-close card fault listed as known) |
+| lane/cardpay-ask | 458fd74 (was 14b5c28) | on top of lane/twofig-engine (94af457 merged in). check3 full ALL GOOD at 14b5c28 | merges with, or right after, the engine branch. No reviewer has seen it yet (qc-controls and qc-layout-touch apply: it adds a question to a sheet) |
 | lane/restore | 52cd58b | check3 full ALL GOOD, qc-foundation PASS (report committed) | qc-data-safety (on Opus, one reviewer at a time), then merge-ready |
-| lane/cardclose | 73dd0d5 | red test and plan only, on top of lane/twofig-engine | see the exact next step |
+| lane/cardclose | 5b7f2d2 | built, check3 full ALL GOOD, qc-foundation running on the build | its review, then merge-ready (after the two above) |
 | lane/state | this file | one file, wip/team/LANE_B_STATE.md; MAIN 16 was asked to merge it into wip-38.31 | keep it current |
 | lane/qcscripts | 8fac696 | e3_boxwalk and e3_always done and in check3. m_lines.test.js and wording_lint.test.js are committed as work in progress: not in check3's table, not proved against a planted fault. e3_fit.js not written | finish the three, full check, report |
 | lane/endperiod-plan | ffc0f91 | plan only (foundation_review/ENDPERIOD_PLAN.md). Three qc-foundation reviews; the last failed for the card gap, now fixed on lane/twofig-engine. The plan's last section says what changed | a fresh qc-foundation on the plan once lane/twofig-engine is merged, then slice 0 and slice 1 |
