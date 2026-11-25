@@ -24,8 +24,6 @@ const Q = require('./qc_places.js'), { w, tap } = Q;
 
 /* real faults in the app this walker found (the check stays failing; see tests/QCSCRIPTS_FOUND.md) */
 const KNOWN = {
-  'Home (made-up numbers): "Show the page as on" left empty: a plain message, nothing saved': 'the day box stays empty while the page still shows the day before; nothing says which day is shown',
-  'Reminders: "At" left empty: a plain message, nothing saved': 'the time box stays empty while the reminders are made for 09:00; nothing says so',
 };
 const T = Q.make('e3_boxwalk', KNOWN), { ck } = T;
 

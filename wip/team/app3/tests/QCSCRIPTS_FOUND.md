@@ -9,10 +9,7 @@ For the coordinator: each line says the file, and what a person sees.
 
 ## tests/e3_boxwalk.js (every box and sheet)
 
-- src/start3.js, the made-up numbers band: clear the day in "Show the page as on". The box stays empty, the page keeps
-  showing the day it showed before, and nothing says which day that is.
-- src/remind3_page.js, Reminders: clear the time in "At". The box stays empty, the reminders are made for 09:00, and
-  nothing says so.
+Both faults found here (a cleared day box in the made-up numbers, a cleared Reminders time) are fixed: the box goes back to the value in use.
 
 Seen on the walk, not counted as faults (for Mako's eye, a wording choice):
 - Plan, a card or a loan opened to change: clear "Day of the month it is paid" and press Save. The form says "Nothing
@@ -24,10 +21,6 @@ Walked on lane/ai-join (the assistant panel and the setup chat). Fixed there and
 during setup now opens the assistant (the welcome is the chat), and after setup the assistant's box is a bar at the
 foot of every screen, so it no longer scrolls away there.
 
-- src/chat3.js (chat3Ask), a new device: open setup, or Settings, then tap Ask. Setup or Settings closes and the cursor
-  goes into the first screen's answer box, but the page stays at its top: on a phone (390 by 844) the box is below the
-  bottom of the screen, so the tap seems to do nothing. From the first screen itself the page does scroll to the box.
-  Six places, one cause (M1, M2, M17).
 - src/chat3.js (renderChat3) and src/shell.html: before setup (setup, Settings on a new device, the first screen with
   Use any AI open) and with the made-up numbers there is no bar at the foot. The way in is the small Ask link in the
   header, and it scrolls away with the page: scrolled to the end of those 8 places, it is off the screen (M1 "always on
