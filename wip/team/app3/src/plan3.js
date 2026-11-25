@@ -273,6 +273,16 @@ function plLineForm3(id) {
 }
 const PL_EVERY3 = [{ v: 'month', name: 'On a day each month' }, { v: 'days', name: 'On two days each month' }, { v: 'weeks1', name: 'Every week' }, { v: 'weeks2', name: 'Every 2 weeks' },
   { v: 'weeks3', name: 'Every 3 weeks' }, { v: 'weeks4', name: 'Every 4 weeks' }, { v: 'none', name: 'No fixed pay: it comes when it comes' }];
+/* [E1b, M13] how often a bill added after setup is due, as setup asks: a day each month, or once a year on a month's day */
+const PL_BILL_EVERY3 = [{ v: 'month', name: 'On a day each month' }, { v: 'year', name: 'Once a year' }];
+const PL_MONTHS3 = [['1', 'January'], ['2', 'February'], ['3', 'March'], ['4', 'April'], ['5', 'May'], ['6', 'June'], ['7', 'July'], ['8', 'August'], ['9', 'September'], ['10', 'October'], ['11', 'November'], ['12', 'December']];
+function plMonth3(m) { return { key: 'month', label: 'Month it is due', kind: 'pick', value: String(m), options: PL_MONTHS3.map(([v, name]) => ({ v, name })) }; }
+/* the month box shows only for once a year */
+function plYearly3() {
+  const show = () => { $('#pl-month').closest('.a3-field').hidden = $('#pl-every').value !== 'year'; };
+  $('#pl-every').addEventListener('change', show);
+  show();
+}
 const PL_DAY2_3 = '1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31'.split(' ').map(d => ({ v: d, name: d })).concat([{ v: 'last', name: 'the last day' }]);
 /* a bill; id null adds one */
 function plBillForm3(id) {
@@ -280,13 +290,17 @@ function plBillForm3(id) {
   const book = E3.book, accts = plAccounts3({ bank: 1, cash: 1, ewallet: 1, wallet: 1, card: 1 }).map(a => ({ v: a.id, name: a.name }));
   if (!id) {
     plForm3('Add a bill', [{ key: 'name', label: 'Name', kind: 'text', hint: 'Like Rent or Phone' }, { key: 'amount', label: 'Amount', kind: 'amount' },
+      { key: 'every', label: 'How often', kind: 'pick', value: 'month', options: PL_BILL_EVERY3 }, plMonth3(Number(E3.today().slice(5, 7))),
       { key: 'day', label: 'Day of the month it is due', kind: 'day' }, { key: 'acct', label: 'Paid from', kind: 'pick', options: accts, value: (accts[0] || {}).v }],
-    [{ label: 'Add', solid: true, step: v => ['addBill', w => PLAN3W.addBill(w, { name: v.name, amount: v.amount, day: v.day, acct: v.acct }), 'Bill added'] }],
+    [{ label: 'Add', solid: true, step: v => ['addBill', w => PLAN3W.addBill(w, { name: v.name, amount: v.amount, every: v.every, month: Number(v.month), day: v.day, acct: v.acct }), 'Bill added'] }],
     'It is due from today on. On a weekend or holiday it moves to the next working day');
+    plYearly3();
     return;
   }
   const s = book.schedules.find(x => x.id === id), v0 = BurrowEngine.periods.scheduleView(book, E3.today())[id];
-  const day = v0.rule && v0.rule.every === 'month' && v0.rule.days.length === 1 ? v0.rule.days[0] : null;
+  /* [E1b] a yearly bill: its month and day */
+  const yearly = s.kind === 'bill' && !!(v0.rule && v0.rule.every === 'year');
+  const day = v0.rule && v0.rule.every === 'month' && v0.rule.days.length === 1 ? v0.rule.days[0] : yearly ? Number(v0.rule.date.slice(3)) : null;
   const pay = s.kind === 'income';
   /* [slice 6] a pay can change how often it lands; for the pay that starts the period, each line counted each pay is
      asked about, with its amount now filled in. [slice 6b] Two days each month and no fixed pay too, both ways: to no
@@ -305,8 +319,8 @@ function plBillForm3(id) {
   const perPay = every.length && starts ? (everyNow === 'none' ? PLAN3W.linesEachMonth({ book, today: E3.today() }) : PLAN3W.linesEachPay({ book, today: E3.today() })) : [];
   const lines = perPay.map(l => ({ key: 'ln-' + l.key, label: `${l.name} ${everyNow === 'none' ? 'a month' : 'each pay'} from the change`, kind: 'amount', value: l.amount, optional: true, hint: ' ' }));
   plForm3(s.name, [{ key: 'name', label: 'Name', kind: 'text', value: s.name }, { key: 'amount', label: 'Amount', kind: 'amount', value: v0.amount }].concat(every.slice(0, 1),
-    [{ key: 'day', label: 'Day of the month it is due', kind: 'day', value: dayNow }], every.slice(1), [{ key: 'from', label: 'Changes from', kind: 'date', value: v0.changeFrom, hint: 'Earlier ones stay as they were' }], lines),
-  [{ label: 'Save', solid: true, step: v => ['changeBill', w => PLAN3W.changeBill(w, id, { name: v.name, amount: v.amount, day: v.day, from: v.from,
+    yearly ? [plMonth3(Number(v0.rule.date.slice(0, 2)))] : [], [{ key: 'day', label: 'Day of the month it is due', kind: 'day', value: dayNow }], every.slice(1), [{ key: 'from', label: 'Changes from', kind: 'date', value: v0.changeFrom, hint: 'Earlier ones stay as they were' }], lines),
+  [{ label: 'Save', solid: true, step: v => ['changeBill', w => PLAN3W.changeBill(w, id, { name: v.name, amount: v.amount, day: v.day, from: v.from, ...(yearly ? { month: Number(v.month) } : {}),
     ...(every.length ? { every: v.every, day2: v.day2 === 'last' ? 'last' : Number(v.day2), start: v.start, lines: Object.fromEntries(perPay.map(l => [l.key, v['ln-' + l.key] == null ? l.amount : v['ln-' + l.key]])) } : {}) }), pay ? 'Pay changed' : 'Bill changed'] }]
     .concat(pay || !v0.next ? [] : [{ label: 'Change the next one only', step: v => ['changeOnce', w => PLAN3W.changeOnce(w, id, { due: v0.next.due, amount: v.amount }), s.name + ' on ' + day3(v0.next.land, 'any') + ' changed'] },
       { label: 'End this bill', sure: [`End ${s.name}? Nothing is due after the day in "Changes from"`, 'Yes, end it'], step: v => ['endBill', w => PLAN3W.endBill(w, id, { last: v.from }), s.name + ' ends'] }]),

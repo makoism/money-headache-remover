@@ -171,8 +171,15 @@
     let from = x.from || v.changeFrom;
     if (s.kind === 'income' && x.amount === 0) bad(PAY_NEEDS_AMOUNT);   // [BL1] a pay always has an amount
     if (fromNone && x.amount == null && v.amount == null) bad(PAY_NEEDS_AMOUNT);
-    const dayMoved = x.every == null && x.day != null && !(v.rule && v.rule.every === 'month' && v.rule.days.length === 1 && v.rule.days[0] === x.day);
-    if ((x.amount != null && x.amount !== v.amount) || dayMoved || rhythm) {
+    /* [E1b, M13] a yearly bill: its month and day change from a date, a new rule as a monthly bill's day */
+    const yearly = s.kind === 'bill' && !!(v.rule && v.rule.every === 'year');
+    let yearRule = null;
+    if (yearly && (x.month != null || x.day != null)) {
+      const r = billRule({ every: 'year', month: x.month != null ? x.month : Number(v.rule.date.slice(0, 2)), day: x.day != null ? x.day : Number(v.rule.date.slice(3)) });
+      if (r.date !== v.rule.date) yearRule = r;
+    }
+    const dayMoved = !yearly && x.every == null && x.day != null && !(v.rule && v.rule.every === 'month' && v.rule.days.length === 1 && v.rule.days[0] === x.day);
+    if ((x.amount != null && x.amount !== v.amount) || dayMoved || rhythm || yearRule) {
       if (!DAY.test(from)) bad('Pick the day the change starts');
       if (from < v.changeFrom) bad('The change can start on ' + v.changeFrom + ' at the earliest: an earlier one is already paid or noted');
       /* [slice 6b] from no fixed pay: the new rule and the pay's amount start with its first pay on or after `from` */
@@ -188,6 +195,7 @@
       if ((x.amount != null && x.amount !== v.amount) || (fromNone && x.amount != null)) ch.steps = (s.steps || []).concat([{ from, amount: amountOk(x.amount, 'the amount') }]);
       if (dayMoved) ch.rules = (s.rules || []).concat([{ from, rule: { every: 'month', days: [dayOfMonth(x.day)] } }]);
       if (rhythm) ch.rules = (s.rules || []).concat([{ from, rule: rhythm }]);
+      if (yearRule) ch.rules = (s.rules || []).concat([{ from, rule: yearRule }]);
     }
     if (!Object.keys(ch).length) bad('Nothing changed');
     /* [slice 6] the pay that starts the period changes how often it lands: each line counted each pay is asked about;
