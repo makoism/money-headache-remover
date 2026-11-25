@@ -34,6 +34,7 @@ node|tests/e3_act_unit.js|e3_act_unit: ALL PASS||300|act3, the one write door (p
 node|tests/cloud3.test.js|cloud3: ALL PASS||300|the cloud copy's core, two devices on a local fake vault
 node|../../../tests/vault_server/vault_server.test.mjs|vault_server: ALL PASS||300|the vault server itself in node (the five changes, the old app's calls, today's database)
 node|../../../tests/vault_server/fake_parity.test.mjs|fake_parity: ALL PASS||300|the fake vault answers as the server does
+node|../../../tests/vault_server/relay_cap.test.mjs|relay_cap: ALL PASS||300|the AI relay's daily call cap per household, in node (M68): the count follows the code word, not the device or the connection
 node|tests/e3_stmt_read.js|e3_stmt_read: ALL PASS||300|statements, the reading half (pure)
 node|tests/e3_stmt_plan.js|e3_stmt_plan: ALL PASS||300|statements, the writing half (pure): lines, matching, records
 node|tests/plan3_write.test.js|plan3_write: ALL PASS||300|the Plan tab's steps (pure)
