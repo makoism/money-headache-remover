@@ -1,5 +1,5 @@
 'use strict';
-// End of pay period, slice 0 (foundation_review/ENDPERIOD_PLAN.md section 7; MAKO_SAYS M24, M46, M20): the sync check
+// End of pay period, slice 0 (foundation_review/ENDPERIOD_PLAN.md section 7 and its fourth review; MAKO_SAYS M24, M46, M20): the sync check
 // "a place cannot give out more than it holds" [X5] judges kept places only: the goals in `book.places`, and Waiting.
 // A plan line (Food) is not a kept place: its money is worked out by the engine each period, like Free to spend. So an
 // end-of-period answer that sends a line's unspent money to a goal, or leaves it in the bank, raises no question.
@@ -54,5 +54,12 @@ t('the answers do not depend on the order the records arrive in', () => {
     const b = Object.assign({}, x.book, { events: new Set(turned).size === n ? turned : evs.slice().reverse(), places: x.book.places.slice().reverse() });
     eq(JSON.stringify(asks(b)), want);
   }
+});
+t('a goal that was removed is still judged (the list of places is read with removed ones in it)', () => {
+  const x = base(), out = x.newId();
+  x.book.events.push(x.pe(x.food, [{ to: x.trip, a: 9000 }]));
+  x.book.events.push(stamp({ id: out, k: 'move', date: '2026-12-12', a: 12000, acct: x.bank, place: x.trip, src: { type: 'typed' } }, '2026-12-12T19:00:00.000+09:00'));
+  x.book.places.find(p => p.id === x.trip).gone = '2026-12-13';
+  eq(asks(x.book), [[x.trip, 3000, [out]]]);
 });
 done('sync_period_end.test.js');

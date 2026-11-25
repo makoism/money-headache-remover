@@ -6748,8 +6748,12 @@ function stmtReceipts(rows, catOf, acctOf) {
   function sharesQuestions(copy) {
     const fig = placeFigures(copy), evs = live(copy.events);
     const out = [];
+    // [ENDPERIOD slice 0] only kept places are judged: the goals in `copy.places` (a removed one too) and Waiting. A plan
+    // line is not a kept place: its money is worked out by the engine each period, like Free to spend, so an
+    // end-of-period answer that sends a line's unspent money on never makes the line "give out more than it holds".
+    const kept = new Set((copy.places || []).filter(x => x && typeof x.id === 'string').map(x => x.id).concat(['waiting']));
     for (const [p, f] of [...fig].sort((x, y) => (x[0] < y[0] ? -1 : 1))) {
-      if (p === 'free' || f >= 0) continue;
+      if (p === 'free' || f >= 0 || !kept.has(p)) continue;
       const outs = evs.filter(e => e.k === 'move' && e.place === p).sort((x, y) => ms(y.at) - ms(x.at) || (x.id < y.id ? 1 : -1));
       const undoFrom = list => { const u = []; let g = f; for (const o of list) { if (g >= 0) break; u.push(o.id); g += Number(o.a) || 0; } return u; };
       // [AW6] either placing may give way: the newest first (`undo`), or the oldest first (`undoOlder`)
