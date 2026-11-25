@@ -647,6 +647,12 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       const a0 = r0.accounts[id], a1 = r1.accounts[id];
       if (a1 && a1.bank != null && (!a0 || a0.bank !== a1.bank)) rows.push({ key: 'bank:' + id, label: ((b1.accounts || []).find(x => x.id === id) || {}).name + ' today', before: a0 ? a0.bank : null, after: a1.bank });
     }
+    /* [qc-assistant run 2; M30] a card whose figure changed shows it: most spending goes on cards, and safe to spend
+       alone would read the same before and after. The engine's own cards.owedNow, named as Home names it */
+    for (const id of Object.keys(r1.cards || {})) {
+      const c0 = (r0.cards || {})[id], c1 = r1.cards[id];
+      if (c1 && c1.owedNow != null && (!c0 || c0.owedNow !== c1.owedNow)) rows.push({ key: 'card:' + id, label: ((b1.accounts || []).find(x => x.id === id) || {}).name + ', ' + SN.label('owed').toLowerCase(), before: c0 ? c0.owedNow : null, after: c1.owedNow });
+    }
     return rows;
   }
   async function carryOut(state, card, deps) {

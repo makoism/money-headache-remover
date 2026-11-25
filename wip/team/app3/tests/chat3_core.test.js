@@ -454,6 +454,20 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const f = await K.fillNow(st, h.deps(FAKE.make([])));
     ok(!f.ok && h.book === null && /Which country/.test(f.text), f.text);
   });
+  /* [qc-assistant run 2 blocker 1; M30, M5] a spend on a card shows the card's own figure before and after, never only
+     two equal safe to spend figures */
+  await t('[M30] a spend on a card: the change card has a row for that card, Still owed before and after (the engine\'s)', async () => {
+    const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
+    const cardA = hp.book.accounts.find(a => a.name === 'Card A').id, cardB = hp.book.accounts.find(a => a.name === 'Card B').id;
+    const owed0 = L.lookahead(hp.book, hp.day).cards[cardA].owedNow;
+    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'log_spend', amount: 900, account: 'A2' }] })]), say('Logged.')]);
+    const r = await K.turn(state, 'I bought lunch, 900 on card A', hp.deps(f));
+    const c = r.shown.find(x => x.who === 'card').card;
+    const row = c.rows.find(x => x.key === 'card:' + cardA);
+    eq(row, { key: 'card:' + cardA, label: 'Card A, still owed', before: owed0, after: L.lookahead(hp.book, hp.day).cards[cardA].owedNow });
+    eq([row.before, row.after], [54000, 54900]);
+    ok(!c.rows.some(x => x.key === 'card:' + cardB), 'a card that did not change has no row');
+  });
   /* [qc-assistant, confusing] two steps asked, one left out: the card says which was not done, never without a word */
   await t('two steps asked and one left out: the card says which one was not done', async () => {
     const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
