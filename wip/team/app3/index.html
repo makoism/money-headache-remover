@@ -12451,12 +12451,12 @@ Actions:
     { n: 2, key: 'how', ask: "You tell me what's in your bank today, what comes in and what goes out and when. From that the app works out what's safe to spend until your next pay. Everything I fill in shows on the screens so you can check it." },
     { n: 3, key: 'country', ask: 'Which country do you bank in, and in which currency? The country moves pay and bills off weekends and holidays.' },
     { n: 4, key: 'banks', ask: 'How many banks do you use? One is fine to start, you can add more later. Which bank does your pay go into?' },
-    { n: 5, key: 'banks', ask: "What does that bank's app show right now? If you don't know: open the bank app. The big number on the first screen is it." },
+    { n: 5, key: 'banks', ask: "What does that bank's app show right now? If you don't know: open the bank app. The big number on the first screen is it. Not sure right now? We can leave it for later, and I'll ask again before I fill anything in." },
     { n: 6, key: 'pays', ask: 'How are you paid? On a day each month, twice a month, every week or two, or whenever work comes in?' },
     { n: 7, key: 'pays', ask: "Which day does it land? If that's a weekend or holiday does it come the day before or after?" },
     { n: 8, key: 'pays', ask: "How much lands in your bank each time? Then always: is that before or after tax? If before or not sure: I need what lands in the bank, after tax. On a Japanese payslip it's 差引支給額 (take-home)." },
     { n: 9, key: 'pays', ask: 'Anything else coming in, like a side job? Is it the same amount each time? If it lands the same day you can give me one total.' },
-    { n: 10, key: 'cards', ask: "Do you have credit cards? For each one: what's on it right now (it's in the card app), which day it's paid and from which bank. Do you know its statement close day (締め日)? Not sure is fine." },
+    { n: 10, key: 'cards', ask: "Do you have credit cards? For each one: what's on it right now (it's in the card app), which day it's paid and from which bank. Do you know its statement close day (締め日)? It's on the card's monthly statement, or in the card app with the payment details. Not sure is fine." },
     { n: 11, key: 'bills', ask: "Which bills come out of your bank? Rent, power, phone, internet, subscriptions. How much and which day for each. Bills you pay by card go with the card, not here." },
     { n: 12, key: 'asked', ask: 'For each bill in NEEDED that was due since your last pay: "Phone was due on 20 Nov. Has it come out of your bank already?" For each card statement in NEEDED: how much was on it. If a pay lands today: has it already landed in that figure?' },
     { n: 13, key: 'free', ask: "How much do you want for food and everyday stuff each pay period? Groceries, eating out, getting around, fun. Leave it blank if you don't know yet." },
@@ -12470,6 +12470,8 @@ Numbers: the app works out every figure. FIGURES (and DRAFT before setup) come w
 How to talk: plain words, short sentences, one question per message, like a friend who is good with money. Usually under 60 words. No headings, no bold, no lists of options, no exclamation marks, no praise. Times and days as the app writes them.
 
 The person can ask anything about the app at any point (use explain for how it works). Answer, then go back to the next setup question.
+
+When they don't know a figure: say where to find it, then give a way on. A bank's figure can be left for later: save that bank with amount null, go on, and it is asked again before fill_book. A close day can be "not sure".
 
 Files: you can't read files, statements, payslips or pictures yet. Never offer to. If they want to send one, say in one line that reading files comes later, and ask them to type the figures.
 
@@ -12564,12 +12566,16 @@ AFTER SETUP. When a pay, bill or card payment the app expects has come in or gon
       for (const x of v) {
         const name = nameOf(x), a = amountIn(x.amount, cur, true), p = prev('banks', name);
         if (!name) return no('Each bank needs a name');
-        if (a === undefined || a === null) return no('What does ' + name + ' show today? A plain number');
+        if (a === undefined) return no('What does ' + name + ' show today? A plain number, or null to leave it for later');
+        /* [AI_JOIN_FIXES H3] "I don't know": the bank is kept with its figure for later, asked again before the fill */
+        if (a === null) { out.push(Object.assign({ name, amount: null, on: null, later: true }, x.type && x.type !== 'bank' ? { type: x.type } : {})); continue; }
         if (x.type && !['bank', 'cash', 'ewallet', 'wallet'].includes(x.type)) return no(name + ': a bank, cash or an e-wallet');
         const on = p && p.amount === a && !x.confirmed ? p.on : today;
         out.push(Object.assign({ name, amount: a, on }, x.type && x.type !== 'bank' ? { type: x.type } : {}, p && p.payToday && on === p.on ? { payToday: p.payToday } : {}));
       }
       d.banks = out;
+      const later = out.filter(b => b.later).map(b => b.name);
+      if (later.length && curOf(d) === cur) return { ok: true, draft: d, text: 'Saved: ' + TITLES.banks + '. ' + later.join(' and ') + ': the figure is for later, asked again before I fill anything in' };
     } else if (section === 'pays') {
       const v = list(value) || []; const out = [];
       for (let i = 0; i < v.length; i++) {
@@ -12665,7 +12671,7 @@ AFTER SETUP. When a pay, bill or card payment the app expects has come in or gon
     out.push({ key: 'country', title: TITLES.country, lines: d.country ? [{ JP: 'Japan', PH: 'The Philippines', XX: 'Somewhere else (weekends only)' }[d.country]] : [] });
     out.push({ key: 'currency', title: TITLES.currency, lines: d.currency ? [{ JPY: 'Yen', PHP: 'Philippine pesos', USD: 'US dollars', EUR: 'Euros' }[d.currency]] : [] });
     const again = 'asked again';
-    out.push({ key: 'banks', title: TITLES.banks, lines: d.banks.map(b => b.amount == null ? `${b.name}: ${again}` : `${b.name}: ${m(b.amount)} on ${day1(b.on)}` + (b.payToday ? `, today's pay ${b.payToday.landed ? 'already in it' : 'not in it yet'}` : '')) });
+    out.push({ key: 'banks', title: TITLES.banks, lines: d.banks.map(b => b.amount == null ? `${b.name}: ${b.later ? 'for later' : again}` : `${b.name}: ${m(b.amount)} on ${day1(b.on)}` + (b.payToday ? `, today's pay ${b.payToday.landed ? 'already in it' : 'not in it yet'}` : '')) });
     out.push({ key: 'pays', title: TITLES.pays, lines: d.pays.map(p => `${p.name}: ${p.amount == null ? (p.every === 'none' ? 'no fixed amount' : 'amount ' + again) : m(p.amount) + ' after tax'}, ${p.every === 'none' ? 'no fixed day' : p.every === 'weeks' ? 'every ' + (p.n > 1 ? p.n + ' weeks' : 'week') + ' from ' + day1(p.start) : 'on day ' + p.day + (p.day2 ? ' and ' + p.day2 : '') + ' each month'}` + (p.every !== 'none' ? `, a weekend or holiday: the working day ${p.shift || 'before'}` : '')) });
     out.push({ key: 'cards', title: TITLES.cards, lines: d.cards.map(c => `${c.name}: ${c.owed == null ? again : m(c.owed) + ' on ' + day1(c.on)}, paid on day ${c.payDay}, statement closes ${c.closeDay === 'not sure' ? 'not sure' : c.closeDay === 'last' ? 'the last day' : 'day ' + c.closeDay}` + (c.statement ? `, ${c.statement.a === 'not sure' ? 'all of it' : m(c.statement.a)} on the statement of ${day1(c.statement.closed)}` : '')) });
     out.push({ key: 'bills', title: TITLES.bills, lines: d.bills.map(b => `${b.name}: ${b.amount == null ? 'amount ' + again : m(b.amount)} on day ${b.day}${b.every === 'year' ? ' of month ' + b.month : ' each month'}` + (b.out ? `, the one of ${b.out.days.map(day1).join(' and ')} ${b.out.out ? 'already out' : 'not out yet'}` : '')) });
