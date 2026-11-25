@@ -543,7 +543,11 @@ function paintQuestions3() {
     return `<div class="a3-q" data-cloudq="${esc3(q.q)}"><p class="a3-next">${esc3(QWORDS3[q.q] || 'Something needs a choice after joining your devices.')}</p>
       <div class="a3-actions">${picks.map(([p, t]) => `<button type="button" class="a3-btn" data-q="${i}" data-pick="${esc3(p)}">${esc3(t)}</button>`).join('')}</div></div>`;
   }).join('');
-  const drawn = qs.map(q => (q.q === 'which' ? stampsOf3(E3.book, q.of) : null));   // what the rows were drawn from
+  /* what the rows were drawn from: a "which" row its item's stamps; a check question (x8, closed, minimum, main) has no
+     row stamps, so it carries the door's whole-book mark from paint time (WHICH_DOOR_PLAN item 6): answered on a book
+     that changed since, it is refused, never written over the newer book */
+  const paintVer = typeof ACT3 === 'object' && ACT3 && ACT3.ver ? ACT3.ver() : null;
+  const drawn = qs.map(q => (q.q === 'which' ? stampsOf3(E3.book, q.of) : { ver: paintVer }));
   for (const b of box.querySelectorAll('[data-q]')) b.addEventListener('click', () => answer3(qs[+b.dataset.q], b.dataset.pick, drawn[+b.dataset.q]));
 }
 /* [M20, M61] a "which to keep" answer is written only on the book its row was drawn from: the question still open, its
@@ -560,7 +564,7 @@ function stampsOf3(book, of) {
 }
 const STALE3 = 'This was already chosen or changed somewhere else, so nothing changed';
 async function answer3(q, pick, drawn) {
-  if (drawn) {
+  if (drawn && q.q === 'which') {
     const now = stampsOf3(E3.book, q.of);
     if (!now.ask || now.k !== drawn.k || now.item !== drawn.item) { setMsg3(STALE3, true); paintQuestions3(); return; }
   }
@@ -569,7 +573,8 @@ async function answer3(q, pick, drawn) {
   const S = BurrowEngine.sync;
   const r = await ACT3.answerSync(q.q === 'which' ? 'Kept' : 'Chosen', (b, o) => (q.q === 'which'
     ? S.answer({ copy: b, of: q.of, pick: pick === 'both' ? 'both' : +pick, now: o.now, by: o.by })
-    : S.answerCheck({ copy: b, question: q, pick, now: o.now, by: o.by })), { undo: 'Kept - the other version can still come back' });
+    : S.answerCheck({ copy: b, question: q, pick, now: o.now, by: o.by })), Object.assign({ undo: 'Kept - the other version can still come back' }, q.q !== 'which' && drawn && drawn.ver != null ? { ver: drawn.ver } : {}));
+  if (!r.ok && r.why === 'other') { setMsg3(STALE3, true); paintQuestions3(); return; }
   if (!r.ok) { setMsg3(r.why === 'save' ? r.text || 'This could not be saved on this device, so nothing changed' : 'That choice could not be made, so nothing changed', true); paintQuestions3(); }
 }
 /* every write through the door redraws the questions while Settings is open (an answer, its Undo, a change elsewhere) */

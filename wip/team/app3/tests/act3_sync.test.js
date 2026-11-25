@@ -198,6 +198,18 @@ const rentAmount = b => b.schedules.find(x => x.id === RENT).steps.slice(-1)[0].
     const e = h.book.events.find(x => x.id === SP);
     eq([e.gone, e.goneBy, e.at], ['2026-12-08', 'stepold1', T1], 'left as it was');
   });
+  await t('[item 6] an answer carrying the whole-book mark from paint time is refused when the book changed since (a check question has no row stamps)', async () => {
+    const h = door(clash(rentTo)), ver = h.A.ver(), before = clone(h.book);
+    const w = await h.A.logSpend({ date: DAY, a: 500, acct: 'k7m2qa-f3n8p1x6wd-1', line: 'free', note: 'tea' });
+    ok(w.ok, JSON.stringify(w));
+    const mid = clone(h.book);
+    const r = await h.A.answerSync('Chosen', answerWith(RENT, 0), { ver });
+    eq([r.ok, r.why], [false, 'other']);
+    eq(canonJ(without(h.book, 'journal')), canonJ(without(mid, 'journal')), 'nothing written');
+    ok(before, 'made');
+    const r2 = await h.A.answerSync('Chosen', answerWith(RENT, 0), { ver: h.A.ver() });
+    ok(r2.ok, 'a fresh mark is taken: ' + JSON.stringify(r2));
+  });
   await t('an answer the engine refuses is not saved, in plain words', async () => {
     const h = door(clash(rentTo)), before = clone(h.book);
     h.A2 = A3.make({ book: () => h.book, put: async x => { h.book = x; return true; }, told: () => DAY + 'T12:00:00.000+09:00',
