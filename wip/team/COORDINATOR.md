@@ -4,7 +4,8 @@ The coordinator is the one session Mako talks to. It records his decisions in DE
 
 
 ## CURRENT STATE
-- COORDINATOR 16 is session_01BFpKEXBhaZ6NZ92Lntxb2A (Opus), took over 26 Nov 08:20 JST. Its keep-going task: trig_01YatA5o6jCLmoL1VbdnbUGo (:44). MAIN 21, LANE E, LANE G and the watch told the new id; coordinator 15 asked once to switch off trig_01YNLycNQNyBxR9EmFprj4xw and close.
+- COORDINATOR 16 is session_01BFpKEXBhaZ6NZ92Lntxb2A (Opus), took over 26 Nov 08:20 JST. Its keep-going task: trig_01YatA5o6jCLmoL1VbdnbUGo (:44). MAIN 21, LANE E, LANE G and the watch told the new id; coordinator 15 switched off trig_01YNLycNQNyBxR9EmFprj4xw and close.
+- 26 Nov 08:25 JST: LANE E (265k) replaced by LANE H session_01BFpKEX35AmbptMfHTaRc9F (Opus; state page LANE_H_STATE.md on lane/e-state; rulings of coordinator 15 carried: slice 1b, loan check plan through qc-foundation, one review round for slices 2 to 5 on controls-5). LANE E switches off trig_01YUs9DHQaHbGbv9XdihHvo3 when LANE H has read the page. Watch told: MAIN 21, LANE G, LANE H.
 
 ### HANDOFF from coordinator 15 to coordinator 16 (26 Nov 08:20 JST). Read this block first; everything below it is history and still holds.
 - Models: Opus for everything until Sun 29 Nov 09:00 JST (weekly Fable limit used up); then put the five gate briefs back to fable (RUNBOOK 5 step 5). M87: use the whole allowance until then (RUNBOOK 4c-now).
