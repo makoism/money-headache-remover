@@ -454,6 +454,25 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const f = await K.fillNow(st, h.deps(FAKE.make([])));
     ok(!f.ok && h.book === null && /Which country/.test(f.text), f.text);
   });
+  /* [qc-assistant blocker 3; M17] "what does this screen do?": one table with a plain line for every screen and every
+     sheet, told to the assistant, and the open sheet's own name with each message */
+  await t('[M17] one table says what every screen and sheet is for; the open screen and sheet go with each message', async () => {
+    const want = ['home', 'plan', 'receipts', 'settings', 'check', 'stmt', 'reminders', 'setup', 'welcome',
+      'free', 'addLine', 'line', 'addBill', 'bill', 'pay', 'addGoal', 'goal', 'addCard', 'card', 'addLoan', 'loan', 'record'];
+    eq(Object.keys(K.SCREENS).sort(), want.slice().sort(), 'the rows');
+    for (const k of want) {
+      const row = K.SCREENS[k];
+      ok(row && row.name && row.does && row.does.split(' ').length >= 6, k + ' has a name and a plain line');
+      ok(K.SYSTEM.includes(row.name + ': ' + row.does), k + ' is in what the assistant is told');
+    }
+    const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
+    const sent = (screen, sheet) => { const b = K.request(state, 'what does this screen do?', [], { book: hp.book, today: hp.day, screen, sheet }); return b.messages[b.messages.length - 1].content[0].text; };
+    ok(sent('plan', { key: 'addCard', title: 'Add a card' }).includes('SCREEN: the person has Plan open, with the sheet "Add a card" on top. ' + K.SCREENS.addCard.does), sent('plan', { key: 'addCard', title: 'Add a card' }).split('\n').find(l => /^SCREEN/.test(l)));
+    /* a sheet named after the person's own record says what kind of sheet it is */
+    ok(sent('plan', { key: 'card', title: 'Card A' }).includes('with the sheet "Card A" (' + K.SCREENS.card.name + ') on top. ' + K.SCREENS.card.does), 'a card\'s own sheet');
+    ok(sent('home', null).includes('SCREEN: the person has Home open. ' + K.SCREENS.home.does), 'no sheet');
+    ok(!/SCREEN:/.test(sent(null, null)), 'no screen told, none said');
+  });
   await t('[C] a whole answer with "no fixed pay", everyday money skipped and no minimum can be filled', async () => {
     const h = page('2026-11-24'), st = edits(h, [['country', 'XX'], ['currency', 'USD'], ['banks', [{ name: 'Main bank', amount: '1234.56' }]], ['pays', [{ name: 'Work', every: 'none' }]], ['free', null], ['min', null]]);
     eq(K.draftCard(st.draft, h.day).need, []);

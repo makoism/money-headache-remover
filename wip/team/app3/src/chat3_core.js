@@ -136,6 +136,34 @@
     { n: 14, key: 'min', ask: 'Keep at least ___ in your bank? Skip it and there is no minimum.' },
     { n: 15, key: 'fill', ask: 'Show what you have (the draft), then ask: shall I fill in your Burrow? When they say yes, call fill_book.' },
   ];
+  /* [qc-assistant blocker 3; M17] ONE table: what every screen and every sheet is for, in one plain line each. The
+     assistant is told all of it (SYSTEM), and with each message which screen is open and which sheet is on top
+     (stateText). A new screen or sheet needs its row here: tests/chat3_core.test.js counts the rows and
+     tests/e3_fakeai_page.js opens each of Plan's sheets. These are words for a person too: the wording lint reads them. */
+  const SCREENS = {
+    home: { name: 'Home', does: 'Home shows what is safe to spend until your next pay, what each account holds today, what is due before pay, and your goals' },
+    plan: { name: 'Plan', does: 'Plan shows your pay and bills, Free to spend and your budget lines, goals, cards and loans. Tap a row to change it' },
+    receipts: { name: 'Receipts', does: 'Receipts is where you log money that came in, went out or moved between your accounts, and see what you logged. Tap a record to change or remove it' },
+    settings: { name: 'Settings', does: 'Settings holds the backup file, the cloud copy, the code word for the AI and the assistant\'s error log' },
+    check: { name: 'Check your bank', does: 'Check your bank is where you type what your bank and cards show today. The app compares each with what it expected and asks about the gap' },
+    stmt: { name: 'Add statements', does: 'Add statements reads a bank or card statement file and shows what it read before anything is added' },
+    reminders: { name: 'Reminders', does: 'Reminders shows the days your bills are due and when to check your bank, and can add them to your calendar' },
+    setup: { name: 'setup on the screens', does: 'Setup on the screens asks for your bank, pay, cards and bills in sections, and each section saves on its own' },
+    welcome: { name: 'the first screen', does: 'The first screen is where setup starts, by answering in the chat or on the screens' },
+    free: { name: 'Free to spend', does: 'Sets Free to spend, the money you keep for food and everyday things' },
+    addLine: { name: 'Add a line', does: 'Adds a budget line, a name and an amount, like Food or Transport' },
+    line: { name: 'A budget line\'s own sheet', does: 'Changes the line\'s name or amount, or ends the line' },
+    addBill: { name: 'Add a bill', does: 'Adds a bill: its name, amount, the day it is due and what it is paid from' },
+    bill: { name: 'A bill\'s own sheet', does: 'Changes the bill\'s name, amount or day from a date you choose, changes the next one only, or ends the bill' },
+    pay: { name: 'A pay\'s own sheet', does: 'Changes the pay\'s name, amount, day or how often it lands, from a date you choose' },
+    addGoal: { name: 'Add a goal', does: 'Adds a goal: its name, the goal amount, a target date and where the money is kept' },
+    goal: { name: 'A goal\'s own sheet', does: 'Sets money aside for the goal, takes money out of it, or changes its name, amount or date' },
+    addCard: { name: 'Add a card', does: 'Adds a card: its name, what is on it now, the day it is paid from your bank and the day its statement closes' },
+    card: { name: 'A card\'s own sheet', does: 'Changes the card\'s name, the day it is paid and the day its statement closes' },
+    addLoan: { name: 'Add a loan', does: 'Adds a loan: its name, what is still owed, the usual payment and the day it is paid' },
+    loan: { name: 'A loan\'s own sheet', does: 'Changes the loan\'s name, the day it is paid or the usual payment, or closes the loan' },
+    record: { name: 'A record\'s own sheet', does: 'Changes or removes one thing you logged on Receipts' },
+  };
   const SYSTEM = `You are the assistant inside The Burrow, a money app the person has open right now. You set it up with them by talking, and after that you answer questions and make changes for them.
 
 Numbers: the app works out every figure. FIGURES (and DRAFT before setup) come with every message and are exact for today. Quote them; never work out a total of your own. Amounts you send are plain numbers in the currency, no symbol, exactly as the person gave them.
@@ -158,13 +186,14 @@ Adding a bank: ask both of its questions in one message: is it new money or move
 
 A spend goes on the account they paid with. If they did not say and they have cards, ask once, naming them: card or bank? The answer is kept for the chat.
 
-SCREEN says which screen the person has open: "this screen" means that one.
+SCREEN says which screen the person has open, and the sheet on top of it when there is one: "this screen" means the sheet if there is one, else the screen. Say what it is for in the words below.
+WHAT EACH SCREEN AND SHEET IS FOR:
+${Object.keys(SCREENS).map(k => SCREENS[k].name + ': ' + SCREENS[k].does).join('\n')}
 WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line): a loan: Plan, Add a loan. A card's pay day or close day: Plan, tap the card. Change a goal or take money out of it: Plan, tap the goal. Change a spend: Receipts, tap it. Statements: Home, Add statements. Reminders: Reminders at the top. A backup or the cloud copy: Settings.`;
   /* [AI_JOIN_FIXES H4] a change it can't make says where it is on the screens (the same map as SYSTEM) */
   const WHERE = [[/loan/, 'Plan, Add a loan'], [/card/, 'Plan, tap the card'], [/goal|take_out/, 'Plan, tap the goal'], [/spend|receipt/, 'Receipts, tap it'],
     [/statement/, 'Home, Add statements'], [/remind/, 'Reminders at the top'], [/backup|cloud/, 'Settings']];
   const whereOf = what => { const w = WHERE.find(([re]) => re.test(what)); return w ? 'On the screens: ' + w[1] : 'Say where from WHERE ON THE SCREENS'; };
-  const SCREEN_NAMES = { home: 'Home', plan: 'Plan', receipts: 'Receipts', settings: 'Settings', check: 'Check your bank', stmt: 'Add statements', reminders: 'Reminders', setup: 'setup on the screens', welcome: 'the first screen' };
 
   /* ---- the tools (BU2: no figures or draft read tool) ---- */
   const num = { type: 'number', description: 'A plain number in the currency, no symbol.' };
@@ -381,7 +410,10 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
   /* ---- what is sent ---- */
   function stateText(state, ctx) {
     const book = ctx.book, out = ['FIGURES (worked out by the app for today, exact)', figures(book, ctx.today).text];
-    if (ctx.screen && SCREEN_NAMES[ctx.screen]) out.push('', 'SCREEN: the person has ' + SCREEN_NAMES[ctx.screen] + ' open.');
+    if (ctx.screen && SCREENS[ctx.screen]) {
+      const sc = SCREENS[ctx.screen], sh = ctx.sheet && SCREENS[ctx.sheet.key], title = sh && clean(ctx.sheet.title || sh.name, 60);
+      out.push('', 'SCREEN: the person has ' + sc.name + ' open' + (sh ? `, with the sheet "${title}"${title !== sh.name ? ' (' + sh.name + ')' : ''} on top. ${sh.does}` : '. ' + sc.does));
+    }
     const pw = book && state.payWith && (book.accounts || []).find(x => x.id === state.payWith && live(x));
     if (pw) out.push('', 'They said they pay with ' + pw.name + ': a spend with no account named goes on it, unless they say otherwise.');
     if (!book) {
@@ -423,7 +455,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     const body = request(state, message, [], ctxOf(deps));
     return body.system + '\n\n' + body.messages.map(m => (m.role === 'user' ? 'YOU\n' : 'THE AI\n') + m.content.map(c => c.text || '').join('\n')).join('\n\n');
   }
-  const ctxOf = deps => ({ book: deps.book ? deps.book() : null, today: deps.today(), anon: deps.anon, invite: deps.invite, screen: deps.screen ? deps.screen() : null });
+  const ctxOf = deps => ({ book: deps.book ? deps.book() : null, today: deps.today(), anon: deps.anon, invite: deps.invite, screen: deps.screen ? deps.screen() : null, sheet: deps.sheet ? deps.sheet() : null });
 
   /* ---- the explain topics (help words where they exist; drafts for Mako's copy pass) ---- */
   const EXPLAIN = {
@@ -926,7 +958,7 @@ ${card.need.length && state.draft ? 'STILL NEEDED: ' + card.need.join(' ') : ''}
   }
 
   const api = {
-    ROUNDS, TURNS, KEEP, MAX_TOKENS, MAX_STEPS, TIER: 'default', EFFORT: 'low', GUIDE, TOOLS, SYSTEM,
+    ROUNDS, TURNS, KEEP, MAX_TOKENS, MAX_STEPS, TIER: 'default', EFFORT: 'low', GUIDE, TOOLS, SYSTEM, SCREENS,
     fresh: () => ({ v: 1, turns: [], draft: null, fill: null, seq: 0 }),
     turn, confirm, notNow, undo, startOver, draftEdit,
     /* [AI_JOIN_FIXES H2] what the first screen says before anything is typed: the welcome, and the first question */

@@ -79,7 +79,7 @@ function chat3Deps() {
     send: chat3Send, today: () => E3.today(), told: () => E3.told(), newId: () => E3.newId(),
     book: () => E3.book, mode: () => E3.mode, door: E3.book ? ACT3 : null,
     start: b => E3.fill(b), discard: () => E3.discard(),
-    anon: CHAT3.anon || '', invite: chat3Invite(), screen: chat3Screen,
+    anon: CHAT3.anon || '', invite: chat3Invite(), screen: chat3Screen, sheet: chat3Sheet,
   };
 }
 /* [AI_JOIN_FIXES H4] which screen is open, for the AI: a sheet over the page first, else the tab */
@@ -92,6 +92,14 @@ function chat3Screen() {
   if (open('#a3Check')) return 'check';
   const t = $('.a3-tabs [aria-current=page]');
   return t ? t.dataset.tab : 'home';
+}
+/* [qc-assistant blocker 3] the sheet on top of that screen, by its row in CHAT3C.SCREENS, with the title it shows */
+function chat3Sheet() {
+  if (!E3.book) return null;
+  if (PL3.form && PL3.form.sheet && $('#a3Plan [data-card=plan-form]') && !$('#a3Plan').hidden) return { key: PL3.form.sheet, title: PL3.form.title };
+  const rc = $('#rcCancel');
+  if (rc && !rc.closest('[hidden]')) return { key: 'record', title: 'Change this' };
+  return null;
 }
 /* is the site's AI there (/api/health says ai: true)? Asked once a page open; never from a plain file with no relay */
 async function chat3Route() {
@@ -404,4 +412,4 @@ async function startChat3() {
   E3.onSaved(() => { if (heldWas !== E3.held()) { heldWas = E3.held(); if (E3.book) renderChat3(); } });
   if (!E3.book) renderHome3(); else renderChat3();
 }
-root3.BurrowApp3.chat = { CHAT3, redraw: chat3Redraw, save: chat3Save };   // for the page tests (start3.js)
+root3.BurrowApp3.chat = { CHAT3, CHAT3C, redraw: chat3Redraw, save: chat3Save };   // for the page tests (start3.js)
