@@ -69,6 +69,8 @@ function openSet3() {
       <div id="a3BkKept"></div></div>`;
   const cloud = typeof cloudCard3 === 'function' ? cloudCard3() : '';
   const word = '<div class="a3-card" data-card="word" id="a3SetWord"></div>';
+  /* [E4, M14] Undo after a reload: the latest changes from the saved journal, each with its own Undo */
+  const changes = '<div class="a3-card" data-card="changes" id="a3SetChanges"></div>';
   /* [AI_JOIN_FIXES J] the assistant's error log, on this device only */
   const ailog = `<div class="a3-card" data-card="ailog"><h2>The assistant's error log</h2>
       <p class="a3-sub">When a message to the assistant fails, this device notes when, what kind of message, the error and the server's answer. Never your words or any money figures. Copy it to send to whoever helps you</p>
@@ -76,7 +78,7 @@ function openSet3() {
   sheet.innerHTML = `<div class="a3-sheet-in">
       <h1 id="a3SetT">Settings</h1>
       <p class="a3-warn" id="a3SetMsg" role="status" hidden></p>
-      ${money}${tryBook ? tryNote : `${device}${backup}${cloud}`}${word}${tryBook ? '' : ailog}
+      ${money}${tryBook ? tryNote : `${changes}${device}${backup}${cloud}`}${word}${tryBook ? '' : ailog}
       <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3SetClose">Done</button></div></div>`;
   /* over whatever shows (the panels and the tab bar), put back as they were on Done */
   SET3.was = [...document.querySelectorAll('[data-panel], .a3-tabs, #a3Check, #a3StmtBar, #a3Stmt')].map(el => [el, el.hidden]);
@@ -95,6 +97,7 @@ function openSet3() {
       MSG3.post({ kind: 'undo', key: 'act3', text: "The assistant's error log is cleared", action: { label: 'Undo', run: async () => { await E3.rec('aiLog', was); MSG3.post({ kind: 'toast', key: 'act3', text: 'Undone' }); } } });
     });
     paintSpace3();
+    paintChanges3();
     $('#a3Persist').addEventListener('click', async () => { await BurrowPersist.askToKeep(); paintSpace3(); });
     $('#a3BkLock').addEventListener('change', e => { $('#a3BkCodeF').hidden = !e.target.checked; if (e.target.checked) $('#a3BkCode').focus(); });
     $('#a3BkSave').addEventListener('click', saveBackup3);
@@ -105,6 +108,26 @@ function openSet3() {
   }
   $('#a3SetT').focus && $('#a3SetT').setAttribute('tabindex', '-1');
   $('#a3SetT').focus();
+}
+/* [E4, M14] Recent changes: the latest 10 steps in the saved journal that are not undone, newest first, each named by
+   the words its Undo bar showed, with when, and its own Undo through the one door (ACT3.undo). An Undo that a later
+   change blocks says so and changes nothing */
+const SET_CHANGES_N3 = 10;
+function paintChanges3() {
+  const host = $('#a3SetChanges'); if (!host) return;
+  const list = ((E3.book && E3.book.journal) || []).filter(j => j && j.id && !j.undone).slice(-SET_CHANGES_N3).reverse();
+  /* when, on this device's clock: the step's day (as the app counts days) and the time it was made */
+  const when = j => { const t = new Date(j.moment), d = j.day || E3.today(), hm = isNaN(t) ? '' : String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0'); return (d === E3.today() ? 'today' : day3(d, E3.today().slice(0, 4))) + (hm ? ' at ' + hm : ''); };
+  /* its Undo bar's words, the first sentence only */
+  const words = j => String(j.words || (/\s/.test(j.label || '') ? j.label : 'A change')).split('. ')[0];
+  host.innerHTML = `<h2>Recent changes</h2><p class="a3-sub">Undo any of these, even after the app was closed. If something changed it since, undo that first</p>`
+    + (list.length ? `<ul class="a3-rows" data-changes>${list.map(j => `<li><span>${esc3(words(j))}<br><span class="when">${esc3(when(j))}</span></span><button type="button" class="a3-btn" data-undoj="${esc3(j.id)}">Undo</button></li>`).join('')}</ul>`
+      : '<p class="a3-sub">No changes yet</p>');
+  host.querySelectorAll('[data-undoj]').forEach(b => b.addEventListener('click', async () => {
+    const r = await ACT3.undo(b.dataset.undoj);
+    if (!r.ok) setMsg3(r.text, true); else setMsg3('Undone: ' + words(((E3.book && E3.book.journal) || []).find(j => j && j.id === b.dataset.undoj) || {}));
+    paintChanges3();
+  }));
 }
 function closeSet3() {
   SET3.open = false; SET3.restore = null; SET3.dropped = null;   // a dropped copy is held for Undo only while Settings is open
@@ -284,6 +307,7 @@ E3.onSaved(() => {
   const m = $('#a3Set [data-card=money]'), save = $('#a3BkSave');
   if (m) m.innerHTML = setMoney3();
   if (save) save.disabled = !E3.book;
+  paintChanges3();   // [E4] the list follows a change saved while Settings is open (another tab, the cloud copy)
 });
 /* the header's Settings button and Escape, without touching the start file */
 document.addEventListener('click', e => { if (e.target.closest && e.target.closest('#a3SetGo')) openSet3(); });

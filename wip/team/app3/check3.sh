@@ -79,6 +79,7 @@ page|tests/e3_plan.js|e3_plan: ALL PASS||300|the Plan tab
 page|tests/e3_accounts.js|e3_accounts: ALL PASS||300|Plan > Accounts after setup (M13, M23): every bank, cash and e-wallet listed, Add an account (new money as it is, moved money as a move), rename, its own Keep at least, Undo, after a reload
 page|tests/e3_acctclose.js|e3_acctclose: ALL PASS||300|close, reopen and remove a bank, cash or e-wallet (M13, M6, M14): asks first, money moved or counted as spent, Closed list with Reopen, remove only one added by mistake, Undo, after a reload
 page|tests/e3_cardclose.js|e3_cardclose: ALL PASS||300|cards and loans (M13, M27, M40): pay it off now (asks, worked example 286,000 - 54,000), close a card at zero, Closed list with Reopen, remove one added by mistake, a loan paid off and closed, Undo
+page|tests/e3_undoreload.js|e3_undoreload: ALL PASS||300|Undo after a reload for changes made on the screens (M14): Settings > Recent changes from the saved journal, named and timed, each with Undo; a change a later one touched is refused with words; after another reload it stays undone
 page|tests/e3_rhythms.js|e3_rhythms: ALL PASS||300|Plan names every rhythm: two days, weeks with the weekday, every few months, set months, once a year, once, the last working day, no fixed day (slice 6)
 page|tests/e3_names.js|e3_names: ALL PASS||300|one figure, one name on Home, Receipts and Plan (labels from screens/names.js)
 page|tests/e3_first.js|e3_first: ALL PASS||300|the ways out of the first screen and the made-up numbers
@@ -169,7 +170,7 @@ page_tests_for() {   # page_tests_for <changed path, relative to app3/>
     src/back3.js)             echo e3_back e3_undobar e3_checkin e3_plan e3_receipts e3_setupfix e3_stmt e3_remind e3_backup e3_tabs e3_stalesheet e3_cloudhold ;;
     src/stmt3*.js)            echo e3_stmt e3_stmt_once e3_walk4 e3_invite e3_chat ;;
     src/ask3*.js)             echo e3_chat e3_invite e3_chatwalk ;;   # ask3_core.js: the summary the assistant is sent
-    src/backup3.js|src/settings3.js) echo e3_backup e3_tabs e3_ailog e3_invite e3_restore e3_cloudhold ;;
+    src/backup3.js|src/settings3.js) echo e3_undoreload e3_backup e3_tabs e3_ailog e3_invite e3_restore e3_cloudhold ;;
     src/sw3.js|src/settings3_sw.js|sw3.js) echo e3_sw offline e3_install ;;
     src/cloud3*.js)           echo e3_cloudfirst e3_cloud e3_cloudbase e3_cloudtake e3_cloudsend e3_cloudhold e3_cloudwhich e3_cloudwhich2 e3_cloudstatus e3_restore ;;
     src/remind3*.js)          echo e3_remind ;;

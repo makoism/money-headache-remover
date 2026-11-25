@@ -289,7 +289,7 @@ function rcLook3(r) {
 }
 function rcRemove3() {
   const e = RC3.edit; if (!e) return;
-  sure3($('#rcSure'), `Remove ${money3(e.a, E3.curOf(e.acct))}, ${rcWhat3(e)}? Undo can bring it back until you reload`, 'Yes, remove it', rcRemoveGo3);
+  sure3($('#rcSure'), `Remove ${money3(e.a, E3.curOf(e.acct))}, ${rcWhat3(e)}? Undo brings it back, after a reload too from Recent changes in Settings`, 'Yes, remove it', rcRemoveGo3);
 }
 async function rcRemoveGo3() {
   const e = RC3.edit; if (!e) return;

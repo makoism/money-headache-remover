@@ -12,7 +12,7 @@
   /* PLAN3W exports that are not steps (they list what a pay change would ask about) */
   const HELPERS = ['linesEachPay', 'linesEachMonth'];
   /* writes that go through act3 without a PLAN3W step: the check-in writer, a statement import, setup's fill */
-  const OTHER_ACTIONS = ['checkIn', 'statementsAdded', 'fill'];
+  const OTHER_ACTIONS = ['checkIn', 'statementsAdded', 'fill', 'undo'];
   const ROWS = [
     { kind: 'account', list: 'accounts', types: ['bank', 'cash', 'ewallet', 'wallet'],
       add: { action: 'addAccount', screen: 'setup row; Plan > Accounts > Add an account', ai: 'add_account' },
@@ -79,7 +79,7 @@
       add: { action: 'fill', screen: 'setup screens, or the chat', no_ai_step: true },
       remove: { what: 'Undo the fill', action: 'fill', screen: 'the Undo band after setup' } },
     { kind: 'undo after a reload', note: 'the saved journal (BZ1)',
-      change: { what: 'Undo a change made on the screens after a reload', todo: 'E4' } },
+      change: { what: 'Undo a change made on the screens after a reload', action: 'undo', screen: 'Settings > Recent changes', no_ai_step: true, ai_todo: 'later: the assistant offers Undo on its own cards only' } },
   ];
   const api = { ROWS, DOOR_KINDS, HELPERS, OTHER_ACTIONS };
   if (typeof module === 'object' && module.exports) module.exports = api;
