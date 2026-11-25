@@ -12,7 +12,8 @@
    and the lines nobody names. A line nobody names fails, unless it is in KNOWN below with its reason (the failure is
    kept and counted, and written in tests/QCSCRIPTS_FOUND.md for the coordinator, who owns MAKO_SAYS and the briefs).
    This file and wording_lint.test.js's own M62 check aside, a file that only lists ids proves nothing: this file is
-   never counted. */
+   never counted.
+   MLINES_SAYS=<a copy of MAKO_SAYS.md> reads that copy instead (to prove the check on a planted line; never in check3). */
 'use strict';
 const fs = require('fs'), path = require('path');
 const ROOT = path.join(__dirname, '../../../..');
@@ -29,7 +30,6 @@ const KNOWN = {
   'M74 is named by a test, a brief or a scope file': G,
   'M75 is named by a test, a brief or a scope file': G,
   'M76 is named by a test, a brief or a scope file': G,
-  'M77 is named by a test, a brief or a scope file': G,
   'M78 is named by a test, a brief or a scope file': G,
   'M79 is named by a test, a brief or a scope file': G,
   'M80 is named by a test, a brief or a scope file': G,
@@ -51,7 +51,7 @@ const ck = (name, ok, extra) => {
 const lines = [];
 {
   let sec = null;
-  for (const l of rd('wip/team/MAKO_SAYS.md').split('\n')) {
+  for (const l of (process.env.MLINES_SAYS ? fs.readFileSync(process.env.MLINES_SAYS, 'utf8') : rd('wip/team/MAKO_SAYS.md')).split('\n')) {
     const h = l.match(/^## ([A-Z])\. /); if (h) sec = h[1];
     if (/^## Not settled/.test(l)) sec = null;
     const m = l.match(/^- (M\d+)\. (.*)$/); if (m) lines.push({ id: m[1], sec, text: m[2] });

@@ -36,3 +36,14 @@ foot of every screen, so it no longer scrolls away there.
 Not faults: no page error on any of the 36 places, and no network call at all with the cloud copy off, also when Ask
 is opened from every place. Served from a server, the page asks its own server once whether the AI is on
 (GET /api/health, nothing sent); that is allowed and counted apart.
+
+## tests/m_lines.test.js (every line of MAKO_SAYS.md is named by a test, a brief or a scope file)
+
+Not a fault in the app: a gap in the process, for the coordinator, who owns MAKO_SAYS.md and the briefs.
+
+- wip/team/MAKO_SAYS.md section G (how the team works with him), M70 to M76 and M78 to M82: no test, no reviewer brief
+  in .claude/agents and no scope file names them, and QC_COMMON gives no reviewer section G. CLAUDE.md and RESUME
+  carry these rules, but nothing checks them. M77 is named by engine/test/card_gap_lives.test.js.
+
+Also printed by the test, not counted as a fault: 19 lines are held only by a reviewer's section (a reviewer marks
+them on every build, no script checks them): M5 M8 M20 M25 M29 M34 M35 M39 M42 M43 M49 M50 M57 M58 M59 M64 M65 M66 M68.
