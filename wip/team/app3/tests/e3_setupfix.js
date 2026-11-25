@@ -390,5 +390,23 @@ async function openSetup(day) {
     ck('account removed: the card is paid from Second bank', !!card && acct(field(card.payFrom)) === 'Second bank', JSON.stringify(card && card.payFrom));
     await c.close();
   }
+  /* 8 (AI_JOIN_FIXES I1): two bills (or two cards) with no name: the words sit next to the rows, at that section's own
+     Save, not only at See my money; the section is not saved until each has its own name */
+  {
+    const { c, p } = await openSetup('2026-11-24');
+    await p.click('#s3AddBill'); await w(120); await p.click('#s3AddBill'); await w(120);
+    await typeIn(p, '[data-row=bill1] [data-f=amount]', '4800'); await typeIn(p, '[data-row=bill2] [data-f=amount]', '5200');
+    await saveSec(p, 'bills');
+    ck('I1: two bills with no name: said next to the second one at Save', (await errOf(p, 's3-bill2-n')) === 'There are two called Bill. Give each its own name', await errOf(p, 's3-bill2-n'));
+    ck('I1: its name box is focused, and the section is not saved', (await focused(p)) === 's3-bill2-n' && (await stateOf(p, 'bills')) !== 'saved', await focused(p));
+    await typeIn(p, '[data-row=bill2] [data-f=name]', 'Internet'); await w(400);   // the row's question words follow the name a moment after typing
+    await saveSec(p, 'bills');
+    ck('I1: named, it saves', (await stateOf(p, 'bills')) === 'saved', await errOf(p, 's3-bill2-n'));
+    await p.click('#s3AddCard'); await w(120); await p.click('#s3AddCard'); await w(120);
+    await typeIn(p, '[data-row=card1] [data-f=owed]', '1000'); await typeIn(p, '[data-row=card2] [data-f=owed]', '2000');
+    await saveSec(p, 'cards');
+    ck('I1: two cards with no name: said next to the second one at Save', (await errOf(p, 's3-card2-n')) === 'There are two called Card. Give each its own name', await errOf(p, 's3-card2-n'));
+    await c.close();
+  }
   await L.finish();
 })().catch(e => { console.log('FAIL crashed ' + e.stack); process.exit(1); });
