@@ -56,7 +56,6 @@ Close
 The assistant is off right now. You can still finish everything:
 
 Use any AI
-Send a file
 
 What you type, today's figures with the names of your accounts, bills and income, and the setup answers so far go to Claude, the AI made by Anthropic, through this page's own server. Your notes, shops and single spends are not sent unless you type them. The chat stays on this device.
 
