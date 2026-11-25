@@ -186,8 +186,11 @@ async function readBackup3(file, code) {
   SET3.restore = r.copy;
   const on = await cloudOn3(), n = (r.copy.events || []).filter(e => e && !e.gone).length, others = on && E3.book ? ' ' + OTHERS3 : '';
   const s = E3.book ? BACKUP3.since(r.copy, E3.book) : null;
+  /* [M7; qc-data-safety B2] records in the backup dated or told after today (a clock that was ahead): said before the yes */
+  const nAhead = typeof rcAhead3 === 'function' ? rcAhead3(r.copy).length : 0;
+  const aheadSay = nAhead ? ` ${nAhead === 1 ? '1 of them is' : nAhead + ' of them are'} dated after today. They do not count until their day, and Receipts lists them.` : '';
   const after = E3.book ? `<br>Anything you logged after this backup was made goes${on ? ', on every device' : ' from this device'}${s.n ? `: ${things3(s.n)} here now ${s.n === 1 ? 'is' : 'are'} not in it ${kinds3(s)}` : ''}. Put it back brings it back.` : '';
-  ask.innerHTML = `<p class="a3-warn" data-set="restoreask">${E3.book ? 'This replaces the money on this device with the backup. What is here now is kept, and Put it back brings it back.' : 'This puts the money from the backup on this device.'} The backup holds ${n} record${n === 1 ? '' : 's'}.${others}${after}</p>
+  ask.innerHTML = `<p class="a3-warn" data-set="restoreask">${E3.book ? 'This replaces the money on this device with the backup. What is here now is kept, and Put it back brings it back.' : 'This puts the money from the backup on this device.'} The backup holds ${n} record${n === 1 ? '' : 's'}.${aheadSay}${others}${after}</p>
     <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3BkGo">Restore it</button><button type="button" class="a3-btn" id="a3BkNo">Cancel</button></div>`;
   $('#a3BkGo').addEventListener('click', async () => {
     const ok = await restoreBook3(SET3.restore, 'Before a backup was restored');
