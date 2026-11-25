@@ -11017,10 +11017,31 @@ function nameOf3(k) {
   const v = k.versions.slice(-1)[0] || {};
   return v.name ? v.name : k.in ? `A setting (${k.of})` : k.of;
 }
+/* [M20] each kept version says what tells it apart, so a person can choose: its amount (the page's one formatter), its
+   days and name when those differ between the versions, and which device it came from (each record's own `by`) */
+function amountNow3(v) {
+  if (Array.isArray(v.steps) && v.steps.length) {
+    const today = E3.today(), on = v.steps.filter(x => x && (x.from == null || String(x.from) <= today));
+    const st = (on.length ? on : v.steps).slice(-1)[0];
+    return st && typeof st.amount === 'number' ? st.amount : null;
+  }
+  return typeof v.a === 'number' ? v.a : typeof v.amount === 'number' ? v.amount : null;
+}
+const daysOf3 = v => (Array.isArray(v.rules) && v.rules.length ? [].concat(...v.rules.map(r => (r && r.rule && r.rule.days) || [])) : []).join(', ');
+const fromWhom3 = v => (!v.by ? '' : v.by === deviceBy3() ? 'from this device' : 'from your other device');
 function versionLine3(k, v) {
   const at = v.at ? when3(Date.parse(v.at)) : 'an unknown time';
   if (k.of === 'copy') return `The copy saved ${at}, with ${(v.events || []).filter(e => e && !e.gone).length} records`;
-  return `${v.gone ? 'Removed' : v.name ? `"${v.name}"` : 'Changed'}, changed ${at}`;
+  const who = fromWhom3(v);
+  if (v.gone) return ['Removed', who, `changed ${at}`].filter(Boolean).join(', ');
+  const all = k.versions.filter(x => !x.gone);
+  const differ = f => new Set(all.map(f)).size > 1;
+  const amt = amountNow3(v), cur = v.cur || (v.acct ? E3.curOf(v.acct) : null);
+  const parts = [v.name ? `"${v.name}"` : 'Changed'];
+  if (amt !== null && cur) parts.push(money3(amt, cur));
+  if (daysOf3(v) && differ(daysOf3)) parts.push(`day ${daysOf3(v)}`);
+  if (v.acct && differ(x => x.acct || '')) parts.push(`from ${E3.nameOf(v.acct)}`);
+  return [parts.join(' '), who, `changed ${at}`].filter(Boolean).join(', ');
 }
 function paintQuestions3() {
   const box = $('#a3CloudQs'); if (!box || !E3.book) { if (box) box.innerHTML = ''; return; }
