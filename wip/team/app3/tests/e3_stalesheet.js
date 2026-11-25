@@ -13,7 +13,8 @@ const { actBook } = require('./e3_act_book.js');
 const DAY = '2026-11-25';
 const bk0 = actBook(), RENT = bk0.schedules.find(s => s.name === 'Rent').id;
 const saved = p => p.evaluate(async () => { const s = await BurrowStore.open(); try { return (await s.load()).copy; } finally { s.close(); } });
-const rent = bk => { const s = bk.schedules.find(x => x.id === RENT); return { name: s.name, amount: s.steps.filter(x => !x.gone).slice(-1)[0].amount }; };
+/* the amount in force: the step with the latest `from` (none is the first), never the order the steps are kept in */
+const rent = bk => { const s = bk.schedules.find(x => x.id === RENT), st = s.steps.filter(x => !x.gone).slice().sort((x, y) => (String(x.from || '') < String(y.from || '') ? -1 : String(x.from || '') > String(y.from || '') ? 1 : String(x.at || '') < String(y.at || '') ? -1 : 1)); return { name: s.name, amount: st[st.length - 1].amount, steps: JSON.stringify(s.steps.map(x => [x.from, x.amount])) }; };
 const until = async (f, ms) => { for (let i = 0; i < (ms || 6000) / 100; i++) { if (await f()) return true; await T.w(100); } return false; };
 async function retype(p, sel, text) { await p.bringToFront(); await p.$eval(sel, e => { e.value = ''; }); await p.tap(sel); await T.w(60); await p.keyboard.type(text); }
 (async () => {
@@ -43,16 +44,33 @@ async function retype(p, sel, text) { await p.bringToFront(); await p.$eval(sel,
     if (open2) { await retype(p2, '#pl-name', 'Rent flat'); await p2.tap('[data-plbtn="0"]'); await T.w(700); }
     let bk = await saved(p1);
     ck('tab 1\'s 76,000 is not written over', rent(bk).amount === 76000, JSON.stringify(rent(bk)));
-    const said = await p2.$eval('#a3Plan', e => e.textContent).catch(() => '');
-    ck('tab 2 is told the item changed somewhere else', !open2 || /changed (somewhere else|in another tab)/i.test(said), said.slice(0, 300));
+    const said = await p2.evaluate(() => document.body.innerText);
+    ck('(the sheet was still open in tab 2)', open2);
+    ck('tab 2 is told nothing was saved because it changed somewhere else', /Nothing was saved, because this changed somewhere else while it was open/.test(said), said.slice(-300));
+    ck('the sheet is closed: the list is shown as it is now', !(await p2.$('#pl-name')));
     ck('nothing was written by the refused save: the name is still Rent', rent(bk).name === 'Rent', rent(bk).name);
     ck('tab 2 now shows the amount as it is, 76,000', await until(async () => ((await p2.$eval('#pl-amount', e => e.value).catch(() => '')) || (await p2.$eval('#a3Plan', e => e.textContent))).replace(/[^\d]/g, '').includes('76000')));
     /* trying again from the fresh sheet saves the name and keeps 76,000 */
     if (!(await p2.$('#pl-name'))) { await p2.tap(`[data-bill="${RENT}"]`); await T.w(250); }
+    ck('the sheet opened again shows 76,000 in its box', (await p2.$eval('#pl-amount', e => e.value)).replace(/\D/g, '') === '76000', await p2.$eval('#pl-amount', e => e.value));
     await retype(p2, '#pl-name', 'Rent flat'); await p2.tap('[data-plbtn="0"]'); await T.w(700);
     bk = await saved(p1);
     ck('trying again saves the name and keeps 76,000', rent(bk).name === 'Rent flat' && rent(bk).amount === 76000, JSON.stringify(rent(bk)));
-    ck('no page errors', !errs.length && !errs2.length, errs.concat(errs2).join(' | '));
+
+    /* a receipt open for a change in tab 2 while tab 1 changes it (tab 2 hears it): the same rule */
+    for (const p of [p1, p2]) { await p.bringToFront(); await p.tap('[data-tab="receipts"]'); await T.w(250); }
+    await p1.bringToFront(); await p1.tap('#rcAmt'); await p1.keyboard.type('1200'); await p1.tap('#rcNote'); await p1.keyboard.type('coffee beans'); await p1.tap('#rcSave'); await T.w(500);
+    const coffee = (await saved(p1)).events.find(e => e.note === 'coffee beans').id;
+    await until(async () => !!(await p2.$(`#rcList [data-rc="${coffee}"]`)));
+    await p2.bringToFront(); await p2.tap(`#rcList [data-rc="${coffee}"]`); await T.w(250);
+    await p1.bringToFront(); await p1.tap(`#rcList [data-rc="${coffee}"]`); await T.w(250); await retype(p1, '#rcAmt', '1500'); await p1.tap('#rcSave'); await T.w(600);
+    await p2.bringToFront(); await retype(p2, '#rcNote', 'coffee'); await p2.tap('#rcSave'); await T.w(700);
+    let c = (await saved(p1)).events.find(e => e.id === coffee);
+    ck('receipt: tab 1\'s 1,500 is not written over by tab 2\'s open form', c.a === 1500 && c.note === 'coffee beans', JSON.stringify({ a: c.a, note: c.note }));
+    ck('receipt: tab 2 says nothing was saved', /Nothing was saved, because this changed somewhere else/.test(await p2.$eval('#rcErr', e => e.textContent)));
+    ck('receipt: what was typed stays in the box', await p2.$eval('#rcNote', e => e.value) === 'coffee');
+    ck('(no page errors)', !errs.length && !errs2.length, errs.concat(errs2).join(' | '));
+    ck('no page errors at the end', !errs.length && !errs2.length, errs.concat(errs2).join(' | '));
   } finally { await b.close(); fs.rmSync(prof, { recursive: true, force: true }); }
   T.done('e3_stalesheet');
 })().catch(e => { console.log('FAIL crashed ' + e.stack); process.exit(1); });

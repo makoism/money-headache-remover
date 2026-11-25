@@ -160,6 +160,10 @@ function drawPlan3() {
 function plForm3(title, fields, buttons, note) {
   const host = $('#a3Plan'), cur = E3.home();
   PL3.form = { title };
+  /* [STALE_SHEET_PLAN, M61] what this sheet saw when it opened: the door refuses a save on anything that changed since.
+     Refused that way (here or by the store for a tab that is behind), the sheet closes to the list as it is now */
+  const seen = ACT3.seen();
+  const elsewhere = res => { if (res.ok || res.why !== 'other') return false; if (typeof BACK3 === 'object') BACK3.forget(); plClose3(); MSG3.post({ kind: 'notice', key: 'a3', text: res.text }); return true; };
   const input = f => {
     const id = 'pl-' + f.key, v = f.value == null ? '' : f.value;
     if (f.kind === 'pick') return `<select class="a3-in a3-sel" id="${id}">${f.options.map(o => `<option value="${esc3(o.v)}"${o.v === v ? ' selected' : ''}>${esc3(o.name)}</option>`).join('')}</select>`;
@@ -189,7 +193,8 @@ function plForm3(title, fields, buttons, note) {
     const got = read(), err = $('#plErr');
     if (got.bad) { err.textContent = got.bad; got.el.focus(); return; }
     const b = buttons[Number(btn.dataset.plbtn)], [label, fn, undo] = b.step(got.vals);
-    const res = await ACT3.run(label, fn, { undo });
+    const res = await ACT3.run(label, fn, { undo, seen });
+    if (elsewhere(res)) return;
     const ask = $('#plAsk'); ask.hidden = true; ask.innerHTML = '';
     if (!res.ok) {
       err.textContent = res.text;
@@ -199,7 +204,8 @@ function plForm3(title, fields, buttons, note) {
         $('#plAnyway').addEventListener('click', async () => {
           const again = read();
           if (again.bad) { err.textContent = again.bad; again.el.focus(); return; }
-          const [l2, f2, u2] = b.anyway.step(again.vals), r2 = await ACT3.run(l2, f2, { undo: u2 });
+          const [l2, f2, u2] = b.anyway.step(again.vals), r2 = await ACT3.run(l2, f2, { undo: u2, seen });
+          if (elsewhere(r2)) return;
           if (!r2.ok) { err.textContent = r2.text; ask.hidden = true; ask.innerHTML = ''; return; }
           plClose3();
         });
