@@ -176,7 +176,7 @@ async function say(p, text) { await p.$eval('#a3ChatIn', (e, v) => { e.value = v
     await p.click('#a3Chat #a3ChatFile'); await T.w(100);
     ck('before a file: the whole file goes, with name, address, employer, account number; crop out My Number', /whole file goes to the AI, with your name, address, employer and account number/.test(await p.$eval('[data-privacy=upload]', e => e.textContent)) && /My Number/.test(await p.$eval('[data-privacy=upload]', e => e.textContent)));
     await p.setViewport({ width: 320, height: 700, isMobile: true, hasTouch: true }); await T.w(200);
-    ck('no sideways scroll at 320', await p.evaluate(() => document.documentElement.scrollWidth <= 320));
+    ck('no sideways scroll at 320', await p.evaluate(() => Math.max(document.documentElement.scrollWidth, document.getElementById('a3').scrollWidth) <= 320));
     /* the desktop check on a fresh page: leaving the phone size makes puppeteer reload the page, and a reload of the app with
        the file notice open (its file box) timed out once under load. The notice is closed and the size changed on a blank
        page, then the app opens at 1280 with the same book and chat kept on this device */

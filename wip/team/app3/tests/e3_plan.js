@@ -167,7 +167,7 @@ const view = bk => T.L.lookahead(bk, DAY);
   ck('every figure on the Plan tab is marked typed or worked out', audit.length === 0 && (await p.$$('#a3Plan [data-figure]')).length > 10, JSON.stringify(audit).slice(0, 300));
   await T.shot(p, 'plan_filled_' + DAY);
   await p.setViewport({ width: 320, height: 700, deviceScaleFactor: 1, isMobile: true, hasTouch: true }); await T.w(200);
-  ck('no sideways scroll at 320', await p.evaluate(() => document.documentElement.scrollWidth <= 320), await p.evaluate(() => document.documentElement.scrollWidth));
+  ck('no sideways scroll at 320', await p.evaluate(() => Math.max(document.documentElement.scrollWidth, document.getElementById('a3').scrollWidth) <= 320), await p.evaluate(() => Math.max(document.documentElement.scrollWidth, document.getElementById('a3').scrollWidth)));
   await T.shot(p, 'plan_320_' + DAY);
   await p.setViewport({ width: 390, height: 844, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
 

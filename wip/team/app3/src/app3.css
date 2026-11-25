@@ -57,8 +57,16 @@ body:not(.a3-has-chat) .a3-try { margin-top: 6px; }
 .a3-field { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
 .a3-field label { font-weight: 600; }
 .a3-err { color: var(--bad); font-size: var(--t-sm); margin: 4px 0 0; min-height: 1em; }
+/* the one message band (screens/messages.js): its own slot under the scrolling area at every size, on every screen and
+   sheet, so "Logged ... Undo" is where the person is however far down they are, and it covers nothing (qc-layout
+   blocker 2, M14; lesson 2 "messages covering buttons"). The page is a column: #a3 scrolls, then the band, then the
+   assistant's bar (below the wide screen; on a wide screen the assistant is the column on the right) */
+body { height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+/* position: relative keeps what is placed inside the scrolling area (a sticky row, a hidden file box) inside it: without it the
+   document itself was 74 px taller than a phone on the first screen and could slide under the header */
+body > .a3 { position: relative; flex: 1 1 auto; min-height: 0; overflow-y: auto; scroll-padding-top: 72px; width: 100%; max-width: none; margin: 0; padding: 16px max(16px, calc((100% - 608px) / 2)) 24px; }
+.a3-msg { flex: none; width: 100%; max-width: 640px; margin: 0 auto; padding: 4px 16px; }
 .a3-msg:empty { display: none; }
-.a3-msg .burrow-msg { background: var(--acc-tint2); color: var(--ink); border-radius: var(--r-ctl); padding: 10px 14px; font-size: var(--t-sm); }
 .a3-later { font-size: var(--t-sm); color: var(--ink2); margin: 0; }
 @media (max-width: 360px) { .a3-tick { grid-template-columns: 28px 1fr; } .a3-tick .a3-in { grid-column: 2; } }
 /* the tab bar and Receipts (receipts lane) */
@@ -104,7 +112,7 @@ html { scroll-padding-top: 72px; }
 .a3-stmt-rows label { display: flex; gap: 10px; align-items: flex-start; }
 .a3-stmt-rows li[data-status=repeat] { opacity: .6; }
 .a3-tick2 { grid-template-columns: 28px 1fr auto; }
-details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
+details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 44px; }
 .a3-tick2 > span:not(.amt) { display: flex; flex-direction: column; }
 /* Plan (plan lane) */
 #a3Plan { display: flex; flex-direction: column; gap: var(--gap-card); }
@@ -183,11 +191,9 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
 .a3-vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .a3-chat-lines { margin: 4px 0 0; padding-left: 18px; font-size: var(--t-sm); }
 .a3-chat-figs li { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; }
-/* below the wide screen the page is a column: the page scrolls on its own above the bar, so the bar never sits on top of
-   anything (as the message band, screens/messages.js BAND_CSS) */
+/* below the wide screen the bar is the last slot of the page's column (the body rule beside .a3-msg): the page scrolls
+   on its own above it, so the bar never sits on top of anything */
 @media (max-width: 999px) {
-  body.a3-has-chat { height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
-  body.a3-has-chat .a3 { flex: 1 1 auto; min-height: 0; overflow-y: auto; scroll-padding-top: 72px; width: 100%; max-width: none; margin: 0; padding: 16px max(16px, calc((100% - 608px) / 2)) 24px; }
   body.a3-has-chat .a3-chat { position: static; flex: none; }
 }
 @media (min-width: 1000px) {
@@ -198,9 +204,32 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
 }
 .a3-chat-check { color: var(--warn); font-size: var(--t-cap); }
 .a3-word { margin-bottom: 14px; }   /* the code word box above the question or the files (stmt3_ai.js) */
-/* [item 14] setup: each section's Save with its state beside it; the message band (Saved, Undo) stays in sight under
-   the tabs while setup is open, and a box focused for an answer is not hidden under it */
+/* [item 14] setup: each section's Save with its state beside it (the message band stays in sight on every screen:
+   the one .a3-msg rule above) */
 .a3-secsave { align-items: center; }
 .a3-secsave [data-saved] { margin: 0; }
-.a3-setup-open .a3-msg { position: sticky; top: calc(var(--btn-h) + 17px); z-index: 2; background: var(--bg); padding: 4px 0; }
-html:has(.a3-setup-open) { scroll-padding-top: 150px; }
+
+/* ---- layout rules that hold on every screen (qc-layout candidate 2, blockers 3 to 6; tests/e3_layout.js; lesson 2: one
+   rule for every name, every figure, every drop-down and every thing to tap, never one screen at a time) ---- */
+/* a long unbroken word wraps inside its card; a row's amount keeps together and moves under the name when both do not fit;
+   a figure wider than the card itself breaks rather than push the page sideways */
+.a3-card, .a3-chat-body, .a3-sheet-in { overflow-wrap: anywhere; }
+.a3-rows li { flex-wrap: wrap; }
+.a3-rows li > * { min-width: 0; max-width: 100%; }
+.a3-rows li > :first-child:not(:only-child) { flex: 1 1 9ch; }
+.a3-rows .amt { white-space: normal; overflow-wrap: break-word; margin-left: auto; text-align: right; }
+/* a drop-down is never cut: it may take the whole row, and its words go onto a second line before they are cut */
+select.a3-in, .a3-sel { max-width: 100%; height: auto; white-space: normal; padding-top: 8px; padding-bottom: 8px; }
+/* where the browser can draw a drop-down's own box as ordinary text (Chrome 135 and later, Mako's phone), its words wrap
+   onto a second line; an older browser skips this line and keeps its own box */
+select.a3-in, .a3-sel { appearance: base-select; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+details summary { display: flex; align-items: center; }
+/* the "?" help mark: the circle stays small, the place to tap is 44 by 44 */
+.burrow-help { width: 44px; height: 44px; margin: -8px; background: radial-gradient(circle closest-side, var(--track) 14px, transparent 14.5px); }
+.burrow-help[aria-expanded="true"] { background: radial-gradient(circle closest-side, var(--accent) 14px, transparent 14.5px); color: var(--on-accent); }
+details summary { min-height: 44px; }
+.a3-rem-go { flex-wrap: wrap; }
+/* a date box always shows its whole date: it has a least width, and a field that sits in a tick row (Check your bank's
+   "Landed on") takes the row's full width instead of the tick's narrow column (qc-layout blocker 1) */
+.a3-in[type="date"] { min-width: min(100%, 10.5em); }
+.a3-tick > .a3-field { grid-column: 1 / -1; }

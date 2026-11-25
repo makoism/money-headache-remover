@@ -84,6 +84,7 @@ page|tests/e3_setupfix.js|e3_setupfix: ALL PASS||300|setup fixes from Mako's fir
 page|tests/e3_overdrawn.js|e3_overdrawn: ALL PASS||300|a bank below zero typed at setup and at Check your bank, the amber line on Home, a reload (M47)
 page|tests/e3_back.js|e3_back: ALL PASS||300|the phone's back button on every sheet, form and setup: it closes the top one, the app stays, typing is kept (K34, K35)
 page|tests/e3_undobar.js|e3_undobar: ALL PASS||300|the Undo bar never sits over a sheet or form opened after it, and is back when that closes in time (K37)
+page|tests/e3_band.js|e3_band: ALL PASS||300|the message band and its Undo are on screen where the person is, at 390, 320, 1300 and with the keyboard up, never over the button just pressed (qc-layout blocker 2, M14)
 page|tests/e3_paytoday.js|e3_paytoday: ALL PASS||300|setup on a day the pay lands asks whether it is already in the bank figure (BV2.13; setup3 through answers3)
 page|tests/e3_fakeai_page.js|e3_fakeai_page: ALL PASS||300|reviewers' way to the assistant: openWithFakeAI on a plain copy (fake_ai_page.js)
 page|tests/e3_chatwalk.js|e3_chatwalk: ALL PASS||600|the setup chat walked through the real page with the fake model: Mako's shape to safe to spend 201,400 and Main bank 286,000 on 24 Nov, Undo the fill, a reload, one spend by chat and its Undo (AI first, slice 1 gate)
@@ -123,6 +124,7 @@ page|tests/e3_remind.js|e3_remind: ALL PASS||300|Reminders on the page (check-in
 page|tests/e3_cloud.js|e3_cloud: ALL PASS||300|the cloud copy, two devices through the page (local fake vault)
 page|tests/e3_restore.js|e3_restore: ALL PASS||300|a backup restored with the cloud copy on reaches the other device, and so does Put it back; Put it back and Drop it ask first (local fake vault)
 page|tests/e3_sw.js|e3_sw: ALL PASS||300|the service worker (precache, offline, 3 s timeout, a new build)
+page|tests/e3_layout.js|e3_layout: ALL PASS||900|the layout at 320, 390, 412 and 1300 wide on a stress book (60-letter names, a 28-letter word, 999,999,999.99) and a new device: no sideways scroll, nothing off its card, no cut drop-down, no narrow date box, nothing to tap under 44 (qc-layout blockers 1, 3 to 6)
 page|tests/e3_boxwalk.js|e3_boxwalk: ALL PASS||600|a walker for every box and sheet (QC_ROLES scripts b): left empty, a wrong value, a plain message, nothing saved, a way out, then every box right saves; its KNOWN faults are in tests/QCSCRIPTS_FOUND.md
 page|tests/e3_always.js|e3_always: ALL PASS||600|on every screen and sheet (QC_ROLES scripts c): Ask one tap away, no page errors, and no network calls with the cloud copy off and the assistant not used; its KNOWN faults are in tests/QCSCRIPTS_FOUND.md
 EOF
@@ -134,7 +136,7 @@ SLOW="e3_walk e3_life_b e3_life_d e3_life_a e3_life_c e3_paychange e3_life_a2 e3
 page_tests_for() {   # page_tests_for <changed path, relative to app3/>
   case "$1" in
     tests/lib3.js|src/e3.js|src/money3.js|src/act3.js|src/shell.html|src/app3.css|build3.sh|../screens/*|../store/*|fixtures/*)
-                              echo e3_try e3_home e3_checkin e3_receipts e3_plan e3_panels e3_amounts e3_names ;;
+                              echo e3_try e3_home e3_checkin e3_receipts e3_plan e3_panels e3_amounts e3_names e3_band e3_undobar ;;
     ../engine/*)              echo e3_try e3_home e3_checkin e3_receipts e3_plan e3_panels e3_amounts e3_names e3_cardgap ;;
     tests/lives3.js)          echo e3_life_a e3_life_a2 e3_life_b e3_life_c e3_life_d ;;
     tests/e3_act_book.js)     echo e3_home e3_checkin ;;
