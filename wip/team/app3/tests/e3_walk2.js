@@ -1,7 +1,11 @@
 #!/usr/bin/env node
 /* Walk 2 fixes (DECISIONS_ROUND2 BI3, BI4), made-up yen.
    BI3: setup on 24 Nov asks, only for a bill due between the last pay and the setup day, whether it left the bank,
-   naming its own day: "Did the Phone of 20 Nov leave your bank?" (QC F3). Phone (due 20 Nov) not gone yet: safe to spend is 196,600, not 201,400.
+   naming its own day: "Did the Phone of 20 Nov leave your bank?" (QC F3). Phone (due 20 Nov) not gone yet: safe to spend is 119,600, not 124,400.
+   Worked by hand: no play amount is typed (the everyday box is left blank), so everything on the cards comes off now
+   (M90, R1). 286,000 - Power 7,400 (Thu 26 Nov) - Rent 72,000 and Internet 5,200 (Fri 27 Nov) - Phone 4,800 (still
+   to go) - Card A 54,000 - Card B 23,000 = 119,600. Before the rule the cards were paid on 10 and 11 Dec, after the pay
+   of Thu 10 Dec, so it was 196,600 (and 201,400 with Phone gone).
    BI4a: Home lists what may still go through: on 28 Nov Rent and Internet by name, on 11 Dec the late side job.
    BI4b: a late or not seen pay is named by the day it lands (after the weekend rule), not its unmoved due day: with
    pay moved to the working day before, the January pay lands Fri 8 Jan, and on 13 Jan Home says "due 8 Jan". */
@@ -42,7 +46,9 @@ const typeIn = async (p, sel, v) => { await p.click(sel, { clickCount: 3 }); awa
     await T.shot(p, 'setup_bi3_2026-11-24');
     await finishSetup3(p); await T.w(600);
     const f = await T.figs(p), safe = f.filter(x => x.fig === 'safe')[0];
-    ck('with Phone still to go, safe to spend is 196,600', safe && safe.amt === 196600, JSON.stringify(safe));
+    // old 196,600; now 119,600 because no play amount is set, so Card A 54,000 and Card B 23,000 come off now (R1):
+    // 286,000 - 7,400 - 72,000 - 5,200 - 4,800 (Phone, still to go) - 54,000 - 23,000 = 119,600
+    ck('with Phone still to go, safe to spend is 119,600', safe && safe.amt === 119600, JSON.stringify(safe));
     const why = f.filter(x => x.fig === 'why')[0];
     ck('and its sum names the phone bill', why && /Phone 20 Nov/.test(why.text), why && why.text);
     ck('no page errors (BI3)', errs.length === 0, errs.join(' | '));
