@@ -1,4 +1,4 @@
-DRAFT by MAIN 17, 25 Nov 2026 17:00 JST, from candidate 2's scope. The coordinator owns this file and corrects it.
+Draft by MAIN 17, 25 Nov 2026 17:00 JST. Checked and corrected by coordinator 13, 25 Nov 20:00 JST. The coordinator owns this file; it is checked once more at the full check, when the TO CONFIRM lines are settled.
 Scope for the AI-first candidate, built from lane/ai-join (hash filled in at the full check).
 Lines of MAKO_SAYS.md this build leaves for later on purpose. The same list goes to Mako with the candidate.
 
@@ -19,3 +19,10 @@ M7 M12 (two figures) Home still shows one headline figure. The everyday money le
 M10 M52          A picture on Home: waits for Mako and the art.
 M21              iPhone browser not tested: the WebKit download is blocked by the environment's network rules.
 TO CONFIRM AT THE FULL CHECK (in or out, by what is merged): the second phone seeing a spend without "Send now" (M67, lane/cloudtake); the six layout blockers (lane/layoutfix); restore from a backup (M19, lane/restore).
+
+KNOWN FAULTS in this build (a reviewer that finds one of these marks it KNOWN, not a new blocker; each goes to Mako in one plain sentence):
+M38 (no fixed pay)   A life with no fixed pay is built, but its month rule is being corrected on a side branch (each month charged the amount in force on its first day; a plan line holds what is left this month, never below zero). Until that lands, figures for a person with no fixed pay can be off in a month where a plan amount changed. Does not touch Mako's own shape (fixed pay on the 10th). Next candidate.
+M36 M51 (plan change) A plan amount changed partway through a month: the Plan screen says the change counts from today, the engine counts it from the 1st. A truth fault, not a taste question; its own small plan goes through qc-foundation. Can touch Mako's own money if he changes a plan amount mid-period.
+M67 M20 (two devices) Only if lane/cloudtake is NOT merged at the full check: with cloud copy on two devices there is a rare overwrite, and the second phone sees a spend only after "Send now". Also on the live build. Mako is told to save a backup file after each session if he uses two devices with real numbers.
+M6                   Change then Undo, asking first only for removes, changes over safe to spend, and amounts the person never typed: built this way, not yet confirmed by Mako (not settled 1). Not a fault; do not raise it.
+
