@@ -3274,6 +3274,14 @@ details summary { min-height: 44px; }
         lines: (planLeft.lines || []).map(l => ({ id: l.src.id, name: l.name, acct: l.acct, per: l.per, amount: l.amount, left: l.left, counts: l.counts, spent: l.spent, over: Math.max(0, -l.left) })),
         free: planLeft.free ? { acct: planLeft.free.acct, per: planLeft.free.per, amount: planLeft.free.amount, left: planLeft.free.left, counts: planLeft.free.counts } : null };
     } else res.period = null;   // [B4] no fixed pay: no periods
+    // [F2, qc-foundation on the month rule build, 26 Nov] no fixed pay: this calendar month's lines and Free to spend,
+    // shaped like the period's, so the assistant and the screens read the engine's own figures; null with periods
+    if (!periodStream) {
+      const [my, mm] = ymOf(today);
+      res.month = { start: dayStr(dayIn(my, mm, 1)), end: dayStr(dayIn(my, mm + 1, 1) - 1),
+        lines: (planLeft.lines || []).map(l => ({ id: l.src.id, name: l.name, acct: l.acct, per: l.per, amount: l.amount, left: l.left, counts: l.counts, spent: l.spent, over: Math.max(0, -l.left) })),
+        free: planLeft.free ? { acct: planLeft.free.acct, per: planLeft.free.per, amount: planLeft.free.amount, left: planLeft.free.left, counts: planLeft.free.counts } : null };
+    } else res.month = null;
     // [periods.js] opts.periods: every period gone by, oldest first, each counted only from what is dated inside it, with
     // everything heard of by the day asked (a spend logged late, a check-in on pay day whose stretch reaches back)
     if (opts.periods && periodStream) {
@@ -13169,10 +13177,11 @@ function stmt3Bar() {
     if (cap) out.push(`Why safe to spend is ${m(r.safeToSpend.headline)}: ${SM.sumLine(cap, r.safeToSpend.headline, home)}`);
     const shA = sh && r.accounts[sh.account] && r.accounts[sh.account].real;
     if (shA) out.push(`How the short amount is worked out: ${SM.sumLine(shA.whyParts, shA.headroom, r.accounts[sh.account].currency)}`);
-    const lines = (p && p.lines) || [];
+    const pm = p || r.month, perW = p ? 'pay period' : 'month';   // [F2] no fixed pay: this month's lines, from the engine
+    const lines = (pm && pm.lines) || [];
     if (lines.length) {
       // [QC F5, B2] the amount that counts this period, the full amount a period beside it only when they differ
-      out.push('Budget lines this pay period (ref | name | amount | left):\n' + lines.map((l, i) => { const ref = 'L' + (i + 1); refs[ref] = l.id; return `${ref} | ${l.name} | ${m(l.counts)}${l.counts !== l.amount ? ` (part of ${m(l.amount)} a period, for the days left)` : ''} | ${m(l.left)} left`; }).join('\n'));
+      out.push(`Budget lines this ${perW} (ref | name | amount | left):\n` + lines.map((l, i) => { const ref = 'L' + (i + 1); refs[ref] = l.id; return `${ref} | ${l.name} | ${m(l.counts)}${l.counts !== l.amount ? ` (part of ${m(l.amount)} a ${p ? 'period' : 'month'}, for the days left)` : ''} | ${m(l.left)} left`; }).join('\n'));
     } else out.push('Budget lines: none yet.');
     out.push(p && p.free ? `Free to spend this pay period: ${m(p.free.counts)}${p.free.counts !== p.free.amount ? ` (part of ${m(p.free.amount)} a period, for the days left)` : ''}, ${m(p.free.left)} left.` : 'Free to spend: not set yet.');
     const goals = (book.places || []).filter(g => live(g) && g.kind === 'goal');
@@ -13234,7 +13243,7 @@ Actions:
     const refOf = (v, letter) => (typeof v === 'string' && v.charAt(0) === letter && refs[v] ? refs[v] : null);
     const amountOf = (v, cur, zero) => { if (typeof v !== 'number' && typeof v !== 'string') return null; const p = SM.parse(String(v), cur || home); return p.ok && (zero ? p.minor >= 0 : p.minor > 0) ? p.minor : null; };
     const acctName = id => ((book.accounts || []).find(a => a && a.id === id) || {}).name;
-    const lineOf = id => ((r.period && r.period.lines) || []).find(l => l.id === id);
+    const lineOf = id => (((r.period || r.month) || {}).lines || []).find(l => l.id === id);
     const mainAcct = (G.fieldValue((book.home || {}).main) || {}).acct;
     for (const a of list) {
       const what = a && typeof a === 'object' ? String(a.do || '') : '';
@@ -13253,11 +13262,11 @@ Actions:
       } else if (what === 'change_line') {
         const id = refOf(a.line, 'L'), l = id && lineOf(id), amt = amountOf(a.amount, home, true), when = WHEN[a.when] ? a.when : 'now';
         if (!l || amt == null) { dropped.push('a change to a line I could not read'); continue; }
-        steps.push({ kind: 'changeLine', ref: a.line, args: [id, { amount: amt, when }], text: `${l.name}: ${m(l.amount)} to ${m(amt)} each pay period, ${WHEN[when]}` });
+        steps.push({ kind: 'changeLine', ref: a.line, args: [id, { amount: amt, when }], text: `${l.name}: ${m(l.amount)} to ${m(amt)} ${r.period === null ? 'each month' : 'each pay period'}, ${WHEN[when]}` });
       } else if (what === 'set_free') {
-        const amt = amountOf(a.amount, home, true), when = WHEN[a.when] ? a.when : 'now', f = r.period && r.period.free;
+        const amt = amountOf(a.amount, home, true), when = WHEN[a.when] ? a.when : 'now', f = (r.period || r.month) && (r.period || r.month).free;
         if (amt == null) { dropped.push('a change to Free to spend I could not read'); continue; }
-        steps.push({ kind: 'setFree', ref: null, args: [{ amount: amt, when }], text: `Free to spend: ${f ? m(f.amount) + ' to ' : ''}${m(amt)} each pay period, ${WHEN[when]}` });
+        steps.push({ kind: 'setFree', ref: null, args: [{ amount: amt, when }], text: `Free to spend: ${f ? m(f.amount) + ' to ' : ''}${m(amt)} ${r.period === null ? 'each month' : 'each pay period'}, ${WHEN[when]}` });
       } else if (what === 'set_aside') {
         const id = refOf(a.goal, 'G'), g = id && (book.places || []).find(x => x.id === id), amt = amountOf(a.amount, home);
         if (!g || amt == null) { dropped.push('money for a goal I could not read'); continue; }
@@ -13302,7 +13311,7 @@ Actions:
       if (!s.ref || seen[s.ref]) continue;
       seen[s.ref] = 1;
       if (s.ref.charAt(0) === 'L') {
-        const id = s.kind === 'changeLine' ? s.args[0] : s.args[0].line, at = r => ((r.period && r.period.lines) || []).find(l => l.id === id);
+        const id = s.kind === 'changeLine' ? s.args[0] : s.args[0].line, at = r => (((r.period || r.month) || {}).lines || []).find(l => l.id === id);
         const l0 = at(r0), l1 = at(r1);
         rows.push({ key: 'line:' + s.ref, label: (l0 || l1 || {}).name + ' left', before: l0 ? l0.left : null, after: l1 ? l1.left : null });
       } else if (s.ref.charAt(0) === 'G') {
@@ -13812,7 +13821,8 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       return as.map(a => `${back(a.id) || '-'} | ${a.name} | ${a.type} | ` + (a.type === 'card' ? (r.cards[a.id] ? m(r.cards[a.id].owedNow) + ' owed, paid on day ' + a.payDay : '') : r.accounts[a.id] ? m(r.accounts[a.id].bank) + ' today' : '')).join('\n') || 'None.';
     }
     if (what === 'pays' || what === 'bills') return figures(book, today).text.split('Pays and bills (ref | name | amount | when):\n')[1]?.split('\n').filter(l => l.startsWith(what === 'pays' ? 'P' : 'B')).join('\n') || 'None.';
-    if (what === 'lines') return ((r.period && r.period.lines) || []).map(l => `${back(l.id)} | ${l.name} | ${m(l.amount)} each pay | ${m(l.left)} left`).join('\n') || 'None.';
+    /* [F2] with no fixed pay the engine's month section, shaped like the period's (never "None." for a person with lines) */
+    if (what === 'lines') { const pm = r.period || r.month, per = r.period ? 'each pay' : 'each month'; return ((pm && pm.lines) || []).map(l => `${back(l.id)} | ${l.name} | ${m(l.amount)} ${per} | ${m(l.left)} left`).join('\n') || 'None.'; }
     if (what === 'goals') return (book.places || []).filter(g => live(g) && g.kind === 'goal').map(g => `${back(g.id)} | ${g.name} | ${m((r.places[g.id] || {}).kept || 0)} set aside of ${m(g.target)}`).join('\n') || 'None.';
     return 'Pick accounts, pays, bills, cards, lines, goals or spends.';
   }
@@ -13822,6 +13832,8 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
   /* one step from the AI into { kind, args, text, amount, ask? } or { bad: words } */
   function stepOf(a, ctx) {
     const { book, today, refs } = ctx, home = G.homeOn(book, today), m = (x, c) => SM.format(x, c || home);
+    /* [F2] the words for a line's or Free to spend's amount: a pay period, or with no fixed pay the month, as Plan says */
+    const per = (() => { try { return LA.lookahead(book, today).period === null ? 'each month' : 'each pay period'; } catch (e) { return 'each pay period'; } })();
     const what = a && typeof a === 'object' ? String(a.do || '') : '';
     const ref = (v, letters) => (typeof v === 'string' && letters.includes(v.charAt(0)) && refs[v] ? refs[v] : null);
     const acctRec = id => (book.accounts || []).find(x => x.id === id);
@@ -13915,12 +13927,12 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       const args = { name: clean(a.name, 60), amount: x, every: a.every, day: a.day, day2: a.day2, start: a.start, acct };
       return { kind: 'addPay', args: [args], text: `Add ${args.name}: ${x ? m(x) : 'no fixed amount'}, ${a.every === 'none' ? 'no fixed day' : a.every === 'month' ? 'on day ' + a.day + ' each month' : a.every}`, amount: x || 0, figs: x ? [x] : [] };
     }
-    if (what === 'add_line') { const x = amt(a.amount); if (!x || !a.name) return { bad: 'a line I could not read' }; return { kind: 'addLine', args: [{ name: clean(a.name, 60), amount: x }], text: `Add a line, ${clean(a.name, 60)}: ${m(x)} each pay period`, amount: x }; }
+    if (what === 'add_line') { const x = amt(a.amount); if (!x || !a.name) return { bad: 'a line I could not read' }; return { kind: 'addLine', args: [{ name: clean(a.name, 60), amount: x }], text: `Add a line, ${clean(a.name, 60)}: ${m(x)} ${per}`, amount: x }; }
     if (what === 'change_line') {
       const id = ref(a.ref || a.line, 'L'), x = amt(a.amount, null, true); if (!id || x == null) return { bad: 'a change to a line I could not read' };
-      return { kind: 'changeLine', args: [id, { amount: x, when: when(a.when) }], text: `${lineName(id)}: ${m(x)} each pay period`, amount: x, ref: a.ref || a.line };
+      return { kind: 'changeLine', args: [id, { amount: x, when: when(a.when) }], text: `${lineName(id)}: ${m(x)} ${per}`, amount: x, ref: a.ref || a.line };
     }
-    if (what === 'set_free') { const x = amt(a.amount, null, true); if (x == null) return { bad: 'Free to spend I could not read' }; return { kind: 'setFree', args: [{ amount: x, when: when(a.when) }], text: `Free to spend: ${m(x)} each pay period`, amount: x }; }
+    if (what === 'set_free') { const x = amt(a.amount, null, true); if (x == null) return { bad: 'Free to spend I could not read' }; return { kind: 'setFree', args: [{ amount: x, when: when(a.when) }], text: `Free to spend: ${m(x)} ${per}`, amount: x }; }
     if (what === 'add_goal') { const x = amt(a.target != null ? a.target : a.amount); if (!x || !a.name) return { bad: 'a goal I could not read' }; return { kind: 'addGoal', args: [{ name: clean(a.name, 60), target: x, due: a.due || undefined }], text: `Add a goal, ${clean(a.name, 60)}: ${m(x)}${a.due ? ' by ' + day1(a.due) : ''}`, amount: 0, figs: [x] }; }
     if (what === 'set_aside') {
       const id = ref(a.goal || a.ref, 'G'), x = amt(a.amount); if (!id || !x) return { bad: 'money for a goal I could not read' };
