@@ -9533,7 +9533,7 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     if (x.min !== undefined) {
       const was = a.minBank ? a.minBank.a : null, now = x.min === '' || x.min === null || x.min === 0 ? null : x.min;
       if (now !== was) {
-        if (id === mainOf(w)) bad('Keep at least for your main bank is in Settings');
+        if (id === mainOf(w)) bad('Keep at least for your main bank cannot be changed after setup yet');   // [qc-assistant controls1 B1] slice 5 adds it in Settings and says so
         ch.minBank = now === null ? null : { a: amountOk(now, 'the amount to keep'), cur: a.cur || home(w) };
       }
     }
