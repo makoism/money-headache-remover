@@ -233,3 +233,4 @@ details summary { min-height: 44px; }
    "Landed on") takes the row's full width instead of the tick's narrow column (qc-layout blocker 1) */
 .a3-in[type="date"] { min-width: min(100%, 10.5em); }
 .a3-tick > .a3-field { grid-column: 1 / -1; }
+.a3-came { border: 0; padding: 0; margin: 8px 0 0; min-width: 0; } .a3-came .a3-q { padding: 0; margin-bottom: 6px; font-size: var(--t-sm); } .a3-came .a3-segs { flex-wrap: wrap; } .a3-came input[type=date] { margin-top: 8px; }
