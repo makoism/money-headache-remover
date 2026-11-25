@@ -19,18 +19,22 @@ function overdueWords3(o, cur, yr, path) {
 }
 function plAccounts3(kinds) { return ((E3.book && E3.book.accounts) || []).filter(a => plLive3(a) && kinds[a.type] && !a.closed); }
 
-/* [slice 6, B4] no fixed pay: no pay periods. Each line and Free to spend is an amount a month that comes off by the day;
-   the amount in force today is the record's own (a lookup, schedules.stepOn) */
+/* [slice 6, B4, CA4 to CA6, CA9] no fixed pay: no pay periods. Each line and Free to spend is an amount for each calendar
+   month: this month what is left of it is kept, later months come off by the day; the amount in force today is the
+   record's own (a lookup, schedules.stepOn) */
+/* [BQ2] the Free to spend entry in force on a day: by `from`, ties broken by `at` */
+function plFreeNow3(book, day) {
+  return ((book.plan || {}).shares || []).filter(s => plLive3(s) && s.free != null && (!s.from || s.from <= day))
+    .sort((p, q) => ((p.from || '') < (q.from || '') ? -1 : (p.from || '') > (q.from || '') ? 1 : (p.at || '') < (q.at || '') ? -1 : (p.at || '') > (q.at || '') ? 1 : 0)).pop();
+}
 function plNoPay3(book, day) {
   const S = BurrowEngine.schedules, n = BurrowEngine.dates.dayNum(day);
   const lines = ((book.plan || {}).budgets || []).filter(l => plLive3(l) && !(l.ends && l.ends <= day)).map(l => ({ l, a: S.stepOn(l, n) })).filter(x => x.a)
-    .map(({ l, a }) => plRow3(`data-line="${esc3(l.id)}"`, `${esc3(l.name)}<br><span class="when">Comes off by the day</span>`, `<span data-fig="line-amount">${plFig3('plan.budgets.*.steps', a)}</span> <span class="when">a month</span>`));
-  /* [BQ2] the entry in force: by `from`, ties broken by `at` */
-  const fr = ((book.plan || {}).shares || []).filter(s => plLive3(s) && s.free != null && (!s.from || s.from <= day))
-    .sort((p, q) => ((p.from || '') < (q.from || '') ? -1 : (p.from || '') > (q.from || '') ? 1 : (p.at || '') < (q.at || '') ? -1 : (p.at || '') > (q.at || '') ? 1 : 0)).pop();
-  const free = fr && fr.free ? plRow3('data-line="free"', `${esc3(label3('freeToSpendLeft'))}<br><span class="when">Comes off by the day</span>`, `<span data-fig="free-amount">${plFig3('plan.shares.*.free', fr.free)}</span> <span class="when">a month</span>`) : '';
+    .map(({ l, a }) => plRow3(`data-line="${esc3(l.id)}"`, `${esc3(l.name)}<br><span class="when">Starts again each month</span>`, `<span data-fig="line-amount">${plFig3('plan.budgets.*.steps', a)}</span> <span class="when">a month</span>`));
+  const fr = plFreeNow3(book, day);
+  const free = fr && fr.free ? plRow3('data-line="free"', `Free to spend<br><span class="when">Starts again each month</span>`, `<span data-fig="free-amount">${plFig3('plan.shares.*.free', fr.free)}</span> <span class="when">a month</span>`) : '';
   return `<section class="a3-card" data-card="plan-period"><h2>Your plan, with no fixed pay</h2>
-    <p class="a3-sub">With no pay day there are no pay periods. Each line is an amount a month, taken off by the day, and safe to spend leaves room for it</p>
+    <p class="a3-sub">With no pay day there are no pay periods. Each line is an amount for each month, from the 1st. Safe to spend keeps room for what is left of it this month and for the months ahead</p>
     ${lines.length || free ? `<ul class="a3-rows a3-rclist">${lines.join('')}${free}</ul>` : '<p class="a3-sub">No budget lines yet. A line keeps money for one thing, like food, each month</p>'}
     <div class="a3-actions"><button type="button" class="a3-btn" id="plAddLine">Add a line</button>${fr ? '' : '<button type="button" class="a3-btn" id="plSetFree">Set Free to spend</button>'}</div></section>`;
 }
@@ -232,27 +236,30 @@ function plWhen3(value) {
 function plLineForm3(id) {
   PL3.sheet = id === 'free' ? 'free' : id ? 'line' : 'addLine';
   const book = E3.book, p = E3.view(E3.today()).period;
-  /* [slice 6, B4] no fixed pay: each month, by the day, from today */
+  /* [slice 6, B4] no fixed pay: each month; [CA6] a change counts from today: this month's amount, less what was spent */
   const each = p ? 'Each pay period' : 'Each month';
+  const fromToday = 'A change counts from today: it is this month\'s amount, less what you spent on it this month';
   if (id === 'free') {
     const has = !!(p && p.free);
-    plForm3('Free to spend', [{ key: 'amount', label: each, kind: 'amount', value: has ? p.free.amount : null }].concat(has ? [plWhen3('next')] : []),
+    /* [qc-numbers, month rule, blocker 4] no fixed pay: the amount in force today, the one the Plan row shows */
+    const fr = p ? null : plFreeNow3(book, E3.today());
+    plForm3('Free to spend', [{ key: 'amount', label: each, kind: 'amount', value: has ? p.free.amount : fr ? fr.free : null }].concat(has ? [plWhen3('next')] : []),
       [{ label: 'Save', solid: true, step: v => ['setFree', w => PLAN3W.setFree(w, { amount: v.amount, when: v.when }), 'Free to spend changed'] }],
-      'Free to spend is money for anything, with no line of its own');
+      p || !fr ? 'Free to spend is money for anything, with no line of its own' : `Free to spend is money for anything, with no line of its own. ${fromToday}`);
     return;
   }
   if (!id) {
     plForm3('Add a line', [{ key: 'name', label: 'Name', kind: 'text', hint: 'Like Food or Transport' }, { key: 'amount', label: each, kind: 'amount' }],
       [{ label: 'Add', solid: true, step: v => ['addLine', w => PLAN3W.addLine(w, { name: v.name, amount: v.amount }), 'Line added'] }],
-      p ? 'It starts in this pay period' : 'It starts today and comes off a little each day');
+      p ? 'It starts in this pay period' : 'This month it counts only for the days left, from today. From the 1st, the whole amount each month');
     return;
   }
   const rec = ((book.plan || {}).budgets || []).find(x => x.id === id);
   const l = p ? p.lines.find(x => x.id === id) : { amount: BurrowEngine.schedules.stepOn(rec, BurrowEngine.dates.dayNum(E3.today())) };
   plForm3(rec.name, [{ key: 'name', label: 'Name', kind: 'text', value: rec.name }, { key: 'amount', label: each, kind: 'amount', value: l ? l.amount : null }].concat(p ? [plWhen3('next')] : []),
     [{ label: 'Save', solid: true, step: v => ['changeLine', w => PLAN3W.changeLine(w, id, { name: v.name, amount: l && v.amount === l.amount ? null : v.amount, when: v.when }), 'Line changed'] },
-     { label: 'End this line', sure: [`End ${rec.name}?${p ? ' It stays for this pay period and stops after it' : ''}`, 'Yes, end it'], step: () => ['endLine', w => PLAN3W.endLine(w, id), rec.name + ' ends after this pay period'] }],
-    'A change never changes a pay period gone by');
+     { label: 'End this line', sure: [`End ${rec.name}?${p ? ' It stays for this pay period and stops after it' : ' It stops today'}`, 'Yes, end it'], step: () => ['endLine', w => PLAN3W.endLine(w, id), `${rec.name} ${p ? 'ends after this pay period' : 'ended today'}`] }],
+    p ? 'A change never changes a pay period gone by' : fromToday);
 }
 const PL_EVERY3 = [{ v: 'month', name: 'On a day each month' }, { v: 'days', name: 'On two days each month' }, { v: 'weeks1', name: 'Every week' }, { v: 'weeks2', name: 'Every 2 weeks' },
   { v: 'weeks3', name: 'Every 3 weeks' }, { v: 'weeks4', name: 'Every 4 weeks' }, { v: 'none', name: 'No fixed pay: it comes when it comes' }];
