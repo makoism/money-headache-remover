@@ -1,0 +1,21 @@
+DRAFT by MAIN 17, 25 Nov 2026 17:00 JST, from candidate 2's scope. The coordinator owns this file and corrects it.
+Scope for the AI-first candidate, built from lane/ai-join (hash filled in at the full check).
+Lines of MAKO_SAYS.md this build leaves for later on purpose. The same list goes to Mako with the candidate.
+
+Now built and taken out of the list: the assistant as the main way in and setup by chat (M1 M2 M3 M4), Undo after a reload (M14), Home's clearer figure words (M7 M12 M47), the bank after the cards with up to three cards and the gap a card leaves (M40), a card with a known close day (M41), a life with no fixed pay (M38), commas typed into an amount box.
+
+M2 M4 M9         Reading files in the chat (a payslip, a statement, a photo of a receipt): not built. The assistant never offers it. Statements can still be added on the screens after setup. Next assistant slice.
+M3               23 things the assistant cannot yet do by asking (loans, goals, cards and accounts added or removed, statements, reminders, backup): it says which screen does each. The controls slices.
+M2               Nine questions the setup chat never asks (the list is in the assistant plan); each can be answered on the screens after setup. One later slice.
+M1 M17           A talk with the real AI has never been run by the team: no session can reach the live site or a key. Every test uses a made-up AI. The first real run is Mako's, with the ten-line walk sent with this candidate.
+M13              After setup: add, rename or remove a bank, cash or e-wallet; remove a card, goal or second income; close a loan early; change Keep at least, currency or country. The controls work, 14 slices; its base is in this build.
+M6               Removes ask first on the screens: controls slice K12. (By the assistant, removes already ask first.)
+M14 (reminders)  Reminders kept, with Undo: queued.
+M23              Pay-later: stage 2.
+M24 M46          Where unspent planned money goes: plan written, not built.
+M18              "?" help on every screen: queued.
+M13 (bank check) A bank check changed or removed later: controls slice 10.
+M7 M12 (two figures) Home still shows one headline figure. The everyday money left and the money with no job yet as two named figures: the engine values are in this build, the screens are the next slice (MAKO_SAYS not settled 8).
+M10 M52          A picture on Home: waits for Mako and the art.
+M21              iPhone browser not tested: the WebKit download is blocked by the environment's network rules.
+TO CONFIRM AT THE FULL CHECK (in or out, by what is merged): the second phone seeing a spend without "Send now" (M67, lane/cloudtake); the six layout blockers (lane/layoutfix); restore from a backup (M19, lane/restore).
