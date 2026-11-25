@@ -16,14 +16,19 @@
    Each account is walked on its own to the horizon (the second next pay, at least 45 days); safe to spend adds each
    one's lowest point and takes off any account that goes below zero. The bank after the cards (BK3) is per bank.
 
-   1 Dec  Bank A 1,800,000, lowest at the start (pay 15 Dec before card A 21 Dec). Bank B 600,000 - internet 150,000
-          (10 Dec) - card B 120,000 (28 Dec) - internet 150,000 (11 Jan) = 180,000. GCash 150,000. Safe 2,130,000.
+   No play amount is set, so everything on each card comes off its bank today (M90, R1), in place of its dated payment.
+   It moves Bank A only while card A's payment lands after a salary (1 to 14 Dec); Bank B has no income, so card B
+   always counted in its lowest point; from 15 Dec every figure is as it was.
+   1 Dec  Bank A 1,800,000 - card A 300,000 (owed now) = 1,500,000, the lowest (was 1,800,000 at the start, with pay
+          15 Dec before card A 21 Dec). Bank B 600,000 - card B 120,000 (owed now) - internet 150,000 (10 Dec) - internet
+          150,000 (11 Jan) = 180,000. GCash 150,000. Safe 1,500,000 + 180,000 + 150,000 = 1,830,000 (was 2,130,000).
           After the cards: Bank A on 21 Dec 1,800,000 + 1,500,000 - 300,000 = 3,000,000; Bank B on 28 Dec 600,000 -
           150,000 - 120,000 = 330,000.
-   3 Dec  money in: a client payment ₱2,500 into GCash: 400,000. Safe 2,380,000.
+   3 Dec  money in: a client payment ₱2,500 into GCash: 400,000. Safe 1,830,000 + 250,000 = 2,080,000 (was 2,380,000).
    6 Dec  spends: ₱1,200 groceries on Card B, ₱500 from GCash. Card B now 240,000 on 28 Dec: Bank B 600,000 - 150,000 -
           240,000 - 150,000 = 60,000. GCash 350,000 (the side gig of 4 Dec is not ticked, so not counted). Safe 1,800,000 +
-          60,000 + 350,000 = 2,210,000. Bank B after its card: 210,000.
+          60,000 + 350,000 = 2,210,000 before the rule; now Bank A is 1,500,000 (card A off today), so 1,500,000 + 60,000 +
+          350,000 = 1,910,000. Bank B after its card: 210,000.
    15 Dec check-in: side gig, internet and salary ticked; Bank A 3,300,000, Bank B 450,000, GCash 750,000.
           Bank A 3,300,000 - card A 300,000 = 3,000,000 (lowest); Bank B 450,000 - 240,000 - 150,000 = 60,000; GCash
           750,000. Safe 3,810,000. After the cards: Bank A 3,000,000 on 21 Dec, Bank B 210,000 on 28 Dec.
@@ -78,16 +83,20 @@ const banks = (a, b, g) => Object.assign({}, A, { 'Bank A': a, 'Bank B': b, GCas
   const asked = await p.$$eval('#a3Setup [data-q=takenOut]:not([hidden]) label', ls => ls.map(l => l.textContent));
   ck('setup asks about the rent of 1 Dec only', asked.join(' | ') === 'Did the Rent of 1 Dec leave your bank?', asked.join(' | '));
   await finishSetup3(p); await w(700);
-  await home(p, '1 Dec after setup', 2130000, banks(1800000, 600000, 150000));
+  // old 2,130,000; now 1,830,000 because no play amount, so card A's 300,000 comes off Bank A today, not on 21 Dec
+  // after the salary of 15 Dec (R1): 1,500,000 + Bank B 180,000 (unchanged, card B had no salary before it) + 150,000
+  await home(p, '1 Dec after setup', 1830000, banks(1800000, 600000, 150000));
   ck('1 Dec: the period is 27 Nov to 14 Dec', (await p.$eval('[data-fig=period]', e => e.textContent).catch(() => '')) === '27 Nov to 14 Dec');
   let ac = await after(p);
   ck('1 Dec: each bank after its own cards: Bank A on 21 Dec 3,000,000, Bank B on 28 Dec 330,000', ac.join(' | ') === 'After your cards are paid on 21 Dec: Bank A = 3000000 | After your cards are paid on 28 Dec: Bank B = 330000', ac.join(' | '));
   /* 3 Dec: a client payment into GCash */
   await go(p, '2026-12-03'); await log(p, 2500, 'GCash', { mode: 'in', note: 'logo job' });
-  await home(p, '3 Dec after a client payment', 2380000, banks(1800000, 600000, 400000));
+  // old 2,380,000; now 2,080,000: 1,830,000 + 250,000 into GCash (card A still off today, R1)
+  await home(p, '3 Dec after a client payment', 2080000, banks(1800000, 600000, 400000));
   /* 6 Dec */
   await go(p, '2026-12-06'); await log(p, 1200, 'Card B', { note: 'groceries' }); await log(p, 500, 'GCash', { note: 'load' });
-  await home(p, '6 Dec after two spends', 2210000, banks(1800000, 600000, 350000));
+  // old 2,210,000; now 1,910,000: Bank A 1,500,000 (card A off today, R1) + Bank B 60,000 + GCash 350,000
+  await home(p, '6 Dec after two spends', 1910000, banks(1800000, 600000, 350000));
   ac = await after(p);
   ck('6 Dec: Bank B after card B is 210,000', ac.some(x => x === 'After your cards are paid on 28 Dec: Bank B = 210000'), ac.join(' | '));
   /* 15 Dec */
