@@ -43,6 +43,17 @@ Standing rules:
 ## 4b. Which model does what (from 25 Nov, to stretch Fable)
 Fable: the coordinator, the main build session, LANE B, and the gate reviewers (qc-foundation, qc-numbers, qc-north-star, qc-controls, qc-assistant). Opus: every builder helper, and qc-novice, qc-layout-touch, qc-data-safety, qc-voice, qc-art-director, efficiency. Opus builders get tight briefs (exact files, failing test first, check3 quick after each change) and the session reads their diff before merging. A Fable call that is refused is switched to Opus at once and reported.
 
+## 4c. Spending few credits (Mako, 25 Nov, M86: "be very diligent ... super efficient with your credits"; from the official docs on how usage is charged, read 25 Nov)
+Facts: every turn of a session sends its whole history again. Inside one hour of the last turn that history is read from a cache at a small part of the price; after an hour it is charged in full and written again at about twice the price. Helpers and reviewers keep their cache only 5 minutes. So the cost of a session is (size of its history) x (number of times it is woken), and a wake after a quiet hour costs most of all.
+1. Wake a big session rarely. Build sessions send the coordinator a message only at a merge, for a ruling, or for a fault Mako would want to know; never an "understood" or an hourly line. Several points go in ONE message. The coordinator answers a build session only when a ruling or an order is needed.
+2. Hand off early, not late: the coordinator at about 120k of history, a build session at about 250k. A handoff is the top of COORDINATOR.md (or RESUME section 0) kept current plus the start prompt; the new session reads only what its prompt lists.
+3. get_session answers are large: call it on yourself once an hour at most, and on another session only when you must.
+4. The watch session is on Sonnet and uses get_session on three ids. It wakes a build session that failed or sat idle 40 minutes with work left. It does NOT wake the coordinator for being idle; only for a limit that changed or a build session it could not wake.
+5. Models: the cheapest that does the job well. Sonnet for fixed-step jobs (the watch, lookups, reading docs). Opus for builders and the non-gate reviewers. Fable for the coordinator, the build sessions and the five gates.
+6. Reviewers are the dearest thing we run. Order for a candidate: check3 full first; then the gate most likely to fail on what changed, alone; fix; then the rest one at a time. A reviewer whose area did not change since its last PASS on this candidate is not run again. Anything a reviewer found twice becomes a script.
+7. Nothing is read or run twice: no re-reading files already in history, quick check after small changes, the full check only before a merge or a candidate.
+8. Still owed (25 Nov): the efficiency reviewer's own pass over this process stopped when the 5-hour window filled. Run it once (Opus, the brief is in coordinator 13's history: reviewers needed and their order, start-up reading sizes, message traffic, wake intervals, handoff points) after the candidate is with Mako, and fold what it finds into this section.
+
 ## 5. Switch to Opus (when Fable is used up)
 Signs: a session's rate_limit_info shows a Fable limit rejected, or sessions on Fable fail while Opus is allowed, or Mako says so.
 1. Agents: in .claude/agents/*.md change `model: fable` to `model: opus` (one sed), commit "reviewers to Opus: Fable used up", push. Tell build sessions to pass model "opus" on Agent calls.
