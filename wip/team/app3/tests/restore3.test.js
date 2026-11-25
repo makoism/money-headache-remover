@@ -70,6 +70,18 @@ const shown = c => S.canon(Object.assign(Object.fromEntries(LISTS.map(k => [k, (
       const back = Bk.restamp(Object.assign(clone(restored), { keptVersions: over2.keptVersions }), over, { now, by, day: '2026-12-10' });
       ck('a question that was open inside the backup itself is closed the same way', !(back.keptVersions || []).some(x => x.ask) && back.keptVersions.find(x => x.of === sid).versions.length === 2);
     }
+    /* the Undo journal (act3: what each step did, kept so a step can be undone after a reload) is not something a
+       restore brings back or marks: its entries name steps made on the book that was replaced. The restored book starts
+       with none, so the Undo bar never offers a step that can only be refused. The way back from a restore is Put it
+       back (MAIN 17 and LANE C, 25 Nov 2026; M14, M61) */
+    {
+      const entry = (id, rec) => ({ id, label: 'Spend logged', moment: '2026-12-09T12:00:00.000+09:00', day: '2026-12-09', by: 'phn002', told: '2026-12-09T12:00:00.000+09:00', added: [{ list: 'events', id: rec }], edited: [], removed: [], revived: [] });
+      const overJ = Object.assign(clone(over), { journal: [entry('phn002-j7k2m9x4qa-3', 'dsk001-zzzzzzzzzz-1')] });
+      const restoredJ = Object.assign(clone(restored), { journal: [entry('dsk001-h3n8p5w1zc-9', BOOK.events[1].id)] });
+      const outJ = Bk.restamp(restoredJ, overJ, { now, by, day: '2026-12-10' });
+      ck('a restore keeps no Undo journal: not the replaced book\'s, not the backup\'s', !outJ.journal || outJ.journal.length === 0, JSON.stringify(outJ.journal || null).slice(0, 200));
+      ck('and the records are restored as without one', S.canon(Object.assign({}, outJ, { journal: undefined })) === S.canon(Object.assign({}, Bk.restamp(restored, over, { now, by, day: '2026-12-10' }), { journal: undefined })));
+    }
     const first = Bk.restamp(BOOK, null, { now, by });
     ck('with nothing here, every record is still stamped', first.events.every(e => e.at === now && e.by === by) && first.events.length === BOOK.events.length && !first.events.some(e => e.gone));
     ck('the top of the copy keeps its version number', first.v === BOOK.v);

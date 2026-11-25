@@ -93,6 +93,7 @@
       const keys = new Set(Object.keys(r).concat(...os.map(o => Object.keys(o).filter(k => isRecords(o[k]) || (isMap(o[k]) && !(top && k === 'keptVersions'))))));
       for (const k of keys) {
         const x = r[k];
+        if (top && k === 'journal') continue;   // the Undo journal names steps made on the book being replaced: a restored book starts with none
         if (top && ['keptVersions', 'rev', 'at', 'v'].includes(k)) { if (x !== undefined) out[k] = C(x); continue; }
         if ((x === undefined || isRecords(x)) && os.some(o => isRecords(o[k]))) {
           const list = (x || []).map(mark), have = new Set(list.map(e => e.id));
