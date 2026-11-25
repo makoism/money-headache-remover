@@ -1169,8 +1169,9 @@
           for (const l of lines) list.push({ land: Math.max(p.land, today), amount: perPeriod({ per: l.per, amount: periodAmount(l.src, p.land, p.id) }, p.land, end, p.id), label: l.name + ' for the period from ' + short(p.land) });
         });
       } else {
-        // [B4, M9, M10] no fixed pay: by day. A monthly amount x 12 / the year's days a day, rounded down, the rest of each
-        // month's own share on its last day; a weekly one a seventh a day, the rest on the seventh day.
+        // [B4, CA4, replaces M9 and M10] no fixed pay: by day. A monthly amount costs floor(amount / the month's days) a
+        // day and the month's last day carries the rest, so every calendar month adds up to the amount typed; a weekly
+        // one a seventh a day, the rest on the seventh day.
         // [THREE_VALUES] this month's everyday money is not taken off by the day here: it caps the headline, as a pay
         // period's does, so it is never counted twice. Later months' days are held as before. `freeAllDays` (how long
         // the money lasts at this rate) keeps every day.
@@ -1178,15 +1179,19 @@
         for (const l of lines) {
           for (let d = today + 1; d <= today + LATER_ON_DAYS; d++) {
             if (l === planLeft.free && d <= monthEnd0 && !freeAllDays) continue;
-            const [y, mo] = ymOf(d), yearDays = dayIn(y + 1, 1, 1) - dayIn(y, 1, 1);
+            const [y, mo] = ymOf(d);
             let want;
             if (l.per === 'week') {
               // [N4, AS9, AV5] a week ends on the seventh day counted from the line's `from` (day 1), else its account's setup day
               const f = l.src && l.src.from ? dayNum(l.src.from) : openEv[l.acct] ? openDay(l.acct) : today + 1;
               const day7 = (((d - f) % 7) + 7) % 7 === 6; want = Math.floor(l.amount / 7) + (day7 ? l.amount - 7 * Math.floor(l.amount / 7) : 0); }
             else {
-              const perDay = Math.floor(l.amount * 12 / yearDays), monthDays = dayIn(y, mo + 1, 1) - dayIn(y, mo, 1);
-              want = perDay + (d === dayIn(y, mo, 'last') ? Math.floor(l.amount * 12 * monthDays / yearDays) - perDay * monthDays : 0);
+              // [CA4] a later month is charged the amount in force on its first day (a change made this month, or one
+              // set to start then); this month keeps the amount it began with [BQ3]
+              const first = dayIn(y, mo, 1), monthDays = dayIn(y, mo + 1, 1) - first;
+              const amount = d > monthEnd0 && l.src ? stepAmount(l.src.steps, first) || 0 : l.amount;
+              const perDay = Math.floor(amount / monthDays);
+              want = perDay + (d === dayIn(y, mo, 'last') ? amount - perDay * monthDays : 0);
             }
             if (want) list.push({ land: d, amount: want, label: l.name + ' (by day)' });
           }
