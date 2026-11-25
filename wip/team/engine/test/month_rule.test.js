@@ -37,4 +37,33 @@ t('an amount that does not divide: 100,001 a month is 100,001 in a 30 day and in
   const b = book(100001);
   for (const [y, m] of [[2027, 4], [2027, 5]]) eq(monthParts(b, y, m).reduce((s, x) => s + x, 0), 100001);
 });
+
+// ----- found by qc-foundation on the plan (qc_reports/2026-11-25_monthrule/foundation_plan.md) -----
+// A later month is charged the amount in force on its first day, not the amount this month began with.
+const stampAt = (r, told) => Object.assign(r, { told, at: told, by: 'q8w3hz' });
+const byDay = (b, seen, name) => { const r = LA.lookahead(b, seen), bank = Object.keys(r.accounts)[0]; return r.accounts[bank].whyParts.filter(p => p.label === name + ' (by day)').map(p => -p.amount); };
+const sum = l => l.reduce((s, x) => s + x, 0);
+t('40,000 changed to 60,000 on 16 Dec: seen 31 Dec, January is charged 60,000 and February runs at floor(60,000 / 28) = 2,142 a day', () => {
+  const b = book(40000), newId = IDS.idMaker('q8w3hz');
+  b.plan.shares.push(stampAt({ id: newId(), from: '2026-12-16', cur: 'JPY', per: { free: 'month' }, free: 60000, goals: {} }, '2026-12-16T20:10:00.000+09:00'));
+  const parts = byDay(b, '2026-12-31', 'Free to spend');
+  // 45 days: 31 of January (30 x floor(60,000 / 31) = 30 x 1,935 = 58,050, the 31st carries 1,950), then 14 of February
+  eq([parts.length, sum(parts.slice(0, 31)), parts[0], parts[30], parts[31], sum(parts)], [45, 60000, 1935, 1950, 2142, 60000 + 14 * 2142]);
+});
+t('an amount set to change next month: 40,000 now, 10,000 from 1 Jan. Seen 31 Dec, January runs at floor(10,000 / 31) = 322 a day and its 31st carries 340', () => {
+  const b = book(40000), newId = IDS.idMaker('q8w3hz');
+  b.plan.shares.push(stampAt({ id: newId(), from: '2027-01-01', cur: 'JPY', per: { free: 'month' }, free: 10000, goals: {} }, '2026-12-18T08:40:00.000+09:00'));
+  const r = LA.lookahead(b, '2026-12-31'), bank = Object.keys(r.accounts)[0];
+  const jan = r.accounts[bank].whyParts.filter(p => p.label === 'Free to spend (by day)').slice(0, 31).map(p => -p.amount);
+  eq([jan[0], jan[29], jan[30], sum(jan)], [322, 322, 340, 10000]);
+});
+t('a plan line too: Food 30,000 a month is charged 30,000 in January (967 a day, the 31st carries 990) and in a 28 day February', () => {
+  const b = book(40000), newId = IDS.idMaker('q8w3hz');
+  b.plan.budgets.push(stampAt({ id: newId(), name: 'Food', place: 'bills', cur: 'JPY', per: 'month', from: '2026-11-01', steps: [{ from: null, amount: 30000 }] }, '2026-11-01T09:05:00.000+09:00'));
+  const jan = byDay(b, '2026-12-31', 'Food').slice(0, 31), feb = byDay(b, '2027-01-31', 'Food').slice(0, 28);
+  eq([jan[0], jan[30], sum(jan), sum(feb)], [967, 990, 30000, 30000]);
+});
+t('an amount smaller than the month\'s days: 20 a month costs nothing for 30 days and 20 on the 31st', () => {
+  eq(byDay(book(20), '2026-12-31', 'Free to spend'), [20]);   // 45 days from 1 Jan: January's 31st only; 14 days of February carry nothing
+});
 done('month_rule.test.js');
