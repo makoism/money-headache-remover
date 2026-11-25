@@ -267,6 +267,30 @@ async function say(p, text) { await p.$eval('#a3ChatIn', (e, v) => { e.value = v
     before = ai.calls; ai.mode = 'ok';
     await R.tell(p, 'Japan');
     ck('E: once it is off, nothing more is sent this visit', ai.calls === before);
+    /* [AI_JOIN_FIXES G] one wording for "the assistant is off", in the panel and in Settings */
+    await p.$eval('#a3SetGo', e => e.click()); await T.w(500);
+    const setOff = await p.$eval('[data-set=aioff]', e => e.textContent).catch(() => null);
+    ck('G: Settings says it in the same words as the panel: "The assistant is off right now"', setOff === 'The assistant is off right now. Everything else still works' && /The assistant is off right now/.test(await p.$eval('[data-card=chat-off]', e => e.textContent).catch(() => '')), setOff);
+    all.push(...errs); await b.close();
+  }
+  /* ---- 12: one assistant (AI_JOIN_FIXES G): the header "Ask" opens the panel; the old Ask sheet is gone ---- */
+  {
+    const { b, p, errs } = await T.open({ profile: fs.mkdtempSync(os.tmpdir() + '/a3chat6-') });
+    await relay(p, { on: false });
+    await p.goto(T.URL0 + '?today=' + DAY); await T.w(600);
+    ck('G: the page has no old Ask sheet', !(await p.$('#a3Ask')) && !(await p.$('#a3AskIn')));
+    await p.click('#a3AskGo'); await T.w(300);
+    ck('G: before setup, Ask puts the cursor in the welcome\'s chat box', await p.evaluate(() => document.activeElement && document.activeElement.id === 'a3ChatIn' && !!document.activeElement.closest('#a3Home')));
+    await p.evaluate(async a => { const { E3 } = BurrowApp3; await E3.fill(BurrowEngine.build.buildBook(Object.assign({}, a, { told: E3.told() }), { newId: E3.newId }).book); BurrowApp3.chat.redraw(); }, MAKO);
+    await T.w(300);
+    await p.click('[data-tab=plan]'); await T.w(200);
+    await p.click('#a3AskGo'); await T.w(400);
+    ck('G: with a book, the header Ask opens the assistant panel, the cursor in its box', await p.evaluate(() => document.querySelector('#a3Chat').hasAttribute('data-open') && document.activeElement && document.activeElement.id === 'a3ChatIn' && !!document.activeElement.closest('#a3Chat')));
+    ck('G: and the tab it was on stays under it', await shows(p, '#a3Plan'));
+    await p.click('#a3ChatClose'); await T.w(300);
+    await p.click('#a3SetGo'); await T.w(300);
+    await p.click('#a3AskGo'); await T.w(400);
+    ck('G: Ask from Settings: Settings closes and the panel opens', !(await shows(p, '#a3Set')) && await p.evaluate(() => document.querySelector('#a3Chat').hasAttribute('data-open')));
     all.push(...errs); await b.close();
   }
   const bad = all.filter(e => !/status of (500|401|429|503)|ERR_INTERNET_DISCONNECTED/.test(e));   // the relay made to fail on purpose

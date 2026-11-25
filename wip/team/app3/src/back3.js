@@ -17,7 +17,6 @@ const BACK3 = (() => {
   const sheet = (key, sel, close, keep) => ({ key, root: () => shownEl(sel), close, keep });
   /* the layer on top first */
   const LAYERS = [
-    sheet('ask', '#a3Ask', () => closeAsk3(), true),
     sheet('rem', '#a3Rem', () => closeRem3()),
     sheet('set', '#a3Set', () => closeSet3()),
     sheet('stmt', '#a3Stmt', () => { const b = $('#a3StmtBack'); if (b) b.click(); else stmt3Close(); }),

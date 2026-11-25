@@ -12,6 +12,7 @@
 const CHAT3 = { state: null, busy: false, open: false, route: null, anon: null, db: null, off: null, failed: false, lastErr: null, any: false };
 const CHAT3_WORDS = {
   privacy: 'What you type, today\'s figures with the names of your accounts, bills and income, and the setup answers so far go to Claude, the AI made by Anthropic, through this page\'s own server. Your notes, shops and single spends are not sent unless you type them. The chat stays on this device.',
+  offLine: 'The assistant is off right now',   // the one wording for it, here and in Settings (AI_JOIN_FIXES G)
   off: 'The assistant is off right now. You can still finish everything:',
   failed: 'That didn\'t go through. Send it again, or finish another way:',
   /* why a change card asks first (M6): the core's card.ask; its card.why is the AI's own words, not shown here */
@@ -330,10 +331,30 @@ async function chat3AnyCheck() {
   chat3Redraw();
 }
 
+/* [AI_JOIN_FIXES G] one assistant: the header "Ask" opens this panel (the old Ask sheet is gone). Before setup the
+   welcome is the panel: the cursor goes to its box. A sheet open over the page (Settings, setup) closes first */
+async function chat3Ask() {
+  if (typeof SET3 === 'object' && SET3.open) closeSet3();
+  if (E3.mode === 'try') await leaveTry3({ toChat: true });
+  if (!E3.book) {
+    if ($('#a3Setup') && !$('#a3Setup').hidden) closeSetup3();
+    showTab3('home');
+    const b = $('#a3Home #a3ChatIn'); if (b) b.focus();
+    return;
+  }
+  if ($('#a3Chat').hidden) renderChat3();
+  const box = $('#a3Chat #a3ChatIn'); if (box) box.focus();
+}
+document.addEventListener('click', e => { if (e.target.closest && e.target.closest('#a3AskGo')) chat3Ask(); });
+
 /* ---- start: the chat kept on this device, then the panel ---- */
-async function startChat3() {
+/* the chat kept on this device (none while the made-up numbers show: that visit's chat is never kept over it) */
+async function chat3Kept() {
   const kept = E3.mode === 'try' ? null : await chat3Get('state');
   CHAT3.state = kept && kept.v === 1 ? kept : CHAT3C.fresh();
+}
+async function startChat3() {
+  await chat3Kept();
   await chat3Route();
   /* anything written through act3 after the fill means the fill can no longer be undone: the cloud copy may send */
   if (ACT3 && typeof ACT3.onChange === 'function') ACT3.onChange(() => { if (E3.held()) E3.release().then(() => renderChat3()); });

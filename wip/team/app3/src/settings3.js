@@ -111,11 +111,13 @@ function paintWord3() {
   if (w) $('#a3SetWordClear').addEventListener('click', () => { STMT3_AI.setWord(''); paintWord3(); setMsg3('The code word is cleared from this device.'); });
   paintAiOff3();
 }
-/* [C5] when this page's own server says its AI is off (/api/health, ai false), Settings says so; no server, no line */
+/* [C5] when this page's own server says its AI is off (/api/health, ai false, or the relay's own "off" answer to the
+   assistant), Settings says so in the panel's words (AI_JOIN_FIXES G: one wording); no server, no line */
 async function paintAiOff3() {
   const h = await STMT3_AI.health(), el = $('#a3SetWord');
-  if (!SET3.open || !el || !h || h.ai !== false || el.querySelector('[data-set=aioff]')) return;
-  el.insertAdjacentHTML('afterbegin', '<p class="a3-warn" data-set="aioff">The AI is off on this page right now. Everything else still works</p>');
+  const off = (h && h.ai === false) || (h && typeof CHAT3 === 'object' && CHAT3.off === true);
+  if (!SET3.open || !el || !off || el.querySelector('[data-set=aioff]')) return;
+  el.insertAdjacentHTML('afterbegin', `<p class="a3-warn" data-set="aioff">${esc3(CHAT3_WORDS.offLine)}. Everything else still works</p>`);
 }
 async function paintSpace3() {
   const el = $('#a3Space'); if (!el || typeof BurrowPersist !== 'object') return;

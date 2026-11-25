@@ -62,9 +62,10 @@ const noStamp = s => s.replace(/DTSTAMP:\d{8}T\d{6}Z/g, 'DTSTAMP:x');
   await p.click('#a3RemClose'); await T.w(200);
   ck('Close goes back to Home', await p.$eval('#a3Rem', e => e.hidden) && await p.$eval('#a3Home', e => !e.hidden));
   await p.click('#a3RemGo'); await T.w(200);
-  await p.click('#a3AskGo'); await T.w(300);
-  ck('Ask over Reminders: Reminders closes first, Ask shows', await p.$eval('#a3Rem', e => e.hidden) && await p.$eval('#a3Ask', e => !e.hidden));
-  await p.click('#a3AskClose'); await T.w(200);
+  /* [AI_JOIN_FIXES G] the old Ask sheet is gone: Settings is the other sheet opened from the header */
+  await p.click('#a3SetGo'); await T.w(300);
+  ck('Settings over Reminders: Reminders closes first, Settings shows', await p.$eval('#a3Rem', e => e.hidden) && await p.$eval('#a3Set', e => !e.hidden));
+  await p.click('#a3SetClose'); await T.w(200);
   ck('and Home is back after', await p.$eval('#a3Home', e => !e.hidden) && await p.$eval('.a3-tabs', e => !e.hidden));
   await p.click('#a3RemGo'); await T.w(200);
   await p.setViewport({ width: 320, height: 700, isMobile: true, hasTouch: true }); await T.w(200);

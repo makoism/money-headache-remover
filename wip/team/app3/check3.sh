@@ -107,7 +107,6 @@ page|tests/e3_install.js|e3_install: ALL PASS||300|installed to the home screen 
 page|tests/e3_publish.js|e3_publish: ALL PASS||300|the private publish (a made-up path, a copy of public/ served by the worker's rules)
 page|tests/e3_tabs.js|e3_tabs: ALL PASS||300|two tabs on one device
 page|tests/e3_backup.js|e3_backup: ALL PASS||300|Settings and the backup file
-page|tests/e3_ask.js|e3_ask: ALL PASS||300|Ask on the page (recorded replies: the viewer's Claude and the relay)
 page|tests/e3_invite.js|e3_invite: ALL PASS||300|the code word for the AI: the box, a word that does not match, Settings, never in the book
 page|tests/e3_remind.js|e3_remind: ALL PASS||300|Reminders on the page (check-ins and bills, the calendar file, Google and Outlook, nothing sent)
 page|tests/e3_cloud.js|e3_cloud: ALL PASS||300|the cloud copy, two devices through the page (local fake vault)
@@ -128,7 +127,7 @@ page_tests_for() {   # page_tests_for <changed path, relative to app3/>
     tests/setup_sections.js)  echo e3_setup e3_setupfix e3_setup6 e3_income2 e3_weeks3 e3_walk2 e3_paytoday e3_chatwalk e3_chat ;;   # a helper (setup saved section by section), not a test
     tests/fake_ai.js|tests/fake_ai_page.js) echo e3_fakeai_page e3_chatwalk e3_chat chat3_core.test ;;   # helpers (the fake model, and it behind a made-up relay), not tests
     tests/chat_real.js)       echo e3_fillcard e3_cloudfirst e3_aijoin ;;   # a helper (the real core and panel with the fake model behind a made-up relay), not a test
-    tests/*.js)               basename "$1" .js ;;
+    tests/*.js)               [ -f "$1" ] && basename "$1" .js ;;   # a test file removed on purpose has no test to run
     src/home3.js)             echo e3_home e3_ns e3_homeplan e3_warnwords e3_cardline e3_bankparts e3_names e3_payday ;;
     src/checkin3.js)          echo e3_checkin e3_checkgap e3_cardfig e3_reload e3_bankparts e3_payday e3_overdrawn ;;
     src/receipts3.js)         echo e3_receipts e3_listfix e3_moneyin e3_bigspend e3_stmt_once e3_period e3_names e3_doors e3_moved1 ;;
@@ -136,9 +135,9 @@ page_tests_for() {   # page_tests_for <changed path, relative to app3/>
     src/setup3.js|src/answers3.js) echo e3_fillcard e3_setup e3_setupfix e3_setup6 e3_income2 e3_weeks3 e3_first e3_onepay e3_overdrawn e3_paytoday e3_chatwalk e3_chat ;;
     src/chat3*.js)            echo e3_fillcard e3_cloudfirst e3_aijoin e3_chat e3_chatwalk e3_fakeai_page e3_fillundo e3_invite e3_back ;;
     src/start3.js)            echo e3_first e3_file e3_try e3_chat ;;
-    src/back3.js)             echo e3_back e3_undobar e3_checkin e3_plan e3_receipts e3_setupfix e3_stmt e3_ask e3_remind e3_backup e3_tabs ;;
+    src/back3.js)             echo e3_back e3_undobar e3_checkin e3_plan e3_receipts e3_setupfix e3_stmt e3_remind e3_backup e3_tabs ;;
     src/stmt3*.js)            echo e3_stmt e3_stmt_once e3_walk4 e3_invite e3_chat ;;
-    src/ask3*.js)             echo e3_ask e3_invite ;;
+    src/ask3*.js)             echo e3_chat e3_invite e3_chatwalk ;;   # ask3_core.js: the summary the assistant is sent
     src/backup3.js|src/settings3.js) echo e3_backup e3_tabs ;;
     src/sw3.js|src/settings3_sw.js|sw3.js) echo e3_sw offline e3_install ;;
     src/cloud3*.js)           echo e3_cloudfirst e3_cloud ;;

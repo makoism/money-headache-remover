@@ -18,7 +18,7 @@ async function spend(p, amt) { await p.click('[data-tab=receipts]'); await w(200
   const LAYERS = [
     ['Settings', async () => { await p.click('#a3SetGo'); }, '#a3Set', async () => { await p.click('#a3SetClose'); }],
     ['Reminders', async () => { await p.click('#a3RemGo'); }, '#a3Rem', async () => { await p.click('#a3RemClose'); }],
-    ['Ask', async () => { await p.click('#a3AskGo'); }, '#a3Ask', async () => { await p.click('#a3AskClose'); }],
+    /* [AI_JOIN_FIXES G] the old Ask sheet is gone; the assistant panel and the Undo bar are walked in e3_chat part 10 */
     ['a Plan form', async () => { await p.click('[data-tab=plan]'); await w(200); await p.click('#plAddBill'); }, '[data-card=plan-form]', async () => { await p.click('#plBack'); }],
     ['Check your bank', async () => { await p.click('[data-tab=home]'); await w(200); await p.click('#a3CheckGo'); }, '#a3Check', async () => { await p.click('#a3CheckX'); }],
     ['Add statements', async () => { await p.click('[data-tab=home]'); await w(200); await p.click('#a3StmtGo'); }, '#a3Stmt', async () => { await p.click('#a3StmtX'); }],

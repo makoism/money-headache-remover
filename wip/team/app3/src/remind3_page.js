@@ -42,7 +42,7 @@ function openRem3() {
       <ul class="a3-rows" id="a3RemLinks"></ul></div>
     <div class="a3-actions"><button type="button" class="a3-btn" id="a3RemClose">Close</button></div>
   </div>`;
-  REM3.was = [...document.querySelectorAll('[data-panel], .a3-tabs, #a3Check, #a3StmtBar, #a3Stmt, #a3Set, #a3Setup, #a3Ask')].map(el => [el, el.hidden]);
+  REM3.was = [...document.querySelectorAll('[data-panel], .a3-tabs, #a3Check, #a3StmtBar, #a3Stmt, #a3Set, #a3Setup')].map(el => [el, el.hidden]);
   REM3.was.forEach(([el]) => { el.hidden = true; }); sheet.hidden = false;
   $('#a3RemAfter').addEventListener('change', e => { REM3.afterPay = e.target.checked; rem3Paint(); });
   $('#a3RemMid').addEventListener('change', e => { REM3.mid = e.target.checked; rem3Paint(); });

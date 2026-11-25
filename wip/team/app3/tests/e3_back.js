@@ -24,7 +24,6 @@ const SHEETS = [
   { id: 'a3Check', name: 'Check your bank', open: async p => { await p.click('#a3CheckGo'); } },
   { id: 'a3Set', name: 'Settings', open: async p => { await p.click('#a3SetGo'); } },
   { id: 'a3Rem', name: 'Reminders', open: async p => { await p.click('#a3RemGo'); } },
-  { id: 'a3Ask', name: 'Ask', open: async p => { await p.click('#a3AskGo'); } },
   { id: 'a3Stmt', name: 'Add statements', open: async p => { await p.click('#a3StmtGo'); } },
   { id: 'a3Setup', name: 'Setup', setup: true },
 ];
@@ -72,15 +71,10 @@ async function start(day, q) {
     await p.fill('#a3Check [data-bankfig]', '123456'); await w(100);
     const ticks = await p.$$('#a3Check .a3-tick input[type=checkbox]');
     if (ticks.length) await ticks[0].uncheck();
-    /* Ask opens over it: back closes Ask only, Check your bank is still there with its typing */
-    await p.click('#a3AskGo'); await w(300);
-    ck('Ask over Check your bank: Ask shows', await shown(p, '#a3Ask'));
-    await p.fill('#a3AskIn', 'how much is rent'); await w(100);
+    /* [AI_JOIN_FIXES G] the old Ask sheet that opened over it is gone (the assistant panel over a sheet: e3_chat part 10) */
+    ck('Check your bank holds 123456', (await p.$eval('#a3Check [data-bankfig]', e => e.value)) === '123456');
     await back(p);
-    ck('back closes Ask, Check your bank shows again', !(await shown(p, '#a3Ask')) && (await shown(p, '#a3Check')));
-    ck('Check your bank still holds 123456', (await p.$eval('#a3Check [data-bankfig]', e => e.value)) === '123456');
-    await back(p);
-    ck('back again closes Check your bank, Home shows', !(await shown(p, '#a3Check')) && (await shown(p, '#a3Home')) && (await inApp(p)));
+    ck('back closes Check your bank, Home shows', !(await shown(p, '#a3Check')) && (await shown(p, '#a3Home')) && (await inApp(p)));
     await p.click('#a3CheckGo'); await w(300);
     ck('opened again: the bank figure typed before is there (123456)', (await p.$eval('#a3Check [data-bankfig]', e => e.value)) === '123456', await p.$eval('#a3Check [data-bankfig]', e => e.value));
     if (ticks.length) ck('opened again: the tick taken off is still off', (await p.$eval('#a3Check .a3-tick input[type=checkbox]', e => e.checked)) === false);
@@ -89,9 +83,6 @@ async function start(day, q) {
     await back(p);
     await p.click('#a3CheckGo'); await w(300);
     ck('closed again untouched: the next time it opens empty', (await p.$eval('#a3Check [data-bankfig]', e => e.value)) === '');
-    await back(p);
-    await p.click('#a3AskGo'); await w(300);
-    ck('Ask opened again: the question typed before is there', (await p.$eval('#a3AskIn', e => e.value)) === 'how much is rent');
     await back(p);
     /* a Plan form */
     await p.click('[data-tab=plan]'); await w(250);
@@ -130,18 +121,19 @@ async function start(day, q) {
     ck('at the end nothing is open and no entry is held', (await depth(p)) === 0, await depth(p));
     await c.close();
   }
-  /* ---- one sheet swapped for another in one tap (Ask closes Reminders first): one entry, never one too few ---- */
+  /* ---- one sheet swapped for another in one tap (Settings closes Reminders first; it was Ask's old sheet before
+     AI_JOIN_FIXES G removed it): one entry, never one too few ---- */
   {
     const { c, p } = await start('2026-11-24', '&try=mako');
     await p.click('#a3RemGo'); await w(300);
-    await p.click('#a3AskGo'); await w(400);
-    ck('Ask in place of Reminders: Ask shows and holds the one entry', (await shown(p, '#a3Ask')) && !(await shown(p, '#a3Rem')) && (await depth(p)) === 1, await depth(p));
-    await p.click('#a3AskClose'); await w(400);
+    await p.click('#a3SetGo'); await w(400);
+    ck('Settings in place of Reminders: Settings shows and holds the one entry', (await shown(p, '#a3Set')) && !(await shown(p, '#a3Rem')) && (await depth(p)) === 1, await depth(p));
+    await p.click('#a3SetClose'); await w(400);
     ck('its Close: the app is still there, nothing open, no entry', (await inApp(p)) && (await shown(p, '#a3Home')) && (await depth(p)) === 0, (await p.url()) + ' ' + (await depth(p).catch(() => '?')));
     await p.click('#a3RemGo'); await w(300);
-    await p.click('#a3AskGo'); await w(400);
+    await p.click('#a3SetGo'); await w(400);
     await back(p);
-    ck('the same swap, then back: the app is still there', (await inApp(p)) && !(await shown(p, '#a3Ask')), await p.url());
+    ck('the same swap, then back: the app is still there', (await inApp(p)) && !(await shown(p, '#a3Set')), await p.url());
     await c.close();
   }
   /* ---- a reload with a sheet open: no entry of a sheet that is gone ---- */

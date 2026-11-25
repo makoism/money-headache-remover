@@ -24,20 +24,21 @@ function tryBand3() {
   $('#a3Day').addEventListener('change', e => { E3.setToday(e.target.value); if (!$('#a3Check').hidden) closeCheck3(); renderHome3(); });
   $('#a3TryOut').addEventListener('click', leaveTry3);
 }
-/* out of the made-up numbers: nothing of them is written; this device's own book shows when it keeps one, else setup */
-async function leaveTry3() {
+/* out of the made-up numbers: nothing of them is written; this device's own book shows when it keeps one, else setup
+   (o.toChat: the assistant instead, AI_JOIN_FIXES G) */
+async function leaveTry3(o) {
   if (SET3.open) closeSet3();
   if (REM3.open) closeRem3();
-  if (ASK3.open) closeAsk3();
   if (!$('#a3Stmt').hidden) stmt3Close();
   showTab3('home');
   if (typeof PL3 === 'object') PL3.form = null;
   if (typeof RC3 === 'object') { RC3.edit = null; RC3.last = null; }
   const t = $('#a3Try'); t.hidden = true; t.innerHTML = '';
   await E3.leaveTry();
+  if (typeof chat3Kept === 'function') await chat3Kept();   // the chat kept on this device, never the made-up visit's
   renderHome3();
   if (typeof renderChat3 === 'function') renderChat3();
-  if (!E3.book) openSetup3();
+  if (!E3.book && !(o && o.toChat === true)) openSetup3();
 }
 (async () => {
   try { $('#a3Pix').innerHTML = pix('sprout', 2); } catch (e) { /* art is a nicety */ }
