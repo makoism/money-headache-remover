@@ -25,12 +25,15 @@
           day, 1 Dec, so December is a whole month). A later month comes off by the day at the month's amount over its
           days, rounded down, the last day carrying the rest: January and March 1,290 a day, February 1,428, April
           1,333. A whole later month is exactly 40,000.
-          Horizon 27 Jan. Food left in December 40,000; 1 to 27 Jan 27 x 1,290 = 34,830; together 74,830.
-          Bank 558,000 - 180,000 (the four bills) - 74,830 = 303,170; safe 303,170 + 17,000 = 320,170.
+          [Coordinator's ruling, 26 Nov 2026 (CA9): a line ADDED partway through a month holds a by-days share of its
+          amount for the rest of that month: days left including the day added, over the month's days, rounded down.
+          Food added 7 Dec: 25 of 31 days, 40,000 x 25 / 31 = 32,258.06, so 32,258. Before, all 40,000.]
+          Horizon 27 Jan. Food left in December 32,258; 1 to 27 Jan 27 x 1,290 = 34,830; together 67,088.
+          Bank 558,000 - 180,000 (the four bills) - 67,088 = 310,912; safe 310,912 + 17,000 = 327,912.
    29 Dec check-in: phone (21 Dec) and rent (28 Dec) ticked; Bank shows 468,000 (558,000 - 90,000), Cash 17,000.
           Horizon 1 Mar (rent's second, 27 Feb moved). Bills 20 Jan 5,000, 27 Jan 85,000, 22 Feb 5,000, 1 Mar 85,000 =
-          180,000. Food left in December 40,000; January 40,000; February 40,000; 1 Mar 1,290; together 121,290.
-          Bank 468,000 - 180,000 - 121,290 = 166,710; safe 166,710 + 17,000 = 183,710.
+          180,000. Food left in December 32,258 (CA9); January 40,000; February 40,000; 1 Mar 1,290; together 113,548.
+          Bank 468,000 - 180,000 - 113,548 = 174,452; safe 174,452 + 17,000 = 191,452.
    2 Jan  money in: a new year gift 10,000 into Cash: Cash 27,000. Horizon 1 Mar; Food left in January 40,000,
           February 40,000, 1 Mar 1,290 = 81,290. Bank 468,000 - 180,000 - 81,290 = 206,710; safe 233,710.
    15 Jan money in: client payment 200,000 to Bank: Bank 668,000. The same 81,290 held.
@@ -87,15 +90,22 @@ const { ck, go, tab, typeIn, log, checkin, home, w } = L;
   await tab(p, 'plan'); await p.click('#plAddLine'); await w(200);
   const lab = await p.$eval('label[for=pl-amount]', e => e.textContent).catch(() => '');
   ck('7 Dec: with no pay day a line is asked for each month', lab === 'Each month', lab);
+  const addNote = await L.txt(p, '[data-card=plan-form] .a3-sub');
+  ck('7 Dec: the sheet says this month counts only for the days left (CA9)', /this month it counts only for the days left/i.test(addNote), addNote);
   await p.fill('#pl-name', 'Food'); await p.fill('#pl-amount', '40000'); await p.click('[data-plbtn="0"]'); await w(400);
   const row = await p.$eval('[data-card=plan-period]', e => e.innerText.replace(/\s+/g, ' ')).catch(() => '');
-  ck('7 Dec: Plan shows Food ¥40,000 a month, coming off by the day', /Food/.test(row) && /¥40,000 a month/.test(row) && /by the day/.test(row), row);
-  await home(p, '7 Dec with Food 40,000 a month', 320170, { Bank: 558000, Cash: 17000 });
+  ck('7 Dec: Plan shows Food ¥40,000 a month, starting again each month', /Food/.test(row) && /¥40,000 a month/.test(row) && /Starts again each month/.test(row), row);
+  await home(p, '7 Dec with Food 40,000 a month', 327912, { Bank: 558000, Cash: 17000 });
+  /* [M36, M51] scope.txt "plan change": the change sheet says what the engine does with no fixed pay (CA6) */
+  await tab(p, 'plan'); await p.click('[data-line]:not([data-line="free"])'); await w(300);
+  const chNote = await L.txt(p, '[data-card=plan-form] .a3-sub');
+  ck('7 Dec: Food\'s sheet says a change counts from today, not a pay period', /counts from today/.test(chNote) && !/pay period/.test(chNote), chNote);
+  await p.click('#plBack'); await w(300);
   /* 29 Dec: check-in */
   await go(p, '2026-12-29');
   const list = await checkin(p, { Bank: 468000, Cash: 17000 });
   ck('29 Dec: the check-in lists the phone and the rent', list.length === 2 && /Phone/.test(list[0]) && /Rent/.test(list[1]), list.join(' | '));
-  await home(p, '29 Dec after the check', 183710, { Bank: 468000, Cash: 17000 });
+  await home(p, '29 Dec after the check', 191452, { Bank: 468000, Cash: 17000 });
   /* 2 Jan: a gift into cash */
   await go(p, '2027-01-02'); await log(p, 10000, 'Cash', { mode: 'in', note: 'new year gift' });
   await home(p, '2 Jan after a gift', 233710, { Bank: 468000, Cash: 27000 });

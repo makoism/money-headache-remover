@@ -1011,7 +1011,9 @@
       const byDay = !past && !periodStream;
       const [ty, tm] = ymOf(today), mStart = dayIn(ty, tm, 1), mEnd = dayIn(ty, tm, 'last');
       const countFrom = id => Math.max(mStart, noneSince != null ? noneSince : openEv[id] ? openDay(id) : firstOpenDay);
-      const monthShare = (a, per, id) => (a == null || per === 'week' || countFrom(id) <= mStart ? a : Math.floor(a * (mEnd - countFrom(id) + 1) / (mEnd - mStart + 1)));
+      // [CA9] a line added partway through this month shares from the day it was added (its `from`), the same way
+      const shareFrom = (id, added) => Math.max(countFrom(id), added ? dayNum(added) : -Infinity);
+      const monthShare = (a, per, id, added) => { const d = shareFrom(id, added); return a == null || per === 'week' || d <= mStart ? a : Math.floor(a * (mEnd - d + 1) / (mEnd - mStart + 1)); };
       const upTo = past ? win.end : Infinity;
       const fPer = freeSrc ? freePerOn(past ? win.start : today) : null;   // [BQ4]
       const opening = {};
@@ -1051,7 +1053,7 @@
         const lp = byDay ? countFrom(moved ? sa : acctId) : lastPay;   // [BQ3]
         const fromOpening = !byDay && (lastPay === null || lastPay <= openDay(moved ? sa : acctId));
         const perOf = lineId === 'free' ? fPer : (lineSrcs.find(x => x.id === lineId) || {}).per;
-        const start = byDay ? monthShare(amount, perOf, moved ? sa : acctId) : fromOpening ? (atOpening != null ? atOpening : amount) : amount;
+        const start = byDay ? monthShare(amount, perOf, moved ? sa : acctId, lineId === 'free' ? null : (lineSrcs.find(x => x.id === lineId) || {}).from) : fromOpening ? (atOpening != null ? atOpening : amount) : amount;
         const inLine = e => lineOfSpend(e) === lineId && e.account && openEv[e.account] && !inside(e, openingOf(e.account), e.account) && (fromOpening || e.day >= lp) && e.day <= upTo;
         const counts = e => inLine(e) && cur(e.account) === cur(acctId);   // [T5] only spends in the line's own currency
         if (!past) for (const e of live().filter(x => x.k === 'spend' && !isFeeRecord(x) && inLine(x) && cur(x.account) !== cur(acctId)))

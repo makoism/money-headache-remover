@@ -96,8 +96,14 @@ const num = v => Number(String(v).replace(/[^\d.]/g, ''));
   await p.click('[data-plbtn="0"]'); await w(600);
   ck('10 Dec saved', !(await L.txt(p, '#plErr')).replace('(none)', '').trim(), await L.txt(p, '#plErr'));
   const plan = await L.txt(p, '#a3Plan');
-  ck('10 Dec Plan: no pay period, Food $400 and Free to spend $1,000 a month', /Your plan, with no fixed pay/.test(plan) && /Food[^|]*\| Comes off by the day \| \$400 a month/.test(plan) && /\$1,000 a month/.test(plan), plan);
+  ck('10 Dec Plan: no pay period, Food $400 and Free to spend $1,000 a month', /Your plan, with no fixed pay/.test(plan) && /Food[^|]*\| Starts again each month \| \$400 a month/.test(plan) && /\$1,000 a month/.test(plan), plan);
   await home(p, '10 Dec, no fixed pay from today', 70967, { Checking: 543000 });
+  /* [M36, M51] qc-numbers on the month rule, blocker 4: with no fixed pay the Free to spend sheet shows the amount in force,
+     and its words say what the engine does: a change counts from today, this month's amount less what was spent */
+  await tab(p, 'plan'); await p.click('[data-line="free"]'); await w(300);
+  const fv = await p.$eval('#pl-amount', e => e.value).catch(() => '(none)'), fnote = await L.txt(p, '[data-card=plan-form] .a3-sub');
+  ck('10 Dec Free to spend sheet, no fixed pay: the box holds $1,000 and says a change counts from today', num(fv) === 1000 && /counts from today/.test(fnote), fv + ' | ' + fnote);
+  await p.click('#plBack'); await w(300);
   ck('10 Dec Home: no period', !(await p.$('#a3Home [data-fig=period]')));
   await L.sameAfterReload(p, '10 Dec after the change');
 
