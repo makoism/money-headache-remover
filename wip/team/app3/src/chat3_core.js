@@ -600,6 +600,29 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
   const resultOf = card => card.status === 'done' ? 'Done, with Undo on the card. ' + card.rows.map(r => `${r.label}: ${r.before == null ? '-' : r.before} to ${r.after == null ? '-' : r.after} (minor units)`).join('; ')
     : card.status === 'ask' ? 'Waiting for the person\'s OK: ' + card.why : 'Not changed: ' + card.why;
 
+  /* [AI_JOIN_FIXES H5] each bank figure step whose gap (the engine's filler on the book the check would make) is larger
+     than safe to spend: Map step -> the gap in words. Comparisons only; every figure is the engine's */
+  function farFigures(plan, book, today, deps, safe) {
+    const far = new Map(), home = G.homeOn(book, today), m = (x, c) => SM.format(x, c || home);
+    if (!deps.door || typeof deps.door.dry !== 'function') return far;
+    const r0 = LA.lookahead(book, today);
+    for (const s of plan) {
+      if (s.kind !== 'checkIn' || !s.ci.figures) continue;
+      let r1;
+      try {
+        const out = CK.checkIn(book, Object.assign({ day: today, told: deps.told(), newId: deps.newId, unticked: [] }, s.ci));
+        r1 = LA.lookahead(deps.door.dry('addRecords', 'Check your bank', out), today);
+      } catch (e) { continue; }
+      for (const id of Object.keys(s.ci.figures)) {
+        const a = r1.accounts[id], f = a && (a.fillers || []).slice(-1)[0], was = r0.accounts[id];
+        if (!f || f.to !== today || !was) continue;
+        const cur = ((book.accounts || []).find(x => x.id === id) || {}).cur;
+        if (f.gain > 0 && f.gain > safe) far.set(s, `The app expected ${m(was.bank, cur)}: ${m(f.gain, cur)} more than it had`);
+        else if (f.amount > 0 && f.amount > safe) far.set(s, `The app expected ${m(was.bank, cur)}: ${m(f.amount, cur)} less than it had`);
+      }
+    }
+    return far;
+  }
   /* ---- one tool call ---- */
   function addTurn(state, t, shown) {
     const turn = Object.assign({ id: 't' + (++state.seq) }, t);
@@ -642,10 +665,14 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       /* every figure in a step (an amount, a target, what is owed, even 0) must be one the person typed */
       const figsOf = s => (s.figs || (s.amount ? [s.amount] : []));
       const guess = plan.filter(s => figsOf(s).some(f => !new RegExp('(^|[^\\d.])' + plain(f) + '(?![\\d])').test(typed)));
-      const card = { kind: 'change', status: 'ask', lines: plan.map(s => s.text + (guess.includes(s) ? ' (my guess)' : '')), rows: [], plan, dropped };
-      if (del || big || guess.length) {
-        card.ask = del ? 'delete' : big ? 'large' : 'guess';
-        card.why = del ? 'this removes something' : big ? 'this is more than safe to spend' : 'I guessed an amount';
+      /* [AI_JOIN_FIXES H5; M6's third reason] a bank figure far from what the app expected (the engine's own gap for that
+         check, on the book the step would make, larger than safe to spend) asks first, with the gap in words: an extra
+         zero never goes in silently */
+      const far = farFigures(plan, book, today, deps, safe);
+      const card = { kind: 'change', status: 'ask', lines: plan.map(s => s.text + (far.has(s) ? '. ' + far.get(s) : '') + (guess.includes(s) ? ' (my guess)' : '')), rows: [], plan, dropped };
+      if (del || big || far.size || guess.length) {
+        card.ask = del ? 'delete' : big ? 'large' : far.size ? 'gap' : 'guess';
+        card.why = del ? 'this removes something' : big ? 'this is more than safe to spend' : far.size ? 'the figure is far from what the app expected' : 'I guessed an amount';
         addTurn(state, { who: 'card', text: card.lines.join('. '), at: deps.told(), card }, shown);
         return resultOf(card) + (dropped.length ? ' Left out: ' + dropped.join('; ') : '');
       }

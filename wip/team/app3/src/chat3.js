@@ -16,7 +16,7 @@ const CHAT3_WORDS = {
   off: 'The assistant is off right now. You can still finish everything:',
   failed: 'That didn\'t go through. Send it again, or finish another way:',
   /* why a change card asks first (M6): the core's card.ask; its card.why is the AI's own words, not shown here */
-  ask: { delete: 'This takes something away. Do it?', large: 'This is more than safe to spend. Do it?', guess: 'You didn\'t type this amount, it\'s the AI\'s guess. Is it right?' },
+  ask: { delete: 'This takes something away. Do it?', large: 'This is more than safe to spend. Do it?', guess: 'You didn\'t type this amount, it\'s the AI\'s guess. Is it right?', gap: 'This is far from what the app expected. Is the figure right?' },
   upload: 'The whole file goes to the AI, with your name, address, employer and account number. On a payslip, crop out your My Number.',
   noFiles: 'Reading files in the chat comes next. For now, type the figures, or add statements on Receipts.',
   fillKept: 'To change something, tell me or change it on its screen',
