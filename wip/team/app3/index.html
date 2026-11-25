@@ -12177,8 +12177,18 @@ function offAsk3() {
       <button type="button" class="a3-btn" id="a3CloudDel">Delete the cloud copy</button>
       <button type="button" class="a3-btn" id="a3CloudKeep">Keep it on</button></div>`;
   $('#a3CloudStop').addEventListener('click', () => turnOff3(false));
-  $('#a3CloudDel').addEventListener('click', () => turnOff3(true));
+  $('#a3CloudDel').addEventListener('click', delAsk3);
   $('#a3CloudKeep').addEventListener('click', () => { $('#a3CloudForm').innerHTML = ''; });
+}
+/* [coordinator's ruling 26 Nov, M61, M66] Delete asks first: the server then keeps only the mark that it was deleted, so
+   every earlier saved version goes too. Keep it is the easy choice and sends nothing */
+function delAsk3() {
+  $('#a3CloudForm').innerHTML = `<p class="a3-warn" data-cloud="delask">Delete the cloud copy for good? The earlier saved versions on the server go too, and this cannot be undone. The money on this device stays</p>
+    <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3CloudDelNo">Keep it</button>
+      <button type="button" class="a3-btn" id="a3CloudDelYes">Delete it for good</button></div>`;
+  $('#a3CloudDelNo').addEventListener('click', () => { $('#a3CloudForm').innerHTML = ''; });
+  $('#a3CloudDelYes').addEventListener('click', () => turnOff3(true));
+  $('#a3CloudDelNo').focus();
 }
 async function turnOff3(del) {
   const st = await cloudState3();
