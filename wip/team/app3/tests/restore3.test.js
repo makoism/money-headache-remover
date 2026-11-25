@@ -52,6 +52,24 @@ const shown = c => S.canon(Object.assign(Object.fromEntries(LISTS.map(k => [k, (
     ck('a record in the copy replaced but not in the restored one is marked gone, by this device', !!extra && extra.gone === '2026-12-10' && extra.at === at && extra.by === by && extra.a === 700);
     ck('a setting with its own change time is restamped and keeps the restored value', out.home.main.at === at && out.home.main.by === by && out.home.main.v.acct === BOOK.accounts[1].id);
     ck('the kept versions of both copies stay', (out.keptVersions || []).map(k => k.id).sort().join() === 'kept:x0,kept:x1');
+    /* [qc-foundation, builder note 1; M20, M61] a "which to keep" question open when the restore is made: phone and
+       desktop both changed the first schedule's amount (73,000 or 74,000 waits), then a backup from before both is
+       restored. The question must not stay open: left open, the figures keep counting the question's amount, and any
+       answer writes a figure from after the backup over the restored one. Both versions stay kept, for Undo. */
+    {
+      const sid = BOOK.schedules[0].id, over2 = clone(over), v = a => Object.assign({}, BOOK.schedules[0], { steps: [{ from: null, amount: a }] });
+      over2.schedules[0] = Object.assign(v(74000), { at: '2026-12-09T21:00:00.000+09:00', by: 'phn002' });
+      over2.keptVersions = over2.keptVersions.concat([{ id: 'kept:' + sid, of: sid, in: 'schedules', ask: true, at: '2026-12-09T21:30:00.000+09:00', by: 'dsk001',
+        versions: [Object.assign(v(73000), { at: '2026-12-09T20:00:00.000+09:00', by: 'dsk001' }), Object.assign(v(74000), { at: '2026-12-09T21:00:00.000+09:00', by: 'phn002' })] }]);
+      ck('before the restore the question is open', S.afterSync(over2).questions.some(q => q.q === 'which' && q.of === sid));
+      const out2 = Bk.restamp(restored, over2, { now, by, day: '2026-12-10' }), k = (out2.keptVersions || []).find(x => x.of === sid);
+      ck('after the restore nothing is asked about it', !S.afterSync(out2).questions.some(q => q.q === 'which') && !(out2.keptVersions || []).some(x => x.ask), JSON.stringify(S.afterSync(out2).questions).slice(0, 200));
+      ck('the kept record is saved not asking, with the restore\'s change time and this device, both versions kept', !!k && k.ask === false && k.at === out2.schedules[0].at && k.by === by && k.versions.length === 2 && k.versions[0].steps[0].amount === 73000 && k.versions[1].steps[0].amount === 74000, JSON.stringify(k).slice(0, 300));
+      ck('the schedule is the backup\'s, not either waiting version', S.canon(S.content(out2.schedules[0])) === S.canon(S.content(restored.schedules[0])));
+      ck('a kept record that was not asking keeps its own change time', (out2.keptVersions || []).find(x => x.id === 'kept:x1').at === '2026-12-08T08:00:00.000+09:00');
+      const back = Bk.restamp(Object.assign(clone(restored), { keptVersions: over2.keptVersions }), over, { now, by, day: '2026-12-10' });
+      ck('a question that was open inside the backup itself is closed the same way', !(back.keptVersions || []).some(x => x.ask) && back.keptVersions.find(x => x.of === sid).versions.length === 2);
+    }
     const first = Bk.restamp(BOOK, null, { now, by });
     ck('with nothing here, every record is still stamped', first.events.every(e => e.at === now && e.by === by) && first.events.length === BOOK.events.length && !first.events.some(e => e.gone));
     ck('the top of the copy keeps its version number', first.v === BOOK.v);
