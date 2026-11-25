@@ -59,6 +59,12 @@
     }
     out.push('Accounts you can spend from (ref | name | kind | bank today):\n' + rows.join('\n'));
     for (const id of Object.keys(r.accounts)) if (r.accounts[id].spendFrom && r.accounts[id].whyParts) out.push(`How safe to spend is worked out for ${name(id)}: ${SM.sumLine(r.accounts[id].whyParts, r.accounts[id].headroom, r.accounts[id].currency)}`);   // [S4] as Home writes it
+    /* [qc-assistant blocker 2; M36, M51] the other sums Home writes under the headline, in Home's own words (the engine's
+       parts, worded once in screens/status.js): what Free to spend holds back, and the short amount's own sum */
+    const cap = ST.capParts(r, x => m(x));
+    if (cap) out.push(`Why safe to spend is ${m(r.safeToSpend.headline)}: ${SM.sumLine(cap, r.safeToSpend.headline, home)}`);
+    const shA = sh && r.accounts[sh.account] && r.accounts[sh.account].real;
+    if (shA) out.push(`How the short amount is worked out: ${SM.sumLine(shA.whyParts, shA.headroom, r.accounts[sh.account].currency)}`);
     const lines = (p && p.lines) || [];
     if (lines.length) {
       // [QC F5, B2] the amount that counts this period, the full amount a period beside it only when they differ

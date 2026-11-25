@@ -254,6 +254,18 @@
     return fill('next.move_from', { amount, from: best, account: w.account, day: w.day, currency: own.currency || ctx.currency }, ctx);
   }
   /* one "later on" entry in words: the month it goes below zero, as "Mar 2027" */
+  /* capParts(result, fmt): the parts of the sum under safe to spend when Free to spend caps it, each with the words a
+     person reads (LISTFIX B3, BM3, S6). One place: Home writes them and the assistant is sent them, so "why is it that
+     much?" gets the screen's own sum (M36, M51). fmt(minor) writes an amount in the home currency. Nothing is added up
+     here: every amount is the engine's (safeToSpend.whyParts, .headline, period.free.left). null when nothing caps it. */
+  function capParts(r, fmt) {
+    const s = r.safeToSpend, w = s.whyParts;
+    if (!w) return null;
+    const all = s.headline === 0 ? 'all of it: ' : '';
+    return w.map((x, i) => (x.over ? Object.assign({}, x, { label: `${all}Free to spend is ${fmt(x.over)} over this period` })
+      : i > 0 && all && r.period && r.period.free && r.period.free.left === 0 ? Object.assign({}, x, { label: `${all}Free to spend is used up this period` })
+      : i > 0 && !all ? Object.assign({}, x, { label: `held back: Free to spend has only ${fmt(s.headline)} left this period` }) : x));
+  }
   function laterText(l, ctx) { return fill('warn.later_on', { account: l.account, month: l.day }, ctx || {}); }
   /* [B1] a below-minimum warning's lower point after its first day under, in words with its own day; '' when none */
   function laterLowText(w, ctx) {
@@ -280,5 +292,5 @@
     return deepFreeze(s);
   }
 
-  return { statusOf, warningText, laterText, laterLowText, moveText, WORDS, STALE_DAYS, OLD_DAYS };
+  return { statusOf, capParts, warningText, laterText, laterLowText, moveText, WORDS, STALE_DAYS, OLD_DAYS };
 });

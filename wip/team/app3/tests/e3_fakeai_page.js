@@ -57,6 +57,22 @@ const fig = (p, sel) => p.$eval(sel, e => Number((e.dataset.amt !== undefined ? 
     all.push(...d.errs); await d.close();
   }
   {
+    /* [qc-assistant blocker 2; M36, M51] "why is it that much?": every sum Home writes under safe to spend is in what the
+       assistant is sent, word for word (the engine's own parts, one source) */
+    const d = await open('2026-11-24');
+    const ai = await openWithFakeAI(d.p, { steps: MAKO_SETUP.steps.concat([{ calls: [{ name: 'change', input: { steps: [{ do: 'set_free', amount: 30000 }] } }] }, { words: 'Set.' }]) });
+    for (const line of MAKO_SETUP.lines) await tell(d.p, line);
+    await tell(d.p, 'set Free to spend to 30,000');
+    await d.p.waitForTimeout(500);
+    const sums = await d.p.$$eval('#a3Home [data-fig=why], #a3Home [data-fig=cap], #a3Home [data-fig=shortwhy]', els => els.map(e => e.dataset.fig + ': ' + e.textContent.trim()));
+    await tell(d.p, 'why is it that much?');
+    const last = ai.bodies[ai.bodies.length - 1], sent = last.messages.map(m => m.content.map(c => c.text || '').join('\n')).join('\n');
+    const missing = sums.filter(x => !sent.includes(x.replace(/^\w+: /, '')));
+    ck('Home shows the held-back sum (Free to spend caps safe to spend: 16,000 of the 30,000 counts for the days left)', (await fig(d.p, '#a3Home [data-fig=safe]')) === 16000 && sums.some(x => /^cap: .*held back: Free to spend has only ¥16,000 left this period\) = ¥16,000$/.test(x)), JSON.stringify(sums));
+    ck('every sum under safe to spend on Home is sent to the assistant word for word', sums.length >= 2 && !missing.length, 'not sent: ' + JSON.stringify(missing));
+    all.push(...d.errs); await d.close();
+  }
+  {
     const d = await open('2026-11-24');
     const ai = await openWithFakeAI(d.p, { invite: 'acorn' });
     await d.p.fill('#a3ChatIn', 'hi'); await d.p.click('#a3ChatSend'); await d.p.waitForTimeout(400);

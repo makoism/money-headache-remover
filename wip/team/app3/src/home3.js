@@ -173,12 +173,9 @@ function drawHome3() {
   /* [BJ5] when Free to spend caps the headline, the engine's sum ends with the cap, so the two figures agree */
   /* [S6] Free to spend over: that part says by how much (the engine's `over`), so the sum never hides the overspend */
   /* [BM3] each part names its own amount: a cap that takes everything (the headline is 0) says "all of it" */
-  const all = r.safeToSpend.headline === 0 ? 'all of it: ' : '';
-  const capParts = (r.safeToSpend.whyParts || []).map((x, i) => (x.over ? Object.assign({}, x, { label: `${all}Free to spend is ${money3(x.over, home)} over this period` })
-    : i > 0 && all && r.period && r.period.free && r.period.free.left === 0 ? Object.assign({}, x, { label: `${all}Free to spend is used up this period` })
-    /* [LISTFIX B3] the step the cap takes off, said as what it is: held back, because Free to spend has only so much left */
-    : i > 0 && !all ? Object.assign({}, x, { label: `held back: Free to spend has only ${money3(r.safeToSpend.headline, home)} left this period` }) : x));
-  const capLine = r.safeToSpend.whyParts ? `<p class="a3-sum" data-fig="cap">${esc3(sum3(capParts, r.safeToSpend.headline, home))}</p>${freeShare3(r, home)}` : '';
+  /* the words of each part live in screens/status.js capParts: the assistant is sent the same sum */
+  const capParts = BurrowScreens.status.capParts(r, x => money3(x, home));
+  const capLine = capParts ? `<p class="a3-sum" data-fig="cap">${esc3(sum3(capParts, r.safeToSpend.headline, home))}</p>${freeShare3(r, home)}` : '';
   /* [C2] when Free to spend left caps the headline, one plain line right under the figure says why it is what it is, with
      the engine's two figures (what the accounts can spare, whyParts[0], and the headline): cause, then the figure, joined as one thought (VOICE B13) */
   const capSay = (() => {

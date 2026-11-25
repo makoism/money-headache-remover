@@ -4975,6 +4975,18 @@ details summary { min-height: 44px; }
     return fill('next.move_from', { amount, from: best, account: w.account, day: w.day, currency: own.currency || ctx.currency }, ctx);
   }
   /* one "later on" entry in words: the month it goes below zero, as "Mar 2027" */
+  /* capParts(result, fmt): the parts of the sum under safe to spend when Free to spend caps it, each with the words a
+     person reads (LISTFIX B3, BM3, S6). One place: Home writes them and the assistant is sent them, so "why is it that
+     much?" gets the screen's own sum (M36, M51). fmt(minor) writes an amount in the home currency. Nothing is added up
+     here: every amount is the engine's (safeToSpend.whyParts, .headline, period.free.left). null when nothing caps it. */
+  function capParts(r, fmt) {
+    const s = r.safeToSpend, w = s.whyParts;
+    if (!w) return null;
+    const all = s.headline === 0 ? 'all of it: ' : '';
+    return w.map((x, i) => (x.over ? Object.assign({}, x, { label: `${all}Free to spend is ${fmt(x.over)} over this period` })
+      : i > 0 && all && r.period && r.period.free && r.period.free.left === 0 ? Object.assign({}, x, { label: `${all}Free to spend is used up this period` })
+      : i > 0 && !all ? Object.assign({}, x, { label: `held back: Free to spend has only ${fmt(s.headline)} left this period` }) : x));
+  }
   function laterText(l, ctx) { return fill('warn.later_on', { account: l.account, month: l.day }, ctx || {}); }
   /* [B1] a below-minimum warning's lower point after its first day under, in words with its own day; '' when none */
   function laterLowText(w, ctx) {
@@ -5001,7 +5013,7 @@ details summary { min-height: 44px; }
     return deepFreeze(s);
   }
 
-  return { statusOf, warningText, laterText, laterLowText, moveText, WORDS, STALE_DAYS, OLD_DAYS };
+  return { statusOf, capParts, warningText, laterText, laterLowText, moveText, WORDS, STALE_DAYS, OLD_DAYS };
 });
 /* One input behaviour for every box (DECISIONS_ROUND2 C, sweep2_repeats A11: "$1,212", "TripLisbon"). The first tap or
    click into a box selects what is in it, so what is typed next replaces the old value instead of adding to it. A
@@ -9690,12 +9702,9 @@ function drawHome3() {
   /* [BJ5] when Free to spend caps the headline, the engine's sum ends with the cap, so the two figures agree */
   /* [S6] Free to spend over: that part says by how much (the engine's `over`), so the sum never hides the overspend */
   /* [BM3] each part names its own amount: a cap that takes everything (the headline is 0) says "all of it" */
-  const all = r.safeToSpend.headline === 0 ? 'all of it: ' : '';
-  const capParts = (r.safeToSpend.whyParts || []).map((x, i) => (x.over ? Object.assign({}, x, { label: `${all}Free to spend is ${money3(x.over, home)} over this period` })
-    : i > 0 && all && r.period && r.period.free && r.period.free.left === 0 ? Object.assign({}, x, { label: `${all}Free to spend is used up this period` })
-    /* [LISTFIX B3] the step the cap takes off, said as what it is: held back, because Free to spend has only so much left */
-    : i > 0 && !all ? Object.assign({}, x, { label: `held back: Free to spend has only ${money3(r.safeToSpend.headline, home)} left this period` }) : x));
-  const capLine = r.safeToSpend.whyParts ? `<p class="a3-sum" data-fig="cap">${esc3(sum3(capParts, r.safeToSpend.headline, home))}</p>${freeShare3(r, home)}` : '';
+  /* the words of each part live in screens/status.js capParts: the assistant is sent the same sum */
+  const capParts = BurrowScreens.status.capParts(r, x => money3(x, home));
+  const capLine = capParts ? `<p class="a3-sum" data-fig="cap">${esc3(sum3(capParts, r.safeToSpend.headline, home))}</p>${freeShare3(r, home)}` : '';
   /* [C2] when Free to spend left caps the headline, one plain line right under the figure says why it is what it is, with
      the engine's two figures (what the accounts can spare, whyParts[0], and the headline): cause, then the figure, joined as one thought (VOICE B13) */
   const capSay = (() => {
@@ -13117,6 +13126,12 @@ function stmt3Bar() {
     }
     out.push('Accounts you can spend from (ref | name | kind | bank today):\n' + rows.join('\n'));
     for (const id of Object.keys(r.accounts)) if (r.accounts[id].spendFrom && r.accounts[id].whyParts) out.push(`How safe to spend is worked out for ${name(id)}: ${SM.sumLine(r.accounts[id].whyParts, r.accounts[id].headroom, r.accounts[id].currency)}`);   // [S4] as Home writes it
+    /* [qc-assistant blocker 2; M36, M51] the other sums Home writes under the headline, in Home's own words (the engine's
+       parts, worded once in screens/status.js): what Free to spend holds back, and the short amount's own sum */
+    const cap = ST.capParts(r, x => m(x));
+    if (cap) out.push(`Why safe to spend is ${m(r.safeToSpend.headline)}: ${SM.sumLine(cap, r.safeToSpend.headline, home)}`);
+    const shA = sh && r.accounts[sh.account] && r.accounts[sh.account].real;
+    if (shA) out.push(`How the short amount is worked out: ${SM.sumLine(shA.whyParts, shA.headroom, r.accounts[sh.account].currency)}`);
     const lines = (p && p.lines) || [];
     if (lines.length) {
       // [QC F5, B2] the amount that counts this period, the full amount a period beside it only when they differ
