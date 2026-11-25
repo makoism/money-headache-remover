@@ -5494,7 +5494,15 @@ html:has(.a3-setup-open) { scroll-padding-top: 150px; }
     };
   }
 
-  const api = { DAY, ms, offsetOf, write, nowIso, dayNum, dayStr, addDays, daysBetween, todayStr, clockAsk, openDay,
+  // A short mark of a set of change stamps (app3/src/act3.js `ver`: "has anything in the book changed since I looked").
+  // Order-free: the stamps are sorted first. Not money: a plain text hash, with the count in front.
+  function markOf(stamps) {
+    const t = stamps.slice().sort().join('\n');
+    let h = 0;
+    for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) >>> 0;
+    return stamps.length + '.' + h.toString(36);
+  }
+  const api = { markOf, DAY, ms, offsetOf, write, nowIso, dayNum, dayStr, addDays, daysBetween, todayStr, clockAsk, openDay,
     nextAt, nextAtWarn, newestAt, makeClock, holdArriving, watchToday };
   root.BurrowClock = api;
   if (typeof module === 'object' && module.exports) module.exports = api;
@@ -8928,22 +8936,22 @@ const E3 = (() => {
         return r;
       });
     }
-    /* the note for a sheet on one item, and the short mark of the whole book (order-free: a sum over every change time) */
+    /* the note for a sheet on one item, and the short mark of the whole book (order-free: every change time, sorted) */
     function seen() { const cur = o.book(), out = {}; if (cur) for (const n of Object.keys(PATHS)) for (const r of listOf(cur, n)) if (r && r.id) out[r.id] = sig(r); return out; }
     function ver(b) {
       b = b || o.book(); if (!b) return '';
-      let sum = 0, n = 0;
+      const stamps = [];
       (function walk(x, top) {
         if (Array.isArray(x)) { for (const y of x) walk(y, false); return; }
         if (!x || typeof x !== 'object') return;
         for (const k of Object.keys(x)) {
           if (top && (k === 'rev' || k === 'journal')) continue;   // the cloud's revision and the Undo journal are not the book's content
           const v = x[k];
-          if (k === 'at' && typeof v === 'string' && !top) { let h = 0; const t = v + '|' + (x.by || '') + '|' + (x.id || ''); for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) >>> 0; sum = (sum + h) >>> 0; n++; }
+          if (k === 'at' && typeof v === 'string' && !top) stamps.push(v + '|' + (x.by || '') + '|' + (x.id || ''));
           else walk(v, false);
         }
       })(b, true);
-      return n + '.' + sum.toString(36);
+      return C && C.markOf ? C.markOf(stamps) : stamps.sort().join(',');   // the hash lives in store/clock.js (no sums in a screen file)
     }
     const api = { run, undo, seen, ver: () => ver(), steps: () => steps.slice(), onChange: f => listeners.push(f) };
     for (const name of Object.keys(ACTIONS)) {
@@ -13424,8 +13432,14 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
   }
   async function carryOut(state, card, deps) {
     const door = deps.door, before = deps.book(), today = deps.today(), done = [];
+    /* [STALE_SHEET_PLAN, M61] the card was made on the book as it was then (card.ver, the door's short mark: no figures in
+       it). If anything changed somewhere else since, the door refuses and nothing is carried out. After each of the
+       card's own steps the mark is taken again, so its own steps never refuse each other */
+    const marks = typeof door.ver === 'function' && card.ver != null;
+    let mark = marks ? card.ver : undefined;
     for (const s of card.plan) {
-      const res = await runOne(door, s, { quiet: true }, deps);
+      const res = await runOne(door, s, marks ? { quiet: true, ver: mark } : { quiet: true }, deps);
+      if (res.ok && marks) mark = door.ver();
       if (!res.ok) {
         for (const st of done.slice().reverse()) await door.undo(st.id, { quiet: true });
         card.status = 'refused'; card.why = s.text + ': ' + res.text;
@@ -13470,7 +13484,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     if (shown) shown.push(turn);
     return turn;
   }
-  async function handle(state, call, deps, shown, said) {
+  async function handle(state, call, deps, shown, said, frame) {
     const today = deps.today(), book = deps.book ? deps.book() : null, x = call.input || {};
     if (call.name === 'list') return list(book, today, x);
     if (call.name === 'explain') return explain(x.topic);
@@ -13486,6 +13500,14 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     if (call.name === 'fill_book') { const f = await fillNow(state, deps, shown, true); return f.ok ? 'Filled in. ' + f.text : 'Not filled in: ' + f.text; }
     if (call.name === 'change') {
       if (!book || !deps.door) return 'There is no book yet: finish setup first.';
+      /* [STALE_SHEET_PLAN, M61] the refs the AI holds are places in lists (S7 is the seventh spend told): if the book
+         changed somewhere else while it was answering, they may point at other things. Nothing is carried out */
+      const verNow = typeof deps.door.ver === 'function' ? deps.door.ver() : null;
+      if (frame && frame.ver != null && verNow !== frame.ver) {
+        frame.ver = verNow;
+        addTurn(state, { who: 'note', text: 'Nothing was changed, because something changed somewhere else while I was answering. Say it again', at: deps.told() }, shown);
+        return 'Not changed: the book changed somewhere else after FIGURES were sent, so the refs may be old. Nothing was done. Use list again before any change, or ask the person to say it again.';
+      }
       const raw = Array.isArray(x.steps) ? x.steps : [];
       const refs = allRefs(book, today), plan = [], dropped = [];
       for (const a of raw) {
@@ -13511,7 +13533,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
          check, on the book the step would make, larger than safe to spend) asks first, with the gap in words: an extra
          zero never goes in silently */
       const far = farFigures(plan, book, today, deps, safe);
-      const card = { kind: 'change', status: 'ask', lines: plan.map(s => s.text + (far.has(s) ? '. ' + far.get(s) : '') + (guess.includes(s) ? ' (my guess)' : '')), rows: [], plan, dropped };
+      const card = { kind: 'change', status: 'ask', ver: verNow, lines: plan.map(s => s.text + (far.has(s) ? '. ' + far.get(s) : '') + (guess.includes(s) ? ' (my guess)' : '')), rows: [], plan, dropped };
       if (del || big || far.size || guess.length) {
         card.ask = del ? 'delete' : big ? 'large' : far.size ? 'gap' : 'guess';
         card.why = del ? 'this removes something' : big ? 'this is more than safe to spend' : far.size ? 'the figure is far from what the app expected' : 'I guessed an amount';
@@ -13519,6 +13541,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
         return resultOf(card) + (dropped.length ? ' Left out: ' + dropped.join('; ') : '');
       }
       const res = await carryOut(state, card, deps);
+      if (frame && typeof deps.door.ver === 'function') frame.ver = deps.door.ver();   // the turn's own steps
       addTurn(state, { who: 'card', text: card.lines.join('. '), at: deps.told(), card }, shown);
       return (res.ok ? resultOf(card) : 'Not changed: ' + res.text) + (dropped.length ? ' Left out: ' + dropped.join('; ') : '');
     }
@@ -13539,6 +13562,8 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       }
       return { state, shown, stop };
     };
+    /* the book as it is when the figures are sent, kept beside the chat state (never in it, never sent) */
+    const frame = { ver: deps.door && typeof deps.door.ver === 'function' && deps.book && deps.book() ? deps.door.ver() : null };
     for (let i = 0; i < ROUNDS; i++) {
       const body = request(state, clean(message, 4000), rounds, ctxOf(deps));
       let res;
@@ -13557,7 +13582,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       const results = [];
       for (const c of r.calls) {
         let out;
-        try { out = await handle(state, c, deps, shown, said); } catch (e) { out = 'That did not work: ' + (e && e.message); }
+        try { out = await handle(state, c, deps, shown, said, frame); } catch (e) { out = 'That did not work: ' + (e && e.message); }
         results.push({ type: 'tool_result', tool_use_id: c.id, content: String(out) });
       }
       rounds.push({ content: r.content, results });

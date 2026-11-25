@@ -349,22 +349,22 @@
         return r;
       });
     }
-    /* the note for a sheet on one item, and the short mark of the whole book (order-free: a sum over every change time) */
+    /* the note for a sheet on one item, and the short mark of the whole book (order-free: every change time, sorted) */
     function seen() { const cur = o.book(), out = {}; if (cur) for (const n of Object.keys(PATHS)) for (const r of listOf(cur, n)) if (r && r.id) out[r.id] = sig(r); return out; }
     function ver(b) {
       b = b || o.book(); if (!b) return '';
-      let sum = 0, n = 0;
+      const stamps = [];
       (function walk(x, top) {
         if (Array.isArray(x)) { for (const y of x) walk(y, false); return; }
         if (!x || typeof x !== 'object') return;
         for (const k of Object.keys(x)) {
           if (top && (k === 'rev' || k === 'journal')) continue;   // the cloud's revision and the Undo journal are not the book's content
           const v = x[k];
-          if (k === 'at' && typeof v === 'string' && !top) { let h = 0; const t = v + '|' + (x.by || '') + '|' + (x.id || ''); for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) >>> 0; sum = (sum + h) >>> 0; n++; }
+          if (k === 'at' && typeof v === 'string' && !top) stamps.push(v + '|' + (x.by || '') + '|' + (x.id || ''));
           else walk(v, false);
         }
       })(b, true);
-      return n + '.' + sum.toString(36);
+      return C && C.markOf ? C.markOf(stamps) : stamps.sort().join(',');   // the hash lives in store/clock.js (no sums in a screen file)
     }
     const api = { run, undo, seen, ver: () => ver(), steps: () => steps.slice(), onChange: f => listeners.push(f) };
     for (const name of Object.keys(ACTIONS)) {
