@@ -110,6 +110,10 @@ const BACK3 = (() => {
     document.addEventListener('input', typedIn, true);
     document.addEventListener('change', typedIn, true);
     if (typeof ACT3 === 'object' && ACT3) ACT3.onChange(forget);
+    /* [STALE_SHEET_PLAN, M61] typing kept from a closed form holds every box of it, the ones not touched too: once the
+       book changed somewhere else (another tab, a copy taken from the cloud or a backup) it is dropped, so an old figure
+       is never put back into a form opened afterwards */
+    addEventListener('burrow3:other', forget); addEventListener('burrow3:book', forget);
     new MutationObserver(sync).observe($('#a3'), { subtree: true, childList: true, attributes: true, attributeFilter: ['hidden'] });
     /* the assistant panel sits beside #a3: open or closed is its data-open, and the width decides sheet or column */
     if ($('#a3Chat')) new MutationObserver(sync).observe($('#a3Chat'), { attributes: true, attributeFilter: ['hidden', 'data-open'] });

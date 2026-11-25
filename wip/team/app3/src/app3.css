@@ -62,7 +62,9 @@ body:not(.a3-has-chat) .a3-try { margin-top: 6px; }
    blocker 2, M14; lesson 2 "messages covering buttons"). The page is a column: #a3 scrolls, then the band, then the
    assistant's bar (below the wide screen; on a wide screen the assistant is the column on the right) */
 body { height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
-body > .a3 { flex: 1 1 auto; min-height: 0; overflow-y: auto; scroll-padding-top: 72px; width: 100%; max-width: none; margin: 0; padding: 16px max(16px, calc((100% - 608px) / 2)) 24px; }
+/* position: relative keeps what is placed inside the scrolling area (a sticky row, a hidden file box) inside it: without it the
+   document itself was 74 px taller than a phone on the first screen and could slide under the header */
+body > .a3 { position: relative; flex: 1 1 auto; min-height: 0; overflow-y: auto; scroll-padding-top: 72px; width: 100%; max-width: none; margin: 0; padding: 16px max(16px, calc((100% - 608px) / 2)) 24px; }
 .a3-msg { flex: none; width: 100%; max-width: 640px; margin: 0 auto; padding: 4px 16px; }
 .a3-msg:empty { display: none; }
 .a3-later { font-size: var(--t-sm); color: var(--ink2); margin: 0; }

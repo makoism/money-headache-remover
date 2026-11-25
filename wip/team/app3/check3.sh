@@ -34,6 +34,7 @@ node|tests/e3_act_unit.js|e3_act_unit: ALL PASS||300|act3, the one write door (p
 node|tests/cloud3.test.js|cloud3: ALL PASS||300|the cloud copy's core, two devices on a local fake vault
 node|../../../tests/vault_server/vault_server.test.mjs|vault_server: ALL PASS||300|the vault server itself in node (the five changes, the old app's calls, today's database)
 node|../../../tests/vault_server/fake_parity.test.mjs|fake_parity: ALL PASS||300|the fake vault answers as the server does
+node|../../../tests/vault_server/relay_cap.test.mjs|relay_cap: ALL PASS||300|the AI relay's daily call cap per household, in node (M68): the count follows the code word, not the device or the connection
 node|tests/e3_stmt_read.js|e3_stmt_read: ALL PASS||300|statements, the reading half (pure)
 node|tests/e3_stmt_plan.js|e3_stmt_plan: ALL PASS||300|statements, the writing half (pure): lines, matching, records
 node|tests/plan3_write.test.js|plan3_write: ALL PASS||300|the Plan tab's steps (pure)
@@ -116,6 +117,7 @@ page|tests/offline.js|offline: ALL PASS||300|offline load
 page|tests/e3_install.js|e3_install: ALL PASS||300|installed to the home screen (M33): the manifest beside the page, its icons, start_url in the page's own folder, kept by the worker, Chrome's installability check
 page|tests/e3_publish.js|e3_publish: ALL PASS||300|the private publish (a made-up path, a copy of public/ served by the worker's rules)
 page|tests/e3_tabs.js|e3_tabs: ALL PASS||300|two tabs on one device
+page|tests/e3_stalesheet.js|e3_stalesheet: ALL PASS||300|a sheet left open while the same thing changes in another tab: its save is refused, nothing is written, it is shown again as it is (STALE_SHEET_PLAN, M61)
 page|tests/e3_backup.js|e3_backup: ALL PASS||300|Settings and the backup file
 page|tests/e3_invite.js|e3_invite: ALL PASS||300|the code word for the AI: the box, a word that does not match, Settings, never in the book
 page|tests/e3_remind.js|e3_remind: ALL PASS||300|Reminders on the page (check-ins and bills, the calendar file, Google and Outlook, nothing sent)
@@ -150,7 +152,7 @@ page_tests_for() {   # page_tests_for <changed path, relative to app3/>
     src/setup3.js|src/answers3.js) echo e3_fillcard e3_setup e3_setupfix e3_setup6 e3_income2 e3_weeks3 e3_first e3_onepay e3_overdrawn e3_paytoday e3_chatwalk e3_chat ;;
     src/chat3*.js)            echo e3_ailog e3_aiwords e3_fillcard e3_cloudfirst e3_aijoin e3_chat e3_chatwalk e3_fakeai_page e3_fillundo e3_invite e3_back ;;
     src/start3.js)            echo e3_first e3_file e3_try e3_chat ;;
-    src/back3.js)             echo e3_back e3_undobar e3_checkin e3_plan e3_receipts e3_setupfix e3_stmt e3_remind e3_backup e3_tabs ;;
+    src/back3.js)             echo e3_back e3_undobar e3_checkin e3_plan e3_receipts e3_setupfix e3_stmt e3_remind e3_backup e3_tabs e3_stalesheet ;;
     src/stmt3*.js)            echo e3_stmt e3_stmt_once e3_walk4 e3_invite e3_chat ;;
     src/ask3*.js)             echo e3_chat e3_invite e3_chatwalk ;;   # ask3_core.js: the summary the assistant is sent
     src/backup3.js|src/settings3.js) echo e3_backup e3_tabs e3_ailog e3_invite e3_restore ;;

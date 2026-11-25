@@ -101,6 +101,7 @@
   const E = node ? null : root.BurrowEngine;
   const LA = node ? require('../../engine/lookahead.js') : E.lookahead;
   const G = node ? require('../../engine/ledger.js') : E.ledger;
+  const PER = node ? require('../../engine/periods.js') : E.periods;
   const SM = node ? require('../../screens/money.js') : root.BurrowScreens.money;
   const SN = node ? require('../../screens/names.js') : root.BurrowScreens.names;
   const HELP = node ? require('../../screens/help.js') : root.BurrowScreens.help;
@@ -189,12 +190,14 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     const s = AQ.summary(book, today), refs = Object.assign({}, s.refs), out = [s.text];
     const home = G.homeOn(book, today);
     const sch = (book.schedules || []).filter(x => live(x) && (x.kind === 'income' || x.kind === 'bill'));
-    const lines = [];
+    const lines = [], view = PER.scheduleView(book, today);
     let p = 0, b = 0;
     for (const x of sch) {
       const ref = x.kind === 'income' ? 'P' + (++p) : 'B' + (++b); refs[ref] = x.id;
-      const rule = (x.rules || []).slice(-1)[0], step = (x.steps || []).slice(-1)[0];
-      lines.push(`${ref} | ${x.name} | ${step && step.amount != null ? SM.format(step.amount, x.cur || home) : 'no fixed amount'} | ${ruleWords(rule && rule.rule)}${x.ends ? ' | ends ' + day1(x.ends) : ''}`);
+      /* one figure, one source: the amount and the rhythm in force today are the engine's own answer (its schedule view,
+         the one Plan shows), never worked out again here from the saved lists (a change dated later is not today's) */
+      const v = view[x.id] || {};
+      lines.push(`${ref} | ${x.name} | ${v.amount != null ? SM.format(v.amount, x.cur || home) : 'no fixed amount'} | ${ruleWords(v.rule)}${x.ends ? ' | ends ' + day1(x.ends) : ''}`);
     }
     if (lines.length) out.push('Pays and bills (ref | name | amount | when):\n' + lines.join('\n'));
     return { text: out.join('\n'), refs };
@@ -611,8 +614,14 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
   }
   async function carryOut(state, card, deps) {
     const door = deps.door, before = deps.book(), today = deps.today(), done = [];
+    /* [STALE_SHEET_PLAN, M61] the card was made on the book as it was then (card.ver, the door's short mark: no figures in
+       it). If anything changed somewhere else since, the door refuses and nothing is carried out. After each of the
+       card's own steps the mark is taken again, so its own steps never refuse each other */
+    const marks = typeof door.ver === 'function' && card.ver != null;
+    let mark = marks ? card.ver : undefined;
     for (const s of card.plan) {
-      const res = await runOne(door, s, { quiet: true }, deps);
+      const res = await runOne(door, s, marks ? { quiet: true, ver: mark } : { quiet: true }, deps);
+      if (res.ok && marks) mark = door.ver();
       if (!res.ok) {
         for (const st of done.slice().reverse()) await door.undo(st.id, { quiet: true });
         card.status = 'refused'; card.why = s.text + ': ' + res.text;
@@ -657,7 +666,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     if (shown) shown.push(turn);
     return turn;
   }
-  async function handle(state, call, deps, shown, said) {
+  async function handle(state, call, deps, shown, said, frame) {
     const today = deps.today(), book = deps.book ? deps.book() : null, x = call.input || {};
     if (call.name === 'list') return list(book, today, x);
     if (call.name === 'explain') return explain(x.topic);
@@ -673,6 +682,14 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     if (call.name === 'fill_book') { const f = await fillNow(state, deps, shown, true); return f.ok ? 'Filled in. ' + f.text : 'Not filled in: ' + f.text; }
     if (call.name === 'change') {
       if (!book || !deps.door) return 'There is no book yet: finish setup first.';
+      /* [STALE_SHEET_PLAN, M61] the refs the AI holds are places in lists (S7 is the seventh spend told): if the book
+         changed somewhere else while it was answering, they may point at other things. Nothing is carried out */
+      const verNow = typeof deps.door.ver === 'function' ? deps.door.ver() : null;
+      if (frame && frame.ver != null && verNow !== frame.ver) {
+        frame.ver = verNow;
+        addTurn(state, { who: 'note', text: 'Nothing was changed, because something changed somewhere else while I was answering. Say it again', at: deps.told() }, shown);
+        return 'Not changed: the book changed somewhere else after FIGURES were sent, so the refs may be old. Nothing was done. Use list again before any change, or ask the person to say it again.';
+      }
       const raw = Array.isArray(x.steps) ? x.steps : [];
       const refs = allRefs(book, today), plan = [], dropped = [];
       for (const a of raw) {
@@ -698,7 +715,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
          check, on the book the step would make, larger than safe to spend) asks first, with the gap in words: an extra
          zero never goes in silently */
       const far = farFigures(plan, book, today, deps, safe);
-      const card = { kind: 'change', status: 'ask', lines: plan.map(s => s.text + (far.has(s) ? '. ' + far.get(s) : '') + (guess.includes(s) ? ' (my guess)' : '')), rows: [], plan, dropped };
+      const card = { kind: 'change', status: 'ask', ver: verNow, lines: plan.map(s => s.text + (far.has(s) ? '. ' + far.get(s) : '') + (guess.includes(s) ? ' (my guess)' : '')), rows: [], plan, dropped };
       if (del || big || far.size || guess.length) {
         card.ask = del ? 'delete' : big ? 'large' : far.size ? 'gap' : 'guess';
         card.why = del ? 'this removes something' : big ? 'this is more than safe to spend' : far.size ? 'the figure is far from what the app expected' : 'I guessed an amount';
@@ -706,6 +723,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
         return resultOf(card) + (dropped.length ? ' Left out: ' + dropped.join('; ') : '');
       }
       const res = await carryOut(state, card, deps);
+      if (frame && typeof deps.door.ver === 'function') frame.ver = deps.door.ver();   // the turn's own steps
       addTurn(state, { who: 'card', text: card.lines.join('. '), at: deps.told(), card }, shown);
       return (res.ok ? resultOf(card) : 'Not changed: ' + res.text) + (dropped.length ? ' Left out: ' + dropped.join('; ') : '');
     }
@@ -726,6 +744,8 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       }
       return { state, shown, stop };
     };
+    /* the book as it is when the figures are sent, kept beside the chat state (never in it, never sent) */
+    const frame = { ver: deps.door && typeof deps.door.ver === 'function' && deps.book && deps.book() ? deps.door.ver() : null };
     for (let i = 0; i < ROUNDS; i++) {
       const body = request(state, clean(message, 4000), rounds, ctxOf(deps));
       let res;
@@ -744,7 +764,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       const results = [];
       for (const c of r.calls) {
         let out;
-        try { out = await handle(state, c, deps, shown, said); } catch (e) { out = 'That did not work: ' + (e && e.message); }
+        try { out = await handle(state, c, deps, shown, said, frame); } catch (e) { out = 'That did not work: ' + (e && e.message); }
         results.push({ type: 'tool_result', tool_use_id: c.id, content: String(out) });
       }
       rounds.push({ content: r.content, results });

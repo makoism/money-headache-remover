@@ -17,8 +17,8 @@ Kept by the main build session (MAIN 17 from 25 Nov 2026). tests/m_lines.test.js
 | M64 nothing deploys or goes to main without his yes | Process: RUNBOOK section 3 (the coordinator pushes after his yes); app3/tests/e3_publish.js checks the publish script writes only under the private path |
 | M65 a private, unlisted address, the old app unchanged | app3/tests/e3_publish.js |
 | M66 the cloud copy server refuses unsafe writes, keeps versions, marks deletes, limits daily writes | tests/vault_server/vault_server.test.mjs and fake_parity.test.mjs, both in check3 |
+| M68 the AI relay has a daily call cap per household | tests/vault_server/relay_cap.test.mjs, in check3 (the relay run in node: the count follows the code word, 400 a day when no number is set) |
+| M49 percents add to 100, a goal never shows full early | app3/tests/e3_homeplan.js (a goal one yen under its target does not read full on Home or Plan, and reads full only at the target; the app shows no percents for a goal, and the test says so) |
 
 Gaps, said plainly:
-- M49 (percents add to 100, a goal never shows full early): no cover yet. The app shows no percents today; no test says so, and none checks a goal near its target.
 - M59 (the 3D world is desktop only): no cover yet. The 3D world is not built.
-- M68 (the AI relay's daily call cap per household): no cover yet in check3. The cap is in the server file on main; no test in this build's check names it.

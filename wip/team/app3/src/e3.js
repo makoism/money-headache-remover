@@ -65,7 +65,7 @@ const E3 = (() => {
   /* ---- two tabs on one device (store/idb.js onOther and catchUp) ----
      What another tab saved (changed events and kept versions by id, the rest of the book when it changed) is joined into
      this page's book, and the screens are told with the 'burrow3:other' event so they draw it. */
-  const OTHER = 'Changed in another tab. Shown again, try again';
+  const OTHER = 'Nothing was saved, because this changed somewhere else while it was open';   // the one sentence, the door's too (src/act3.js OTHER)
   function joinIn(ch) {
     if (!ch || !book || mode !== 'kept') return false;
     if (ch.gone) { book = null; mode = 'none'; hold = false; return true; }   // the fill was undone in another tab
@@ -108,6 +108,7 @@ const E3 = (() => {
     let r = await saveR({ replace: true });
     if (!r.ok && r.why === 'behind' && store) { await store.catchUp(); book = next; r = await saveR({ replace: true }); }   // the whole book replaces the other tab's too
     if (!r.ok) { book = before; mode = m; }
+    else { try { root3.dispatchEvent(new CustomEvent('burrow3:book')); } catch (e) { /* a listener's own fault */ } }   // a whole new book: typing kept from before is dropped (back3)
     return r.ok;
   }
   /* backup lane: what the store keeps beside the book (store/idb.js):
