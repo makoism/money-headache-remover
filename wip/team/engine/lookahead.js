@@ -854,14 +854,24 @@
     const freePerOn = d => { let r = sharesByFrom.length ? sharesByFrom[0].per : 'month'; for (const x of sharesByFrom) if (x.f <= d) r = x.per; return r; };
     const freeSrc = shares.length ? { id: 'free', acct: shares[0].acct, per: freePerOn(today),
       steps: shares.map(x => ({ from: x.from == null ? null : x.from, amount: x.free, at: x.at })) } : null;
-    const lineSrcs = budgets.map(l => ({ id: l.id, name: l.name, acct: l.acct, per: l.per, steps: l.steps, once: [l.once], field: 'amount', from: l.from || null }));
-    if (freeSrc) Object.assign(freeSrc, { once: shares.map(x => x.once), field: 'free' });
+    const lineSrcs = budgets.map(l => ({ id: l.id, name: l.name, acct: l.acct, per: l.per, steps: l.steps, once: [{ m: l.once, id: l.id }], field: 'amount', from: l.from || null }));
+    if (freeSrc) Object.assign(freeSrc, { once: shares.map(x => ({ m: x.once, id: x.id })), field: 'free' });
     // [B8, T1, AE1] A period's amount: a live `once` key named by the occurrence of the pay that starts it, else the step in
     // force. [AO4, AR1] Until the person picks add or replace, a `once` amount waiting for that period counts on the safe
     // side: the larger, so more is kept aside for the line.
     const periodAmount = (src, start, occ) => {
       let a = null;
-      if (occ) for (const m of src.once) { const v = m && m[occ]; if (v && typeof v === 'object' && !v.gone && typeof v[src.field] === 'number') a = v[src.field]; }
+      // [CA7] several entries can carry a `once` for the same pay (two devices, a change in between): the one written
+      // last wins (`at`), then the entry with the greater id; never the order of the list
+      if (occ) {
+        let best = null;
+        for (const o of src.once) {
+          const v = o.m && o.m[occ]; if (!(v && typeof v === 'object' && !v.gone && typeof v[src.field] === 'number')) continue;
+          const c = { at: String(v.at || ''), id: String(o.id || ''), a: v[src.field] };
+          if (!best || c.at > best.at || (c.at === best.at && c.id > best.id)) best = c;
+        }
+        if (best) a = best.a;
+      }
       if (a === null) a = stepAmount(src.steps, start);
       if (occ) for (const w of book.pendingMove || []) {
         if (!w || w.gone || w.waits !== 'pick' || w.to !== 'once' || w.key !== occ || (w.line !== src.id && !(src.id === 'free' && w.share))) continue;
