@@ -40,6 +40,7 @@ node|tests/plan3_write.test.js|plan3_write: ALL PASS||300|the Plan tab's steps (
 node|tests/backup3.test.js|backup3: ALL PASS||300|the backup file's core
 node|tests/answers3.test.js|answers3: ALL PASS||300|answers3, the one answers-to-book function (BV1): same answers, same book
 node|tests/chat3_core.test.js|chat3_core: ALL PASS||300|the assistant's core with the fake model: Mako's setup chat to 201,400, before tax, a side job, a stale draft, a skipped question, changes with Undo (BU, BV, BW)
+node|tests/restore3.test.js|restore3: ALL PASS||300|a restore while the cloud copy is on: restamped so it sticks, nothing added after the backup returns, two devices on the fake vault, Put it back reaches both
 node|tests/ask3_core.test.js|ask3_core: ALL PASS||300|Ask, the pure half (the summary sent, the reply checked, steps through act3, Undo)
 node|tests/remind3.test.js|remind3: ALL PASS||300|reminders, the pure half (days from the engine's calendar, the calendar file, Google and Outlook links)
 node|tests/no_maths.js|NO MATHS PASS||300|no money maths in screens
@@ -118,6 +119,7 @@ page|tests/e3_backup.js|e3_backup: ALL PASS||300|Settings and the backup file
 page|tests/e3_invite.js|e3_invite: ALL PASS||300|the code word for the AI: the box, a word that does not match, Settings, never in the book
 page|tests/e3_remind.js|e3_remind: ALL PASS||300|Reminders on the page (check-ins and bills, the calendar file, Google and Outlook, nothing sent)
 page|tests/e3_cloud.js|e3_cloud: ALL PASS||300|the cloud copy, two devices through the page (local fake vault)
+page|tests/e3_restore.js|e3_restore: ALL PASS||300|a backup restored with the cloud copy on reaches the other device, and so does Put it back; Put it back and Drop it ask first (local fake vault)
 page|tests/e3_sw.js|e3_sw: ALL PASS||300|the service worker (precache, offline, 3 s timeout, a new build)
 page|tests/e3_boxwalk.js|e3_boxwalk: ALL PASS||600|a walker for every box and sheet (QC_ROLES scripts b): left empty, a wrong value, a plain message, nothing saved, a way out, then every box right saves; its KNOWN faults are in tests/QCSCRIPTS_FOUND.md
 page|tests/e3_always.js|e3_always: ALL PASS||600|on every screen and sheet (QC_ROLES scripts c): Ask one tap away, no page errors, and no network calls with the cloud copy off and the assistant not used; its KNOWN faults are in tests/QCSCRIPTS_FOUND.md
@@ -150,9 +152,9 @@ page_tests_for() {   # page_tests_for <changed path, relative to app3/>
     src/back3.js)             echo e3_back e3_undobar e3_checkin e3_plan e3_receipts e3_setupfix e3_stmt e3_remind e3_backup e3_tabs ;;
     src/stmt3*.js)            echo e3_stmt e3_stmt_once e3_walk4 e3_invite e3_chat ;;
     src/ask3*.js)             echo e3_chat e3_invite e3_chatwalk ;;   # ask3_core.js: the summary the assistant is sent
-    src/backup3.js|src/settings3.js) echo e3_backup e3_tabs e3_ailog e3_invite ;;
+    src/backup3.js|src/settings3.js) echo e3_backup e3_tabs e3_ailog e3_invite e3_restore ;;
     src/sw3.js|src/settings3_sw.js|sw3.js) echo e3_sw offline e3_install ;;
-    src/cloud3*.js)           echo e3_cloudfirst e3_cloud ;;
+    src/cloud3*.js)           echo e3_cloudfirst e3_cloud e3_restore ;;
     src/remind3*.js)          echo e3_remind ;;
     publish3.sh)              echo e3_publish e3_install ;;
     manifest3.webmanifest|make_icons3.js|icon3-*.png) echo e3_install ;;

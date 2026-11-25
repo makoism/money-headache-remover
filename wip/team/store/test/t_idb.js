@@ -113,6 +113,40 @@ module.exports = [
     t.assert.eq([r.refused, r.versions], [true, 1], 'removeCopy refuses an id that is not a whole copy; the shared kept versions stay');
   } },
 
+  { name: 'a pinned whole copy (the one from before the first restore) is never removed by newer ones, until removeCopy [D2]', run: async t => {
+    const p = await t.page();
+    const r = await p.evaluate(async () => {
+      const s = await window.BurrowStore.open(); await s.load();
+      const c = window.makeCopy(3); await s.save(c, { full: true });
+      const pin = await s.keepCopy(c, 'first', { pin: true });
+      for (let i = 0; i < 7; i++) { await new Promise(res => setTimeout(res, 5)); await s.keepCopy(c, 'restore ' + i); }
+      const list = await s.keptCopies();
+      const kept = await s.keptCopy(pin);
+      await s.removeCopy(pin);
+      return { whys: list.map(x => x.why), pinned: list.filter(x => x.pin).map(x => x.id), kept: !!kept, after: (await s.keptCopies()).map(x => x.why) };
+    });
+    t.assert.eq(r.whys.slice().sort(), ['first', 'restore 2', 'restore 3', 'restore 4', 'restore 5', 'restore 6'], 'the pinned copy stays beside the newest 5');
+    t.assert.eq([r.pinned.length, r.kept], [1, true], 'it is listed as pinned and reads back whole');
+    t.assert.eq(r.after.includes('first'), false, 'removeCopy drops it when the person chooses');
+  } },
+
+  { name: 'a dropped pinned copy is kept again as it was (its own time, id and pin), and keeping a pinned copy removes no other [D2]', run: async t => {
+    const p = await t.page();
+    const r = await p.evaluate(async () => {
+      const s = await window.BurrowStore.open(); await s.load();
+      const c = window.makeCopy(3); await s.save(c, { full: true });
+      const pin = await s.keepCopy(c, 'first', { pin: true });
+      for (let i = 0; i < 5; i++) { await new Promise(res => setTimeout(res, 5)); await s.keepCopy(c, 'restore ' + i); }
+      const was = await s.keptCopy(pin);
+      await s.removeCopy(pin);
+      const back = await s.keepCopy(was.copy, was.why, { pin: true, at: was.at });
+      const now = await s.keptCopy(back), list = await s.keptCopies();
+      return { same: back === pin, at: now.at === was.at, pin: now.pin === true, why: now.why, whys: list.map(x => x.why) };
+    });
+    t.assert.eq([r.same, r.at, r.pin, r.why], [true, true, true, 'first'], 'kept again under its own id and time, pinned');
+    t.assert.eq(r.whys.slice().sort(), ['first', 'restore 0', 'restore 1', 'restore 2', 'restore 3', 'restore 4'], 'the newest 5 beside it all stay');
+  } },
+
   { name: 'device-only state is its own record and never in the shared copy [D3]', run: async t => {
     const ctx = await t.context();
     const a = await t.page(ctx);
