@@ -38,12 +38,13 @@
   const period = w => { const p = LA.lookahead(w.book, w.today).period; if (!p) bad('Your plan needs a pay day first'); return p; };
   /* [slice 6, B4] with no fixed pay there are no pay periods: lines and Free to spend are each month, by the day */
   const noPay = w => !LA.lookahead(w.book, w.today).period;
-  const sameName = (list, name, id) => { if (list.some(x => live(x) && x.id !== id && String(x.name).toLowerCase() === name.toLowerCase())) bad('There is already one called ' + name); };
+  /* an item that has ended (its `ends` on or before today) no longer holds its name (qc-foundation on the month rule build) */
+  const sameName = (list, name, id, today) => { if (list.some(x => live(x) && x.id !== id && !(today && x.ends && x.ends <= today) && String(x.name).toLowerCase() === name.toLowerCase())) bad('There is already one called ' + name); };
 
   /* ---- budget lines and Free to spend ---- */
   function addLine(w, x) {
     const name = nameOk(x.name), a = amountOk(x.amount, 'an amount');
-    sameName(A3.listOf(w.book, 'budgets'), name);
+    sameName(A3.listOf(w.book, 'budgets'), name, undefined, w.today);
     if (name.toLowerCase() === 'free to spend') bad('Free to spend is already in your plan. Change its amount instead');
     const id = w.add('budgets', { name, place: 'bills', cur: home(w), per: noPay(w) ? 'month' : 'pay', from: w.today, steps: [{ from: null, amount: a }] });
     stampNew(find(w, 'budgets', id), 'steps');
@@ -59,7 +60,7 @@
     }
     const p = x.when === 'today' ? { start: w.today } : period(w);
     const ch = {};
-    if (x.name != null && x.name !== l.name) { ch.name = nameOk(x.name); sameName(A3.listOf(w.book, 'budgets'), ch.name, id); }
+    if (x.name != null && x.name !== l.name) { ch.name = nameOk(x.name); sameName(A3.listOf(w.book, 'budgets'), ch.name, id, w.today); }
     /* 'now' is a step from this period's first day: it counts in this period and after [V, BF] */
     if (a == null) { if (!ch.name) bad('Nothing changed'); }
     else if (x.when === 'once') {

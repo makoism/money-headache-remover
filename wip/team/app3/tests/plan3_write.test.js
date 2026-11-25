@@ -72,6 +72,15 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     eq([l.ends, l.gone, l.steps.slice(-1)[0].amount], [DAY, undefined, 0]);
     eq(view(h.book).period.lines[0].amount, 40000);
   });
+  await t('[qc-foundation on the month rule build] a line that has ended does not block adding a new one with its name', async () => {
+    const h = setup(); await h.go('addLine', { name: 'Food', amount: 40000 });
+    ok((await h.go('endLine', h.book.plan.budgets[0].id)).ok, 'ended');
+    const r = await h.go('addLine', { name: 'Food', amount: 30000 });
+    ok(r.ok, JSON.stringify(r));
+    eq(h.book.plan.budgets.filter(l => l.name === 'Food').length, 2);
+    const r2 = await h.go('addLine', { name: 'food', amount: 1000 });
+    ok(!r2.ok && /already one called/.test(r2.text), 'a second live Food is still refused: ' + JSON.stringify(r2));
+  });
   await t('Free to spend: a share entry; a change from a date is a new entry; one period only is a once key', async () => {
     const h = setup();
     let r = await h.go('setFree', { amount: 60000 }); ok(r.ok, JSON.stringify(r));
