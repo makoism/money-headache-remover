@@ -137,7 +137,8 @@ function drawPlan3() {
     return plRow3(`data-owed="${esc3(a.id)}"`, `${esc3(a.name)}<br><span class="when">${days}</span>${od}${nx}`, k.credit ? `<span data-fig="credit">${esc3(label3('inCredit')).toLowerCase()} ${plFig3('cards.*.credit', k.credit, a.cur)}</span>`   /* [BL5] never as owed */
       : `<span data-fig="owed-now">${plFig3(a.type === 'card' ? 'cards.*.owedNow' : 'owed.*.owedNow', k.owedNow, a.cur)}</span><br><span class="when">${esc3(label3('owed')).toLowerCase()}</span>`);
   }).filter(Boolean);
-  out.push(`<section class="a3-card" data-card="plan-owed"><h2>Cards and loans</h2>${owedRows.length ? `<ul class="a3-rows a3-rclist">${owedRows.join('')}</ul>` : '<p class="a3-sub">No cards or loans</p>'}
+  const closedOwed = ((book.accounts || []).filter(a => plLive3(a) && (a.type === 'card' || a.type === 'loan') && a.closed)).map(a => plRow3(`data-acctclosed="${esc3(a.id)}"`, `${esc3(a.name)}<br><span class="when">Closed ${esc3(day3(a.closed, yr))}. Its history stays</span>`, ''));
+  out.push(`<section class="a3-card" data-card="plan-owed"><h2>Cards and loans</h2>${owedRows.length ? `<ul class="a3-rows a3-rclist">${owedRows.join('')}</ul>` : '<p class="a3-sub">No cards or loans</p>'}${closedOwed.length ? `<p class="a3-acct">Closed</p><ul class="a3-rows a3-rclist" data-closed>${closedOwed.join('')}</ul>` : ''}
     <div class="a3-actions"><button type="button" class="a3-btn" id="plAddCard">Add a card</button><button type="button" class="a3-btn" id="plAddLoan">Add a loan</button></div></section>`);
   /* pay periods gone by */
   const past = per.past.map(q => {
@@ -375,9 +376,15 @@ function plOwedForm3(id) {
   const fields = [{ key: 'name', label: 'Name', kind: 'text', value: a.name }, { key: 'payDay', label: 'Day of the month it is paid', kind: 'day', value: a.payDay }];
   if (card) fields.push({ key: 'cutDay', label: 'Day the statement closes', kind: 'day', value: a.cutDay, hint: 'Leave it empty if you are not sure: then all that is owed is due on each payment day' });
   else fields.push({ key: 'amount', label: 'Usual payment', kind: 'amount', value: a.amount });
+  /* [E3, M13, M27] pay it off now (only if they really paid it), close (at zero), remove one added by mistake */
+  const r = E3.view(E3.today()), k = card ? r.cards[id] : r.owed[id], owed = k ? k.owedNow : 0, cur = a.cur || E3.home(), from = E3.nameOf(a.payFrom);
+  const what = card ? 'card' : 'loan';
   plForm3(a.name, fields, [{ label: 'Save', solid: true, step: v => ['changeOwed', w => PLAN3W.changeOwed(w, id, card ? { name: v.name, payDay: v.payDay, cutDay: v.cutDay } : { name: v.name, payDay: v.payDay, amount: v.amount }), a.name + ' changed'] }]
-    .concat(card ? [] : [{ label: 'Close this loan', sure: [`Close ${a.name}? It leaves your plan`, 'Yes, close it'], step: () => ['closeLoan', w => PLAN3W.closeLoan(w, id), a.name + ' closed'] }]),
-    card ? '' : 'A loan closes once it is paid off');
+    .concat(owed > 0 ? [{ label: 'Pay it off now', sure: [`Did you pay all ${money3(owed, cur)} on ${a.name} today, from ${from}? It is written as paid today`, 'Yes, I paid it'], step: () => ['payOff', w => PLAN3W.payOff(w, id), a.name + ' paid off'] }] : [])
+    .concat([card ? { label: 'Close this card', sure: [`Close ${a.name}? Its payment day stops. Its history stays`, 'Yes, close it'], step: () => ['closeAccount', w => PLAN3W.closeAccount(w, id, {}), a.name + ' closed'] }
+      : { label: 'Close this loan', sure: [`Close ${a.name}? It leaves your plan`, 'Yes, close it'], step: () => ['closeLoan', w => PLAN3W.closeLoan(w, id), a.name + ' closed'] },
+      { label: 'Remove this ' + what, sure: [`Remove ${a.name}? Use this only if it was added by mistake: it goes as if it was never added`, 'Yes, remove it'], step: () => ['removeAccount', w => PLAN3W.removeAccount(w, id), a.name + ' removed'] }]),
+    (owed > 0 ? `${esc3(a.name)}: ${money3(owed, cur)} ${esc3(label3('owed')).toLowerCase()}. ` : '') + (card ? 'A card closes once nothing is on it' : 'A loan closes once it is paid off'));
 }
 /* [E1, M13] an account's own sheet: its name, and its own Keep at least (the main bank's is in Settings) */
 function plAcctForm3(id) {

@@ -9558,7 +9558,9 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     .concat(A3.listOf(w.book, 'budgets').filter(l => live(l) && l.acct === id && !(l.ends && l.ends < w.today)).map(l => l.name));
   function closeAccount(w, id, x) {
     const a = find(w, 'accounts', id);
-    if (!OWN_KINDS[a.type]) bad(a.type === 'loan' ? 'Close a loan on its own sheet' : 'Close a card on its own sheet');
+    if (a.type === 'loan') return closeLoan(w, id);
+    if (a.type === 'card') return closeCard(w, id);
+    if (!OWN_KINDS[a.type]) bad('That account cannot be closed here');
     if (id === mainOf(w)) bad('Your main bank is where pay lands, so it cannot be closed here yet');
     if (a.closed) bad(a.name + ' is already closed');
     const k = keptIn(w, id);
@@ -9574,6 +9576,31 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     w.edit('accounts', id, { closed: w.today });
     return id;
   }
+  /* [E3, M27, M40, R3] a card closes at zero: a final check of 0 today and `closed` (its payment day stops: the schedules it
+     owns end on the closing day). With something on it, refused: pay it off (payOff) or tick its payment at Check your
+     bank first */
+  function closeCard(w, id) {
+    const a = find(w, 'accounts', id);
+    if (a.closed) bad(a.name + ' is already closed');
+    const c = LA.lookahead(w.book, w.today).cards[id];
+    if (c && c.owedNow > 0) bad(a.name + ' still has ' + SMF.format(c.owedNow, a.cur || home(w)) + ' on it. Pay it off first, or tick its payment at Check your bank when it has gone');
+    w.add('events', { k: 'check', acct: id, date: w.today, a: 0 });
+    w.edit('accounts', id, { closed: w.today });
+    return id;
+  }
+  /* [E3, K7] all that is owed on a card or a loan, paid today from the account it is paid from: one repay, written only
+     when the person says they really paid it (the screen and the assistant ask) */
+  function payOff(w, id) {
+    const a = find(w, 'accounts', id);
+    if (a.type !== 'card' && a.type !== 'loan') bad('Only a card or a loan is paid off');
+    if (a.closed) bad(a.name + ' is closed');
+    const r = LA.lookahead(w.book, w.today), k = a.type === 'card' ? r.cards[id] : r.owed[id], owed = k ? k.owedNow : 0;
+    if (!(owed > 0)) bad('Nothing is owed on ' + a.name);
+    const from = a.payFrom || mainOf(w);
+    if (!(w.book.accounts || []).some(y => live(y) && !y.closed && y.id === from)) bad('The account ' + a.name + ' is paid from is closed. Change that first');
+    w.add('events', { k: 'repay', date: w.today, a: owed, a2: owed, acct: from, acct2: id, src: { type: 'typed' } });
+    return id;
+  }
   function reopenAccount(w, id) {
     const a = find(w, 'accounts', id);
     if (!a.closed) bad(a.name + ' is not closed');
@@ -9585,7 +9612,7 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
      account and those records are marked gone; Undo puts them back whole */
   function removeAccount(w, id) {
     const a = find(w, 'accounts', id);
-    if (!OWN_KINDS[a.type]) bad('Remove a card or a loan on its own sheet');
+    if (!OWN_KINDS[a.type] && a.type !== 'card' && a.type !== 'loan') bad('That account cannot be removed here');
     if (id === mainOf(w)) bad('Your main bank is where pay lands, so it cannot be removed');
     const uses = linksTo(w, id).map(l => l.rec.name).concat(keptIn(w, id));
     if (uses.length) bad(uses.join(' and ') + ' use' + (uses.length > 1 ? '' : 's') + ' ' + a.name + '. Change ' + (uses.length > 1 ? 'them' : 'it') + ' first, or close ' + a.name + ' instead');
@@ -9596,7 +9623,7 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     return id;
   }
 
-  const api = { addPay, addAccount, changeAccount, closeAccount, reopenAccount, removeAccount, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan };
+  const api = { addPay, addAccount, changeAccount, closeAccount, reopenAccount, removeAccount, payOff, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan };
   if (node) module.exports = api;
   else root.PLAN3W = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
@@ -10626,7 +10653,8 @@ function drawPlan3() {
     return plRow3(`data-owed="${esc3(a.id)}"`, `${esc3(a.name)}<br><span class="when">${days}</span>${od}${nx}`, k.credit ? `<span data-fig="credit">${esc3(label3('inCredit')).toLowerCase()} ${plFig3('cards.*.credit', k.credit, a.cur)}</span>`   /* [BL5] never as owed */
       : `<span data-fig="owed-now">${plFig3(a.type === 'card' ? 'cards.*.owedNow' : 'owed.*.owedNow', k.owedNow, a.cur)}</span><br><span class="when">${esc3(label3('owed')).toLowerCase()}</span>`);
   }).filter(Boolean);
-  out.push(`<section class="a3-card" data-card="plan-owed"><h2>Cards and loans</h2>${owedRows.length ? `<ul class="a3-rows a3-rclist">${owedRows.join('')}</ul>` : '<p class="a3-sub">No cards or loans</p>'}
+  const closedOwed = ((book.accounts || []).filter(a => plLive3(a) && (a.type === 'card' || a.type === 'loan') && a.closed)).map(a => plRow3(`data-acctclosed="${esc3(a.id)}"`, `${esc3(a.name)}<br><span class="when">Closed ${esc3(day3(a.closed, yr))}. Its history stays</span>`, ''));
+  out.push(`<section class="a3-card" data-card="plan-owed"><h2>Cards and loans</h2>${owedRows.length ? `<ul class="a3-rows a3-rclist">${owedRows.join('')}</ul>` : '<p class="a3-sub">No cards or loans</p>'}${closedOwed.length ? `<p class="a3-acct">Closed</p><ul class="a3-rows a3-rclist" data-closed>${closedOwed.join('')}</ul>` : ''}
     <div class="a3-actions"><button type="button" class="a3-btn" id="plAddCard">Add a card</button><button type="button" class="a3-btn" id="plAddLoan">Add a loan</button></div></section>`);
   /* pay periods gone by */
   const past = per.past.map(q => {
@@ -10864,9 +10892,15 @@ function plOwedForm3(id) {
   const fields = [{ key: 'name', label: 'Name', kind: 'text', value: a.name }, { key: 'payDay', label: 'Day of the month it is paid', kind: 'day', value: a.payDay }];
   if (card) fields.push({ key: 'cutDay', label: 'Day the statement closes', kind: 'day', value: a.cutDay, hint: 'Leave it empty if you are not sure: then all that is owed is due on each payment day' });
   else fields.push({ key: 'amount', label: 'Usual payment', kind: 'amount', value: a.amount });
+  /* [E3, M13, M27] pay it off now (only if they really paid it), close (at zero), remove one added by mistake */
+  const r = E3.view(E3.today()), k = card ? r.cards[id] : r.owed[id], owed = k ? k.owedNow : 0, cur = a.cur || E3.home(), from = E3.nameOf(a.payFrom);
+  const what = card ? 'card' : 'loan';
   plForm3(a.name, fields, [{ label: 'Save', solid: true, step: v => ['changeOwed', w => PLAN3W.changeOwed(w, id, card ? { name: v.name, payDay: v.payDay, cutDay: v.cutDay } : { name: v.name, payDay: v.payDay, amount: v.amount }), a.name + ' changed'] }]
-    .concat(card ? [] : [{ label: 'Close this loan', sure: [`Close ${a.name}? It leaves your plan`, 'Yes, close it'], step: () => ['closeLoan', w => PLAN3W.closeLoan(w, id), a.name + ' closed'] }]),
-    card ? '' : 'A loan closes once it is paid off');
+    .concat(owed > 0 ? [{ label: 'Pay it off now', sure: [`Did you pay all ${money3(owed, cur)} on ${a.name} today, from ${from}? It is written as paid today`, 'Yes, I paid it'], step: () => ['payOff', w => PLAN3W.payOff(w, id), a.name + ' paid off'] }] : [])
+    .concat([card ? { label: 'Close this card', sure: [`Close ${a.name}? Its payment day stops. Its history stays`, 'Yes, close it'], step: () => ['closeAccount', w => PLAN3W.closeAccount(w, id, {}), a.name + ' closed'] }
+      : { label: 'Close this loan', sure: [`Close ${a.name}? It leaves your plan`, 'Yes, close it'], step: () => ['closeLoan', w => PLAN3W.closeLoan(w, id), a.name + ' closed'] },
+      { label: 'Remove this ' + what, sure: [`Remove ${a.name}? Use this only if it was added by mistake: it goes as if it was never added`, 'Yes, remove it'], step: () => ['removeAccount', w => PLAN3W.removeAccount(w, id), a.name + ' removed'] }]),
+    (owed > 0 ? `${esc3(a.name)}: ${money3(owed, cur)} ${esc3(label3('owed')).toLowerCase()}. ` : '') + (card ? 'A card closes once nothing is on it' : 'A loan closes once it is paid off'));
 }
 /* [E1, M13] an account's own sheet: its name, and its own Keep at least (the main bank's is in Settings) */
 function plAcctForm3(id) {
@@ -13606,9 +13640,9 @@ Actions:
     addGoal: { name: 'Add a goal', does: 'Adds a goal: its name, the goal amount, a target date and where the money is kept' },
     goal: { name: 'A goal\'s own sheet', does: 'Sets money aside for the goal, takes money out of it, or changes its name, amount or date' },
     addCard: { name: 'Add a card', does: 'Adds a card: its name, what is on it now, the day it is paid from your bank and the day its statement closes' },
-    card: { name: 'A card\'s own sheet', does: 'Changes the card\'s name, the day it is paid and the day its statement closes' },
+    card: { name: 'A card\'s own sheet', does: 'Changes the card\'s name, the day it is paid and the day its statement closes; pays it off now, closes it, or removes one added by mistake' },
     addLoan: { name: 'Add a loan', does: 'Adds a loan: its name, what is still owed, the usual payment and the day it is paid' },
-    loan: { name: 'A loan\'s own sheet', does: 'Changes the loan\'s name, the day it is paid or the usual payment, or closes the loan' },
+    loan: { name: 'A loan\'s own sheet', does: 'Changes the loan\'s name, the day it is paid or the usual payment; pays it off now, closes it, or removes one added by mistake' },
     addAccount: { name: 'Add an account', does: 'Adds a bank, cash or e-wallet after setup: its name, what it holds today, and whether that money was moved from your main bank' },
     account: { name: 'An account\'s own sheet', does: 'Renames a bank, cash or e-wallet, sets its own Keep at least, closes it, or removes one added by mistake' },
     closeAccount: { name: 'Close an account', does: 'Closes a bank, cash or e-wallet: what it holds moves to another account of yours, or counts as spent, and bills paid from it move too. Its history stays' },
