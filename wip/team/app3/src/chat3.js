@@ -102,7 +102,9 @@ async function chat3Route() {
 }
 
 /* ---- drawing ---- */
-const chat3Full = () => !E3.book;   // before setup the panel is the first screen
+/* before setup the panel is the first screen; while the setup screens are open it is the bar (AI_JOIN_FIXES I4) */
+const chat3SetupOpen = () => !!$('#a3Setup') && !$('#a3Setup').hidden;
+const chat3Full = () => !E3.book && !chat3SetupOpen();
 function chat3Figs(rows) {
   const cur = E3.book ? E3.home() : 'JPY';
   if (!rows || !rows.length) return '';
@@ -166,7 +168,12 @@ function chat3Inner() {
 function renderChat3() {
   const aside = $('#a3Chat');
   if (!aside) return;
-  if (chat3Full() || E3.mode === 'try') { aside.hidden = true; aside.innerHTML = ''; aside.removeAttribute('data-open'); document.body.classList.remove('a3-has-chat'); return; }
+  /* [AI_JOIN_FIXES I4] the bar is there in the made-up numbers too (that visit's chat is never kept), and on the setup
+     screens, where the welcome's own box is taken away so there is only ever one chat box */
+  if (chat3Full()) { aside.hidden = true; aside.innerHTML = ''; aside.removeAttribute('data-open'); document.body.classList.remove('a3-has-chat'); return; }
+  /* the setup screens are open over the welcome: its chat parts go (its ways in stay), so the bar is the one chat box */
+  const w = !E3.book && $('#a3Home .a3-welcome');
+  if (w && w.querySelector('#a3ChatIn')) [...w.children].forEach(c => { if (!c.matches('h2, .a3-actions')) c.remove(); });
   aside.hidden = false; document.body.classList.add('a3-has-chat');
   const keep = $('#a3ChatIn') && $('#a3ChatIn').closest('#a3Chat') ? $('#a3ChatIn').value : '';
   aside.innerHTML = `<div class="a3-chat-head"><h2>The assistant</h2><button type="button" class="a3-link" id="a3ChatClose">Close</button></div>
@@ -179,8 +186,10 @@ function renderChat3() {
 }
 /* before setup: the whole first screen, with the ways in that were there before */
 function renderWelcome3(host) {
-  host.innerHTML = `<section class="a3-card a3-welcome" data-card="first"><h2>Welcome to the burrow</h2>${chat3Inner()}
+  const open = chat3SetupOpen();   // the setup screens are open over it: the bar is the chat, the welcome keeps its ways in
+  host.innerHTML = `<section class="a3-card a3-welcome" data-card="first"><h2>Welcome to the burrow</h2>${open ? '' : chat3Inner()}
     <div class="a3-actions"><button type="button" class="a3-btn" id="a3SetupGo">Set up on the screens instead</button><button type="button" class="a3-btn" id="a3TryGo">See it with made-up numbers first</button><button type="button" class="a3-btn" id="a3OtherGo">I already use the burrow on another device</button></div></section>`;
+  if (open) { renderChat3(); return; }
   chat3Wire(host);
 }
 function chat3Wire(host) {
@@ -344,7 +353,6 @@ async function chat3AnyCheck() {
    welcome is the panel: the cursor goes to its box. A sheet open over the page (Settings, setup) closes first */
 async function chat3Ask() {
   if (typeof SET3 === 'object' && SET3.open) closeSet3();
-  if (E3.mode === 'try') await leaveTry3({ toChat: true });
   if (!E3.book) {
     if ($('#a3Setup') && !$('#a3Setup').hidden) closeSetup3();
     showTab3('home');
