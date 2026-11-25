@@ -119,11 +119,11 @@
   /* ---- the 15 setup questions (AI_FIRST_PLAN section 2, with BV7, BV2.13 and BW: how many banks, one is fine).
      Drafts for Mako's copy pass. ---- */
   const GUIDE = [
-    { n: 1, key: 'welcome', ask: "Hi, I'll set up your Burrow with you. I ask a few questions, about 10 minutes. You can type, or send me a statement or payslip and I'll read it. What you tell me stays on this phone until you say fill it in." },
+    { n: 1, key: 'welcome', ask: "Hi, I'll set up your Burrow with you. I ask a few questions, about 10 minutes. You type, and I'll say where to find each figure. What you tell me stays on this phone until you say fill it in." },
     { n: 2, key: 'how', ask: "You tell me what's in your bank today, what comes in and what goes out and when. From that the app works out what's safe to spend until your next pay. Everything I fill in shows on the screens so you can check it." },
     { n: 3, key: 'country', ask: 'Which country do you bank in, and in which currency? The country moves pay and bills off weekends and holidays.' },
     { n: 4, key: 'banks', ask: 'How many banks do you use? One is fine to start, you can add more later. Which bank does your pay go into?' },
-    { n: 5, key: 'banks', ask: "What does that bank's app show right now? If you don't know: open the bank app. The big number on the first screen is it. Or send me a screenshot." },
+    { n: 5, key: 'banks', ask: "What does that bank's app show right now? If you don't know: open the bank app. The big number on the first screen is it." },
     { n: 6, key: 'pays', ask: 'How are you paid? On a day each month, twice a month, every week or two, or whenever work comes in?' },
     { n: 7, key: 'pays', ask: "Which day does it land? If that's a weekend or holiday does it come the day before or after?" },
     { n: 8, key: 'pays', ask: "How much lands in your bank each time? Then always: is that before or after tax? If before or not sure: I need what lands in the bank, after tax. On a Japanese payslip it's 差引支給額 (take-home)." },
@@ -142,6 +142,8 @@ Numbers: the app works out every figure. FIGURES (and DRAFT before setup) come w
 How to talk: plain words, short sentences, one question per message, like a friend who is good with money. Usually under 60 words. No headings, no bold, no lists of options, no exclamation marks, no praise. Times and days as the app writes them.
 
 The person can ask anything about the app at any point (use explain for how it works). Answer, then go back to the next setup question.
+
+Files: you can't read files, statements, payslips or pictures yet. Never offer to. If they want to send one, say in one line that reading files comes later, and ask them to type the figures.
 
 SETUP (when FIGURES says there is no book yet). Ask these in order, one per message, skipping what DRAFT already has:
 ${GUIDE.map(g => g.n + '. ' + g.ask).join('\n')}

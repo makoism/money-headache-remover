@@ -420,6 +420,14 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     ok(/¥286,000/.test(JSON.stringify(K.draftCard(st.draft, h.day))));
     ok(!K.draftCard(st.draft, h.day).need.includes('What does Main bank show today?'));
   });
+  /* ---- AI_JOIN_FIXES H: what the assistant is told ---- */
+  await t('[H1] it never offers to read a file, statement, payslip or screenshot: nothing it is told offers one, and it is told it cannot yet', async () => {
+    const told = K.SYSTEM + ' ' + K.GUIDE.map(g => g.ask).join(' ');
+    ok(!/send me|I'll read|screenshot|upload|photo/i.test(told), (told.match(/.{0,60}(send me|I'll read|screenshot|upload|photo).{0,60}/i) || [''])[0]);
+    ok(/can't read files/i.test(K.SYSTEM) && /type the figures/i.test(K.SYSTEM), 'it is told it cannot read files yet, and to ask for the figures typed');
+    const body = (await (async () => { const f = FAKE.make([say('ok')]); await K.turn(K.fresh(), 'hi', page('2026-11-24').deps(f)); return f.bodies[0]; })());
+    ok(!/send me|I'll read|screenshot/i.test(body.system), 'what is sent says the same');
+  });
   console.log(bad ? `chat3_core: ${bad} of ${n} FAILED` : `chat3_core: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })();
