@@ -1,4 +1,5 @@
 Scope for lane/cash-1, slice 1 of the cash plan (cards in safe to spend), drafted by LANE G on 26 Nov 2026 from the candidate's scope.txt (lane/ai-join qc_reports/2026-11-25_ai_first) as coordinator 16 asked; the coordinator checks and corrects it and owns this file.
+Checked by coordinator 16, 26 Nov 2026 09:05 JST: the slice part matches CASH_PLAN R1 and the cards plan; the candidate part is the newest lane/ai-join scope.txt with the card-spend fault and the M88 M89 M90 line replaced by the slice part above. Lines merged into lane/ai-join later (checkgap) are added when cash-1 takes them in.
 
 THIS SLICE BUILDS (M88 to M97):
 M90 (in part)   With NO play amount set, everything on the cards now comes off safe to spend today (ruling R1, CASH_PLAN 14, cards plan): Home, Plan, the help "?" and the change cards say so ("Set a play amount" where the cards push it over). With a play amount set, the figures are as before, byte for byte (golden answers).
