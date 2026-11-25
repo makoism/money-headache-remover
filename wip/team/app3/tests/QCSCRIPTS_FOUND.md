@@ -21,10 +21,8 @@ Walked on lane/ai-join (the assistant panel and the setup chat). Fixed there and
 during setup now opens the assistant (the welcome is the chat), and after setup the assistant's box is a bar at the
 foot of every screen, so it no longer scrolls away there.
 
-- src/chat3.js (renderChat3) and src/shell.html: before setup (setup, Settings on a new device, the first screen with
-  Use any AI open) and with the made-up numbers there is no bar at the foot. The way in is the small Ask link in the
-  header, and it scrolls away with the page: scrolled to the end of those 8 places, it is off the screen (M1 "always on
-  screen").
+Fixed since: before setup the header line with Ask stays at the top of every screen (app3.css, one rule), so the way in
+no longer scrolls away on any of the 36 places. This test has no KNOWN fault left: every place is a hard fail.
 
 Not faults: no page error on any of the 36 places, and no network call at all with the cloud copy off, also when Ask
 is opened from every place. Served from a server, the page asks its own server once whether the AI is on
