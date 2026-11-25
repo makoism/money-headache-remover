@@ -191,3 +191,70 @@ Slice 2 is the only one that can start before L1 and L2 merge. Slices 3, 4, 7 an
 ## 6. (e) Files this lane does not touch
 
 Not edited by this plan or its slices: `.claude/agents/*.md`, `wip/team/QC_ROLES.md`, `QC_AGENT.md`, `QC_NUMBERS.md`, `wip/team/qc/`. The coordinator owns them (DECISIONS new foundation 17). Suggestion for the coordinator's brief update: the controls table (section 2) is the list a reviewer can walk to check "every kind can be added, changed and removed".
+
+---
+
+## Corrections after qc-foundation (BZ)
+
+qc-foundation FAILed this plan (qc_reports/2026-11-24_controls_plan/qc-foundation.md): three FOUNDATIONAL findings, three plan corrections, four WATCH items. Each is taken. The three base changes are built first, on lane/controls-base (from wip-38.31), each its own commit with an engine or store test first and a migration test for every shape change. Every saved book that exists today stays readable. The decisions and reasons are DECISIONS_ROUND2 BZ.
+
+### The three base changes (before slice 1)
+
+**BZ1. A saved Undo journal (finding 2; M14, M6, M61).** Replaces F-A.
+- act3 writes one journal entry per step, in the same save as the step, into a new top-level list `journal`:
+  - `id` (the step id, the same as the records' `grp`), `label`, `moment` (the step's `at`), `day`, `by`;
+  - `added` and `removed`: `{ list, id }` for each record;
+  - `edited`: `{ list, id, before }`, where `before` holds the old value of each field it changed (and the old `at` and `by`);
+  - `revived`: a gone record a check-in's `set:` id took over, with the whole record as it was.
+- `undo(stepId)` after a reload reads the entry, so a step that only edits (setKeep, changeAccount, changeCheck, a close's `closed`) undoes too. The rule within a visit is unchanged: refused whole when a later step changed any record it touched, so nothing is ever half undone. An undone entry gets `undone` (the Undo's step id); an Undo is not journaled itself.
+- The sync joins two journals by id and never asks about them (an entry marked undone wins over the same entry not marked). Two tabs or two devices then both keep every step, and an Undo of a step from the other device is still refused when anything changed its records since. Two devices' changes to one record still meet in the which-to-keep question (M20). The journal keeps the latest 200 steps by moment, in act3 and in the sync, so a step dropped on both sides is not brought back by the base copy.
+- Steps from before the journal still undo what they can, as today: what they added (by `grp`) and removed (by `goneBy`).
+- So the close (slice 5) undoes after a reload too: the transfer and the final check gone, `closed` and the moved links edited back, in one step. Reopen stays as its own door for a close the person wants to take back later, when other steps have touched the account since.
+
+**BZ2. A dated `startsPeriod` (finding 1; M38, M46, M31).** Replaces BY1's undated move.
+- `startsPeriod` on a pay is either `true` (every book saved today: held since the pay's start) or a list of dated entries like `rules`: `[{ from, at, by }]` (`from: null` means since the pay's start).
+- The pay that holds it on a day is the live pay with the newest entry on or before that day (by `from`, ties by `at`). Moving it is one new entry on the new pay. The old pay is never edited, so its past stays.
+- The engine draws each period from the pay that held the flag on that day: the old pay's pays before the switch, the new pay's from it. The current period runs from the last pay that started one to the day before the next pay of the pay holding it today.
+- endPay (slice 7) on the pay that starts periods adds an entry `{ from: <end day> }` on the other pay with a fixed day, in the same step as `ends`. One Undo takes both back.
+- lane/ai-core's F4 (bde36f9) is moved onto this on lane/controls-base (ai-core merged in, at the coordinator's word): addPay gives the new pay `startsPeriod: [{ from: <today>, at, by }]` when the pay holding it today has no fixed day or has ended; changeBill from no fixed pay back to a day adds an entry from its first pay; the old pay keeps its flag.
+- endBill on the pay holding the flag (the assistant's "my job ended", qc-foundation confirm on ai-core, finding 1) adds an entry from the day after its last day on another live pay with a fixed day that has not ended, in the same step; with none, it keeps the flag until a pay is added. A new entry is never dated before the newest entry any pay has (as BQ2), or it would lose for good. One Undo, after a reload too (BZ1), takes the end and the entry back.
+
+**BZ3. A removed record comes back when a live record names it (finding 3; M67, M20, M45, M61).**
+- In the engine and the sync: a live event (its `acct`, `acct2`, `line`, `stream` or a settled occurrence), a live schedule or a live line that names a removed account, line or schedule brings it back. With an account come its own records removed in the same step (the same `goneBy`, naming it). A notice says so, as a late spend reopens a closed account (AP1).
+- Read the same way by both, from the joined data, so both devices show the same: the look ahead counts it and warns `revived`, and `afterSync` gives the notice `revived`. Nothing is written by the sync. The person can remove it again, with the money on it moved or removed first.
+- So "true remove" (section 3) stays safe on two devices: a 3,000 spend logged offline on the phone on an e-wallet the desktop removed counts, the e-wallet is back, and the person is told.
+
+**BZ4. sync.js reads `type` (WATCH).** Lines 289 and 425 read `a.kind`; accounts keep `type`. Fixed with a test first: a card's match window is 7 days, and a closed card's figure at close has the owed sign.
+
+### Plan corrections (no base change)
+
+- **A. removeImport (slice 11)** also puts back, in the same step, every record whose `goneBy` names one of the import's lines (sync's rematch, sync.js:305; the same payment from a bank and a card import, stmt3_plan.js:236). Section 3's "never marked gone in saved data" is wrong and is replaced by this.
+- **B. changeCheck (slice 10)** changes or removes, in the same step, the gap spend that check-in logged (`dayInside`, the same `grp` and account, checkin3.js:148), so the line and the gain follow the new figure.
+- **C. "The latest check-in" (slice 10)** is per account: the latest check of that account, by date then `told`, counting checks written by a statement import. Removing it takes out that check-in's records for that account only; another account's check in the same check-in stays.
+
+### WATCH items, now in the plan
+
+- **Rows from the lists, not by hand (slice 1).** controls3.js builds one row per act3 list (`PATHS`, `people` included) and per account type (act3's `SPEND_FROM` and the ledger's types, `paylater` included). A row with no door is `todo`. So couples (stage 2) and pay-later (stage 2 lane A) arrive with rows already, and e3_controls fails when a list or type has no row.
+- **Closing an account in another currency** needs a `convert`, not a `transfer`. Stage 2 (with currency). In v1, closeAccount refuses a move to an account in another currency and offers the write-off or a move to an account in the same currency.
+- **Yen is the default (M34).** Someone who typed peso amounts under yen fixes it with Start again in v1 (slice 12: the book kept whole, setup refilled except amounts). A real currency change, a dated `home.curs` entry, is stage 2. A rescaling relabel rewrites every amount and stays out of v1.
+- **sync.js `kind` and `type`:** BZ4 above.
+
+### BZ2 part: rows from the controls back-test (qc_reports/2026-11-24_backtest_live_build/SORTED.md, K4 to K23)
+
+Each row is a door the table above lacked. Each goes into controls3.js with its slice, `todo` until built. K29, K34, K35, K37, K18 and K32 are handled in other lanes.
+
+| Row | What is missing | The door | Slice |
+|---|---|---|---|
+| K4 | A card's or a pay's weekend rule cannot be changed later | `changeOwed` and `changeBill` take `shift` (the card form and the pay form get the weekend box); assistant `change_card`, `change_bill` take it too. A pay's rule change is a dated entry like its other changes, so past landings stay | 6 (card), 7 (pay) |
+| K5 | No loan in setup | A loan row in the setup screens (name, still owed, usual payment, day), writing what `addLoan` writes; the setup chat's `add_loan` | 12 |
+| K6 | A loan's "Still owed" cannot be changed | A "Still owed today" box in the loan's form, written as a `check` on the loan (as a card's figure is), with Undo; assistant `change_loan` | 6 |
+| K7 | A loan paid off early cannot be closed (closeLoan refuses while anything is owed) | "Pay it off now" for a loan as for a card (a `repay` from its paying account, dated today, only if the person really paid it), then the close at zero; `closeLoan` folds into `closeAccount`; assistant `close_loan` | 6 |
+| K12 | The screens' End this bill, End this line and Receipts Remove do not ask first (M6) | One shared confirm for every screen delete or end, saying what is lost and what stays ("Its history stays" or "It was never used"), the same words the assistant's confirm uses; then the step and its Undo bar. e3_controls checks every `end` and `remove` door asks first | 1 (the shared confirm, in the table's door walk) |
+| K13 | No budget line or goal in the setup screens | A line row and a goal row in the setup screens, writing what `addLine` and `addGoal` write, each section saved on its own with Undo (M16); the setup chat already has `add_line` and `add_goal` (ai-core) | 12 |
+| K16 | The assistant cannot change a spend or a refund | Assistant `change_spend` over act3 `edit` (amount, day, account, line or place, note), with the confirm when larger than safe to spend | 8 |
+| K23 | Reminders have no row, no Undo, and are not kept across a reload | A `reminders` act3 list (add, change, remove through act3, Undo from the journal, BZ1). Today they are not saved on purpose; M14 ("Undo everywhere") overrides that. A new list in the saved shape: added only, old books read as having none (a migration test) | 10 |
+
+### What this changes above
+
+- Section 1 F-A is replaced by BZ1. Section 3: "Undo after a reload: refused (F-A)" now reads "undone from the journal"; for End the pay that starts the periods, "Periods before it are unchanged" holds by BZ2; Remove a statement import follows A; Change a past check's figure follows B; Remove a check-in follows C.
+- Slice 2 (act3 guards) keeps F-B and setField; its Undo item is done by BZ1. Slice 7 writes the dated entry (BZ2). Slice 1 builds rows from the lists (WATCH).
