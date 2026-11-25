@@ -39,6 +39,9 @@ Standing rules:
 4. Every session pushes after every commit, and keeps RESUME section 0 (MAIN) or its last status message (LANE B) current, so a stop loses nothing.
 5. When work stops and you come back: tell Mako in one line how long it was stopped and why, then carry on. Do not make it long.
 
+## 4b. Which model does what (from 25 Nov, to stretch Fable)
+Fable: the coordinator, the main build session, LANE B, and the gate reviewers (qc-foundation, qc-numbers, qc-north-star, qc-controls, qc-assistant). Opus: every builder helper, and qc-novice, qc-layout-touch, qc-data-safety, qc-voice, qc-art-director, efficiency. Opus builders get tight briefs (exact files, failing test first, check3 quick after each change) and the session reads their diff before merging. A Fable call that is refused is switched to Opus at once and reported.
+
 ## 5. Switch to Opus (when Fable is used up)
 Signs: a session's rate_limit_info shows a Fable limit rejected, or sessions on Fable fail while Opus is allowed, or Mako says so.
 1. Agents: in .claude/agents/*.md change `model: fable` to `model: opus` (one sed), commit "reviewers to Opus: Fable used up", push. Tell build sessions to pass model "opus" on Agent calls.
