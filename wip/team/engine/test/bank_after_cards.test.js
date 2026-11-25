@@ -18,7 +18,11 @@ function after(cards, o) {
   const out = BB.buildBook({ day: '2026-11-24', told: '2026-11-24T12:00:00.000+09:00', currency: 'JPY', country: 'JP',
     banks: [{ key: 'bank1', name: 'Main bank', amount: 168000, main: true, min: null }],
     pays: [o.pay || PAY], cards, bills: o.bills || [], free: null }, { newId: IDS.idMaker('k3f9aq') });
-  const book = out.book || out, r = LA.lookahead(book, o.seen || '2026-11-24'), bank = book.accounts.find(a => a.type !== 'card').id;
+  let book = out.book || out;
+  /* a spend on a card, typed by the person: { card: 'Card C', day, a } */
+  for (const sp of o.spends || []) book = Object.assign({}, book, { events: book.events.concat([{ id: 'k3f9aq-sp' + sp.day.replace(/-/g, '') + sp.a, k: 'spend', date: sp.day, a: sp.a,
+    acct: book.accounts.find(a => a.name === sp.card).id, line: 'free', told: sp.day + 'T12:00:00.000+09:00', src: { type: 'typed' } }]) });
+  const r = LA.lookahead(book, o.seen || '2026-11-24'), bank = book.accounts.find(a => a.type !== 'card').id;
   const x = r.bankAfterCards[bank];
   if (x) x.names = x.cards.map(c => book.accounts.find(a => a.id === c).name).sort();
   return x;
@@ -87,5 +91,17 @@ t('paid twice a month (150,000 on the 10th and 25th), cards A and C: 402,000 aft
 t('the days and the cards named are the same whichever order the cards were typed in', () => {
   const x = after([A, B, C]), y = after([C, B, A]), z = after([B, C, A]);
   eq([y.cardDays, y.names, y.amount], [x.cardDays, x.names, x.amount]); eq([z.cardDays, z.names, z.amount], [x.cardDays, x.names, x.amount]);
+});
+// [qc-numbers monthrule2 blocker 4, coordinator 26 Nov 07:57] close days not sure: the words say "It counts everything
+// on the cards now", so a new spend on a card whose payment is overdue is in the figure too, taken with the overdue
+// payment today. Seen 28 Nov, nothing ticked, Card C 12,000 overdue (27 Nov) and a new 5,000 on Card C on 28 Nov:
+//   168,000 - 12,000 - 5,000 (today) + 300,000 (10 Dec) - 54,000 - 23,000 = 374,000. Before the fix 379,000 (the 5,000 left out).
+t('an overdue card with a new spend: everything on it is counted today, 374,000', () => {
+  const x = after([A, B, C], { seen: '2026-11-28', spends: [{ card: 'Card C', day: '2026-11-28', a: 5000 }] });
+  eq([x.amount, x.cardDays, x.ifAllTaken], [374000, ['2026-11-28', '2026-12-10', '2026-12-11'], true]);
+});
+t('a new spend never raises the figure, and with no overdue payment it is in the next payment as before', () => {
+  const x = after([A, B, C], { spends: [{ card: 'Card A', day: '2026-11-24', a: 5000 }] });
+  eq(x.amount, 374000);
 });
 done('bank_after_cards.test.js');
