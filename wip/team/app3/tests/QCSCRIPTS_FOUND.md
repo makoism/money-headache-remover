@@ -37,16 +37,17 @@ Not faults: no page error on any of the 36 places, and no network call at all wi
 is opened from every place. Served from a server, the page asks its own server once whether the AI is on
 (GET /api/health, nothing sent); that is allowed and counted apart.
 
-## tests/m_lines.test.js (every line of MAKO_SAYS.md is named by a test, a brief or a scope file)
+## tests/m_lines.test.js (every line of MAKO_SAYS.md is named by its own id)
 
 Not a fault in the app: a gap in the process, for the coordinator, who owns MAKO_SAYS.md and the briefs.
 
-- wip/team/MAKO_SAYS.md section G (how the team works with him), M70 to M76 and M78 to M82: no test, no reviewer brief
-  in .claude/agents and no scope file names them, and QC_COMMON gives no reviewer section G. CLAUDE.md and RESUME
-  carry these rules, but nothing checks them. M77 is named by engine/test/card_gap_lives.test.js.
+Rule since 25 Nov (coordinator): a line counts only when its own id is written in a test, a reviewer brief, a scope
+file or wip/team/M_COVERAGE.md; section G (how the team works with him) is covered by wip/team/RUNBOOK.md section 8.
+A section handed whole to a reviewer covers nothing by itself, so a line added later fails until someone names it.
 
-Also printed by the test, not counted as a fault: 19 lines are held only by a reviewer's section (a reviewer marks
-them on every build, no script checks them): M5 M8 M20 M25 M29 M34 M35 M39 M42 M43 M49 M50 M57 M58 M59 M64 M65 M66 M68.
+- 19 lines are named by no id anywhere, only held inside a reviewer's whole section: M5 M8 M20 M25 M29 M34 M35 M39 M42
+  M43 M49 M50 M57 M58 M59 M64 M65 M66 M68. Each is a KNOWN line in the test. Naming one in wip/team/M_COVERAGE.md (who
+  checks it, how) makes its check pass; the test then fails until the line is taken out of KNOWN and out of this list.
 
 ## tests/wording_lint.test.js (the words a person sees, against VOICE.md)
 
