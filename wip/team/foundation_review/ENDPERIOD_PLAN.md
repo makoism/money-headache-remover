@@ -66,3 +66,26 @@ It is a label on money already in the bank, added to no total. Home now shows tw
 ## qc-foundation
 - **Review 1 (draft 3ecd19d): FAIL.** A line's answer raised a sync question that could not be cleared (now slice 0); "add it to the same line" through `once` was unsound (taken out); undecided money vanished at a change of pay; no change or take back on a later day.
 - **Review 2 (60a3d16): FAIL, small, no saved-shape change.** F-A the question offered money the period did not have (section 4's rule, slices 1 and 4); F-B Take back after the goal's money moved on (refused); F-C the silence at a change of pay (slice 2b); F-D Take back un-fixed the period's end (`moves: []`); F-E the assistant could not change or take back (slice 3); F-F two devices get a which question, not "the newer wins" (section 4). Its yes to slice 0 is recorded there. All six are in the text above; the coordinator runs the next review.
+
+## Third review (qc-foundation, 24 Nov, on ba963f2) and what changed since: read this before building
+
+FAIL, for a cause outside this plan: a card's unlogged spending was dated on the day the card was checked, so the figures this plan reads ("left" in a period just ended) were wrong for anyone who spends on cards. That is fixed in the engine on lane/twofig-engine (BZ1 in DECISIONS_ROUND2: a card gap is split by days over the stretch it covers). **This plan builds only on top of that branch.** Section 3's third bullet is corrected by it: after the fix the period that ended really shows the overspend once the card figures are typed, pay ticked or not.
+
+Decisions taken by the coordinator on 24 and 25 Nov, now part of this plan:
+- A goal is offered only when the cards and the bank are fresh (checked after the period's end). "Leave it in my bank" and "Decide later" are always offered.
+- With no fixed pay the money is never called "money with no job" and is never offered to a goal: the card says what is true ("not needed before <the day the look-ahead reaches>, with no income counted") and offers only Decide later and Check your bank.
+- The engine now gives canSpare, everyday and noJob (BZ3). The card and the assistant read those; undecided money sits inside noJob and never in the everyday figure (Not settled 8).
+
+Eight points for the builder, each goes into the slice named (no saved-shape change in any):
+1. Undo of a goal answer after the goal's money was spent is not refused by the write door: act3's undo refuses only when the same record changed later, and its check floors a place at zero. The same hole exists for money set aside by hand. Fix the shared piece (act3's check refuses a step that leaves a kept place below zero), one test. Slice 2.
+2. The sync question for a goal cannot be answered (device A takes back, device B spends from the goal: a `shares` question with nothing to undo). Slice 0 makes it answerable (offer to put the answer back) or routes it to EP3; a test with two devices.
+3. "Plan order" has no owner (a list's order means nothing, SCHEMA_V3 2.3). The order an overspend comes off the lines is: Free to spend first, then each line by its `told`, then its id.
+4. Answers are counted by record, not by line: a line marked gone drops out of a past period's lines, so its waiting money and its answers would be missed.
+5. Answering again after Take back is an edit of the live record, never a second add.
+6. Slice 2b covers every write that empties the past periods, not only the pay-change form: each reads EP3.waiting first and names what is still to decide.
+7. Outside pieces, named: the site's AI switch and the relay key with its daily cap (the pay-day prompt is scripted and costs no model call); the cloud copy for the two-device tests; lane/ai-core and lane/ai-panel for the assistant action.
+8. EP3 does money sums outside the engine: it is listed by name in the no_maths gate as a pure file tested in node, with no page access, so it can move into engine/periods.js when carrying (q6) and holding out (q7) arrive.
+
+Still open for a later stage (watch, not built): a later card check can push spending back into a period already answered (the card says so and offers Take back, never takes back by itself); two-weekly or weekly pay with a monthly line needs carrying (q6) before those lives; no fixed pay needs an id form for its month; after a change to no fixed pay, given answers still fill their goals but cannot be seen or changed; a pay unticked after an answer leaves the new period started (T1), and the screen must say so; sending part of a place's left, or splitting it, is a screen and an action only.
+
+Order of building, unchanged: slice 0 (the sync fix, its own qc-foundation yes on the terms recorded above), slice 1 (endperiod3.js and its node test, waits for nobody once lane/twofig-engine is merged), then 2, 2b, 3, 4 behind the lanes named in section 7.
