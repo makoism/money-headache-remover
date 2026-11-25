@@ -12922,6 +12922,7 @@ Actions:
   const E = node ? null : root.BurrowEngine;
   const LA = node ? require('../../engine/lookahead.js') : E.lookahead;
   const G = node ? require('../../engine/ledger.js') : E.ledger;
+  const PER = node ? require('../../engine/periods.js') : E.periods;
   const SM = node ? require('../../screens/money.js') : root.BurrowScreens.money;
   const SN = node ? require('../../screens/names.js') : root.BurrowScreens.names;
   const HELP = node ? require('../../screens/help.js') : root.BurrowScreens.help;
@@ -13010,12 +13011,14 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     const s = AQ.summary(book, today), refs = Object.assign({}, s.refs), out = [s.text];
     const home = G.homeOn(book, today);
     const sch = (book.schedules || []).filter(x => live(x) && (x.kind === 'income' || x.kind === 'bill'));
-    const lines = [];
+    const lines = [], view = PER.scheduleView(book, today);
     let p = 0, b = 0;
     for (const x of sch) {
       const ref = x.kind === 'income' ? 'P' + (++p) : 'B' + (++b); refs[ref] = x.id;
-      const rule = (x.rules || []).slice(-1)[0], step = (x.steps || []).slice(-1)[0];
-      lines.push(`${ref} | ${x.name} | ${step && step.amount != null ? SM.format(step.amount, x.cur || home) : 'no fixed amount'} | ${ruleWords(rule && rule.rule)}${x.ends ? ' | ends ' + day1(x.ends) : ''}`);
+      /* one figure, one source: the amount and the rhythm in force today are the engine's own answer (its schedule view,
+         the one Plan shows), never worked out again here from the saved lists (a change dated later is not today's) */
+      const v = view[x.id] || {};
+      lines.push(`${ref} | ${x.name} | ${v.amount != null ? SM.format(v.amount, x.cur || home) : 'no fixed amount'} | ${ruleWords(v.rule)}${x.ends ? ' | ends ' + day1(x.ends) : ''}`);
     }
     if (lines.length) out.push('Pays and bills (ref | name | amount | when):\n' + lines.join('\n'));
     return { text: out.join('\n'), refs };

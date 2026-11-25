@@ -568,6 +568,22 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const c = r.shown.find(x => x.who === 'card' && x.card.kind === 'change');
     eq([c.card.status, h.book.events.filter(e => e.k === 'spend' && !e.gone && (e.a === 900 || e.a === 700)).length], ['done', 2]);
   });
+  await t('[one figure, one source] the pay and bill amounts sent to the AI are the engine\'s own (its schedule view): a change dated later is not quoted as today\'s', async () => {
+    const h = page('2026-11-24'); await runSetup(h, FAKE.make(steps(SETUP)));
+    const P = require(E + 'periods.js');
+    for (const kind of ['income', 'bill']) {
+      const x = h.book.schedules.find(s => s && !s.gone && s.kind === kind && (s.steps || []).length);
+      ok(x, 'the setup book has a ' + kind);
+      const first = x.steps[0];
+      /* a change dated later (a rise from June): the last step in the list is not the one in force today */
+      x.steps = [first, Object.assign({}, first, { id: first.id + 'z', from: '2027-06-01', amount: first.amount + 11100, at: '2026-11-24T12:00:00.000+09:00' })];
+      const view = P.scheduleView(h.book, h.day)[x.id];
+      eq(view.amount, first.amount, 'the engine reads the step in force today');
+      const line = K.figures(h.book, h.day).text.split('\n').find(l => l.includes('| ' + x.name + ' |'));
+      const SMn = require('../../screens/money.js');
+      ok(line && line.includes('| ' + SMn.format(view.amount, x.cur || 'JPY') + ' |'), kind + ': the line sent is ' + line + ', the engine says ' + view.amount);
+    }
+  });
   console.log(bad ? `chat3_core: ${bad} of ${n} FAILED` : `chat3_core: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })();
