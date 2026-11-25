@@ -193,21 +193,21 @@ A spend goes on the account they paid with. If they did not say and they have ca
 SCREEN says which screen the person has open, and the sheet on top of it when there is one: "this screen" means the sheet if there is one, else the screen. Say what it is for in the words below.
 WHAT EACH SCREEN AND SHEET IS FOR:
 ${Object.keys(SCREENS).map(k => SCREENS[k].name + ': ' + SCREENS[k].does).join('\n')}
-WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line): a loan: Plan, Add a loan. A card's pay day or close day: Plan, tap the card. Change a goal or take money out of it: Plan, tap the goal. Change a spend: Receipts, tap it. Statements: Home, Add statements. Reminders: Reminders at the top. A backup or the cloud copy: Settings.`;
+WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line): change a goal or take money out of it: Plan, tap the goal. Change a spend: Receipts, tap it. Statements: Home, Add statements. Reminders: Reminders at the top. A backup or the cloud copy: Settings.`;
   /* [AI_JOIN_FIXES H4] a change it can't make says where it is on the screens (the same map as SYSTEM) */
-  const WHERE = [[/loan/, 'Plan, Add a loan'], [/card/, 'Plan, tap the card'], [/goal|take_out/, 'Plan, tap the goal'], [/spend|receipt/, 'Receipts, tap it'],
+  const WHERE = [[/loan/, 'Plan, tap the loan'], [/card/, 'Plan, tap the card'], [/goal|take_out/, 'Plan, tap the goal'], [/spend|receipt/, 'Receipts, tap it'],
     [/statement/, 'Home, Add statements'], [/remind/, 'Reminders at the top'], [/backup|cloud/, 'Settings']];
   const whereOf = what => { const w = WHERE.find(([re]) => re.test(what)); return w ? 'On the screens: ' + w[1] : 'Say where from WHERE ON THE SCREENS'; };
 
   /* ---- the tools (BU2: no figures or draft read tool) ---- */
   const num = { type: 'number', description: 'A plain number in the currency, no symbol.' };
   const str = d => ({ type: 'string', description: d });
-  const DO = ['landed', 'bank_figure', 'card_figure', 'log_spend', 'refund', 'money_in', 'move_money', 'remove', 'add_bill', 'change_bill', 'end_bill', 'add_pay', 'add_line', 'change_line', 'end_line', 'set_free', 'add_goal', 'set_aside', 'add_card', 'add_account', 'change_account', 'close_account', 'reopen_account', 'remove_account'];
+  const DO = ['landed', 'bank_figure', 'card_figure', 'log_spend', 'refund', 'money_in', 'move_money', 'remove', 'add_bill', 'change_bill', 'end_bill', 'add_pay', 'add_line', 'change_line', 'end_line', 'set_free', 'add_goal', 'set_aside', 'add_card', 'add_account', 'change_account', 'close_account', 'reopen_account', 'remove_account', 'pay_off', 'change_card', 'change_loan', 'add_loan'];
   /* a step that was asked for and left out, in words for the person (the card says which was not done) */
   const DO_WORDS = { landed: 'ticking off a pay or bill', bank_figure: 'a bank figure', card_figure: 'a card figure', log_spend: 'a spend', refund: 'a refund', money_in: 'money that came in',
     move_money: 'money moved between accounts', remove: 'removing a record', add_bill: 'a new bill', change_bill: 'a change to a bill or pay', end_bill: 'ending a bill', add_pay: 'a new pay',
     add_line: 'a new line', change_line: 'a change to a line', end_line: 'ending a line', set_free: 'a change to Free to spend', add_goal: 'a new goal', set_aside: 'money set aside for a goal',
-    add_card: 'a new card', add_account: 'a new account', change_account: 'a change to an account', close_account: 'closing an account', reopen_account: 'reopening an account', remove_account: 'removing an account' };
+    add_card: 'a new card', add_account: 'a new account', change_account: 'a change to an account', close_account: 'closing an account', reopen_account: 'reopening an account', remove_account: 'removing an account', pay_off: 'paying off a card or loan', change_card: 'a change to a card', change_loan: 'a change to a loan', add_loan: 'a new loan' };
   const CURS = ['JPY', 'PHP', 'USD', 'EUR'];
   const SECTIONS = ['country', 'currency', 'banks', 'pays', 'cards', 'bills', 'asked', 'statements', 'payToday', 'free', 'min'];
   const TOOLS = [
@@ -218,7 +218,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     { name: 'draft_set', description: 'Save one setup section into the draft, its whole value. Nothing reaches the app until fill_book. Sections: country "JP"|"PH"|"XX"; currency "JPY"|"PHP"|"USD"|"EUR" (a change of currency drops the amounts saved before it: ask each again); banks [{name, amount, type?, confirmed?}] (first is where pay lands; confirmed true when the person gave the figure again today); pays [{name, amount, every: month|days|weeks|none, day?, day2?, n?, start?, shift?: before|after, bank?, afterTax, same?}]; cards [{name, owed, payDay, closeDay: day|"last"|"not sure", shift?, payFrom?, confirmed?}]; bills [{name, amount, day, every?: month|year, month?, from?}]; asked [{name, out: true|false}]; statements [{name, amount|"not sure"}]; payToday {landed: true|false}; free amount|null; min amount|null.',
       input_schema: { type: 'object', properties: { section: { type: 'string', enum: SECTIONS }, value: { description: 'The section\'s whole value.' } }, required: ['section', 'value'] } },
     { name: 'fill_book', description: 'Turn the draft into the person\'s Burrow. Only when they said to fill it in. Refused while NEEDED is not empty.', input_schema: { type: 'object', properties: {} } },
-    { name: 'change', description: 'Make up to ' + MAX_STEPS + ' changes, each a named step: ' + DO.join(', ') + '. landed {ref: the P, B or card A ref, amount? only if it was different, date? the day it landed}; bank_figure and card_figure {account, amount}. Fields: amount, account (A ref), every (add_bill: month|year|months, with month 1..12 for a year, n and start for months), from and to (A refs), line (L ref), goal (G ref), ref (the record: S, B, P, L or G ref), date (YYYY-MM-DD, today or before), note, name, day, day2, every (month|days|weeks1..4|none), start, when (now|next|once), target, due, owed, payDay, closeDay, type (bank|cash|ewallet), moved (true|false), from (the A ref the money came from), afterFigure (true|false: moved after they looked at that bank on the day of its figure). change_account {account: a bank, cash or e-wallet A ref, name?, min?: its own Keep at least, 0 for none}. close_account {account, to: the A ref its money goes to, or "spent" when it is not there any more}: bills and cards paid from it move there too, its history stays. reopen_account {account}. remove_account {account}: only for one added by mistake; anything with history is closed instead.',
+    { name: 'change', description: 'Make up to ' + MAX_STEPS + ' changes, each a named step: ' + DO.join(', ') + '. landed {ref: the P, B or card A ref, amount? only if it was different, date? the day it landed}; bank_figure and card_figure {account, amount}. Fields: amount, account (A ref), every (add_bill: month|year|months, with month 1..12 for a year, n and start for months), from and to (A refs), line (L ref), goal (G ref), ref (the record: S, B, P, L or G ref), date (YYYY-MM-DD, today or before), note, name, day, day2, every (month|days|weeks1..4|none), start, when (now|next|once), target, due, owed, payDay, closeDay, type (bank|cash|ewallet), moved (true|false), from (the A ref the money came from), afterFigure (true|false: moved after they looked at that bank on the day of its figure). change_account {account: a bank, cash or e-wallet A ref, name?, min?: its own Keep at least, 0 for none}. close_account {account, to: the A ref its money goes to, or "spent" when it is not there any more}: bills and cards paid from it move there too, its history stays. reopen_account {account}. remove_account {account}: only for one added by mistake; anything with history is closed instead. close_account and remove_account also take a card or loan (a card or loan closes at zero). pay_off {account: card or loan}: all it owes, paid today from its paying account, only when they say they paid it. change_card {account, name?, payDay?, closeDay?}. change_loan {account, name?, payDay?, amount: the usual payment}. add_loan {name, owed, amount, payDay}.',
       input_schema: { type: 'object', properties: { steps: { type: 'array', items: { type: 'object', properties: { do: { type: 'string', enum: DO }, amount: num }, required: ['do'] } } }, required: ['steps'] } },
   ];
 
@@ -240,7 +240,11 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     if (lines.length) out.push('Pays and bills (ref | name | amount | when):\n' + lines.join('\n'));
     /* [E2] closed accounts keep a ref after every open one, so "reopen it" can name one */
     let a = Math.max(0, ...Object.keys(refs).filter(k => /^A\d+$/.test(k)).map(k => Number(k.slice(1))));
-    const closed = (book.accounts || []).filter(x => live(x) && x.closed && x.type !== 'card' && x.type !== 'loan').map(x => { const ref = 'A' + (++a); refs[ref] = x.id; return `${ref} | ${x.name} | closed ${day1(x.closed)}`; });
+    /* [E3] loans get a ref after the accounts you can spend from */
+    const lv = LA.lookahead(book, today).owed || {};
+    const loans = (book.accounts || []).filter(x => live(x) && !x.closed && x.type === 'loan').map(x => { const ref = 'A' + (++a); refs[ref] = x.id; return `${ref} | ${x.name} | ${lv[x.id] ? SM.format(lv[x.id].owedNow, x.cur || home) : '?'} still owed | ${x.amount ? SM.format(x.amount, x.cur || home) + ' ' : ''}paid on day ${x.payDay}`; });
+    if (loans.length) out.push('Loans (ref | name | still owed | payment):\n' + loans.join('\n'));
+    const closed = (book.accounts || []).filter(x => live(x) && x.closed).map(x => { const ref = 'A' + (++a); refs[ref] = x.id; return `${ref} | ${x.name} | closed ${day1(x.closed)}`; });
     if (closed.length) out.push('Closed accounts (ref | name | closed on; reopen_account opens one again):\n' + closed.join('\n'));
     return { text: out.join('\n'), refs };
   }
@@ -546,7 +550,8 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     }
     if (what === 'accounts' || what === 'cards') {
       const as = (book.accounts || []).filter(a => live(a) && !a.closed && (what === 'cards' ? a.type === 'card' : a.type !== 'card'));
-      return as.map(a => `${back(a.id) || '-'} | ${a.name} | ${a.type} | ` + (a.type === 'card' ? (r.cards[a.id] ? m(r.cards[a.id].owedNow) + ' owed, paid on day ' + a.payDay : '') : r.accounts[a.id] ? m(r.accounts[a.id].bank) + ' today' : '')).join('\n') || 'None.';
+      return as.map(a => `${back(a.id) || '-'} | ${a.name} | ${a.type} | ` + (a.type === 'card' ? (r.cards[a.id] ? m(r.cards[a.id].owedNow) + ' owed, paid on day ' + a.payDay : '')
+        : a.type === 'loan' ? (r.owed[a.id] ? m(r.owed[a.id].owedNow) + ' still owed, ' + m(a.amount) + ' paid on day ' + a.payDay : '') : r.accounts[a.id] ? m(r.accounts[a.id].bank) + ' today' : '')).join('\n') || 'None.';
     }
     if (what === 'pays' || what === 'bills') return figures(book, today).text.split('Pays and bills (ref | name | amount | when):\n')[1]?.split('\n').filter(l => l.startsWith(what === 'pays' ? 'P' : 'B')).join('\n') || 'None.';
     if (what === 'lines') return ((r.period && r.period.lines) || []).map(l => `${back(l.id)} | ${l.name} | ${m(l.amount)} each pay | ${m(l.left)} left`).join('\n') || 'None.';
@@ -680,13 +685,37 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       return { kind: 'addAccount', args: [Object.assign({ name: clean(a.name, 60), type: a.type || 'bank', amount: x, moved: a.moved }, a.date ? { date: a.date } : {},
         a.from ? { from: ref(a.from, 'A') || 'none' } : {}, typeof a.afterFigure === 'boolean' ? { afterFigure: a.afterFigure } : {})], text: `Add ${clean(a.name, 60)} with ${m(x)}${a.moved ? ' moved from ' + nm(a.from ? ref(a.from, 'A') : mainAcct) : ''}`, amount: x, figs: [x] };
     }
+    /* [E3, M27, M40] cards and loans: all it owes paid off today (an amount never typed, so it asks first), a card's name and
+       days, a loan's name, day and payment, a loan added */
+    if (what === 'pay_off') {
+      const id = ref(a.account || a.ref, 'A'), rec = id && acctRec(id);
+      if (!rec || (rec.type !== 'card' && rec.type !== 'loan')) return { bad: 'pay_off is for a card or a loan' };
+      const r0 = LA.lookahead(book, today), k = rec.type === 'card' ? r0.cards[id] : r0.owed[id], owed = k ? k.owedNow : 0;
+      if (!(owed > 0)) return { bad: 'nothing is owed on ' + rec.name };
+      return { kind: 'payOff', args: [id], text: `Pay off ${rec.name}: ${m(owed, rec.cur)} from ${nm(rec.payFrom || mainAcct)}, today`, amount: owed, figs: [owed] };
+    }
+    if (what === 'change_card' || what === 'change_loan') {
+      const id = ref(a.account || a.ref, 'A'), rec = id && acctRec(id), card = what === 'change_card';
+      if (!rec || rec.type !== (card ? 'card' : 'loan')) return { bad: what.replace('_', ' ') + ' for a ' + (card ? 'card' : 'loan') + ' I do not know' };
+      const ch = {}; if (a.name) ch.name = clean(a.name, 60); if (a.payDay != null) { if (!dayOk(a.payDay)) return { bad: 'a day I could not read' }; ch.payDay = a.payDay; }
+      if (card && a.closeDay !== undefined) ch.cutDay = a.closeDay === 'not sure' || a.closeDay === null ? null : a.closeDay;
+      if (!card && a.amount != null) { ch.amount = amt(a.amount, rec.cur); if (!ch.amount) return { bad: 'a payment I could not read' }; }
+      if (!Object.keys(ch).length) return { bad: 'a change with nothing to change' };
+      const words = [ch.name ? 'called ' + ch.name : '', ch.payDay ? 'paid on day ' + ch.payDay : '', ch.cutDay !== undefined ? (ch.cutDay == null ? 'close day not sure' : 'closes on day ' + ch.cutDay) : '', ch.amount ? m(ch.amount, rec.cur) + ' each payment' : ''].filter(Boolean).join(', ');
+      return { kind: 'changeOwed', args: [id, ch], text: `${rec.name}: ${words}`, amount: 0, figs: ch.amount ? [ch.amount] : [] };
+    }
+    if (what === 'add_loan') {
+      const o = amt(a.owed), x = amt(a.amount); if (!o || !x || !a.name || !dayOk(a.payDay)) return { bad: 'a loan I could not read: name, owed, amount and payDay' };
+      return { kind: 'addLoan', args: [{ name: clean(a.name, 60), owed: o, amount: x, payDay: a.payDay }], text: `Add ${clean(a.name, 60)}: ${m(o)} still owed, ${m(x)} paid on day ${a.payDay}`, amount: 0, figs: [o, x] };
+    }
     /* [E2, M13, M6] closing (its money moved to `to`, or "spent"), reopening, and removing one added by mistake: a close
        and a remove ask first (del) */
     if (what === 'close_account' || what === 'reopen_account' || what === 'remove_account') {
       const id = ref(a.account || a.ref, 'A'), rec = id && acctRec(id);
-      if (!rec || rec.type === 'card' || rec.type === 'loan') return { bad: what.replace('_', ' ') + ' is for a bank, cash or e-wallet' };
+      if (!rec) return { bad: what.replace('_', ' ') + ' for an account I do not know' };
       if (what === 'reopen_account') return { kind: 'reopenAccount', args: [id], text: `Reopen ${rec.name}` };
       if (what === 'remove_account') return { kind: 'removeAccount', args: [id], text: `Remove ${rec.name}, as if it was never added`, del: true };
+      if (rec.type === 'card' || rec.type === 'loan') return { kind: 'closeAccount', args: [id, {}], text: `Close ${rec.name}. Its history stays`, del: true };
       const spent = a.to === 'spent', to = spent ? 'spent' : ref(a.to, 'A');
       if (!to) return { bad: 'ask where its money goes: another of their accounts, or is it not there any more (spent)? Then change again with to' };
       const held = ((LA.lookahead(book, today).accounts || {})[id] || {}).bank || 0;

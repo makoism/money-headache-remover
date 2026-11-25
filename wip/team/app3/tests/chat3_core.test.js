@@ -262,6 +262,42 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     ok(!k4.ok && /history/.test(k4.text), 'it has history now (the close and its move): refused with words ' + JSON.stringify(k4.text));
     ok(!hp.book.accounts.find(a => a.id === savId).gone, 'not removed');
   });
+  await t('[E3, M3, M13, M27] cards and loans by asking: add_loan, change_card, change_loan, pay_off (asks first: the amount was never typed), close_account on a card at zero, remove_account on a loan added by mistake', async () => {
+    const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
+    const L = require(E + 'lookahead.js');
+    const lref = (body, re) => FAKE.results(body)[0].text.split('\n').find(l => re.test(l)).split(' | ')[0];
+    let bike;
+    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'add_loan', name: 'Bike loan', owed: 100000, amount: 10000, payDay: 27 }] })]), say('Added.'),
+      say('', [call('change', { steps: [{ do: 'change_card', account: 'A2', name: 'Shop card', payDay: 12 }] })]), say('Changed.'),
+      say('', [call('list', { what: 'accounts' })]), body => { bike = lref(body, /Bike loan/); return say('', [call('change', { steps: [{ do: 'change_loan', account: bike, amount: 12000 }] })]); }, say('Changed.'),
+      say('', [call('change', { steps: [{ do: 'pay_off', account: 'A2' }] })]), say('Tap OK if you paid it.'),
+      say('', [call('change', { steps: [{ do: 'close_account', account: 'A2' }] })]), say('Tap OK to close it.'),
+      say('', [call('list', { what: 'accounts' })]), body => say('', [call('change', { steps: [{ do: 'remove_account', account: lref(body, /Bike loan/) }] })]), say('Tap OK.')]);
+    const d = hp.deps(f), card = hp.book.accounts.find(a => a.type === 'card').id, main = hp.book.home.main.v.acct;
+    const r1 = await K.turn(state, 'add a bike loan, 100,000 owed, 10,000 a month on the 27th', d);
+    eq(r1.shown.find(x => x.who === 'card').card.status, 'done');
+    const loan = hp.book.accounts.find(a => a.name === 'Bike loan');
+    eq([loan.type, loan.payDay, loan.amount, L.lookahead(hp.book, '2026-11-24').owed[loan.id].owedNow], ['loan', 27, 10000, 100000]);
+    const r2 = await K.turn(r1.state, 'rename card A to Shop card, it is paid on the 12th now', d);
+    eq([r2.shown.find(x => x.who === 'card').card.status, hp.book.accounts.find(a => a.id === card).name, hp.book.accounts.find(a => a.id === card).payDay], ['done', 'Shop card', 12]);
+    const r3 = await K.turn(r2.state, 'the bike loan payment is 12,000 now', d);
+    eq([r3.shown.find(x => x.who === 'card').card.status, hp.book.accounts.find(a => a.id === loan.id).amount], ['done', 12000]);
+    const owed = L.lookahead(hp.book, '2026-11-24').cards[card].owedNow, bank0 = L.lookahead(hp.book, '2026-11-24').accounts[main].bank;
+    const r4 = await K.turn(r3.state, 'I paid off the shop card', d);
+    const c4 = r4.shown.find(x => x.who === 'card');
+    eq(c4.card.status, 'ask', JSON.stringify(c4.card)); ok(new RegExp('Pay off Shop card').test(c4.card.lines.join(' ')), c4.card.lines.join(' | '));
+    const k4 = await K.confirm(r4.state, c4.id, d); ok(k4.ok, JSON.stringify(k4));
+    const v = L.lookahead(hp.book, '2026-11-24');
+    eq([v.cards[card].owedNow, v.accounts[main].bank], [0, bank0 - owed]);
+    const r5 = await K.turn(k4.state, 'close the shop card', d);
+    const c5 = r5.shown.find(x => x.who === 'card'); eq([c5.card.status, c5.card.ask], ['ask', 'delete']);
+    const k5 = await K.confirm(r5.state, c5.id, d); ok(k5.ok, JSON.stringify(k5));
+    eq(hp.book.accounts.find(a => a.id === card).closed, '2026-11-24');
+    const r6 = await K.turn(k5.state, 'remove the bike loan, I added it by mistake', d);
+    const c6 = r6.shown.find(x => x.who === 'card'); eq([c6.card.status, c6.card.ask], ['ask', 'delete']);
+    const k6 = await K.confirm(r6.state, c6.id, d); ok(k6.ok, JSON.stringify(k6));
+    ok(hp.book.accounts.find(a => a.id === loan.id).gone, 'removed');
+  });
   await t('[M6] an answer to a follow-up question ("from when?") still counts the amount typed just before', async () => {
     const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
     const f = FAKE.make([say('From when: this one, or the next one?'),
@@ -644,14 +680,14 @@ const steps = list => [].concat(...list.map(([, r]) => r));
   });
   await t('[H4] it is told which screen is open and what the screens can do that it cannot; a refusal says where', async () => {
     const h = page('2026-11-24'); const { state, deps: d0 } = await runSetup(h, FAKE.make(steps(SETUP)));
-    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'change_card', ref: 'A2', payDay: 12 }] })]), say('ok'), say('ok')]);
+    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'take_out', goal: 'G1', amount: 5000 }] })]), say('ok'), say('ok')]);
     const deps = Object.assign(h.deps(f), { door: d0.door, screen: () => 'plan' });
-    const r = await K.turn(state, 'Card A is paid on the 12th now', deps);
+    const r = await K.turn(state, 'take 5,000 out of the trip goal', deps);
     const sent = JSON.stringify(f.bodies[0].messages);
     ok(/SCREEN: the person has Plan open/.test(sent), 'the open screen is sent');
     const res = FAKE.results(f.bodies[1])[0].text;
-    ok(/^Nothing changed: /.test(res) && /Plan, tap the card/.test(res), res);
-    ok(/WHERE ON THE SCREENS/.test(K.SYSTEM) && /Add a loan/.test(K.SYSTEM) && /Receipts, tap it/.test(K.SYSTEM) && /Settings/.test(K.SYSTEM), 'the map of the screens');
+    ok(/^Nothing changed: /.test(res) && /Plan, tap the goal/.test(res), res);
+    ok(/WHERE ON THE SCREENS/.test(K.SYSTEM) && /Receipts, tap it/.test(K.SYSTEM) && /Settings/.test(K.SYSTEM), 'the map of the screens');
     eq(r.shown.filter(x => x.who === 'card' && x.card.kind === 'change').length, 0, 'nothing changed, no change card');
     const f2 = FAKE.make([say('ok')]);
     await K.turn(state, 'hi', Object.assign(h.deps(f2), { door: d0.door }));
