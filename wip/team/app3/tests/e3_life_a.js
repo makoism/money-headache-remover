@@ -11,17 +11,22 @@
    Safe to spend is the lowest point of Checking's walk (bank, less each line left this period, then pays, bills, card
    payments and each period's lines on its pay day), to the horizon (the second next pay, at least 45 days), plus Cash.
 
-   7 Dec  setup. Period 4 to 17 Dec. Checking 185,000: 15 Dec phone -4,500 = 180,500 (lowest); 18 Dec +160,000; 21 Dec
-          Visa -23,000; ... Safe 180,500 + 12,000 = 192,500.
+   No play amount is set (Groceries is a burrow line, not Free to spend), so everything on the Visa comes off today
+   (M90, R1), in place of its dated payment; from 18 Dec on that changes nothing, as the Visa was due before each next
+   pay anyway.
+   7 Dec  setup. Period 4 to 17 Dec. Checking 185,000 - 23,000 (Visa, owed now) = 162,000; 15 Dec phone -4,500 =
+          157,500 (lowest); 18 Dec +160,000; ... Safe 157,500 + 12,000 = 169,500 (was 192,500 with the Visa on 21 Dec,
+          after the pay of 18 Dec).
           Plan: the pay "every 2 weeks, on Fridays"; car insurance "each year on 1 Mar". Nudge: the pays before 1 Mar are
           18 Dec, 1 Jan, 15 Jan, 29 Jan, 12 Feb, 26 Feb: $480 / 6 = $80.00 each pay.
    8 Dec  Plan: a line, Groceries $300.00 each pay. In the period that holds the setup day a line counts its share from
           the setup day [I4]: 7 to 17 Dec is 11 of the period's 14 days, so 30,000 x 11 / 14 = 23,571 counts now.
-          Checking 185,000 - 23,571 = 161,429; 15 Dec 156,929 (lowest); 18 Dec +160,000 - 30,000 (the next period's
-          groceries). Safe 156,929 + 12,000 = 168,929.
+          Checking 185,000 - 23,000 (Visa) - 23,571 = 138,429; 15 Dec 133,929 (lowest); 18 Dec +160,000 - 30,000 (the
+          next period's groceries). Safe 133,929 + 12,000 = 145,929 (was 168,929).
    10 Dec spends on Groceries: $45.50 on Visa, $20.00 cash. Groceries left 23,571 - 4,550 - 2,000 = 17,021; Visa owes
-          27,550 (all of it out on 21 Dec, after the lowest point); Cash 10,000. Checking 185,000 - 17,021 = 167,979;
-          15 Dec 163,479 (lowest). Safe 163,479 + 10,000 = 173,479.
+          27,550, all of it off today; Cash 10,000. Checking 185,000 - 27,550 - 17,021 = 140,429; 15 Dec 135,929
+          (lowest). Safe 135,929 + 10,000 = 145,929 (was 173,479): the Visa spend moves 4,550 from Groceries left to the
+          Visa, so Checking's walk is the same as on 8 Dec, and only the cash spend's 2,000 leaves Cash.
    18 Dec check-in: phone (15 Dec) and pay (18 Dec) ticked; Checking 185,000 - 4,500 + 160,000 = 340,500; Cash 10,000.
           Period 18 to 31 Dec, Groceries 30,000. 340,500 - 30,000 = 310,500; 21 Dec Visa -27,550 = 282,950 (lowest);
           1 Jan +160,000 - 90,000 - 30,000; ... Safe 282,950 + 10,000 = 292,950.
@@ -74,7 +79,8 @@ const row = (p, attr, name) => p.evaluate(([a, n]) => { const b = [...document.q
     await p.selectOption(r + '[data-f=day]', day);
   }
   await finishSetup3(p); await w(700);
-  await home(p, '7 Dec after setup', 192500, { Checking: 185000, Cash: 12000 });
+  // old 192,500; now 169,500 because no play amount, so the Visa's 23,000 comes off today (R1): 185,000 - 23,000 - 4,500 + 12,000
+  await home(p, '7 Dec after setup', 169500, { Checking: 185000, Cash: 12000 });
   ck('7 Dec: the period is 4 Dec to 17 Dec', (await p.$eval('[data-fig=period]', e => e.textContent).catch(() => '')) === '4 Dec to 17 Dec');
   await tab(p, 'plan');
   ck('7 Dec Plan: the pay every 2 weeks, on Fridays', /every 2 weeks, on Fridays/.test(await row(p, 'data-pay', 'Pay')), await row(p, 'data-pay', 'Pay'));
@@ -84,11 +90,13 @@ const row = (p, attr, name) => p.evaluate(([a, n]) => { const b = [...document.q
   await go(p, '2026-12-08');
   await tab(p, 'plan'); await p.click('#plAddLine'); await w(200);
   await p.fill('#pl-name', 'Groceries'); await p.fill('#pl-amount', '300'); await p.click('[data-plbtn="0"]'); await w(400);
-  await home(p, '8 Dec with Groceries $300 each pay', 168929, { Checking: 185000, Cash: 12000 });
+  // old 168,929; now 145,929 because the Visa's 23,000 comes off today (R1): 185,000 - 23,000 - 23,571 - 4,500 + 12,000
+  await home(p, '8 Dec with Groceries $300 each pay', 145929, { Checking: 185000, Cash: 12000 });
   /* 10 Dec: groceries on the card and in cash */
   await go(p, '2026-12-10');
   await log(p, '45.50', 'Visa', { for: 'Groceries', note: 'market' }); await log(p, '20', 'Cash', { for: 'Groceries', note: 'bakery' });
-  await home(p, '10 Dec after two grocery spends', 173479, { Checking: 185000, Cash: 10000 });
+  // old 173,479; now 145,929 because the Visa's 27,550 comes off today (R1): 185,000 - 27,550 - 17,021 - 4,500 + 10,000
+  await home(p, '10 Dec after two grocery spends', 145929, { Checking: 185000, Cash: 10000 });
   /* 18 Dec: pay day check-in */
   await go(p, '2026-12-18');
   let list = await checkin(p, { Checking: '3405', Cash: '100' });
