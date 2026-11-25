@@ -87,9 +87,10 @@ function rcFigs3(book) {
 }
 /* [NS-FIX 4] a spend on a line that leaves the line over (the engine's `over` on the book the draft would make): the same
    words as Plan, "¥1,076 over Food. It comes out of what your bank can spare" (BM1); null otherwise */
-/* [LISTFIX B6] a new spend on a card leaves the bank only when the card is paid, so safe to spend may not drop, or may
-   even rise: the words say when, from the engine's statements on the book with the spend (the first unpaid one it is in:
-   no close day, or closing on or after the spend's day; with the close day not sure, the next payment) */
+/* [LISTFIX B6] a new spend on a card leaves the bank only when the card is paid: the words say when, from the engine's
+   statements on the book with the spend (the first unpaid one it is in: no close day, or closing on or after the spend's
+   day; with the close day not sure, the next payment). [CARDS_IN_HEADLINE 2, R1] With no play amount it comes off safe to
+   spend now, and the words say so; with one, a play spend comes off play money left */
 function rcCardWords3(book, x) {
   if (RC3.edit || RC3.mode !== 'spend' || !x || !x.acct) return null;
   const a = ((E3.book && E3.book.accounts) || []).find(y => y.id === x.acct);
@@ -98,7 +99,7 @@ function rcCardWords3(book, x) {
   /* close day not sure: everything on it is paid on its next payment day (the engine's next, "all owed") */
   const k = r.cards[x.acct] || {};
   const st = k.next && k.next.statement === 'all owed' ? { payment: k.next.payment_date } : (k.statements || []).find(s => !s.paid && s.payment && (!s.closed || s.closed >= x.date));
-  return st ? `It goes on ${E3.nameOf(x.acct)} and leaves your bank when the card is paid on ${day3(st.payment, E3.today().slice(0, 4))}` : null;
+  return st ? `It goes on ${E3.nameOf(x.acct)} and leaves your bank when the card is paid on ${day3(st.payment, E3.today().slice(0, 4))}${r.safeToSpend.cardsNow ? '. It comes off safe to spend now' : ''}` : null;
 }
 function rcOver3(f, x) {
   if (!f || !f.period || !x || !x.line || x.line === 'free' || RC3.mode !== 'spend') return null;

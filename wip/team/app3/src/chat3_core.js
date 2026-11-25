@@ -512,7 +512,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
 
   /* ---- the explain topics (help words where they exist; drafts for Mako's copy pass) ---- */
   const EXPLAIN = {
-    cards: 'A card is paid in full from your bank on its payment day. What you spend on it comes out of the bank then, so safe to spend takes off what is due before your next pay.',
+    cards: 'A card is paid in full from your bank on its payment day. With a play amount set, a play spend on a card comes off your play money at once. With no play amount, everything on your cards comes off safe to spend now, whatever its payment day.',
     free: 'Free to spend is what you keep for food and everyday things each pay period. Safe to spend leaves room for it until each pay.',
     goals: 'A goal is money you set aside for something. It stays in your bank, marked as set aside, or in its own account.',
     check: 'Check your bank: type what your bank app shows today. The app compares it with what it expected and asks about the gap.',
@@ -709,6 +709,8 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
   function noteOf(b0, b1, today) {
     const r0 = LA.lookahead(b0, today), r1 = LA.lookahead(b1, today), pay = (r1.daysToNextPay || {}).next_pay;
     if (!pay || r0.safeToSpend.headline !== r1.safeToSpend.headline) return null;
+    /* [CARDS_IN_HEADLINE 3, R1] no play amount: a card spend comes off now, so it stays the same only at 0 */
+    if (r1.safeToSpend.cardsNow) return r1.safeToSpend.headline === 0 && r1.safeToSpend.shortfall > r0.safeToSpend.shortfall ? `${SN.label('safeToSpend')} is already 0: your cards owe more than your bank can spare before pay` : null;
     const ids = Object.keys(r1.cards || {}).filter(id => { const c0 = (r0.cards || {})[id], c1 = r1.cards[id]; return c0 && c1.owedNow > c0.owedNow && c1.next && c1.next.payment_date && c1.next.payment_date >= pay; });
     if (!ids.length) return null;
     const names = ids.map(id => ((b1.accounts || []).find(x => x.id === id) || {}).name);

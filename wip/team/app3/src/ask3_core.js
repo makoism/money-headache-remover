@@ -50,6 +50,8 @@
        and the first day under */
     const sh = r.safeToSpend.short;
     out.push(`Safe to spend until next pay: ${m(r.safeToSpend.headline)}.` + (sh ? ` Short by ${m(sh.amount)}${sh.beforePay ? ` before the pay on ${day(sh.beforePay, today)}` : ''}, below ${sh.minimum ? 'your minimum' : 'zero'} from ${day(sh.day, today)}.` : ''));
+    /* [CARDS_IN_HEADLINE 3, R1] no play amount: what the cards take off now, so "why did it drop?" is answered from the figures */
+    if (r.safeToSpend.cardsNow) out.push(`No play amount is set, so safe to spend takes off everything owed now on your cards paid in full: ${m(r.safeToSpend.cardsNow.owed)}.`);
     const rows = [];
     let k = 0;
     for (const a of accts.filter(x => SPEND_FROM[x.type])) {

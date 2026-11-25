@@ -16,6 +16,9 @@
   const WORDS = {
     safeToSpend: ['What you can spend before your next pay and still cover everything due before it.',
       'Bills and card payments due by then are already taken off.'],
+    /* [CARDS_IN_HEADLINE 2, R1] with no play amount, everything on the cards comes off now */
+    safeToSpendCards: ['What you can spend before your next pay and still cover everything due before it.',
+      'Bills due by then and everything on your cards now are already taken off.'],
     status: ['How things stand today, in one line.', 'It changes when you check your bank or log a spend.'],
     period: ['Your money runs from one pay to the next, not by calendar month.'],
     periodMoved: ['Your pay is due on {due}, but that day is a weekend or a holiday, so it lands on {landed}. The pay period moves with it.'],

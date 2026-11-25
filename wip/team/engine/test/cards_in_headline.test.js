@@ -228,6 +228,9 @@ t('cards alone take more than the bank can spare before pay: headline 0, short b
   eq(s.state, 'cards_over');
   eq(s.reason.code, 'cards_over');
   eq(s.next, { code: 'set_play' });
+  eq(s.text.reason, "What's on your cards is ¥29,000 more than your bank can spare before pay on 10 Dec. Your pay covers the card payments, so your bank never goes below zero");
+  eq(s.text.next, 'Set a play amount');
+  eq(s.level, 'wait');   // [M47] never red: the bank itself never goes under
 });
 
 /* ---- play amount set: nothing changes from today's engine ---- */

@@ -11,7 +11,10 @@
      ctx.oldDays   a bank figure older than this leads with "Check your bank", above a pay not in yet (14) [N26]
 
    One state, in this order (the first that is true wins, the rest go in `also` so they can sit under it):
-     sample > empty > short > warning > set_aside > plan_over > question > check (old) > late > check > zero > no_free > ok
+     sample > empty > short > warning > set_aside > cards_over > plan_over > question > check (old) > late > check > zero > no_free > ok
+   cards_over [CARDS_IN_HEADLINE 2, M90, R1, M91]: no play amount is set, so everything owed on the cards comes off
+   safe to spend now, and the cards alone take more than the bank can spare before pay (the dated walk has no
+   shortfall, so the bank itself never goes under: the pay covers the card payments); the way out is a play amount
    check (old) [N26]: the last bank check is over ctx.oldDays old, so a pay "not in yet" is only a guess; the check leads
    plan_over [LISTFIX A2]: the real money is fine (no short, no warning) but the plan lines need more than the accounts
    can spare, so nothing is safe to spend; it says so and by how much, never "it turns safe once your pay is in"
@@ -29,7 +32,7 @@
   const OLD_DAYS = 14;    // [N26] past this, "Check your bank" leads, above "Pay not in yet"
   const STALE_DAYS = 7;   // for Mako: how old a bank figure may get before the status asks for a check-in
   /* [C3, M47] short and under a minimum (or below zero) are 'warn', plain amber: never 'bad', never red */
-  const LEVEL = { sample: 'wait', empty: 'wait', short: 'warn', warning: 'warn', set_aside: 'bad', plan_over: 'bad', question: 'wait', late: 'wait', check: 'wait', zero: 'wait', no_free: 'wait', ok: 'good' };
+  const LEVEL = { sample: 'wait', empty: 'wait', short: 'warn', warning: 'warn', set_aside: 'bad', cards_over: 'wait', plan_over: 'bad', question: 'wait', late: 'wait', check: 'wait', zero: 'wait', no_free: 'wait', ok: 'good' };
   /* engine warning codes (lookahead_ref.js): which change the state, which are notes under it */
   const WARNING_STATE = { below_minimum: 'warning', set_aside_over: 'set_aside', check_again: 'question', gain_to_ask: 'question', minimum_other_currency: 'question' };
   const NOTE_ONLY = ['card_other_currency', 'loan_other_currency', 'income_other_currency', 'spend_other_currency', 'reopened', 'revived'];
@@ -42,6 +45,7 @@
     'state.short': W('Not safe to spend'),
     'state.warning': W('Under a minimum'),
     'state.set_aside': W('Set aside more than you can spare'),
+    'state.cards_over': W('Your cards take all you can spare'),
     'state.plan_over': W('Your plan needs more than you have'),
     'state.question': W('A question for you'),
     'state.late': W('Pay not in yet'),
@@ -60,6 +64,8 @@
     'reason.below_minimum': W('{account} goes {amount} under its minimum on {day}'),
     'reason.below_zero': W('{account} goes {amount} below zero on {day}'),
     'reason.set_aside_over': W('{who} is {amount} more than {account} can spare on {day}'),
+    'reason.cards_over': W('What\'s on your cards is {amount} more than your bank can spare before pay on {until}. Your pay covers the card payments, so your bank never goes below zero'),
+    'reason.cards_over_no_pay': W('What\'s on your cards is {amount} more than your bank can spare right now'),
     'reason.plan_over': W('Your plan lines need {amount} more than your bank can spare. It runs short from {day}'),
     'reason.plan_over_no_day': W('Your plan lines need {amount} more than your bank can spare'),
     'reason.gain_to_ask': W('{account} has more in it than the app expected'),
@@ -80,6 +86,7 @@
     'next.check_in': W('Check your bank'),
     'next.move_money_in': W('Move money in before {day}'),
     'next.move_money_in_now': W('Move money in or spend less'),
+    'next.set_play': W('Set a play amount'),
     'next.plan_over': W('Lower a plan line, or move money in'),
     'next.move_from': W('Move {amount} from {from} to {account} by {day}. {from} can spare it'),
     'next.answer': W('Answer the question'),
@@ -132,6 +139,7 @@
     if (r.code === 'short' && r.short) return r.until ? (r.short.minimum ? 'reason.short_before_min' : 'reason.short_before') : r.short.minimum ? 'reason.short_from_min' : 'reason.short_from';
     if (r.code === 'short') return r.day ? 'reason.short_on' : 'reason.short';
     if (r.code === 'to_confirm') return r.count === 1 ? 'reason.to_confirm_one' : 'reason.to_confirm_many';
+    if (r.code === 'cards_over') return r.until ? 'reason.cards_over' : 'reason.cards_over_no_pay';
     if (r.code === 'plan_over') return r.day ? 'reason.plan_over' : 'reason.plan_over_no_day';
     if (r.code === 'nothing_safe') return r.until ? 'reason.nothing_safe' : 'reason.nothing_safe_no_pay';
     if (r.code === 'safe') return r.until ? 'reason.safe' : 'reason.safe_no_pay';
@@ -168,7 +176,12 @@
     }
     /* [LISTFIX A2] the plan lines alone need more than the accounts can spare: the bank itself does not go under (no
        short, no below-zero warning) and no goal holds too much, so the shortfall is the plan's */
-    if (stp.shortfall > 0 && !stp.short && !below.length && !warnings.some(w => w.code === 'set_aside_over'))
+    /* [CARDS_IN_HEADLINE 2, R1] with no play amount the cards come off now: when the dated walk has no shortfall, the
+       cards alone make it short, so the reason is the cards and the way out a play amount (M91), never "the plan" */
+    const cardsOnly = stp.cardsNow && stp.cardsNow.datedShortfall === 0;
+    if (stp.shortfall > 0 && !stp.short && !below.length && !warnings.some(w => w.code === 'set_aside_over') && cardsOnly)
+      out.push({ state: 'cards_over', reason: { code: 'cards_over', amount: stp.shortfall, currency: ctx.currency, until }, next: { code: 'set_play' }, note: 'cards_over' });
+    if (stp.shortfall > 0 && !stp.short && !below.length && !warnings.some(w => w.code === 'set_aside_over') && !cardsOnly)
       out.push({ state: 'plan_over', reason: { code: 'plan_over', amount: stp.shortfall, currency: ctx.currency, day: planShortDay(accounts, ctx.currency) }, next: { code: 'plan_over' }, note: 'plan_over' });
     /* [N26] the last bank check is old: checking the bank comes before a pay that only looks late */
     const oldAfter = ctx.oldDays == null ? OLD_DAYS : ctx.oldDays;
