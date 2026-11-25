@@ -121,7 +121,9 @@ function drawPlan3() {
     return plRow3(`data-acct="${esc3(a.id)}"`, `${esc3(a.name)}<br><span class="when">${esc3(kind)}</span>${min}`,
       k && k.bank != null ? `<span data-fig="acct-bank">${plFig3('accounts.*.bank', k.bank, a.cur)}</span><br><span class="when">${esc3(label3('bankToday')).toLowerCase()}</span>` : '');
   });
-  out.push(`<section class="a3-card" data-card="plan-accounts"><h2>Accounts</h2>${acctRows.length ? `<ul class="a3-rows a3-rclist">${acctRows.join('')}</ul>` : '<p class="a3-sub">No accounts</p>'}
+  /* [E2] closed ones stay listed, apart, so a close can be taken back (Reopen) and nothing seems to vanish */
+  const closedRows = ((book.accounts || []).filter(a => plLive3(a) && PL_OWN3[a.type] && a.closed)).map(a => plRow3(`data-acctclosed="${esc3(a.id)}"`, `${esc3(a.name)}<br><span class="when">Closed ${esc3(day3(a.closed, yr))}. Its history stays</span>`, ''));
+  out.push(`<section class="a3-card" data-card="plan-accounts"><h2>Accounts</h2>${acctRows.length ? `<ul class="a3-rows a3-rclist">${acctRows.join('')}</ul>` : '<p class="a3-sub">No accounts</p>'}${closedRows.length ? `<p class="a3-acct">Closed</p><ul class="a3-rows a3-rclist" data-closed>${closedRows.join('')}</ul>` : ''}
     <p class="a3-sub">What each holds changes at Check your bank</p>
     <div class="a3-actions"><button type="button" class="a3-btn" id="plAddAcct">Add an account</button></div></section>`);
   /* cards and loans */
@@ -160,6 +162,7 @@ function drawPlan3() {
   on('#plAddLoan', () => plLoanForm3());
   on('#plAddAcct', () => plAcctAddForm3());
   host.querySelectorAll('[data-acct]').forEach(b => b.addEventListener('click', () => plAcctForm3(b.dataset.acct)));
+  host.querySelectorAll('[data-acctclosed]').forEach(b => b.addEventListener('click', () => plAcctClosedForm3(b.dataset.acctclosed)));
   host.querySelectorAll('[data-line]').forEach(b => b.addEventListener('click', () => plLineForm3(b.dataset.line)));
   host.querySelectorAll('[data-bill]').forEach(b => b.addEventListener('click', () => plBillForm3(b.dataset.bill)));
   host.querySelectorAll('[data-pay]').forEach(b => b.addEventListener('click', () => plBillForm3(b.dataset.pay)));
@@ -210,9 +213,11 @@ function plForm3(title, fields, buttons, note) {
     const got = read(), err = $('#plErr');
     if (got.bad) { err.textContent = got.bad; got.el.focus(); return; }
     const b = buttons[Number(btn.dataset.plbtn)];
+    /* [E2] a button that opens another sheet (Close this account opens its own sheet) */
+    if (b.open) { b.open(); return; }
     /* [M6, M61] a button that removes asks first (sure3): nothing is written until the yes */
     if (b.sure && !btn.dataset.yes) { const [l0, f0] = b.step(got.vals), no = ACT3.refusal(l0, f0); if (no) { err.textContent = no; $('#plSure').innerHTML = ''; return; } }
-    if (b.sure && !btn.dataset.yes) { sure3($('#plSure'), b.sure[0], b.sure[1], () => { btn.dataset.yes = '1'; btn.click(); }); return; }
+    if (b.sure && !btn.dataset.yes) { const sq = typeof b.sure === 'function' ? b.sure(got.vals) : b.sure; sure3($('#plSure'), sq[0], sq[1], () => { btn.dataset.yes = '1'; btn.click(); }); return; }
     delete btn.dataset.yes;
     const [label, fn, undo] = b.step(got.vals);
     const res = await ACT3.run(label, fn, { undo, seen });
@@ -380,8 +385,31 @@ function plAcctForm3(id) {
   const a = E3.book.accounts.find(x => x.id === id), main = ((E3.book.home || {}).main || {}).v, isMain = main && main.acct === id;
   const fields = [{ key: 'name', label: 'Name', kind: 'text', value: a.name }];
   if (!isMain) fields.push({ key: 'min', label: 'Keep at least', kind: 'amount', optional: true, value: a.minBank ? a.minBank.a : null, hint: 'Leave it empty for none. Safe to spend never counts this part' });
-  plForm3(a.name, fields, [{ label: 'Save', solid: true, step: v => ['changeAccount', w => PLAN3W.changeAccount(w, id, isMain ? { name: v.name } : { name: v.name, min: v.min }), a.name + ' changed'] }],
+  plForm3(a.name, fields, [{ label: 'Save', solid: true, step: v => ['changeAccount', w => PLAN3W.changeAccount(w, id, isMain ? { name: v.name } : { name: v.name, min: v.min }), a.name + ' changed'] }]
+    .concat(isMain ? [] : [{ label: 'Close this account', open: () => plAcctCloseForm3(id) },
+      { label: 'Remove this account', sure: [`Remove ${a.name}? Use this only if it was added by mistake: it goes as if it was never added`, 'Yes, remove it'], step: () => ['removeAccount', w => PLAN3W.removeAccount(w, id), a.name + ' removed'] }]),
     isMain ? 'Your main bank, where pay lands. What it holds changes at Check your bank' : 'What it holds changes at Check your bank');
+}
+/* [E2, M13, M45] closing a bank, cash or e-wallet: where its money goes (one of your own open accounts in the same
+   currency, or "not there any more"), then one step with Undo. Bills, pays and cards paid from it move there too */
+function plAcctCloseForm3(id) {
+  PL3.sheet = 'closeAccount';
+  const book = E3.book, a = book.accounts.find(x => x.id === id), k = E3.view(E3.today()).accounts[id], held = k && k.bank != null ? k.bank : 0;
+  const others = plAccounts3(PL_OWN3).filter(y => y.id !== id && (y.cur || E3.home()) === (a.cur || E3.home()));
+  const main = ((book.home || {}).main || {}).v;
+  const opts = others.map(y => ({ v: y.id, name: 'Move it to ' + y.name })).concat([{ v: 'spent', name: 'It is not there any more (spent)' }]);
+  plForm3('Close ' + a.name, [{ key: 'to', label: 'Its money', kind: 'pick', options: opts, value: main && others.some(y => y.id === main.acct) ? main.acct : opts[0].v,
+      hint: 'Bills, pays and cards paid from it move to the account you pick (to your main bank if the money is spent)' }],
+    [{ label: 'Close this account', solid: true, sure: v => [v.to === 'spent' ? `Close ${a.name}? What it held counts as spent. Its history stays` : `Close ${a.name}? What it holds moves to ${E3.nameOf(v.to)}. Its history stays`, 'Yes, close it'],
+      step: v => ['closeAccount', w => PLAN3W.closeAccount(w, id, { to: v.to }), a.name + ' closed'] }],
+    `${esc3(a.name)} holds ${money3(held, a.cur || E3.home())} today (${esc3(label3('bankToday')).toLowerCase()})`);
+}
+/* [E2] a closed account: Reopen (its history was kept) */
+function plAcctClosedForm3(id) {
+  PL3.sheet = 'closedAccount';
+  const a = E3.book.accounts.find(x => x.id === id);
+  plForm3(a.name, [], [{ label: 'Reopen', solid: true, step: () => ['reopenAccount', w => PLAN3W.reopenAccount(w, id), a.name + ' open again'] }],
+    `Closed ${esc3(day3(a.closed, E3.today().slice(0, 4)))}. Its history stays. Reopen it if it was closed by mistake or you use it again`);
 }
 /* [E1, M13, M23] a bank, cash or e-wallet after setup: what it holds today, and whether that money was taken from the
    main bank since its last figure (then it moves from there, never counted twice) [qc-foundation F3] */

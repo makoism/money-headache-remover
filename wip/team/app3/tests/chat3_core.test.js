@@ -234,6 +234,34 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const c4 = r4.shown.find(x => x.who === 'card');
     ok(!c4 || c4.card.status !== 'done', 'a card is not renamed by change_account'); eq(JSON.stringify(hp.book.accounts), before, 'nothing written');
   });
+  await t('[E2, M3, M6, M13] "I closed my savings, the money went to my bank": close_account asks first, OK closes it with the money moved; Undo; "reopen it"; remove_account on one added by mistake asks first; one with history is refused with words', async () => {
+    const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
+    const sref = body => FAKE.results(body)[0].text.split('\n').find(l => /Savings/.test(l)).split(' | ')[0];
+    let sv;
+    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'add_account', name: 'Savings', type: 'bank', amount: 40000, moved: false }] })]), say('Added.'),
+      say('', [call('list', { what: 'accounts' })]), body => { sv = sref(body); return say('', [call('change', { steps: [{ do: 'close_account', account: sv, to: 'A1' }] })]); }, say('Tap OK to close it.'),
+      () => say('', [call('change', { steps: [{ do: 'reopen_account', account: sv }] })]), say('Open again.'),
+      () => say('', [call('change', { steps: [{ do: 'remove_account', account: sv }] })]), say('Tap OK.'), say('It has history.')]);
+    const d = hp.deps(f), main = hp.book.home.main.v.acct;
+    const r1 = await K.turn(state, 'Add a bank called Savings with 40,000 in it, new money', d);
+    const bank0 = require(E + 'lookahead.js').lookahead(hp.book, '2026-11-24').accounts[main].bank;
+    const r2 = await K.turn(r1.state, 'I closed my savings, the money went to my bank', d);
+    const c2 = r2.shown.find(x => x.who === 'card');
+    eq([c2.card.status, c2.card.ask], ['ask', 'delete'], JSON.stringify(c2.card));
+    ok(/Close Savings.*40,000.*Main bank/.test(c2.card.lines.join(' ')), c2.card.lines.join(' | '));
+    const savId = hp.book.accounts.find(a => a.name === 'Savings').id;
+    ok(!hp.book.accounts.find(a => a.id === savId).closed, 'nothing changed yet');
+    const c = await K.confirm(r2.state, c2.id, d); ok(c.ok, JSON.stringify(c));
+    eq([hp.book.accounts.find(a => a.id === savId).closed, require(E + 'lookahead.js').lookahead(hp.book, '2026-11-24').accounts[main].bank], ['2026-11-24', bank0 + 40000]);
+    const r3 = await K.turn(c.state, 'oh, reopen it', d);
+    eq([r3.shown.find(x => x.who === 'card').card.status, hp.book.accounts.find(a => a.id === savId).closed || null], ['done', null]);
+    const r4 = await K.turn(r3.state, 'remove savings, it was a mistake', d);
+    const c4 = r4.shown.find(x => x.who === 'card');
+    eq([c4.card.status, c4.card.ask], ['ask', 'delete']);
+    const k4 = await K.confirm(r4.state, c4.id, d);
+    ok(!k4.ok && /history/.test(k4.text), 'it has history now (the close and its move): refused with words ' + JSON.stringify(k4.text));
+    ok(!hp.book.accounts.find(a => a.id === savId).gone, 'not removed');
+  });
   await t('[M6] an answer to a follow-up question ("from when?") still counts the amount typed just before', async () => {
     const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
     const f = FAKE.make([say('From when: this one, or the next one?'),
@@ -536,7 +564,7 @@ const steps = list => [].concat(...list.map(([, r]) => r));
      sheet, told to the assistant, and the open sheet's own name with each message */
   await t('[M17] one table says what every screen and sheet is for; the open screen and sheet go with each message', async () => {
     const want = ['home', 'plan', 'receipts', 'settings', 'check', 'stmt', 'reminders', 'setup', 'welcome',
-      'free', 'addLine', 'line', 'addBill', 'bill', 'pay', 'addGoal', 'goal', 'addCard', 'card', 'addLoan', 'loan', 'addAccount', 'account', 'record'];
+      'free', 'addLine', 'line', 'addBill', 'bill', 'pay', 'addGoal', 'goal', 'addCard', 'card', 'addLoan', 'loan', 'addAccount', 'account', 'closeAccount', 'closedAccount', 'record'];
     eq(Object.keys(K.SCREENS).sort(), want.slice().sort(), 'the rows');
     for (const k of want) {
       const row = K.SCREENS[k];

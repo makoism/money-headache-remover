@@ -9542,7 +9542,61 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     return id;
   }
 
-  const api = { addPay, addAccount, changeAccount, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan };
+  /* [E2, M13, M45, M61] closing a bank, cash or e-wallet that is not the main bank (CONTROLS_PLAN section 3, P6, R3, R4).
+     x.to: the account its money goes to (one of your own, open, same currency), or 'spent' when the money is not there
+     any more. One step: each bill, pay, card and loan paid from it or into it moves to x.to (the main bank when its money
+     was spent); when spent, a final check of 0 today (the gap counts as spending, as at Check your bank), else the move of
+     all it holds today (the engine's figure) to x.to, which leaves it at 0; then `closed` today. Refused below zero (move money in first), with a goal or a budget
+     line kept in it, or for the main bank (later, CONTROLS_PLAN slice 13). Its history stays; Reopen undoes the close. */
+  const linksTo = (w, id) => {
+    const out = [];
+    for (const s of A3.listOf(w.book, 'schedules')) if (live(s) && s.acct === id && !(s.ends && s.ends < w.today)) out.push({ list: 'schedules', rec: s, field: 'acct' });
+    for (const a of w.book.accounts || []) if (live(a) && !a.closed && a.payFrom === id) out.push({ list: 'accounts', rec: a, field: 'payFrom' });
+    return out;
+  };
+  const keptIn = (w, id) => (w.book.places || []).filter(g => live(g) && g.keptIn && g.keptIn.acct === id).map(g => g.name)
+    .concat(A3.listOf(w.book, 'budgets').filter(l => live(l) && l.acct === id && !(l.ends && l.ends < w.today)).map(l => l.name));
+  function closeAccount(w, id, x) {
+    const a = find(w, 'accounts', id);
+    if (!OWN_KINDS[a.type]) bad(a.type === 'loan' ? 'Close a loan on its own sheet' : 'Close a card on its own sheet');
+    if (id === mainOf(w)) bad('Your main bank is where pay lands, so it cannot be closed here yet');
+    if (a.closed) bad(a.name + ' is already closed');
+    const k = keptIn(w, id);
+    if (k.length) bad(k.join(' and ') + (k.length > 1 ? ' are' : ' is') + ' kept in ' + a.name + '. Change or remove ' + (k.length > 1 ? 'them' : 'it') + ' first');
+    const spent = x && x.to === 'spent', to = spent ? mainOf(w) : x && x.to;
+    const dest = !spent && (w.book.accounts || []).find(y => live(y) && y.id === to && y.id !== id && !y.closed && OWN_KINDS[y.type] && (y.cur || home(w)) === (a.cur || home(w)));
+    if (!spent && !dest) bad('Pick where its money goes: another account of yours, or "it is not there any more"');
+    const v = LA.lookahead(w.book, w.today).accounts[id], held = v && v.bank != null ? v.bank : 0;
+    if (held < 0) bad(a.name + ' is below zero. Move money into it first, then close it');
+    for (const l of linksTo(w, id)) w.edit(l.list, l.rec.id, { [l.field]: to });
+    if (spent) w.add('events', { k: 'check', acct: id, date: w.today, a: 0 });
+    else if (held > 0) w.add('events', { k: 'transfer', date: w.today, a: held, acct: id, acct2: to, src: { type: 'typed' } });
+    w.edit('accounts', id, { closed: w.today });
+    return id;
+  }
+  function reopenAccount(w, id) {
+    const a = find(w, 'accounts', id);
+    if (!a.closed) bad(a.name + ' is not closed');
+    w.edit('accounts', id, { closed: null });
+    return id;
+  }
+  /* [E2] an account added by mistake: true remove, only while nothing but its own adding step names it (its opening, its
+     check, the move that filled it), no bill, pay, card, loan, goal or line uses it, and it is not the main bank. The
+     account and those records are marked gone; Undo puts them back whole */
+  function removeAccount(w, id) {
+    const a = find(w, 'accounts', id);
+    if (!OWN_KINDS[a.type]) bad('Remove a card or a loan on its own sheet');
+    if (id === mainOf(w)) bad('Your main bank is where pay lands, so it cannot be removed');
+    const uses = linksTo(w, id).map(l => l.rec.name).concat(keptIn(w, id));
+    if (uses.length) bad(uses.join(' and ') + ' use' + (uses.length > 1 ? '' : 's') + ' ' + a.name + '. Change ' + (uses.length > 1 ? 'them' : 'it') + ' first, or close ' + a.name + ' instead');
+    const on = (w.book.events || []).filter(e => live(e) && (e.acct === id || e.acct2 === id));
+    if (on.some(e => e.grp !== a.grp || !(e.k === 'open' || e.k === 'check' || e.k === 'transfer'))) bad(a.name + ' has history. Close it instead: its history stays');
+    for (const e of on) w.remove('events', e.id);
+    w.remove('accounts', id);
+    return id;
+  }
+
+  const api = { addPay, addAccount, changeAccount, closeAccount, reopenAccount, removeAccount, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan };
   if (node) module.exports = api;
   else root.PLAN3W = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
@@ -10556,7 +10610,9 @@ function drawPlan3() {
     return plRow3(`data-acct="${esc3(a.id)}"`, `${esc3(a.name)}<br><span class="when">${esc3(kind)}</span>${min}`,
       k && k.bank != null ? `<span data-fig="acct-bank">${plFig3('accounts.*.bank', k.bank, a.cur)}</span><br><span class="when">${esc3(label3('bankToday')).toLowerCase()}</span>` : '');
   });
-  out.push(`<section class="a3-card" data-card="plan-accounts"><h2>Accounts</h2>${acctRows.length ? `<ul class="a3-rows a3-rclist">${acctRows.join('')}</ul>` : '<p class="a3-sub">No accounts</p>'}
+  /* [E2] closed ones stay listed, apart, so a close can be taken back (Reopen) and nothing seems to vanish */
+  const closedRows = ((book.accounts || []).filter(a => plLive3(a) && PL_OWN3[a.type] && a.closed)).map(a => plRow3(`data-acctclosed="${esc3(a.id)}"`, `${esc3(a.name)}<br><span class="when">Closed ${esc3(day3(a.closed, yr))}. Its history stays</span>`, ''));
+  out.push(`<section class="a3-card" data-card="plan-accounts"><h2>Accounts</h2>${acctRows.length ? `<ul class="a3-rows a3-rclist">${acctRows.join('')}</ul>` : '<p class="a3-sub">No accounts</p>'}${closedRows.length ? `<p class="a3-acct">Closed</p><ul class="a3-rows a3-rclist" data-closed>${closedRows.join('')}</ul>` : ''}
     <p class="a3-sub">What each holds changes at Check your bank</p>
     <div class="a3-actions"><button type="button" class="a3-btn" id="plAddAcct">Add an account</button></div></section>`);
   /* cards and loans */
@@ -10595,6 +10651,7 @@ function drawPlan3() {
   on('#plAddLoan', () => plLoanForm3());
   on('#plAddAcct', () => plAcctAddForm3());
   host.querySelectorAll('[data-acct]').forEach(b => b.addEventListener('click', () => plAcctForm3(b.dataset.acct)));
+  host.querySelectorAll('[data-acctclosed]').forEach(b => b.addEventListener('click', () => plAcctClosedForm3(b.dataset.acctclosed)));
   host.querySelectorAll('[data-line]').forEach(b => b.addEventListener('click', () => plLineForm3(b.dataset.line)));
   host.querySelectorAll('[data-bill]').forEach(b => b.addEventListener('click', () => plBillForm3(b.dataset.bill)));
   host.querySelectorAll('[data-pay]').forEach(b => b.addEventListener('click', () => plBillForm3(b.dataset.pay)));
@@ -10645,9 +10702,11 @@ function plForm3(title, fields, buttons, note) {
     const got = read(), err = $('#plErr');
     if (got.bad) { err.textContent = got.bad; got.el.focus(); return; }
     const b = buttons[Number(btn.dataset.plbtn)];
+    /* [E2] a button that opens another sheet (Close this account opens its own sheet) */
+    if (b.open) { b.open(); return; }
     /* [M6, M61] a button that removes asks first (sure3): nothing is written until the yes */
     if (b.sure && !btn.dataset.yes) { const [l0, f0] = b.step(got.vals), no = ACT3.refusal(l0, f0); if (no) { err.textContent = no; $('#plSure').innerHTML = ''; return; } }
-    if (b.sure && !btn.dataset.yes) { sure3($('#plSure'), b.sure[0], b.sure[1], () => { btn.dataset.yes = '1'; btn.click(); }); return; }
+    if (b.sure && !btn.dataset.yes) { const sq = typeof b.sure === 'function' ? b.sure(got.vals) : b.sure; sure3($('#plSure'), sq[0], sq[1], () => { btn.dataset.yes = '1'; btn.click(); }); return; }
     delete btn.dataset.yes;
     const [label, fn, undo] = b.step(got.vals);
     const res = await ACT3.run(label, fn, { undo, seen });
@@ -10815,8 +10874,31 @@ function plAcctForm3(id) {
   const a = E3.book.accounts.find(x => x.id === id), main = ((E3.book.home || {}).main || {}).v, isMain = main && main.acct === id;
   const fields = [{ key: 'name', label: 'Name', kind: 'text', value: a.name }];
   if (!isMain) fields.push({ key: 'min', label: 'Keep at least', kind: 'amount', optional: true, value: a.minBank ? a.minBank.a : null, hint: 'Leave it empty for none. Safe to spend never counts this part' });
-  plForm3(a.name, fields, [{ label: 'Save', solid: true, step: v => ['changeAccount', w => PLAN3W.changeAccount(w, id, isMain ? { name: v.name } : { name: v.name, min: v.min }), a.name + ' changed'] }],
+  plForm3(a.name, fields, [{ label: 'Save', solid: true, step: v => ['changeAccount', w => PLAN3W.changeAccount(w, id, isMain ? { name: v.name } : { name: v.name, min: v.min }), a.name + ' changed'] }]
+    .concat(isMain ? [] : [{ label: 'Close this account', open: () => plAcctCloseForm3(id) },
+      { label: 'Remove this account', sure: [`Remove ${a.name}? Use this only if it was added by mistake: it goes as if it was never added`, 'Yes, remove it'], step: () => ['removeAccount', w => PLAN3W.removeAccount(w, id), a.name + ' removed'] }]),
     isMain ? 'Your main bank, where pay lands. What it holds changes at Check your bank' : 'What it holds changes at Check your bank');
+}
+/* [E2, M13, M45] closing a bank, cash or e-wallet: where its money goes (one of your own open accounts in the same
+   currency, or "not there any more"), then one step with Undo. Bills, pays and cards paid from it move there too */
+function plAcctCloseForm3(id) {
+  PL3.sheet = 'closeAccount';
+  const book = E3.book, a = book.accounts.find(x => x.id === id), k = E3.view(E3.today()).accounts[id], held = k && k.bank != null ? k.bank : 0;
+  const others = plAccounts3(PL_OWN3).filter(y => y.id !== id && (y.cur || E3.home()) === (a.cur || E3.home()));
+  const main = ((book.home || {}).main || {}).v;
+  const opts = others.map(y => ({ v: y.id, name: 'Move it to ' + y.name })).concat([{ v: 'spent', name: 'It is not there any more (spent)' }]);
+  plForm3('Close ' + a.name, [{ key: 'to', label: 'Its money', kind: 'pick', options: opts, value: main && others.some(y => y.id === main.acct) ? main.acct : opts[0].v,
+      hint: 'Bills, pays and cards paid from it move to the account you pick (to your main bank if the money is spent)' }],
+    [{ label: 'Close this account', solid: true, sure: v => [v.to === 'spent' ? `Close ${a.name}? What it held counts as spent. Its history stays` : `Close ${a.name}? What it holds moves to ${E3.nameOf(v.to)}. Its history stays`, 'Yes, close it'],
+      step: v => ['closeAccount', w => PLAN3W.closeAccount(w, id, { to: v.to }), a.name + ' closed'] }],
+    `${esc3(a.name)} holds ${money3(held, a.cur || E3.home())} today (${esc3(label3('bankToday')).toLowerCase()})`);
+}
+/* [E2] a closed account: Reopen (its history was kept) */
+function plAcctClosedForm3(id) {
+  PL3.sheet = 'closedAccount';
+  const a = E3.book.accounts.find(x => x.id === id);
+  plForm3(a.name, [], [{ label: 'Reopen', solid: true, step: () => ['reopenAccount', w => PLAN3W.reopenAccount(w, id), a.name + ' open again'] }],
+    `Closed ${esc3(day3(a.closed, E3.today().slice(0, 4)))}. Its history stays. Reopen it if it was closed by mistake or you use it again`);
 }
 /* [E1, M13, M23] a bank, cash or e-wallet after setup: what it holds today, and whether that money was taken from the
    main bank since its last figure (then it moves from there, never counted twice) [qc-foundation F3] */
@@ -13528,7 +13610,9 @@ Actions:
     addLoan: { name: 'Add a loan', does: 'Adds a loan: its name, what is still owed, the usual payment and the day it is paid' },
     loan: { name: 'A loan\'s own sheet', does: 'Changes the loan\'s name, the day it is paid or the usual payment, or closes the loan' },
     addAccount: { name: 'Add an account', does: 'Adds a bank, cash or e-wallet after setup: its name, what it holds today, and whether that money was moved from your main bank' },
-    account: { name: 'An account\'s own sheet', does: 'Renames a bank, cash or e-wallet, or sets its own Keep at least' },
+    account: { name: 'An account\'s own sheet', does: 'Renames a bank, cash or e-wallet, sets its own Keep at least, closes it, or removes one added by mistake' },
+    closeAccount: { name: 'Close an account', does: 'Closes a bank, cash or e-wallet: what it holds moves to another account of yours, or counts as spent, and bills paid from it move too. Its history stays' },
+    closedAccount: { name: 'A closed account\'s own sheet', does: 'Reopens an account that was closed, with its history' },
     record: { name: 'A record\'s own sheet', does: 'Changes or removes one thing you logged on Receipts' },
   };
   const SYSTEM = `You are the assistant inside The Burrow, a money app the person has open right now. You set it up with them by talking, and after that you answer questions and make changes for them.
@@ -13565,12 +13649,12 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
   /* ---- the tools (BU2: no figures or draft read tool) ---- */
   const num = { type: 'number', description: 'A plain number in the currency, no symbol.' };
   const str = d => ({ type: 'string', description: d });
-  const DO = ['landed', 'bank_figure', 'card_figure', 'log_spend', 'refund', 'money_in', 'move_money', 'remove', 'add_bill', 'change_bill', 'end_bill', 'add_pay', 'add_line', 'change_line', 'end_line', 'set_free', 'add_goal', 'set_aside', 'add_card', 'add_account', 'change_account'];
+  const DO = ['landed', 'bank_figure', 'card_figure', 'log_spend', 'refund', 'money_in', 'move_money', 'remove', 'add_bill', 'change_bill', 'end_bill', 'add_pay', 'add_line', 'change_line', 'end_line', 'set_free', 'add_goal', 'set_aside', 'add_card', 'add_account', 'change_account', 'close_account', 'reopen_account', 'remove_account'];
   /* a step that was asked for and left out, in words for the person (the card says which was not done) */
   const DO_WORDS = { landed: 'ticking off a pay or bill', bank_figure: 'a bank figure', card_figure: 'a card figure', log_spend: 'a spend', refund: 'a refund', money_in: 'money that came in',
     move_money: 'money moved between accounts', remove: 'removing a record', add_bill: 'a new bill', change_bill: 'a change to a bill or pay', end_bill: 'ending a bill', add_pay: 'a new pay',
     add_line: 'a new line', change_line: 'a change to a line', end_line: 'ending a line', set_free: 'a change to Free to spend', add_goal: 'a new goal', set_aside: 'money set aside for a goal',
-    add_card: 'a new card', add_account: 'a new account', change_account: 'a change to an account' };
+    add_card: 'a new card', add_account: 'a new account', change_account: 'a change to an account', close_account: 'closing an account', reopen_account: 'reopening an account', remove_account: 'removing an account' };
   const CURS = ['JPY', 'PHP', 'USD', 'EUR'];
   const SECTIONS = ['country', 'currency', 'banks', 'pays', 'cards', 'bills', 'asked', 'statements', 'payToday', 'free', 'min'];
   const TOOLS = [
@@ -13581,7 +13665,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     { name: 'draft_set', description: 'Save one setup section into the draft, its whole value. Nothing reaches the app until fill_book. Sections: country "JP"|"PH"|"XX"; currency "JPY"|"PHP"|"USD"|"EUR" (a change of currency drops the amounts saved before it: ask each again); banks [{name, amount, type?, confirmed?}] (first is where pay lands; confirmed true when the person gave the figure again today); pays [{name, amount, every: month|days|weeks|none, day?, day2?, n?, start?, shift?: before|after, bank?, afterTax, same?}]; cards [{name, owed, payDay, closeDay: day|"last"|"not sure", shift?, payFrom?, confirmed?}]; bills [{name, amount, day, every?: month|year, month?, from?}]; asked [{name, out: true|false}]; statements [{name, amount|"not sure"}]; payToday {landed: true|false}; free amount|null; min amount|null.',
       input_schema: { type: 'object', properties: { section: { type: 'string', enum: SECTIONS }, value: { description: 'The section\'s whole value.' } }, required: ['section', 'value'] } },
     { name: 'fill_book', description: 'Turn the draft into the person\'s Burrow. Only when they said to fill it in. Refused while NEEDED is not empty.', input_schema: { type: 'object', properties: {} } },
-    { name: 'change', description: 'Make up to ' + MAX_STEPS + ' changes, each a named step: ' + DO.join(', ') + '. landed {ref: the P, B or card A ref, amount? only if it was different, date? the day it landed}; bank_figure and card_figure {account, amount}. Fields: amount, account (A ref), every (add_bill: month|year|months, with month 1..12 for a year, n and start for months), from and to (A refs), line (L ref), goal (G ref), ref (the record: S, B, P, L or G ref), date (YYYY-MM-DD, today or before), note, name, day, day2, every (month|days|weeks1..4|none), start, when (now|next|once), target, due, owed, payDay, closeDay, type (bank|cash|ewallet), moved (true|false), from (the A ref the money came from), afterFigure (true|false: moved after they looked at that bank on the day of its figure). change_account {account: a bank, cash or e-wallet A ref, name?, min?: its own Keep at least, 0 for none}.',
+    { name: 'change', description: 'Make up to ' + MAX_STEPS + ' changes, each a named step: ' + DO.join(', ') + '. landed {ref: the P, B or card A ref, amount? only if it was different, date? the day it landed}; bank_figure and card_figure {account, amount}. Fields: amount, account (A ref), every (add_bill: month|year|months, with month 1..12 for a year, n and start for months), from and to (A refs), line (L ref), goal (G ref), ref (the record: S, B, P, L or G ref), date (YYYY-MM-DD, today or before), note, name, day, day2, every (month|days|weeks1..4|none), start, when (now|next|once), target, due, owed, payDay, closeDay, type (bank|cash|ewallet), moved (true|false), from (the A ref the money came from), afterFigure (true|false: moved after they looked at that bank on the day of its figure). change_account {account: a bank, cash or e-wallet A ref, name?, min?: its own Keep at least, 0 for none}. close_account {account, to: the A ref its money goes to, or "spent" when it is not there any more}: bills and cards paid from it move there too, its history stays. reopen_account {account}. remove_account {account}: only for one added by mistake; anything with history is closed instead.',
       input_schema: { type: 'object', properties: { steps: { type: 'array', items: { type: 'object', properties: { do: { type: 'string', enum: DO }, amount: num }, required: ['do'] } } }, required: ['steps'] } },
   ];
 
@@ -13601,6 +13685,10 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       lines.push(`${ref} | ${x.name} | ${v.amount != null ? SM.format(v.amount, x.cur || home) : 'no fixed amount'} | ${ruleWords(v.rule)}${x.ends ? ' | ends ' + day1(x.ends) : ''}`);
     }
     if (lines.length) out.push('Pays and bills (ref | name | amount | when):\n' + lines.join('\n'));
+    /* [E2] closed accounts keep a ref after every open one, so "reopen it" can name one */
+    let a = Math.max(0, ...Object.keys(refs).filter(k => /^A\d+$/.test(k)).map(k => Number(k.slice(1))));
+    const closed = (book.accounts || []).filter(x => live(x) && x.closed && x.type !== 'card' && x.type !== 'loan').map(x => { const ref = 'A' + (++a); refs[ref] = x.id; return `${ref} | ${x.name} | closed ${day1(x.closed)}`; });
+    if (closed.length) out.push('Closed accounts (ref | name | closed on; reopen_account opens one again):\n' + closed.join('\n'));
     return { text: out.join('\n'), refs };
   }
   function ruleWords(r) {
@@ -14038,6 +14126,18 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       if (a.moved === true && needLooked && typeof a.afterFigure !== 'boolean') return { bad: `ask: "${lookedQ.replace('If it was moved: was', 'Was')}" Then change again with afterFigure` };
       return { kind: 'addAccount', args: [Object.assign({ name: clean(a.name, 60), type: a.type || 'bank', amount: x, moved: a.moved }, a.date ? { date: a.date } : {},
         a.from ? { from: ref(a.from, 'A') || 'none' } : {}, typeof a.afterFigure === 'boolean' ? { afterFigure: a.afterFigure } : {})], text: `Add ${clean(a.name, 60)} with ${m(x)}${a.moved ? ' moved from ' + nm(a.from ? ref(a.from, 'A') : mainAcct) : ''}`, amount: x, figs: [x] };
+    }
+    /* [E2, M13, M6] closing (its money moved to `to`, or "spent"), reopening, and removing one added by mistake: a close
+       and a remove ask first (del) */
+    if (what === 'close_account' || what === 'reopen_account' || what === 'remove_account') {
+      const id = ref(a.account || a.ref, 'A'), rec = id && acctRec(id);
+      if (!rec || rec.type === 'card' || rec.type === 'loan') return { bad: what.replace('_', ' ') + ' is for a bank, cash or e-wallet' };
+      if (what === 'reopen_account') return { kind: 'reopenAccount', args: [id], text: `Reopen ${rec.name}` };
+      if (what === 'remove_account') return { kind: 'removeAccount', args: [id], text: `Remove ${rec.name}, as if it was never added`, del: true };
+      const spent = a.to === 'spent', to = spent ? 'spent' : ref(a.to, 'A');
+      if (!to) return { bad: 'ask where its money goes: another of their accounts, or is it not there any more (spent)? Then change again with to' };
+      const held = ((LA.lookahead(book, today).accounts || {})[id] || {}).bank || 0;
+      return { kind: 'closeAccount', args: [id, { to }], text: spent ? `Close ${rec.name}: what it held (${m(held, rec.cur)}) counts as spent. Its history stays` : `Close ${rec.name}: ${m(held, rec.cur)} moves to ${nm(to)}. Its history stays`, del: true };
     }
     /* [E1, M13] a bank, cash or e-wallet renamed, or its own Keep at least set (0 clears it): PLAN3W.changeAccount */
     if (what === 'change_account') {

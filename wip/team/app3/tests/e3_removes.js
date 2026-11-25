@@ -17,6 +17,8 @@ const TABLE = {
   'End this line': 'sure',
   'End this bill': 'sure',
   'Close this loan': 'sure',
+  'Close this account': 'sure on its own sheet; the button on the account\'s sheet only opens that sheet (tests/e3_acctclose.js)',
+  'Remove this account': 'sure (tests/e3_acctclose.js)',
   'Stop here': 'its own question in Settings (tests/e3_cloud.js)',
   'Delete the cloud copy': 'its own question in Settings (tests/e3_cloud.js)',
   'Drop it': 'its own question in Settings (tests/e3_restore.js, e3_backup.js)',
