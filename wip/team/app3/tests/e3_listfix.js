@@ -218,7 +218,9 @@ const rows = p => p.$$eval('#rcList li', es => es.map(e => ({ gap: e.dataset.gap
   /* B6: the made-up book on 25 Nov. ¥1,200 logged on Card A: its close day is not sure, so everything on it is paid on
      its next payment day, 10 Dec. The Undo bar says when it leaves the bank, so a safe to spend that does not drop (or
      rises) has its reason: "Logged ¥1,200 on Free to spend. It goes on Card A and leaves your bank when the card is paid
-     on 10 Dec". A spend from the bank says nothing more ("Logged ¥500 on Free to spend"). */
+     on 10 Dec". A spend from the bank says nothing more ("Logged ¥500 on Free to spend").
+     With no play amount (the made-up book's plan.shares is empty) everything on the cards comes off safe to spend now
+     (M90, R1), so the card's words add ". It comes off safe to spend now": safe to spend drops by the 1,200 at once. */
   await fresh(bk);
   await go('2026-11-25');
   await p.tap('[data-tab="receipts"]'); await T.w(300);
@@ -226,7 +228,9 @@ const rows = p => p.$$eval('#rcList li', es => es.map(e => ({ gap: e.dataset.gap
   await pickAcct('Card A'); await T.w(100);
   await p.tap('#rcAmt'); await p.keyboard.type('1200'); await p.click('#rcSave'); await T.w(500);
   const barB6 = await p.evaluate(() => (document.querySelector('#a3Msg .burrow-msg span') || {}).textContent || '');
-  ck('B6: on a card, the Undo bar says when it leaves the bank', barB6 === 'Logged ¥1,200 on Free to spend. It goes on Card A and leaves your bank when the card is paid on 10 Dec', barB6);
+  // old "... when the card is paid on 10 Dec"; now with ". It comes off safe to spend now" after it: no play amount, so
+  // the cards come off safe to spend now (R1); the bank still pays it on 10 Dec
+  ck('B6: on a card, the Undo bar says when it leaves the bank', barB6 === 'Logged ¥1,200 on Free to spend. It goes on Card A and leaves your bank when the card is paid on 10 Dec. It comes off safe to spend now', barB6);
   await pickAcct('Main bank'); await T.w(100);
   await p.tap('#rcAmt'); await p.keyboard.type('500'); await p.click('#rcSave'); await T.w(500);
   const barB6b = await p.evaluate(() => (document.querySelector('#a3Msg .burrow-msg span') || {}).textContent || '');
