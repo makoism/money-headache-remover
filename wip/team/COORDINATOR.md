@@ -4,6 +4,8 @@ The coordinator is the one session Mako talks to. It records his decisions in DE
 
 
 ## CURRENT STATE
+- COORDINATOR 16 is session_01BFpKEXBhaZ6NZ92Lntxb2A (Opus), took over 26 Nov 08:20 JST. Its keep-going task: trig_01YatA5o6jCLmoL1VbdnbUGo (:44). MAIN 21, LANE E, LANE G and the watch told the new id; coordinator 15 asked once to switch off trig_01YNLycNQNyBxR9EmFprj4xw and close.
+
 ### HANDOFF from coordinator 15 to coordinator 16 (26 Nov 08:20 JST). Read this block first; everything below it is history and still holds.
 - Models: Opus for everything until Sun 29 Nov 09:00 JST (weekly Fable limit used up); then put the five gate briefs back to fable (RUNBOOK 5 step 5). M87: use the whole allowance until then (RUNBOOK 4c-now).
 - MAKO: nothing waits on his yes now. The cards question is ANSWERED (choice 1, DECISIONS 28, M90). Since 06:40 JST he gave DECISIONS 28 to 32: M89 widened, M90, M91 (options incl. later), section H M92 to M97 (cash envelopes, play money as wallet cash, the open receipt question, monthly cash moment), M98 (read every idea as a person in a real moment: RUNBOOK 1 step 0, LESSONS 6, qc-novice plan mode), M99 (visual overview before filing receipts). DECISIONS next number: 33. MAKO_SAYS last: M99. Last percentages told: 91% first version, 35% with art and 3D. He asked if the credits will be used by Sunday: told sessions cannot see the weekly percentage, LANE E started for width, and offered pacing if he sends a usage screenshot (not sent).
