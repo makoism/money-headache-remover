@@ -1,18 +1,16 @@
 'use strict';
-// A card's unlogged spending found at a check belongs to the days it covers, not to the day the card was checked
-// (MAKO_SAYS M11 logs weekly, M30 nearly all spending on cards, M36, M38; DECISIONS_ROUND2 A4, T2 and period-end q1: a
-// gap's stretch is split by days at the pay). Found by qc-foundation on the end-of-period plan, 24 Nov 2026.
+// A card's unlogged spending found at a check is spending in the period the CHECK is in, whole (MAKO_SAYS M11 logs
+// weekly, M30 nearly all spending on cards, M36, M38; DECISIONS_ROUND2 T2 and CHECKGAP: coordinator 15, 26 Nov 2026,
+// replacing the split by days at the pay that qc-foundation asked for on 24 Nov). A closed period never changes by it.
 // Made-up yen, Mako's shape: one bank, pay 300,000 on the 10th, two cards paid in full on the 10th and 11th (close
 // days not sure), Free to spend 60,000, cards checked about weekly.
 //   24 Nov  setup: bank 300,000, Card A owes 20,000, Card B owes 10,000
 //    6 Dec  cards checked: A at 50,000 (30,000 not logged), B at 24,000 (14,000 not logged), all in the period to 9 Dec
 //   10 Dec  pay lands, Card A's 50,000 leaves the bank; 11 Dec Card B's 24,000 leaves
 //   13 Dec  all three ticked, bank checked at 526,000 (300,000 + 300,000 - 50,000 - 24,000, no gap of its own),
-//           A checked at 21,000 and B at 7,000: not logged over 7 Dec to 13 Dec, seven days.
-//           7, 8 and 9 Dec are in the old period (3 of 7 days), 10 to 13 Dec in the new one (4 of 7):
-//           A 21,000 is 9,000 old and 12,000 new; B 7,000 is 3,000 old and 4,000 new
-// So the old period's Free to spend spent is 30,000 + 14,000 + 9,000 + 3,000 = 56,000 and the new period's is 16,000.
-// Before the fix both gaps are dated 13 Dec whole: old 44,000, new 28,000.
+//           A checked at 21,000 and B at 7,000: not logged over 7 Dec to 13 Dec, seven days, found on 13 Dec.
+// [CHECKGAP] Both gaps are the period from 10 Dec's, whole: the old period's Free to spend spent is 30,000 + 14,000 =
+// 44,000 (what the 6 Dec checks found) and the new period's 21,000 + 7,000 = 28,000. (By days it was 56,000 and 16,000.)
 const { t, done, eq, ok } = require('./t.js');
 const BB = require('../build_book.js'), LA = require('../lookahead.js'), CI = require('../checkin.js'), P = require('../periods.js'), IDS = require('../ids.js');
 
@@ -43,11 +41,11 @@ t('the periods are 10 Nov to 9 Dec and from 10 Dec', () => {
   const { old, now } = spentOf(life().book);
   ok(old, 'a past period'); eq(old.end, '2026-12-09'); eq(now.start, '2026-12-10');
 });
-t('the old period holds what was found on 6 Dec (44,000) and 3 of 7 days of what was found on 13 Dec (12,000): 56,000', () => {
-  eq(spentOf(life().book).old.free.spent, 56000);
+t('[CHECKGAP] the old period holds what was found on 6 Dec, 44,000, and nothing of what was found on 13 Dec', () => {
+  eq(spentOf(life().book).old.free.spent, 44000);
 });
-t('the new period holds 4 of 7 days of the 28,000 found on 13 Dec: 16,000', () => {
-  eq(spentOf(life().book).now.free.spent, 16000);
+t('[CHECKGAP] the new period holds all 28,000 found on 13 Dec', () => {
+  eq(spentOf(life().book).now.free.spent, 28000);
 });
 t('nothing is lost or counted twice: 72,000 in all', () => {
   const { old, now } = spentOf(life().book);
@@ -63,14 +61,13 @@ t('each card still owes what was typed, and the bank has no gap of its own', () 
 t('the same in every order the records can arrive in', () => {
   const orders = [e => e.reverse(), e => e.sort((x, y) => (x.id < y.id ? -1 : 1)), e => e.sort((x, y) => (x.id < y.id ? 1 : -1)),
     e => e.sort((x, y) => (String(x.date) < String(y.date) ? 1 : -1)), e => e.slice(1).concat(e.slice(0, 1))];
-  for (const o of orders) { const s = spentOf(life(o).book); eq([s.old.free.spent, s.now.free.spent], [56000, 16000]); }
+  for (const o of orders) { const s = spentOf(life(o).book); eq([s.old.free.spent, s.now.free.spent], [44000, 28000]); }
 });
-// ---- no fixed pay: the plan runs by the calendar month, and a gap across the 1st is split by days [CARDGAP 2b] ----
+// ---- no fixed pay: the plan runs by the calendar month; a gap found on 5 Dec is December's, whole [CHECKGAP] ----
 // Made-up yen: a bank at 420,000, no fixed pay, Free to spend 60,000 a month, set up 1 Nov 2026.
 //   28 Nov  bank checked at 420,000 (no gap); on 5 Dec it shows 406,000: 14,000 not logged over 29 Nov to 5 Dec,
-//           seven days: 29 and 30 Nov (2 of 7: 4,000) are November's, 1 to 5 Dec (5 of 7: 10,000) are December's.
-//   So on 5 Dec Free to spend left this month is 60,000 - 10,000 = 50,000. Before the fix the whole gap counted nowhere
-//   (60,000 left). The same with the 14,000 found on a card instead of the bank.
+//           found on 5 Dec, so December's whole: Free to spend left this month is 60,000 - 14,000 = 46,000 (never
+//           nowhere, which gave 60,000; by days it was 50,000). The same with the 14,000 found on a card.
 function byDayLife(where) {
   const newId = IDS.idMaker('p7m2xd');
   const out = BB.buildBook({ day: '2026-11-01', told: '2026-11-01T12:00:00.000+09:00', currency: 'JPY', country: 'JP',
@@ -89,15 +86,17 @@ function byDayLife(where) {
   check('2026-12-05', where === 'card' ? { [bank]: 420000, [card]: 14000 } : { [bank]: 406000, [card]: 0 });
   return { book, card, bank };
 }
-t('no fixed pay, a bank gap across the 1st: 10,000 of 14,000 is December\'s, so 50,000 is left', () => {
-  const { book, bank } = byDayLife('bank'), r = LA.lookahead(book, '2026-12-05');
-  eq(r.accounts[bank].fillers.slice(-1)[0].parts.map(p => [p.from, p.to, p.amount]), [['2026-11-29', '2026-11-30', 4000], ['2026-12-01', '2026-12-05', 10000]]);
-  ok(r.safeToSpend.cappedByFreeToSpend); eq(r.safeToSpend.headline, 50000);   // the headline is Free to spend left this month
+t('[CHECKGAP] no fixed pay, a bank gap across the 1st found on 5 Dec: all 14,000 is December\'s, so 46,000 is left', () => {
+  const { book, bank } = byDayLife('bank'), r = LA.lookahead(book, '2026-12-05'), f = r.accounts[bank].fillers.slice(-1)[0];
+  eq([f.from, f.to], ['2026-11-29', '2026-12-05']);   // the days it covers, for the words
+  eq(f.parts.map(p => [p.from, p.to, p.amount]), [['2026-12-05', '2026-12-05', 14000]]);
+  ok(r.safeToSpend.cappedByFreeToSpend); eq(r.safeToSpend.headline, 46000);   // the headline is Free to spend left this month
 });
-t('no fixed pay, a card gap across the 1st: the same, 4,000 and 10,000, 50,000 left', () => {
-  const { book, card } = byDayLife('card'), r = LA.lookahead(book, '2026-12-05');
-  eq(r.cards[card].fillers.slice(-1)[0].parts.map(p => [p.from, p.to, p.amount]), [['2026-11-29', '2026-11-30', 4000], ['2026-12-01', '2026-12-05', 10000]]);
-  ok(r.safeToSpend.cappedByFreeToSpend); eq(r.safeToSpend.headline, 50000);   // the headline is Free to spend left this month
+t('[CHECKGAP] no fixed pay, a card gap across the 1st: the same, all 14,000 on 5 Dec, 46,000 left', () => {
+  const { book, card } = byDayLife('card'), r = LA.lookahead(book, '2026-12-05'), f = r.cards[card].fillers.slice(-1)[0];
+  eq([f.from, f.to], ['2026-11-29', '2026-12-05']);
+  eq(f.parts.map(p => [p.from, p.to, p.amount]), [['2026-12-05', '2026-12-05', 14000]]);
+  ok(r.safeToSpend.cappedByFreeToSpend); eq(r.safeToSpend.headline, 46000);   // the headline is Free to spend left this month
 });
 t('every card gap\'s parts add up to the gap, and none is dated after its check or has no days', () => {
   for (const b of [life().book, byDayLife('card').book]) {

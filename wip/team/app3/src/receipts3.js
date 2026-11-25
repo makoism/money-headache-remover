@@ -333,8 +333,9 @@ function rcHeld3() {
   try { for (const h of E3.view(E3.today()).heldByCheck || []) out[h.id] = h.check; } catch (e) { /* no figures: nothing to say */ }
   return out;
 }
-/* [LISTFIX A1, T2] a gap found at Check your bank is spending: the engine's fillers (each account's, cut at the period
-   starts, and each card's), listed in the period each part counts in, so the list and the spent figure agree. A gain
+/* [LISTFIX A1, T2, CHECKGAP] a gap found at Check your bank is spending: the engine's fillers (each account's and each
+   card's), listed in the period its one part counts in (the check's own, whole), so the list and the spent figure
+   agree; the row's dates are the days the gap covers. A gain
    held for its question counts nowhere and is left out. Not a button: a gap changes only at a check. */
 function rcGaps3(per) {
   let r; try { r = E3.view(E3.today()); } catch (e) { return []; }
@@ -342,12 +343,12 @@ function rcGaps3(per) {
   const onWhat = place => (!place || place === 'free' ? { line: 'free' } : ((E3.book.plan || {}).budgets || []).some(l => l.id === place) ? { line: place } : { place });
   for (const id of Object.keys(r.accounts || {})) for (const f of r.accounts[id].fillers || []) {
     if (f.held || f.apart) continue;   // [LISTFIX2] held for its question, or never spending (the engine's marks)
-    for (const pt of f.parts || []) if (pt.amount && inPer(pt.from)) out.push({ acct: id, check: f.to, from: pt.from, to: pt.to, amount: pt.amount, on: onWhat(f.place) });
+    for (const pt of f.parts || []) if (pt.amount && inPer(pt.from)) out.push({ acct: id, check: f.to, from: f.from, to: f.to, amount: pt.amount, on: onWhat(f.place) });
   }
   /* [CARDGAP] a card's gap by its parts too (the engine cuts it by days at each period start, as a bank's) */
   for (const id of Object.keys(r.cards || {})) for (const f of r.cards[id].fillers || []) {
     if (f.apart) continue;
-    for (const pt of f.parts || []) if (pt.amount && inPer(pt.from)) out.push({ acct: id, check: f.day, from: pt.from, to: pt.to, amount: pt.amount, on: { line: 'free' } });
+    for (const pt of f.parts || []) if (pt.amount && inPer(pt.from)) out.push({ acct: id, check: f.day, from: f.from, to: f.to, amount: pt.amount, on: { line: 'free' } });
   }
   return out;
 }

@@ -1,7 +1,7 @@
 {
   "life": "grid_two_phones_check",
   "title": "Coverage grid cells: two check-ins on one day from two phones (check, two devices), a check edited after its period ended (check, edited after settled), a ticked pay's amount corrected (settle, edited after settled)",
-  "story": "A couple, one shared copy. Set up Mon 4 Jan 2027: the bank holds 300,000, of which Free to spend 50,000 (typed). Pay of 250,000 on the 25th (moved earlier). Fri 8 Jan: Jun checks in on his phone at 09:00 (296,000) and Tess on hers at 18:00 (293,000); the later one's stretch starts at the earlier one. Mon 25 Jan the pay is ticked as 250,000; later the amount is corrected to 252,000 (the record is the same, edited). In February Tess also corrects her 8 Jan figure from 294,000 to 293,000: an edit of a check in a period that has ended, which does not touch the new period. Tue 26 Jan check-in: 540,000. Every amount is made up.",
+  "story": "A couple, one shared copy. Set up Mon 4 Jan 2027: the bank holds 300,000, of which Free to spend 50,000 (typed). Pay of 250,000 on the 25th (moved earlier). Fri 8 Jan: Jun checks in on his phone at 09:00 (296,000) and Tess on hers at 18:00 (293,000); the later one's stretch starts at the earlier one. Mon 25 Jan the pay is ticked as 250,000; later the amount is corrected to 252,000 (the record is the same, edited). In February Tess also corrects her 8 Jan figure from 294,000 to 293,000: an edit of a check in a period that has ended; the 26 Jan check's gap is measured from it [CHECKGAP]. Tue 26 Jan check-in: 540,000. Every amount is made up.",
   "currency": "JPY",
   "window": { "from": "2027-01-04", "to": "2027-02-28" },
   "holidays": { "country": "none", "dates": [], "bank_closed": [] },
@@ -30,8 +30,9 @@
       "why": "50,000 (Free to spend at the opening) - 4,000 (the filler of Jun's check-in, 300,000 - 296,000) - 3,000 (the filler of Tess's) = 43,000" },
     { "id": "g2p-04", "date": "2027-01-26", "question": "not_explained", "account": "b", "expected": 5000,
       "why": "293,000 (check of 8 Jan, as corrected) + 252,000 (pay of Mon 25 Jan, as corrected) - 540,000 (check-in figure) = 5,000" },
-    { "id": "g2p-05", "date": "2027-01-26", "question": "headline", "expected": 49444,
-      "why": "50,000 (Free to spend for the period from Mon 25 Jan; the edits in the old period do not touch it) - 556 (the filler's share for 25 and 26 Jan: 5,000 less the old period's 4,444, which is 5,000 x 16 / 18 days, rounded) = 49,444" },
+    { "id": "g2p-05", "date": "2027-01-26", "question": "headline", "expected": 45000,
+      "why": "50,000 (Free to spend for the period from Mon 25 Jan) - 5,000 (the filler found at the Tue 26 Jan check, whole: the check is in this period [CHECKGAP]) = 45,000",
+      "note": "Before CHECKGAP (coordinator 15, 26 Nov) 4,444 of the 5,000 went by days to the closed period and the headline was 49,444. The 8 Jan correction (294,000 to 293,000) is measured against by the 26 Jan check: with 294,000 that gap would be 6,000 and the headline 44,000." },
     { "id": "g2p-06", "date": "2027-01-26", "question": "bank_today", "account": "b", "expected": 540000,
       "why": "540,000 (check-in, Tue 26 Jan) = 540,000" }
   ]

@@ -7,7 +7,7 @@
      opts.at            'end of day' (default) or 'start of day'
      opts.calendars     { <country>: { holidays: [dates], bankClosed: [dates] } } replacing the built-in tables
      opts.deviceOffset  the device's offset ('+09:00'), for a time saved with no offset of its own [X9]
-     opts.mostlyBeforePay  the person's answer to the filler question [A4]
+     opts.mostlyBeforePay  no longer read: a check's gap is its own period's, whole [CHECKGAP, replacing A4]
    The result's names are those of SCHEMA_V3 section 12. Every amount is in whole minor units, every date a whole day
    number inside (D8). A copy the rules forbid (a closed account still holding money [P6], a schedule change that no
    longer makes a settled or named occurrence [X8]) is refused with an error that names the decision.
@@ -443,6 +443,12 @@
     const byTime = (x, y) => x.day - y.day || keyCmp(x.key, y.key) || x.idx - y.idx;
     const isClosingRecord = (e, id) => e.id === I.built.close(id) || String(e.id).startsWith(I.built.close(id) + ':');
     const heldBy = [];   // [S3] records told after a check that holds them: { id, account, check }
+    // [CHECKGAP] a record told after the first check that holds it (bank or card) only explains part of that check's
+    // gap, so it counts in the check's period (the day of the check), never in a closed one, and never moves safe to
+    // spend up: id -> the check's day, the earliest when two hold it
+    const lateDay = new Map();
+    const lateTo = (rid, day) => { if (!lateDay.has(rid) || lateDay.get(rid) > day) lateDay.set(rid, day); };
+    const countDay = e => (lateDay.has(e.id) ? Math.max(e.day, lateDay.get(e.id)) : e.day);
     function bankInfo(id) {
       let base = openingOf(id);
       // [Z1] a check whose large gain was answered "wrong" counts nowhere; the account asks for the figure again
@@ -474,7 +480,7 @@
         let computed = base.amount;
         moves.forEach((e, k) => { if (isIn[k] !== wasIn[k]) computed += isIn[k] ? delta(e, id) : -delta(e, id); });
         // [S3, AN4] a record told after this check but inside it: named, so the screens can say the figure holds it
-        moves.forEach((e, k) => { if (isIn[k] && !wasIn[k] && e.key > cc.key) heldBy.push({ id: e.id, account: id, check: dayStr(cc.day) }); });
+        moves.forEach((e, k) => { if (isIn[k] && !wasIn[k] && e.key > cc.key) { heldBy.push({ id: e.id, account: id, check: dayStr(cc.day) }); lateTo(e.id, cc.day); } });
         wasIn = isIn;
         const fp = fillerPlaceOf(c);
         fillers.push(Object.assign(makeFiller(id, c.day > base.day ? base.day + 1 : c.day, c.day, computed - c.a), fp ? { place: fp } : {},
@@ -491,27 +497,11 @@
       const bank = base.amount + loggedIn - loggedOut;
       return { bank, checked: base.amount, loggedIn, loggedOut, asOfDay: base.day, fillers, lastGap, askAgain: askAgain ? wrong.day : null };
     }
-    // [A3, A4, T6] the filler of a stretch, split by days at each period start in it (or all to the older period)
+    // [CHECKGAP] the filler of a stretch: the days it covers (`from`, `to`, for the words) and ONE part, on the check's
+    // own day, holding the whole gap: a gap found at a check is that check's period's, whole (coordinator 15, 26 Nov,
+    // replacing BZ1's and CARDGAP 2b's by-days split and A4's `mostlyBeforePay`); a closed period never changes by it
     function makeFiller(id, first, last, amount) {
-      // [CARDGAP 2b] cut at every day a reader counts from: each period start, and, while the plan runs by the day (no
-      // fixed pay), each calendar month's first day and the day of the change to no fixed pay; so a gap across the 1st
-      // is split by days and never counts nowhere
-      const byDayCuts = [];
-      if (!periodStream) {
-        const [fy, fm] = ymOf(first);
-        for (let k = 1; ; k++) { const d = dayIn(fy, fm + k, 1); if (d > last) break; byDayCuts.push(d); }
-        if (noneSince != null) byDayCuts.push(noneSince);
-      }
-      const starts = [...new Set(periodStartDays.concat(byDayCuts))].filter(d => d > first && d <= last).sort((x, y) => x - y);
-      const cuts = [first, ...starts, last + 1], days = last - first + 1, parts = [];
-      let given = 0;
-      for (let i = 0; i < cuts.length - 1; i++) {
-        const n = cuts[i + 1] - cuts[i];
-        const share = opts.mostlyBeforePay ? (i === 0 ? amount : 0) : i === cuts.length - 2 ? amount - given : Math.round(amount * n / days);
-        given += share;
-        parts.push({ from: dayStr(cuts[i]), to: dayStr(cuts[i + 1] - 1), days: n, amount: share });
-      }
-      return { account: id, from: dayStr(first), to: dayStr(last), amount, parts };
+      return { account: id, from: dayStr(first), to: dayStr(last), amount, parts: [{ from: dayStr(last), to: dayStr(last), days: 1, amount }] };
     }
 
     // ----- plans of a loan or pay-later [Q3] -----
@@ -623,8 +613,10 @@
       const stmtAmount = cl => { const b = statementsTo(cl, cl).list.find(x => x.close === cl); return b ? b.amount : owedAt(cl); };
       // a card check sets the statement it names and what is owed now; the gaps are its fillers [A3]
       const fillers = [];
-      // [CARDGAP] each gap carries the days it covers (the day after this card's check before it, to this check) and
-      // is cut by days like a bank's (makeFiller); the checks are walked in the bank's order, never as told
+      // [CARDGAP, CHECKGAP] each gap carries the days it covers (the day after this card's check before it, to this
+      // check) for the words, and counts whole on the check's own day, as a bank's (makeFiller); the checks are walked in
+      // the bank's order, never as told. A record on the card dated by a check and told after it explains part of that
+      // check's gap and counts with it (lateTo)
       const cardChecks = live().filter(x => x.k === 'check' && x.account === id && !x.stmt).sort(byTime);
       for (const e of cardChecks) {
         // the check before this one: the latest on an earlier day, else the card's opening day (its opening check is not
@@ -633,15 +625,15 @@
         const sameDayEarlier = cardChecks.slice(0, cardChecks.indexOf(e)).some(x => x.day === e.day);
         const openD = openEv[id] ? openDay(id) : null;
         const prevDay = sameDayEarlier ? e.day - 1 : before.length ? Math.max(...before) : openD != null && openD < e.day ? openD : null;
-        const parts = [];
-        const stretch = (from, to, amount) => { if (amount) parts.push(...makeFiller(id, Math.min(from, to), to, amount).parts); };
-        let gap = 0, closed = null;
+        for (const x of live()) if (x.account === id && x.k !== 'check' && x.day <= e.day && keyCmp(x.key, e.key) > 0) lateTo(x.id, e.day);
+        let gap = 0, closed = null, first0 = null;
+        const stretch = (from, to) => { const f = Math.min(from, to); if (first0 === null || f < first0) first0 = f; };
         const sx = live().find(x => x.k === 'check' && x.account === id && x.stmt && x.grp != null && x.grp === e.grp);
         if (sx) {
           const cl = dayNum(sx.stmtDate), g = sx.a - stmtAmount(cl);
           if (g) lines.push({ day: cl, amount: g, what: 'filler' });
           gap += g;
-          stretch(prevDay != null && prevDay < cl ? prevDay + 1 : cl, cl, g);   // a close day on or before the check before it: that one day
+          stretch(prevDay != null && prevDay < cl ? prevDay + 1 : cl, cl);   // a close day on or before the check before it: that one day
           closed = cl;
         }
         const g2 = e.a - owedAt(e.day);
@@ -681,10 +673,10 @@
           if (rest) lines.push({ day: e.day, amount: rest, what: 'filler' });
         }
         gap += g2;
-        stretch(last0 === -Infinity ? e.day : last0 + 1, e.day, g2);
+        if (g2) stretch(last0 === -Infinity ? e.day : last0 + 1, e.day);
         // more: typed above what the app had (spending not logged); less: below it (comes off spending), each 0 or more
         fillers.push({ account: id, day: e.date, amount: gap, more: Math.max(0, gap), less: Math.max(0, -gap),
-          from: parts.length ? parts[0].from : e.date, to: e.date, parts });
+          from: gap && first0 !== null ? dayStr(first0) : e.date, to: e.date, parts: gap ? makeFiller(id, e.day, e.day, gap).parts : [] });
       }
       const owedNow = owedAt(knownTo) + lines.filter(l => l.day > knownTo).reduce((t, l) => t + l.amount, 0);
 
@@ -1042,7 +1034,7 @@
         const fromOpening = !byDay && (lastPay === null || lastPay <= openDay(moved ? sa : acctId));
         const perOf = lineId === 'free' ? fPer : (lineSrcs.find(x => x.id === lineId) || {}).per;
         const start = byDay ? monthShare(amount, perOf, moved ? sa : acctId) : fromOpening ? (atOpening != null ? atOpening : amount) : amount;
-        const inLine = e => lineOfSpend(e) === lineId && e.account && openEv[e.account] && !inside(e, openingOf(e.account), e.account) && (fromOpening || e.day >= lp) && e.day <= upTo;
+        const inLine = e => lineOfSpend(e) === lineId && e.account && openEv[e.account] && !inside(e, openingOf(e.account), e.account) && (fromOpening || countDay(e) >= lp) && countDay(e) <= upTo;   // [CHECKGAP] told after its check: the check's day
         const counts = e => inLine(e) && cur(e.account) === cur(acctId);   // [T5] only spends in the line's own currency
         if (!past) for (const e of live().filter(x => x.k === 'spend' && !isFeeRecord(x) && inLine(x) && cur(x.account) !== cur(acctId)))
           res.warnings.push({ account: e.account, code: 'spend_other_currency', line: lineId, event: e.id,
