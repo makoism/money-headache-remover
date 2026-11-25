@@ -1,0 +1,123 @@
+# Cash, play money and the buckets: one slice for M88 to M97 (plan only)
+
+LANE F, 26 Nov 2026, branch lane/cashplan (from lane/ai-join 578ee3e). The plan only: nothing is built until qc-foundation and qc-novice have read it and the coordinator has ruled. Every figure is made up. Worked examples marked "run" were run on today's engine (scripts in the lane's scratchpad, not in the repo).
+
+## 0. Three scenes of a person's month (M97, M98)
+
+**Scene 1, pay day, Aki (paid monthly, cash way).** Aki's pay of 240,000 lands on the 10th. Aki opens the app at lunch. The assistant says: "Your pay is in. Last month Groceries had 2,100 left in its envelope. Keep it there for this month, put it in Trip, or decide later?" Aki taps Keep it. Then: "Here is this month's cash: take out 67,900. Play wallet 36,000 (15% of your pay), Groceries envelope 31,900 (34,000, less the 2,100 still in it)." Trip stays in the bank for Aki (chosen at setup), so it is not on the list. Aki goes to the ATM after work, takes out 67,900, fills the envelopes, and taps "Done, I took it out". The bank goes down 67,900, the play wallet and groceries envelope go up, safe to spend does not move (moving money is never spending). Aki could also tap "I took out a different amount" or "Not today".
+What else could be true: Aki has no ATM nearby today (Not today, asked again tomorrow, never nagged), took out 70,000 (types it; the 2,100 more is asked about: "Put the extra 2,100 in which envelope, or keep it as extra cash?"), the pay was smaller than usual (percentages shrink with it; set amounts do not, and the list says the bank goes lower).
+
+**Scene 2, a Tuesday, Aki again.** Aki has been spending play cash all week and never logged it. On the train Aki types "about 12,000 left in my wallet". The assistant: "Play money is 12,000 now, so about 24,000 was spent since the 10th. [Undo]". Nothing else to do. A grocery run on the card the same day: Aki sends "groceries 4,380" (later a receipt photo, M99). The assistant knows Groceries is cash for Aki, so it asks "Was that from the groceries envelope or on a card?" Another day Aki types "3,000 lunch with Ken": the assistant cannot tell, so it asks openly "What was the 3,000 for?" with the burrows as quick answers and "Something else" (M94). Only when it has a real guess ("lunch" is usually play) does it ask "Play money?".
+What else could be true: Aki has two wallets, play and groceries, and says "groceries wallet 8,000 left"; Aki paid play money by card once (it still comes off play money at once, M90); Aki never answers (play money stays as it was, the figure says when it was last updated).
+
+**Scene 3, Ben, keeps it all in the bank, set amounts.** Ben has no safe place at home. At setup the assistant recommended cash envelopes, Ben said "no safe place", and the assistant offered the second way (split the bank into accounts with automatic transfers) and the third (keep it in the bank, the app is the reference). Ben chose the bank. Ben set amounts: Rent 80,000, Food 40,000, Play 40,000, Savings 30,000 a month from a 230,000 pay, so 40,000 is left over. On pay day the app says "You got 40,000 extra this month. Split it into your burrows, keep it in the bank, or later?" Ben taps Later and it stays on Home as "to decide". Ben pays for most things by card; every card spend that is not on another burrow comes off play money at once, and Home still shows the bank after the cards are paid.
+What else could be true: Ben skipped the play amount at setup (then everything owed on the cards comes off safe to spend, the cards plan's branch); Ben's percentages add to 100 (then there is never extra from the plan, only from money that comes in beyond the pay); Ben changes his mind in a month and moves to cash (M91: the way can be changed any time, nothing is lost).
+
+## 1. Mako's lines it serves and touches
+- Serves: M88 (set amount or percentage per burrow, setup asks which), M89 (extra money: split, keep in the bank, later), M90 (cards come off safe to spend; play amount always asked; skipped branch), M91 (every feature offers the options a person would want, including later), M92 (cash first recommendation, then bank split, then bank only), M93 (play money is wallet cash; wallets per purpose), M94 (the open question), M95 (rough update by asking), M96 (the monthly cash moment), M97 (day to day only the wallet matters), and the coordinator's walk notes (a) to (e) under section H (section 7 below maps each).
+- Touches: M1 to M6 (the assistant asks and does, Undo), M7, M12, M13, M14, M23 (cash as accounts), M24 and M46 (joined with the end of period card), M30, M36, M38, M40, M45 (cash moved is never counted twice), M47, M49 (percents add to 100), M51, M53, M61, M67.
+- Main way in (lesson 5): the assistant. Setup is a chat that asks the new questions; pay day is a scripted assistant moment (no model call, M68) with the same card on Home when the assistant is off (Not settled 2); the wallet update is one sentence to the assistant, with the same box on the wallet's row.
+
+## 2. What exists today (run on today's engine)
+- Cash, e-wallets and wallets are accounts (build_book BANK_TYPES), spend-from by default. A move between two of the person's accounts is a `transfer` (act3.js:191).
+- Run W1: bank 300,000, pay 300,000 on the 25th, rent 85,000 on the 27th, play (Free to spend) 60,000, a cash wallet with 0, set up 26 Nov: headline 58,000 (the period's share), canSpare 215,000, noJob 157,000. Move 58,000 from bank to wallet: every figure the same (bank 242,000, wallet 58,000). Counted once. **Moving money is never spending: true today.**
+- Run W2: then on 5 Dec a check of the wallet at 12,000: play left 12,000 (58,000 - 46,000 gap), noJob 157,000 unchanged. A check gap with no place counts as play money spent (lookahead.js:1053, `f.place || 'free'`). **The rough wallet update (M95) is a wallet check: true today for play money.**
+- Run W3: bank 200,000, rent 85,000, Food 80,000 a pay on the bank, a groceries envelope with 0: headline 35,000. Move 80,000 into the envelope: headline 35,000 (right), but the bank's own headroom reads **-45,000** and the envelope's **+80,000**: the per account picture says the bank is short and the envelope is free money. **Gap 1: an envelope's cash is not tied to its burrow.**
+- A line's acct set to the envelope instead (run W1 case C): the walk puts every FUTURE period's amount on the envelope, which has no income: canSpare falls 120,000 too low. So the line must stay on the bank (where its money comes from) and the envelope must be a second field.
+- No percentages anywhere: lines and Free to spend are amounts (`steps[].amount`, `shares[].free`). **Gap 2.**
+- Card spends paid after the next pay leave canSpare where it was (the cards plan, section 1). With play set the headline is play left, so it moves for a play card spend, but noJob (what the extra money notice would offer) does not: the notice would offer money the cards will take. **Gap 3.**
+- noJob exists, nothing offers it at pay day. The end of period plan (lane/endperiod) offers a line's leftovers. **Gap 4: the extra money notice and its record.**
+- Setup asks Free to spend as one optional amount (setup3.js, chat3_core.js). No way to run money, no percent, no envelopes. **Gap 5.**
+
+## 3. The engine and the saved data
+
+### E1. Percent or set amount for each burrow (M88)
+- Saved: a step of a plan line (`plan.budgets[].steps[]`) and a Free to spend entry (`plan.shares[]`) carry either `amount` (as now) or `pct`, whole hundredths of a percent (1500 = 15%). Never both. Old books have only amounts: unchanged.
+- The amount for a period with a pct: floor(pct x P / 10000), where P is **the pay that starts the period: every pay landing on the period's first day, together** (Mako's two incomes on the 10th, M28), the ticked amount when ticked, else the expected one. Rounding down leaves at most a few yen; it stays in noJob (counted once).
+- Other income inside the period (a bonus, a second pay on another day) is not in P: it is extra money (E4).
+- No fixed pay: a pct line counts this month floor(pct x the pays ticked this month / 10000), growing as each lands; before any lands, 0. RULING R2.
+- Goals (savings burrows): a goal gains an optional `each` (amount or pct a pay). It is not money set aside until the person moves it (the pay day list does that in one tap); until then the walk holds it like a plan line for the period, so extra money never offers it twice. RULING R3.
+- Checks: percents of lines, play and goals plus the bills' share of P never above 100 (the write door refuses; M49). The Plan screen shows the bar (bills, each burrow, left over).
+- Tests first: engine/test/pct_lines.test.js: P = 240,000; Play 15% gives 36,000; Food 20% 48,000; 3333 (33.33%) of 240,001 gives 79,992 (floor); a late pay: the period has not started, nothing changes (BH1); the pay ticked at 230,000: Play 34,500 from that moment; a change from 15% to set 40,000 on the 20th applies from the next period (T watch rule, unchanged); nine record orders.
+
+### E2. An envelope's cash belongs to its burrow (M93, walk note b)
+- Saved: a cash, wallet or e-wallet account gains an optional `holds`: a plan line id, `'free'` (play money) or a goal id. One burrow per envelope; a burrow may have one envelope.
+- The walk: a line whose envelope holds cash takes its "left this period" from the envelope first, up to what is in it, and only the rest from its own account (the same shape as H7, a place's money first). Play money: no change (it caps the headline; W1 and W2 already count once). A goal kept in an envelope: `keptIn` own account (BI5), existing.
+- A check of an envelope puts its gap on the burrow it holds (checkin's `fillerPlace` defaults to `holds`). A spend from an envelope with no line counts on its burrow, not on play money.
+- Worked by hand on W3 with the rule: envelope 80,000 holds Food 80,000 left: envelope headroom 0; bank 120,000 - 85,000 = 35,000; headline 35,000. Bank no longer reads short. Then a check of the envelope at 50,000: Food spent 30,000, Food left 50,000, all held in the envelope; headline 35,000.
+- Tests first: engine/test/envelopes.test.js with W1 to W3 and their hand-worked figures; an envelope holding more than the burrow's left (the extra is that account's own spare money and is named as such); an envelope removed: its `holds` goes with it, the burrow goes back to its account; two devices filling the same envelope (moves merge as events, M67).
+
+### E3. Cards come off at once (M90): the cards plan, both branches
+- The walk change of CARDS_IN_HEADLINE_PLAN.md (lane/cardsplan 5728e46d) section 1, built as written: for a card paid in full, what is owed now comes off today instead of on its payment day. Its test list (section 6) and the 34 asks it changes come with it.
+- Play amount set: headline = max(0, min(canSpare, play left)), as now. A card spend with no other burrow counts as play spent (lookahead.js:1043, as now), so it comes off the headline at once; with E3, it also comes off canSpare, so noJob (extra money) is never money the cards will take (cards plan section 5 F).
+- Play amount skipped: headline = canSpare, which now has the cards taken off. That is the cards plan in full ("the skipped branch").
+- RULING R1 (the cost the cards plan named): a person paid weekly or every two weeks sees the whole card bill come off this week.
+
+### E4. Extra money (M89)
+- What it is: at the first look after a period-starting pay is ticked, `res.extra = { amount, occ }`: noJob for the new period (canSpare less play left), less the goals' `each` not yet moved. With percents adding to 100 it is 0 or a few yen of rounding (then not shown below a floor of 1% of P). Income beyond P landing in a period raises it again when ticked.
+- The answer is one new record, `k: 'extra'` (an event, so it joins across devices like every event, M67): `{ occ, a (the amount shown), choice: 'split' | 'bank' | 'later', moves: [{ to: goal or line id, a }] }`.
+  - split: moves to goals (a goal's money, as `periodEnd` moves do, P2) and to this period's lines (a `once` raise of that line for this period, existing B8). Undo removes the record.
+  - bank: no money moves; the amount stays in canSpare and Home names it "kept in the bank". Not offered again for this occ.
+  - later: Home keeps "Extra money: 40,000 to decide" until answered; the assistant mentions it at most once per visit.
+- Never double: the notice offers at most noJob at that moment; a second device that answered first wins by the same "which to keep" door (lane/whichdoor) when both answered differently.
+- Joined with the end of period card (lane/endperiod, ruling 6 there): one pay day sequence, in this order: (1) last period's leftovers per burrow (endperiod), (2) extra money, (3) the cash list (E5). One card, "1 of 3", same buttons in the chat and on Home.
+- Tests first: engine/test/extra_money.test.js: Ben's month (pay 230,000, set amounts 190,000, extra 40,000); split 30,000 to Savings and 10,000 to Food this period; bank; later; a bonus of 50,000 on the 20th; percents to 100 (extra 0); nine orders; a join with both devices answering.
+
+### E5. The monthly cash moment (M96, walk notes a and b)
+- A pure function `cashMoment(book, day)` in a new file engine/cash.js: for each envelope, the burrow's amount for the period that started, less what is still in the envelope when the leftover was kept there (endperiod choice "keep it in the envelope", RULING R4), never below 0; the total to take out; from which bank. Nothing saved.
+- "Done, I took it out" writes one `transfer` per envelope (act3, one group, one Undo). "I took out a different amount" asks the total and fills the envelopes in the list's order, the last one gets the difference, and the screen shows each before it is written. "Not today" writes nothing; asked again on the next visit, at most once a day; after 7 days it becomes a line on Home, never a popup (walk note d).
+- Tests first: engine/test/cash_moment.test.js (Aki's month in scene 1: take out 67,900 = 36,000 + 31,900; the bank down 67,900, safe to spend the same before and after, run on the real page later in e3_cash.js).
+
+### E6. The way the person runs money (M92, walk note d)
+- Saved: `home.way` = 'cash' | 'split' | 'bank' (a field with v, at, by like home.main). Read by the assistant's words and by the pay day sequence (no cash list unless 'cash' and at least one envelope). Changing it moves no money.
+
+### Saved shape summary for qc-foundation
+New optional fields: `steps[].pct`, `shares[].pct`, `places[].each`, `accounts[].holds`, `home.way`; one new event kind `extra`. No migration: an old book reads the same. Backup, restore and the cloud copy carry them as they carry every field (check: backup3 and the vault refuse nothing unknown; a test restores a book with each).
+
+## 4. The assistant (main way in)
+- Setup chat, new questions, one at a time, each with all its info on screen (M53, M85-like):
+  1. The way (M92): the recommendation in Mako's order, cash first "only if you have a safe place at home", then splitting the bank, then the bank with the app as the reference. Answers: Cash envelopes, Split my bank, Keep it in the bank, Not sure yet (= bank, changeable). Never asked again unless the person asks.
+  2. Set amounts or percentages (M88), explained with one example each: "a set amount: the same 40,000 every month" and "a percentage: 15% of each pay, so it grows and shrinks with your pay". Both, per burrow, are allowed; the question sets the default.
+  3. Play money, always asked (M90), as the chosen kind. "Skip for now" is allowed and says what it means: "then everything on your cards comes off safe to spend".
+  4. Cash way only: which burrows go in cash ("Play money in your wallet is what we recommend"; groceries and others optional), each becomes a cash account at 0 with `holds`. Separate wallets per purpose are offered (M93).
+- Day to day: "about 12,000 left in my wallet" or "I spent about 5,000" -> one change card, Undo (a check of the play wallet, or a rough spend from it marked rough). If the person has more than one cash place, it asks which.
+- Receipts and spends it cannot place (M94): it asks "What was the 3,000 for?" with the burrows as quick answers and "Something else"; it asks about one burrow only when it has a reason, and says the reason. The rule is written in the assistant's own instructions in chat3_core.js and tested with the fake AI (a spend with no clue gets the open question; "lunch" may get the guess).
+- All new words (the recommendation, each question, the pay day card, the extra money card) go through qc-voice, then the coordinator for Mako, before they are final. Until then they ship as drafts listed in scope.txt.
+
+## 5. The screens (with the assistant off, Not settled 2)
+- Setup screens: the same four questions as fields.
+- Plan: each burrow shows "40,000 a month" or "15% of pay (36,000 this period)"; the percent bar; Change turns either into the other.
+- Home: the pay day card (section E4 order); "Extra money: X to decide" while later; cash places as places in the picture ("Play wallet about 12,000, updated Tue"), M7 and M36; the bank after the cards stays (M90).
+- Each wallet or envelope row: "How much is in it now?" (the check) and "Take out cash" (a transfer).
+- Files: setup3.js, plan3.js, plan3_write.js, home3.js, receipts3.js, chat3_core.js, act3.js, settings3.js (the way). LANE E goes first on plan3_write.js and the card rows: before building, merge its newest ready controls branches and tell it which files change.
+
+## 6. Other lives
+- Paid every two weeks, cash way: the cash moment comes each period (each pay), amounts per period; a monthly set amount is shared by the period's days as today (perPeriod).
+- No fixed pay: set amounts by the month (CA4 to CA6); percents per R2; the cash moment on the first pay ticked in a month.
+- Couple, joint bank: envelopes are accounts; `owner` is not read by these rules.
+- Cash only, no cards: E3 changes nothing; golden answers byte for byte (cards plan test 9).
+- A person who never checks the wallet: play money left counts only logged spends; Home says when the wallet was last updated, and the next visit's assistant asks once (never a popup).
+
+## 7. The coordinator's walk notes under section H
+(a) pay day list: E5. (b) taking cash out is moving, never spending; cash at home is a place in the picture: W1 run, E2, section 5 Home. (c) wallet check per wallet or envelope, "about 12,000 left" means about the difference was spent, with Undo: W2 run, E2, section 4. (d) no safe place or not now: bank split or bank, never nagged, change any time: E6, section 4 question 1, E5 "Not today". (e) a play card spend still comes off: E3.
+
+## 8. Slices (test first, one commit each; check3 quick after each, full before each ready report)
+1. E3 (cards plan slices 1 and 2 as written there): failing tests, the walk, the 34 asks by hand, the checker brought to the one rule. qc-numbers after.
+2. E2 envelopes and the check's default place, engine tests W1 to W3.
+3. E1 percents (pay day lives first; no fixed pay after R2), build_book answers, the write door's 100% check.
+4. E4 extra money with its record, after lane/endperiod and lane/whichdoor are in; the joined pay day sequence in engine terms.
+5. E5 and E6, cash.js.
+6. The setup chat and setup screens (section 4 questions), fake AI setup test for Aki and Ben.
+7. Pay day card, wallet rows, Plan percent bar, Home lines; the assistant's day to day doors and the open question; e3_cash.js, a real-page walk of scenes 1 to 3 (LESSONS 4 addendum).
+8. Words through qc-voice; the list for Mako.
+qc-foundation after slices 1, 4 (saved shape); qc-numbers after 1 and 3; qc-assistant, qc-controls, qc-novice after 7.
+
+## 9. Rulings asked of the coordinator (each with a recommendation)
+- **R1, cards at once for weekly and fortnightly pay** (from the cards plan): the whole card bill comes off this week's figure even when later pays cover it. Recommended: yes, as M90 says, with words that name the cards as the cause; listed for Mako's run.
+- **R2, percentages with no fixed pay**: recommended: a percent burrow gets its share of each pay as it is ticked, so the month's amount grows as money comes in; before any pay, 0 and the screen says so. Alternative: percentages need a pay day; with no fixed pay only set amounts.
+- **R3, a goal's "each pay" amount is held before it is moved**: recommended yes (so extra money is never offered twice); the pay day list moves it in one tap.
+- **R4, leftover cash in an envelope at the end of a period**: the end of period plan does not carry a leftover into the same line in its first version. For an envelope the cash is physically still there. Recommended: for envelopes only, add "Keep it in the envelope" (it counts toward the new period, so less is taken out), beside "Put it in a burrow" and "Decide later"; for burrows kept in the bank nothing changes.
+- **R5, a card spend's burrow**: M90 says every card spend comes off play money at once. Read as: every card spend that is not on another burrow (groceries on the card come off Groceries, not off play). Recommended: that reading, since otherwise one grocery spend is counted twice.
+
+## 10. M99 (second slice, designed alongside)
+The receipts overview uses E4's moves shape: a batch of receipts becomes rows { amount, burrow or "ask" }, a bar of the split per burrow with what each leaves, "Looks good / Change one / Not now", one Undo for the batch (one act3 group). The open question of M94 is the "ask" row. Planned in its own file after this plan is ruled, since the assistant cannot read files yet.

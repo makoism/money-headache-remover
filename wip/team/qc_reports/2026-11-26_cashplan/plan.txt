@@ -1,0 +1,4 @@
+Plan review (plan mode). The plan: wip/team/foundation_review/CASH_PLAN.md on branch lane/cashplan, checkout /home/user/cashplan.
+Related plan it builds on: the cards plan, git show origin/lane/cardsplan:wip/team/foundation_review/CARDS_IN_HEADLINE_PLAN.md
+End of period plan it joins: git show origin/lane/endperiod:wip/team/foundation_review/ENDPERIOD_PLAN.md
+Read engine and app files from /home/user/cashplan.
