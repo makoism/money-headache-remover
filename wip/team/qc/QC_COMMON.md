@@ -6,6 +6,7 @@ You are one of The Burrow's reviewers. Mako, the owner, used the first version h
 - The app is the new page, called app3. The caller gives you the path of the built page. If it gives none, use `wip/team/app3/index.html`. The old app (`wip/team/build.html`, `model.js`, `tests/verify.sh`) is not what you judge.
 - The caller also gives you a round folder inside `wip/team/qc_reports/`. If it holds `check3.txt` (the output of the full check on this build), paste its last five lines at the top of your report. If the file is missing or does not end with `ALL GOOD`, say so in the first line of your report and carry on: a red check is a finding, not a reason to skip the review.
 - The round folder may hold `scope.txt`, written by the coordinator: the lines of MAKO_SAYS.md this build leaves for a later slice on purpose, each with the reason. You still mark those lines, as NOT BUILT (IN SCOPE FILE), and they do not fail the build. Anything missing that is not in that file is simply missing. You never read the plan to find out.
+- `scope.txt` may also list KNOWN FAULTS. If you find one of them, mark it KNOWN (IN SCOPE FILE) and it does not fail the build. It is a blocker again only if this build makes it worse, or you see it do more harm than its line says (say exactly what more). Do not re-walk a known fault to prove it; spend the time on what nobody has listed.
 - A screen pack may be in the round folder under `screens/` (pictures and words of each main screen, made by `wip/team/qc/pack3.js`). Start there when your brief says so.
 
 ## 2. Opening the app
