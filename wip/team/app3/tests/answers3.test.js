@@ -3,7 +3,8 @@
    1. Mako's made-up shape (24 Nov 2026: Main bank 286,000; pay 240,000 on the 10th, the working day before; Card A
       54,000 paid on the 10th, Card B 23,000 on the 11th the day before; Rent, Power, Phone (already out), Internet):
       the hidden fields are filled (keys, day, told, currency, weekend rules, startsPeriod) and the book's look ahead
-      gives safe to spend 201,400, next pay 10 Dec.
+      gives safe to spend 124,400, next pay 10 Dec (no play amount, so the cards' 54,000 and 23,000 come off now:
+      286,000 - 7,400 - 72,000 - 5,200 - 54,000 - 23,000 = 124,400; CARDS_IN_HEADLINE, R1).
    2. Same answers, same book: the answers as setup3 collects them today (its answers3(true) for the same form, written
       out from setup3.js) and the chat's answers give the same saved records, field for field.
    3. Answers back into setup3's form and back again give the same answers.
@@ -63,10 +64,10 @@ t('weekend rules left out: pay the working day before, cards and bills the day a
   const x = A.toBuild(m, { day: DAY, told: TOLD });
   eq(x.pays[0].shift, 'before'); eq(x.cards.map(c => c.shift), ['after', 'after']);
 });
-t('Mako\'s book: safe to spend 201,400 on 24 Nov, next pay 10 Dec, Main bank 286,000, cards 54,000 and 23,000', () => {
+t('Mako\'s book: safe to spend 124,400 on 24 Nov, next pay 10 Dec, Main bank 286,000, cards 54,000 and 23,000', () => {
   const r = A.build(mako(), { day: DAY, told: TOLD, newId: I.idMaker('ans3te') });
   const v = L.lookahead(r.book, DAY), bank = r.ids.bank1;
-  eq(v.safeToSpend.headline, 201400, 'safe'); eq(v.daysToNextPay.next_pay, '2026-12-10'); eq(v.accounts[bank].bank, 286000);
+  eq(v.safeToSpend.headline, 124400, 'safe'); eq(v.daysToNextPay.next_pay, '2026-12-10'); eq(v.accounts[bank].bank, 286000);
   eq(v.dueBeforeNextPay.total, 84600, 'due before pay');
   eq(Object.values(v.cards).map(c => c.owedNow), [54000, 23000]);
 });
@@ -115,7 +116,7 @@ t('answers sit on their item by key: a fill is refused while one is missing or a
   m.bills.reverse();
   eq(A.need(m, { day: DAY }), []);
   const r = A.build(m, { day: DAY, told: TOLD, newId: I.idMaker('ans3te') });
-  eq(L.lookahead(r.book, DAY).safeToSpend.headline, 201400 - 4800, 'Phone still to come is taken off');
+  eq(L.lookahead(r.book, DAY).safeToSpend.headline, 124400 - 4800, 'Phone still to come is taken off');   // 119,600
 });
 t('figures given on another day are asked again on the fill day (BV3)', () => {
   const m = mako();

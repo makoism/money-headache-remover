@@ -5,9 +5,10 @@
       the app in the middle: Japan; one bank, Main bank 286,000 (where to find it first); pay on the 10th, the working day
       before, 240,000 after tax; no side job; Card A 54,000 paid on the 10th (day after), Card B 23,000 on the 11th
       (day before), close days not sure; Rent 72,000 on the 27th, Power 7,400 on the 26th, Phone 4,800 on the 20th
-      (already out), Internet 5,200 on the 27th; Free to spend blank; no minimum; fill. The book: safe to spend 201,400,
+      (already out), Internet 5,200 on the 27th; Free to spend blank; no minimum; fill. The book: safe to spend 124,400 (no play amount, so both cards come off
+      now: 286,000 - 7,400 - 72,000 - 5,200 - 54,000 - 23,000; CARDS_IN_HEADLINE, R1),
       next pay 10 Dec, Main bank 286,000, cards 54,000 and 23,000. Then Undo the fill (no book, the draft kept), fill
-      again, a spend by chat ("I spent 1,200 on lunch": safe 200,200, Undo: 201,400), a delete asks first.
+      again, a spend by chat ("I spent 1,200 on lunch": safe 123,200, Undo: 124,400), a delete asks first.
    2. What is sent: every round carries fresh figures and the draft (BU2), never an id, a note or a shop (BV6), the
       relay's fields (max_tokens 2,000, invite, tool_choice auto), the last 10 turns only, no figures or draft tool.
    3. "Before tax": a pay is not saved until it is after tax (new foundation 13).
@@ -67,7 +68,7 @@ const SETUP = [
   ['yes', [say('', [call('draft_set', { section: 'asked', value: [{ name: 'Phone', out: true }] })]), say(K.GUIDE[12].ask)]],
   ['not sure yet', [say('', [call('draft_set', { section: 'free', value: null })]), say(K.GUIDE[13].ask)]],
   ['no minimum', [say('', [call('draft_set', { section: 'min', value: null })]), body => { ok(/NEEDED now: nothing/.test(FAKE.results(body)[0].text), 'nothing needed'); return say('That is everything. Shall I fill in your Burrow?'); }]],
-  ['yes fill it in', [say('', [call('fill_book', {})]), body => { ok(/Filled in\. Safe to spend ¥201,400, Main bank ¥286,000\./.test(FAKE.results(body)[0].text), FAKE.results(body)[0].text); return say("Done. Here's Home. Check each tab, tell me anything that's wrong."); }]],
+  ['yes fill it in', [say('', [call('fill_book', {})]), body => { ok(/Filled in\. Safe to spend ¥124,400, Main bank ¥286,000\./.test(FAKE.results(body)[0].text), FAKE.results(body)[0].text); return say("Done. Here's Home. Check each tab, tell me anything that's wrong."); }]],
 ];
 async function runSetup(h, fake, upTo) {
   let state = K.fresh();
@@ -81,18 +82,18 @@ const steps = list => [].concat(...list.map(([, r]) => r));
   const h = page('2026-11-24'), fake = FAKE.make(steps(SETUP));
   const { state: S1, deps, outs } = await runSetup(h, fake);
 
-  await t('the setup chat for Mako\'s shape ends in a book: safe to spend 201,400 on 24 Nov, next pay 10 Dec, Main bank 286,000', async () => {
+  await t('the setup chat for Mako\'s shape ends in a book: safe to spend 124,400 on 24 Nov, next pay 10 Dec, Main bank 286,000', async () => {
     eq(fake.left(), 0, 'every recorded reply used');
     ok(outs.every(o => o.stop === 'words'), 'each turn ends in words');
     const v = L.lookahead(h.book, h.day), main = h.book.home.main.v.acct;
-    eq(v.safeToSpend.headline, 201400); eq(v.daysToNextPay.next_pay, '2026-12-10'); eq(v.accounts[main].bank, 286000);
+    eq(v.safeToSpend.headline, 124400); eq(v.daysToNextPay.next_pay, '2026-12-10'); eq(v.accounts[main].bank, 286000);
     eq(v.dueBeforeNextPay.total, 84600);
     eq(Object.values(v.cards).map(c => c.owedNow), [54000, 23000]);
     eq(h.book.schedules.filter(s => s.kind === 'income').map(s => [s.name, s.shift, !!s.startsPeriod, s.steps[0].amount]), [['Pay', 'before', true, 240000]]);
     eq(h.book.home.main.v.min, null, 'no minimum was set');
     eq(h.book.plan.shares, [], 'Free to spend left blank');
     const fillCard = S1.turns.filter(x => x.who === 'card' && x.card.kind === 'fill');
-    eq(fillCard.map(x => [x.card.status, x.card.figures]), [['done', { safe: 201400, bank: 286000 }]]);
+    eq(fillCard.map(x => [x.card.status, x.card.figures]), [['done', { safe: 124400, bank: 286000 }]]);
   });
   await t('each section saved on its own with a "Saved" line; the draft card follows the answers', async () => {
     const notes = outs.map(o => lastNote(o)).filter(x => x.length).map(x => x[0]);
@@ -130,17 +131,17 @@ const steps = list => [].concat(...list.map(([, r]) => r));
 
   /* day to day: a spend by chat, Undo, a delete that asks first */
   let S2 = S1;
-  await t('"I spent 1,200 on lunch": made at once with the engine\'s before and after; safe 200,200; Undo puts back 201,400 (BW)', async () => {
-    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'log_spend', amount: 1200, note: 'lunch', account: 'A1' }] })]), body => { ok(/^Done/.test(FAKE.results(body)[0].text), FAKE.results(body)[0].text); return say('Logged. Safe to spend is now 200,200.'); }]);
+  await t('"I spent 1,200 on lunch": made at once with the engine\'s before and after; safe 123,200; Undo puts back 124,400 (BW)', async () => {
+    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'log_spend', amount: 1200, note: 'lunch', account: 'A1' }] })]), body => { ok(/^Done/.test(FAKE.results(body)[0].text), FAKE.results(body)[0].text); return say('Logged. Safe to spend is now 123,200.'); }]);
     const r = await K.turn(S2, 'I spent 1,200 on lunch from Main bank', Object.assign(h.deps(f), { door: deps.door }));
     S2 = r.state;
-    eq(safe(h), 200200);
+    eq(safe(h), 123200);   // 124,400 - 1,200 from Main bank
     const c = r.shown.find(x => x.who === 'card').card;
     eq([c.status, c.lines], ['done', ['Log ¥1,200 on Free to spend from Main bank, today (lunch)']]);
-    eq(c.rows.find(x => x.key === 'safe'), { key: 'safe', label: 'Safe to spend', before: 201400, after: 200200 });
+    eq(c.rows.find(x => x.key === 'safe'), { key: 'safe', label: 'Safe to spend', before: 124400, after: 123200 });
     const u = await K.undo(S2, r.shown.find(x => x.who === 'card').id, { door: deps.door, told: deps.told, book: () => h.book });
     ok(u.ok, JSON.stringify(u)); S2 = u.state;
-    eq(safe(h), 201400);
+    eq(safe(h), 124400);
   });
   await t('what is sent never holds a record id or a note; the list tool gives amounts and dates only (BV6)', async () => {
     const f = FAKE.make([say('', [call('change', { steps: [{ do: 'log_spend', amount: 900, note: 'secret coffee at Blue Door', account: 'A1' }] })]), say('Logged.'),
@@ -161,7 +162,7 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     ok(!h.book.schedules.find(s => s.name === 'Internet').ends, 'nothing changed yet');
     const c = await K.confirm(S2, t1.id, Object.assign(h.deps(f), { door: deps.door })); S2 = c.state;
     ok(c.ok, JSON.stringify(c)); eq(h.book.schedules.find(s => s.name === 'Internet').ends, '2026-11-24');
-    eq(safe(h), 201400 - 900 + 5200);
+    eq(safe(h), 124400 - 900 + 5200);   // 128,700: the coffee 900 from the bank, Internet's 5,200 of 27 Nov no longer due
   });
   await t('a change larger than safe to spend asks first (BW)', async () => {
     const f = FAKE.make([say('', [call('change', { steps: [{ do: 'log_spend', amount: 300000, account: 'A1' }] })]), say('That is more than safe to spend. Tap OK if it is right.')]);
@@ -340,7 +341,7 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     ok(u.ok, JSON.stringify(u)); eq(h2.book, null); eq(h2.discards, 1);
     eq(u.state.turns.find(x => x.id === fillId).card.status, 'undone');
     const again = await K.fillNow(u.state, h2.deps(FAKE.make([])));
-    ok(again.ok, again.text); eq(safe(h2), 201400);
+    ok(again.ok, again.text); eq(safe(h2), 124400);
   });
 
   await t('"before tax": the pay is not saved until it is what lands, after tax (new foundation 13)', async () => {
@@ -432,7 +433,7 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     r = K.pasteBack(r.state, '{"asked":[{"name":"Phone","out":true}]}', d9);
     ok(r.ok, r.text);
     const f = await K.fillNow(r.state, d9);
-    ok(f.ok, f.text); eq(safe(h9), 201400);
+    ok(f.ok, f.text); eq(safe(h9), 124400);
     const badPaste = K.pasteBack(K.fresh(), '{"pays":[{"name":"Pay","amount":300000,"every":"month","day":10}]}', d9);
     ok(!badPaste.ok && /before or after tax/.test(badPaste.text), badPaste.text);
     ok(!K.pasteBack(K.fresh(), 'sorry, I cannot help', d9).ok);
@@ -440,7 +441,7 @@ const steps = list => [].concat(...list.map(([, r]) => r));
   await t('an amount in the AI\'s words that is not in the figures, the draft or the person\'s words is marked "check this" (AI_FIRST_PLAN 7)', async () => {
     const h10 = page('2026-11-24');
     await runSetup(h10, FAKE.make(steps(SETUP)));
-    const f = FAKE.make([say('Safe to spend is 201,400 until 10 Dec, so a 9,000 dinner fits. You will have about 150,000 left.')]);
+    const f = FAKE.make([say('Safe to spend is 124,400 until 10 Dec, so a 9,000 dinner fits. You will have about 150,000 left.')]);
     const r = await K.turn(K.fresh(), 'can I afford a 9,000 dinner?', h10.deps(f));
     eq(r.shown.find(x => x.who === 'ai').check, ['150,000']);
   });
@@ -468,17 +469,18 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     eq([row.before, row.after], [54000, 54900]);
     ok(!c.rows.some(x => x.key === 'card:' + cardB), 'a card that did not change has no row');
   });
-  /* [M30, M77; the coordinator's ruling 26 Nov] Mako's shape, worked by hand: Main bank 286,000, less Power 7,400, Rent
-     72,000 and Internet 5,200 before pay on 10 Dec = 201,400. Card A is paid on the 10th, the pay day, so lunch 900 on it
-     leaves the headline at 201,400 when Free to spend is not set: the card says why, in one true line. With Free to
-     spend at 30,000 (16,000 counts for the days left) the same lunch takes 900 off both at once, and no such line */
-  await t('[M30, M77] lunch 900 on Card A: with no Free to spend the headline stays 201,400 and the card says why; with it set, 16,000 to 15,100', async () => {
+  /* [M30, M77, M90; ruling R1] Mako's shape, worked by hand: Main bank 286,000, less Power 7,400, Rent 72,000 and
+     Internet 5,200 before pay on 10 Dec, less what is owed now on Card A (54,000) and Card B (23,000) because no play
+     amount is set = 124,400. Lunch 900 on Card A comes off at once: 123,500, and Card A owes 54,900; no line is needed.
+     With Free to spend at 30,000 (16,000 counts for the days left) nothing changes from before: the same lunch takes 900
+     off play money left and the headline, 16,000 to 15,100, and no line */
+  await t('[M30, M77] lunch 900 on Card A: with no Free to spend the headline drops 124,400 to 123,500 at once; with it set, 16,000 to 15,100', async () => {
     const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
     const lunch = say('', [call('change', { steps: [{ do: 'log_spend', amount: 900, account: 'A2' }] })]);
     const r = await K.turn(state, 'lunch 900 on card A', hp.deps(FAKE.make([lunch, say('Logged.')])));
     const c = r.shown.find(x => x.who === 'card').card;
-    eq(c.rows.map(x => [x.label, x.before, x.after]), [['Safe to spend', 201400, 201400], ['Card A, still owed', 54000, 54900]]);
-    eq(c.note, 'Safe to spend stays the same: Card A is paid from your bank on or after your next pay');
+    eq(c.rows.map(x => [x.label, x.before, x.after]), [['Safe to spend', 124400, 123500], ['Card A, still owed', 54000, 54900]]);
+    eq(c.note, null);
     const hq = page('2026-11-24'); const q = await runSetup(hq, FAKE.make(steps(SETUP)));
     const d = hq.deps(FAKE.make([say('', [call('change', { steps: [{ do: 'set_free', amount: 30000 }] })]), say('Set.'), lunch, say('Logged.')]));
     const q1 = await K.turn(q.state, 'set Free to spend to 30,000', d);
@@ -633,7 +635,7 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     let r = await K.turn(state, 'I bought lunch, 900', D(f));
     ok(/^Nothing changed: /.test(res) && /Card A, Card B or Main bank/.test(res) && /once/.test(res), res);
     eq(r.shown.filter(x => x.who === 'card' && x.card.kind === 'change').length, 0, 'nothing logged');
-    eq(safe(h), 201400);
+    eq(safe(h), 124400);
     f = FAKE.make([body => say('', [call('change', { steps: [{ do: 'log_spend', amount: 900, note: 'lunch', account: refIn(body, 'Card A') }] })]), say('Logged on Card A.')]);
     r = await K.turn(r.state, 'Card A', D(f));
     let c = r.shown.find(x => x.who === 'card' && x.card.kind === 'change');
