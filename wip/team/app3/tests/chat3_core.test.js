@@ -428,6 +428,16 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const body = (await (async () => { const f = FAKE.make([say('ok')]); await K.turn(K.fresh(), 'hi', page('2026-11-24').deps(f)); return f.bodies[0]; })());
     ok(!/send me|I'll read|screenshot/i.test(body.system), 'what is sent says the same');
   });
+  await t('[H2] the first screen already asks the first question: the welcome ends with it, and the first request says it was asked', async () => {
+    const w = K.welcome();
+    eq(w.length, 3); ok(/^Which country do you bank in, and in which currency\?/.test(w[2]), w[2]);
+    const f = FAKE.make([say('ok')]); await K.turn(K.fresh(), 'Japan, yen', page('2026-11-24').deps(f));
+    const sent = JSON.stringify(f.bodies[0].messages);
+    ok(/The first screen already showed the welcome and asked: Which country do you bank in/.test(sent), 'the first request says the question was asked');
+    const f2 = FAKE.make([say('ok'), say('ok')]); const h2 = page('2026-11-24');
+    const r1 = await K.turn(K.fresh(), 'Japan, yen', h2.deps(f2)); await K.turn(r1.state, 'Main bank', h2.deps(f2));
+    ok(!/The first screen already showed/.test(JSON.stringify(f2.bodies[1].messages)), 'only before the first answer');
+  });
   console.log(bad ? `chat3_core: ${bad} of ${n} FAILED` : `chat3_core: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })();

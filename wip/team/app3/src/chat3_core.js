@@ -365,6 +365,9 @@ AFTER SETUP. When a pay, bill or card payment the app expects has come in or gon
       out.push('', 'DRAFT (saved on this device, not in the app yet). Today is ' + SN.dayLabel(ctx.today, true) + '. Currency: ' + curOf(d) + '.');
       for (const s of card.sections) out.push(s.title + ': ' + (s.lines.length ? s.lines.join('; ') : 'not asked yet'));
       out.push('NEEDED before fill_book: ' + (card.need.length ? card.need.join(' ') : 'nothing. Show the draft and ask whether to fill it in.'));
+      /* [AI_JOIN_FIXES H2] the first screen asked the first question before anything was typed */
+      if (state.turns.filter(t => t.who === 'person').length <= 1 && !state.turns.some(t => t.who === 'ai'))
+        out.push('', 'The first screen already showed the welcome and asked: ' + GUIDE[2].ask + ' Their first message answers that, or asks something first. Do not greet again.');
     }
     return out.join('\n');
   }
@@ -808,6 +811,8 @@ ${card.need.length && state.draft ? 'STILL NEEDED: ' + card.need.join(' ') : ''}
     ROUNDS, TURNS, KEEP, MAX_TOKENS, MAX_STEPS, TIER: 'default', EFFORT: 'low', GUIDE, TOOLS, SYSTEM,
     fresh: () => ({ v: 1, turns: [], draft: null, fill: null, seq: 0 }),
     turn, confirm, notNow, undo, startOver, draftEdit,
+    /* [AI_JOIN_FIXES H2] what the first screen says before anything is typed: the welcome, and the first question */
+    welcome: () => [GUIDE[0].ask, GUIDE[1].ask, GUIDE[2].ask],
     fillNow: (s, deps) => fillNow(s, deps),
     copyPrompt, pasteBack,
     request, read, figures, draftCard: (d, today) => draftCard(d, today), fillCheck, sentText,

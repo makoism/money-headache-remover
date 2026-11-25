@@ -85,6 +85,7 @@ async function say(p, text) { await p.$eval('#a3ChatIn', (e, v) => { e.value = v
     await p.evaluate(fake);
     const home = await p.$eval('#a3Home', e => e.textContent);
     ck('before setup the welcome is the first screen', /Welcome to the burrow/.test(home) && /I'll set up your Burrow with you/.test(home) && /safe to spend until your next pay/.test(home));
+    ck('H2: the first screen already asks the first question', /Which country do you bank in, and in which currency\?/.test(home) && !/Ask or tell me something/.test(await p.$eval('#a3Home', e => e.innerText)));
     ck('the box to type in is on it', await shows(p, '#a3Home #a3ChatIn') && await shows(p, '#a3Home #a3ChatSend'));
     ck('the ways in that were there before are kept', await shows(p, '#a3SetupGo') && await shows(p, '#a3TryGo') && await shows(p, '#a3OtherGo'));
     ck('no bar or column before setup', !(await shows(p, '#a3Chat')));

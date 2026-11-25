@@ -19,8 +19,6 @@ const CHAT3_WORDS = {
   ask: { delete: 'This takes something away. Do it?', large: 'This is more than safe to spend. Do it?', guess: 'You didn\'t type this amount, it\'s the AI\'s guess. Is it right?' },
   upload: 'The whole file goes to the AI, with your name, address, employer and account number. On a payslip, crop out your My Number.',
   noFiles: 'Reading files in the chat comes next. For now, type the figures, or add statements on Receipts.',
-  welcome: ['Hi, I\'ll set up your Burrow with you. I ask a few questions, about 10 minutes. You can type, and I\'ll say where to find each figure. What you tell me stays on this phone until you say fill it in.',
-    'You tell me what\'s in your bank today, what comes in and what goes out and when. From that the app works out what\'s safe to spend until your next pay. Everything I fill in shows on the screens so you can check it.'],
   fillKept: 'To change something, tell me or change it on its screen',
 };
 
@@ -137,7 +135,7 @@ function chat3Turn(t) {
 /* the parts every form of the panel shares: the log, the box, the privacy line and "See what is sent", the ways when off */
 function chat3Inner() {
   const st = CHAT3.state || CHAT3C.fresh();
-  const welcome = chat3Full() && !st.turns.length ? CHAT3_WORDS.welcome.map(w => `<p class="a3-ask-ai">${esc3(w)}</p>`).join('') : '';
+  const welcome = chat3Full() && !st.turns.length ? CHAT3C.welcome().map(w => `<p class="a3-ask-ai">${esc3(w)}</p>`).join('') : '';
   const off = CHAT3.off || CHAT3.failed ? `<div class="a3-card" data-card="chat-off"><p class="a3-sub">${esc3(CHAT3.off ? CHAT3_WORDS.off : CHAT3_WORDS.failed)}</p><div class="a3-chat-ways">
       ${chat3Full() ? '<button type="button" class="a3-btn" id="a3ChatScreens">Set up on the screens</button>' : ''}
       <button type="button" class="a3-btn" id="a3ChatAny">Use any AI</button></div><div id="a3ChatAnyBox"></div></div>` : '';
@@ -146,8 +144,8 @@ function chat3Inner() {
     ? chat3Card({ id: 'live', who: 'card', card: CHAT3C.draftCard(st.draft, E3.today()) }) : '';
   return `<div class="a3-chat-log" id="a3ChatLog" aria-live="polite">${welcome}${st.turns.map(chat3Turn).join('')}${live}</div>${off}
     <div id="a3ChatWord"></div>
-    <div class="a3-chat-row"><label class="a3-vh" for="a3ChatIn">Ask or tell me something</label>
-      <textarea class="a3-in a3-text" id="a3ChatIn" rows="1" maxlength="1000" placeholder="Ask or tell me something"></textarea>
+    <div class="a3-chat-row"><label class="a3-vh" for="a3ChatIn">${chat3Full() ? 'Your answer' : 'Ask or tell me something'}</label>
+      <textarea class="a3-in a3-text" id="a3ChatIn" rows="1" maxlength="1000" placeholder="${chat3Full() ? 'Your answer' : 'Ask or tell me something'}"></textarea>
       <button type="button" class="a3-btn solid" id="a3ChatSend">Send</button></div>
     <div class="a3-chat-ways"><button type="button" class="a3-link" id="a3ChatFile">Send a file</button></div><div id="a3ChatFileBox"></div>
     <p class="a3-sub" data-privacy="chat">${esc3(CHAT3_WORDS.privacy)}</p>
