@@ -44,6 +44,24 @@ const clean = s => (s || '').replace(/⁠/g, '').replace(/\s+/g, ' ').trim();
   await p.click('[data-card=goals] [data-homegoal]'); await T.w(400);
   const g = await p.evaluate(() => ({ plan: !document.querySelector('[data-panel=plan]').hidden, title: (document.querySelector('[data-card=plan-form] h2') || {}).textContent }));
   ck('tapping it opens Trip on Plan', g.plan && g.title === 'Trip', JSON.stringify(g));
+  /* [M49] "Percents add to 100. A goal never shows full early": the goal one yen under its target does not read as full
+     anywhere, and it reads full only at the target. The app shows no percents for a goal; this says so */
+  await typeIn(p, '#pl-amount', '79999'); await p.click('[data-plbtn="0"]'); await T.w(500);
+  const near = async () => {
+    await p.click('[data-tab=plan]'); await T.w(300);
+    const plan = await p.$eval('#a3Plan [data-goal]', e => ({ t: e.innerText.replace(/\u2060/g, '').replace(/\s+/g, ' ').trim(), v: Number(e.querySelector('meter').value), max: Number(e.querySelector('meter').max) }));
+    await p.click('[data-tab=home]'); await T.w(300);
+    const home = (await p.$$eval('[data-card=goals] [data-homegoal]', es => es.map(e => e.innerText.replace(/\u2060/g, '').replace(/\s+/g, ' ').trim())))[0];
+    return { plan, home };
+  };
+  let m49 = await near();
+  ck('M49: one yen under the target, Home says 99,999 of 100,000, not the target', /^Trip ¥99,999 of ¥100,000$/.test(m49.home), JSON.stringify(m49));
+  ck('M49: Plan says 99,999 of 100,000 and its bar is not full', /¥99,999/.test(m49.plan.t) && /of ¥100,000/.test(m49.plan.t) && m49.plan.max === 100000 && m49.plan.v === 99999, JSON.stringify(m49));
+  ck('M49: nothing calls the goal full, done or reached before its target, and no percent is shown for it', !/full|done|reached|complete|%/i.test(m49.home + ' ' + m49.plan.t), JSON.stringify(m49));
+  await p.click('[data-card=goals] [data-homegoal]'); await T.w(400);
+  await typeIn(p, '#pl-amount', '1'); await p.click('[data-plbtn="0"]'); await T.w(500);
+  m49 = await near();
+  ck('M49: at the target it reads 100,000 of 100,000 and the bar is full', /^Trip ¥100,000 of ¥100,000$/.test(m49.home) && m49.plan.v === m49.plan.max, JSON.stringify(m49));
   ck('no page errors', errs.length === 0, errs.join(' | '));
   await b.close();
   T.done('e3_homeplan');

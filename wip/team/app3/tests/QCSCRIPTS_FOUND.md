@@ -36,7 +36,7 @@ Rule since 25 Nov (coordinator): a line counts only when its own id is written i
 file or wip/team/M_COVERAGE.md; section G (how the team works with him) is covered by wip/team/RUNBOOK.md section 8.
 A section handed whole to a reviewer covers nothing by itself, so a line added later fails until someone names it.
 
-- 3 lines have no cover yet, written so in wip/team/M_COVERAGE.md: M49 M59 M68. Each is a KNOWN line in the test.
+- 1 line has no cover yet, written so in wip/team/M_COVERAGE.md: M59, the 3D world, not built (M49 and M68 have their tests since 25 Nov). Each is a KNOWN line in the test.
   The other 16 of the 19 found on 25 Nov are named in M_COVERAGE.md with the test that checks each (MAIN 17, 25 Nov).
 
 ## tests/wording_lint.test.js (the words a person sees, against VOICE.md)
