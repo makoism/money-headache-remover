@@ -493,7 +493,8 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       return as.map(a => `${back(a.id) || '-'} | ${a.name} | ${a.type} | ` + (a.type === 'card' ? (r.cards[a.id] ? m(r.cards[a.id].owedNow) + ' owed, paid on day ' + a.payDay : '') : r.accounts[a.id] ? m(r.accounts[a.id].bank) + ' today' : '')).join('\n') || 'None.';
     }
     if (what === 'pays' || what === 'bills') return figures(book, today).text.split('Pays and bills (ref | name | amount | when):\n')[1]?.split('\n').filter(l => l.startsWith(what === 'pays' ? 'P' : 'B')).join('\n') || 'None.';
-    if (what === 'lines') return ((r.period && r.period.lines) || []).map(l => `${back(l.id)} | ${l.name} | ${m(l.amount)} each pay | ${m(l.left)} left`).join('\n') || 'None.';
+    /* [F2] with no fixed pay the engine's month section, shaped like the period's (never "None." for a person with lines) */
+    if (what === 'lines') { const pm = r.period || r.month, per = r.period ? 'each pay' : 'each month'; return ((pm && pm.lines) || []).map(l => `${back(l.id)} | ${l.name} | ${m(l.amount)} ${per} | ${m(l.left)} left`).join('\n') || 'None.'; }
     if (what === 'goals') return (book.places || []).filter(g => live(g) && g.kind === 'goal').map(g => `${back(g.id)} | ${g.name} | ${m((r.places[g.id] || {}).kept || 0)} set aside of ${m(g.target)}`).join('\n') || 'None.';
     return 'Pick accounts, pays, bills, cards, lines, goals or spends.';
   }
@@ -503,6 +504,8 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
   /* one step from the AI into { kind, args, text, amount, ask? } or { bad: words } */
   function stepOf(a, ctx) {
     const { book, today, refs } = ctx, home = G.homeOn(book, today), m = (x, c) => SM.format(x, c || home);
+    /* [F2] the words for a line's or Free to spend's amount: a pay period, or with no fixed pay the month, as Plan says */
+    const per = (() => { try { return LA.lookahead(book, today).period === null ? 'each month' : 'each pay period'; } catch (e) { return 'each pay period'; } })();
     const what = a && typeof a === 'object' ? String(a.do || '') : '';
     const ref = (v, letters) => (typeof v === 'string' && letters.includes(v.charAt(0)) && refs[v] ? refs[v] : null);
     const acctRec = id => (book.accounts || []).find(x => x.id === id);
@@ -596,12 +599,12 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       const args = { name: clean(a.name, 60), amount: x, every: a.every, day: a.day, day2: a.day2, start: a.start, acct };
       return { kind: 'addPay', args: [args], text: `Add ${args.name}: ${x ? m(x) : 'no fixed amount'}, ${a.every === 'none' ? 'no fixed day' : a.every === 'month' ? 'on day ' + a.day + ' each month' : a.every}`, amount: x || 0, figs: x ? [x] : [] };
     }
-    if (what === 'add_line') { const x = amt(a.amount); if (!x || !a.name) return { bad: 'a line I could not read' }; return { kind: 'addLine', args: [{ name: clean(a.name, 60), amount: x }], text: `Add a line, ${clean(a.name, 60)}: ${m(x)} each pay period`, amount: x }; }
+    if (what === 'add_line') { const x = amt(a.amount); if (!x || !a.name) return { bad: 'a line I could not read' }; return { kind: 'addLine', args: [{ name: clean(a.name, 60), amount: x }], text: `Add a line, ${clean(a.name, 60)}: ${m(x)} ${per}`, amount: x }; }
     if (what === 'change_line') {
       const id = ref(a.ref || a.line, 'L'), x = amt(a.amount, null, true); if (!id || x == null) return { bad: 'a change to a line I could not read' };
-      return { kind: 'changeLine', args: [id, { amount: x, when: when(a.when) }], text: `${lineName(id)}: ${m(x)} each pay period`, amount: x, ref: a.ref || a.line };
+      return { kind: 'changeLine', args: [id, { amount: x, when: when(a.when) }], text: `${lineName(id)}: ${m(x)} ${per}`, amount: x, ref: a.ref || a.line };
     }
-    if (what === 'set_free') { const x = amt(a.amount, null, true); if (x == null) return { bad: 'Free to spend I could not read' }; return { kind: 'setFree', args: [{ amount: x, when: when(a.when) }], text: `Free to spend: ${m(x)} each pay period`, amount: x }; }
+    if (what === 'set_free') { const x = amt(a.amount, null, true); if (x == null) return { bad: 'Free to spend I could not read' }; return { kind: 'setFree', args: [{ amount: x, when: when(a.when) }], text: `Free to spend: ${m(x)} ${per}`, amount: x }; }
     if (what === 'add_goal') { const x = amt(a.target != null ? a.target : a.amount); if (!x || !a.name) return { bad: 'a goal I could not read' }; return { kind: 'addGoal', args: [{ name: clean(a.name, 60), target: x, due: a.due || undefined }], text: `Add a goal, ${clean(a.name, 60)}: ${m(x)}${a.due ? ' by ' + day1(a.due) : ''}`, amount: 0, figs: [x] }; }
     if (what === 'set_aside') {
       const id = ref(a.goal || a.ref, 'G'), x = amt(a.amount); if (!id || !x) return { bad: 'money for a goal I could not read' };

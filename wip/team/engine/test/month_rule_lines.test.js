@@ -44,4 +44,15 @@ t('8,000 of Food spent, seen 20 Dec: 22,000 is held for the rest of December. Ca
   const { b } = life([['2026-12-11', 8000]]), r = LA.lookahead(b, '2026-12-20');
   eq([r.horizon, r.canSpare.amount], ['2027-02-03', 1892503]);
 });
+// [F2, qc-foundation on the build, 26 Nov; seen in the 25 Nov review too] with no fixed pay the answer carries this
+// month's lines and Free to spend in `month`, shaped like the period's, so the assistant and every screen read the
+// engine's figures (never a by-days share worked out elsewhere). Seen 20 Dec with 8,000 of Food spent on 11 Dec:
+// Food 30,000 this month, 8,000 spent, 22,000 left; Free to spend 40,000, nothing spent, 40,000 left.
+t('[F2] no fixed pay: the answer has this month\'s lines and Free to spend (Food 30,000, 8,000 spent, 22,000 left)', () => {
+  const { b } = life([['2026-12-11', 8000]]), r = LA.lookahead(b, '2026-12-20');
+  eq(r.period, null);
+  eq([r.month.start, r.month.end], ['2026-12-01', '2026-12-31']);
+  eq(r.month.lines.map(l => [l.name, l.amount, l.spent, l.left]), [['Food', 30000, 8000, 22000]]);
+  eq([r.month.free.amount, r.month.free.left], [40000, 40000]);
+});
 done('month_rule_lines.test.js');

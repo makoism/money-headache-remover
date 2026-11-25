@@ -717,6 +717,26 @@ const steps = list => [].concat(...list.map(([, r]) => r));
       ok(line && line.includes('| ' + SMn.format(view.amount, x.cur || 'JPY') + ' |'), kind + ': the line sent is ' + line + ', the engine says ' + view.amount);
     }
   });
+  /* [F2, qc-foundation on the month rule build, 26 Nov; M1, M3] no fixed pay: the assistant reads this month's lines
+     from the engine (never "None."), and its change cards say "each month", as Plan does. Made-up yen: set up 1 Dec,
+     bank 500,000, no fixed pay, Free to spend 40,000 a month, a Food line of 30,000 a month; 8,000 of Food on 11 Dec. */
+  await t('[F2] no fixed pay: list lines gives this month\'s lines with what is left, and the change cards say each month', async () => {
+    const BB = require(E + 'build_book.js'), h = page('2026-12-20'), newId = I.idMaker('q8w3hz');
+    const out = BB.buildBook({ day: '2026-12-01', told: '2026-12-01T09:00:00.000+09:00', currency: 'JPY', country: 'JP',
+      banks: [{ key: 'bank1', name: 'Main bank', amount: 500000, main: true, min: null }],
+      pays: [{ key: 'pay1', name: 'Work', bank: 'bank1', amount: null, every: 'none' }], cards: [], bills: [], free: 40000 }, { newId });
+    const b = out.book || out, bank = b.accounts.find(a => a.type === 'bank').id, food = newId(), stp = (r, told) => Object.assign(r, { told, at: told, by: 'q8w3hz' });
+    b.plan.budgets.push(stp({ id: food, name: 'Food', place: 'bills', cur: 'JPY', per: 'month', from: '2026-12-01', steps: [{ from: null, amount: 30000 }] }, '2026-12-01T09:05:00.000+09:00'));
+    b.events.push(stp({ id: newId(), k: 'spend', date: '2026-12-11', a: 8000, acct: bank, line: food, src: { type: 'typed' } }, '2026-12-11T19:20:00.000+09:00'));
+    h.book = b;
+    let listed = '';
+    const f = FAKE.make([say('', [call('list', { what: 'lines' })]), body => { listed = FAKE.results(body)[0].text; const ref = listed.split('\n').find(l => /Food/.test(l)).split(' | ')[0];
+      return say('', [call('change', { steps: [{ do: 'change_line', ref, amount: 25000 }, { do: 'set_free', amount: 35000 }] })]); }, say('Tap OK.')]);
+    const r = await K.turn(K.fresh(), 'what lines do I have? make Food 25,000 and Free to spend 35,000', h.deps(f));
+    ok(/Food \| ¥30,000 each month \| ¥22,000 left/.test(listed), 'lines read: ' + listed);
+    const card = r.shown.find(x => x.who === 'card');
+    ok(card && card.card.lines.some(l => /Food: ¥25,000 each month/.test(l)) && card.card.lines.some(l => /Free to spend: ¥35,000 each month/.test(l)), JSON.stringify(card && card.card.lines));
+  });
   console.log(bad ? `chat3_core: ${bad} of ${n} FAILED` : `chat3_core: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })();

@@ -1118,6 +1118,14 @@
         lines: (planLeft.lines || []).map(l => ({ id: l.src.id, name: l.name, acct: l.acct, per: l.per, amount: l.amount, left: l.left, counts: l.counts, spent: l.spent, over: Math.max(0, -l.left) })),
         free: planLeft.free ? { acct: planLeft.free.acct, per: planLeft.free.per, amount: planLeft.free.amount, left: planLeft.free.left, counts: planLeft.free.counts } : null };
     } else res.period = null;   // [B4] no fixed pay: no periods
+    // [F2, qc-foundation on the month rule build, 26 Nov] no fixed pay: this calendar month's lines and Free to spend,
+    // shaped like the period's, so the assistant and the screens read the engine's own figures; null with periods
+    if (!periodStream) {
+      const [my, mm] = ymOf(today);
+      res.month = { start: dayStr(dayIn(my, mm, 1)), end: dayStr(dayIn(my, mm + 1, 1) - 1),
+        lines: (planLeft.lines || []).map(l => ({ id: l.src.id, name: l.name, acct: l.acct, per: l.per, amount: l.amount, left: l.left, counts: l.counts, spent: l.spent, over: Math.max(0, -l.left) })),
+        free: planLeft.free ? { acct: planLeft.free.acct, per: planLeft.free.per, amount: planLeft.free.amount, left: planLeft.free.left, counts: planLeft.free.counts } : null };
+    } else res.month = null;
     // [periods.js] opts.periods: every period gone by, oldest first, each counted only from what is dated inside it, with
     // everything heard of by the day asked (a spend logged late, a check-in on pay day whose stretch reaches back)
     if (opts.periods && periodStream) {

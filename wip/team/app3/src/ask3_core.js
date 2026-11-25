@@ -65,10 +65,11 @@
     if (cap) out.push(`Why safe to spend is ${m(r.safeToSpend.headline)}: ${SM.sumLine(cap, r.safeToSpend.headline, home)}`);
     const shA = sh && r.accounts[sh.account] && r.accounts[sh.account].real;
     if (shA) out.push(`How the short amount is worked out: ${SM.sumLine(shA.whyParts, shA.headroom, r.accounts[sh.account].currency)}`);
-    const lines = (p && p.lines) || [];
+    const pm = p || r.month, perW = p ? 'pay period' : 'month';   // [F2] no fixed pay: this month's lines, from the engine
+    const lines = (pm && pm.lines) || [];
     if (lines.length) {
       // [QC F5, B2] the amount that counts this period, the full amount a period beside it only when they differ
-      out.push('Budget lines this pay period (ref | name | amount | left):\n' + lines.map((l, i) => { const ref = 'L' + (i + 1); refs[ref] = l.id; return `${ref} | ${l.name} | ${m(l.counts)}${l.counts !== l.amount ? ` (part of ${m(l.amount)} a period, for the days left)` : ''} | ${m(l.left)} left`; }).join('\n'));
+      out.push(`Budget lines this ${perW} (ref | name | amount | left):\n` + lines.map((l, i) => { const ref = 'L' + (i + 1); refs[ref] = l.id; return `${ref} | ${l.name} | ${m(l.counts)}${l.counts !== l.amount ? ` (part of ${m(l.amount)} a ${p ? 'period' : 'month'}, for the days left)` : ''} | ${m(l.left)} left`; }).join('\n'));
     } else out.push('Budget lines: none yet.');
     out.push(p && p.free ? `Free to spend this pay period: ${m(p.free.counts)}${p.free.counts !== p.free.amount ? ` (part of ${m(p.free.amount)} a period, for the days left)` : ''}, ${m(p.free.left)} left.` : 'Free to spend: not set yet.');
     const goals = (book.places || []).filter(g => live(g) && g.kind === 'goal');
@@ -130,7 +131,7 @@ Actions:
     const refOf = (v, letter) => (typeof v === 'string' && v.charAt(0) === letter && refs[v] ? refs[v] : null);
     const amountOf = (v, cur, zero) => { if (typeof v !== 'number' && typeof v !== 'string') return null; const p = SM.parse(String(v), cur || home); return p.ok && (zero ? p.minor >= 0 : p.minor > 0) ? p.minor : null; };
     const acctName = id => ((book.accounts || []).find(a => a && a.id === id) || {}).name;
-    const lineOf = id => ((r.period && r.period.lines) || []).find(l => l.id === id);
+    const lineOf = id => (((r.period || r.month) || {}).lines || []).find(l => l.id === id);
     const mainAcct = (G.fieldValue((book.home || {}).main) || {}).acct;
     for (const a of list) {
       const what = a && typeof a === 'object' ? String(a.do || '') : '';
@@ -149,11 +150,11 @@ Actions:
       } else if (what === 'change_line') {
         const id = refOf(a.line, 'L'), l = id && lineOf(id), amt = amountOf(a.amount, home, true), when = WHEN[a.when] ? a.when : 'now';
         if (!l || amt == null) { dropped.push('a change to a line I could not read'); continue; }
-        steps.push({ kind: 'changeLine', ref: a.line, args: [id, { amount: amt, when }], text: `${l.name}: ${m(l.amount)} to ${m(amt)} each pay period, ${WHEN[when]}` });
+        steps.push({ kind: 'changeLine', ref: a.line, args: [id, { amount: amt, when }], text: `${l.name}: ${m(l.amount)} to ${m(amt)} ${r.period === null ? 'each month' : 'each pay period'}, ${WHEN[when]}` });
       } else if (what === 'set_free') {
-        const amt = amountOf(a.amount, home, true), when = WHEN[a.when] ? a.when : 'now', f = r.period && r.period.free;
+        const amt = amountOf(a.amount, home, true), when = WHEN[a.when] ? a.when : 'now', f = (r.period || r.month) && (r.period || r.month).free;
         if (amt == null) { dropped.push('a change to Free to spend I could not read'); continue; }
-        steps.push({ kind: 'setFree', ref: null, args: [{ amount: amt, when }], text: `Free to spend: ${f ? m(f.amount) + ' to ' : ''}${m(amt)} each pay period, ${WHEN[when]}` });
+        steps.push({ kind: 'setFree', ref: null, args: [{ amount: amt, when }], text: `Free to spend: ${f ? m(f.amount) + ' to ' : ''}${m(amt)} ${r.period === null ? 'each month' : 'each pay period'}, ${WHEN[when]}` });
       } else if (what === 'set_aside') {
         const id = refOf(a.goal, 'G'), g = id && (book.places || []).find(x => x.id === id), amt = amountOf(a.amount, home);
         if (!g || amt == null) { dropped.push('money for a goal I could not read'); continue; }
@@ -198,7 +199,7 @@ Actions:
       if (!s.ref || seen[s.ref]) continue;
       seen[s.ref] = 1;
       if (s.ref.charAt(0) === 'L') {
-        const id = s.kind === 'changeLine' ? s.args[0] : s.args[0].line, at = r => ((r.period && r.period.lines) || []).find(l => l.id === id);
+        const id = s.kind === 'changeLine' ? s.args[0] : s.args[0].line, at = r => (((r.period || r.month) || {}).lines || []).find(l => l.id === id);
         const l0 = at(r0), l1 = at(r1);
         rows.push({ key: 'line:' + s.ref, label: (l0 || l1 || {}).name + ' left', before: l0 ? l0.left : null, after: l1 ? l1.left : null });
       } else if (s.ref.charAt(0) === 'G') {
