@@ -8,7 +8,7 @@ How it is kept:
 - Every QC reviewer marks each line that touches its role MET, NOT MET or NOT BUILT on every build. That is how we know a line reached the app.
 - A line here that no plan, test or reviewer covers is a fault in the process: tell the coordinator.
 - Newer lines win. Dates are Nov 2026. Refs: NF = DECISIONS.md "The new foundation" item; D = DECISIONS.md; R2 = foundation_review/DECISIONS_ROUND2.md; NS = NORTH_STAR.md; L = LESSONS.md.
-- Last changed: 26 Nov 2026, 06:45 JST (M85 made stronger: never a question without all its info, never again). Before that 06:35 JST (M87 new: use up all the credits by Sunday 09:00 JST). Before that 25 Nov 21:45 JST (M86 new: be very diligent and as efficient with credits as possible). Before that 25 Nov 10:20 JST (M85 new: a question carries all its info, no team labels). Before that 10:00 JST (M84 new: he can pause the work). Before that 25 Nov 09:40 JST (M82 changed, M83 new). Before that 24 Nov 12:30 JST (M82: Fable and the resets; before that M6: a third ask-first reason). First version 24 Nov, M1 to M81.
+- Last changed: 26 Nov 2026, 07:00 JST (M88 new: each bucket a set amount or a percentage, setup asks which; M89 new: extra money gets a notice to split it into the burrows). Before that 06:45 JST (M85 made stronger: never a question without all its info, never again). Before that 06:35 JST (M87 new: use up all the credits by Sunday 09:00 JST). Before that 25 Nov 21:45 JST (M86 new: be very diligent and as efficient with credits as possible). Before that 25 Nov 10:20 JST (M85 new: a question carries all its info, no team labels). Before that 10:00 JST (M84 new: he can pause the work). Before that 25 Nov 09:40 JST (M82 changed, M83 new). Before that 24 Nov 12:30 JST (M82: Fable and the resets; before that M6: a third ask-first reason). First version 24 Nov, M1 to M81.
 
 ## A. How he wants to use the app
 
@@ -84,6 +84,8 @@ How it is kept:
 - M58. Art comes last, with him, designs first. It never gets in the way. (19, D "art step")
 - M59. The 3D world is desktop only. (19, D "3D")
 - M60. Later: centred drop-down arrows, thousands commas as you type. (24, NF14)
+- M88. Two ways to fill the buckets, both an option: a percentage of pay ("the envelope system ... your play money is a percentage", adding to 100%), or a set amount each month ("I want to spend only 40,000 yen per month on play money"). Setup asks the person which they want, and makes clear what each means. (26, NF27)
+- M89. When there is extra money (set amounts that leave some over, or more coming in), the app says so, on a notice or a screen: "you got some extra money, you can split them up into your burrows". (26, NF27; joins M24, M46)
 
 ## F. Data safety and privacy
 
