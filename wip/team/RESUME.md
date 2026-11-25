@@ -12,6 +12,13 @@ Written 2026-11-18 on branch `wip-38.31`. Read this whole file before touching a
   3. 5a91f412 blocker 3: chat3_core.js SCREENS, one table (9 screens, 13 sheets); the open sheet goes with each message (chat3.js chat3Sheet, plan3.js PL3.sheet set by each opener). A new sheet needs a row there.
   4. dfee8705 two steps asked, one left out: the card says "Not done: ..." (card.left, DO_WORDS).
   5. d2b8955f the newest .claude/agents, QC_COMMON, QC_ROLES and RUNBOOK taken from wip-38.31; the first assistant report kept as run1_qc-assistant.md.
+- **After qc-assistant run 2 (FAIL, kept as run2_qc-assistant.md: a card spend showed two equal safe to spend figures and no row for the card):**
+  6. 3cadd021 the change card shows each card whose Still owed changed (chat3_core.js rowsOf), and files point to Add statements on Home.
+  7. c55e7c60 RULED by the coordinator (04:35 JST): on Mako's shape with Free to spend not set, a card spend does not lower safe to spend (the card is paid on or after the next pay). The engine is NOT changed in this candidate; it is a KNOWN FAULT in scope.txt and the coordinator put the cause to Mako (way 3: everything on the cards comes off the headline; do not write that plan until the coordinator says). The card says why in one line (chat3_core.js noteOf); the worked example is pinned both ways in chat3_core.test.js "[M30, M77]" and e3_fakeai_page.
+  8. d6c6bd19 "Send a file" is off the page (ruled: the app must not offer what it cannot do).
+  9. 83bfe975 check3 full ALL GOOD (106 tests) and the screen pack. **qc-assistant run 3 started 04:55 JST**; if this session died, start it again fresh.
+- **Rulings held:** MAIN 18's ACT3.refusal is a dry run only, so no qc-data-safety re-run. The relay's DB: wrangler.toml binds it; <site>/api/health shows "vault": true when it is live.
+- **Tip:** run the full check into a scratch file and copy it to the round folder when it ends (a half-written check3.txt trips the uncommitted-changes hook).
 - **Running or next:** check3 full into the round folder, then the screen pack (node wip/team/qc/pack3.js <round>/screens), then reviewers ONE at a time, fresh: qc-assistant, qc-numbers, qc-foundation, qc-controls, qc-north-star, then qc-novice, qc-layout-touch, qc-voice (opus). qc-data-safety is not run again unless a later fix touches saving, the cloud copy, backup or the write door. One message to the coordinator after each verdict.
 - **Known and small, not fixed:** the sums sent to the assistant are written without forced cents, Home writes cents when the screen has some (a cents currency could differ by ".00"); the goal, line, loan and record sheets are in the table and the node test but the page test opens only the nine sheets Mako's shape has.
 
