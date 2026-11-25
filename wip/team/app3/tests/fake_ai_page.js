@@ -77,7 +77,7 @@ const MAKO = {
 };
 const TURNS = [
   ['hi', [say(K.GUIDE[0].ask + ' ' + K.GUIDE[1].ask + ' ' + K.GUIDE[2].ask)]],
-  ['Japan', [say('', [call('draft_set', { section: 'country', value: 'JP' })]), say(K.GUIDE[3].ask)]],
+  ['Japan, yen', [say('', [call('draft_set', { section: 'country', value: 'JP' }), call('draft_set', { section: 'currency', value: 'JPY' })]), say(K.GUIDE[3].ask)]],
   ['Just one, Main bank', [say(K.GUIDE[4].ask)]],
   ['286,000', [say('', [call('draft_set', { section: 'banks', value: MAKO.banks })]), say(K.GUIDE[5].ask)]],
   ['once a month, on the 10th', [say(K.GUIDE[6].ask)]],

@@ -39,6 +39,7 @@ function page(day) {
 }
 const say = (words, calls) => ({ words, calls });
 const call = (name, input) => ({ name, input });
+const edits2 = (h, st0, list) => { let st = st0; const deps = h.deps(FAKE.make([])); for (const [sec, v] of list) { const r = K.draftEdit(st, sec, v, deps); ok(r.ok, sec + ': ' + r.text); st = r.state; } return st; };
 const lastNote = r => r.shown.filter(x => x.who === 'note').map(x => x.text);
 const safe = h => L.lookahead(h.book, h.day).safeToSpend.headline;
 
@@ -51,7 +52,7 @@ const MAKO = {
 /* the whole setup conversation: [what Mako says, the AI's recorded replies for that turn] */
 const SETUP = [
   ['hi', [say(K.GUIDE[0].ask + ' ' + K.GUIDE[1].ask + ' ' + K.GUIDE[2].ask)]],
-  ['Japan', [say('', [call('draft_set', { section: 'country', value: 'JP' })]), say(K.GUIDE[3].ask)]],
+  ['Japan, yen', [say('', [call('draft_set', { section: 'country', value: 'JP' }), call('draft_set', { section: 'currency', value: 'JPY' })]), say(K.GUIDE[3].ask)]],
   ['Just one, Main bank', [say(K.GUIDE[4].ask)]],
   ['what does safe to spend mean?', [say('', [call('explain', { topic: 'safeToSpend' })]), (body) => say(FAKE.results(body)[0].text + ' So, what does Main bank show right now?')]],
   ['286,000', [say('', [call('draft_set', { section: 'banks', value: MAKO.banks })]), say(K.GUIDE[5].ask)]],
@@ -360,7 +361,7 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const text = K.copyPrompt(K.fresh(), h9.day);
     ok(/before or after tax/.test(text) && /How many banks/.test(text) && /"pays"/.test(text) && /afterTax/.test(text), 'the questions and the answer shape');
     ok(!/[a-z0-9]{6}-[a-z0-9]{10}-\d/.test(text), 'no ids');
-    const reply = 'Here you go:\n```json\n' + JSON.stringify({ country: 'JP', banks: MAKO.banks, pays: MAKO.pays, cards: MAKO.cards, bills: MAKO.bills, free: null, min: null }) + '\n```';
+    const reply = 'Here you go:\n```json\n' + JSON.stringify({ country: 'JP', currency: 'JPY', banks: MAKO.banks, pays: MAKO.pays, cards: MAKO.cards, bills: MAKO.bills, free: null, min: null }) + '\n```';
     let r = K.pasteBack(K.fresh(), reply, d9);
     ok(r.ok, r.text);
     eq(r.state.draft.banks[0], { name: 'Main bank', amount: 286000, on: '2026-11-24' });
@@ -381,6 +382,43 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const f = FAKE.make([say('Safe to spend is 201,400 until 10 Dec, so a 9,000 dinner fits. You will have about 150,000 left.')]);
     const r = await K.turn(K.fresh(), 'can I afford a 9,000 dinner?', h10.deps(f));
     eq(r.shown.find(x => x.who === 'ai').check, ['150,000']);
+  });
+  /* ---- AI_JOIN_FIXES C: "Fill in my Burrow" needs a whole answer (qc-foundation 3 and 6, qc-assistant blocker 6) ---- */
+  const edits = (h, list) => { let st = K.fresh(); const deps = h.deps(FAKE.make([])); for (const [sec, v] of list) { const r = K.draftEdit(st, sec, v, deps); ok(r.ok, sec + ': ' + r.text); st = r.state; } return st; };
+  await t('[C] the bank answer alone is not enough: the fill waits for the country, the currency, a pay, everyday money and the minimum', async () => {
+    const h = page('2026-11-24'), st = edits(h, [['banks', [{ name: 'Main bank', amount: 286000 }]]]);
+    const card = K.draftCard(st.draft, h.day);
+    eq(card.ready, false);
+    eq(card.need, ['Which country do you bank in?', 'Which currency? Yen, pesos, dollars or euros', 'How are you paid? A day each month, every week or two, or no fixed pay', 'How much for food and everyday stuff each pay period? Or skip it', 'Keep at least how much in your bank? Or no minimum']);
+    const f = await K.fillNow(st, h.deps(FAKE.make([])));
+    ok(!f.ok && h.book === null && /Which country/.test(f.text), f.text);
+  });
+  await t('[C] a whole answer with "no fixed pay", everyday money skipped and no minimum can be filled', async () => {
+    const h = page('2026-11-24'), st = edits(h, [['country', 'XX'], ['currency', 'USD'], ['banks', [{ name: 'Main bank', amount: '1234.56' }]], ['pays', [{ name: 'Work', every: 'none' }]], ['free', null], ['min', null]]);
+    eq(K.draftCard(st.draft, h.day).need, []);
+    const f = await K.fillNow(st, h.deps(FAKE.make([])));
+    ok(f.ok, f.text);
+    eq([h.book.home && L.lookahead(h.book, h.day).safeToSpend.headline, JSON.stringify(h.book).includes('"USD"')], [123456, true], 'dollars with cents: 1,234.56 is 123456 cents');
+  });
+  await t('[C] the currency is its own answer: an amount typed before it changed is asked again, never read in the old currency (50,000 then pesos is not 500.00)', async () => {
+    const h = page('2026-11-24');
+    let st = edits(h, [['banks', [{ name: 'Main bank', amount: 50000 }]], ['bills', [{ name: 'Rent', amount: 9000, day: 27 }]], ['free', 3000]]);
+    const r = K.draftEdit(st, 'country', 'PH', h.deps(FAKE.make([])));
+    ok(r.ok && /asked again/.test(r.shown[0].text), r.shown[0].text);
+    st = edits2(h, r.state, [['currency', 'PHP']]);
+    const u = K.draftEdit(edits2(h, st, [['banks', [{ name: 'Main bank', amount: 700 }]]]), 'currency', 'USD', h.deps(FAKE.make([])));
+    ok(u.ok && /asked again/.test(u.shown[0].text) && !/700/.test(JSON.stringify(K.draftCard(u.state.draft, h.day))), 'pesos to dollars asks again too');
+    const card = K.draftCard(st.draft, h.day), words = JSON.stringify(card);
+    ok(!/500\.00|50,000|9,000|90\.00/.test(words), words);
+    ok(card.need.filter(x => x === 'What does Main bank show today?').length === 1 && card.need.some(x => /everyday/.test(x)), JSON.stringify(card.need));
+    st = edits2(h, st, [['banks', [{ name: 'Main bank', amount: 50000 }]]]);
+    ok(K.draftCard(st.draft, h.day).need.includes('How much is Rent?'), 'then the bill\'s amount is asked again: ' + JSON.stringify(K.draftCard(st.draft, h.day).need));
+    ok(/₱50,000 on/.test(JSON.stringify(K.draftCard(st.draft, h.day))), JSON.stringify(K.draftCard(st.draft, h.day).sections[2]));
+  });
+  await t('[C] saying the currency the amounts were already read in loses nothing (Japan, then 286,000, then "yen")', async () => {
+    const h = page('2026-11-24'), st = edits(h, [['country', 'JP'], ['banks', [{ name: 'Main bank', amount: 286000 }]], ['currency', 'JPY']]);
+    ok(/¥286,000/.test(JSON.stringify(K.draftCard(st.draft, h.day))));
+    ok(!K.draftCard(st.draft, h.day).need.includes('What does Main bank show today?'));
   });
   console.log(bad ? `chat3_core: ${bad} of ${n} FAILED` : `chat3_core: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);

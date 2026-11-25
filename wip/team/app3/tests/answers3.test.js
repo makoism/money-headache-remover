@@ -23,7 +23,7 @@ const DAY = '2026-11-24', TOLD = DAY + 'T10:00:00.000+09:00';
 
 /* Mako's shape as the chat's draft holds it (what he said; nothing hidden) */
 const mako = () => ({
-  country: 'JP',
+  country: 'JP', currency: 'JPY',
   banks: [{ name: 'Main bank', amount: 286000, on: DAY }],
   pays: [{ name: 'Pay', amount: 240000, every: 'month', day: 10, shift: 'before' }],
   cards: [{ name: 'Card A', owed: 54000, on: DAY, payDay: 10, closeDay: 'not sure', shift: 'after' },

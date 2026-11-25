@@ -37,7 +37,7 @@ const after = (key, words) => body => { note(key)(body); return say(words); };
 /* [what Mako types, the AI's recorded replies for that turn] */
 const SETUP = [
   ['hi', [say(K.GUIDE[0].ask + ' ' + K.GUIDE[1].ask + ' ' + K.GUIDE[2].ask)]],
-  ['Japan', [say('', [call('draft_set', { section: 'country', value: 'JP' })]), say(K.GUIDE[3].ask)]],
+  ['Japan, yen', [say('', [call('draft_set', { section: 'country', value: 'JP' }), call('draft_set', { section: 'currency', value: 'JPY' })]), say(K.GUIDE[3].ask)]],
   ['Just one, Main bank', [say(K.GUIDE[4].ask)]],
   ['what does safe to spend mean?', [say('', [call('explain', { topic: 'safeToSpend' })]), body => say(FAKE.results(body)[0].text + ' So, what does Main bank show right now?')]],
   ['286,000', [say('', [call('draft_set', { section: 'banks', value: MAKO.banks })]), say(K.GUIDE[5].ask)]],

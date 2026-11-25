@@ -67,6 +67,7 @@
    The draft's sections (draft_set and K.draftEdit take one section and its whole value; amounts are whole yen or cents,
    minor units; accounts are named by their names; ANSWERS3 fills every hidden field, never the AI, BV1):
      country  'JP' | 'PH' | 'XX'
+     currency 'JPY' | 'PHP' | 'USD' | 'EUR'   its own answer; amounts saved before it changed are dropped and asked again
      banks    [{ name, amount, type?: 'bank' | 'cash' | 'ewallet' }]   the first is the main bank; each figure keeps its
               `on` day (set here, never by the AI)
      pays     [{ name, amount, every: 'month' | 'days' | 'weeks' | 'none', day?, day2?, n?, start?, shift?: 'before' |
@@ -120,7 +121,7 @@
   const GUIDE = [
     { n: 1, key: 'welcome', ask: "Hi, I'll set up your Burrow with you. I ask a few questions, about 10 minutes. You can type, or send me a statement or payslip and I'll read it. What you tell me stays on this phone until you say fill it in." },
     { n: 2, key: 'how', ask: "You tell me what's in your bank today, what comes in and what goes out and when. From that the app works out what's safe to spend until your next pay. Everything I fill in shows on the screens so you can check it." },
-    { n: 3, key: 'country', ask: 'Which country do you bank in? It moves pay and bills off weekends and holidays.' },
+    { n: 3, key: 'country', ask: 'Which country do you bank in, and in which currency? The country moves pay and bills off weekends and holidays.' },
     { n: 4, key: 'banks', ask: 'How many banks do you use? One is fine to start, you can add more later. Which bank does your pay go into?' },
     { n: 5, key: 'banks', ask: "What does that bank's app show right now? If you don't know: open the bank app. The big number on the first screen is it. Or send me a screenshot." },
     { n: 6, key: 'pays', ask: 'How are you paid? On a day each month, twice a month, every week or two, or whenever work comes in?' },
@@ -152,13 +153,14 @@ AFTER SETUP. When a pay, bill or card payment the app expects has come in or gon
   const num = { type: 'number', description: 'A plain number in the currency, no symbol.' };
   const str = d => ({ type: 'string', description: d });
   const DO = ['landed', 'bank_figure', 'card_figure', 'log_spend', 'refund', 'money_in', 'move_money', 'remove', 'add_bill', 'change_bill', 'end_bill', 'add_pay', 'add_line', 'change_line', 'end_line', 'set_free', 'add_goal', 'set_aside', 'add_card', 'add_account'];
-  const SECTIONS = ['country', 'banks', 'pays', 'cards', 'bills', 'asked', 'statements', 'payToday', 'free', 'min'];
+  const CURS = ['JPY', 'PHP', 'USD', 'EUR'];
+  const SECTIONS = ['country', 'currency', 'banks', 'pays', 'cards', 'bills', 'asked', 'statements', 'payToday', 'free', 'min'];
   const TOOLS = [
     { name: 'list', description: 'Records with their refs: accounts, pays, bills, cards, lines, goals, or the recent spends of one account (amount, date and ref only).',
       input_schema: { type: 'object', properties: { what: { type: 'string', enum: ['accounts', 'pays', 'bills', 'cards', 'lines', 'goals', 'spends'] }, account: str('An account ref like A1, for spends.') }, required: ['what'] } },
     { name: 'explain', description: 'How a part of the app works, in the app\'s own words.',
       input_schema: { type: 'object', properties: { topic: { type: 'string', enum: ['safeToSpend', 'period', 'status', 'cards', 'free', 'goals', 'check', 'undo', 'setup', 'sent'] } }, required: ['topic'] } },
-    { name: 'draft_set', description: 'Save one setup section into the draft, its whole value. Nothing reaches the app until fill_book. Sections: country "JP"|"PH"|"XX"; banks [{name, amount, type?, confirmed?}] (first is where pay lands; confirmed true when the person gave the figure again today); pays [{name, amount, every: month|days|weeks|none, day?, day2?, n?, start?, shift?: before|after, bank?, afterTax, same?}]; cards [{name, owed, payDay, closeDay: day|"last"|"not sure", shift?, payFrom?, confirmed?}]; bills [{name, amount, day, every?: month|year, month?, from?}]; asked [{name, out: true|false}]; statements [{name, amount|"not sure"}]; payToday {landed: true|false}; free amount|null; min amount|null.',
+    { name: 'draft_set', description: 'Save one setup section into the draft, its whole value. Nothing reaches the app until fill_book. Sections: country "JP"|"PH"|"XX"; currency "JPY"|"PHP"|"USD"|"EUR" (a change of currency drops the amounts saved before it: ask each again); banks [{name, amount, type?, confirmed?}] (first is where pay lands; confirmed true when the person gave the figure again today); pays [{name, amount, every: month|days|weeks|none, day?, day2?, n?, start?, shift?: before|after, bank?, afterTax, same?}]; cards [{name, owed, payDay, closeDay: day|"last"|"not sure", shift?, payFrom?, confirmed?}]; bills [{name, amount, day, every?: month|year, month?, from?}]; asked [{name, out: true|false}]; statements [{name, amount|"not sure"}]; payToday {landed: true|false}; free amount|null; min amount|null.',
       input_schema: { type: 'object', properties: { section: { type: 'string', enum: SECTIONS }, value: { description: 'The section\'s whole value.' } }, required: ['section', 'value'] } },
     { name: 'fill_book', description: 'Turn the draft into the person\'s Burrow. Only when they said to fill it in. Refused while NEEDED is not empty.', input_schema: { type: 'object', properties: {} } },
     { name: 'change', description: 'Make up to ' + MAX_STEPS + ' changes, each a named step: ' + DO.join(', ') + '. landed {ref: the P, B or card A ref, amount? only if it was different, date? the day it landed}; bank_figure and card_figure {account, amount}. Fields: amount, account (A ref), every (add_bill: month|year|months, with month 1..12 for a year, n and start for months), from and to (A refs), line (L ref), goal (G ref), ref (the record: S, B, P, L or G ref), date (YYYY-MM-DD, today or before), note, name, day, day2, every (month|days|weeks1..4|none), start, when (now|next|once), target, due, owed, payDay, closeDay, type (bank|cash|ewallet), moved (true|false), from (the A ref the money came from), afterFigure (true|false: moved after they looked at that bank on the day of its figure).',
@@ -209,7 +211,7 @@ AFTER SETUP. When a pay, bill or card payment the app expects has come in or gon
     return p.ok && (zero ? p.minor >= 0 : p.minor > 0) ? p.minor : undefined;
   }
   const dayOk = d => Number.isInteger(d) && d >= 1 && d <= 31;
-  const TITLES = { country: 'Country', banks: 'Your bank', pays: 'Pay', cards: 'Cards', bills: 'Bills', asked: 'Bills since your last pay', statements: 'Card statements', payToday: "Today's pay", free: 'Free to spend', min: 'Keep at least' };
+  const TITLES = { country: 'Country', currency: 'Currency', banks: 'Your bank', pays: 'Pay', cards: 'Cards', bills: 'Bills', asked: 'Bills since your last pay', statements: 'Card statements', payToday: "Today's pay", free: 'Free to spend', min: 'Keep at least' };
   /* one section into a copy of the draft, checked; { ok, draft, text } or { ok: false, text } */
   function draftSet(draft0, section, value, today) {
     const d = clone(draft0) || emptyDraft(), cur = curOf(d), no = text => ({ ok: false, text });
@@ -219,6 +221,13 @@ AFTER SETUP. When a pay, bill or card payment the app expects has come in or gon
     if (section === 'country') {
       if (!['JP', 'PH', 'XX'].includes(value)) return no('Country is JP, PH or XX (somewhere else)');
       d.country = value;
+    } else if (section === 'currency') {
+      /* [AI_JOIN_FIXES C] the currency is its own answer. Amounts saved before the currency they are read in changed
+         (50,000 yen units would show as 500.00 pesos) are dropped and asked again, never converted or kept: see the
+         end of this function */
+      const v = String(value || '').toUpperCase();
+      if (!CURS.includes(v)) return no('Currency is JPY, PHP, USD or EUR');
+      d.currency = v;
     } else if (section === 'banks') {
       const v = list(value); if (!v || !v.length) return no('Give at least one bank');
       const out = [];
@@ -309,16 +318,27 @@ AFTER SETUP. When a pay, bill or card payment the app expects has come in or gon
       if (a === undefined) return no('A plain number, or null to leave it blank');
       d[section] = a;
     } else return no('No such section: ' + String(section).slice(0, 20));
+    if (curOf(d) !== cur) {   // the currency the amounts are read in changed (by the currency answer, or by the country before it)
+      let n = 0;
+      for (const b of d.banks) if (b.amount != null) { b.amount = null; b.on = null; delete b.payToday; n++; }
+      for (const c of d.cards) if (c.owed != null) { c.owed = null; c.on = null; delete c.statement; n++; }
+      for (const x of d.pays) if (x.amount != null) { x.amount = null; n++; }
+      for (const x of d.bills) if (x.amount != null) { x.amount = null; n++; }
+      for (const k of ['free', 'min']) if (d[k] != null) { delete d[k]; n++; }
+      if (n) return { ok: true, draft: d, text: 'Saved: ' + TITLES[section] + '. The amounts from before were typed before the currency was known, so each is asked again' };
+    }
     return { ok: true, draft: d, text: 'Saved: ' + TITLES[section] };
   }
   /* the draft in plain lines (what is sent, and the draft card) */
   function draftLines(d) {
     const cur = curOf(d), m = a => (a == null ? 'blank' : SM.format(a, cur)), out = [];
     out.push({ key: 'country', title: TITLES.country, lines: d.country ? [{ JP: 'Japan', PH: 'The Philippines', XX: 'Somewhere else (weekends only)' }[d.country]] : [] });
-    out.push({ key: 'banks', title: TITLES.banks, lines: d.banks.map(b => `${b.name}: ${m(b.amount)} on ${day1(b.on)}` + (b.payToday ? `, today's pay ${b.payToday.landed ? 'already in it' : 'not in it yet'}` : '')) });
-    out.push({ key: 'pays', title: TITLES.pays, lines: d.pays.map(p => `${p.name}: ${p.amount == null ? 'no fixed amount' : m(p.amount) + ' after tax'}, ${p.every === 'none' ? 'no fixed day' : p.every === 'weeks' ? 'every ' + (p.n > 1 ? p.n + ' weeks' : 'week') + ' from ' + day1(p.start) : 'on day ' + p.day + (p.day2 ? ' and ' + p.day2 : '') + ' each month'}` + (p.every !== 'none' ? `, a weekend or holiday: the working day ${p.shift || 'before'}` : '')) });
-    out.push({ key: 'cards', title: TITLES.cards, lines: d.cards.map(c => `${c.name}: ${m(c.owed)} on ${day1(c.on)}, paid on day ${c.payDay}, statement closes ${c.closeDay === 'not sure' ? 'not sure' : c.closeDay === 'last' ? 'the last day' : 'day ' + c.closeDay}` + (c.statement ? `, ${c.statement.a === 'not sure' ? 'all of it' : m(c.statement.a)} on the statement of ${day1(c.statement.closed)}` : '')) });
-    out.push({ key: 'bills', title: TITLES.bills, lines: d.bills.map(b => `${b.name}: ${m(b.amount)} on day ${b.day}${b.every === 'year' ? ' of month ' + b.month : ' each month'}` + (b.out ? `, the one of ${b.out.days.map(day1).join(' and ')} ${b.out.out ? 'already out' : 'not out yet'}` : '')) });
+    out.push({ key: 'currency', title: TITLES.currency, lines: d.currency ? [{ JPY: 'Yen', PHP: 'Philippine pesos', USD: 'US dollars', EUR: 'Euros' }[d.currency]] : [] });
+    const again = 'asked again';
+    out.push({ key: 'banks', title: TITLES.banks, lines: d.banks.map(b => b.amount == null ? `${b.name}: ${again}` : `${b.name}: ${m(b.amount)} on ${day1(b.on)}` + (b.payToday ? `, today's pay ${b.payToday.landed ? 'already in it' : 'not in it yet'}` : '')) });
+    out.push({ key: 'pays', title: TITLES.pays, lines: d.pays.map(p => `${p.name}: ${p.amount == null ? (p.every === 'none' ? 'no fixed amount' : 'amount ' + again) : m(p.amount) + ' after tax'}, ${p.every === 'none' ? 'no fixed day' : p.every === 'weeks' ? 'every ' + (p.n > 1 ? p.n + ' weeks' : 'week') + ' from ' + day1(p.start) : 'on day ' + p.day + (p.day2 ? ' and ' + p.day2 : '') + ' each month'}` + (p.every !== 'none' ? `, a weekend or holiday: the working day ${p.shift || 'before'}` : '')) });
+    out.push({ key: 'cards', title: TITLES.cards, lines: d.cards.map(c => `${c.name}: ${c.owed == null ? again : m(c.owed) + ' on ' + day1(c.on)}, paid on day ${c.payDay}, statement closes ${c.closeDay === 'not sure' ? 'not sure' : c.closeDay === 'last' ? 'the last day' : 'day ' + c.closeDay}` + (c.statement ? `, ${c.statement.a === 'not sure' ? 'all of it' : m(c.statement.a)} on the statement of ${day1(c.statement.closed)}` : '')) });
+    out.push({ key: 'bills', title: TITLES.bills, lines: d.bills.map(b => `${b.name}: ${b.amount == null ? 'amount ' + again : m(b.amount)} on day ${b.day}${b.every === 'year' ? ' of month ' + b.month : ' each month'}` + (b.out ? `, the one of ${b.out.days.map(day1).join(' and ')} ${b.out.out ? 'already out' : 'not out yet'}` : '')) });
     out.push({ key: 'free', title: TITLES.free, lines: d.free === undefined ? [] : [m(d.free) + (d.free != null ? ' each pay period' : '')] });
     out.push({ key: 'min', title: TITLES.min, lines: d.min === undefined ? [] : [d.min == null ? 'no minimum' : m(d.min)] });
     return out;
@@ -743,7 +763,7 @@ QUESTIONS
 ${GUIDE.slice(2, 14).map(g => '- ' + g.ask).join('\n')}
 
 ANSWER SHAPE (amounts are plain numbers, no symbol; days of the month are numbers)
-{"country": "JP" | "PH" | "XX",
+{"country": "JP" | "PH" | "XX", "currency": "JPY" | "PHP" | "USD" | "EUR",
  "banks": [{"name": "Main bank", "amount": 0}],
  "pays": [{"name": "Pay", "amount": 0, "every": "month" | "days" | "weeks" | "none", "day": 25, "shift": "before" | "after", "afterTax": true, "same": true}],
  "cards": [{"name": "Card", "owed": 0, "payDay": 10, "closeDay": "not sure", "shift": "after"}],

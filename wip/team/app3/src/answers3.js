@@ -6,7 +6,7 @@
    the book, and asks (its `asked`, `askedStatements`) which answers the day needs.
 
    The answers (ANSWERS3's shape; amounts in minor units; accounts are named by their names):
-     { country: 'JP' | 'PH' | 'XX', currency?: from the form only (the chat never sets it),
+     { country: 'JP' | 'PH' | 'XX', currency: 'JPY' | 'PHP' | 'USD' | 'EUR' (its own answer, in the chat too),
        banks: [{ name, amount, type?: 'bank' | 'cash' | 'ewallet' | 'wallet', on: day the figure was given,
                  payToday?: { landed, day } }],      the first is the main bank
        pays:  [{ name, amount | null, every: 'month' | 'days' | 'weeks' | 'none', day?, day2?, n?, start?, shift?, bank? }],
@@ -152,9 +152,18 @@
   /* what a fill on that day still needs, in the words the chat asks it */
   function need(ans, o) {
     const out = [], day = o.day;
-    if (!(ans.banks || []).length) return ['Which bank does your pay go into?'];
+    /* [AI_JOIN_FIXES C; M2, M7, M42] a whole answer: the country, the currency (its own answer), a pay or "no fixed pay",
+       and everyday money and the minimum each answered or skipped in words (null), never left unasked (undefined) */
+    const late = [];
+    if (!ans.country) out.push('Which country do you bank in?');
+    if (!ans.currency) out.push('Which currency? Yen, pesos, dollars or euros');
+    if (!(ans.pays || []).length) late.push('How are you paid? A day each month, every week or two, or no fixed pay');
+    if (ans.free === undefined) late.push('How much for food and everyday stuff each pay period? Or skip it');
+    if (ans.min === undefined) late.push('Keep at least how much in your bank? Or no minimum');
+    if (!(ans.banks || []).length) return out.concat(['Which bank does your pay go into?'], late);
     for (const b of ans.banks) if (!Number.isInteger(b.amount) || b.on !== day) out.push('What does ' + b.name + ' show today?');
     for (const c of ans.cards || []) if (!Number.isInteger(c.owed) || c.on !== day) out.push('What is on ' + c.name + ' today?');
+    out.push(...late);
     let q;
     try { q = questions(ans, o); } catch (e) { return out.concat([e.message]); }
     for (const b of ans.bills || []) {
@@ -180,7 +189,7 @@
         if (!b.payToday || typeof b.payToday.landed !== 'boolean' || b.payToday.day !== day) out.push("Has today's pay already landed in " + b.name + "'s figure?");
       }
     }
-    try { toBuild(ans, { day, told: day + 'T00:00:00.000Z', currency: o.currency }); } catch (e) { out.push(e.message); }
+    try { toBuild(ans, { day, told: day + 'T00:00:00.000Z', currency: o.currency }); } catch (e) { if (!out.includes(e.message)) out.push(e.message); }
     return out;
   }
 
