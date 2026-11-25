@@ -5,7 +5,7 @@ The coordinator is the one session Mako talks to. It records his decisions in DE
 
 ## CURRENT STATE
 ### HANDOFF from coordinator 14 to coordinator 15 (26 Nov 06:35 JST). Read this block first; the dated lines further down are history and still hold.
-- 26 Nov 06:40 JST: OPEN QUESTION ANSWERED: Mako chose 1 (DECISIONS 28, M89 widened, M90, M91). Nothing waits on him now except the items for the candidate message. DECISIONS next number: 29. MAKO_SAYS last line: M91.
+- 26 Nov 06:40 JST: OPEN QUESTION ANSWERED: Mako chose 1 (DECISIONS 28, M89 widened, M90, M91). Nothing waits on him now except the items for the candidate message. DECISIONS next number: 30. MAKO_SAYS last line: M97 (section H, NF29, 06:45 JST: cash envelopes, play money in cash, sent to MAIN 20 and LANE D).
 - COORDINATOR 15 is session_01BFpKEWQ3CvnuXtPQDkDJq1 (Opus), took over 26 Nov 06:32 JST. Its keep-going task: trig_01YNLycNQNyBxR9EmFprj4xw (:17). MAIN 20, LANE D and the watch told the new id; coordinator 14 asked to switch off trig_01GEfvrmANympBPBgs7Wgws7 and close.
 - Models: the weekly Fable limit is used up until Sun 29 Nov 09:00 JST. Everything runs on Opus (claude-opus-5-5); every reviewer brief is model opus. On Sun after 09:00 JST put the five gate briefs back to fable (RUNBOOK 5 step 5).
 - Mako M87 (26 Nov): "make sure we use up all of the credits by Sunday 9am". RUNBOOK 4c-now: work at full width until the reset, care unchanged.
