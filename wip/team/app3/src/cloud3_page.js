@@ -281,8 +281,14 @@ function cloudStatus3(st) {
 }
 /* Home's one cloud line (home3.js reads it); Home is drawn again only when the line changes */
 const cloudHome3 = () => cloudStatus3().home;
+/* [M20, M36; qc-data-safety B3] how many "which to keep" questions wait (the engine's own list, read from the book, so it
+   is the same after a reload and with the cloud copy off): Home says so until each is answered, with the way to Settings */
+function cloudChoose3() {
+  if (E3.mode === 'try' || !E3.book) return 0;
+  try { return BurrowEngine.sync.afterSync(E3.book).questions.length; } catch (e) { return 0; }
+}
 function homeSay3() {
-  const now = cloudHome3();
+  const now = cloudHome3() + '|' + cloudChoose3();
   if (now === C3.homeSaid) return;
   C3.homeSaid = now;
   try { if (E3.book) renderHome3(); } catch (e) { /* a screen's own fault */ }

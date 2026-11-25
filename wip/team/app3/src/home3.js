@@ -156,6 +156,9 @@ function drawHome3() {
   if (origin !== 'sample') out.push(`<section class="a3-card a3-status" data-card="status" data-level="${esc3(st.level)}">${helpHead3(`<h2>${esc3(st.text.state)}</h2>`, 'status')}<p class="a3-sub">${esc3(st.text.reason)}</p>${st.state === 'plan_over' ? `<p class="a3-next" data-fig="status-next">${esc3(st.text.next)}</p>` : ''}${st.state === 'no_free' ? `<div class="a3-actions"><button type="button" class="a3-btn solid" id="a3FreeGo">${esc3(st.text.next)}</button></div>` : ''}</section>`);
   /* the cloud copy's one status (cloud3_page.js cloudStatus3): one plain line, only when it is not in step */
   const cloudLine = origin !== 'sample' && typeof cloudHome3 === 'function' ? cloudHome3() : '';
+  /* [M20; qc-data-safety B3] something was changed on two devices: asked here too, until it is answered in Settings */
+  const choose = origin !== 'sample' && typeof cloudChoose3 === 'function' ? cloudChoose3() : 0;
+  if (choose) out.push(`<p class="a3-warn" data-cloud="choose">${choose === 1 ? 'Something was changed on two devices. Choose which to keep' : choose + ' things were changed on two devices. Choose which to keep'} <button type="button" class="a3-btn" data-cloudchoose>Choose</button></p>`);
   if (cloudLine) out.push(`<p class="a3-warn" data-cloud="home">${esc3(cloudLine)}</p>`);
   /* bank today, one figure per account, with its age */
   for (const id of ids) {
@@ -271,6 +274,7 @@ function drawHome3() {
   host.querySelectorAll('[data-figure]').forEach(el => P.stamp(el, P.mark(Number(el.dataset.amt), origin === 'sample' ? 'sample' : el.dataset.figure === 'accounts.*.bank' ? 'typed' : 'worked')));
   /* [north star F1] no Free to spend yet: the prompt opens Plan's own Set Free to spend form */
   host.querySelectorAll('[data-homegoal]').forEach(el => el.addEventListener('click', () => planOpen3('goal', el.dataset.homegoal)));
+  host.querySelectorAll('[data-cloudchoose]').forEach(el => el.addEventListener('click', () => { if (typeof openSet3 === 'function') openSet3(); }));
   $('#a3AddCardGo').addEventListener('click', () => planOpen3('card'));
   if ($('#a3FreeGo')) $('#a3FreeGo').addEventListener('click', () => planOpen3('free'));
   $('#a3CheckGo').addEventListener('click', openCheck3);

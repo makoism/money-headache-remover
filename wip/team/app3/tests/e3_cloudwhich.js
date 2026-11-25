@@ -53,7 +53,13 @@ const amountOf = (b, id) => b.schedules.find(x => x.id === id).steps.slice(-1)[0
     await T.w(500);
     await B.p.reload(); await T.w(300);
     await until(async () => { const b = await stored(B.p); return !!(b && (b.keptVersions || []).some(k => k.of === rent && k.ask)); });
-    await B.p.click('#a3SetGo');
+    /* [M20, M36; qc-data-safety B3] Home says so too, and it stays until the choice is made: a person who never opens
+       Settings is still asked */
+    const homeLine = p => p.$eval('#a3Home [data-cloud=choose]', e => e.textContent.replace(/\s+/g, ' ').trim()).catch(() => '');
+    ck('B3. Home on B says there is something to choose', await until(async () => /changed on two devices/.test(await homeLine(B.p)), 5000), await homeLine(B.p));
+    await T.w(6500);
+    ck('B3. the line is still there after the passing message has gone', /changed on two devices/.test(await homeLine(B.p)), await homeLine(B.p));
+    ck('B3. its button opens Settings at the question', await (async () => { await B.p.click('#a3Home [data-cloudchoose]'); return until(async () => !!(await B.p.$('[data-cloudq=which]')), 4000); })());
     ck('B is asked which Rent to keep', await until(async () => !!(await B.p.$('[data-cloudq=which]'))));
     const rows = await B.p.$$eval('[data-cloudq=which] li', ls => ls.map(l => l.querySelector('span').textContent.replace(/\s+/g, ' ').trim()));
     ck('two rows, and they differ', rows.length === 2 && rows[0] !== rows[1], rows.join(' | '));
@@ -63,6 +69,7 @@ const amountOf = (b, id) => b.schedules.find(x => x.id === id).steps.slice(-1)[0
     const i = rows.findIndex(t => /¥75,000/.test(t));
     await (await B.p.$$('[data-cloudq=which] li button'))[i].click();
     ck('B keeps 75,000 and the question is gone', await until(async () => { const b = await stored(B.p); return b && amountOf(b, rent) === 75000 && !(await B.p.$('[data-cloudq=which]')); }));
+    ck('B3. after the choice Home no longer asks', await until(async () => !/changed on two devices/.test(await homeLine(B.p)), 4000), await homeLine(B.p));
     const r2 = rev();
     await B.p.click('#a3CloudNow');
     ck('(the pick is sent)', await until(() => rev() > r2));
