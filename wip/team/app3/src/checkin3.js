@@ -27,7 +27,8 @@ function openCheck3() {
      a typed figure is a check on the card, written by the engine's check-in writer */
   const cardFigs = Object.keys(r.cards || {}).map(id => `<div class="a3-field"><label for="a3c-${esc3(id)}">What is on ${esc3(E3.nameOf(id))} now?</label>
       <input class="a3-in" data-amount type="text" inputmode="decimal" autocomplete="off" id="a3c-${esc3(id)}" data-cardfig="${esc3(id)}" placeholder="${esc3(SM.symbol(E3.curOf(id)).trim())}">
-      <p class="a3-sub">Leave it blank if you have not looked. <span data-expected="${esc3(id)}"></span></p><p class="a3-warn" data-gap="${esc3(id)}" aria-live="polite" hidden></p></div>`).join('');
+      <p class="a3-sub">Leave it blank if you have not looked. <span data-expected="${esc3(id)}"></span></p><p class="a3-warn" data-gap="${esc3(id)}" aria-live="polite" hidden></p>
+      <div class="a3-gapask" data-payask="${esc3(id)}" hidden><p class="a3-sub" data-payq="${esc3(id)}"></p><button type="button" class="a3-btn" data-payyes="${esc3(id)}">Yes, tick it</button></div></div>`).join('');
   const sheet = $('#a3Check');
   sheet.innerHTML = `<div class="a3-sheet-in">
     <h1 id="a3CheckT">Check your bank</h1>
@@ -42,6 +43,13 @@ function openCheck3() {
   sheet.querySelectorAll('[data-cardfig]').forEach(el => BurrowScreens.inputs.bind(el, { kind: 'amount', code: E3.curOf(el.dataset.cardfig), optional: true }));
   sheet.querySelectorAll('input, select').forEach(el => { el.addEventListener('input', checkPreview3); el.addEventListener('change', checkPreview3); });
   sheet.querySelectorAll('[data-gapyes]').forEach(el => el.addEventListener('click', () => { check3.sure[el.dataset.gapyes] = true; checkPreview3(); }));
+  /* [card payment question] Yes ticks that card's payment on the list above; what is typed stays */
+  sheet.querySelectorAll('[data-payyes]').forEach(el => el.addEventListener('click', () => {
+    const o = (check3.payAsk || {})[el.dataset.payyes]; if (!o) return;
+    const row = [...sheet.querySelectorAll('.a3-tick')].find(x => x.dataset.item === o.item), box = row && row.querySelector('input[type=checkbox]');
+    if (box && !box.checked) { box.checked = true; box.dispatchEvent(new Event('change', { bubbles: true })); }
+    checkPreview3();
+  }));
   checkPreview3();
   $('#a3CheckX').addEventListener('click', closeCheck3);
   $('#a3CheckSave').addEventListener('click', saveCheck3);
@@ -110,6 +118,24 @@ function askCards3(id) {
   return check3.list.filter(o => o.account === id && o.statement === 'all owed' && rowOf(o) && rowOf(o).querySelector('input[type=checkbox]').checked)
     .map(o => { const v = typed3(rowOf(o).querySelector('[data-amt]').value, E3.curOf(id)); return `Was ${E3.occName(o.item)}'s payment ${money3(v === null ? o.amount : v, E3.curOf(id))}?`; });
 }
+/* [card payment question; coordinator 24 Nov, M11, M27] a card's payment left unticked while the card shows far less than
+   the app had: most likely the payment did go out. Asked when ticking it would leave a smaller gap on that card than
+   the card showing "less than the app had" does now (both gaps are the engine's, for the book each choice would make;
+   nothing is worked out here). Gives { cardId: the list item to tick } for the cards to ask about. */
+function payAsks3(d, r1) {
+  const out = {};
+  for (const id of Object.keys(r1.cards || {})) {
+    if (!(id in d.figures)) continue;
+    const f = (r1.cards[id].fillers || []).slice(-1)[0];
+    if (!f || f.day !== check3.day || !(f.less > 0)) continue;
+    const o = check3.list.find(x => !d.ticked.includes(x.item) && (BurrowEngine.ids.occurrence(x.item) || {}).schedule === id);
+    if (!o) continue;
+    let r2; try { r2 = checkView3(checkOut3(Object.assign({}, d, { ticked: d.ticked.concat([o.item]) }))); } catch (e) { continue; }
+    const g = ((r2.cards[id] || {}).fillers || []).slice(-1)[0];
+    if (g && g.day === check3.day && g.less < f.less && g.more < f.less) out[id] = o;
+  }
+  return out;
+}
 /* while typing: what the app expects each figure to be now, with what is ticked (the engine on the book the check-in
    would make with no figure), and the gap each typed figure leaves (the engine on the book with the figures) */
 function checkPreview3() {
@@ -122,6 +148,12 @@ function checkPreview3() {
     if (a) el.textContent = `Expected now ${money3(a.bank, a.currency)}, last checked ${money3(a.checked, a.currency)} on ${day3(a.asOf, yr)}`;
     /* [BM4, BL5] a card in credit is written the way Home writes it, "in credit ¥3,000", never with a minus */
     else if (r0.cards[id]) { const c = E3.lastCheckOf(id, check3.day), k = r0.cards[id]; el.textContent = `Expected now ${k.credit ? label3('inCredit').toLowerCase() + ' ' + money3(k.credit, E3.curOf(id)) : money3(k.owedNow, E3.curOf(id))}${c ? `, last checked ${money3(c.a, E3.curOf(id))} on ${day3(c.date, yr)}` : ''}`; }
+  }
+  check3.payAsk = payAsks3(d, r1);
+  for (const el of sheet.querySelectorAll('[data-payask]')) {
+    const id = el.dataset.payask, o = check3.payAsk[id];
+    el.hidden = !o;
+    sheet.querySelector(`[data-payq="${id}"]`).textContent = o ? `Did ${E3.occName(o.item)}'s payment of ${money3(o.amount, E3.curOf(o.account))} go out on ${day3(o.lands, yr)}?` : '';
   }
   for (const el of sheet.querySelectorAll('[data-gap]')) {
     const id = el.dataset.gap, g = id in d.figures ? gapWords3(r1, id, check3.day) : null;
@@ -137,6 +169,15 @@ async function saveCheck3() {
   const sheet = $('#a3Check'), err = $('#a3CheckErr');
   const d = readCheck3(true);
   if (d.bad) { err.textContent = d.bad; d.el.focus(); return; }
+  /* [card payment question] asked first, once: Save again saves it as typed, so nobody is trapped */
+  const asks = Object.keys(check3.payAsk || {}), askKey = asks.join(' ');
+  if (asks.length && check3.payAsked !== askKey) {
+    check3.payAsked = askKey;
+    const names = asks.map(id => E3.nameOf(id));
+    err.textContent = `${names.join(' and ')} ${names.length > 1 ? 'show' : 'shows'} far less than the app had, and ${names.length > 1 ? 'their payments are' : 'its payment is'} not ticked. Answer the question under ${names.length > 1 ? 'each' : 'it'}, or press Save again to save it as it is`;
+    const q = sheet.querySelector('[data-payask]:not([hidden]) button'); if (q) q.focus();
+    return;
+  }
   const out = checkOut3(d), day = check3.day;
   /* a gap the person logs as a spend now: one spend on the line picked, for the engine's gap, dated the check's day and
      marked inside its figure (dayInside, BK4), written with the check-in (the same moment and group), so the gap is gone

@@ -310,7 +310,11 @@ function rcGaps3(per) {
     if (f.held || f.apart) continue;   // [LISTFIX2] held for its question, or never spending (the engine's marks)
     for (const pt of f.parts || []) if (pt.amount && inPer(pt.from)) out.push({ acct: id, check: f.to, from: pt.from, to: pt.to, amount: pt.amount, on: onWhat(f.place) });
   }
-  for (const id of Object.keys(r.cards || {})) for (const f of r.cards[id].fillers || []) if (f.amount && !f.apart && inPer(f.day)) out.push({ acct: id, check: f.day, from: f.day, to: f.day, amount: f.amount, on: { line: 'free' } });
+  /* [CARDGAP] a card's gap by its parts too (the engine cuts it by days at each period start, as a bank's) */
+  for (const id of Object.keys(r.cards || {})) for (const f of r.cards[id].fillers || []) {
+    if (f.apart) continue;
+    for (const pt of f.parts || []) if (pt.amount && inPer(pt.from)) out.push({ acct: id, check: f.day, from: pt.from, to: pt.to, amount: pt.amount, on: { line: 'free' } });
+  }
   return out;
 }
 function rcGapLi3(g, yr) {

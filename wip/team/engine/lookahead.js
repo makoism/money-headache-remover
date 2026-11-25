@@ -460,6 +460,7 @@
       };
       const span = moves.map(e => { const ds = [e.day].concat([e.posted, e.posted2].filter(Boolean).map(dayNum)); return [Math.min(...ds), Math.max(...ds)]; });
       let wasIn = moves.map(e => inside(e, base, id));
+      const inOpening = wasIn.slice();   // [S3 for the opening] named below when still inside at the end
       // [AP1] the closing's final check: the last check dated on the closing day
       const closingCheck = closedOn(id) === null ? null : checks.filter(c => c.day === closedOn(id)).pop() || null;
       for (const c of checks) {
@@ -481,6 +482,9 @@
         base = cc;
         lastGap = { day: c.day, had: computed, gain: c.a - computed, answer: c.gain || null };
       }
+      // [S3 for the opening; qc-numbers 25 Nov] a record inside the opening figure and still inside the last check is
+      // named too, with the opening's day, so its row can say the bank figure already has it
+      moves.forEach((e, k) => { if (inOpening[k] && wasIn[k] && !heldBy.some(h => h.id === e.id)) heldBy.push({ id: e.id, account: id, check: dayStr(openingOf(id).day) }); });
       // [QC F4] bank today in its parts: the last check, and what was logged in and out after it
       const since = moves.filter((e, k) => !wasIn[k]).map(e => delta(e, id));
       const loggedIn = since.filter(d => d > 0).reduce((t, d) => t + d, 0), loggedOut = since.filter(d => d < 0).reduce((t, d) => t - d, 0);
@@ -489,7 +493,16 @@
     }
     // [A3, A4, T6] the filler of a stretch, split by days at each period start in it (or all to the older period)
     function makeFiller(id, first, last, amount) {
-      const starts = periodStartDays.filter(d => d > first && d <= last).sort((x, y) => x - y);
+      // [CARDGAP 2b] cut at every day a reader counts from: each period start, and, while the plan runs by the day (no
+      // fixed pay), each calendar month's first day and the day of the change to no fixed pay; so a gap across the 1st
+      // is split by days and never counts nowhere
+      const byDayCuts = [];
+      if (!periodStream) {
+        const [fy, fm] = ymOf(first);
+        for (let k = 1; ; k++) { const d = dayIn(fy, fm + k, 1); if (d > last) break; byDayCuts.push(d); }
+        if (noneSince != null) byDayCuts.push(noneSince);
+      }
+      const starts = [...new Set(periodStartDays.concat(byDayCuts))].filter(d => d > first && d <= last).sort((x, y) => x - y);
       const cuts = [first, ...starts, last + 1], days = last - first + 1, parts = [];
       let given = 0;
       for (let i = 0; i < cuts.length - 1; i++) {
@@ -610,19 +623,35 @@
       const stmtAmount = cl => { const b = statementsTo(cl, cl).list.find(x => x.close === cl); return b ? b.amount : owedAt(cl); };
       // a card check sets the statement it names and what is owed now; the gaps are its fillers [A3]
       const fillers = [];
-      for (const e of live().filter(x => x.k === 'check' && x.account === id && !x.stmt)) {
-        let gap = 0;
+      // [CARDGAP] each gap carries the days it covers (the day after this card's check before it, to this check) and
+      // is cut by days like a bank's (makeFiller); the checks are walked in the bank's order, never as told
+      const cardChecks = live().filter(x => x.k === 'check' && x.account === id && !x.stmt).sort(byTime);
+      for (const e of cardChecks) {
+        // the check before this one: the latest on an earlier day, else the card's opening day (its opening check is not
+        // among the live records); a second check on the same day covers that one day only
+        const before = cardChecks.filter(x => x.day < e.day).map(x => x.day);
+        const sameDayEarlier = cardChecks.slice(0, cardChecks.indexOf(e)).some(x => x.day === e.day);
+        const openD = openEv[id] ? openDay(id) : null;
+        const prevDay = sameDayEarlier ? e.day - 1 : before.length ? Math.max(...before) : openD != null && openD < e.day ? openD : null;
+        const parts = [];
+        const stretch = (from, to, amount) => { if (amount) parts.push(...makeFiller(id, Math.min(from, to), to, amount).parts); };
+        let gap = 0, closed = null;
         const sx = live().find(x => x.k === 'check' && x.account === id && x.stmt && x.grp != null && x.grp === e.grp);
         if (sx) {
           const cl = dayNum(sx.stmtDate), g = sx.a - stmtAmount(cl);
           if (g) lines.push({ day: cl, amount: g, what: 'filler' });
           gap += g;
+          stretch(prevDay != null && prevDay < cl ? prevDay + 1 : cl, cl, g);   // a close day on or before the check before it: that one day
+          closed = cl;
         }
         const g2 = e.a - owedAt(e.day);
         if (g2) lines.push({ day: e.day, amount: g2, what: 'filler' });
         gap += g2;
+        const last0 = Math.max(prevDay != null ? prevDay : -Infinity, closed != null ? closed : -Infinity);
+        stretch(last0 === -Infinity ? e.day : last0 + 1, e.day, g2);
         // more: typed above what the app had (spending not logged); less: below it (comes off spending), each 0 or more
-        fillers.push({ account: id, day: e.date, amount: gap, more: Math.max(0, gap), less: Math.max(0, -gap) });
+        fillers.push({ account: id, day: e.date, amount: gap, more: Math.max(0, gap), less: Math.max(0, -gap),
+          from: parts.length ? parts[0].from : e.date, to: e.date, parts });
       }
       const owedNow = owedAt(knownTo) + lines.filter(l => l.day > knownTo).reduce((t, l) => t + l.amount, 0);
 
@@ -689,7 +718,9 @@
         : nextPoint ? { item: nextPoint.id, amount: nextAmount, payment_date: dayStr(nextPoint.land), statement: label || 'open', closes_on: nextPoint.closes != null ? dayStr(nextPoint.closes) : undefined, state: 'coming' } : null;
       const cardItems = unpaid.map(p => ({ id: p.id, due: p.due, land: p.land, amount: p.part, statement: label || 'closed' }));
       if (nextPoint) cardItems.push({ id: nextPoint.id, due: nextPoint.due, land: nextPoint.land, amount: nextAmount, statement: label || 'open' });
-      return { owedNow, statements: points, next, overdue, walkItems, cardItems, fillers, payFrom };
+      // [BK6] this card's payment days after one day and up to another (one a month on its pay day, after the weekend rule)
+      const landsBetween = (from, to) => { const out = [], [y0, m0] = ymOf(from); for (let k = 0; ; k++) { const p = payOf(dayIn(y0, m0 + k, c.payDay)); if (p.land > to) break; if (p.land > from) out.push(p.land); if (k > 36) break; } return out; };
+      return { owedNow, statements: points, next, overdue, walkItems, cardItems, fillers, payFrom, landsBetween };
     }
 
     // ----- loans and pay-later [B5, E6, F19, H7, I2, Q3, AB3, AC5, AD7] -----
@@ -991,7 +1022,7 @@
         }
         if (lineId === 'free') for (const cid in cards) {
           if (cur(cid) !== cur(acctId)) continue;
-          for (const f of cards[cid].fillers) if ((fromOpening || dayNum(f.day) >= lp) && dayNum(f.day) <= upTo) filled += f.amount;
+          for (const f of cards[cid].fillers) for (const pt of f.parts) if ((fromOpening || dayNum(pt.from) >= lp) && dayNum(pt.from) <= upTo) filled += pt.amount;   // [CARDGAP] by part, as a bank's
         }
         const spent = live().filter(e => e.k === 'spend' && !isFeeRecord(e) && counts(e)).reduce((t, e) => t + e.a, 0)
           - live().filter(e => e.k === 'in' && e.sub === 'refund' && counts(e)).reduce((t, e) => t + e.a, 0) + filled;   // [O] a refund given back to its line
@@ -1090,6 +1121,7 @@
       }
       return x.amount;
     }
+    let freeAllDays = false;
     function plannedFor(id) {
       const list = [];
       const lines = (planLeft.lines || []).filter(l => l.acct === id);
@@ -1106,8 +1138,13 @@
       } else {
         // [B4, M9, M10] no fixed pay: by day. A monthly amount x 12 / the year's days a day, rounded down, the rest of each
         // month's own share on its last day; a weekly one a seventh a day, the rest on the seventh day.
+        // [THREE_VALUES] this month's everyday money is not taken off by the day here: it caps the headline, as a pay
+        // period's does, so it is never counted twice. Later months' days are held as before. `freeAllDays` (how long
+        // the money lasts at this rate) keeps every day.
+        const [ty0, tm0] = ymOf(today), monthEnd0 = dayIn(ty0, tm0, 'last');
         for (const l of lines) {
           for (let d = today + 1; d <= today + LATER_ON_DAYS; d++) {
+            if (l === planLeft.free && d <= monthEnd0 && !freeAllDays) continue;
             const [y, mo] = ymOf(d), yearDays = dayIn(y + 1, 1, 1) - dayIn(y, 1, 1);
             let want;
             if (l.per === 'week') {
@@ -1300,7 +1337,9 @@
     const np = nextPays[0];
     res.daysToNextPay = np ? { days: Math.max(0, np.land - today), next_pay: dayStr(np.land), item: np.id, late: np.land < today || undefined } : { days: null };
     if (!periodStream) {   // [B4] "lasts about N weeks"
+      freeAllDays = true;
       const lastDay = homeSpend.map(id => walk(id, today + LATER_ON_DAYS, res.accounts[id].minimum).firstBelowZero);
+      freeAllDays = false;
       res.lastsAboutWeeks = planLeft.lines || planLeft.free ? Math.floor((Math.min(...lastDay.map(d => (d === null ? today + LATER_ON_DAYS : d))) - today) / 7) : null;
     }
 
@@ -1316,6 +1355,21 @@
     // [S1, G4, BH1] the pay safe to spend runs to: the next one, or on its day (counted) or while it is late, the one after
     res.safeToSpend.until = after ? dayStr(after.land) : null;
     res.safeToSpend.untilPay = after ? after.id : null;
+    // ----- three values, one meaning in every life [THREE_VALUES_PLAN; MAKO_SAYS Not settled 8] -----
+    // canSpare: what the home-currency spend-from accounts can spare after everything due, goals, plan lines, the
+    //   minimum and the everyday money of the days after lastDay that the walk holds; not reduced by everyday money up
+    //   to lastDay; signed. everyday: the everyday amount as set (full), the part that counts this stretch, what is
+    //   spent and left of it (counts less spent is left), and the last day it runs to: the day before the next counted
+    //   pay, or this month's last day with no fixed pay. noJob: canSpare less everyday left, never below zero.
+    //   The headline above is max(0, min(canSpare, everyday left)), or max(0, canSpare) with no everyday amount.
+    {
+      const [ty1, tm1] = ymOf(today), f = planLeft.free && planLeft.free.left != null ? planLeft.free : null;
+      const lastDay = periodStream ? (after ? dayStr(after.land - 1) : null) : dayStr(dayIn(ty1, tm1, 'last'));
+      const counts = f ? (f.counts != null ? f.counts : f.amount) : null;
+      res.canSpare = { amount: raw, lastDay, through: res.horizon };
+      res.everyday = f ? { full: f.amount, counts, spent: counts - f.left, left: f.left, lastDay, kind: periodStream ? 'pay' : 'month' } : null;
+      res.noJob = { amount: Math.max(0, raw - (f ? Math.max(0, f.left) : 0)) };
+    }
     // [BJ1] a pay due today left unticked at a check-in today is not counted: named so the heading can say so
     res.safeToSpend.notCounting = np && leftToday(np) ? np.id : null;
     res.dueBeforeNextPay = { until: dayStr(until), byAccount, items: due.map(itemOut), total: due.filter(o => !o.otherCur).reduce((t, o) => t + o.amount, 0) };
@@ -1341,23 +1395,29 @@
       money_out: late.filter(o => isOut(o) && !o.otherCur).reduce((t, o) => t + o.amount, 0) };
     res.mayStillPost = past.filter(o => today <= windowEnd(o) || stillExpected(o)).map(o => Object.assign(itemOut(o), today <= windowEnd(o) ? { postsBy: dayStr(windowEnd(o)) } : { stillExpected: true }));
 
-    // ----- each bank after its cards are paid [NORTH_STAR, BK1, BK3; refines BB2] -----
-    // Per bank, dated, from the walk's own steps. D1 is the earliest unpaid card payment from the bank (an overdue one
-    // is taken today); N is the first counted pay landing after D1; the day is the last card payment on or after D1 and
-    // on or before N's day (BK5: the pay counted first, the walk's order). It starts from the bank today, adds the counted pays and takes off bills, moves, loan parts and card
-    // payments up to that day; never plan lines, never goals (money set aside in the bank stays in it and is named).
-    // A late or not seen pay is not counted (BH1) and is named; close days "not sure" are named (all on the card is
-    // taken); the lowest end of day below zero before the day is given as a dip.
+    // ----- each bank after its cards are paid [NORTH_STAR, BK1, BK6 (24 Nov, replaces the day rule of BK3 and BK5)] -----
+    // Per bank, dated, from the walk's own steps. One next unpaid payment for each card paid from the bank (an overdue
+    // one is taken today); the day is the latest of those days. It starts from the bank today, adds the counted pays
+    // landing on or before that day (a pay on the day itself first, the walk's order) and takes off bills, moves, loan
+    // parts and every card payment the walk holds up to that day; never plan lines, never goals (money set aside in
+    // the bank stays in it and is named). The walk for this figure runs to that latest day even when it is past the
+    // horizon. A card payment day inside the stretch that has no amount yet (a card's payment after its next one) is
+    // named in laterCardDays, never silently left out. A late or not seen pay is not counted (BH1) and is named; close
+    // days "not sure" are named (all on the card is taken); the lowest end of day below zero before the day is a dip.
     res.bankAfterCards = {};
     for (const id in banks) {
       if (!res.accounts[id]) continue;
-      const w = walk(id, horizon, 0), real = w.steps.filter(x => x.order !== 2);
+      const mine = Object.keys(cards).filter(c => cards[c].payFrom === id && cur(c) === cur(id));
+      const firstLands = mine.map(c => cards[c].walkItems.filter(x => x.amount).map(x => Math.max(x.land, today))).filter(l => l.length).map(l => Math.min(...l));
+      if (!firstLands.length) continue;
+      const w = walk(id, Math.max(horizon, ...firstLands), 0), real = w.steps.filter(x => x.order !== 2);
       const cardSteps = real.filter(x => x.card && x.amount < 0);
       if (!cardSteps.length) continue;
-      const d1 = Math.min(...cardSteps.map(x => x.day));
-      const n = real.find(x => x.pay && x.amount > 0 && x.day > d1);
-      const inStretch = cardSteps.filter(x => x.day >= d1 && (!n || x.day <= n.day));   // [BK5] on N's own day too, the pay first
-      const last = Math.max(...inStretch.map(x => x.day));
+      const firstOf = {}; for (const x of cardSteps) if (firstOf[x.card] == null || x.day < firstOf[x.card]) firstOf[x.card] = x.day;
+      const last = Math.max(...Object.values(firstOf));
+      const inStretch = cardSteps.filter(x => x.day <= last);
+      const laterCardDays = [];
+      for (const c of mine) if (firstOf[c] != null) for (const d of cards[c].landsBetween(firstOf[c], last)) if (!cardSteps.some(x => x.card === c && x.day === d)) laterCardDays.push({ card: c, day: dayStr(d) });
       let bal = w.start, dip = null;
       const upTo = real.filter(x => x.day <= last);
       for (let i = 0; i < upTo.length; i++) {
@@ -1373,7 +1433,7 @@
         cardDays: [...new Set(inStretch.map(x => x.day))].sort((x, z) => x - z).map(dayStr), cards: cardIds,
         pays: [...new Set(upTo.filter(x => x.pay).map(x => x.day))].map(dayStr), billsTaken: upTo.filter(x => !x.card && !x.pay && x.amount < 0).length,
         paysNotCounted: notCounted.map(o => ({ item: o.id, due: dayStr(o.land) })), ifAllTaken: cardIds.some(c => cards[c].cardItems.some(x => x.statement === 'all owed')),
-        setAside, dip };
+        setAside, dip, laterCardDays };
     }
 
     // ----- total [F10, F11, O6] -----

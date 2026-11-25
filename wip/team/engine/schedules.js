@@ -210,7 +210,7 @@
   // `startsPeriod` on a pay is `true` (every book saved before BZ2: held since the pay's start) or dated entries like
   // `rules`: [{ from, at, by }] (`from: null`: since the pay's start; an entry marked `gone` holds nothing). The pay that
   // holds it on a day has the newest entry on or before that day: by `from`, then `at`; on a full tie (two bare flags in an
-  // old book) the pay with a fixed day on that day, then the first saved. Moving it is a new entry on the new pay, so the
+  // old book) the pay with a fixed day on that day, then the greater id (never the order saved). Moving it is a new entry on the new pay, so the
   // old pay's past stays its own. The rule in force is read by `from` (ties by `at`), as the look ahead reads it [BQ4].
   const holdEntries = s => (s.startsPeriod === true ? [{ f: -Infinity, at: '' }]
     : Array.isArray(s.startsPeriod) ? s.startsPeriod.filter(x => x && !x.gone).map(x => ({ f: x.from == null ? -Infinity : dayNum(x.from), at: x.at || '' })) : []);
@@ -228,8 +228,9 @@
       const fixed = ((ruleOnDay(s, d) || {}).every || 'none') !== 'none' ? 1 : 0;
       for (const e of holdEntries(s)) {
         if (e.f > d) continue;
-        const k = [e.f, e.at, fixed];
-        if (!bk || k[0] > bk[0] || (k[0] === bk[0] && (k[1] > bk[1] || (k[1] === bk[1] && k[2] > bk[2])))) { best = s; bk = k; }
+        // the last tie-break is the pay's id, never the order the list arrives in (LESSONS 4 addendum; coordinator 25 Nov)
+        const k = [e.f, e.at, fixed, String(s.id)];
+        if (!bk || k[0] > bk[0] || (k[0] === bk[0] && (k[1] > bk[1] || (k[1] === bk[1] && (k[2] > bk[2] || (k[2] === bk[2] && k[3] > bk[3])))))) { best = s; bk = k; }
       }
     }
     return best;
