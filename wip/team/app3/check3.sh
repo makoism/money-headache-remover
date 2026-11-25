@@ -81,6 +81,7 @@ page|tests/e3_plan.js|e3_plan: ALL PASS||300|the Plan tab
 page|tests/e3_accounts.js|e3_accounts: ALL PASS||300|Plan > Accounts after setup (M13, M23): every bank, cash and e-wallet listed, Add an account (new money as it is, moved money as a move), rename, its own Keep at least, Undo, after a reload
 page|tests/e3_billyear.js|e3_billyear: ALL PASS||300|a yearly bill after setup (M13): Add a bill asks how often, once a year asks the month and day; its sheet changes them from a date; Undo; after a reload
 page|tests/e3_payfrom.js|e3_payfrom: ALL PASS||300|which account pays a card, a loan or a bill, chosen and changed after setup (M13, M23), with a card's weekend rule; refused with words while a payment gone by is not ticked off; Undo; after a reload
+page|tests/e3_remkeep.js|e3_remkeep: ALL PASS||300|Reminders keep each choice on this phone (M13, M61): after Close and a reload as left, and the sheet says so; a calendar already filled changes only with a new file
 page|tests/e3_rhythms.js|e3_rhythms: ALL PASS||300|Plan names every rhythm: two days, weeks with the weekday, every few months, set months, once a year, once, the last working day, no fixed day (slice 6)
 page|tests/e3_names.js|e3_names: ALL PASS||300|one figure, one name on Home, Receipts and Plan (labels from screens/names.js)
 page|tests/e3_first.js|e3_first: ALL PASS||300|the ways out of the first screen and the made-up numbers
@@ -174,7 +175,7 @@ page_tests_for() {   # page_tests_for <changed path, relative to app3/>
     src/backup3.js|src/settings3.js) echo e3_backup e3_tabs e3_ailog e3_invite e3_restore e3_cloudhold ;;
     src/sw3.js|src/settings3_sw.js|sw3.js) echo e3_sw offline e3_install ;;
     src/cloud3*.js)           echo e3_cloudfirst e3_cloud e3_cloudbase e3_cloudtake e3_cloudsend e3_cloudhold e3_cloudwhich e3_cloudwhich2 e3_cloudstatus e3_restore ;;
-    src/remind3*.js)          echo e3_remind ;;
+    src/remind3*.js)          echo e3_remind e3_remkeep ;;
     publish3.sh)              echo e3_publish e3_install ;;
     manifest3.webmanifest|make_icons3.js|icon3-*.png) echo e3_install ;;
   esac
