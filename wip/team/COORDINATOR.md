@@ -3,7 +3,8 @@
 The coordinator is the one session Mako talks to. It records his decisions in DECISIONS.md (and NORTH_STAR.md, LAUNCH_CHECKLIST.md), starts and messages working sessions, and brings their results back to him. Working sessions take direction from nowhere else. The coordinator hands off at about 150k tokens of history, like every session.
 
 
-## CURRENT STATE (Coordinator 11, session_01BFpKEXW1AERpCVxch4xuXD, Fable; kept current; a new coordinator starts here)
+## CURRENT STATE (kept current; a new coordinator starts here)
+- 25 Nov 09:50 JST: coordinator 11 (session_01BFpKEXW1AERpCVxch4xuXD, 540k of history) started COORDINATOR 12, session_01BFpKEZhy3Va2Px9ZqnUfCG (Fable), and told Mako to switch to it. Coordinator 12 owns this page from here.
 - 25 Nov 09:45 JST. Read wip/team/RUNBOOK.md first. Mako has NO resets left. When Fable is used up: RUNBOOK section 5 (Opus).
 - Sessions: MAIN 16 session_01BFpKEXwwdFrqMuakSKhAF2 (Fable; the only one that merges into wip-38.31; keep-going trig_018ghanx6di1CKjFhfdDGUHU at :53). LANE B session_01BFpKEZBRWqdY7tLMMx4sDU (Fable, own machine, side branches only; keep-going trig_01B4FiGw8D4QqYsn4uVaGoiP at :02). MAIN 15 (Opus) is finished: do not use it. Watchdog session_01BFpKEYWd9Kcs4FkcwuNGo1 (trig_015mKtiUhZRgbkacuPYA8Ks6, :33).
 - Tasks: coordinator 11 keep-going trig_012ZZ22UMcuT4b9dUnKDYPBR (:31, bound to coordinator 11: disable when you take over). Limit watch, fresh sessions, leave running: trig_01YFELHK7NgWErr1z8zHcyHK (:08), trig_01PTY42DC11tRg5stwpBpBhx (:28), trig_01BtpzWTfGf9aZtTrkDBfuBo (:48). The three "Burrow resume watch" tasks bound to coordinator 11 are already disabled.
