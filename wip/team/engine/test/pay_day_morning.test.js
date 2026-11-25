@@ -37,7 +37,9 @@ const next = d => D.dayStr(D.dayNum(d) + 1);
 function onePeriod(r, when) {
   const end = r.period.end;
   eq([when, r.everyday.lastDay, r.canSpare.lastDay], [when, end, end]);
-  eq([when, r.safeToSpend.until, r.dueBeforeNextPay.until], [when, next(end), next(end)]);
+  // safe to spend runs to the pay that ends the period: it lands the day after the period's last day, or, on pay-day
+  // morning, today (the period's last day is today until the pay is ticked). The due list's bound is the first day NOT in it
+  eq([when, r.safeToSpend.until, r.dueBeforeNextPay.until], [when, r.period.payToday ? end : next(end), next(end)]);
   const lateItems = r.dueBeforeNextPay.items.filter(o => o.lands > end).map(o => o.lands);
   eq([when, lateItems], [when, []]);
 }
@@ -48,6 +50,9 @@ t('the evening before pay day (9 Dec): the old period, 12,000 left, all of the a
 });
 t('pay-day morning (10 Dec, the pay not ticked yet): every part of the answer reads one period', () => {
   const r = LA.lookahead(life().book, '2026-12-10');
+  eq([r.period.start, r.period.end, r.period.payToday, r.everyday.left, r.safeToSpend.headline, r.safeToSpend.until], ['2026-11-10', '2026-12-10', true, 12000, 12000, '2026-12-10']);
+  eq(r.dueBeforeNextPay.items.map(o => o.lands), ['2026-12-10'], 'only Card A, paid today, is due before the pay; Card B (11 Dec) and rent (28 Dec) are the coming period\'s');
+  eq(r.canSpare.amount, LA.lookahead(life().book, '2026-12-09').canSpare.amount, 'what the bank can spare still holds the coming period: the same as the evening before');
   onePeriod(r, '10 Dec morning');
   ok(r.safeToSpend.headline === r.everyday.left || r.safeToSpend.headline === r.canSpare.amount, 'the headline is the smaller of the two it is made from');
 });

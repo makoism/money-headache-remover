@@ -3509,12 +3509,18 @@ html:has(.a3-setup-open) { scroll-padding-top: 150px; }
     // late it is not counted, so the list runs to the pay after it too (late-03 under BH1). What is past its day and not
     // settled is in mayStillPost and notSeenYet.
     const after = np && np.land <= today ? nextPays.find(p => p.land > today) : np;
-    const until = after ? after.land : today + NO_PAY_DUE_DAYS;
+    // [CA8, coordinator 26 Nov 2026; narrows S1 and G4 for these fields] on the day a pay is due and not yet ticked, today
+    // is still the OLD period's last day in every part of the answer (a period starts when its pay is ticked, T1; money
+    // not yet seen never counts, BH1): what is due "before next pay" is what lands today, safe to spend runs to today's
+    // pay, and the everyday figure's last day is today. The walk still counts the pay and holds the coming period's
+    // money and bills, so what the accounts can spare is unchanged.
+    const payToday = periodStream && np && np.land === today && !leftToday(np) ? np : null;
+    const until = payToday ? today + 1 : after ? after.land : today + NO_PAY_DUE_DAYS;
     const due = items.filter(o => isOut(o) && !o.settled && o.land >= today && o.land < until && o.amount).sort((a, b) => a.land - b.land || (a.acct < b.acct ? -1 : 1));
     const byAccount = {}; for (const o of due) (byAccount[o.acct] = byAccount[o.acct] || []).push(o.id);
     // [S1, G4, BH1] the pay safe to spend runs to: the next one, or on its day (counted) or while it is late, the one after
-    res.safeToSpend.until = after ? dayStr(after.land) : null;
-    res.safeToSpend.untilPay = after ? after.id : null;
+    res.safeToSpend.until = payToday ? dayStr(today) : after ? dayStr(after.land) : null;
+    res.safeToSpend.untilPay = payToday ? payToday.id : after ? after.id : null;
     // ----- three values, one meaning in every life [THREE_VALUES_PLAN; MAKO_SAYS Not settled 8] -----
     // canSpare: what the home-currency spend-from accounts can spare after everything due, goals, plan lines, the
     //   minimum and the everyday money of the days after lastDay that the walk holds; not reduced by everyday money up
@@ -3524,7 +3530,7 @@ html:has(.a3-setup-open) { scroll-padding-top: 150px; }
     //   The headline above is max(0, min(canSpare, everyday left)), or max(0, canSpare) with no everyday amount.
     {
       const [ty1, tm1] = ymOf(today), f = planLeft.free && planLeft.free.left != null ? planLeft.free : null;
-      const lastDay = periodStream ? (after ? dayStr(after.land - 1) : null) : dayStr(dayIn(ty1, tm1, 'last'));
+      const lastDay = periodStream ? (payToday ? dayStr(today) : after ? dayStr(after.land - 1) : null) : dayStr(dayIn(ty1, tm1, 'last'));
       const counts = f ? (f.counts != null ? f.counts : f.amount) : null;
       res.canSpare = { amount: raw, lastDay, through: res.horizon };
       res.everyday = f ? { full: f.amount, counts, spent: counts - f.left, left: f.left, lastDay, kind: periodStream ? 'pay' : 'month' } : null;

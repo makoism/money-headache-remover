@@ -30,7 +30,12 @@ const SN = require('../../screens/names.js');
     const got = await period(), head = await p.$eval('[data-card=safe] h2', e => e.textContent);
     ck('10 Dec: the period runs to today\'s pay, never 10 Nov to 10 Dec', got.text === '10 Nov to today\'s pay', got.text);
     /* [C8, M51] "next pay" is today's pay on this screen (the period card), so the heading names the one after it as that */
-    ck('10 Dec: safe to spend runs to the pay after today\'s, and says so', head === 'Safe to spend until the pay after today\'s, on 8 Jan 2027, includes today\'s pay of ¥180,000, not in your bank yet', head);   // [BV2.13] counted, not seen yet
+    /* [CA8, coordinator 26 Nov 2026: until the pay is ticked, today is the old period's last day in every part of the answer]
+       the figure under this heading is what is left of the period ending today, so the heading runs to today's pay.
+       RED until src/home3.js (and screens/status.js) word it: the engine now gives safeToSpend.until = today and
+       safeToSpend.untilPay = today's pay on pay-day morning. Before: "until the pay after today's, on 8 Jan 2027, includes
+       today's pay of ¥180,000, not in your bank yet" over the old period's figure (qc-numbers, 25 Nov) */
+    ck('10 Dec: safe to spend runs to today\'s pay, and says so', head === 'Safe to spend until today\'s pay is in', head);
     ck('10 Dec: "next pay" means one pay on Home: today\'s', /Next pay 10 Dec, today/.test(got.next) && !/next pay on/i.test(await p.$eval('#a3Home', e => e.textContent)), got.next);   // the try book's January pay lands Fri 8 Jan (Sun 10, holiday Mon 11: the working day before)
   }
   await p.click('#a3CheckGo'); await T.w(200);

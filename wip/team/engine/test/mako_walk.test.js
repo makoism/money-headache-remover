@@ -47,15 +47,21 @@ t('a late pay unticked at two check-ins stays on the list, and ticking it starts
   ok(!r.checkIn.toConfirm.some(o => o.item === occ));
   eq([r.period.start, r.period.startsWith], ['2027-01-13', occ]);
 });
-t('on pay day before the check-in, due before next pay is what the sum takes off before the pay after it [G4, AU4]', () => {
+t('on pay day before the check-in, due before next pay is what lands today; the sum still takes off the coming period [CA8, G4, AU4]', () => {
   const w = life();
   const r = w.on('2026-12-10');
   const bank = r.accounts[w.ids.bank];
-  eq(r.dueBeforeNextPay.until, '2027-01-08');
-  ok(r.dueBeforeNextPay.items.some(w.of('card_b')) && r.dueBeforeNextPay.items.some(w.of('rent')));
-  // bank + both pays today - what is past and not settled (the November bills) - what is due before the January pay
+  // [CA8, 26 Nov 2026; before, the list ran to the January pay] until the pay is ticked, "due before next pay" is what
+  // lands today, the old period's last day: Card A's payment. Card B (11 Dec) and the December bills are the coming
+  // period's: not in the list, but still taken off by the sum, so what the bank can spare does not move.
+  eq(r.dueBeforeNextPay.until, '2026-12-11');
+  eq(r.dueBeforeNextPay.items.map(i => i.lands), ['2026-12-10']);
+  ok(r.dueBeforeNextPay.items.some(w.of('card_a')) && !r.dueBeforeNextPay.items.some(w.of('card_b')) && !r.dueBeforeNextPay.items.some(w.of('rent')));
+  // by hand: bank 286,000 + both pays today 240,000 - the November bills past and not settled (power 7,400, rent 72,000,
+  // internet 5,200 = 84,600) - Card A 54,000 - Card B 23,000 - phone 4,800 - power 7,400 - rent 72,000 - internet 5,200
+  // (all before the January pay): 526,000 - 84,600 - 77,000 - 89,400 = 275,000
   const pastOut = r.mayStillPost.concat(r.notSeenYet.items).filter(i => i.direction !== 'in' && !i.item.startsWith(w.ids.pay_main) && !i.item.startsWith(w.ids.pay_side)).reduce((t, i) => t + i.amount, 0);
-  eq(bank.headroom, bank.bank + 240000 - pastOut - r.dueBeforeNextPay.total);
+  eq([bank.bank, pastOut, bank.headroom], [286000, 84600, 275000]);
 });
 t('while the main pay is late, it does not count: safe to spend is the walk without it, to the pay after it [BH1, BH2]', () => {
   const w = life();
@@ -89,7 +95,9 @@ t('a pay left unticked at a check-in on its due day is not counted that day [BJ1
 t('on pay day safe to spend runs to the pay after it; a main pay left unticked at a check-in that day is named [S1, BJ1]', () => {
   const w = life();
   const r0 = w.on('2026-12-10');   // no check-in yet: the 10 Dec pay counts [G4]
-  eq([r0.safeToSpend.until, r0.safeToSpend.notCounting, r0.period.payToday], ['2027-01-08', null, true]);
+  // [CA8, 26 Nov 2026] before the tick, safe to spend runs to today's pay (it was the pay after, 8 Jan); once the pay is
+  // left unticked at a check-in today it is not counted, and the figure runs to the pay after it as before
+  eq([r0.safeToSpend.until, r0.safeToSpend.notCounting, r0.period.payToday], ['2026-12-10', null, true]);
   w.ci('2026-12-10', ['pay_main']);
   const r = w.on('2026-12-10');
   eq([r.safeToSpend.until, r.safeToSpend.notCounting, r.period.payToday], ['2027-01-08', w.ids.pay_main + '@2026-12-10', false]);

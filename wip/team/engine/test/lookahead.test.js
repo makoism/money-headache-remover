@@ -153,9 +153,10 @@ t("the period's next pay on 10 Dec before the pay is ticked: coming, today [G4]"
   // [S1, QC numbers] the period still runs to today (what is logged today counts in it), and says the pay lands today,
   // so no screen writes it as "10 Nov to 10 Dec"
   eq([r.period.start, r.period.end, r.period.payToday, r.daysToNextPay.days], ['2026-11-10', '2026-12-10', true, 0]);
-  // [S1, G4] the pay due today is counted, so safe to spend runs to the pay after it (the January pay, early on Fri 8 Jan)
-  eq(r.safeToSpend.until, '2027-01-08');
-  eq(r.safeToSpend.untilPay, 'pay_main@2027-01-10');
+  // [CA8, 26 Nov 2026; before: S1, G4 ran it to the pay after, 8 Jan] until the pay is ticked today is the old period's
+  // last day in every part of the answer: safe to spend runs to today's pay
+  eq(r.safeToSpend.until, '2026-12-10');
+  eq(r.safeToSpend.untilPay, 'pay_main@2026-12-10');
 });
 t("the period's next pay one day late, inside its posting window: late, still counted [H8]", () => {
   const r = run(base(), '2026-12-26');

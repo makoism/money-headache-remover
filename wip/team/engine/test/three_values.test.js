@@ -91,7 +91,8 @@ t('pay period, 24 Nov, the day before pay: 182,400, 1,935, 180,465, headline 1,9
   const r = paid().see('2026-11-24');
   eq(three(r), [182400, 1935, 180465, 1935]); eq([r.everyday.full, r.everyday.counts, r.everyday.lastDay, r.everyday.kind], [60000, 1935, '2026-11-24', 'pay']); ties(r);
 });
-t('25 Nov, the pay not ticked: the same three, to 24 Dec', () => { const r = paid().see('2026-11-25'); eq(three(r), [182400, 1935, 180465, 1935]); eq(r.everyday.lastDay, '2026-12-24'); ties(r); });
+// [CA8, 26 Nov 2026] on pay-day morning the 1,935 is the old period's, so its last day is today, not 24 Dec
+t('25 Nov, the pay not ticked: the same three, and the everyday figure runs to today', () => { const r = paid().see('2026-11-25'); eq(three(r), [182400, 1935, 180465, 1935]); eq(r.everyday.lastDay, '2026-11-25'); ties(r); });
 t('26 Nov and 16 Dec, the pay never ticked: 97,400, 1,935, 95,465', () => {
   for (const d of ['2026-11-26', '2026-12-16']) { const r = paid().see(d); eq(three(r), [97400, 1935, 95465, 1935]); ties(r); }
 });
