@@ -16,11 +16,11 @@
   const ROWS = [
     { kind: 'account', list: 'accounts', types: ['bank', 'cash', 'ewallet', 'wallet'],
       add: { action: 'addAccount', screen: 'setup row; Plan > Accounts > Add an account', ai: 'add_account' },
-      change: [{ action: 'changeAccount', screen: 'Plan > Accounts > the account', ai_todo: 'E1 change_account' }, { what: 'its figure', action: 'checkIn', screen: 'Check your bank', ai: 'bank_figure' }],
+      change: [{ action: 'changeAccount', screen: 'Plan > Accounts > the account', ai: 'change_account' }, { what: 'its figure', action: 'checkIn', screen: 'Check your bank', ai: 'bank_figure' }],
       end: { action: 'closeAccount', todo: 'E2' },
       remove: { action: 'removeAccount', todo: 'E2' } },
     { kind: 'main bank', note: 'the account pay lands in (home.main)',
-      change: { action: 'changeAccount', screen: 'Plan > Accounts > the account', ai_todo: 'E1 change_account' },
+      change: { action: 'changeAccount', screen: 'Plan > Accounts > the account', ai: 'change_account' },
       end: { action: 'closeAccount', todo: 'later: CONTROLS_PLAN slice 13 (a new main bank, every link moved)' } },
     { kind: 'card', types: ['card'],
       add: { action: 'addCard', screen: 'setup row; Plan > Add a card', ai: 'add_card' },

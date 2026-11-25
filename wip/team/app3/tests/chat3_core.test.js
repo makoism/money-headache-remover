@@ -209,6 +209,31 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const c = r2.shown.find(x => x.who === 'card').card;
     eq([c.status, c.ask], ['ask', 'guess']); eq(JSON.stringify(hp.book), before, 'nothing written');
   });
+  await t('[E1, M3, M13] "rename my bank to Everyday" and "keep at least 5,000 in Savings": change_account, each with a card and Undo; a card or a loan is not changed this way', async () => {
+    const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
+    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'add_account', name: 'Savings', type: 'bank', amount: 40000, moved: false }] })]), say('Added.'),
+      say('', [call('change', { steps: [{ do: 'change_account', account: 'A1', name: 'Everyday' }] })]), say('Renamed.'),
+      say('', [call('list', { what: 'accounts' })]), body => { const r = FAKE.results(body)[0].text.split('\n').find(l => /Savings/.test(l)).split(' | ')[0]; return say('', [call('change', { steps: [{ do: 'change_account', account: r, min: 5000 }] })]); }, say('Done.'),
+      say('', [call('change', { steps: [{ do: 'change_account', account: 'A2', name: 'Shop card' }] })]), say('Hmm.')]);
+    const d = hp.deps(f);
+    const r1 = await K.turn(state, 'Add a bank called Savings with 40,000 in it, new money', d);
+    const main = hp.book.home.main.v.acct, was = hp.book.accounts.find(a => a.id === main).name;
+    const r2 = await K.turn(r1.state, 'rename my bank to Everyday', d);
+    const c2 = r2.shown.find(x => x.who === 'card');
+    eq([c2.card.status, hp.book.accounts.find(a => a.id === main).name], ['done', 'Everyday'], JSON.stringify(c2.card));
+    ok(/Everyday/.test(c2.card.lines.join(' ')), c2.card.lines.join(' | '));
+    const r3 = await K.turn(r2.state, 'keep at least 5,000 in Savings', d);
+    const sv = hp.book.accounts.find(a => a.name === 'Savings');
+    eq([r3.shown.find(x => x.who === 'card').card.status, sv.minBank && sv.minBank.a], ['done', 5000]);
+    const u = await K.undo(r3.state, r2.shown.find(x => x.who === 'card').id, d);
+    ok(!u.ok || hp.book.accounts.find(a => a.id === main).name === was, 'Undo of an older card is refused or puts it back');
+    const u3 = await K.undo(r3.state, r3.shown.find(x => x.who === 'card').id, d); ok(u3.ok, JSON.stringify(u3));
+    ok(!hp.book.accounts.find(a => a.name === 'Savings').minBank, 'Undo takes Keep at least off');
+    const before = JSON.stringify(hp.book.accounts);
+    const r4 = await K.turn(u3.state || r3.state, 'call card A Shop card', d);
+    const c4 = r4.shown.find(x => x.who === 'card');
+    ok(!c4 || c4.card.status !== 'done', 'a card is not renamed by change_account'); eq(JSON.stringify(hp.book.accounts), before, 'nothing written');
+  });
   await t('[M6] an answer to a follow-up question ("from when?") still counts the amount typed just before', async () => {
     const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
     const f = FAKE.make([say('From when: this one, or the next one?'),
