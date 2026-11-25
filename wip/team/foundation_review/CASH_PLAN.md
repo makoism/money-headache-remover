@@ -165,5 +165,15 @@ Also: lane/cashplan took the current MAKO_SAYS.md (it stopped at M82 on the bran
 - **Door rule.** An account in another currency cannot hold a burrow: refused at the write door with words.
 - **Watch.** A person paid weekly who wants a monthly cash trip: a "fill up to the amount" list is a later item, for Mako's run (M92 "once a month"). The cards plan gets its own review before slice 1. R5 goes to Mako as a question in his words ("every card spend comes off it").
 
+## 14. The coordinator's rulings (coordinator 15, 26 Nov). These win over everything above.
+- R1 YES, **only where the play amount is skipped**. E3, the cards-now walk, applies only when there is no play amount. With a play amount, safe to spend is play money left, and only play spends on a card come off it (R5). The words name the cards as the cause, with a one-line way out: "Set a play amount" (M91). Listed for Mako's run. qc-foundation runs on the cards plan before slice 1.
+- R2 YES: a percentage burrow fills from each pay as it is ticked. Before any pay it shows 0, with words saying it fills as money comes in. Set amounts stay possible with no fixed pay.
+- R3 YES (a goal's per-pay amount is held from the pay until it is moved).
+- R4 YES, with three choices for an envelope's leftover: "Keep it in the envelope" (it counts toward the new period, so less cash is taken out), "Move it to another burrow", "Decide later".
+- R5 RULED: a card spend comes off the burrow it belongs to, and comes off play money only when it is play (M45). On Mako's run list with the example. Not a separate question.
+- R6 YES: a suggested play amount with [Use that] [Another amount] [Skip for now]. The words say it is a starting point, and how it was worked out, in one line.
+- Extra money, WIDENED: new money with no job, (a) on pay day (the pay less the bills, burrows, play money and goals' per-pay amounts due in the period) and (b) money that comes in outside pay with no job (a refund not given back to a burrow, a gift, a side job). Each such income gets its own `ex:<income>` answer (section 13). Never money already in the bank. "Keep it in the bank" goes to "Kept in the bank". Older no-job money stays under Not settled 8. Because E3 is now skipped-branch only, the extra amount is not capped by noJob where the cards are still dated. Instead it is capped by what the bank can spare after the cards are paid, so it never offers card money (test on Mako's shape).
+- scope.txt: ask the coordinator for one in every BUILD round folder. The button and glossary words in CASH_WORDS.md go to Mako at his run.
+
 ## 10. M99 (second slice, designed alongside)
 The receipts overview uses E4's moves shape: a batch of receipts becomes rows { amount, burrow or "ask" }, a bar of the split per burrow with what each leaves, "Looks good / Change one / Not now", one Undo for the batch (one act3 group). The open question of M94 is the "ask" row. Planned in its own file after this plan is ruled, since the assistant cannot read files yet.
