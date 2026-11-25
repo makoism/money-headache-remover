@@ -3009,7 +3009,9 @@ details summary { min-height: 44px; }
     const sharesByFrom = shares.map(x => ({ f: x.from == null ? -Infinity : dayNum(x.from), at: x.at || '', per: (x.per || {}).free || 'month' })).sort((p, q) => p.f - q.f || (p.at < q.at ? -1 : p.at > q.at ? 1 : 0));
     const freePerOn = d => { let r = sharesByFrom.length ? sharesByFrom[0].per : 'month'; for (const x of sharesByFrom) if (x.f <= d) r = x.per; return r; };
     const freeSrc = shares.length ? { id: 'free', acct: shares[0].acct, per: freePerOn(today),
-      steps: shares.map(x => ({ from: x.from == null ? null : x.from, amount: x.free, at: x.at })) } : null;
+      steps: shares.map(x => ({ from: x.from == null ? null : x.from, amount: x.free, at: x.at })),
+      // [CA9] the day Free to spend was first set (its earliest entry), read like a plan line's `from`
+      from: shares.some(x => x.from == null) ? null : shares.map(x => x.from).sort()[0] || null } : null;
     const lineSrcs = budgets.map(l => ({ id: l.id, name: l.name, acct: l.acct, per: l.per, steps: l.steps, once: [{ m: l.once, id: l.id }], field: 'amount', from: l.from || null }));
     if (freeSrc) Object.assign(freeSrc, { once: shares.map(x => ({ m: x.once, id: x.id })), field: 'free' });
     // [B8, T1, AE1] A period's amount: a live `once` key named by the occurrence of the pay that starts it, else the step in
@@ -3209,7 +3211,7 @@ details summary { min-height: 44px; }
         const lp = byDay ? countFrom(moved ? sa : acctId) : lastPay;   // [BQ3]
         const fromOpening = !byDay && (lastPay === null || lastPay <= openDay(moved ? sa : acctId));
         const perOf = lineId === 'free' ? fPer : (lineSrcs.find(x => x.id === lineId) || {}).per;
-        const start = byDay ? monthShare(amount, perOf, moved ? sa : acctId, lineId === 'free' ? null : (lineSrcs.find(x => x.id === lineId) || {}).from) : fromOpening ? (atOpening != null ? atOpening : amount) : amount;
+        const start = byDay ? monthShare(amount, perOf, moved ? sa : acctId, lineId === 'free' ? freeSrc.from : (lineSrcs.find(x => x.id === lineId) || {}).from) : fromOpening ? (atOpening != null ? atOpening : amount) : amount;
         const inLine = e => lineOfSpend(e) === lineId && e.account && openEv[e.account] && !inside(e, openingOf(e.account), e.account) && (fromOpening || e.day >= lp) && e.day <= upTo;
         const counts = e => inLine(e) && cur(e.account) === cur(acctId);   // [T5] only spends in the line's own currency
         if (!past) for (const e of live().filter(x => x.k === 'spend' && !isFeeRecord(x) && inLine(x) && cur(x.account) !== cur(acctId)))
