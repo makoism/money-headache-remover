@@ -250,18 +250,29 @@ async function rcSave3(sure) {
     both = RC3.mode === 'spend' && x.line === 'free' && df && df.capped ? 'Safe to spend goes down with it, it\'s what\'s left of your Free to spend' : null;
   } catch (e) { ov = null; }
   const said = [rcWords3(x), onCard, ov, both].filter(Boolean).join('. ');
-  const r = RC3.edit ? await ACT3.edit(RC3.edit.id, rcFields3(x), { undo: said }) : await ACT3[RC_KIND3[RC3.mode]](x, { undo: said });
-  if (!r.ok) { $('#rcErr').textContent = r.text; return; }   // the form may have been drawn again meanwhile (another tab)
+  const r = RC3.edit ? await ACT3.edit(RC3.edit.id, rcFields3(x), { undo: said, seen: rcSeen3() }) : await ACT3[RC_KIND3[RC3.mode]](x, { undo: said });
+  if (!r.ok) { $('#rcErr').textContent = r.text; rcLook3(r); return; }   // the form may have been drawn again meanwhile (another tab)
   RC3.last = before;
   if (RC3.edit) { RC3.edit = null; RC3.mode = 'spend'; }
   renderRc3();
   const a = $('#rcAmt'); if (a) a.focus();
 }
+/* [STALE_SHEET_PLAN, M61] the receipt being changed, as it was when it was opened: the door refuses a save or a remove
+   if it changed somewhere else since. Refused, the list is shown as it is now, what was typed stays in the boxes, and the
+   receipt is looked at again, so a second Save is a choice made knowing it changed */
+const rcSeen3 = () => ({ [RC3.edit.id]: (RC3.edit.at || '') + '|' + (RC3.edit.by || '') });
+function rcLook3(r) {
+  if (r.why !== 'other' || !RC3.edit) return;
+  const now = ((E3.book && E3.book.events) || []).find(e => e.id === RC3.edit.id && !e.gone);
+  if (!now) { const t = $('#rcErr').textContent; RC3.edit = null; RC3.mode = 'spend'; renderRc3(); $('#rcErr').textContent = t; return; }
+  RC3.edit = JSON.parse(JSON.stringify(now));
+  if (typeof rcList3 === 'function') rcList3();
+}
 async function rcRemove3() {
   const e = RC3.edit; if (!e) return;
   const before = rcFigs3(E3.book);
-  const r = await ACT3.remove(e.id, { undo: `Removed ${money3(e.a, E3.curOf(e.acct))}, ${rcWhat3(e)}` });
-  if (!r.ok) { $('#rcErr').textContent = r.text; return; }
+  const r = await ACT3.remove(e.id, { undo: `Removed ${money3(e.a, E3.curOf(e.acct))}, ${rcWhat3(e)}`, seen: rcSeen3() });
+  if (!r.ok) { $('#rcErr').textContent = r.text; rcLook3(r); return; }
   RC3.last = before; RC3.edit = null; RC3.mode = 'spend';
   renderRc3();
 }
@@ -310,7 +321,11 @@ function rcGaps3(per) {
     if (f.held || f.apart) continue;   // [LISTFIX2] held for its question, or never spending (the engine's marks)
     for (const pt of f.parts || []) if (pt.amount && inPer(pt.from)) out.push({ acct: id, check: f.to, from: pt.from, to: pt.to, amount: pt.amount, on: onWhat(f.place) });
   }
-  for (const id of Object.keys(r.cards || {})) for (const f of r.cards[id].fillers || []) if (f.amount && !f.apart && inPer(f.day)) out.push({ acct: id, check: f.day, from: f.day, to: f.day, amount: f.amount, on: { line: 'free' } });
+  /* [CARDGAP] a card's gap by its parts too (the engine cuts it by days at each period start, as a bank's) */
+  for (const id of Object.keys(r.cards || {})) for (const f of r.cards[id].fillers || []) {
+    if (f.apart) continue;
+    for (const pt of f.parts || []) if (pt.amount && inPer(pt.from)) out.push({ acct: id, check: f.day, from: pt.from, to: pt.to, amount: pt.amount, on: { line: 'free' } });
+  }
   return out;
 }
 function rcGapLi3(g, yr) {

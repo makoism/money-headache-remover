@@ -11,7 +11,10 @@
    This device's cloud state is device-only (SCHEMA_V3 2.2: code, base, baseRev, when last sent, when it fell behind),
    kept beside the book (E3.rec 'cloud'), never in the copy that is sent or in a backup.
    Where the vault is: the page's own address when it is served (the site), else the site's address (RELAY3, from
-   wip/team/RELAY at build time). A try book never sends anything. */
+   wip/team/RELAY at build time). A try book never sends anything.
+   Earlier versions: the vault keeps the copy's last 10 earlier versions (?versions=1, one read with ?rev=N). Settings
+   lists them by when they were sent, and one is restored the way a backup file is (restoreBook3 in settings3.js: the copy
+   here kept first, every record restamped so it reaches the other devices with the next send), after saying so. */
 const C3 = { st: null, busy: false, again: false, timer: 0, tick: 0, lastPush: 0, lastChange: 0, failed: false, lastCheck: 0, checkedAt: 0, dirty: false, applying: false, shown: null, why: null, stop: null, said: false, reach: null };
 /* The cloud clocks [CS1, CS2]: a take every 60 seconds while in view, and one on coming back into view unless the last
    check was under 10 seconds ago. Tests run them faster through one number their harness puts in the page before these
@@ -126,6 +129,10 @@ const when3 = ms => { const d = new Date(ms); return d.toDateString() === new Da
 async function syncNow3(opts) {
   opts = opts || {};
   if (E3.mode === 'try') return null;
+  /* [AI_JOIN_FIXES B; M61, M67] the setup chat's fill was held back while it could be undone (BV2.9), and a cloud copy
+     turned on then sent nothing and said nothing. A cloud copy that is on ends the hold: the first copy goes, and the
+     fill's Undo is over (the card then says how to change things) */
+  if (E3.held && E3.held() && (await cloudState3()).on) await E3.release();
   if (C3.busy) { C3.again = opts.leaving ? 'leaving' : C3.again || true; return null; }   // leaving while a sync runs: a real leaving send follows it
   C3.busy = true; clearTimeout(C3.timer); C3.failed = false; C3.first = false;
   try {
@@ -136,7 +143,7 @@ async function syncNow3(opts) {
     const snap = E3.book, wasWaiting = waiting3(st), take = !opts.act && guard3(st);
     const hold = st.base != null && held3();   // a first join is the person's own act and is never held
     const keys = await CLOUD3.keysFor(st.code);
-    const r = await CLOUD3.syncOnce({ api: cloudApi3(), pack: BurrowPack, S: BurrowEngine.sync, keys, device: { base: st.base, baseRev: st.baseRev }, copy: snap, keepalive: !!opts.leaving, take, hold });
+    const r = await CLOUD3.syncOnce({ api: cloudApi3(), pack: BurrowPack, S: BurrowEngine.sync, keys, device: { base: st.base, baseRev: st.baseRev }, copy: snap, keepalive: !!opts.leaving, take, holdBack: hold, now: nowIso3() });
     C3.lastCheck = Date.now();
     if (wasWaiting && !take) C3.lastPush = Date.now();   // a send was tried: the next one keeps its distance, sent or not
     if (!r.ok) { C3.failed = true; await failed3(st, r.why, wasWaiting || C3.dirty); return r; }   // [CS3] the book was not replaced: the base stays
@@ -328,13 +335,45 @@ async function paintCloud3() {
     body.dataset.mode = 'on';
     body.innerHTML = `<div id="a3CloudBehind"></div><div class="a3-actions"><button type="button" class="a3-btn" id="a3CloudNow">Send now</button>
       <button type="button" class="a3-btn" id="a3CloudShow">Show code</button>
+      <button type="button" class="a3-btn" id="a3CloudVers">Earlier versions</button>
       <button type="button" class="a3-btn" id="a3CloudOff">Turn off</button></div><div id="a3CloudForm"></div>`;
     $('#a3CloudNow').addEventListener('click', async () => { $('#a3CloudState').textContent = 'Sending.'; await syncNow3({ act: true }); tick3(CT3.take); });
     $('#a3CloudShow').addEventListener('click', () => { $('#a3CloudForm').innerHTML = `<p class="a3-code" data-cloud="code">${esc3(CLOUD3.codeShow(C3.st.code))}</p>`; });
     $('#a3CloudOff').addEventListener('click', offAsk3);
+    $('#a3CloudVers').addEventListener('click', versions3);
   }
   $('#a3CloudBehind').innerHTML = behind;
   paintQuestions3();
+}
+/* the cloud's earlier versions, newest first; one is restored after asking (draft words, FOR_MAKO copy pass) */
+async function versions3() {
+  const f = $('#a3CloudForm'); f.innerHTML = '<p class="a3-sub">Looking for earlier versions</p>';
+  const st = await cloudState3();
+  const keys = await CLOUD3.keysFor(st.code);
+  const r = await CLOUD3.fetchVersions({ api: cloudApi3(), keys });
+  if (!SET3.open || !$('#a3CloudForm')) return;
+  if (!r.ok) { f.innerHTML = `<p class="a3-warn">${esc3(WHY3[r.why] || WHY3.server)}</p>`; return; }
+  if (!r.versions.length) { f.innerHTML = '<p class="a3-sub" data-cloud="versions">The cloud has no earlier versions of this copy yet</p>'; return; }
+  f.innerHTML = `<p class="a3-next" data-cloud="versions">The cloud keeps the last ${r.versions.length === 1 ? 'version' : r.versions.length + ' versions'} before the one it holds now. Restoring one replaces the money on this device. What is here now is kept, and Put it back brings it back. ${esc3(OTHERS3)}</p>
+    <ul class="a3-rows">${r.versions.map(v => `<li data-cloudver="${v.rev}"><span>${v.updated ? 'Sent ' + esc3(when3(v.updated)) : 'An earlier version'}</span><button type="button" class="a3-btn">Restore this one</button></li>`).join('')}</ul>
+    <div id="a3CloudVerAsk"></div>`;
+  for (const li of f.querySelectorAll('[data-cloudver]')) li.querySelector('button').addEventListener('click', () => verAsk3(+li.dataset.cloudver, li.querySelector('span').textContent));
+}
+function verAsk3(rev, label) {
+  const ask = $('#a3CloudVerAsk');
+  ask.innerHTML = `<p class="a3-warn" data-cloud="verask">${esc3(label)}: this replaces the money on this device with that version. What is here now is kept, and Put it back brings it back. ${esc3(OTHERS3)}<br>Anything you logged after this version was sent goes, on every device. Put it back brings it back.</p>
+    <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3CloudVerGo">Restore it</button><button type="button" class="a3-btn" id="a3CloudVerNo">Cancel</button></div>`;
+  $('#a3CloudVerNo').addEventListener('click', () => { ask.innerHTML = ''; });
+  $('#a3CloudVerGo').addEventListener('click', async () => {
+    const st = await cloudState3();
+    const g = await CLOUD3.fetchRev({ api: cloudApi3(), pack: BurrowPack, keys: await CLOUD3.keysFor(st.code), rev, now: nowIso3(), mine: E3.book });
+    if (!g.ok) { setMsg3(g.why === 'gone' ? 'The cloud does not keep that version any more, so nothing changed' : WHY3[g.why] || WHY3.server, true); ask.innerHTML = ''; return; }
+    const ok = await restoreBook3(g.copy, 'Before an earlier cloud version was restored');
+    setMsg3(ok ? 'Restored the earlier copy from the cloud - it goes to your other devices with the next send' : 'This could not be saved on this device, so nothing changed', !ok);
+    if ($('#a3CloudForm')) $('#a3CloudForm').innerHTML = '';
+    paintKept3();
+    const save = $('#a3BkSave'); if (save) save.disabled = !E3.book;
+  });
 }
 async function turnOn3() {
   $('#a3CloudState').textContent = 'Checking the cloud can be reached.';

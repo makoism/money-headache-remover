@@ -76,8 +76,18 @@
   }
 
   /* ---- one step on a copy of the book: what it added, changed and removed ---- */
-  function writer(book, s) {
+  /* [STALE_SHEET_PLAN, M61] what a caller saw: `seen` is id -> stamp (`at` and `by`) of every record when its sheet
+     opened. An edit or a remove of a record whose stamp moved since is refused, and so is an add to a list whose newest
+     entry is "the amount now" (REPLACES) when any entry of it is new or moved. Nothing is written. */
+  const OTHER = 'Nothing was saved, because this changed somewhere else while it was open';
+  const REPLACES = { shares: 1 };
+  const sig = r => (r.at || '') + '|' + (r.by || '');
+  const other = () => { const e = new Bad(OTHER); e.why = 'other'; return e; };
+  function writer(book, s, seen) {
     const log = { added: [], edited: [], removed: [], revived: [] };
+    const mine = new Set();   // records this step itself wrote: never refused by the note
+    const fresh = (list, r) => { if (seen && !mine.has(r.id) && seen[r.id] !== sig(r)) throw other(); };
+    const wholeList = list => { if (seen && REPLACES[list]) for (const r of listOf(book, list)) if (r && !mine.has(r.id) && seen[r.id] !== sig(r)) throw other(); };
     const stamp = r => { r.at = s.at; r.by = s.by; };
     return {
       log,
@@ -85,6 +95,7 @@
         if (!rec || typeof rec !== 'object') throw new Error('act3: add needs a record');
         const r = Object.assign({}, rec);
         if (!r.id) r.id = s.newId();
+        wholeList(list); mine.add(r.id);
         if (!r.told) r.told = s.told;
         if (r.grp == null) r.grp = s.id;
         stamp(r);
@@ -99,7 +110,7 @@
           log.revived.push({ list, id: r.id, before });
           return r.id;
         }
-        if (had) throw new Error('act3: there is already a record ' + r.id);
+        if (had) throw new Bad('That is there already. It may have been added somewhere else');
         listOf(book, list, true).push(r);
         log.added.push({ list, id: r.id });
         return r.id;
@@ -108,6 +119,7 @@
         const r = listOf(book, list).find(x => x && x.id === id);
         if (!r) throw new Bad('That is not there any more');
         if (r.gone) throw new Bad('That was removed. Undo the removal first');
+        fresh(list, r); mine.add(id);
         const before = {};
         for (const k of Object.keys(fields)) {
           if (k === 'id' || k === 'told' || k === 'at' || k === 'by' || k === 'gone' || k === 'goneBy') throw new Error('act3: ' + k + ' is not edited');
@@ -123,6 +135,7 @@
         const r = listOf(book, list).find(x => x && x.id === id);
         if (!r) throw new Bad('That is not there any more');
         if (r.gone) return r;
+        fresh(list, r); mine.add(id);
         const before = { at: r.at, by: r.by };
         r.gone = s.day; r.goneBy = s.id; stamp(r);
         log.removed.push({ list, id, before });
@@ -202,6 +215,34 @@
     },
   };
 
+  /* ---- [BZ1] the saved Undo journal: one entry per step, in the book's top-level `journal`, the latest JOURNAL_KEEP.
+     An entry: { id (the step id, the records' grp), label, moment (the step's at), day, by, told, added, removed:
+     [{ list, id }], edited: [{ list, id, before: { field: old value, at, by } }], revived: [{ list, id, before }],
+     undone?: the Undo's step id, moved?: { record id: at } (a record an Undo put back as this step left it) }.
+     The sync joins journals by id and keeps the latest JOURNAL_KEEP (engine/sync.js). ---- */
+  const JOURNAL_KEEP = 200;
+  /* the order of two entries by moment (a clock, not money), then id */
+  const byMoment = (a, b) => { const x = Date.parse(a && a.moment) || 0, y = Date.parse(b && b.moment) || 0; return x < y ? -1 : x > y ? 1 : a.id < b.id ? -1 : 1; };
+  function journalAdd(book, entry) {
+    const list = Array.isArray(book.journal) ? book.journal : (book.journal = []);
+    list.push(entry);
+    if (list.length > JOURNAL_KEEP) {
+      const sorted = list.slice().sort(byMoment);
+      while (sorted.length > JOURNAL_KEEP) sorted.shift();
+      const keep = new Set(sorted);
+      book.journal = list.filter(j => keep.has(j));
+    }
+  }
+  /* a field the step added had no old value: kept as null (an edit never leaves a null, it takes the field away) so the
+     saved text still names it, and Undo takes it away again */
+  const keptEdit = x => { const before = {}; for (const k of Object.keys(x.before)) before[k] = x.before[k] === undefined ? null : clone(x.before[k]); return { list: x.list, id: x.id, before }; };
+  const ownAt = (j, id) => (j.moved && j.moved[id]) || j.moment;
+  function fromJournal(j) {
+    const m = { id: j.id, label: j.label, at: j.moment, added: j.added || [], edited: j.edited || [], removed: j.removed || [], revived: j.revived || [], own: {} };
+    for (const x of m.added.concat(m.edited, m.removed, m.revived)) m.own[x.id] = ownAt(j, x.id);
+    return m;
+  }
+
   const ARGS = { logSpend: 1, refund: 1, moneyIn: 1, moveMoney: 1, edit: 2, remove: 1, addRecords: 2 };   // how many each takes
   const LABELS = { logSpend: 'Spend logged', refund: 'Refund logged', moneyIn: 'Money in logged', moveMoney: 'Money moved', edit: 'Changed', remove: 'Removed' };
   function make(o) {
@@ -211,27 +252,33 @@
     let queue = Promise.resolve(), by = null;
 
     /* plan a step on a copy; returns { book, step } or throws Bad */
-    function plan(label, fn, dry) {
+    function plan(label, fn, dry, undoing, guard) {
       const cur = o.book();
       if (!cur) throw new Bad('Set up first');
+      if (guard && guard.ver != null && guard.ver !== ver(cur)) throw other();
       if (clock) clock.see(cur);
       const book = clone(cur), id = o.newId();
       if (!by) by = String(id).split('-')[0];
       const s = { id, label, at: nowAt(), by, told: o.told(), day: o.today(), newId: o.newId };
-      const w = writer(book, s);
+      const w = writer(book, s, guard && guard.seen);
       w.today = s.day;
       const out = fn(w);
       if (!w.log.added.length && !w.log.edited.length && !w.log.removed.length && !w.log.revived.length) throw new Bad('Nothing changed');
       if (o.check && !dry) {
         try { o.check(book); } catch (e) { const err = new Bad('This would leave numbers the app refuses: ' + e.message); err.why = 'engine'; throw err; }
       }
-      return { book, step: { id, label, out, at: s.at, added: w.log.added, edited: w.log.edited, removed: w.log.removed, revived: w.log.revived } };
+      const step = { id, label, out, at: s.at, added: w.log.added, edited: w.log.edited, removed: w.log.removed, revived: w.log.revived };
+      /* [BZ1] the step's journal entry goes into the same save, so an Undo after a reload finds what it edited too */
+      if (!dry && !undoing) journalAdd(book, { id, label, moment: s.at, day: s.day, by: s.by, told: s.told,
+        added: clone(w.log.added), edited: w.log.edited.map(keptEdit), removed: clone(w.log.removed), revived: clone(w.log.revived) });
+      if (undoing) undoing(book, s);
+      return { book, step };
     }
     function run(label, fn, opts) {
       opts = opts || {};
       const p = queue.then(async () => {
         let planned;
-        try { planned = plan(label, fn); } catch (e) {
+        try { planned = plan(label, fn, false, opts.journalUndo, opts.isUndo ? null : { seen: opts.seen, ver: opts.ver }); } catch (e) {
           if (e instanceof Bad) return { ok: false, why: e.why || 'bad', text: e.message };
           throw e;
         }
@@ -240,6 +287,7 @@
         if (clock) clock.see(planned.step.at);
         const st = planned.step;
         st.own = {}; for (const x of st.added.concat(st.edited, st.removed, st.revived)) st.own[x.id] = st.at;   // the `at` this step left on each record
+        if (opts.seen && !opts.isUndo) for (const x of st.added.concat(st.edited, st.removed, st.revived)) { const f = findIn(planned.book, x.id); if (f) opts.seen[x.id] = sig(f.rec); }   // the caller's own step: its note follows
         if (opts.after) opts.after(st);
         if (!opts.isUndo) steps.push(st);
         if (o.queue && !opts.quiet && !opts.isUndo) {
@@ -255,9 +303,23 @@
     /* Undo: put back only what that step did. What it added is marked gone; what it removed is put back; what it
        changed gets its old values. A record a later step changed since is left alone and the Undo is refused. */
     function undo(stepId, opts) {
-      const mem = steps.find(s => s.id === stepId);
+      /* [BZ1] this visit's memory first; after a reload, the saved journal (what the step added, removed and edited, with
+         the old values); a step from before the journal: what it added (grp) and removed (goneBy), as before */
+      const cur = o.book();
+      const saved = !steps.some(s => s.id === stepId) && cur ? ((cur.journal || []).find(j => j && j.id === stepId) || null) : null;
+      if (saved && saved.undone) return Promise.resolve({ ok: false, why: 'bad', text: 'That was undone already' });
+      const mem = steps.find(s => s.id === stepId) || (saved ? fromJournal(saved) : undefined);
       /* once kept: the step is gone from this visit's list, and an earlier step that left a record as this Undo put it
          back may be undone in turn (its record now carries the Undo's `at`) */
+      /* [BZ1] in the same save: the entry is marked undone, and an earlier entry that left a record as this Undo put it
+         back now owns that record at the Undo's `at` (as `after` does for this visit's steps) */
+      const journalUndo = (book, s) => {
+        const list = book.journal || [], own = list.find(j => j && j.id === stepId);
+        if (own) own.undone = s.id;
+        if (mem) for (const x of mem.edited.concat(mem.removed)) for (const j of list) {
+          if (j && j !== own && !j.undone && ownAt(j, x.id) === x.before.at) j.moved = Object.assign({}, j.moved, { [x.id]: s.at });
+        }
+      };
       const after = u => {
         const i = steps.indexOf(mem); if (i >= 0) steps.splice(i, 1);
         if (mem) for (const x of mem.edited.concat(mem.removed)) for (const p of steps) if (p.own[x.id] && p.own[x.id] === x.before.at) p.own[x.id] = u.at;
@@ -281,13 +343,30 @@
           for (const k of Object.keys(x.before)) if (k !== 'at' && k !== 'by') back[k] = x.before[k] === undefined ? null : x.before[k];
           w.edit(x.list, x.id, back);
         }
-      }, Object.assign({ isUndo: true, after }, opts)).then(r => {
+      }, Object.assign({ isUndo: true, after, journalUndo }, opts)).then(r => {
         if (o.queue && r.ok && !(opts && opts.quiet)) o.queue.post({ kind: 'toast', key: 'act3', text: 'Undone' });
         if (o.queue && !r.ok && !(opts && opts.quiet)) o.queue.post({ kind: 'toast', key: 'act3', text: r.text });
         return r;
       });
     }
-    const api = { run, undo, steps: () => steps.slice(), onChange: f => listeners.push(f) };
+    /* the note for a sheet on one item, and the short mark of the whole book (order-free: every change time, sorted) */
+    function seen() { const cur = o.book(), out = {}; if (cur) for (const n of Object.keys(PATHS)) for (const r of listOf(cur, n)) if (r && r.id) out[r.id] = sig(r); return out; }
+    function ver(b) {
+      b = b || o.book(); if (!b) return '';
+      const stamps = [];
+      (function walk(x, top) {
+        if (Array.isArray(x)) { for (const y of x) walk(y, false); return; }
+        if (!x || typeof x !== 'object') return;
+        for (const k of Object.keys(x)) {
+          if (top && (k === 'rev' || k === 'journal')) continue;   // the cloud's revision and the Undo journal are not the book's content
+          const v = x[k];
+          if (k === 'at' && typeof v === 'string' && !top) stamps.push(v + '|' + (x.by || '') + '|' + (x.id || ''));
+          else walk(v, false);
+        }
+      })(b, true);
+      return C && C.markOf ? C.markOf(stamps) : stamps.sort().join(',');   // the hash lives in store/clock.js (no sums in a screen file)
+    }
+    const api = { run, undo, seen, ver: () => ver(), steps: () => steps.slice(), onChange: f => listeners.push(f) };
     for (const name of Object.keys(ACTIONS)) {
       const n = ARGS[name];   // the action's own arguments, before the options
       api[name] = (...args) => {
@@ -304,7 +383,7 @@
     return api;
   }
 
-  const api = { make, PATHS, listOf, Bad };
+  const api = { make, PATHS, listOf, Bad, OTHER };
   if (node) module.exports = api;
   else root.BurrowAct3 = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

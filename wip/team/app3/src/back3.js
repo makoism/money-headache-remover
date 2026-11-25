@@ -13,13 +13,13 @@
       so a layer that was open when one of them came over it still counts as there (`holding`) until that sheet closes.
       Whoever needs to know when that changes asks with onChange (the cloud copy holds a take back while a form is there).
    A new sheet needs a row in LAYERS (tests/e3_back.js counts the page's sheets against its own list).
+   The assistant panel (chat3.js) has its row too: tests/e3_chat.js part 10 walks it.
    No money here: `held` and `skip` are lists of markers, so nothing is counted with sums. */
 const BACK3 = (() => {
   const shownEl = sel => { const el = $(sel); return el && !el.closest('[hidden]') ? el : null; };
   const sheet = (key, sel, close, keep) => ({ key, root: () => shownEl(sel), close, keep });
   /* the layer on top first */
   const LAYERS = [
-    sheet('ask', '#a3Ask', () => closeAsk3(), true),
     sheet('rem', '#a3Rem', () => closeRem3()),
     sheet('set', '#a3Set', () => closeSet3()),
     sheet('stmt', '#a3Stmt', () => { const b = $('#a3StmtBack'); if (b) b.click(); else stmt3Close(); }),
@@ -27,11 +27,15 @@ const BACK3 = (() => {
     sheet('check', '#a3Check', () => closeCheck3(), true),
     sheet('plan-form', '#a3Plan [data-card=plan-form]', () => plClose3(), true),
     { key: 'rc-edit', root: () => (shownEl('#rcCancel') ? $('#rcForm') : null), close: () => $('#rcCancel').click() },
+    /* the assistant panel (chat3.js), open as a sheet on a phone: under every sheet and form above, which open over
+       it. On a wide screen it is a column that is always there, so it is no layer. The message band is in the page
+       above it, never over it, so it holds no Undo bar back (beside) */
+    { key: 'chat', root: () => { const el = shownEl('#a3Chat[data-open]'); return el && !matchMedia('(min-width: 1000px)').matches ? el : null; }, close: () => $('#a3ChatClose').click(), beside: true },
   ];
   const open = () => LAYERS.filter(l => l.root());
   const held = [], skip = [];
   let was = [], covered = [];
-  const COVERS = ['ask', 'rem', 'set'], fns = [];
+  const COVERS = ['chat', 'rem', 'set'], fns = [];
   /* ---- what was typed, by layer ---- */
   const nameOf = el => el.id || [...el.attributes].filter(a => a.name.startsWith('data-') && a.name !== 'data-input' && a.name !== 'data-error').map(a => `${a.name}=${a.value}`).join(';');
   const fields = root => [...root.querySelectorAll('input, select, textarea')].filter(el => el.type !== 'password' && el.type !== 'file' && nameOf(el));
@@ -73,7 +77,7 @@ const BACK3 = (() => {
        inside a layer shows there, and the held one shows again when the layer closes, if its time is not up */
     for (const l of on) { const d = domOf(l); if (!drawn.has(d)) drawn.set(d, { mark: MSG3.mark(), isNew: true }); }
     let top = null;
-    for (const l of on) { const m = drawn.get(domOf(l)).mark; if (top === null || m > top) top = m; }
+    for (const l of on) { if (l.beside) continue; const m = drawn.get(domOf(l)).mark; if (top === null || m > top) top = m; }
     MSG3.cover('undo', top);
     for (const l of fresh) {
       const d = drawn.get(domOf(l));
@@ -112,7 +116,14 @@ const BACK3 = (() => {
     document.addEventListener('input', typedIn, true);
     document.addEventListener('change', typedIn, true);
     if (typeof ACT3 === 'object' && ACT3) ACT3.onChange(forget);
+    /* [STALE_SHEET_PLAN, M61] typing kept from a closed form holds every box of it, the ones not touched too: once the
+       book changed somewhere else (another tab, a copy taken from the cloud or a backup) it is dropped, so an old figure
+       is never put back into a form opened afterwards */
+    addEventListener('burrow3:other', forget); addEventListener('burrow3:book', forget);
     new MutationObserver(sync).observe($('#a3'), { subtree: true, childList: true, attributes: true, attributeFilter: ['hidden'] });
+    /* the assistant panel sits beside #a3: open or closed is its data-open, and the width decides sheet or column */
+    if ($('#a3Chat')) new MutationObserver(sync).observe($('#a3Chat'), { attributes: true, attributeFilter: ['hidden', 'data-open'] });
+    matchMedia('(min-width: 1000px)').addEventListener('change', sync);
     sync();
   }
   const holding = () => [...new Set(open().map(l => l.key).concat(covered))];

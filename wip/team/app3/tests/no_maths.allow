@@ -24,3 +24,6 @@ cloud3_page.js :: Date.now() - CT3.soon :: whether a change came in the last 5 s
 cloud3_page.js :: Math.max(0, C3.lastPush + CT3.gap - Date.now()) :: how long until the next cloud send may go (CS1 timing); a clock, not money
 cloud3_page.js :: Math.max(C3.checkedAt || 0, st.sentAt || 0) :: the later of two times this device was last in step with the cloud (B4); a clock, not money
 cloud3_page.js :: String(p || '').split('.').reduce((o, x) => (o && x ? o[x] : o), b) :: walks a path like plan.budgets to the list a kept version belongs in; a lookup, not money
+chat3.js :: abc[b % abc.length] :: a random letter of the assistant's device id (BU3); not money
+plan3_write.js :: SC.dayNum(date) - 1 :: a moved account opens the day before its move (qc-foundation F3); a day, not money
+e3.js :: (Date.parse(y.at) || 0) - (Date.parse(x.at) || 0) :: kept whole copies listed newest first by moment (each at has its own offset); a clock, not money

@@ -99,7 +99,7 @@ t('on pay day safe to spend runs to the pay after it; a main pay left unticked a
 // N the 12 Jan pay, the day 11 Dec: 286,000 - 7,400 - 72,000 - 5,200 (Nov bills) + 240,000 (10 Dec pay) - 54,000 (A)
 // - 23,000 (B) = 364,400. After ticking the pay and card A on 10 Dec (the bank typed as the app has it, 387,400):
 // D1 is 11 Dec, the day 11 Dec, 387,400 - 23,000 = 364,400 with no pay named (it is in the bank already).
-const bacBase = { currency: 'JPY', setAside: [], dip: null, paysNotCounted: [], ifAllTaken: true };
+const bacBase = { currency: 'JPY', setAside: [], dip: null, paysNotCounted: [], ifAllTaken: true, laterCardDays: [] };   // [BK6] no later card day without an amount in these stretches
 t('the bank after the cards are paid: 11 Dec on 23 Nov, 9 Dec and 10 Dec, before and after the tick [BK3]', () => {
   const sc = JSON.parse(JSON.stringify(require('./mako_madeup.js').SC));
   sc.events = [{ id: 'sp1', date: '2026-12-18', kind: 'spend', account: 'card_a', amount: 18000 }, { id: 'sp2', date: '2026-12-20', kind: 'spend', account: 'card_b', amount: 9500 },

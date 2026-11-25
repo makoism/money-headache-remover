@@ -42,12 +42,12 @@ function openRem3() {
       <ul class="a3-rows" id="a3RemLinks"></ul></div>
     <div class="a3-actions"><button type="button" class="a3-btn" id="a3RemClose">Close</button></div>
   </div>`;
-  REM3.was = [...document.querySelectorAll('[data-panel], .a3-tabs, #a3Check, #a3StmtBar, #a3Stmt, #a3Set, #a3Setup, #a3Ask')].map(el => [el, el.hidden]);
+  REM3.was = [...document.querySelectorAll('[data-panel], .a3-tabs, #a3Check, #a3StmtBar, #a3Stmt, #a3Set, #a3Setup')].map(el => [el, el.hidden]);
   REM3.was.forEach(([el]) => { el.hidden = true; }); sheet.hidden = false;
   $('#a3RemAfter').addEventListener('change', e => { REM3.afterPay = e.target.checked; rem3Paint(); });
   $('#a3RemMid').addEventListener('change', e => { REM3.mid = e.target.checked; rem3Paint(); });
   $('#a3RemBefore').addEventListener('change', e => { REM3.before = Number(e.target.value); rem3Paint(); });
-  $('#a3RemTime').addEventListener('change', e => { REM3.time = e.target.value || '09:00'; rem3Paint(); });
+  $('#a3RemTime').addEventListener('change', e => { if (!e.target.value) e.target.value = REM3.time; /* a cleared time goes back to the time in use, shown in the box */ REM3.time = e.target.value; rem3Paint(); });
   $('#a3RemBills').addEventListener('change', e => { const c = e.target.closest('[data-rembill]'); if (!c) return; REM3.off[c.dataset.rembill] = !c.checked; rem3Paint(); });
   $('#a3RemIcs').addEventListener('click', rem3Save);
   $('#a3RemClose').addEventListener('click', closeRem3);

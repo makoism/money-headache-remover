@@ -279,6 +279,204 @@ const ev = (b, id) => b.events.find(e => e.id === id);
     await h.A.logSpend({ date: DAY, a: 1000, acct: bank });
     eq(given, before);
   });
+  /* ---- [BZ1, qc-foundation finding 2] the saved Undo journal: Undo after a reload undoes edits too ---- */
+  const reload = (h, r) => setup({ book: clone(h.book), newId: I.idMaker('t3actd', () => r || 0.7) });
+  await t('[BZ1] each step saves a journal entry in the same save: step id, label, moment, what it added, removed and edited (old values)', async () => {
+    const h = setup();
+    ok(!('journal' in h.book), 'a book saved today has no journal');
+    const a = await h.A.logSpend({ date: DAY, a: 1000, acct: bank });
+    const b = await h.A.edit(a.step.added[0].id, { a: 900 });
+    const c = await h.A.remove(a.step.added[0].id);
+    eq(h.saves, 3, 'one save each, the journal inside it');
+    eq(h.book.journal.map(j => [j.id, j.label, j.moment, j.day]), [[a.step.id, 'logSpend', a.step.at, DAY], [b.step.id, 'edit', b.step.at, DAY], [c.step.id, 'remove', c.step.at, DAY]]);
+    eq(h.book.journal[0].added, [{ list: 'events', id: a.step.added[0].id }]);
+    eq(h.book.journal[1].edited.map(x => [x.list, x.id, x.before.a, x.before.at]), [['events', a.step.added[0].id, 1000, a.step.at]]);
+    eq(h.book.journal[2].removed.map(x => [x.list, x.id]), [['events', a.step.added[0].id]]);
+  });
+  await t('[BZ1] a step that only edits, then a reload, then Undo: the old value is back', async () => {
+    const h = setup();
+    const a = await h.A.logSpend({ date: DAY, a: 1000, acct: bank }), sp = a.step.added[0].id;
+    const r0 = view(h.book);
+    const b = await h.A.edit(sp, { a: 900, note: 'lunch' });
+    const ren = await h.A.run('Renamed', w => { w.edit('accounts', WALLET, { name: 'Purse' }); });
+    ok(b.ok && ren.ok);
+    const h2 = reload(h);
+    const u1 = await h2.A.undo(ren.step.id);
+    ok(u1.ok, JSON.stringify(u1));
+    eq(h2.book.accounts.find(x => x.id === WALLET).name, 'Wallet', 'the rename undone after a reload');
+    const u2 = await h2.A.undo(b.step.id);
+    ok(u2.ok, JSON.stringify(u2));
+    const e = ev(h2.book, sp);
+    eq([e.a, 'note' in e], [1000, false], 'the old amount back, the note taken away');
+    eq(view(h2.book).safeToSpend.headline, r0.safeToSpend.headline, 'safe to spend as before the edit');
+    eq(h2.book.journal.filter(j => j.undone).map(j => j.id).sort(), [b.step.id, ren.step.id].sort(), 'both marked undone');
+    const again = await h2.A.undo(b.step.id);
+    ok(!again.ok && /undone already/.test(again.text), 'a second Undo of the same step is refused: ' + JSON.stringify(again));
+  });
+  await t('[BZ1] two edits of one record: after a reload the newer is undone, then the older', async () => {
+    const h = setup();
+    const a = await h.A.logSpend({ date: DAY, a: 1000, acct: bank }), sp = a.step.added[0].id;
+    const b = await h.A.edit(sp, { a: 900 }), c = await h.A.edit(sp, { a: 800 });
+    const h2 = reload(h);
+    const early = await h2.A.undo(b.step.id);
+    ok(!early.ok && early.why === 'later', 'the older first is refused: a later step changed it');
+    ok((await h2.A.undo(c.step.id)).ok, 'the newer');
+    eq(ev(h2.book, sp).a, 900);
+    const h3 = reload(h2, 0.9);
+    ok((await h3.A.undo(b.step.id)).ok, 'then the older, after another reload');
+    eq(ev(h3.book, sp).a, 1000);
+  });
+  /* the close shape (controls slice 5): a final check, the money moved out as `close:<account>`, `closed` on the account */
+  const closeWallet = w => {
+    w.add('events', { k: 'check', acct: WALLET, date: DAY, a: 10000, src: { type: 'typed' } });
+    w.add('events', { id: 'close:' + WALLET, k: 'transfer', acct: WALLET, acct2: bank, date: DAY, a: 10000, src: { type: 'typed' } });
+    w.edit('accounts', WALLET, { closed: DAY });
+  };
+  await t('[BZ1] the close shape: transfer plus close, then a reload and Undo: all of it back, nothing half done', async () => {
+    const h = setup(), before = clone(h.book), r0 = view(h.book);
+    const c = await h.A.run('Closed', closeWallet);
+    ok(c.ok, JSON.stringify(c));
+    const r1 = view(h.book);
+    eq(r1.accounts[bank].bank, r0.accounts[bank].bank + 10000, 'the money moved to the bank');
+    const h2 = reload(h);
+    const u = await h2.A.undo(c.step.id);
+    ok(u.ok, JSON.stringify(u));
+    const w = h2.book.accounts.find(x => x.id === WALLET);
+    ok(!('closed' in w), 'not closed');
+    ok(ev(h2.book, 'close:' + WALLET).gone && c.step.added.every(x => ev(h2.book, x.id).gone), 'the transfer and the check gone');
+    const r2 = view(h2.book);
+    eq([r2.accounts[bank].bank, r2.accounts[WALLET].bank, r2.safeToSpend.headline], [r0.accounts[bank].bank, r0.accounts[WALLET].bank, r0.safeToSpend.headline], 'the figures as before the close');
+    const strip = b => JSON.stringify(Object.assign({}, b, { journal: undefined, events: b.events.filter(e => !e.gone).map(e => e.id).sort(), accounts: b.accounts.map(x => { const y = Object.assign({}, x); delete y.at; delete y.by; return y; }) }));
+    eq(strip(h2.book), strip(before), 'live records as before');
+  });
+  await t('[BZ1] the close shape: a later step touched the account, so Undo after a reload is refused whole and changes nothing', async () => {
+    const h = setup();
+    const c = await h.A.run('Closed', closeWallet);
+    ok((await h.A.run('Renamed', w => { w.edit('accounts', WALLET, { name: 'Old wallet' }); })).ok);
+    const h2 = reload(h), mid = clone(h2.book);
+    const u = await h2.A.undo(c.step.id);
+    ok(!u.ok && u.why === 'later', JSON.stringify(u));
+    eq(h2.book, mid, 'nothing half done: the transfer, the check and closed all stay');
+    eq(h2.saves, 0);
+  });
+  await t('[BZ1 migration] a step made before the journal still undoes what it can after a reload (adds and removes); an edit-only one is refused, nothing changed', async () => {
+    const h = setup();
+    const a = await h.A.logSpend({ date: DAY, a: 1000, acct: bank }), sp = a.step.added[0].id;
+    const b = await h.A.edit(sp, { a: 900 });
+    const x = await h.A.logSpend({ date: DAY, a: 700, acct: bank }), rm = await h.A.remove(x.step.added[0].id);
+    const old = clone(h.book); delete old.journal;   // as a book saved before the journal
+    const h2 = setup({ book: old, newId: I.idMaker('t3actd', () => 0.7) });
+    const ub = await h2.A.undo(b.step.id);
+    ok(!ub.ok, 'an old edit-only step cannot be found: ' + JSON.stringify(ub));
+    eq(ev(h2.book, sp).a, 900, 'and nothing changed');
+    ok((await h2.A.undo(rm.step.id)).ok, 'an old removal is put back');
+    ok((await h2.A.undo(a.step.id)).ok, 'an old add is taken back');
+    eq([ev(h2.book, sp).gone, ev(h2.book, x.step.added[0].id).gone], [DAY, undefined]);
+    ok(!h2.book.journal || h2.book.journal.length === 0, 'Undo steps are not journaled: ' + JSON.stringify(h2.book.journal));
+  });
+  await t('[BZ1 migration] the engine reads a book with a journal the same as without one', async () => {
+    const h = setup();
+    await h.A.logSpend({ date: DAY, a: 1000, acct: bank });
+    await h.A.run('Closed', closeWallet);
+    const no = clone(h.book); delete no.journal;
+    eq(JSON.stringify(view(h.book)), JSON.stringify(view(no)));
+  });
+  await t('[BZ1] the journal keeps the latest 200 steps', async () => {
+    const h = setup();
+    let first = null, last = null;
+    for (let i = 0; i < 203; i++) { const r = await h.A.logSpend({ date: DAY, a: 10 + i, acct: bank }, { quiet: true }); if (!first) first = r; last = r; }
+    eq(h.book.journal.length, 200);
+    ok(!h.book.journal.some(j => j.id === first.step.id) && h.book.journal[199].id === last.step.id, 'the oldest dropped');
+  });
+  /* ---- a sheet left open (STALE_SHEET_PLAN; M61): the door takes a note of what was seen, and refuses an edit or a
+     remove of a record that changed since the note. Rent is 72,000 in the made-up book. ---- */
+  const RENT = actBook().schedules.find(x => x.name === 'Rent').id, POWER = actBook().schedules.find(x => x.name === 'Power').id;
+  const rentOf = b => b.schedules.find(x => x.id === RENT);
+  const setAmount = (w, id, a) => w.edit('schedules', id, { steps: [{ from: null, amount: a }] });
+  await t('[stale sheet] a note, then the record changes, then an edit with the old note: refused, why other, nothing written', async () => {
+    const h = setup(), seen = h.A.seen();
+    ok((await h.A.run('changeBill', w => setAmount(w, RENT, 76000))).ok, 'the other change is kept');
+    const before = JSON.stringify(h.book), saves = h.saves;
+    const r = await h.A.run('changeBill', w => w.edit('schedules', RENT, { name: 'Rent flat', steps: [{ from: null, amount: 72000 }] }), { seen });
+    eq([r.ok, r.why], [false, 'other']); ok(/changed somewhere else/.test(r.text), r.text);
+    eq([JSON.stringify(h.book) === before, h.saves, rentOf(h.book).steps[0].amount, rentOf(h.book).name], [true, saves, 76000, 'Rent']);
+  });
+  await t('[stale sheet] with a fresh note the same edit is kept', async () => {
+    const h = setup();
+    await h.A.run('changeBill', w => setAmount(w, RENT, 76000));
+    const r = await h.A.run('changeBill', w => w.edit('schedules', RENT, { name: 'Rent flat' }), { seen: h.A.seen() });
+    eq([r.ok, rentOf(h.book).name, rentOf(h.book).steps[0].amount], [true, 'Rent flat', 76000]);
+  });
+  await t('[stale sheet] a remove with an old note is refused; an edit of another record with the same note is kept', async () => {
+    const h = setup(), seen = h.A.seen();
+    await h.A.run('changeBill', w => setAmount(w, RENT, 76000));
+    const r = await h.A.run('endBill', w => w.remove('schedules', RENT), { seen });
+    eq([r.ok, r.why, !!rentOf(h.book).gone], [false, 'other', false]);
+    const r2 = await h.A.run('changeBill', w => setAmount(w, POWER, 7900), { seen });
+    eq([r2.ok, h.book.schedules.find(x => x.id === POWER).steps[0].amount], [true, 7900]);
+  });
+  await t('[stale sheet] a record made after the note was taken: an edit of it with that note is refused; adding is never refused', async () => {
+    const h = setup(), seen = h.A.seen();
+    const s = await h.A.logSpend({ date: DAY, a: 1200, acct: bank, note: 'coffee' });
+    const id = s.step.added[0].id;
+    const r = await h.A.edit(id, { a: 1300 }, { seen });
+    eq([r.ok, r.why, ev(h.book, id).a], [false, 'other', 1200]);
+    const add = await h.A.logSpend({ date: DAY, a: 450, acct: bank, note: 'bun' }, { seen });
+    eq(add.ok, true);
+  });
+  await t('[stale sheet] no note: as before; and the note does not depend on the order of the lists', async () => {
+    const h = setup(), b2 = clone(h.book); b2.schedules.reverse(); b2.events.reverse();
+    const h2 = setup({ book: b2 });
+    eq(Object.keys(h.A.seen()).sort().map(k => [k, h.A.seen()[k]]), Object.keys(h2.A.seen()).sort().map(k => [k, h2.A.seen()[k]]));
+    await h.A.run('changeBill', w => setAmount(w, RENT, 76000));
+    eq((await h.A.run('changeBill', w => setAmount(w, RENT, 72000))).ok, true);
+  });
+  await t('[stale sheet] Undo is not touched by a note: the step that changed Rent can still be undone', async () => {
+    const h = setup();
+    const r = await h.A.run('changeBill', w => setAmount(w, RENT, 76000));
+    eq((await h.A.undo(r.step.id)).ok, true); eq(rentOf(h.book).steps[0].amount, 72000);
+  });
+  /* from qc-foundation's review of the plan (qc_reports/2026-11-25_stalesheet/foundation_plan.md) */
+  const share = a => ({ from: DAY, cur: 'JPY', per: { free: 'pay' }, free: a, goals: {} });
+  await t('[stale sheet] Free to spend is changed by ADDING an entry: with an old note the add is refused when the list moved (30,000 open, 20,000 saved elsewhere)', async () => {
+    const h = setup(), seen = h.A.seen();
+    ok((await h.A.run('setFree', w => w.add('shares', share(20000)))).ok);
+    const n0 = h.book.plan.shares.length;
+    const r = await h.A.run('setFree', w => w.add('shares', share(30000)), { seen });
+    eq([r.ok, r.why, h.book.plan.shares.length], [false, 'other', n0]);
+    eq((await h.A.run('setFree', w => w.add('shares', share(30000)), { seen: h.A.seen() })).ok, true);
+    const add = await h.A.run('addBill', w => w.add('schedules', { kind: 'bill', name: 'Gym', acct: bank, cur: 'JPY', rules: [{ from: null, rule: { every: 'month', days: [5] } }], steps: [{ from: null, amount: 7000 }] }), { seen });
+    eq(add.ok, true, 'an add to any other list is never refused');
+  });
+  await t('[stale sheet] one note, two steps of the same caller on the same record: the second is kept (the note follows the caller\'s own steps)', async () => {
+    const h = setup(), seen = h.A.seen();
+    eq((await h.A.run('changeBill', w => w.edit('schedules', RENT, { name: 'Rent flat' }), { seen })).ok, true);
+    eq((await h.A.run('changeBill', w => setAmount(w, RENT, 76000), { seen })).ok, true);
+    const a = await h.A.run('setFree', w => w.add('shares', share(20000)), { seen }), id = a.step.added[0].id;
+    eq((await h.A.run('setFree', w => w.edit('shares', id, { free: 25000 }), { seen })).ok, true, 'a record the caller added itself');
+    await h.A.run('changeBill', w => setAmount(w, RENT, 77000));   // then someone else
+    eq((await h.A.run('changeBill', w => setAmount(w, RENT, 78000), { seen })).why, 'other');
+  });
+  await t('[stale sheet] the whole-book mark: a step with an old mark is refused, with the mark of now it is kept; the mark does not depend on record order', async () => {
+    const h = setup(), v0 = h.A.ver();
+    ok(typeof v0 === 'string' && v0.length > 2 && v0.length < 24 && !/\d{5,}/.test(v0.split('.')[0]), 'short: ' + v0);
+    const b2 = clone(h.book); b2.schedules.reverse(); b2.events.reverse(); b2.accounts.reverse();
+    eq(setup({ book: b2 }).A.ver(), v0);
+    eq((await h.A.logSpend({ date: DAY, a: 450, acct: bank, note: 'bun' }, { ver: v0 })).ok, true, 'nothing changed since the mark');
+    const before = JSON.stringify(h.book);
+    const r = await h.A.logSpend({ date: DAY, a: 900, acct: bank, note: 'tea' }, { ver: v0 });
+    eq([r.ok, r.why, r.text, JSON.stringify(h.book) === before], [false, 'other', A3.OTHER, true]);
+    eq((await h.A.logSpend({ date: DAY, a: 900, acct: bank, note: 'tea' }, { ver: h.A.ver() })).ok, true);
+    ok(h.A.ver() !== v0);
+  });
+  await t('[stale sheet] the same thing added twice (a bill ticked in two tabs) is a plain refusal, not a crash', async () => {
+    const h = setup();
+    const occ = 'set:' + I.occName(RENT, '2026-11-27');
+    const rec = () => ({ id: occ, k: 'settle', item: I.occName(RENT, '2026-11-27'), date: DAY, a: 72000, acct: bank });
+    eq((await h.A.run('tick', w => w.add('events', rec()))).ok, true);
+    const r = await h.A.run('tick', w => w.add('events', rec()));
+    eq([r.ok, r.why], [false, 'bad']); ok(/there already/.test(r.text), r.text);
+  });
   console.log(bad ? `e3_act_unit: ${bad} FAIL of ${n}` : `e3_act_unit: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })();

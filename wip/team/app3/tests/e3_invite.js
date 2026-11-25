@@ -2,13 +2,15 @@
 /* The code word for the AI (the relay's INVITE_CODES): a made-up relay address answered by the test, never the real one.
    The made-up relay says invite:true on /api/health and answers /api/ai only when the call's `invite` is "otter"; any
    other word gets the relay's own 401 invite_required.
-   1. One place sends every relay call (STMT3_AI.post): Ask and Add statements both carry the kept word in `invite`.
-   2. When the relay asks for a word and none is kept here, Ask and Add statements show the box "Code word for the AI
-      (ask the owner)"; nothing goes to the AI until a word is typed. The word is kept on this device only
+   1. One place sends every relay call (STMT3_AI.post): the assistant and Add statements both carry the kept word in `invite`.
+   2. When the relay asks for a word and none is kept here, the assistant (on a message) and Add statements show the box
+      "Code word for the AI (ask the owner)"; nothing goes to the AI until a word is typed. The word is kept on this device only
       (localStorage burrow3.invite), never in the book, its kept copies or anything saved for the backup or cloud copy.
    3. A 401 invite_required says "The code word didn't match. Type it again" with the box, never "(401)".
    4. Settings has a line to change or clear the word.
-   5. A relay that asks for no word shows no box. No page errors. Every word and amount is made up. */
+   5. A relay that asks for no word shows no box. No page errors. Every word and amount is made up.
+   [AI_JOIN_FIXES G] The old Ask sheet is gone: the header Ask opens the assistant panel, so each check that used the
+   sheet now goes through the panel, on a book kept on this device (the made-up numbers keep no chat). */
 'use strict';
 const fs = require('fs'), path = require('path'), os = require('os');
 const T = require('./lib3.js'), { ck } = T;
@@ -33,7 +35,9 @@ async function relay(p, health) {
       if (health.fail) return rq.respond({ status: health.fail.status, contentType: 'application/json', headers: H, body: JSON.stringify(health.fail.message ? { error: { code: 'x', message: health.fail.message } } : {}) });
       if (health.invite && String(body.invite || '').trim().toLowerCase() !== GOOD) return rq.respond({ status: 401, contentType: 'application/json', headers: H, body: JSON.stringify({ error: { code: 'invite_required', message: 'This page needs the code word from its owner.' } }) });
       const tool = body.tools[0].name;
-      const input = tool === 'money_answer' ? { answer: 'Rent is 72,000 on 27 Nov.', actions: [] } : ROWS;
+      /* the assistant's request (chat3_core): plain words back */
+      if (tool !== 'statement_rows') return rq.respond({ status: 200, contentType: 'application/json', headers: H, body: JSON.stringify({ stop_reason: 'end_turn', content: [{ type: 'text', text: 'Rent is 72,000 on 27 Nov.' }] }) });
+      const input = ROWS;
       return rq.respond({ status: 200, contentType: 'application/json', headers: H, body: JSON.stringify({ stop_reason: 'tool_use', content: [{ type: 'tool_use', name: tool, input }] }) });
     }
     rq.continue();
@@ -43,8 +47,16 @@ async function relay(p, health) {
 const kept = p => p.evaluate(() => localStorage.getItem('burrow3.invite'));
 const hasBox = async p => !!(await p.$('#a3Word')) && /Code word for the AI \(ask the owner\)/.test(await p.$eval('#a3Word label', e => e.textContent));
 async function typeWord(p, w) { await p.$eval('#a3WordIn', (e, v) => { e.value = v; }, w); await p.click('#a3WordKeep'); await T.w(150); }
-async function ask(p, q) { await p.$eval('#a3AskIn', (e, v) => { e.value = v; }, q); await p.click('#a3AskSend'); await T.w(500); }
-const lastAi = p => p.$$eval('.a3-ask-ai', e => (e[e.length - 1] || {}).textContent || '');
+/* the assistant panel: the header Ask opens it; a message is typed in its box and sent */
+async function ask(p, q) { await p.$eval('#a3ChatIn', (e, v) => { e.value = v; }, q); await p.$eval('#a3ChatSend', e => e.click()); await T.w(700); }
+const lastAi = p => p.$$eval('#a3ChatLog > *', e => (e[e.length - 1] || {}).textContent || '');
+const askBox = p => p.$eval('#a3ChatIn', e => e.value);
+/* a book kept on this device (the made-up numbers keep no chat), then the page again */
+async function withBook(p) {
+  await p.goto(T.URL0 + '?today=' + DAY); await T.w(300);
+  await p.evaluate(async bk0 => { const s = await BurrowStore.open(); await s.load(); await s.save(bk0, { full: true }); s.close(); }, bk);
+  await p.reload(); await T.w(600);
+}
 async function pick(p) {
   await p.click('#a3StmtGo'); await T.w(300);
   (await p.$(`[data-files="${BANK}"]`)).uploadFile(path.join(dir, 'bank.csv'));
@@ -69,33 +81,34 @@ const idbText = p => p.evaluate(async () => {
   {
     const { b, p, errs } = await T.open();
     const sent = await relay(p, { ai: true, invite: true });
-    await p.goto(T.URL0 + '?try=mako&today=' + DAY); await T.w(400);
+    await withBook(p);
 
     /* the box, once, when no word is kept here */
     await p.click('#a3AskGo'); await T.w(400);
-    ck('Ask: the relay asks for a word and none is kept here: the box "Code word for the AI (ask the owner)" shows', await hasBox(p));
-    ck('Ask: opening sends nothing to the AI', sent.length === 0);
+    ck('the assistant: opening sends nothing to the AI', sent.length === 0);
     await ask(p, 'What is due before next pay?');
-    ck('Ask without a word typed: nothing is sent, the box is still there, the question is back', sent.length === 0 && await hasBox(p) && (await p.$eval('#a3AskIn', e => e.value)) === 'What is due before next pay?');
+    ck('the assistant: the relay asks for a word and none is kept here: the box "Code word for the AI (ask the owner)" shows', await hasBox(p));
+    ck('a message without a word typed: nothing is sent, the box is there, the message is back in its box', sent.length === 0 && await hasBox(p) && (await askBox(p)) === 'What is due before next pay?');
 
     /* a word that does not match */
     await typeWord(p, 'badger');
     ck('the word typed is kept on this device only (localStorage burrow3.invite), and the box goes', (await kept(p)) === 'badger' && !(await p.$('#a3Word')));
     await ask(p, 'What is due before next pay?');
     ck('[item 3] the relay call carries the word in invite', sent.length === 1 && sent[0].invite === 'badger', JSON.stringify(sent.map(s => s.invite)));
-    const bad = await lastAi(p);
-    ck('a 401 invite_required has its own words, never "(401)"', bad === BAD_WORDS && !/401|did not answer/.test(await p.$eval('#a3Ask', e => e.textContent)), bad);
-    ck('with the box again, and the question back in its box', await hasBox(p) && (await p.$eval('#a3AskIn', e => e.value)) === 'What is due before next pay?');
+    const bad = await p.$eval('#a3WordErr', e => e.textContent).catch(() => '');
+    ck('a 401 invite_required has its own words, never "(401)"', bad === BAD_WORDS && !/401|did not answer/.test(await p.$eval('#a3Chat', e => e.textContent)), bad);
+    ck('with the box again, and the message back in its box', await hasBox(p) && (await askBox(p)) === 'What is due before next pay?');
     ck('the word that did not match is no longer kept', (await kept(p)) === null);
 
     /* the right word */
     await typeWord(p, GOOD);
     await ask(p, 'What is due before next pay?');
-    ck('with the right word the answer reaches the page', (await lastAi(p)) === 'Rent is 72,000 on 27 Nov.' && sent[sent.length - 1].invite === GOOD);
-    await p.click('#a3AskClose'); await T.w(200);
+    ck('with the right word the answer reaches the page', (await lastAi(p)) === 'Rent is 72,000 on 27 Nov.' && sent[sent.length - 1].invite === GOOD, await lastAi(p));
+    await p.click('#a3ChatClose'); await T.w(200);
     await p.click('#a3AskGo'); await T.w(400);
-    ck('Ask again: the word is kept, so no box', !(await p.$('#a3Word')));
-    await p.click('#a3AskClose'); await T.w(200);
+    await ask(p, 'And after that?');
+    ck('the assistant again: the word is kept, so no box', !(await p.$('#a3Word')) && sent[sent.length - 1].invite === GOOD);
+    await p.click('#a3ChatClose'); await T.w(200);
 
     /* Add statements: the same word, from the same place */
     await pick(p);
@@ -131,12 +144,14 @@ const idbText = p => p.evaluate(async () => {
     ck('Settings clears the word', (await kept(p)) === null && /No code word/i.test(await p.$eval('[data-set="word"]', e => e.textContent)));
     await p.click('#a3SetClose'); await T.w(200);
     await p.click('#a3AskGo'); await T.w(400);
-    ck('cleared: Ask shows the box again', await hasBox(p));
+    const nC = sent.length;
+    await ask(p, 'What is due before next pay?');
+    ck('cleared: the assistant shows the box again, and sends nothing', await hasBox(p) && sent.length === nC);
     ck('the word went nowhere but the relay\'s invite field', sent.every(s => Object.keys(s).filter(k => JSON.stringify(s[k]).includes(GOOD)).every(k => k === 'invite')));
     const errs1 = errs.filter(e => !/status of 401 \(Unauthorized\)/.test(e));   // the browser's own line for the relay's 401, not a page error
     ck('no page errors (the browser\'s line for the 401 aside)', errs1.length === 0, errs1.join(' | '));
     await p.setViewport({ width: 320, height: 700, isMobile: true, hasTouch: true }); await T.w(200);
-    ck('no sideways scroll at 320 with the box', await p.evaluate(() => document.documentElement.scrollWidth <= 320));
+    ck('no sideways scroll at 320 with the box', await p.evaluate(() => Math.max(document.documentElement.scrollWidth, document.getElementById('a3').scrollWidth) <= 320));
     await T.shot(p, 'invite_box');
     await b.close();
   }
@@ -150,10 +165,11 @@ const idbText = p => p.evaluate(async () => {
     await p.evaluate(async bk0 => { const s = await BurrowStore.open(); await s.load(); await s.save(bk0, { full: true }); s.close(); }, bk);
     await p.reload(); await T.w(500);
     await p.click('#a3AskGo'); await T.w(400);
-    await typeWord(p, GOOD);
     await ask(p, 'What is due before next pay?');
+    await typeWord(p, GOOD);
+    await p.$eval('#a3ChatSend', e => e.click()); await T.w(700);
     ck('kept book: the answer came through the relay with the word', sent.length === 1 && sent[0].invite === GOOD);
-    await p.click('#a3AskClose'); await T.w(200);
+    await p.click('#a3ChatClose'); await T.w(200);
     await p.click('#a3SetGo'); await T.w(300);
     await p.click('#a3BkSave').catch(() => {}); await T.w(300);
     ck('the word is in localStorage only, never in the saved book or anything kept with it', (await kept(p)) === GOOD && !(await idbText(p)).includes(GOOD));
@@ -166,11 +182,11 @@ const idbText = p => p.evaluate(async () => {
   {
     const { b, p, errs } = await T.open();
     const sent = await relay(p, { ai: true });
-    await p.goto(T.URL0 + '?try=mako&today=' + DAY); await T.w(400);
+    await withBook(p);
     await p.click('#a3AskGo'); await T.w(400);
-    ck('no word asked for: no box', !(await p.$('#a3Word')));
     await ask(p, 'What is due before next pay?');
-    ck('no word asked for: the answer comes, nothing kept on the device', (await lastAi(p)) === 'Rent is 72,000 on 27 Nov.' && sent[0].invite === '' && (await p.evaluate(() => localStorage.length)) === 0);
+    ck('no word asked for: no box', !(await p.$('#a3Word')));
+    ck('no word asked for: the answer comes, nothing kept on the device', (await lastAi(p)) === 'Rent is 72,000 on 27 Nov.' && sent[0].invite === '' && (await p.evaluate(() => localStorage.length)) === 0, await lastAi(p));
     ck('no page errors (no word)', errs.length === 0, errs.join(' | '));
     await b.close();
   }
@@ -181,22 +197,22 @@ const idbText = p => p.evaluate(async () => {
     const { b, p, errs } = await T.open();
     const health = { ai: true };
     await relay(p, health);
-    await p.goto(T.URL0 + '?try=mako&today=' + DAY); await T.w(400);
+    await withBook(p);
     await p.click('#a3AskGo'); await T.w(400);
     for (const [status, message] of [[429, 'Daily limit for this device reached. Try again tomorrow.'], [503, 'The AI has no credit left on this page. The owner needs to top it up.'], [400, 'Claude rejected the request.']]) {
       health.fail = { status, message };
       await ask(p, 'What is due before next pay?');
       const got = await lastAi(p);
-      ck(`C5: a ${status} shows the server's own message`, got === `That didn't go through: ${message} Your question is back in the box`, got);
+      ck(`C5: a ${status} shows the server's own message`, got === `The AI did not answer: ${message.replace(/\.$/, '')}. Nothing was lost`, got);
     }
     health.fail = { status: 500 };
     await ask(p, 'What is due before next pay?');
     ck('C5: a reply with no message keeps the plain fallback', /the AI did not answer \(500\)/.test(await lastAi(p)), await lastAi(p));
     health.fail = { status: 429 };
     await ask(p, 'What is due before next pay?');
-    ck('C5: a 429 with no message keeps the caller\'s words', /too many questions right now/.test(await lastAi(p)), await lastAi(p));
+    ck('C5: a 429 with no message keeps the caller\'s words', /the daily limit is reached, or too many messages at once/.test(await lastAi(p)), await lastAi(p));
     health.fail = { status: 503, message: 'The relay has no API key yet.' };
-    await p.click('#a3AskClose'); await T.w(200);
+    await p.click('#a3ChatClose'); await T.w(200);
     await pick(p);
     await p.click('#a3StmtRead'); await T.w(900);
     const sheet = await p.$eval('#a3Stmt', e => e.textContent);
@@ -214,7 +230,7 @@ const idbText = p => p.evaluate(async () => {
     await p.goto(T.URL0 + '?try=mako&today=' + DAY); await T.w(400);
     await p.click('#a3SetGo'); await T.w(500);
     const off = await p.$eval('[data-set=aioff]', e => e.textContent).catch(() => null);
-    ck('C5: /api/health says ai false: Settings says the AI is off', off === 'The AI is off on this page right now. Everything else still works', off);
+    ck('C5: /api/health says ai false: Settings says the assistant is off, in the panel\'s words (AI_JOIN_FIXES G)', off === 'The assistant is off right now. Everything else still works', off);
     ck('no page errors (AI off)', errs.length === 0, errs.join(' | '));
     await b.close();
   }

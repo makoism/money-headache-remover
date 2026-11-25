@@ -233,10 +233,19 @@ t('[slice 6b] pay on two days a month changed to no fixed pay mid-period: by day
   const r = lookahead(b.book, '2026-12-12');
   eq([r.period, r.daysToNextPay.days, r.horizon, r.accounts[bank].bank], [null, null, '2027-01-27', 493000]);
   eq([r.safeToSpend.headline, r.safeToSpend.cappedByFreeToSpend], [66967, true]);
-  eq(r.safeToSpend.whyParts, [{ label: 'what your accounts can spare', amount: 181778 }, { label: 'more than Free to spend left this period', amount: -114811 }]);
+  // [THREE_VALUES, 24 Nov] "what your accounts can spare" no longer has this month's everyday money taken off by the day
+  // (it caps instead, so it is counted once): the old 181,778 plus 13 to 31 Dec by the day, 19 x 3,287 + 20 = 62,473
+  // (3,287 = floor(100,000 x 12 / 365); the last day carries floor(1,200,000 x 31 / 365) - 31 x 3,287 = 20), is 244,251.
+  // The headline is the same 66,967: Free to spend left was the smaller of the two before and after.
+  eq(r.safeToSpend.whyParts, [{ label: 'what your accounts can spare', amount: 244251 }, { label: 'more than Free to spend left this period', amount: -177284 }]);
+  eq([r.canSpare.amount, r.everyday.left, r.noJob.amount, r.everyday.kind, r.everyday.lastDay], [244251, 66967, 177284, 'month', '2026-12-31']);
   b.book.events.push(Object.assign({ id: 'sixb2k-aaaaaaaaaa-5', k: 'spend', acct: bank, a: 6000, date: '2027-01-03' }, at6('2027-01-03')));
   const j = lookahead(b.book, '2027-01-05').safeToSpend;
-  eq([j.headline, j.cappedByFreeToSpend], [66177, false], 'January starts again');
+  // [THREE_VALUES] January starts again with 100,000 less the 6,000 spent: 94,000 left. Before, the walk had already
+  // taken January's everyday money off by the day and the headline read 66,177 (the same money off twice). What the
+  // accounts can spare is that 66,177 plus 6 to 31 Jan by the day, 26 x 3,287 + 20 = 85,482: 151,659. Headline 94,000.
+  eq([j.headline, j.cappedByFreeToSpend], [94000, true], 'January starts again');
+  eq(lookahead(b.book, '2027-01-05').canSpare.amount, 151659);
   ok(Number.isInteger(r.lastsAboutWeeks), 'lasts about N weeks: ' + r.lastsAboutWeeks);
   // the period history before the change is not lost from the book: the day before the change still has its period
   eq(lookahead(b.book, '2026-12-09').period.start, '2026-11-30');

@@ -198,7 +198,7 @@ function stmt3Review() {
 }
 /* the review drawn again after a change, keeping which shops are open and where it was scrolled */
 function stmt3Again() {
-  const open = [...document.querySelectorAll('[data-rowsof]')].filter(u => !u.hidden).map(u => u.dataset.rowsof), y = scrollY;
+  const open = [...document.querySelectorAll('[data-rowsof]')].filter(u => !u.hidden).map(u => u.dataset.rowsof), y = ($('#a3') || {}).scrollTop || scrollY;   // the page may scroll inside #a3 (chat3.js)
   stmt3Review();
   for (const k of open) { const u = document.querySelector(`[data-rowsof="${CSS.escape(k)}"]`); if (u) { u.hidden = false; document.querySelector(`[data-mx="${CSS.escape(k)}"]`).setAttribute('aria-expanded', 'true'); } }
   scrollTo(0, y);

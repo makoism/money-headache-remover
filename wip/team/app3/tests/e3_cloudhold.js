@@ -60,12 +60,12 @@ const FAST = sp => { window.__burrow3CloudSpeed = sp; };
     await A.p.tap('[data-tab="home"]'); await T.w(200);
     const home0 = await homeText(A.p);
     await A.p.click('#a3AskGo'); await T.w(300);
-    ck('(the chat is open on A)', await A.p.$eval('#a3Ask', e => !e.hidden));
+    ck('(the chat is open on A)', !!(await A.p.$('#a3Chat[data-open]:not([hidden])')));
     ck('(B logged a spend and it was sent)', await bLogs('1200', 'coffee one'));
     ck('1. F3: with the chat open, A takes the spend', await until(() => has(A.p, 'coffee one'), 3 * TICK + 1500));
     ck('1. F3: Home under the chat shows it (drawn again while the chat is open)', await until(async () => (await homeText(A.p)) !== home0, 2000), home0.slice(0, 120));
-    ck('1. the chat is still open, as it was', await A.p.$eval('#a3Ask', e => !e.hidden));
-    await A.p.click('#a3AskClose'); await T.w(300);
+    ck('1. the chat is still open, as it was', !!(await A.p.$('#a3Chat[data-open]:not([hidden])')));
+    await A.p.click('#a3ChatClose'); await T.w(300);
 
     /* ---- 2. B2: a Plan form half typed, the chat over it ---- */
     await A.p.tap('[data-tab="plan"]'); await T.w(250);
@@ -83,7 +83,7 @@ const FAST = sp => { window.__burrow3CloudSpeed = sp; };
     await T.w(3 * TICK);
     ck('2. B2: with the form covered by the chat, the book does not change', !(await has(A.p, 'tea two')));
     ck('2. B1: only the revision is asked: no copy fetched, nothing sent', calls(from, isRev).length >= 2 && calls(from, isCopy).length === 0 && calls(from, isPut).length === 0, JSON.stringify(vault.log.slice(from).map(x => x.method + ' ' + x.query)));
-    await A.p.click('#a3AskClose'); await T.w(400);
+    await A.p.click('#a3ChatClose'); await T.w(400);
     ck('2. B2: the chat closed, the form shows with the typing still there', !!(await A.p.$('[data-card=plan-form]')) && (await A.p.$eval('#pl-name', e => e.value)) === 'Gym' && (await A.p.$eval('#pl-amount', e => e.value)) === '7000', await A.p.$eval('#pl-name', e => e.value).catch(() => 'no form'));
     await T.w(2 * TICK);
     ck('2. the form still open: still not taken, and the typing stays', !(await has(A.p, 'tea two')) && (await A.p.$eval('#pl-amount', e => e.value)) === '7000');
@@ -102,7 +102,9 @@ const FAST = sp => { window.__burrow3CloudSpeed = sp; };
     ck('2. B4: now "Last checked" moves', (await checked(A.p)) > tSent, `${await checked(A.p)} vs ${tSent}`);
     await A.p.click('#a3SetClose'); await T.w(200);
     await A.p.tap('[data-tab="plan"]'); await T.w(250); await A.p.click('#plAddBill'); await T.w(300);
-    ck('2. the typing is still kept for the form (K35)', (await A.p.$eval('#pl-name', e => e.value)) === 'Gym');
+    /* [STALE_SHEET_PLAN, M61] once the cloud's copy came in, typing kept from the closed form is dropped (back3), so an
+       old figure is never put back: the form opens empty. While the form was open its typing stayed (checked above) */
+    ck('2. after the take landed, the closed form\'s kept typing is dropped (stale sheet rule)', (await A.p.$eval('#pl-name', e => e.value)) === '');
     const errs = A.errs.concat(B.errs).filter(e => !/Failed to load resource/.test(e));
     ck('no page errors', errs.length === 0, errs.join(' | '));
   } finally { await A.b.close(); await B.b.close(); await s.close(); }

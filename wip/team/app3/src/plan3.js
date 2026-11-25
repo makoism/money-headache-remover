@@ -160,6 +160,10 @@ function drawPlan3() {
 function plForm3(title, fields, buttons, note) {
   const host = $('#a3Plan'), cur = E3.home();
   PL3.form = { title };
+  /* [STALE_SHEET_PLAN, M61] what this sheet saw when it opened: the door refuses a save on anything that changed since.
+     Refused that way (here or by the store for a tab that is behind), the sheet closes to the list as it is now */
+  const seen = ACT3.seen();
+  const elsewhere = res => { if (res.ok || res.why !== 'other') return false; if (typeof BACK3 === 'object') BACK3.forget(); plClose3(); MSG3.post({ kind: 'notice', key: 'a3', text: res.text }); return true; };
   const input = f => {
     const id = 'pl-' + f.key, v = f.value == null ? '' : f.value;
     if (f.kind === 'pick') return `<select class="a3-in a3-sel" id="${id}">${f.options.map(o => `<option value="${esc3(o.v)}"${o.v === v ? ' selected' : ''}>${esc3(o.name)}</option>`).join('')}</select>`;
@@ -189,7 +193,8 @@ function plForm3(title, fields, buttons, note) {
     const got = read(), err = $('#plErr');
     if (got.bad) { err.textContent = got.bad; got.el.focus(); return; }
     const b = buttons[Number(btn.dataset.plbtn)], [label, fn, undo] = b.step(got.vals);
-    const res = await ACT3.run(label, fn, { undo });
+    const res = await ACT3.run(label, fn, { undo, seen });
+    if (elsewhere(res)) return;
     const ask = $('#plAsk'); ask.hidden = true; ask.innerHTML = '';
     if (!res.ok) {
       err.textContent = res.text;
@@ -199,7 +204,8 @@ function plForm3(title, fields, buttons, note) {
         $('#plAnyway').addEventListener('click', async () => {
           const again = read();
           if (again.bad) { err.textContent = again.bad; again.el.focus(); return; }
-          const [l2, f2, u2] = b.anyway.step(again.vals), r2 = await ACT3.run(l2, f2, { undo: u2 });
+          const [l2, f2, u2] = b.anyway.step(again.vals), r2 = await ACT3.run(l2, f2, { undo: u2, seen });
+          if (elsewhere(r2)) return;
           if (!r2.ok) { err.textContent = r2.text; ask.hidden = true; ask.innerHTML = ''; return; }
           plClose3();
         });
@@ -269,8 +275,9 @@ function plBillForm3(id) {
   const every = everyNow ? [{ key: 'every', label: 'How often it lands', kind: 'pick', value: everyNow, options: PL_EVERY3 },
     { key: 'day2', label: 'And on day', kind: 'pick', value: everyNow === 'days' ? String(r0.days[1]) : 'last', options: PL_DAY2_3 },
     { key: 'start', label: 'The day of one pay, when it lands every few weeks', kind: 'date', value: r0.every === 'weeks' ? r0.from : '' }] : [];
-  const others = book.schedules.some(x => plLive3(x) && x.id !== s.id && x.kind === 'income' && x.startsPeriod);
-  const starts = s.startsPeriod || (everyNow === 'none' && !others);
+  /* [BZ2] the pay holding the flag today (a dated flag: the engine says which) */
+  const holder = BurrowEngine.schedules.periodHolder((book.schedules || []).filter(plLive3), E3.today());
+  const starts = (holder && holder.id === s.id) || (everyNow === 'none' && !holder);
   const perPay = every.length && starts ? (everyNow === 'none' ? PLAN3W.linesEachMonth({ book, today: E3.today() }) : PLAN3W.linesEachPay({ book, today: E3.today() })) : [];
   const lines = perPay.map(l => ({ key: 'ln-' + l.key, label: `${l.name} ${everyNow === 'none' ? 'a month' : 'each pay'} from the change`, kind: 'amount', value: l.amount, optional: true, hint: ' ' }));
   plForm3(s.name, [{ key: 'name', label: 'Name', kind: 'text', value: s.name }, { key: 'amount', label: 'Amount', kind: 'amount', value: v0.amount }].concat(every.slice(0, 1),

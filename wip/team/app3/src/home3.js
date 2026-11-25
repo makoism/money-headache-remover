@@ -93,6 +93,9 @@ function safeUntil3(r, yr, home) {
      words with the engine's own amount for it */
   const np = r.daysToNextPay || {}, notIn = np.days === 0 && !r.safeToSpend.notCounting && ((r.checkIn || {}).toConfirm || []).find(o => o.item === np.item);
   const notInWords = notIn ? `, includes today's pay of ${esc3(money3(notIn.amount, home))}, not in your bank yet` : '';
+  /* [CA8] on the morning of pay day, before the pay is ticked, today is still the old period's last day: the engine says
+     the figure runs to today's pay (safeToSpend.untilPay is today's own pay), and the heading says so */
+  if (n.days === 0 && r.safeToSpend.untilPay && r.safeToSpend.untilPay === np.item) return ` until today's pay is in`;
   /* [C8, M51] "next pay" on this screen is today's pay (the period card), so this one is named "the pay after today's" */
   if (n.days === 0 && r.safeToSpend.until) return ` until the pay after today's, on ${esc3(day3(r.safeToSpend.until, yr))}${r.safeToSpend.notCounting ? ', not counting today\'s pay (not in at your check today)' : ''}${notInWords}`;
   return ` until next pay on ${d}${notInWords}`;
@@ -129,10 +132,12 @@ function drawHome3() {
   const host = $('#a3Home');
   if (!E3.book) {
     host.removeAttribute('data-origin');
-    host.innerHTML = `<section class="a3-card" data-card="first"><h2>Welcome to the burrow</h2><p class="a3-sub">Put in what your bank shows today, your pay, your cards and your bills. Or look around first with made-up numbers shaped like a real month</p>
+    /* [AI first, new foundation 12] before setup the assistant is the whole first screen (chat3.js), with the same ways in */
+    if (typeof renderWelcome3 === 'function' && typeof CHAT3C === 'object') renderWelcome3(host);
+    else host.innerHTML = `<section class="a3-card" data-card="first"><h2>Welcome to the burrow</h2><p class="a3-sub">Put in what your bank shows today, your pay, your cards and your bills. Or look around first with made-up numbers shaped like a real month</p>
       <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3SetupGo">Set up with your own numbers</button><button type="button" class="a3-btn" id="a3TryGo">See it with made-up numbers first</button><button type="button" class="a3-btn" id="a3OtherGo">I already use the burrow on another device</button></div></section>`;
     $('#a3SetupGo').addEventListener('click', openSetup3);
-    $('#a3TryGo').addEventListener('click', () => { E3.useTry('mako'); tryBand3(); renderHome3(); });
+    $('#a3TryGo').addEventListener('click', () => { E3.useTry('mako'); tryBand3(); renderHome3(); if (typeof renderChat3 === 'function') renderChat3(); });
     $('#a3OtherGo').addEventListener('click', fromOther3);
     return;
   }

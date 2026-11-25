@@ -57,9 +57,11 @@ const STMT3_AI = (() => {
       /* [C5] the server words each refusal itself (the daily limit, no key, no credit, a refused request): its message is
          shown as it is, less its last full stop (the callers add their own). With no message, the old plain words */
       const j = await r.json().catch(() => null), said = j && j.error && typeof j.error.message === 'string' ? j.error.message.trim().replace(/\.$/, '') : '';
-      if (said && (r.status === 400 || r.status === 429 || r.status === 503)) throw new Error(said);
-      if (r.status === 429) throw new Error(busy || 'too many requests right now, try again in a minute');
-      throw new Error('the AI did not answer (' + r.status + ')');
+      /* each Error carries the server's status and its own code (relay_unconfigured is the relay's "off") */
+      const fail = m => Object.assign(new Error(m), { status: r.status, code: (j && j.error && typeof j.error.code === 'string') ? j.error.code : '' });
+      if (said && (r.status === 400 || r.status === 429 || r.status === 503)) throw fail(said);
+      if (r.status === 429) throw fail(busy || 'too many requests right now, try again in a minute');
+      throw fail('the AI did not answer (' + r.status + ')');
     }
     return r.json();
   }
@@ -69,7 +71,7 @@ const STMT3_AI = (() => {
     if (!slot) return;
     slot.innerHTML = `<div class="a3-field a3-word" id="a3Word"><label for="a3WordIn">Code word for the AI (ask the owner)</label>
       <input class="a3-in a3-text" id="a3WordIn" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="a3WordH">
-      <p class="a3-sub" id="a3WordH">Kept on this device only, and sent only to this page's own server.</p>
+      <p class="a3-sub" id="a3WordH">Kept on this device only, and sent only to this page's own server</p>
       <p class="a3-err" id="a3WordErr" role="alert"></p>
       <div class="a3-actions"><button type="button" class="a3-btn" id="a3WordKeep">Keep it</button></div></div>`;
     const err = slot.querySelector('#a3WordErr'), say = t => { err.textContent = t || ''; err.hidden = !t; };

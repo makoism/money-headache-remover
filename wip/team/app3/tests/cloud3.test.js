@@ -180,7 +180,7 @@ const canon = x => S.canon(x);
     // this device renamed the same pay; its write is refused once (as when another write lands first), then the cloud cannot be reached
     Object.assign(Aa.copy.schedules.find(s => s.id === sid), { name: 'Main job (desk)', at: '2026-12-07T08:00:00.000+09:00', by: 'dsk001' });
     let refusedOnce = false, down = false;
-    const apiA = { del: k => api5.del(k), rev: k => api5.rev(k),
+    const apiA = { del: k => api5.del(k), versions: k => api5.versions(k), rev: (k, n) => api5.rev(k, n),
       get: k => (down ? Promise.resolve({ status: 0, ok: false, j: {} }) : api5.get(k)),
       put: async (k, body, ka) => { if (!refusedOnce) { refusedOnce = true; down = true; return { status: 409, ok: false, j: { error: { code: 'conflict' } } }; } return api5.put(k, body, ka); } };
     const mine = clone(Aa.copy);
@@ -243,7 +243,7 @@ const canon = x => S.canon(x);
     const one = await C.syncOnce({ api: apih, pack, S, keys, device: {}, copy: b0 });
     const mine = clone(one.copy); mine.events.push({ id: 'dsk001-b7n3k9s2x4-77', k: 'spend', acct: BOOK.accounts[0].id, date: '2026-12-08', a: 410, told: '2026-12-08T09:30:00.000+09:00', at: '2026-12-08T09:30:00.000+09:00', by: 'dsk001' });
     let from = vh.log.length;
-    const h1 = await C.syncOnce({ api: apih, pack, S, keys, device: one.device, copy: mine, hold: true });
+    const h1 = await C.syncOnce({ api: apih, pack, S, keys, device: one.device, copy: mine, holdBack: true });
     const got = vh.log.slice(from);
     ck('hold, the cloud not moved: this book is written as it is', h1.ok && !h1.held && h1.pushed && S.canon(h1.copy) === S.canon(C.noRev(mine)) && S.canon(h1.device.base) === S.canon(C.noRev(mine)));
     ck('hold: no copy is fetched, only the revision', got.filter(x => x.method === 'GET' && !x.query).length === 0 && got.some(x => x.method === 'GET' && x.query === 'versions=1'), JSON.stringify(got.map(x => x.method + ' ' + x.query)));
@@ -253,7 +253,7 @@ const canon = x => S.canon(x);
     await C.syncOnce({ api: apih, pack, S, keys, device: other.device, copy: other.copy });
     const mine2 = clone(h1.copy); mine2.events.push({ id: 'dsk001-b7n3k9s2x4-78', k: 'spend', acct: BOOK.accounts[0].id, date: '2026-12-08', a: 230, told: '2026-12-08T09:50:00.000+09:00', at: '2026-12-08T09:50:00.000+09:00', by: 'dsk001' });
     from = vh.log.length;
-    const h2 = await C.syncOnce({ api: apih, pack, S, keys, device: h1.device, copy: mine2, hold: true });
+    const h2 = await C.syncOnce({ api: apih, pack, S, keys, device: h1.device, copy: mine2, holdBack: true });
     const got2 = vh.log.slice(from);
     ck('hold, the cloud moved: held, nothing written, no copy fetched', h2.ok && h2.held && !h2.pushed && got2.every(x => x.method === 'GET' && x.query === 'versions=1'), JSON.stringify(got2.map(x => x.method + ' ' + x.query)));
     ck('hold, held: the book and the base handed back are the ones given', S.canon(h2.copy) === S.canon(C.noRev(mine2)) && h2.device.baseRev === h1.device.baseRev);
@@ -290,7 +290,7 @@ const canon = x => S.canon(x);
     const later = await C.syncOnce({ api: api8, pack, S, keys, device: t.device, copy: t.copy });
     ck('and it is sent by the next sync that may send', later.ok && later.pushed && later.copy.events.some(e => e.id === 'dsk001-b7n3k9s2x4-901'));
     // [B5] the server's daily limit is its own answer, not "busy"
-    const full = { get: k => api8.get(k), rev: k => api8.rev(k), del: k => api8.del(k), put: async () => ({ status: 429, ok: false, j: { error: { code: 'rate_limited', message: 'Too many saves today for this vault.' } } }) };
+    const full = { get: k => api8.get(k), versions: k => api8.versions(k), rev: (k, n) => api8.rev(k, n), del: k => api8.del(k), put: async () => ({ status: 429, ok: false, j: { error: { code: 'rate_limited', message: 'Too many saves today for this vault.' } } }) };
     const m2 = clone(later.copy); m2.schedules[0].name = 'Main job again'; m2.schedules[0].at = '2026-12-08T10:00:00.000+09:00';
     let rd = await C.syncOnce({ api: full, pack, S, keys, device: later.device, copy: m2 });
     ck('B5: "too many saves today" from the server is said as the day\'s limit', !rd.ok && rd.why === 'day', JSON.stringify(rd).slice(0, 120));
