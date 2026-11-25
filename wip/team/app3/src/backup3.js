@@ -112,6 +112,10 @@
     const out = walk(restored, overs, true);
     const kept = new Map();
     for (const c of overs.slice(0, 1).concat([restored])) for (const k of c.keptVersions || []) if (k && !kept.has(k.id)) kept.set(k.id, C(k));
+    // a "which to keep" question open at the restore is closed by it: the restore rewrites every item, so the question
+    // is saved not asking, with the restore's change time; its versions stay kept, for Undo (M20). Left open, the
+    // figures would count the question's amount and an answer would write over what was restored.
+    for (const k of kept.values()) if (k.ask) Object.assign(k, { ask: false, at, by });
     if (kept.size) out.keptVersions = [...kept.values()].sort((a, b) => (a.id < b.id ? -1 : 1));
     else delete out.keptVersions;
     return out;
