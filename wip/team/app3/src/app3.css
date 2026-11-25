@@ -208,3 +208,24 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
    the one .a3-msg rule above) */
 .a3-secsave { align-items: center; }
 .a3-secsave [data-saved] { margin: 0; }
+
+/* ---- layout rules that hold on every screen (qc-layout candidate 2, blockers 3 to 6; tests/e3_layout.js; lesson 2: one
+   rule for every name, every figure, every drop-down and every thing to tap, never one screen at a time) ---- */
+/* a long unbroken word wraps inside its card; a row's amount keeps together and moves under the name when both do not fit;
+   a figure wider than the card itself breaks rather than push the page sideways */
+.a3-card, .a3-chat-body, .a3-sheet-in { overflow-wrap: anywhere; }
+.a3-rows li { flex-wrap: wrap; }
+.a3-rows li > * { min-width: 0; max-width: 100%; }
+.a3-rows li > :first-child:not(:only-child) { flex: 1 1 9ch; }
+.a3-rows .amt { white-space: normal; overflow-wrap: break-word; margin-left: auto; text-align: right; }
+/* a drop-down is never cut: it may take the whole row, and its words go onto a second line before they are cut */
+select.a3-in, .a3-sel { max-width: 100%; height: auto; white-space: normal; padding-top: 8px; padding-bottom: 8px; }
+/* where the browser can draw a drop-down's own box as ordinary text (Chrome 135 and later, Mako's phone), its words wrap
+   onto a second line; an older browser skips this line and keeps its own box */
+select.a3-in, .a3-sel { appearance: base-select; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+details summary { display: flex; align-items: center; }
+/* the "?" help mark: the circle stays small, the place to tap is 44 by 44 */
+.burrow-help { width: 44px; height: 44px; margin: -8px; background: radial-gradient(circle closest-side, var(--track) 14px, transparent 14.5px); }
+.burrow-help[aria-expanded="true"] { background: radial-gradient(circle closest-side, var(--accent) 14px, transparent 14.5px); color: var(--on-accent); }
+details summary { min-height: 44px; }
+.a3-rem-go { flex-wrap: wrap; }
