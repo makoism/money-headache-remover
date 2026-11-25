@@ -87,3 +87,5 @@ These lines are about how the team works with him, so no app test or reviewer ca
 - M79: QC_ROLES.md (qc-assistant and qc-controls run on every release).
 - M82: sections 4b and 5.
 - M84: COORDINATOR.md CURRENT STATE (the list of tasks to switch off and on).
+- M86, M87: section 4c and 4c-now (credits: few until the reset is not near, the whole allowance until Sun 29 Nov 09:00 JST).
+- M98: section 1 step 0 (the user walk before any line is written), LESSONS 6, qc-novice in plan mode.

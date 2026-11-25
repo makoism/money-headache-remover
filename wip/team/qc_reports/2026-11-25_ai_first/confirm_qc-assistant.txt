@@ -1,4 +1,4 @@
-Written by the coordinator, 26 Nov 2026 05:00 JST. A confirming run for qc-assistant (see QC_COMMON.md, "A confirming run").
-Earlier report: qc-assistant.md in this folder (run 3, FAIL, one blocker: the second "Set up on the screens" link opened empty boxes; every line from runs 1 and 2 was MET).
-Changed since that report: commit 8af94cb2 only (both links to setup on the screens are one door, so the chat's answers fill the boxes from either; test e3_chatwalk G).
-Check: that blocker is gone from both links, with answers given in the chat first; and setup by chat and setup on the screens still both finish.
+Written by the coordinator, 26 Nov 2026 07:30 JST. A confirming run for qc-assistant (see QC_COMMON.md, "A confirming run").
+Earlier report: qc-assistant.md in this folder (run 4, FAIL, one blocker: before setup, a bank changed and Saved on the setup screens, 250,000 to 260,000, was lost when the chat then filled the app; two stores of setup answers joined one way).
+Changed since that report: 578ee3e3 (fix B: a section's Save and its Undo write the chat's draft through ANSWERS3.fromForm, newest wins both ways, section by section; tests e3_twodrafts.js and chat3_core.test.js [fix B]); b1943425 (every write of the setup draft goes through one queue, the clear last); 267b56ae and 956b2560 (docs and briefs only); f09777f8 (the check log).
+Check: the 250,000 to 260,000 case both ways (Save on the screens then the chat fills; the chat then the screens), Undo of a section with setup open and closed, a cents currency, a pay typed by hand; that setup by chat and setup on the screens still both finish; and that See my money leaves no stale setup draft after a reload.
