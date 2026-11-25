@@ -212,5 +212,22 @@ ck('setup hints come from the old reader\'s own sums: pay, rent', h.pay && h.pay
   const spentOf = b => { const x = PR.periods(b, D4); const w = [].concat(x.past || [], x.now ? [x.now] : []).find(q => q.start <= '2026-12-08' && q.end >= '2026-12-08'); return w && w.free ? w.free.spent : null; };
   ck('[refund] Free to spend spent is the same before and after the import: 3,000 - 2,000 = 1,000 of it', spentOf(bk) === spentOf(af), JSON.stringify([spentOf(bk), spentOf(af)]));
 }
+// [monthrule2 1b, way c part a] a pay ticked at a check is dated its due day, Thu 10 Dec; the bank statement read later
+// says 11 Dec. The statement's day wins (statement over typed) and the review says so in one line, never silently:
+// "Your Main job came in on 11 Dec, not 10 Dec, so your last period now ends 10 Dec". Made-up Mako book.
+{
+  const CI = require('../../engine/checkin.js'), D5 = '2026-12-16', bk = JSON.parse(JSON.stringify(book0));
+  const MAIN = sch('Main job'), occM = MAIN + '@2026-12-10', r0 = L.lookahead(bk, '2026-12-14');
+  const out = CI.checkIn(bk, { day: '2026-12-14', told: '2026-12-14T12:00+09:00', newId: I.idMaker('t3stdv', () => 0.3), figures: {}, ticked: [occM], unticked: [],
+    amounts: {}, expected: { [occM]: 180000 }, lands: { [occM]: '2026-12-10' }, landed: {} });
+  const b2 = CI.apply(bk, out);
+  ck('[came] the check dated Main job 10 Dec', b2.events.some(e => e.k === 'in' && e.date === '2026-12-10' && (e.settles || []).some(x => x.s === MAIN)));
+  const rd = R.cleanRead({ kind: 'bank', rows: [{ date: '2026-12-11', text: 'SALARY MAIN JOB', amount: 180000, dir: 'in' }] }, 'bank_pay.csv', D5);
+  const pp = P.plan(b2, [rd], { today: D5, assign: [BANK], cats: {} });
+  ck('[came] the review names the day it moved', JSON.stringify(pp.moved) === JSON.stringify([{ s: MAIN, was: '2026-12-10', now: '2026-12-11', starts: true }]), JSON.stringify(pp.moved));
+  ck('[came] in words', P.movedWords(pp.moved[0], id => bk.schedules.find(x => x.id === id).name, d => d) === 'Your Main job came in on 2026-12-11, not 2026-12-10, so your last period now ends 2026-12-10', P.movedWords(pp.moved[0], id => bk.schedules.find(x => x.id === id).name, d => d));
+  const same = P.plan(b2, [R.cleanRead({ kind: 'bank', rows: [{ date: '2026-12-10', text: 'SALARY MAIN JOB', amount: 180000, dir: 'in' }] }, 'bank_pay2.csv', D5)], { today: D5, assign: [BANK], cats: {} });
+  ck('[came] the same day: nothing to say', same.moved.length === 0, JSON.stringify(same.moved));
+}
 console.log(bad ? `e3_stmt_plan: ${bad} FAIL of ${n}` : `e3_stmt_plan: ALL PASS (${n})`);
 process.exit(bad ? 1 : 0);

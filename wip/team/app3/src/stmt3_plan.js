@@ -182,6 +182,15 @@
         .map(x => ({ x, g: Math.abs(dayNum(x.lands) - dayNum(l.date)) })).filter(y => y.g <= 10).sort((p1, p2) => p1.g - p2.g || (p1.x.lands < p2.x.lands ? -1 : 1))[0];
       if (best) { l.settles = [best.x.item]; l.status = 'settles'; taken.add(best.x.item); }
     }
+    // [monthrule2 1b, way c part a] a pay ticked at a check is dated its due day; a statement line that replaces it with
+    // another day moves it (statement over typed) and the review says so, never silently: { s, was, now, starts }
+    const moved = [];
+    for (const l of all) {
+      const t = l.status === 'typed' && kept[l.typed];
+      if (!t || t.k !== 'in' || t.sub !== 'pay' || t.date === l.date || !(t.settles || []).length) continue;
+      const sc = (book.schedules || []).find(x => x && !x.gone && x.id === t.settles[0].s);
+      if (sc) moved.push({ s: sc.id, was: t.date, now: l.date, starts: !!sc.startsPeriod });
+    }
     const statements = [];
     for (const g of byRead) {
       const st = g.read.statement;
@@ -197,7 +206,7 @@
       if (l.dir === 'in') m.inA += l.a; else m.outA += l.a;
     }
     const count = s => all.filter(l => l.status === s).length;
-    return { today, lines: all, statements, merchants: Object.values(merchants).sort((x, y) => (y.inA + y.outA) - (x.inA + x.outA)),
+    return { today, lines: all, moved, statements, merchants: Object.values(merchants).sort((x, y) => (y.inA + y.outA) - (x.inA + x.outA)),
       counts: { read: all.length, repeat: count('repeat'), typed: count('typed'), settles: count('settles'), meets: count('meets'), new: count('new'), pick: count('pick'), askmove: count('askmove') },
       reads: byRead.map(g => ({ idx: g.idx, file: g.read.file, acct: g.acct.id, from: g.read.from, to: g.read.to, rows: g.lines.length, notes: g.read.notes || [] })) };
   }
@@ -292,7 +301,12 @@
     return { bank: d.balance !== null ? { a: m(d.balance), date: d.balanceDate } : null, pay: d.pay !== null ? { a: m(d.pay), how: d.how } : null, bills, cards: d.card !== null ? m(d.card) : null };
   }
 
-  const api = { plan, records, catsToKeep, knownCats, knownCards, knownMoves, setupHints, expectedOf, use };
+  /* the review's one line for a pay whose day a statement moved (name: schedule id to its name; day: a date to words) */
+  function movedWords(m, name, day) {
+    const end = new Date((dayNum(m.now) - 1) * MS).toISOString().slice(0, 10);
+    return `Your ${name(m.s)} came in on ${day(m.now)}, not ${day(m.was)}` + (m.starts ? `, so your last period now ends ${day(end)}` : '');
+  }
+  const api = { plan, records, movedWords, catsToKeep, knownCats, knownCards, knownMoves, setupHints, expectedOf, use };
   if (node) module.exports = api;
   else root.STMT3P = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
