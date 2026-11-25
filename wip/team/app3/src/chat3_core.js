@@ -159,9 +159,9 @@
     addGoal: { name: 'Add a goal', does: 'Adds a goal: its name, the goal amount, a target date and where the money is kept' },
     goal: { name: 'A goal\'s own sheet', does: 'Sets money aside for the goal, takes money out of it, or changes its name, amount or date' },
     addCard: { name: 'Add a card', does: 'Adds a card: its name, what is on it now, the day it is paid from your bank and the day its statement closes' },
-    card: { name: 'A card\'s own sheet', does: 'Changes the card\'s name and days; pays it off, closes or removes it' },
+    card: { name: 'A card\'s own sheet', does: 'Changes the card\'s name and days, pays it off, closes or removes it' },
     addLoan: { name: 'Add a loan', does: 'Adds a loan: its name, what is still owed, the usual payment and the day it is paid' },
-    loan: { name: 'A loan\'s own sheet', does: 'Changes the loan\'s name, day or payment; pays it off, closes or removes it' },
+    loan: { name: 'A loan\'s own sheet', does: 'Changes the loan\'s name, day or payment, pays it off, closes or removes it' },
     addAccount: { name: 'Add an account', does: 'Adds a bank, cash or e-wallet with what it holds today' },
     account: { name: 'An account\'s own sheet', does: 'Renames an account, sets its Keep at least, closes or removes it' },
     closeAccount: { name: 'Close an account', does: 'Closes a bank, cash or e-wallet: its money moves to another account or counts as spent' },
@@ -245,7 +245,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     const loans = (book.accounts || []).filter(x => live(x) && !x.closed && x.type === 'loan').map(x => { const ref = 'A' + (++a); refs[ref] = x.id; return `${ref} | ${x.name} | ${lv[x.id] ? SM.format(lv[x.id].owedNow, x.cur || home) : '?'} still owed | ${x.amount ? SM.format(x.amount, x.cur || home) + ' ' : ''}paid on day ${x.payDay}`; });
     if (loans.length) out.push('Loans (ref | name | still owed | payment):\n' + loans.join('\n'));
     const closed = (book.accounts || []).filter(x => live(x) && x.closed).map(x => { const ref = 'A' + (++a); refs[ref] = x.id; return `${ref} | ${x.name} | closed ${day1(x.closed)}`; });
-    if (closed.length) out.push('Closed accounts (ref | name | closed on; reopen_account opens one again):\n' + closed.join('\n'));
+    if (closed.length) out.push('Closed accounts, reopen_account opens one again (ref | name | closed on):\n' + closed.join('\n'));
     return { text: out.join('\n'), refs };
   }
   function ruleWords(r) {

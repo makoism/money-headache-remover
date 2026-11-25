@@ -384,7 +384,7 @@ function plOwedForm3(id) {
     .concat([card ? { label: 'Close this card', sure: [`Close ${a.name}? Its payment day stops. Its history stays`, 'Yes, close it'], step: () => ['closeAccount', w => PLAN3W.closeAccount(w, id, {}), a.name + ' closed'] }
       : { label: 'Close this loan', sure: [`Close ${a.name}? It leaves your plan`, 'Yes, close it'], step: () => ['closeLoan', w => PLAN3W.closeLoan(w, id), a.name + ' closed'] },
       { label: 'Remove this ' + what, sure: [`Remove ${a.name}? Use this only if it was added by mistake: it goes as if it was never added`, 'Yes, remove it'], step: () => ['removeAccount', w => PLAN3W.removeAccount(w, id), a.name + ' removed'] }]),
-    (owed > 0 ? `${esc3(a.name)}: ${money3(owed, cur)} ${esc3(label3('owed')).toLowerCase()}. ` : '') + (card ? 'A card closes once nothing is on it' : 'A loan closes once it is paid off'));
+    `${owed > 0 ? `${esc3(a.name)}: ${money3(owed, cur)} ${esc3(label3('owed')).toLowerCase()}. ` : ''}${card ? 'A card closes once nothing is on it' : 'A loan closes once it is paid off'}`);
 }
 /* [E1, M13] an account's own sheet: its name, and its own Keep at least (the main bank's is in Settings) */
 function plAcctForm3(id) {
