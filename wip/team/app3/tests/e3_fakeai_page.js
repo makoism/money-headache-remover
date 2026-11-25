@@ -99,6 +99,16 @@ const fig = (p, sel) => p.$eval(sel, e => Number((e.dataset.amt !== undefined ? 
     all.push(...d.errs); await d.close();
   }
   {
+    /* two steps asked, one left out: the card says which was not done */
+    const d = await open('2026-11-24');
+    await openWithFakeAI(d.p, { steps: MAKO_SETUP.steps.concat([{ calls: [{ name: 'change', input: { steps: [{ do: 'add_goal', name: 'Trip', target: 100000 }, { do: 'set_aside', goal: 'G1', amount: 5000 }] } }] }, { words: 'Added the goal.' }]) });
+    for (const line of MAKO_SETUP.lines) await tell(d.p, line);
+    await tell(d.p, 'add a goal called Trip for 100,000 and set aside 5,000 for it');
+    const left = await d.p.$eval('[data-card=chat-change][data-status=done] [data-chat=left]', e => e.textContent).catch(() => null);
+    ck('two steps asked, one left out: the card says "Not done: money set aside for a goal"', left === 'Not done: money set aside for a goal. Say that part again on its own', String(left));
+    all.push(...d.errs); await d.close();
+  }
+  {
     const d = await open('2026-11-24');
     const ai = await openWithFakeAI(d.p, { invite: 'acorn' });
     await d.p.fill('#a3ChatIn', 'hi'); await d.p.click('#a3ChatSend'); await d.p.waitForTimeout(400);

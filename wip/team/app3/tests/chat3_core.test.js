@@ -454,6 +454,23 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const f = await K.fillNow(st, h.deps(FAKE.make([])));
     ok(!f.ok && h.book === null && /Which country/.test(f.text), f.text);
   });
+  /* [qc-assistant, confusing] two steps asked, one left out: the card says which was not done, never without a word */
+  await t('two steps asked and one left out: the card says which one was not done', async () => {
+    const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
+    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'add_goal', name: 'Trip', target: 100000 }, { do: 'set_aside', goal: 'G1', amount: 5000 }] })]), say('Added the goal.')]);
+    const r = await K.turn(state, 'add a goal called Trip for 100,000 and set aside 5,000 for it', hp.deps(f));
+    const c = r.shown.find(x => x.who === 'card').card;
+    eq([c.status, c.lines.length, c.left], ['done', 1, ['money set aside for a goal']]);
+    /* a step that waits on a question says so in plain words, never the note written for the AI */
+    const f2 = FAKE.make([say('', [call('change', { steps: [{ do: 'log_spend', amount: 700, account: 'A1' }, { do: 'log_spend', amount: 800 }] })]), say('Card or bank for the 800?')]);
+    const r2 = await K.turn(r.state, 'I spent 700 from Main bank and 800 on a taxi', hp.deps(f2));
+    const c2 = r2.shown.find(x => x.who === 'card').card;
+    eq([c2.status, c2.left], ['done', ['one step that needs an answer from you first']]);
+    /* nothing left out: no such line */
+    const f3 = FAKE.make([say('', [call('change', { steps: [{ do: 'log_spend', amount: 600, account: 'A1' }] })]), say('Logged.')]);
+    const r3 = await K.turn(r2.state, 'I spent 600 from Main bank', hp.deps(f3));
+    eq(r3.shown.find(x => x.who === 'card').card.left, []);
+  });
   /* [qc-assistant blocker 3; M17] "what does this screen do?": one table with a plain line for every screen and every
      sheet, told to the assistant, and the open sheet's own name with each message */
   await t('[M17] one table says what every screen and sheet is for; the open screen and sheet go with each message', async () => {
