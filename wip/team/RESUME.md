@@ -4,6 +4,15 @@ Written 2026-11-18 on branch `wip-38.31`. Read this whole file before touching a
 
 ## 0. Handoff (latest first)
 
+**PAUSED BY MAKO, 25 Nov 2026 about 10:00 JST** (his words through Coordinator 12: "pause for a bit ... wrap it up so we don't lose progress"). Nothing runs. Do not resume until Coordinator 12 (session_01BFpKEZhy3Va2Px9ZqnUfCG) sends "go". Written by MAIN 16 at 11:15 JST. Everything is pushed; no helper is running; no reminder of mine is set. The full state is the entry below this one (09:50 JST); what changed since:
+- **lane/ai-fix2 at 1d36003e** (pushed, tree clean): AI fixes A to F done. **Exact next step on "go":** one Opus builder from origin/lane/ai-fix2 doing items G, H (1 to 7), I (1 to 4), J, K of foundation_review/AI_JOIN_FIXES.md with the brief in RESUME's step 1 (exact files per item are in MAIN 16's brief: G shell.html, start3.js, ask3.js, back3.js, settings3.js; H chat3_core.js and one line in chat3.js; I setup3.js, start3.js, chat3.js; J settings3.js plus a new tests/e3_ailog.js; K app3/REAL_AI_WALK.md), then check3 full into qc_reports/2026-11-25_ai_fix and the screen pack.
+- lane/ai-fix (8d5f65c0) is superseded by lane/ai-fix2. wip-save/ai-fix is no longer needed (item D was redone and committed).
+- **lane/cloudtake at 3c79bfb4**, unfinished item 3 on the remote as wip-save/cloudtake. Next: step 2 below.
+- **lane/layoutfix at ccf79480**, unfinished test on the remote as wip-save/layoutfix. Next: step 3 below.
+- **Candidate 2: ba17a838 on republish-c2bea7d**, with Mako for his yes; origin/main is 67404694, unchanged.
+- wip-38.31 holds candidate 2's code plus docs (this file, LANE_B_STATE.md). lane/next 75234959 holds the plans.
+- LANE B's branches wait on their last reviews: lane/twofig-engine fc7e5a66, lane/restore 99209db8, lane/cardpay-ask 14b5c28.
+
 **2026-11-25 09:50 JST, MAIN 16: the whole state, written for a session that has never seen this work (RUNBOOK section 5).** Read wip/team/MAKO_SAYS.md first, then RUNBOOK sections 4 and 5. Report to **Coordinator 12 (session_01BFpKEZhy3Va2Px9ZqnUfCG)**, which took over from Coordinator 11 on 25 Nov 09:50 JST (checked: started by 11, named in COORDINATOR.md). LANE B is session_01BFpKEZBRWqdY7tLMMx4sDU. The entries below this one are older and this one wins.
 
 *Pace (coordinator, 25 Nov): one builder helper and one reviewer at most. No reviewer before check3 full is green; each gets the screen pack and stops at 150k tokens. qc-foundation on plans, and on a build only when the engine or saved shape changed. get_session on yourself every 30 minutes and before any helper; if rate_limit_info.status is not "allowed", one line to the coordinator and start nothing. Push after every commit. Builder helpers run on Opus (model "opus") with tight briefs (exact files, failing test first, check3 quick after each change, read their diff before merging); Fable is kept for the gate reviewers (qc-foundation, qc-numbers, qc-north-star, qc-controls, qc-assistant); qc-novice, qc-layout-touch, qc-data-safety and qc-voice run on Opus. If a Fable call is refused, switch that call to Opus at once and tell the coordinator.*
