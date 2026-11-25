@@ -140,9 +140,9 @@ function openSet3() {
 const SET_CHANGES_N3 = 10;
 function paintChanges3() {
   const host = $('#a3SetChanges'); if (!host) return;
-  const list = ((E3.book && E3.book.journal) || []).filter(j => j && j.id && !j.undone).slice(-SET_CHANGES_N3).reverse();
+  const list = ((E3.book && E3.book.journal) || []).filter(j => j && j.id && !j.undone).reverse().slice(0, SET_CHANGES_N3);
   /* when, on this device's clock: the step's day (as the app counts days) and the time it was made */
-  const when = j => { const t = new Date(j.moment), d = j.day || E3.today(), hm = isNaN(t) ? '' : String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0'); return (d === E3.today() ? 'today' : day3(d, E3.today().slice(0, 4))) + (hm ? ' at ' + hm : ''); };
+  const when = j => { const t = new Date(j.moment), d = j.day || E3.today(), hm = isNaN(t) ? '' : String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0'); return `${d === E3.today() ? 'today' : day3(d, E3.today().slice(0, 4))}${hm ? ' at ' + hm : ''}`; };
   /* its Undo bar's words, the first sentence only */
   const words = j => String(j.words || (/\s/.test(j.label || '') ? j.label : 'A change')).split('. ')[0];
   host.innerHTML = `<h2>Recent changes</h2><p class="a3-sub">Undo any of these, even after the app was closed. If something changed it since, undo that first</p>`

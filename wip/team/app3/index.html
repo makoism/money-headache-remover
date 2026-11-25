@@ -9596,7 +9596,7 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     if (id === mainOf(w)) bad('Your main bank is where pay lands, so it cannot be closed here yet');
     if (a.closed) bad(a.name + ' is already closed');
     const k = keptIn(w, id);
-    if (k.length) bad(k.join(' and ') + (k.length > 1 ? ' are' : ' is') + ' kept in ' + a.name + '. Change or remove ' + (k.length > 1 ? 'them' : 'it') + ' first');
+    if (k.length) bad(`${k.join(' and ')} ${k[1] ? 'are' : 'is'} kept in ${a.name}. Change or remove ${k[1] ? 'them' : 'it'} first`);
     const spent = x && x.to === 'spent', to = spent ? mainOf(w) : x && x.to;
     const dest = !spent && (w.book.accounts || []).find(y => live(y) && y.id === to && y.id !== id && !y.closed && OWN_KINDS[y.type] && (y.cur || home(w)) === (a.cur || home(w)));
     if (!spent && !dest) bad('Pick where its money goes: another account of yours, or "it is not there any more"');
@@ -9647,7 +9647,7 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     if (!OWN_KINDS[a.type] && a.type !== 'card' && a.type !== 'loan') bad('That account cannot be removed here');
     if (id === mainOf(w)) bad('Your main bank is where pay lands, so it cannot be removed');
     const uses = linksTo(w, id).map(l => l.rec.name).concat(keptIn(w, id));
-    if (uses.length) bad(uses.join(' and ') + ' use' + (uses.length > 1 ? '' : 's') + ' ' + a.name + '. Change ' + (uses.length > 1 ? 'them' : 'it') + ' first, or close ' + a.name + ' instead');
+    if (uses.length) bad(uses.join(' and ') + ' use' + (uses[1] ? '' : 's') + ' ' + a.name + '. Change ' + (uses[1] ? 'them' : 'it') + ' first, or close ' + a.name + ' instead');
     const on = (w.book.events || []).filter(e => live(e) && (e.acct === id || e.acct2 === id));
     if (on.some(e => e.grp !== a.grp || !(e.k === 'open' || e.k === 'check' || e.k === 'transfer'))) bad(a.name + ' has history. Close it instead: its history stays');
     for (const e of on) w.remove('events', e.id);
@@ -10926,13 +10926,12 @@ function plOwedForm3(id) {
   else fields.push({ key: 'amount', label: 'Usual payment', kind: 'amount', value: a.amount });
   /* [E3, M13, M27] pay it off now (only if they really paid it), close (at zero), remove one added by mistake */
   const r = E3.view(E3.today()), k = card ? r.cards[id] : r.owed[id], owed = k ? k.owedNow : 0, cur = a.cur || E3.home(), from = E3.nameOf(a.payFrom);
-  const what = card ? 'card' : 'loan';
   plForm3(a.name, fields, [{ label: 'Save', solid: true, step: v => ['changeOwed', w => PLAN3W.changeOwed(w, id, card ? { name: v.name, payDay: v.payDay, cutDay: v.cutDay } : { name: v.name, payDay: v.payDay, amount: v.amount }), a.name + ' changed'] }]
     .concat(owed > 0 ? [{ label: 'Pay it off now', sure: [`Did you pay all ${money3(owed, cur)} on ${a.name} today, from ${from}? It is written as paid today`, 'Yes, I paid it'], step: () => ['payOff', w => PLAN3W.payOff(w, id), a.name + ' paid off'] }] : [])
     .concat([card ? { label: 'Close this card', sure: [`Close ${a.name}? Its payment day stops. Its history stays`, 'Yes, close it'], step: () => ['closeAccount', w => PLAN3W.closeAccount(w, id, {}), a.name + ' closed'] }
       : { label: 'Close this loan', sure: [`Close ${a.name}? It leaves your plan`, 'Yes, close it'], step: () => ['closeLoan', w => PLAN3W.closeLoan(w, id), a.name + ' closed'] },
-      { label: 'Remove this ' + what, sure: [`Remove ${a.name}? Use this only if it was added by mistake: it goes as if it was never added`, 'Yes, remove it'], step: () => ['removeAccount', w => PLAN3W.removeAccount(w, id), a.name + ' removed'] }]),
-    (owed > 0 ? `${esc3(a.name)}: ${money3(owed, cur)} ${esc3(label3('owed')).toLowerCase()}. ` : '') + (card ? 'A card closes once nothing is on it' : 'A loan closes once it is paid off'));
+      card ? { label: 'Remove this card', sure: [`Remove ${a.name}? Use this only if it was added by mistake: it goes as if it was never added`, 'Yes, remove it'], step: () => ['removeAccount', w => PLAN3W.removeAccount(w, id), a.name + ' removed'] } : { label: 'Remove this loan', sure: [`Remove ${a.name}? Use this only if it was added by mistake: it goes as if it was never added`, 'Yes, remove it'], step: () => ['removeAccount', w => PLAN3W.removeAccount(w, id), a.name + ' removed'] }]),
+    `${owed > 0 ? `${esc3(a.name)}: ${money3(owed, cur)} ${esc3(label3('owed')).toLowerCase()}. ` : ''}${card ? 'A card closes once nothing is on it' : 'A loan closes once it is paid off'}`);
 }
 /* [E1, M13] an account's own sheet: its name, and its own Keep at least (the main bank's is in Settings) */
 function plAcctForm3(id) {
@@ -12699,9 +12698,9 @@ function openSet3() {
 const SET_CHANGES_N3 = 10;
 function paintChanges3() {
   const host = $('#a3SetChanges'); if (!host) return;
-  const list = ((E3.book && E3.book.journal) || []).filter(j => j && j.id && !j.undone).slice(-SET_CHANGES_N3).reverse();
+  const list = ((E3.book && E3.book.journal) || []).filter(j => j && j.id && !j.undone).reverse().slice(0, SET_CHANGES_N3);
   /* when, on this device's clock: the step's day (as the app counts days) and the time it was made */
-  const when = j => { const t = new Date(j.moment), d = j.day || E3.today(), hm = isNaN(t) ? '' : String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0'); return (d === E3.today() ? 'today' : day3(d, E3.today().slice(0, 4))) + (hm ? ' at ' + hm : ''); };
+  const when = j => { const t = new Date(j.moment), d = j.day || E3.today(), hm = isNaN(t) ? '' : String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0'); return `${d === E3.today() ? 'today' : day3(d, E3.today().slice(0, 4))}${hm ? ' at ' + hm : ''}`; };
   /* its Undo bar's words, the first sentence only */
   const words = j => String(j.words || (/\s/.test(j.label || '') ? j.label : 'A change')).split('. ')[0];
   host.innerHTML = `<h2>Recent changes</h2><p class="a3-sub">Undo any of these, even after the app was closed. If something changed it since, undo that first</p>`
@@ -13721,9 +13720,9 @@ Actions:
     addGoal: { name: 'Add a goal', does: 'Adds a goal: its name, the goal amount, a target date and where the money is kept' },
     goal: { name: 'A goal\'s own sheet', does: 'Sets money aside for the goal, takes money out of it, or changes its name, amount or date' },
     addCard: { name: 'Add a card', does: 'Adds a card: its name, what is on it now, the day it is paid from your bank and the day its statement closes' },
-    card: { name: 'A card\'s own sheet', does: 'Changes the card\'s name and days; pays it off, closes or removes it' },
+    card: { name: 'A card\'s own sheet', does: 'Changes the card\'s name and days, pays it off, closes or removes it' },
     addLoan: { name: 'Add a loan', does: 'Adds a loan: its name, what is still owed, the usual payment and the day it is paid' },
-    loan: { name: 'A loan\'s own sheet', does: 'Changes the loan\'s name, day or payment; pays it off, closes or removes it' },
+    loan: { name: 'A loan\'s own sheet', does: 'Changes the loan\'s name, day or payment, pays it off, closes or removes it' },
     addAccount: { name: 'Add an account', does: 'Adds a bank, cash or e-wallet with what it holds today' },
     account: { name: 'An account\'s own sheet', does: 'Renames an account, sets its Keep at least, closes or removes it' },
     closeAccount: { name: 'Close an account', does: 'Closes a bank, cash or e-wallet: its money moves to another account or counts as spent' },
@@ -13807,7 +13806,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     const loans = (book.accounts || []).filter(x => live(x) && !x.closed && x.type === 'loan').map(x => { const ref = 'A' + (++a); refs[ref] = x.id; return `${ref} | ${x.name} | ${lv[x.id] ? SM.format(lv[x.id].owedNow, x.cur || home) : '?'} still owed | ${x.amount ? SM.format(x.amount, x.cur || home) + ' ' : ''}paid on day ${x.payDay}`; });
     if (loans.length) out.push('Loans (ref | name | still owed | payment):\n' + loans.join('\n'));
     const closed = (book.accounts || []).filter(x => live(x) && x.closed).map(x => { const ref = 'A' + (++a); refs[ref] = x.id; return `${ref} | ${x.name} | closed ${day1(x.closed)}`; });
-    if (closed.length) out.push('Closed accounts (ref | name | closed on; reopen_account opens one again):\n' + closed.join('\n'));
+    if (closed.length) out.push('Closed accounts, reopen_account opens one again (ref | name | closed on):\n' + closed.join('\n'));
     return { text: out.join('\n'), refs };
   }
   function ruleWords(r) {
