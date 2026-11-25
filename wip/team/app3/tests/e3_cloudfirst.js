@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /* The cloud copy turned on right after a setup by chat (AI_JOIN_FIXES item B; qc-foundation finding 5; M61, M67, M19).
-   Mako sets up by chat on his phone on Tue 24 Nov 2026 (made-up shape: Main bank 286,000, safe to spend 201,400),
+   Mako sets up by chat on his phone on Tue 24 Nov 2026 (made-up shape: Main bank 286,000, safe to spend 124,400),
    turns the cloud copy on in Settings, writes the code down and opens his desktop. Nothing else is changed in between.
    Before the fix every send returned silently while the fill could still be undone, so the cloud stayed empty and the
    code restored nothing. Now turning the cloud copy on ends the fill's hold and the first copy is sent.
@@ -21,7 +21,7 @@ const until = async (f, ms) => { for (let i = 0; i < (ms || 8000) / 100; i++) { 
     await A.p.goto(URL); await T.w(700);
     await R.setup(A.p, ai);
     const h = await R.home(A.p);
-    ck('the phone: set up by chat, safe to spend 201,400 and Main bank 286,000', h.safe === 201400 && h.bank === 286000, JSON.stringify(h) + (await R.log(A.p)).slice(-300));
+    ck('the phone: set up by chat, safe to spend 124,400 and Main bank 286,000', h.safe === 124400 && h.bank === 286000, JSON.stringify(h) + (await R.log(A.p)).slice(-300));
     ck('the fill can still be undone, and nothing has been sent', await A.p.evaluate(() => BurrowApp3.E3.held()) && vault.rows.size === 0);
     await A.p.click('#a3SetGo'); await T.w(200);
     await A.p.click('#a3CloudOn');
@@ -41,7 +41,7 @@ const until = async (f, ms) => { for (let i = 0; i < (ms || 8000) / 100; i++) { 
     ck('the second device takes the book with the code', await until(() => B.p.evaluate(() => !!BurrowApp3.E3.book && BurrowApp3.E3.book.schedules.length > 0), 8000), await B.p.$eval('#a3CloudErr', e => e.textContent).catch(() => ''));
     await B.p.click('#a3SetClose').catch(() => {}); await T.w(300);
     const hb = await R.home(B.p);
-    ck('its Home shows the same money: safe to spend 201,400, Main bank 286,000', hb.safe === 201400 && hb.bank === 286000, JSON.stringify(hb));
+    ck('its Home shows the same money: safe to spend 124,400, Main bank 286,000', hb.safe === 124400 && hb.bank === 286000, JSON.stringify(hb));
     const errs = A.errs.concat(B.errs).filter(e => !/Failed to load resource/.test(e));   // the vault's 404 while nothing is stored
     ck('no page errors', !errs.length, errs.join(' | '));
   } catch (e) { ck('the test ran to its end', false, e.stack); }

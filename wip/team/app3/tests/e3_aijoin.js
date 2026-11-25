@@ -2,10 +2,10 @@
 /* The assistant joined to the app's base (AI_JOIN_FIXES item A; qc-foundation foundational 1 and 2 on lane/ai-merge).
    The real core, the real panel, E3, act3 and the store; only the model is made up (tests/chat_real.js).
    Mako's made-up shape, set up by chat on Tue 24 Nov 2026: Main bank 286,000, pay 240,000 on the 10th, Rent 72,000 on
-   the 27th and the rest; safe to spend 201,400.
+   the 27th and the rest; safe to spend 124,400.
    1. A bill changed by chat, a reload, Undo on the kept card (M14). "Rent is 80,000 now": the next Rent is Fri 27 Nov,
-      before the pay of 10 Dec, so safe to spend is 201,400 - 8,000 = 193,400. The page is reloaded. The card is still
-      there with Undo; one tap and Rent is 72,000 again, safe to spend 201,400, and the card says Taken back.
+      before the pay of 10 Dec, so safe to spend is 124,400 - 8,000 = 116,400. The page is reloaded. The card is still
+      there with Undo; one tap and Rent is 72,000 again, safe to spend 124,400, and the card says Taken back.
    2. A job change by chat on Tue 5 Jan 2027 and the period on Sat 20 Mar (M31, M38). "My job ended, the new one pays
       300,000 on the 25th", after "my pay came in" on 10 Dec: the old pay ends (asked first: it takes something away), the new one is added. On 5 Jan the
       period that began with the pay of 10 Dec runs to the day before the first new pay: Mon 25 Jan is a weekday, so to
@@ -24,22 +24,22 @@ const rent = p => p.evaluate(() => { const s = BurrowApp3.E3.book.schedules.find
     await p.goto(T.URL0 + '?today=2026-11-24'); await T.w(700);
     await R.setup(p, ai);
     let h = await R.home(p);
-    ck('set up by chat: safe to spend 201,400, Main bank 286,000', h.safe === 201400 && h.bank === 286000, JSON.stringify(h) + ' ' + (await R.log(p)).slice(-400));
+    ck('set up by chat: safe to spend 124,400, Main bank 286,000', h.safe === 124400 && h.bank === 286000, JSON.stringify(h) + ' ' + (await R.log(p)).slice(-400));
 
     /* 1. a bill changed by chat, a reload, Undo on the kept card */
     ai.push(body => R.say('', [R.call('change', { steps: [{ do: 'change_bill', ref: R.ref(body, 'Rent'), amount: 80000 }] })]), R.say('Rent is 80,000 from the next one.'));
     await R.tell(p, 'Rent is 80,000 now');
     h = await R.home(p);
-    ck('Rent 80,000 by chat: safe to spend 193,400 (201,400 - 8,000)', h.safe === 193400 && (await rent(p)) === 80000, JSON.stringify(h));
+    ck('Rent 80,000 by chat: safe to spend 116,400 (124,400 - 8,000)', h.safe === 116400 && (await rent(p)) === 80000, JSON.stringify(h));
     await p.reload(); await T.w(900);
     const cc = '[data-card=chat-change][data-status=done]';
     ck('after a reload the card is kept, with Undo', !!(await p.$(cc + ' [data-chatundo]')));
     await p.$eval(cc + ' [data-chatundo]', e => e.click()); await R.idle(p); await T.w(400);
     h = await R.home(p);
-    ck('Undo on the kept card after the reload: Rent 72,000 again, safe to spend 201,400', (await rent(p)) === 72000 && h.safe === 201400, JSON.stringify([await rent(p), h]));
+    ck('Undo on the kept card after the reload: Rent 72,000 again, safe to spend 124,400', (await rent(p)) === 72000 && h.safe === 124400, JSON.stringify([await rent(p), h]));
     ck('the card says Taken back, and has no Undo left', /Taken back/.test(await p.$eval('[data-card=chat-change]', e => e.textContent)) && !(await p.$('[data-card=chat-change] [data-chatundo]')));
     await p.reload(); await T.w(900);
-    ck('and after one more reload: still 72,000 and 201,400', (await rent(p)) === 72000 && (await R.home(p)).safe === 201400);
+    ck('and after one more reload: still 72,000 and 124,400', (await rent(p)) === 72000 && (await R.home(p)).safe === 124400);
 
     /* 2. a job change by chat on 5 Jan, the period on 20 Mar */
     const landed = async (day, name, words) => {

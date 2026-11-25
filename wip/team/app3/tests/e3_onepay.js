@@ -6,14 +6,15 @@
    the 27th, power 7,400 on the 26th, phone 4,800 on the 20th, internet 5,200 on the 27th; no minimum.
    Hand-worked (yen):
    - 20 Nov: the period is 10 Nov to 9 Dec, the next pay 10 Dec (a Thursday). Phone left today. Before the pay: power,
-     rent, internet = 84,600. The cards leave on the pay day or after it, so the pay covers them.
-     Safe to spend 286,000 - 84,600 = 201,400.
-   - 9 Dec: nothing logged, the same: 201,400, the next pay tomorrow, the period still 10 Nov to 9 Dec.
+     rent, internet = 84,600. The cards leave on the pay day or after it, but no play amount is set, so everything
+     owed on them comes off now (M90, R1): Safe to spend 286,000 - 84,600 - 54,000 - 23,000 = 124,400.
+   - 9 Dec: nothing logged, the same: 124,400, the next pay tomorrow, the period still 10 Nov to 9 Dec.
    - 10 Dec, Check your bank with everything ticked as listed (the November bills, the one pay, card A):
      the bank is 286,000 - 84,600 + 240,000 - 54,000 = 387,400, typed. The next pay is due 10 Jan 2027, a Sunday, and
      Mon 11 Jan is Coming of Age Day (a holiday in Japan), so it lands Tue 12 Jan. Before it: card B 23,000 (11 Dec) and
      December's bills 4,800 + 7,400 + 72,000 + 5,200 = 89,400 = 112,400. Card A's January payment leaves with the pay on
-     12 Jan; card B owes nothing more after 11 Dec. Safe to spend 387,400 - 112,400 = 275,000.
+     12 Jan; card B owes nothing more after 11 Dec. Safe to spend 387,400 - 112,400 = 275,000 (the same with the cards
+     owed now: card A owes nothing after its tick, card B's 23,000 is all it owes).
      The period is 10 Dec 2026 to 11 Jan 2027.
    - The same figures as the made-up try book, which has the two incomes (180,000 and 60,000) on the same day: entering
      them as one number changes nothing on Home. */
@@ -59,12 +60,12 @@ const home = async p => { const f = await T.figs(p); return { one: k => f.filter
     ck(`${day}: the next pay is ${want.next}`, np && np.text.includes(want.next) && np.text.includes('Next pay') && !/late|not been seen/.test(np.text), np && np.text);
     return h;
   };
-  await at('20 Nov', { safe: 201400, period: '10 Nov to 9 Dec', next: '10 Dec', sameAsTry: '2026-11-20' });
+  await at('20 Nov', { safe: 124400, period: '10 Nov to 9 Dec', next: '10 Dec', sameAsTry: '2026-11-20' });
   const why = (await home(p)).one('why')[0];
-  ck('20 Nov: the sum behind it is the bank less power, rent and internet', why && /286,000/.test(why.text) && /7,400/.test(why.text) && /72,000/.test(why.text) && /5,200/.test(why.text) && /201,400/.test(why.text), why && why.text);
+  ck('20 Nov: the sum behind it is the bank less power, rent, internet and the cards owed now', why && /286,000/.test(why.text) && /7,400/.test(why.text) && /72,000/.test(why.text) && /5,200/.test(why.text) && /54,000/.test(why.text) && /23,000/.test(why.text) && /124,400/.test(why.text), why && why.text);
 
   await p.goto(T.URL0 + '?today=2026-12-09'); await T.w(500);
-  await at('9 Dec', { safe: 201400, period: '10 Nov to 9 Dec', next: '10 Dec', sameAsTry: '2026-12-09' });
+  await at('9 Dec', { safe: 124400, period: '10 Nov to 9 Dec', next: '10 Dec', sameAsTry: '2026-12-09' });
 
   /* 10 Dec: Check your bank with everything ticked as listed */
   await p.goto(T.URL0 + '?today=2026-12-10'); await T.w(500);

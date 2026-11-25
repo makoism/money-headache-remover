@@ -9,11 +9,11 @@
    27th; Free to spend blank; no minimum; "fill it in".
    Worked by hand: next pay Thu 10 Dec 2026 (a weekday, so not moved). Due before it from Main bank: Power 7,400 (Thu 26
      Nov), Rent 72,000 and Internet 5,200 (Fri 27 Nov), together 7,400 + 72,000 + 5,200 = 84,600. Phone (20 Nov) is
-     already out, inside the 286,000. The cards come out on 10 and 11 Dec, the pay lands on 10 Dec: neither is before
-     the pay, so neither is in the sum. Safe to spend 286,000 - 84,600 = 201,400. Main bank today 286,000.
-   Then: Undo the fill (back to the first screen, the answers kept), fill again from the draft card (201,400), a reload
-   (the same figures, the chat kept), one spend by chat, "I spent 1,200 on lunch": safe to spend 201,400 - 1,200 =
-   200,200, Main bank 286,000 - 1,200 = 284,800; a reload (the same); Undo on its card: 201,400 and 286,000 again; the
+     already out, inside the 286,000. The cards come out on 10 and 11 Dec, after the pay of 10 Dec lands, but with no
+     play amount everything owed on them comes off now (M90, R1): Card A 54,000 and Card B 23,000. Safe to spend 286,000 - 84,600 - 54,000 - 23,000 = 124,400 (no play amount, so both cards come off now; R1). Main bank today 286,000.
+   Then: Undo the fill (back to the first screen, the answers kept), fill again from the draft card (124,400), a reload
+   (the same figures, the chat kept), one spend by chat, "I spent 1,200 on lunch": safe to spend 124,400 - 1,200 =
+   123,200, Main bank 286,000 - 1,200 = 284,800; a reload (the same); Undo on its card: 124,400 and 286,000 again; the
    fill's card has no button now. Every request: max_tokens 2,000, the invite field, no record id.
    The same answers typed on the setup screens (setup3) on another device make the same book, record for record: ids,
    moments and devices aside, every account, schedule, record, check-in, plan entry and setting is the same. */
@@ -55,7 +55,7 @@ const SETUP = [
 ];
 const refIn = (body, name) => { const m = new RegExp('(?:^|\\n)([A-Z]\\d+) \\| ' + name + ' \\|').exec(JSON.stringify(body.messages).replace(/\\n/g, '\n')); return m ? m[1] : null; };   // the A ref FIGURES gives a name
 /* [AI_JOIN_FIXES H6] Mako has cards, so he names the account the lunch came from */
-const SPEND = [body => say('', [call('change', { steps: [{ do: 'log_spend', amount: 1200, note: 'lunch', account: refIn(body, 'Main bank') }] })]), after('spend', 'Logged. Safe to spend is now 200,200.')];
+const SPEND = [body => say('', [call('change', { steps: [{ do: 'log_spend', amount: 1200, note: 'lunch', account: refIn(body, 'Main bank') }] })]), after('spend', 'Logged. Safe to spend is now 123,200.')];
 const fake = FAKE.make([].concat(...SETUP.map(x => x[1]), SPEND));
 async function relay(p) {
   await p.evaluateOnNewDocument(() => { window.STMT3_RELAY = 'https://relay.example'; });
@@ -142,16 +142,16 @@ const log = p => p.$eval('#a3ChatLog', e => e.textContent.replace(/\s+/g, ' '));
 
     /* fill */
     await tell(p, SETUP[SETUP.length - 1][0]);
-    ck('the fill: the core read back the engine\'s figures', /Filled in\. Safe to spend ¥201,400, Main bank ¥286,000\./.test(seen.fill || ''), seen.fill);
+    ck('the fill: the core read back the engine\'s figures', /Filled in\. Safe to spend ¥124,400, Main bank ¥286,000\./.test(seen.fill || ''), seen.fill);
     const chatBook = await p.evaluate(() => BurrowApp3.E3.book);
     let h = await home(p);
-    ck('Home: safe to spend 201,400 (286,000 - 84,600 due before pay)', h.safe === 201400, JSON.stringify(h));
+    ck('Home: safe to spend 124,400 (286,000 - 84,600 due before pay - 77,000 owed now on the cards)', h.safe === 124400, JSON.stringify(h));
     ck('Home: Main bank 286,000', h.bank === 286000);
     ck('Home: due before next pay 84,600 (Power 7,400, Rent 72,000, Internet 5,200)', h.due === 84600);
     ck('Home: next pay 10 Dec', /10 Dec/.test(h.next || ''), h.next);
     ck('Home: Card A 54,000 and Card B 23,000', JSON.stringify(h.cards.slice().sort()) === '[23000,54000]', JSON.stringify(h.cards));
     ck('the panel is the bar now, with the chat', !!(await p.$('#a3Chat:not([hidden]) #a3ChatIn')) && /Done\. Here's Home/.test(await log(p)));
-    ck('the fill card has the figures and Undo', JSON.stringify(await p.$$eval('[data-card=chat-fill] [data-amt]', e => e.map(x => Number(x.dataset.amt)))) === '[201400,286000]' && (await p.$eval('[data-card=chat-fill] [data-chatundo]', e => e.textContent)) === 'Undo');
+    ck('the fill card has the figures and Undo', JSON.stringify(await p.$$eval('[data-card=chat-fill] [data-amt]', e => e.map(x => Number(x.dataset.amt)))) === '[124400,286000]' && (await p.$eval('[data-card=chat-fill] [data-chatundo]', e => e.textContent)) === 'Undo');
 
     /* Undo the fill, fill again */
     await p.$eval('[data-card=chat-fill] [data-chatundo]', e => e.click()); await idle(p); await T.w(300);
@@ -159,12 +159,12 @@ const log = p => p.$eval('#a3ChatLog', e => e.textContent.replace(/\s+/g, ' '));
     ck('the answers are kept: the draft card with Fill in my Burrow', !!(await p.$('#a3Home [data-chatfill]')));
     await p.$eval('#a3Home [data-chatfill]', e => e.click()); await idle(p); await T.w(400);
     h = await home(p);
-    ck('filled again from the draft card: 201,400 and 286,000', h.safe === 201400 && h.bank === 286000, JSON.stringify(h));
+    ck('filled again from the draft card: 124,400 and 286,000', h.safe === 124400 && h.bank === 286000, JSON.stringify(h));
 
     /* a reload */
     await p.reload(); await T.w(900);
     h = await home(p);
-    ck('after a reload: the same figures', h.safe === 201400 && h.bank === 286000 && h.due === 84600, JSON.stringify(h));
+    ck('after a reload: the same figures', h.safe === 124400 && h.bank === 286000 && h.due === 84600, JSON.stringify(h));
     ck('after a reload: the chat is kept', /Done\. Here's Home/.test(await log(p)));
 
     /* one spend by chat */
@@ -172,23 +172,23 @@ const log = p => p.$eval('#a3ChatLog', e => e.textContent.replace(/\s+/g, ' '));
     await tell(p, 'I spent 1,200 on lunch from Main bank');
     ck('the change was made at once and said Done', /^Done/.test(seen.spend || ''), seen.spend);
     const cc = '[data-card=chat-change][data-status=done]';
-    ck('its card: what changed, and safe to spend 201,400 before and 200,200 after', /Log ¥1,200 on Free to spend from Main bank, today \(lunch\)/.test(await p.$eval(cc, e => e.textContent)) && (await p.$$eval(cc + ' [data-amt]', e => e.map(x => Number(x.dataset.amt)))).slice(0, 2).join() === '201400,200200');
+    ck('its card: what changed, and safe to spend 124,400 before and 123,200 after', /Log ¥1,200 on Free to spend from Main bank, today \(lunch\)/.test(await p.$eval(cc, e => e.textContent)) && (await p.$$eval(cc + ' [data-amt]', e => e.map(x => Number(x.dataset.amt)))).slice(0, 2).join() === '124400,123200');
     h = await home(p);
-    ck('Home: safe to spend 200,200 (201,400 - 1,200), Main bank 284,800 (286,000 - 1,200)', h.safe === 200200 && h.bank === 284800, JSON.stringify(h));
+    ck('Home: safe to spend 123,200 (124,400 - 1,200), Main bank 284,800 (286,000 - 1,200)', h.safe === 123200 && h.bank === 284800, JSON.stringify(h));
     ck('the fill can no longer be undone: its card has no button now (AI_JOIN_FIXES D)', !(await p.$('[data-card=chat-fill] button')));
     await p.reload(); await T.w(900);
     h = await home(p);
-    ck('after a reload: 200,200 and 284,800', h.safe === 200200 && h.bank === 284800, JSON.stringify(h));
+    ck('after a reload: 123,200 and 284,800', h.safe === 123200 && h.bank === 284800, JSON.stringify(h));
     await p.$eval(cc + ' [data-chatundo]', e => e.click()); await idle(p); await T.w(400);
     h = await home(p);
-    ck('Undo on the spend\'s card: 201,400 and 286,000 again', h.safe === 201400 && h.bank === 286000, JSON.stringify(h));
+    ck('Undo on the spend\'s card: 124,400 and 286,000 again', h.safe === 124400 && h.bank === 286000, JSON.stringify(h));
     await p.reload(); await T.w(900);
     h = await home(p);
-    ck('after a reload: still 201,400 and 286,000', h.safe === 201400 && h.bank === 286000, JSON.stringify(h));
+    ck('after a reload: still 124,400 and 286,000', h.safe === 124400 && h.bank === 286000, JSON.stringify(h));
 
     /* the same answers on the setup screens: the same book */
     const scr = await byScreens();
-    ck('on the setup screens the same answers ask only about the Phone of 20 Nov, and give 201,400', JSON.stringify(scr.asked) === '["Did the Phone of 20 Nov leave your bank?"]' && scr.safe === 201400, JSON.stringify([scr.asked, scr.safe]));
+    ck('on the setup screens the same answers ask only about the Phone of 20 Nov, and give 124,400', JSON.stringify(scr.asked) === '["Did the Phone of 20 Nov leave your bank?"]' && scr.safe === 124400, JSON.stringify([scr.asked, scr.safe]));
     const d = diff(same(chatBook), same(scr.book), 'book');
     ck('the chat\'s book and the screens\' book are the same, record for record', !d && chatBook.events.length === scr.book.events.length && chatBook.events.length > 0, d);
     const other = JSON.parse(JSON.stringify(scr.book)); other.events.find(e => e.k === 'check').a = 285000;

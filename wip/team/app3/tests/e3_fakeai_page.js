@@ -2,7 +2,7 @@
 /* The reviewers' way to the assistant (tests/fake_ai_page.js): a plain copy of the built page, opened with Playwright the
    way wip/team/qc/qc3.js opens it, then openWithFakeAI. Made-up figures only.
    1. Before: the panel says the assistant is off. After: it is on, and any words get the made-up echo.
-   2. MAKO_SETUP typed line by line fills the book: safe to spend 201,400, Main bank 286,000.
+   2. MAKO_SETUP typed line by line fills the book: safe to spend 124,400, Main bank 286,000.
    3. With a code word: the word box shows first; the right word is sent in invite. No page errors. */
 'use strict';
 const T = require('./lib3.js'), { ck } = T;
@@ -38,7 +38,7 @@ const fig = (p, sel) => p.$eval(sel, e => Number((e.dataset.amt !== undefined ? 
     for (const line of MAKO_SETUP.lines) await tell(d.p, line);
     await d.p.waitForTimeout(500);
     const safe = await fig(d.p, '#a3Home [data-fig=safe]'), bank = await fig(d.p, '#a3Home [data-card=bank] [data-fig=bank]');
-    ck('MAKO_SETUP by chat: safe to spend 201,400, Main bank 286,000, every reply used', safe === MAKO_SETUP.safe && bank === MAKO_SETUP.bank && ai.left() === 0, JSON.stringify({ safe, bank, left: ai.left() }));
+    ck('MAKO_SETUP by chat: safe to spend 124,400, Main bank 286,000, every reply used', safe === MAKO_SETUP.safe && bank === MAKO_SETUP.bank && ai.left() === 0, JSON.stringify({ safe, bank, left: ai.left() }));
     all.push(...d.errs); await d.close();
   }
   {
@@ -51,9 +51,9 @@ const fig = (p, sel) => p.$eval(sel, e => Number((e.dataset.amt !== undefined ? 
     await tell(d.p, 'I had lunch, paid from Main bank');
     const card = '[data-card=chat-change][data-status=ask]';
     const st = await d.p.$eval(card + ' [data-chat=status]', e => ({ ask: e.dataset.ask, text: e.textContent })).catch(() => null);
-    ck('an amount not typed: the card asks first, in its own words, with Do it and Not now, nothing written yet', !!st && st.ask === 'guess' && /You didn't type this amount/.test(st.text) && !!(await d.p.$(card + ' [data-chatok]')) && !!(await d.p.$(card + ' [data-chatnot]')) && (await fig(d.p, '#a3Home [data-fig=safe]')) === 201400, JSON.stringify(st));
+    ck('an amount not typed: the card asks first, in its own words, with Do it and Not now, nothing written yet', !!st && st.ask === 'guess' && /You didn't type this amount/.test(st.text) && !!(await d.p.$(card + ' [data-chatok]')) && !!(await d.p.$(card + ' [data-chatnot]')) && (await fig(d.p, '#a3Home [data-fig=safe]')) === 124400, JSON.stringify(st));
     await d.p.$eval(card + ' [data-chatok]', e => e.click()); await d.p.waitForTimeout(600);
-    ck('Do it writes it: safe to spend 200,200', (await fig(d.p, '#a3Home [data-fig=safe]')) === 200200);
+    ck('Do it writes it: safe to spend 123,200', (await fig(d.p, '#a3Home [data-fig=safe]')) === 123200);
     all.push(...d.errs); await d.close();
   }
   {
@@ -109,7 +109,7 @@ const fig = (p, sel) => p.$eval(sel, e => Number((e.dataset.amt !== undefined ? 
     all.push(...d.errs); await d.close();
   }
   {
-    /* [M30, M77] lunch 900 on Card A with no Free to spend set: the card shows Card A's row and says why safe to spend stays */
+    /* [M30, M77, M90] lunch 900 on Card A with no Free to spend set: the card shows Card A's row and safe to spend drops at once */
     const d = await open('2026-11-24');
     const refIn = (body, name) => { const m = new RegExp('(?:^|\\n)([A-Z]\\d+) \\| ' + name + ' \\|').exec(JSON.stringify(body.messages).replace(/\\n/g, '\n')); return m ? m[1] : null; };
     await openWithFakeAI(d.p, { steps: MAKO_SETUP.steps.concat([body => ({ calls: [{ name: 'change', input: { steps: [{ do: 'log_spend', amount: 900, account: refIn(body, 'Card A') }] } }] }), { words: 'Logged.' }]) });
@@ -118,7 +118,8 @@ const fig = (p, sel) => p.$eval(sel, e => Number((e.dataset.amt !== undefined ? 
     const card = '[data-card=chat-change][data-status=done]';
     const words = await d.p.$eval(card, e => e.innerText).catch(() => '');
     const note = await d.p.$eval(card + ' [data-chat=note]', e => e.textContent).catch(() => null);
-    ck('a card spend that leaves safe to spend at 201,400: the card shows Card A still owed 54,000 to 54,900 and says why', note === 'Safe to spend stays the same: Card A is paid from your bank on or after your next pay' && /Card A, still owed\s*¥54,000\s*¥54,900/.test(words) && (await fig(d.p, '#a3Home [data-fig=safe]')) === 201400, JSON.stringify([note, words]));
+    /* [M90, R1] no play amount: 124,400 - 900 = 123,500 at once, so no line is needed */
+    ck('a card spend with no play amount comes off at once, 124,400 to 123,500: the card shows Card A still owed 54,000 to 54,900, no note', note === null && /Safe to spend\s*¥124,400\s*¥123,500/.test(words) && /Card A, still owed\s*¥54,000\s*¥54,900/.test(words) && (await fig(d.p, '#a3Home [data-fig=safe]')) === 123500, JSON.stringify([note, words]));
     all.push(...d.errs); await d.close();
   }
   {

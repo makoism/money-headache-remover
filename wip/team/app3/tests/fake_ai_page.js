@@ -8,7 +8,7 @@
      const d = await Q.open({ today: '2026-11-24' });
      const ai = await openWithFakeAI(d.p, { steps: MAKO_SETUP.steps });   // the page reloads with the assistant on
      for (const line of MAKO_SETUP.lines) await tell(d.p, line);           // Mako's setup, by chat
-     // Home now shows safe to spend 201,400 and Main bank 286,000; ai.bodies holds every request the page sent
+     // Home now shows safe to spend 124,400 and Main bank 286,000; ai.bodies holds every request the page sent
      await d.close();
 
    openWithFakeAI(page, opts) -> { fake, bodies, left() }
@@ -21,7 +21,7 @@
    tell(page, words)  types words into the panel, sends, and waits until the answer is shown.
    MAKO_SETUP         { lines, steps }: Mako's made-up shape on Tue 24 Nov 2026 (the same answers as e3_chatwalk).
                       Each line is what he types; steps are the model's replies to them, in order. After the last
-                      line ("yes fill it in") the book is filled: safe to spend 201,400, Main bank 286,000. */
+                      line ("yes fill it in") the book is filled: safe to spend 124,400, Main bank 286,000. */
 'use strict';
 const FAKE = require('./fake_ai.js');
 const K = require('../src/chat3_core.js');
@@ -92,6 +92,6 @@ const TURNS = [
   ['no minimum', [say('', [call('draft_set', { section: 'min', value: null })]), say('That is everything. Shall I fill in your Burrow?')]],
   ['yes fill it in', [say('', [call('fill_book', {})]), say("Done. Here's Home. Check each tab, tell me anything that's wrong.")]],
 ];
-const MAKO_SETUP = { lines: TURNS.map(t => t[0]), steps: [].concat(...TURNS.map(t => t[1])), safe: 201400, bank: 286000 };
+const MAKO_SETUP = { lines: TURNS.map(t => t[0]), steps: [].concat(...TURNS.map(t => t[1])), safe: 124400, bank: 286000 };
 
 module.exports = { openWithFakeAI, tell, MAKO_SETUP, RELAY };
