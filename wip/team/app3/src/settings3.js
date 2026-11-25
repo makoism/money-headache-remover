@@ -53,11 +53,15 @@ function openSet3() {
       <div id="a3BkAsk"></div>
       <div id="a3BkKept"></div></div>`;
   const cloud = typeof cloudCard3 === 'function' ? cloudCard3() : '';
-  const word = '<div class="a3-card" data-card="word" id="a3SetWord"></div>';   // the code word for the AI: a device thing, shown for a try book too
+  const word = '<div class="a3-card" data-card="word" id="a3SetWord"></div>';
+  /* [AI_JOIN_FIXES J] the assistant's error log, on this device only */
+  const ailog = `<div class="a3-card" data-card="ailog"><h2>The assistant's error log</h2>
+      <p class="a3-sub">When a message to the assistant fails, this device notes when, what kind of message, the error and the server's answer. Never your words or any money figures. Copy it to send to whoever helps you</p>
+      <div class="a3-actions"><button type="button" class="a3-btn" id="a3AiLogCopy">Copy the assistant's error log</button><button type="button" class="a3-btn" id="a3AiLogClear">Clear</button></div></div>`;   // the code word for the AI: a device thing, shown for a try book too
   sheet.innerHTML = `<div class="a3-sheet-in">
       <h1 id="a3SetT">Settings</h1>
       <p class="a3-warn" id="a3SetMsg" role="status" hidden></p>
-      ${money}${tryBook ? tryNote : `${device}${backup}${cloud}`}${word}
+      ${money}${tryBook ? tryNote : `${device}${backup}${cloud}`}${word}${tryBook ? '' : ailog}
       <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3SetClose">Done</button></div></div>`;
   /* over whatever shows (the panels and the tab bar), put back as they were on Done */
   SET3.was = [...document.querySelectorAll('[data-panel], .a3-tabs, #a3Check, #a3StmtBar, #a3Stmt')].map(el => [el, el.hidden]);
@@ -65,6 +69,16 @@ function openSet3() {
   $('#a3SetClose').addEventListener('click', closeSet3);
   paintWord3();
   if (!tryBook) {
+    $('#a3AiLogCopy').addEventListener('click', async () => {
+      const log = (await E3.rec('aiLog')) || [];
+      const t = chat3LogText(log);
+      try { await navigator.clipboard.writeText(t); setMsg3(log.length ? 'Copied. Paste it where you need it.' : 'Copied. The log is empty.'); } catch (e) { setMsg3('Could not copy here. Nothing in the log was changed.', true); }
+    });
+    $('#a3AiLogClear').addEventListener('click', async () => {
+      const was = (await E3.rec('aiLog')) || [];
+      await E3.rec('aiLog', []);
+      MSG3.post({ kind: 'undo', key: 'act3', text: "The assistant's error log is cleared", action: { label: 'Undo', run: async () => { await E3.rec('aiLog', was); MSG3.post({ kind: 'toast', key: 'act3', text: 'Undone' }); } } });
+    });
     paintSpace3();
     $('#a3Persist').addEventListener('click', async () => { await BurrowPersist.askToKeep(); paintSpace3(); });
     $('#a3BkLock').addEventListener('change', e => { $('#a3BkCodeF').hidden = !e.target.checked; if (e.target.checked) $('#a3BkCode').focus(); });
