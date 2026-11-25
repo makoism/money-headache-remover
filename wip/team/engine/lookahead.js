@@ -663,11 +663,14 @@
             const n = cuts[i + 1] - cuts[i], share = i === cuts.length - 2 ? g2 - given : Math.round(g2 * n / days);
             given += share;
             let d = cuts[i + 1] - 1;
-            if (i < cuts.length - 2) {
-              const b = asOf.list.find(x => x.close === d);
+            // the part carries on, close by close, until it reaches a statement not already paid as of the check, or the
+            // open cycle: stopping one close on could leave it on another statement whose payment day has also passed,
+            // a false overdue payment (qc-foundation on the build, 25 Nov)
+            for (let j = i; j < cuts.length - 2; j++) {
+              const cl = cuts[j + 1] - 1, b = asOf.list.find(x => x.close === cl);
               const held = !!b && payments.some(p => p.day <= e.day && keyCmp(p.key, e.key) <= 0 && (p.settles || []).includes(b.id));
               const nothingLeft = !!b && b.land <= e.day && (b.into ? b.leftAtFold : b.left) <= 0;
-              if (held || nothingLeft) d = Math.min(d + 1, e.day);
+              if (held || nothingLeft) d = Math.min(cl + 1, e.day); else break;
             }
             if (share) lines.push({ day: d, amount: share, what: 'filler' });
           }

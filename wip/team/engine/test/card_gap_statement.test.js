@@ -59,7 +59,7 @@ function walk(checks, cardOver) {
   const out = BB.buildBook({ day: '2026-11-24', told: '2026-11-24T12:00:00.000+09:00', currency: 'JPY', country: 'JP',
     banks: [{ key: 'bank1', name: 'Main bank', amount: 500000, main: true, min: null }],
     pays: [{ key: 'pay1', name: 'Pay', bank: 'bank1', amount: 300000, every: 'month', day: 25, shift: 'none', startsPeriod: true }],
-    cards: [Object.assign({ key: 'card1', name: 'Card A', owed: 0, payDay: 10, closeDay: 15, payFrom: 'bank1', shift: 'none', inFull: true, statement: 0 }, cardOver && cardOver.inFull === false ? { inFull: false } : {})],
+    cards: [Object.assign({ key: 'card1', name: 'Card A', owed: 0, payDay: 10, closeDay: 15, payFrom: 'bank1', shift: 'none', inFull: true, statement: 0 }, cardOver && cardOver.inFull === false ? { inFull: false } : {}, cardOver && cardOver.closeDay ? { closeDay: cardOver.closeDay, payDay: cardOver.payDay } : {})],
     bills: [], free: 80000 }, { newId });
   let book = out.book || out;
   const card = book.accounts.find(a => a.type === 'card').id;
@@ -131,5 +131,22 @@ t('the same in every order the records arrive in', () => {
   const orders = [e => e.reverse(), e => e.sort((x, y) => (x.id < y.id ? -1 : 1)), e => e.sort((x, y) => (x.id < y.id ? 1 : -1)), e => e.sort((x, y) => (String(x.date) < String(y.date) ? 1 : -1)),
     e => e.slice(1).concat(e.slice(0, 1)), e => e.slice(3).concat(e.slice(0, 3)), e => e.filter((_, i) => i % 2).concat(e.filter((_, i) => !(i % 2))), e => e.sort((x, y) => (String(x.k) < String(y.k) ? -1 : 1)), e => e.sort((x, y) => (x.a || 0) - (y.a || 0))];
   for (const o of orders) eq(pick(Object.assign({}, w.book, { events: o(w.book.events.slice()) })), want);
+});
+// Away across TWO payment days (qc-foundation on the build, 25 Nov). Checks to 12 Dec (36,000), then back on 20 Feb.
+// She really spent 2,000 a day for 88 days, 176,000; the bank really paid 42,000 on 10 Jan and 62,000 on 10 Feb, so the
+// card shows 72,000. The app asks only about the 10 Jan payment (36,000, what it knew); she ticks it and types 72,000.
+// The part of the gap whose days fall before the 15 Dec close cannot go on that paid statement, and the 15 Jan
+// statement's payment day (10 Feb) has also passed with nothing on it: the part carries on, close by close, to the
+// first statement not already paid as of the check. Nothing is overdue; the 15 Feb statement, due 10 Mar, is 66,858.
+// Before this the part stopped on the 15 Jan statement and showed as "overdue 10 Feb: 3,086", a payment that never was.
+t('away across two payment days: no false overdue, 66,858 due 10 Mar, the card owes the 72,000 typed', () => {
+  const k = walk(W.concat([['2027-02-20', 72000]])).at('2027-02-20');
+  eq([k.owedNow, overdue(k), k.next.amount, k.next.payment_date], [72000, [], 66858, '2027-03-10']);
+});
+// A card that closes on the last day and is paid on the 27th, first checked twelve weeks after setup (16 Feb, 100,000
+// typed, nothing ticked because nothing was known to be due): nothing was ever asked, so nothing can be overdue.
+t('a first check after two payment days on a card that closes the 31st: no false overdue', () => {
+  const k = walk([['2027-02-16', 100000]], { closeDay: 31, payDay: 27 }).at('2027-02-16');
+  eq([k.owedNow, overdue(k)], [100000, []]);
 });
 done('card_gap_statement.test.js');
