@@ -293,6 +293,14 @@ const ev = (b, id) => b.events.find(e => e.id === id);
     eq(h.book.journal[1].edited.map(x => [x.list, x.id, x.before.a, x.before.at]), [['events', a.step.added[0].id, 1000, a.step.at]]);
     eq(h.book.journal[2].removed.map(x => [x.list, x.id]), [['events', a.step.added[0].id]]);
   });
+  await t('[E4, M14] each journal entry keeps the words its Undo bar showed, so a list after a reload can name it; an Undo leaves no entry of its own', async () => {
+    const h = setup();
+    const a = await h.A.logSpend({ date: DAY, a: 1000, acct: bank });
+    const b = await h.A.run('changeAccount', w => w.edit('accounts', bank, { name: 'Everyday' }), { undo: 'Main bank changed' });
+    eq(h.book.journal.map(j => j.words), ['Spend logged', 'Main bank changed']);
+    ok((await h.A.undo(b.step.id)).ok);
+    eq([h.book.journal.length, !!h.book.journal[1].undone], [2, true]);
+  });
   await t('[BZ1] a step that only edits, then a reload, then Undo: the old value is back', async () => {
     const h = setup();
     const a = await h.A.logSpend({ date: DAY, a: 1000, acct: bank }), sp = a.step.added[0].id;

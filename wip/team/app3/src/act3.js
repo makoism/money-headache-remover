@@ -252,7 +252,7 @@
     let queue = Promise.resolve(), by = null;
 
     /* plan a step on a copy; returns { book, step } or throws Bad */
-    function plan(label, fn, dry, undoing, guard) {
+    function plan(label, fn, dry, undoing, guard, words) {
       const cur = o.book();
       if (!cur) throw new Bad('Set up first');
       if (guard && guard.ver != null && guard.ver !== ver(cur)) throw other();
@@ -269,7 +269,8 @@
       }
       const step = { id, label, out, at: s.at, added: w.log.added, edited: w.log.edited, removed: w.log.removed, revived: w.log.revived };
       /* [BZ1] the step's journal entry goes into the same save, so an Undo after a reload finds what it edited too */
-      if (!dry && !undoing) journalAdd(book, { id, label, moment: s.at, day: s.day, by: s.by, told: s.told,
+      /* [E4, M14] with the words its Undo bar shows, so the list of recent changes can name it after a reload */
+      if (!dry && !undoing) journalAdd(book, { id, label, words: words || LABELS[label] || label, moment: s.at, day: s.day, by: s.by, told: s.told,
         added: clone(w.log.added), edited: w.log.edited.map(keptEdit), removed: clone(w.log.removed), revived: clone(w.log.revived) });
       if (undoing) undoing(book, s);
       return { book, step };
@@ -278,7 +279,7 @@
       opts = opts || {};
       const p = queue.then(async () => {
         let planned;
-        try { planned = plan(label, fn, false, opts.journalUndo, opts.isUndo ? null : { seen: opts.seen, ver: opts.ver }); } catch (e) {
+        try { planned = plan(label, fn, false, opts.journalUndo, opts.isUndo ? null : { seen: opts.seen, ver: opts.ver }, opts.undo); } catch (e) {
           if (e instanceof Bad) return { ok: false, why: e.why || 'bad', text: e.message };
           throw e;
         }
