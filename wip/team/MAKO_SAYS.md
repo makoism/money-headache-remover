@@ -8,7 +8,7 @@ How it is kept:
 - Every QC reviewer marks each line that touches its role MET, NOT MET or NOT BUILT on every build. That is how we know a line reached the app.
 - A line here that no plan, test or reviewer covers is a fault in the process: tell the coordinator.
 - Newer lines win. Dates are Nov 2026. Refs: NF = DECISIONS.md "The new foundation" item; D = DECISIONS.md; R2 = foundation_review/DECISIONS_ROUND2.md; NS = NORTH_STAR.md; L = LESSONS.md.
-- Last changed: 25 Nov 2026, 10:00 JST (M84 new: he can pause the work). Before that 25 Nov 09:40 JST (M82 changed, M83 new). Before that 24 Nov 12:30 JST (M82: Fable and the resets; before that M6: a third ask-first reason). First version 24 Nov, M1 to M81.
+- Last changed: 25 Nov 2026, 10:20 JST (M85 new: a question carries all its info, no team labels). Before that 10:00 JST (M84 new: he can pause the work). Before that 25 Nov 09:40 JST (M82 changed, M83 new). Before that 24 Nov 12:30 JST (M82: Fable and the resets; before that M6: a third ask-first reason). First version 24 Nov, M1 to M81.
 
 ## A. How he wants to use the app
 
@@ -114,6 +114,7 @@ How it is kept:
 - M82. Use Fable for every session, helper and reviewer where it is better. No resets are left (25 Nov); when Fable is used up, switch to Opus with nothing missed (wip/team/RUNBOOK.md section 5). (24 and 25, NF19, NF20)
 - M83. Work must carry on by itself after a usage limit stops it: "fix this once and for all." Sessions pace themselves, push after every commit, and are woken by the coordinator's watch. (25, NF20)
 - M84. When he says pause, everything stops cleanly: "wrap it up so we don't lose progress." Commit, push, mark the state pages, switch off the wake-up tasks. It starts again only on his word to the coordinator. This comes before M71 and M83. (25, NF21)
+- M85. A question to him has everything in the same message: "if theres a question I need all of the info right in front of me." No team labels (candidate numbers, lane names, hashes), no "still open" reminders without the whole question. (25, NF22)
 
 ## Not settled yet (do not guess, do not ask him yourself; the coordinator brings these to him with the app in front of him)
 
