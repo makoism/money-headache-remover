@@ -556,7 +556,7 @@
           lines.push({ day: posted, amount: e.k === 'spend' ? e.a : -e.a });   // [F5] a refund lowers the cycle it posts in
         }
         if ((e.k === 'transfer' || e.k === 'borrow') && e.from === id) lines.push({ day: e.day, amount: e.a });   // [O5]
-        if (e.k === 'repay' && e.to === id) payments.push({ day: e.day, amount: e.a2 != null ? e.a2 : e.a, settles: e.settles });
+        if (e.k === 'repay' && e.to === id) payments.push({ day: e.day, amount: e.a2 != null ? e.a2 : e.a, settles: e.settles, key: e.key });
       }
       // [Q3] a card instalment plan's parts are card lines on their days
       for (const pa of Object.values(acct).filter(x => x.of === id)) for (const pt of planParts(pa))
@@ -645,9 +645,39 @@
           closed = cl;
         }
         const g2 = e.a - owedAt(e.day);
-        if (g2) lines.push({ day: e.day, amount: g2, what: 'filler' });
-        gap += g2;
         const last0 = Math.max(prevDay != null ? prevDay : -Infinity, closed != null ? closed : -Infinity);
+        if (g2) {
+          // [CARDCLOSE] the gap goes on the statements its days fall in: its stretch is cut at this card's close days by
+          // the day share (the last part takes the rest), one line a part, dated the part's last day. A card "not sure"
+          // has no close days: one line on the check's day, as before. Never cut by `mostlyBeforePay` (that is the pay
+          // periods' answer). A statement already paid AS OF THIS CHECK is never reopened: paid by a payment this check
+          // already holds (dated on or before its day and told with or before it), or its payment day come with nothing
+          // left on it; that part joins the cycle after it (the day after the close, never after the check). Judged at
+          // the check's own moment, so a payment ticked later never rewrites what an earlier check found.
+          const first = last0 === -Infinity ? e.day : Math.min(last0 + 1, e.day);
+          const cs = notSure ? [] : closes.filter(cl => cl >= first && cl < e.day);
+          const asOf = cs.length ? statementsTo(e.day, e.day) : null;
+          const cuts = [first, ...cs.map(x => x + 1), e.day + 1], days = e.day - first + 1;
+          let given = 0;
+          for (let i = 0; i < cuts.length - 1; i++) {
+            const n = cuts[i + 1] - cuts[i], share = i === cuts.length - 2 ? g2 - given : Math.round(g2 * n / days);
+            given += share;
+            let d = cuts[i + 1] - 1;
+            if (i < cuts.length - 2) {
+              const b = asOf.list.find(x => x.close === d);
+              const held = !!b && payments.some(p => p.day <= e.day && keyCmp(p.key, e.key) <= 0 && (p.settles || []).includes(b.id));
+              const nothingLeft = !!b && b.land <= e.day && (b.into ? b.leftAtFold : b.left) <= 0;
+              if (held || nothingLeft) d = Math.min(d + 1, e.day);
+            }
+            if (share) lines.push({ day: d, amount: share, what: 'filler' });
+          }
+          // what is owed on the check's day is the figure typed, always: on a card with a rate, a part placed on an older
+          // statement can move the interest the gap was measured against; the difference goes on the check's own day
+          // (the open cycle, which cannot move interest again). The gap and its period parts stay as found.
+          const rest = e.a - owedAt(e.day);
+          if (rest) lines.push({ day: e.day, amount: rest, what: 'filler' });
+        }
+        gap += g2;
         stretch(last0 === -Infinity ? e.day : last0 + 1, e.day, g2);
         // more: typed above what the app had (spending not logged); less: below it (comes off spending), each 0 or more
         fillers.push({ account: id, day: e.date, amount: gap, more: Math.max(0, gap), less: Math.max(0, -gap),
