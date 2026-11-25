@@ -4,6 +4,13 @@ Written 2026-11-18 on branch `wip-38.31`. Read this whole file before touching a
 
 ## 0. Handoff (latest first)
 
+**25 Nov 2026 19:30 JST, MAIN 17 (session_01BFpKEV1GxHfTcdKMQxFr1i): I merge and push wip-38.31 and lane/ai-join now; MAIN 16 has stopped.** The entry below (MAIN 16's) still holds for the steps; this one wins where they differ.
+- lane/ai-join is at e8a8dd9 (5254981e plus a scope draft in qc_reports/2026-11-25_ai_first/scope.txt, the coordinator corrects it). Full check on it on this machine: ALL GOOD, 87 tests.
+- A fresh machine needs the test tools first: `mkdir -p /home/claude/work/tools && cd /home/claude/work/tools && npm init -y && npm install puppeteer-core acorn acorn-walk`. Without them most page tests fail in 0 seconds.
+- MAIN 16's Opus builder (on MAIN 16's machine) is still on lane/ai-fix2: I4, J, K, the e3_chat reload fix, then the full check and screen pack. Its half-done I4 is also on origin as wip-save/ai-fix2. Coordinator's ruling (19:23 JST): that builder is the ONE builder across MAIN 16 and MAIN 17; when it finishes I merge lane/ai-fix2 into the join and start the Opus builder for lane/cloudtake (step 2 below), then lane/layoutfix (step 3).
+- Asked LANE C for lane/restore's final hash and qc-data-safety's verdict (step 4 waits on the answer).
+- The limit stopped every session from about 17:00 to 19:20 JST. No helper or reviewer while rate_limit_info is not "allowed".
+
 **25 Nov 2026 19:45 JST, MAIN 16: state for MAIN 17 (MAIN 16's history is over 500k; a new session takes over).** Read wip/team/MAKO_SAYS.md first (M84 pause comes first, M85 a question to Mako carries everything and no team labels), RUNBOOK sections 4 and 5. Report to Coordinator 12 (session_01BFpKEZhy3Va2Px9ZqnUfCG). The engine and side branches are moving from LANE B (session_01BFpKEZBRWqdY7tLMMx4sDU) to **LANE C (session_01BFpKEYZiAu8h8WESqH2Nwo)**. The long entry dated 25 Nov 09:50 JST below still holds for branches, rulings and Traps; this entry wins where they differ.
 - **Live on main:** candidate 2 (ba17a838).
 - **The AI-first build is being put together on lane/ai-join (5254981e, worktree .claude/worktrees/join).** In it: lane/ai-fix2 up to 2b1d8e8f (assistant fixes A to I3), LANE B's lane/cardpay-ask 458fd74 with lane/twofig-engine cdb0d1a (card gap, the three values res.canSpare / res.everyday / res.noJob, three cards, ONE dated rule for which pay starts the periods, the card payment question at Check your bank), and lane/cardclose 799ebbc (a card with a known close day). Engine suite on it: 28 runs, 779 asks pass. A quick check on the meeting screens passed; one chat test timed out once on a page reload after the file button (passed 4 of 4 after; the builder was told to make it firm).
