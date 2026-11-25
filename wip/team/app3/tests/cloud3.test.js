@@ -222,7 +222,20 @@ const canon = x => S.canon(x);
     ck('revOnly: no connection is said as such', !rv.ok && rv.why === 'net');
   }
 
-  // ---- CS1: a leaving send too big to outlive the page goes as a plain send; a take that must not send; "too many saves today" ----
+  // ---- CS1, B3: a book as the store loads it (an empty keptVersions list, its revision and save time) with nothing
+  //      changed is not a change: no write. Found by e3_cloudsend: every reload sent one copy and counted one send ----
+  {
+    const v9 = makeVault(), api9 = C.client({ fetch: v9.fetch, base: () => 'http://vault.test' });
+    const b0 = clone(BOOK); delete b0.keptVersions;
+    const first = await C.syncOnce({ api: api9, pack, S, keys, device: {}, copy: b0 });
+    const loaded = Object.assign(clone(first.copy), { keptVersions: [], rev: 7, at: '2026-12-01T10:00:00.000+09:00' });
+    const puts9 = v9.log.filter(x => x.method === 'PUT').length;
+    const again = await C.syncOnce({ api: api9, pack, S, keys, device: first.device, copy: loaded });
+    ck('a book loaded from the store with an empty keptVersions list and nothing changed is not sent', again.ok && !again.pushed && v9.log.filter(x => x.method === 'PUT').length === puts9, JSON.stringify({ pushed: again.pushed }));
+    ck('and noRev drops an empty keptVersions list, as it drops the store\'s marks', !('keptVersions' in C.noRev({ keptVersions: [], rev: 1 })) && C.noRev({ keptVersions: [{ id: 'kept:x' }] }).keptVersions.length === 1);
+  }
+
+  // ---- CS1: a leaving send too big to outlive the page goes as a plain send; a take that must not send ----
   {
     const v7 = makeVault();
     const seen = [];
@@ -250,14 +263,6 @@ const canon = x => S.canon(x);
     ck('its base is the cloud\'s copy, so this device\'s spend is still waiting', t.device.baseRev === o2.device.baseRev && !t.device.base.events.some(e => e.id === 'dsk001-b7n3k9s2x4-901') && t.waiting === true);
     const later = await C.syncOnce({ api: api8, pack, S, keys, device: t.device, copy: t.copy });
     ck('and it is sent by the next sync that may send', later.ok && later.pushed && later.copy.events.some(e => e.id === 'dsk001-b7n3k9s2x4-901'));
-    // [B5] the server's daily limit is its own answer, not "busy"
-    const full = { get: k => api8.get(k), rev: k => api8.rev(k), del: k => api8.del(k), put: async () => ({ status: 429, ok: false, j: { error: { code: 'rate_limited', message: 'Too many saves today for this vault.' } } }) };
-    const m2 = clone(later.copy); m2.schedules[0].name = 'Main job again'; m2.schedules[0].at = '2026-12-08T10:00:00.000+09:00';
-    let rd = await C.syncOnce({ api: full, pack, S, keys, device: later.device, copy: m2 });
-    ck('B5: "too many saves today" from the server is said as the day\'s limit', !rd.ok && rd.why === 'day', JSON.stringify(rd).slice(0, 120));
-    const minute = Object.assign({}, full, { put: async () => ({ status: 429, ok: false, j: { error: { code: 'rate_limited', message: 'Too many requests. Wait a minute.' } } }) });
-    rd = await C.syncOnce({ api: minute, pack, S, keys, device: later.device, copy: m2 });
-    ck('B5: the per-minute limit is still "busy"', !rd.ok && rd.why === 'busy');
   }
 
   console.log(bad ? `cloud3: ${bad} FAIL of ${n}` : `cloud3: ALL PASS (${n})`);

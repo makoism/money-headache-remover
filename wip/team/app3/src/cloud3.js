@@ -79,14 +79,19 @@
     return { get: k => req(k, 'GET'), rev: k => req(k, 'GET', null, false, '?versions=1'), put, del: k => req(k, 'DELETE') };
   }
   // 410: the cloud copy was deleted on another device; it stays gone until a fresh turn-on (a new code), so the device stops
-  const WHY = { net: 'net', code: 'code', busy: 'busy', server: 'server', deleted: 'deleted', day: 'day' };
-  // [B5] a write refused because this copy has had its saves for the day (the server's own words) is 'day', not 'busy'
-  const putFail = p => (p.status === 429 && /today/i.test(String((p.j && p.j.error && p.j.error.message) || '')) ? WHY.day : failOf(p.status));
+  const WHY = { net: 'net', code: 'code', busy: 'busy', server: 'server', deleted: 'deleted' };
   const failOf = st => (st === 0 ? WHY.net : st === 403 ? WHY.code : st === 410 ? WHY.deleted : st === 429 ? WHY.busy : WHY.server);
 
   // ---------- one sync [AQ1, AW2, AW5] ----------
   // the store's own marks on a saved book (its revision and save time, store/idb.js meta) are never part of the shared copy [BD2]
-  const noRev = c => { if (!c || typeof c !== 'object') return c; const o = Object.assign({}, c); delete o.rev; delete o.at; return o; };
+  // The store also hands back an empty keptVersions list on every load, where the engine leaves the field out when nothing
+  // is kept: the same book both ways, so an empty list is dropped too (else every reload looks like a change and sends)
+  const noRev = c => {
+    if (!c || typeof c !== 'object') return c;
+    const o = Object.assign({}, c); delete o.rev; delete o.at;
+    if (Array.isArray(o.keptVersions) && !o.keptVersions.length) delete o.keptVersions;
+    return o;
+  };
   // What the cloud holds now: { ok, rev, copy } (rev 0 and no copy when nothing is stored), or { ok: false, why }.
   async function fetchCloud({ api, pack, keys }) {
     const g = await api.get(keys);
@@ -138,7 +143,7 @@
         dev = { base: JSON.parse(JSON.stringify(out)), baseRev: r.rev };   // its own object: the copy is edited later, the base never
         return { ok: true, copy: out, device: dev, pushed: true, merged, firstJoin, questions: S.afterSync(out).questions };
       }
-      if (p.status !== 409) return { ok: false, why: putFail(p), device: dev0, copy: copy0 };
+      if (p.status !== 409) return { ok: false, why: failOf(p.status), device: dev0, copy: copy0 };
       // [AW5] refused: keep the joined copy, with the copy it took as its base, and join again on the latest
       cur = out; dev = { base: JSON.parse(JSON.stringify(cloud.copy)), baseRev: cloud.rev };
     }

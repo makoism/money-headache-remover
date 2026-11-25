@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* A change is sent by itself (DECISIONS_ROUND2 CS1; SYNC_PULL_PLAN B5; M67, M11, M4, M66). Two devices through the page
+/* A change is sent by itself (DECISIONS_ROUND2 CS1; M67, M11, M4, M66). Two devices through the page
    on the local fake vault, made-up money. Device A runs on the page's real clocks: no timer is shortened for it. Device B
    only looks, with its timed check 20 times faster so the test does not wait a minute for it.
    1. The owner's way: log once, close the page one second later. The other device shows it.
@@ -7,8 +7,7 @@
       three spends in 20 seconds, the page hidden at 25, with a copy over 64 KB. The other device shows all three.
    3. Leaving with a change still waiting and a copy over 64 KB: a plain send carries it.
    4. The day's guard: after 1,200 sends in a day this device sends no more by itself, Settings says so, and what the
-      other device changes still arrives.
-   5. B5: the server's "too many saves today" stops sends with the same words, not "the cloud is busy". */
+      other device changes still arrives. */
 'use strict';
 const T = require('./lib3.js'), { ck } = T;
 const fs = require('fs'), os = require('os'), path = require('path'), crypto = require('crypto');
@@ -106,16 +105,6 @@ const FAST = sp => { window.__burrow3CloudSpeed = sp; };
     ck('4. and this device\'s own spend is kept, still waiting', (await has(A.p, 'nut eight')) && !(await has(B.p, 'nut eight')));
     ck('4. still nothing sent by this device', puts.filter(x => x.status === 200).length === puts.slice(0, n4).filter(x => x.status === 200).length + 1, 'B sent one');
 
-    /* ---- 5. B5: the server says "too many saves today" ---- */
-    await setSends(A.p, 3); await A.p.reload(); await T.w(800);
-    ck('(a new count: the waiting spend is sent on opening)', await until(() => has(B.p, 'nut eight'), 2 * TICK + 3000));
-    vault.handle = (m, id, tok, body, q) => (m === 'PUT' ? { status: 429, j: { error: { code: 'rate_limited', message: 'Too many saves today for this vault.' } } } : stamp(m, id, tok, body, q));
-    await T.w(10500);
-    await A.p.tap('[data-tab="receipts"]'); await T.w(250); await log(A.p, '800', 'pea ten');
-    await T.w(1500);
-    await A.p.click('#a3SetGo'); await until(async () => !!(await A.p.$('#a3CloudNow')));
-    ck('5. B5: the server\'s daily limit is said with the guard\'s words', await until(async () => /most it sends in one day/.test(await state(A.p)) && /tomorrow/.test(await state(A.p)), 3000), await state(A.p));
-    ck('5. B5: never as "the cloud is busy"', !/busy/.test(await state(A.p)));
     const errs = A.errs.concat(B.errs).filter(e => !/Failed to load resource/.test(e));
     ck('no page errors', errs.length === 0, errs.join(' | '));
   } finally { await A.b.close(); await B.b.close(); await s.close(); }

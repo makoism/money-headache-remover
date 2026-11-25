@@ -1,7 +1,9 @@
 /* ---------- the cloud copy on the page (SCHEMA_V3 1, 2.2, 2.3; DECISIONS_ROUND2 D5, E3, AQ1 to AQ4, AW2, AW5, AW7, BD5) ----------
    Turning it on makes a code, shows it once and asks the person to keep it; "I have a code" ties this device to a copy
-   made on another one. While it is on: the copy is taken on opening, sent when the person leaves the app (going to the
-   background or closing the tab) and after a change at most every 90 seconds, and Send now sends at once. Each sync is
+   made on another one. While it is on: the copy is taken on opening and by itself while in view (CS2); a change is sent
+   at once, a burst again 5 seconds after its last change, never two sends inside 10 seconds, up to 1,200 a day (CS1);
+   it is also sent when the person leaves the app (going to the background or closing the tab), and Send now sends at
+   once. Each sync is
    CLOUD3.syncOnce (fetch, join with the engine's sync against this device's base, write with the revision it is based
    on). The same record changed on two devices, and any one-device check that fails after the join, waits as a question in
    Settings; the version not picked stays kept (keptVersions) so it can come back. A cloud copy deleted on another device
@@ -72,11 +74,6 @@ async function failed3(st, why, waiting) {
     C3.why = null; C3.dirty = false; clearTimeout(C3.tick);
     await putCloud3({ on: false, gone: Date.now() });
     if (!SET3.open) MSG3.post({ kind: 'notice', key: 'cloud', text: WHY3.deleted });
-    return;
-  }
-  if (why === 'day') {   // [B5] the server has had this copy's saves for the day: the guard's own state and words
-    C3.why = null;
-    await keepCloud3(st, { sends: { day: cloudDay3(), n: CLOUD_DAY3 } });
     return;
   }
   C3.why = why;

@@ -103,7 +103,7 @@ page|tests/e3_remind.js|e3_remind: ALL PASS||300|Reminders on the page (check-in
 page|tests/e3_cloud.js|e3_cloud: ALL PASS||300|the cloud copy, two devices through the page (local fake vault)
 page|tests/e3_cloudbase.js|e3_cloudbase: ALL PASS||300|the cloud copy's base is saved only with its book: a refused save, a refused write then no signal (CS3, M61, M20)
 page|tests/e3_cloudtake.js|e3_cloudtake: ALL PASS||300|the cloud copy taken by itself: a timed check of the revision, coming back into view, two tabs, the timer stopped and said once, a killed page (CS2, B1, B3)
-page|tests/e3_cloudsend.js|e3_cloudsend: ALL PASS||600|the cloud copy sent by itself: at once, a burst 5 seconds after, never two in 10 seconds, leaving with a big copy, the day's guard (CS1, B5)
+page|tests/e3_cloudsend.js|e3_cloudsend: ALL PASS||600|the cloud copy sent by itself: at once, a burst 5 seconds after, never two in 10 seconds, leaving with a big copy, the day's guard (CS1)
 page|tests/e3_sw.js|e3_sw: ALL PASS||300|the service worker (precache, offline, 3 s timeout, a new build)
 EOF
 )
