@@ -14,7 +14,7 @@
    Then: Undo the fill (back to the first screen, the answers kept), fill again from the draft card (201,400), a reload
    (the same figures, the chat kept), one spend by chat, "I spent 1,200 on lunch": safe to spend 201,400 - 1,200 =
    200,200, Main bank 286,000 - 1,200 = 284,800; a reload (the same); Undo on its card: 201,400 and 286,000 again; the
-   fill's own button is Start over now. Every request: max_tokens 2,000, the invite field, no record id.
+   fill's card has no button now. Every request: max_tokens 2,000, the invite field, no record id.
    The same answers typed on the setup screens (setup3) on another device make the same book, record for record: ids,
    moments and devices aside, every account, schedule, record, check-in, plan entry and setting is the same. */
 'use strict';
@@ -173,7 +173,7 @@ const log = p => p.$eval('#a3ChatLog', e => e.textContent.replace(/\s+/g, ' '));
     ck('its card: what changed, and safe to spend 201,400 before and 200,200 after', /Log ¥1,200 on Free to spend from Main bank, today \(lunch\)/.test(await p.$eval(cc, e => e.textContent)) && (await p.$$eval(cc + ' [data-amt]', e => e.map(x => Number(x.dataset.amt)))).slice(0, 2).join() === '201400,200200');
     h = await home(p);
     ck('Home: safe to spend 200,200 (201,400 - 1,200), Main bank 284,800 (286,000 - 1,200)', h.safe === 200200 && h.bank === 284800, JSON.stringify(h));
-    ck('the fill can no longer be undone: its button is Start over', (await p.$eval('[data-card=chat-fill] [data-chatundo]', e => e.textContent)) === 'Start over');
+    ck('the fill can no longer be undone: its card has no button now (AI_JOIN_FIXES D)', !(await p.$('[data-card=chat-fill] button')));
     await p.reload(); await T.w(900);
     h = await home(p);
     ck('after a reload: 200,200 and 284,800', h.safe === 200200 && h.bank === 284800, JSON.stringify(h));

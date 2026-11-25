@@ -13321,8 +13321,8 @@ ${card.need.length && state.draft ? 'STILL NEEDED: ' + card.need.join(' ') : ''}
    the chat on this device (IndexedDB `burrow3chat`, never in the book, the cloud copy or a backup), and gives the core
    what it needs (deps): the relay, the day, E3's book, ACT3, E3.fill and E3.discard.
    Each change the assistant makes is a card with what changed, the engine's figures before and after, and one-tap Undo;
-   a delete or a change larger than safe to spend asks first (BW). The fill card has Undo while nothing else is written,
-   then Start over, which asks first (BV2.9). When the site's AI is off or the relay fails, two ways always finish setup:
+   a delete or a change larger than safe to spend asks first (BW). The fill card has Undo while nothing else is written
+   or sent; after that it says how to change things (AI_JOIN_FIXES D). When the site's AI is off or the relay fails, two ways always finish setup:
    "Set up on the screens" (setup3, filled from the draft) and "Use any AI" (copy the questions, paste the answer back).
    This file chooses, writes and places; it never adds, takes away or rounds. Words are drafts for Mako's copy pass. */
 const CHAT3 = { state: null, busy: false, open: false, route: null, anon: null, db: null, off: null, any: false };
@@ -13335,7 +13335,7 @@ const CHAT3_WORDS = {
   noFiles: 'Reading files in the chat comes next. For now, type the figures, or add statements on Receipts.',
   welcome: ['Hi, I\'ll set up your Burrow with you. I ask a few questions, about 10 minutes. You can type, and I\'ll say where to find each figure. What you tell me stays on this phone until you say fill it in.',
     'You tell me what\'s in your bank today, what comes in and what goes out and when. From that the app works out what\'s safe to spend until your next pay. Everything I fill in shows on the screens so you can check it.'],
-  startOver: 'Start over? Your money on this device goes and the setup answers stay, so you can fill it in again. Anything you logged since is lost.',
+  fillKept: 'To change something, tell me or change it on its screen',
 };
 
 /* below the wide screen the page scrolls inside #a3, above the bar (app3.css): every screen's scrollTo moves it too.
@@ -13431,7 +13431,9 @@ function chat3Card(t) {
   if (c.kind === 'fill') {
     const f = c.figures || {}, cur = E3.book ? E3.home() : 'JPY';
     const figs = f.safe != null ? `<ul class="a3-rows"><li><span>${esc3(label3('safeToSpend'))}</span><span class="amt">${fig3('safeToSpend.headline', f.safe, cur)}</span></li>${f.bank != null ? `<li><span>${esc3(label3('bankToday'))}</span><span class="amt">${fig3('accounts.*.bank', f.bank, cur)}</span></li>` : ''}</ul>` : '';
-    const foot = c.status === 'done' ? `<div class="a3-actions"><button type="button" class="a3-btn" data-chatundo="${id}">${E3.held() ? 'Undo' : 'Start over'}</button></div>`
+    /* [AI_JOIN_FIXES D] Undo only while it can work (E3.held: nothing else written, nothing sent to the cloud). After
+       that there is no Start over (the store refuses it once the hold is gone): the card says how to change things */
+    const foot = c.status === 'done' ? (E3.held() ? `<div class="a3-actions"><button type="button" class="a3-btn" data-chatundo="${id}">Undo</button></div>` : `<p class="a3-sub" data-chat="status">${esc3(CHAT3_WORDS.fillKept)}</p>`)
       : `<p class="a3-sub" data-chat="status">${c.status === 'undone' ? 'Taken back. Your answers are kept' : 'Started over. Your answers are kept'}</p>`;
     return `<div class="a3-card a3-chat-card" data-card="chat-fill" data-turn="${id}" data-status="${esc3(c.status)}"><h3>Filled in</h3>${figs}${foot}</div>`;
   }
@@ -13468,7 +13470,7 @@ function chat3Inner() {
 function renderChat3() {
   const aside = $('#a3Chat');
   if (!aside) return;
-  if (chat3Full() || E3.mode === 'try') { aside.hidden = true; aside.innerHTML = ''; document.body.classList.remove('a3-has-chat'); return; }
+  if (chat3Full() || E3.mode === 'try') { aside.hidden = true; aside.innerHTML = ''; aside.removeAttribute('data-open'); document.body.classList.remove('a3-has-chat'); return; }
   aside.hidden = false; document.body.classList.add('a3-has-chat');
   const keep = $('#a3ChatIn') && $('#a3ChatIn').closest('#a3Chat') ? $('#a3ChatIn').value : '';
   aside.innerHTML = `<div class="a3-chat-head"><h2>The assistant</h2><button type="button" class="a3-link" id="a3ChatClose">Close</button></div>
@@ -13510,10 +13512,11 @@ function chat3SentNow() {
 }
 /* every redraw after the chat changed: the panel, and Home (a fill or a change shows there at once) */
 function chat3Redraw() {
+  if (!E3.book) CHAT3.open = false;   // [AI_JOIN_FIXES D] the fill was taken back: the sheet closes, the welcome is the one chat
   if (E3.book && $('#a3Home').querySelector('.a3-welcome')) renderHome3();
   else if (!E3.book) renderHome3();
-  else { renderChat3(); if (!$('#a3Home').hidden) renderHome3(); }
-  if (E3.book) renderChat3();
+  else if (!$('#a3Home').hidden) renderHome3();
+  renderChat3();   // with no book it empties and hides the bar, so there is never a second chat box
 }
 
 /* ---- what the person does ---- */
@@ -13569,16 +13572,8 @@ async function chat3Act(fn) {
   chat3Redraw();
   return r;
 }
-/* Undo on a card; for the fill once something else was written it is Start over, asked first */
+/* Undo on a card. The fill's Undo is there only while it can work (the card's own foot) */
 async function chat3Undo(turnId) {
-  const t = (CHAT3.state.turns || []).find(x => x.id === turnId);
-  const isFill = t && t.card && t.card.kind === 'fill';
-  if (isFill && !E3.held()) {
-    if (!confirm(CHAT3_WORDS.startOver)) return;
-    const r = await chat3Act(() => CHAT3C.startOver(CHAT3.state, chat3Deps()));
-    if (r && r.ok !== false) MSG3.post({ kind: 'toast', key: 'chat3', text: 'Started over' });
-    return;
-  }
   const r = await chat3Act(() => CHAT3C.undo(CHAT3.state, turnId, chat3Deps()));
   if (r && r.ok !== false) MSG3.post({ kind: 'toast', key: 'chat3', text: 'Undone' });
 }
