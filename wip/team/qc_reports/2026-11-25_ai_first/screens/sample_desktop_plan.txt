@@ -1,0 +1,74 @@
+the burrow
+Settings
+Reminders
+Ask
+
+Made-up numbers shaped like a real month. Nothing you do here is saved
+Show the page as on
+Set up with my own numbers
+Home
+Receipts
+Plan
+This pay period
+
+10 Nov to today's pay
+
+No budget lines yet. A line keeps money for one thing, like food, each pay period
+
+Add a line
+Set Free to spend
+Pay and bills
+Main job
+day 10 each month, due 10 Dec, not ticked off yet, ¥180,000, next 8 Jan 2027, ¥180,000
+¥180,000
+Side job
+day 10 each month, due 10 Dec, not ticked off yet, ¥60,000, next 8 Jan 2027, ¥60,000
+¥60,000
+Rent
+day 27 each month, due 27 Nov, not seen yet, ¥72,000, next 28 Dec, ¥72,000
+¥72,000
+Power
+day 26 each month, due 26 Nov, not seen yet, ¥7,400, next 28 Dec, ¥7,400
+¥7,400
+Phone
+day 20 each month, next 21 Dec
+¥4,800
+Internet
+day 27 each month, due 27 Nov, not seen yet, ¥5,200, next 28 Dec, ¥5,200
+¥5,200
+Add a bill
+Goals
+
+No goals yet. A goal is money set aside for something, kept in your bank or in an account of its own
+
+Add a goal
+Cards and loans
+Card A
+paid on day 10 from Main bank, close day not sure
+Next payment ¥54,000 on 10 Dec
+¥54,000
+still owed
+Card B
+paid on day 11 from Main bank, close day not sure
+Next payment ¥23,000 on 11 Dec
+¥23,000
+still owed
+Add a card
+Add a loan
+Pay periods gone by
+
+None yet. When your next pay is ticked off, this pay period shows here with what was spent
+
+The assistant
+Close
+
+The assistant is off right now. You can still finish everything:
+
+Use any AI
+Send a file
+
+What you type, today's figures with the names of your accounts, bills and income, and the setup answers so far go to Claude, the AI made by Anthropic, through this page's own server. Your notes, shops and single spends are not sent unless you type them. The chat stays on this device.
+
+See what is sent
+Ask or tell me something
+Send
