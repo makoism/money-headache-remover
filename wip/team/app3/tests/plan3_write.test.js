@@ -139,6 +139,41 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     r = await h.go('changeGoal', g.id, { target: 180000, due: '' }); ok(r.ok, JSON.stringify(r));
     eq([h.book.places[0].target, h.book.places[0].due], [180000, undefined]);
   });
+  await t('[E7, M13, M43, M45, M46] remove a goal: with nothing in it, the place goes (Undo puts it back); with money, it asks where the money goes: back to spending money (safe to spend rises by it) or into another goal (the other holds it); never lost, never counted twice', async () => {
+    const h = setup(), v0 = view(h.book);
+    let r = await h.go('addGoal', { name: 'Trip', target: 150000 }); ok(r.ok, JSON.stringify(r));
+    r = await h.go('addGoal', { name: 'Laptop', target: 200000 }); ok(r.ok, JSON.stringify(r));
+    r = await h.go('addGoal', { name: 'Empty', target: 1000 }); ok(r.ok, JSON.stringify(r));
+    const [trip, lap, emp] = h.book.places.map(g => g.id);
+    r = await h.go('removeGoal', emp, {}); ok(r.ok, JSON.stringify(r));
+    ok(h.book.places.find(g => g.id === emp).gone, 'an empty goal is removed');
+    ok(!view(h.book).places[emp], 'and leaves the picture');
+    r = await h.go('setAside', trip, { amount: 20000 }); ok(r.ok, JSON.stringify(r));
+    const v1 = view(h.book);
+    r = await h.go('removeGoal', trip, {});
+    ok(!r.ok && /20,000/.test(r.text) && /spending money/.test(r.text) && /another goal/.test(r.text), 'with money it asks where it goes: ' + r.text);
+    eq(view(h.book).places[trip].kept, 20000, 'nothing written');
+    r = await h.go('removeGoal', trip, { to: lap }); ok(r.ok, JSON.stringify(r));
+    const v2 = view(h.book);
+    eq([!!h.book.places.find(g => g.id === trip).gone, v2.places[lap].kept, v2.safeToSpend.headline, v2.accounts[BANK].bank], [true, 20000, v1.safeToSpend.headline, v1.accounts[BANK].bank], 'into Laptop: Laptop holds it, safe to spend and the bank unchanged');
+    r = await h.go('removeGoal', lap, { to: 'spend' }); ok(r.ok, JSON.stringify(r));
+    const v3 = view(h.book);
+    eq([v3.safeToSpend.headline, v3.accounts[BANK].bank], [v0.safeToSpend.headline, v0.accounts[BANK].bank], 'back to spending: as before any goal');
+    r = await h.go('removeGoal', lap, { to: 'spend' }); ok(!r.ok, 'removed twice is refused');
+  });
+  await t('[E7] remove a goal kept in its own account: the money goes back to the main bank with the goal, the account stays; into another goal only one kept in the same place', async () => {
+    const h = setup();
+    let r = await h.go('addGoal', { name: 'House', target: 900000, mode: 'ownAccount' }); ok(r.ok, JSON.stringify(r));
+    r = await h.go('addGoal', { name: 'Trip', target: 100000 }); ok(r.ok, JSON.stringify(r));
+    const [house, trip] = h.book.places.map(g => g.id), own = h.book.places[0].keptIn.acct;
+    r = await h.go('setAside', house, { amount: 30000 }); ok(r.ok, JSON.stringify(r));
+    const v1 = view(h.book);
+    r = await h.go('removeGoal', house, { to: trip }); ok(!r.ok && /back to spending/.test(r.text), 'into a goal kept elsewhere is refused with words: ' + r.text);
+    r = await h.go('removeGoal', house, { to: 'spend' }); ok(r.ok, JSON.stringify(r));
+    const v2 = view(h.book);
+    eq([v2.accounts[own].bank, v2.accounts[BANK].bank, v2.safeToSpend.headline - v1.safeToSpend.headline], [0, v1.accounts[BANK].bank + 30000, 30000]);
+    ok(!h.book.accounts.find(a => a.id === own).gone, 'its account stays');
+  });
   await t('setting aside never takes more than the bank can spare through the next pay: the real walk\'s lowest point less what is set aside [BM2, replaces BL2]', async () => {
     const h = setup();
     let r = await h.go('addGoal', { name: 'Trip', target: 10000000 }); ok(r.ok, JSON.stringify(r));

@@ -22,6 +22,7 @@ const TABLE = {
   'Close this card': 'sure (tests/e3_cardclose.js)',
   'Remove this card': 'sure (tests/e3_cardclose.js)',
   'Remove this loan': 'sure (tests/e3_cardclose.js)',
+  'Remove this goal': 'sure, with where its money goes picked on the sheet (tests/e3_goalremove.js)',
   'Stop here': 'its own question in Settings (tests/e3_cloud.js)',
   'Delete the cloud copy': 'its own question in Settings (tests/e3_cloud.js)',
   'Delete it for good': 'the second step of Delete the cloud copy, after its own question with Keep it first (tests/e3_cloud.js)',

@@ -79,6 +79,7 @@ page|tests/e3_panels.js|e3_panels: ALL PASS||300|only the tapped tab's panel sho
 page|tests/e3_lineshare.js|e3_lineshare: ALL PASS||300|a line added mid-period: one amount that counts now, the full one in a sentence, how far over
 page|tests/e3_plan.js|e3_plan: ALL PASS||300|the Plan tab
 page|tests/e3_accounts.js|e3_accounts: ALL PASS||300|Plan > Accounts after setup (M13, M23): every bank, cash and e-wallet listed, Add an account (new money as it is, moved money as a move), rename, its own Keep at least, Undo, after a reload
+page|tests/e3_goalremove.js|e3_goalremove: ALL PASS||300|remove a goal (M13, M43, M46): asks first; with money, where it goes (back to spending money or into another goal) picked on the sheet, never lost or counted twice; Undo; after a reload
 page|tests/e3_acctclose.js|e3_acctclose: ALL PASS||300|close, reopen and remove a bank, cash or e-wallet (M13, M6, M14): asks first, money moved or counted as spent, Closed list with Reopen, remove only one added by mistake, Undo, after a reload
 page|tests/e3_cardclose.js|e3_cardclose: ALL PASS||300|cards and loans (M13, M27, M40): pay it off now (asks, worked example 286,000 - 54,000), close a card at zero, Closed list with Reopen, remove one added by mistake, a loan paid off and closed, Undo
 page|tests/e3_undoreload.js|e3_undoreload: ALL PASS||300|Undo after a reload for changes made on the screens (M14): Settings > Recent changes from the saved journal, named and timed, each with Undo; a change a later one touched is refused with words; after another reload it stays undone
@@ -169,7 +170,7 @@ page_tests_for() {   # page_tests_for <changed path, relative to app3/>
     src/home3.js)             echo e3_cloudstatus e3_home e3_ns e3_homeplan e3_warnwords e3_cardline e3_bankparts e3_names e3_payday ;;
     src/checkin3.js)          echo e3_checkin e3_checkgap e3_cardfig e3_reload e3_bankparts e3_payday e3_overdrawn e3_cardpay e3_paycame ;;
     src/receipts3.js)         echo e3_removes e3_receipts e3_listfix e3_moneyin e3_bigspend e3_stmt_once e3_period e3_names e3_doors e3_moved1 e3_cardgap e3_moved2 ;;
-    src/plan3.js|src/plan3_write.js) echo e3_accounts e3_acctclose e3_cardclose e3_removes e3_aijoin e3_plan e3_rhythms e3_lineshare e3_homeplan e3_paychange e3_names e3_billyear e3_payfrom ;;
+    src/plan3.js|src/plan3_write.js) echo e3_accounts e3_goalremove e3_acctclose e3_cardclose e3_removes e3_aijoin e3_plan e3_rhythms e3_lineshare e3_homeplan e3_paychange e3_names e3_billyear e3_payfrom ;;
     src/setup3.js|src/answers3.js) echo e3_twodrafts e3_fillcard e3_setup e3_setupfix e3_setup6 e3_income2 e3_weeks3 e3_first e3_onepay e3_overdrawn e3_paytoday e3_chatwalk e3_chat ;;
     src/chat3*.js)            echo e3_twodrafts e3_ailog e3_aiwords e3_fillcard e3_cloudfirst e3_aijoin e3_chat e3_chatwalk e3_fakeai_page e3_fillundo e3_invite e3_back e3_cloudhold ;;
     src/start3.js)            echo e3_first e3_file e3_try e3_chat e3_cloudtake ;;

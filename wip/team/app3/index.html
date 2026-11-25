@@ -9453,6 +9453,37 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     return id;
   }
 
+  /* [E7, M13, M43, M45, M46; CONTROLS_PLAN section 3] a goal removed. With nothing in it, the place goes. With money in it
+     the person says where the money goes first, in the same step, so none drops out: x.to 'spend' (back to spending
+     money: the move to Waiting takeOut writes, T7; from its own account the transfer back to the main bank too), or
+     another goal's id (a move from one place to the other, only between goals kept in the same account). Its own account
+     stays (closing it is its own step). A bill paid from the goal stops the remove: that bill is changed first. */
+  function removeGoal(w, id, x) {
+    const g = find(w, 'places', id), k = g.keptIn || {}, to = (x || {}).to;
+    const bills = A3.listOf(w.book, 'schedules').filter(s => live(s) && s.place === id && !(s.ends && s.ends < w.today));
+    if (bills.length) bad(bills.map(s => s.name).join(' and ') + ' ' + (bills[1] ? 'are' : 'is') + ' paid from ' + g.name + '. Change ' + (bills[1] ? 'them' : 'it') + ' first');
+    const held = (LA.lookahead(w.book, w.today).places[id] || {}).kept || 0;
+    const cur = g.cur || home(w), acct = k.acct || mainOf(w);
+    if (held > 0) {
+      if (to !== 'spend' && !(to && to !== id)) {
+        const q = new A3.Bad(`${g.name} holds ${SMF.format(held, cur)}. Where should it go: back to spending money, or into another goal?`);
+        q.why = 'ask';
+        throw q;
+      }
+      if (to === 'spend') {
+        w.add('events', { k: 'move', date: w.today, a: held, acct, place: id, src: { type: 'typed' } });
+        if (k.mode === 'ownAccount') w.add('events', { k: 'transfer', date: w.today, a: held, acct: k.acct, acct2: mainOf(w), src: { type: 'typed' } });
+      } else {
+        const o = find(w, 'places', to), ok = o.keptIn || {};
+        if (o.kind !== 'goal') bad('Pick a goal for the money');
+        if ((ok.acct || mainOf(w)) !== acct) bad(`${o.name} is kept in ${nameOf(w, ok.acct || mainOf(w))}, not with ${g.name}. Move the money back to spending money first, then set it aside for ${o.name}`);
+        w.add('events', { k: 'move', date: w.today, a: held, acct, place: id, place2: to, src: { type: 'typed' } });
+      }
+    }
+    w.remove('places', id);
+    return id;
+  }
+
   /* a paid-off loan closes: a final check of nothing on its closing day, and `closed` [SCHEMA 3, P6, R3]; one that
      still owes is refused (its last payment is ticked at Check your bank first) */
   function closeLoan(w, id) {
@@ -9706,7 +9737,7 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     return id;
   }
 
-  const api = { addPay, addAccount, changeAccount, closeAccount, reopenAccount, removeAccount, payOff, setKeep, setCountry, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan };
+  const api = { addPay, addAccount, changeAccount, closeAccount, reopenAccount, removeAccount, payOff, setKeep, setCountry, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, removeGoal, addLoan, addCard, changeOwed, closeLoan };
   if (node) module.exports = api;
   else root.PLAN3W = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
@@ -11000,13 +11031,18 @@ function plGoalForm3(id, fill) {
     [{ label: 'Add', solid: true, step: v => ['addGoal', w => PLAN3W.addGoal(w, { name: v.name, target: v.target, due: v.due || null, mode: v.mode }), 'Goal added'] }]);
     return;
   }
-  const g = book.places.find(x => x.id === id);
+  const g = book.places.find(x => x.id === id), held = ((E3.view(E3.today()).places || {})[id] || {}).kept || 0;
+  const others = (book.places || []).filter(x => plLive3(x) && x.kind === 'goal' && x.id !== id).map(x => ({ v: x.id, name: 'Into ' + x.name }));
+  const toField = held > 0 ? [{ key: 'to', label: 'If you remove it, its money goes', kind: 'pick', value: 'spend', options: [{ v: 'spend', name: 'Back to spending money' }].concat(others) }] : [];
   plForm3(g.name, [{ key: 'amount', label: 'Set aside now', kind: 'amount', optional: true, hint: g.keptIn && g.keptIn.mode === 'ownAccount' ? 'It moves from your bank into ' + E3.nameOf(g.keptIn.acct) : 'It stays in your bank, kept apart from safe to spend' },
-    { key: 'name', label: 'Name', kind: 'text', value: g.name }, { key: 'target', label: 'Goal amount', kind: 'amount', value: g.target }, { key: 'due', label: 'Target date', kind: 'date', value: g.due || '' }],
+    { key: 'name', label: 'Name', kind: 'text', value: g.name }, { key: 'target', label: 'Goal amount', kind: 'amount', value: g.target }, { key: 'due', label: 'Target date', kind: 'date', value: g.due || '' }].concat(toField),
   [{ label: 'Set aside', solid: true, step: v => ['setAside', w => PLAN3W.setAside(w, id, { amount: v.amount }), 'Set aside for ' + g.name],
      anyway: { label: 'Set aside anyway', step: v => ['setAside', w => PLAN3W.setAside(w, id, { amount: v.amount, anyway: true }), 'Set aside for ' + g.name] } },
    { label: 'Save changes', step: v => ['changeGoal', w => PLAN3W.changeGoal(w, id, { name: v.name, target: v.target, due: v.due }), 'Goal changed'] },
-   { label: 'Take out', step: v => ['takeOut', w => PLAN3W.takeOut(w, id, { amount: v.amount }), 'Taken out of ' + g.name] }]);
+   { label: 'Take out', step: v => ['takeOut', w => PLAN3W.takeOut(w, id, { amount: v.amount }), 'Taken out of ' + g.name] },
+   /* [E7, M13, M46] remove it; with money in it, where the money goes is picked on the sheet first, nothing drops out */
+   { label: 'Remove this goal', sure: [held > 0 ? `Remove ${g.name}? Its ${money3(held, g.cur || E3.home())} goes where you picked above` : `Remove ${g.name}?`, 'Yes, remove it'],
+     step: v => ['removeGoal', w => PLAN3W.removeGoal(w, id, held > 0 ? { to: v.to } : {}), g.name + ' removed'] }]);
 }
 /* a card's or a loan's days and payment */
 function plOwedForm3(id) {
@@ -13873,12 +13909,12 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
   /* ---- the tools (BU2: no figures or draft read tool) ---- */
   const num = { type: 'number', description: 'A plain number in the currency, no symbol.' };
   const str = d => ({ type: 'string', description: d });
-  const DO = ['landed', 'bank_figure', 'card_figure', 'log_spend', 'refund', 'money_in', 'move_money', 'remove', 'add_bill', 'change_bill', 'end_bill', 'add_pay', 'add_line', 'change_line', 'end_line', 'set_free', 'add_goal', 'set_aside', 'add_card', 'add_account', 'change_account', 'close_account', 'reopen_account', 'remove_account', 'pay_off', 'change_card', 'change_loan', 'add_loan', 'set_keep', 'set_country'];
+  const DO = ['landed', 'bank_figure', 'card_figure', 'log_spend', 'refund', 'money_in', 'move_money', 'remove', 'add_bill', 'change_bill', 'end_bill', 'add_pay', 'add_line', 'change_line', 'end_line', 'set_free', 'add_goal', 'set_aside', 'add_card', 'add_account', 'change_account', 'close_account', 'reopen_account', 'remove_account', 'pay_off', 'change_card', 'change_loan', 'add_loan', 'set_keep', 'set_country', 'change_goal', 'take_out', 'remove_goal'];
   /* a step that was asked for and left out, in words for the person (the card says which was not done) */
   const DO_WORDS = { landed: 'ticking off a pay or bill', bank_figure: 'a bank figure', card_figure: 'a card figure', log_spend: 'a spend', refund: 'a refund', money_in: 'money that came in',
     move_money: 'money moved between accounts', remove: 'removing a record', add_bill: 'a new bill', change_bill: 'a change to a bill or pay', end_bill: 'ending a bill', add_pay: 'a new pay',
     add_line: 'a new line', change_line: 'a change to a line', end_line: 'ending a line', set_free: 'a change to Free to spend', add_goal: 'a new goal', set_aside: 'money set aside for a goal',
-    add_card: 'a new card', add_account: 'a new account', change_account: 'a change to an account', close_account: 'closing an account', reopen_account: 'reopening an account', remove_account: 'removing an account', pay_off: 'paying off a card or loan', change_card: 'a change to a card', change_loan: 'a change to a loan', add_loan: 'a new loan', set_keep: 'Keep at least for your main bank', set_country: 'where you bank' };
+    add_card: 'a new card', add_account: 'a new account', change_account: 'a change to an account', close_account: 'closing an account', reopen_account: 'reopening an account', remove_account: 'removing an account', pay_off: 'paying off a card or loan', change_card: 'a change to a card', change_loan: 'a change to a loan', add_loan: 'a new loan', set_keep: 'Keep at least for your main bank', set_country: 'where you bank', change_goal: 'a change to a goal', take_out: 'money taken out of a goal', remove_goal: 'removing a goal' };
   const CURS = ['JPY', 'PHP', 'USD', 'EUR'];
   const SECTIONS = ['country', 'currency', 'banks', 'pays', 'cards', 'bills', 'asked', 'statements', 'payToday', 'free', 'min'];
   const TOOLS = [
@@ -14336,6 +14372,23 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     }
     if (what === 'set_free') { const x = amt(a.amount, null, true); if (x == null) return { bad: 'Free to spend I could not read' }; return { kind: 'setFree', args: [{ amount: x, when: when(a.when) }], text: `Free to spend: ${m(x)} each pay period`, amount: x }; }
     if (what === 'add_goal') { const x = amt(a.target != null ? a.target : a.amount); if (!x || !a.name) return { bad: 'a goal I could not read' }; return { kind: 'addGoal', args: [{ name: clean(a.name, 60), target: x, due: a.due || undefined }], text: `Add a goal, ${clean(a.name, 60)}: ${m(x)}${a.due ? ' by ' + day1(a.due) : ''}`, amount: 0, figs: [x] }; }
+    /* [E7, M13, M43, M46] a goal changed, money taken out (back to spending money), or the goal removed: with money in it,
+       where the money goes is asked first ('spend' or another goal's G ref); a remove asks before it is done (del) */
+    if (what === 'change_goal' || what === 'take_out' || what === 'remove_goal' || (what === 'remove' && ref(a.ref, 'G'))) {
+      const id = ref(a.goal || a.ref, 'G'), g = id && (book.places || []).find(x => x.id === id);
+      if (!g) return { bad: 'a goal I do not know' };
+      if (what === 'take_out') { const x = amt(a.amount); if (!x) return { bad: 'an amount I could not read' }; return { kind: 'takeOut', args: [id, { amount: x }], text: `Take ${m(x)} out of ${g.name}, back to spending money`, amount: x, ref: a.goal || a.ref }; }
+      if (what === 'change_goal') {
+        const ch = {}; if (a.name) ch.name = clean(a.name, 60); if (a.target != null) { ch.target = amt(a.target); if (!ch.target) return { bad: 'a goal amount I could not read' }; } if (a.due !== undefined) ch.due = a.due || '';
+        if (!Object.keys(ch).length) return { bad: 'a change to a goal with nothing to change' };
+        return { kind: 'changeGoal', args: [id, ch], text: `${g.name}: ` + [ch.name ? 'called ' + ch.name : '', ch.target ? m(ch.target) : '', ch.due !== undefined ? (ch.due ? 'by ' + day1(ch.due) : 'no date') : ''].filter(Boolean).join(', '), amount: 0, figs: ch.target ? [ch.target] : [] };
+      }
+      const held = (LA.lookahead(book, today).places[id] || {}).kept || 0;
+      const to = a.to === 'spend' ? 'spend' : a.to ? ref(a.to, 'G') : null;
+      if (held > 0 && !to) return { bad: `ask: "${g.name} holds ${m(held)}. Where should it go: back to spending money, or into another goal?" Then change again with to ("spend" or the G ref)` };
+      const where = held > 0 ? (to === 'spend' ? `, its ${m(held)} back to spending money` : `, its ${m(held)} into ${((book.places || []).find(x => x.id === to) || {}).name}`) : '';
+      return { kind: 'removeGoal', args: [id, held > 0 ? { to } : {}], text: `Remove the goal ${g.name}${where}`, del: true, amount: 0, ref: a.goal || a.ref };
+    }
     if (what === 'set_aside') {
       const id = ref(a.goal || a.ref, 'G'), x = amt(a.amount); if (!id || !x) return { bad: 'money for a goal I could not read' };
       return { kind: 'setAside', args: [id, { amount: x }], text: `Set aside ${m(x)} for ${((book.places || []).find(g => g.id === id) || {}).name}, today`, amount: x, ref: a.goal || a.ref };

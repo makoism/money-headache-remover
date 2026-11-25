@@ -357,6 +357,37 @@
     return id;
   }
 
+  /* [E7, M13, M43, M45, M46; CONTROLS_PLAN section 3] a goal removed. With nothing in it, the place goes. With money in it
+     the person says where the money goes first, in the same step, so none drops out: x.to 'spend' (back to spending
+     money: the move to Waiting takeOut writes, T7; from its own account the transfer back to the main bank too), or
+     another goal's id (a move from one place to the other, only between goals kept in the same account). Its own account
+     stays (closing it is its own step). A bill paid from the goal stops the remove: that bill is changed first. */
+  function removeGoal(w, id, x) {
+    const g = find(w, 'places', id), k = g.keptIn || {}, to = (x || {}).to;
+    const bills = A3.listOf(w.book, 'schedules').filter(s => live(s) && s.place === id && !(s.ends && s.ends < w.today));
+    if (bills.length) bad(bills.map(s => s.name).join(' and ') + ' ' + (bills[1] ? 'are' : 'is') + ' paid from ' + g.name + '. Change ' + (bills[1] ? 'them' : 'it') + ' first');
+    const held = (LA.lookahead(w.book, w.today).places[id] || {}).kept || 0;
+    const cur = g.cur || home(w), acct = k.acct || mainOf(w);
+    if (held > 0) {
+      if (to !== 'spend' && !(to && to !== id)) {
+        const q = new A3.Bad(`${g.name} holds ${SMF.format(held, cur)}. Where should it go: back to spending money, or into another goal?`);
+        q.why = 'ask';
+        throw q;
+      }
+      if (to === 'spend') {
+        w.add('events', { k: 'move', date: w.today, a: held, acct, place: id, src: { type: 'typed' } });
+        if (k.mode === 'ownAccount') w.add('events', { k: 'transfer', date: w.today, a: held, acct: k.acct, acct2: mainOf(w), src: { type: 'typed' } });
+      } else {
+        const o = find(w, 'places', to), ok = o.keptIn || {};
+        if (o.kind !== 'goal') bad('Pick a goal for the money');
+        if ((ok.acct || mainOf(w)) !== acct) bad(`${o.name} is kept in ${nameOf(w, ok.acct || mainOf(w))}, not with ${g.name}. Move the money back to spending money first, then set it aside for ${o.name}`);
+        w.add('events', { k: 'move', date: w.today, a: held, acct, place: id, place2: to, src: { type: 'typed' } });
+      }
+    }
+    w.remove('places', id);
+    return id;
+  }
+
   /* a paid-off loan closes: a final check of nothing on its closing day, and `closed` [SCHEMA 3, P6, R3]; one that
      still owes is refused (its last payment is ticked at Check your bank first) */
   function closeLoan(w, id) {
@@ -610,7 +641,7 @@
     return id;
   }
 
-  const api = { addPay, addAccount, changeAccount, closeAccount, reopenAccount, removeAccount, payOff, setKeep, setCountry, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan };
+  const api = { addPay, addAccount, changeAccount, closeAccount, reopenAccount, removeAccount, payOff, setKeep, setCountry, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, removeGoal, addLoan, addCard, changeOwed, closeLoan };
   if (node) module.exports = api;
   else root.PLAN3W = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

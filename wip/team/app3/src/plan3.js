@@ -376,13 +376,18 @@ function plGoalForm3(id, fill) {
     [{ label: 'Add', solid: true, step: v => ['addGoal', w => PLAN3W.addGoal(w, { name: v.name, target: v.target, due: v.due || null, mode: v.mode }), 'Goal added'] }]);
     return;
   }
-  const g = book.places.find(x => x.id === id);
+  const g = book.places.find(x => x.id === id), held = ((E3.view(E3.today()).places || {})[id] || {}).kept || 0;
+  const others = (book.places || []).filter(x => plLive3(x) && x.kind === 'goal' && x.id !== id).map(x => ({ v: x.id, name: 'Into ' + x.name }));
+  const toField = held > 0 ? [{ key: 'to', label: 'If you remove it, its money goes', kind: 'pick', value: 'spend', options: [{ v: 'spend', name: 'Back to spending money' }].concat(others) }] : [];
   plForm3(g.name, [{ key: 'amount', label: 'Set aside now', kind: 'amount', optional: true, hint: g.keptIn && g.keptIn.mode === 'ownAccount' ? 'It moves from your bank into ' + E3.nameOf(g.keptIn.acct) : 'It stays in your bank, kept apart from safe to spend' },
-    { key: 'name', label: 'Name', kind: 'text', value: g.name }, { key: 'target', label: 'Goal amount', kind: 'amount', value: g.target }, { key: 'due', label: 'Target date', kind: 'date', value: g.due || '' }],
+    { key: 'name', label: 'Name', kind: 'text', value: g.name }, { key: 'target', label: 'Goal amount', kind: 'amount', value: g.target }, { key: 'due', label: 'Target date', kind: 'date', value: g.due || '' }].concat(toField),
   [{ label: 'Set aside', solid: true, step: v => ['setAside', w => PLAN3W.setAside(w, id, { amount: v.amount }), 'Set aside for ' + g.name],
      anyway: { label: 'Set aside anyway', step: v => ['setAside', w => PLAN3W.setAside(w, id, { amount: v.amount, anyway: true }), 'Set aside for ' + g.name] } },
    { label: 'Save changes', step: v => ['changeGoal', w => PLAN3W.changeGoal(w, id, { name: v.name, target: v.target, due: v.due }), 'Goal changed'] },
-   { label: 'Take out', step: v => ['takeOut', w => PLAN3W.takeOut(w, id, { amount: v.amount }), 'Taken out of ' + g.name] }]);
+   { label: 'Take out', step: v => ['takeOut', w => PLAN3W.takeOut(w, id, { amount: v.amount }), 'Taken out of ' + g.name] },
+   /* [E7, M13, M46] remove it; with money in it, where the money goes is picked on the sheet first, nothing drops out */
+   { label: 'Remove this goal', sure: [held > 0 ? `Remove ${g.name}? Its ${money3(held, g.cur || E3.home())} goes where you picked above` : `Remove ${g.name}?`, 'Yes, remove it'],
+     step: v => ['removeGoal', w => PLAN3W.removeGoal(w, id, held > 0 ? { to: v.to } : {}), g.name + ' removed'] }]);
 }
 /* a card's or a loan's days and payment */
 function plOwedForm3(id) {
