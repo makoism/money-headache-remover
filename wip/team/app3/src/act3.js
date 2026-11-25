@@ -176,6 +176,7 @@
            not last (the next join brings the other copy's value back). It is marked not set, { v: null, at, by, gone },
            and every reader takes v null as not set */
         const unset = value === undefined && !sl.list && fieldValue(old);
+        if (unset && old.v === null && old.gone) return old;   // already not set: left as it was, so the earlier answer's Undo still works
         if (unset) value = Object.assign({}, old, { v: null, gone: s.day });
         const v = value === undefined ? undefined : clone(value);
         if ((marked || unset || (opts && opts.stamp)) && v && typeof v === 'object' && !Array.isArray(v)) stamp(v);

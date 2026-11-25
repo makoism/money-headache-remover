@@ -526,7 +526,7 @@
     const acct = mins.length ? mins[0].account : accts.length ? accts[0].of : ((copy.home.main || {}).v || {}).acct;   // [marker] v null is not set
     const a = (copy.accounts || []).find(x => x.id === acct) || {};
     const options = [...new Set([].concat(...kept.map(id => kv(id).versions.map(v => v.by))))].filter(Boolean).sort();
-    return { q: 'main', account: acct, kept, main: copy.home.main.v.min == null ? null : copy.home.main.v.min, own: a.minBank == null ? null : a.minBank, options };
+    return { q: 'main', account: acct, kept, main: ((copy.home.main || {}).v || {}).min == null ? null : copy.home.main.v.min, own: a.minBank == null ? null : a.minBank, options };
   }
   function afterSync(copy) {
     const c = closedChecks(copy);
@@ -606,7 +606,7 @@
       }
     } else if (q.q === 'minimum') {
       const a = out.accounts.find(x => x.id === q.account);
-      const min = pick === 'own' ? a.minBank : out.home.main.v.min;
+      const min = pick === 'own' ? a.minBank : (((out.home.main || {}).v || {}).min ?? null);   // [marker] v null is not set
       out.home.main = Object.assign({}, out.home.main, { v: { acct: q.account, min } }, stamp);
       Object.assign(a, { minBank: null }, stamp);
     } else if (q.q === 'main') {   // [AW4] one device's view: its version of each kept item, then the minimum from that view

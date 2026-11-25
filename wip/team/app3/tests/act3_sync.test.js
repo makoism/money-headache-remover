@@ -183,6 +183,14 @@ const rentAmount = b => b.schedules.find(x => x.id === RENT).steps.slice(-1)[0].
     ok(u.ok, JSON.stringify(u));
     eq([h.book.plan.limits.ceiling.v.a, h.book.ui.sb.v], [20000, 'cards'], 'Undo puts the values back');
   });
+  await t('[WATCH 2] a settings item already marked not set is left as it was by a second answer', async () => {
+    const A = A3.make({ book: () => bk, put: async x => { bk = x; return true; }, told: () => DAY + 'T12:00:00.000+09:00', newId: I.idMaker(DEV_B, Math.random), today: () => DAY, queue: { post: () => {} }, check: x => L.lookahead(x, DAY) });
+    let bk = mako(); const mark = { v: null, at: T1, by: DEV_A, gone: '2026-12-09' };
+    bk.ui = Object.assign({}, bk.ui, { sb: clone(mark) });
+    const r = await A.run('x', w => { w.swap('ui', 'ui.sb', undefined); });
+    ok(r.ok || /Nothing changed/.test(r.text), JSON.stringify(r));   // nothing to write: no step at all, or an empty one
+    eq(bk.ui.sb, mark);
+  });
   await t('[WATCH] a whole copy leaving out a record that was already removed does not mark it again (its own Undo still works)', async () => {
     const mine = mako(), cloud = clone(mine), SP = DEV_A + '-q7k2m9x4ws-1';
     const gone = { id: SP, k: 'spend', date: '2026-12-08', a: 1200, acct: 'k7m2qa-f3n8p1x6wd-1', line: 'free', src: { type: 'typed' }, told: T1, at: T1, by: DEV_A, gone: '2026-12-08', goneBy: 'stepold1' };
