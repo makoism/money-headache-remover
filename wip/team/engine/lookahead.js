@@ -742,7 +742,9 @@
         if (nextPoint && p.id === nextPoint.id) nextExp += o.amount;
         else if (!carries && (!nextPoint || p.land > nextPoint.land)) walkItems.push({ land: p.land, amount: o.amount, future: true, label: c.name + ', ' + o.name + ' ' + short(o.land) });
       }
-      if (nextPoint) walkItems.push({ land: nextPoint.land, amount: nextExp ? planned(rest + nextExp, nextPoint.due) : nextAmount, label: c.name + (notSure ? ', all owed' : ' still open, closes ' + short(nextPoint.closes)) });
+      // [CARDS_IN_HEADLINE 1.2] `exp`: the part of the open item that is bills charged to the card and still to come (not
+      // owed now); the cards-now walk keeps it on this payment day
+      if (nextPoint) walkItems.push({ land: nextPoint.land, amount: nextExp ? planned(rest + nextExp, nextPoint.due) : nextAmount, exp: carries ? 0 : nextExp, label: c.name + (notSure ? ', all owed' : ' still open, closes ' + short(nextPoint.closes)) });
       // [F4, H8] a payment past its day and not ticked is overdue (late, then not seen), never the next one
       const shown = p => ({ item: p.id, amount: p.asks, payment_date: dayStr(p.land), statement: label || 'closed', closed_on: p.closed != null ? dayStr(p.closed) : undefined });
       const overdue = unpaid.filter(p => p.land < today).map(p => Object.assign(shown(p), { state: payState(p.land, payFrom) }));
@@ -753,7 +755,7 @@
       if (nextPoint) cardItems.push({ id: nextPoint.id, due: nextPoint.due, land: nextPoint.land, amount: nextAmount, statement: label || 'open' });
       // [BK6] this card's payment days after one day and up to another (one a month on its pay day, after the weekend rule)
       const landsBetween = (from, to) => { const out = [], [y0, m0] = ymOf(from); for (let k = 0; ; k++) { const p = payOf(dayIn(y0, m0 + k, c.payDay)); if (p.land > to) break; if (p.land > from) out.push(p.land); if (k > 36) break; } return out; };
-      return { owedNow, statements: points, next, overdue, walkItems, cardItems, fillers, payFrom, landsBetween };
+      return { owedNow, carries, statements: points, next, overdue, walkItems, cardItems, fillers, payFrom, landsBetween };
     }
 
     // ----- loans and pay-later [B5, E6, F19, H7, I2, Q3, AB3, AC5, AD7] -----
@@ -852,8 +854,10 @@
     // of how often pay lands writes a new entry with its own `per` (a month with no fixed pay, each pay with a pay day)
     const sharesByFrom = shares.map(x => ({ f: x.from == null ? -Infinity : dayNum(x.from), at: x.at || '', per: (x.per || {}).free || 'month' })).sort((p, q) => p.f - q.f || (p.at < q.at ? -1 : p.at > q.at ? 1 : 0));
     const freePerOn = d => { let r = sharesByFrom.length ? sharesByFrom[0].per : 'month'; for (const x of sharesByFrom) if (x.f <= d) r = x.per; return r; };
+    // [CASH_PLAN 17 F1] an entry `free: 'none'` means no play amount from the period holding its `from`: read as null, so
+    // that period and the ones after it have no Free to spend; the periods before keep the amounts they had [M44]
     const freeSrc = shares.length ? { id: 'free', acct: shares[0].acct, per: freePerOn(today),
-      steps: shares.map(x => ({ from: x.from == null ? null : x.from, amount: x.free, at: x.at })) } : null;
+      steps: shares.map(x => ({ from: x.from == null ? null : x.from, amount: x.free === 'none' ? null : x.free, at: x.at })) } : null;
     const lineSrcs = budgets.map(l => ({ id: l.id, name: l.name, acct: l.acct, per: l.per, steps: l.steps, once: [l.once], field: 'amount', from: l.from || null }));
     if (freeSrc) Object.assign(freeSrc, { once: shares.map(x => x.once), field: 'free' });
     // [B8, T1, AE1] A period's amount: a live `once` key named by the occurrence of the pay that starts it, else the step in
@@ -1166,7 +1170,10 @@
         const starts = nextPays.filter(p => p.land >= today && !leftToday(p)).sort((x, z) => x.land - z.land);
         starts.forEach((p, i) => {
           const end = starts[i + 1] ? starts[i + 1].land : p.land + 30;
-          for (const l of lines) list.push({ land: Math.max(p.land, today), amount: perPeriod({ per: l.per, amount: periodAmount(l.src, p.land, p.id) }, p.land, end, p.id), label: l.name + ' for the period from ' + short(p.land) });
+          for (const l of lines) {
+            const amount = perPeriod({ per: l.per, amount: periodAmount(l.src, p.land, p.id) }, p.land, end, p.id);
+            if (amount != null) list.push({ land: Math.max(p.land, today), amount, label: l.name + ' for the period from ' + short(p.land) });   // [BJ2, F1] none in that period
+          }
         });
       } else {
         // [B4, M9, M10] no fixed pay: by day. A monthly amount x 12 / the year's days a day, rounded down, the rest of each
@@ -1198,7 +1205,11 @@
     // ----- the walk, one account at a time [B3, B9, F1, F2, F3, F9, F14, H5, H7, H8, Q2, Q4, S4, T3, T4, V2] -----
     // [BM2] `real`: the real-money walk, the bank's own money only (pays, bills, card payments, moves): no goals, no plan
     // lines. Below zero and under the minimum are judged on it; the full walk (goals and plan lines off) is what can be spared.
-    function walk(id, end, minimum, real) {
+    // [CARDS_IN_HEADLINE 1, R1] `cardsNow` (only while no play amount is in force, playOn): for each card paid in full from
+    // this account in its currency, everything owed now comes off today, in place of its dated payment steps (never on
+    // top of them); bills charged to the card and still to come stay on their payment days. A card that carries a balance
+    // stays dated.
+    function walk(id, end, minimum, real, cardsNow) {
       const start = banks[id].bank;
       const why = [{ label: acct[id].name + ' today', amount: start }];
       let bal = start;
@@ -1222,6 +1233,17 @@
       }
       for (const cid in cards) {
         if (cards[cid].payFrom !== id || cur(cid) !== cur(id)) continue;   // [H5] another currency: warned below
+        if (cardsNow && !cards[cid].carries) {
+          const k = cards[cid], owed = Math.max(0, k.owedNow), dated = k.walkItems.filter(w => !w.future && w.amount);
+          const pays = dated.length ? Math.min(...dated.map(w => w.land)) : null;
+          if (owed) steps.push({ day: today, order: 1, amount: -owed, label: acct[cid].name + ', owed now' + (pays !== null ? ', paid ' + short(pays) : ''), card: cid, now: true });
+          for (const w of k.walkItems) {
+            const amount = w.future ? w.amount : w.exp || 0;
+            if (!amount || w.land > end) continue;
+            steps.push({ day: Math.max(w.land, today), order: 1, amount: -Math.max(0, amount), label: w.future ? w.label + ', paid ' + short(w.land) : acct[cid].name + ', bills charged to it, paid ' + short(w.land), card: cid });
+          }
+          continue;
+        }
         for (const w of cards[cid].walkItems) {
           if (!w.amount) continue;
           if (w.future && w.land > end) continue;
@@ -1271,6 +1293,20 @@
     const touches = (e, id) => e.account === id || e.from === id || e.to === id;
     const reopened = id => closedOn(id) !== null && live().some(e => e.day > closedOn(id) && touches(e, id)
       && (e.k === 'check' ? e.a !== 0 : delta(e, id) !== 0));
+    // [CASH_PLAN 17 F1, R1] whether a play amount (Free to spend) is in force on a day: the entry in force for the period
+    // holding that day is an amount (a dated `free: 'none'` stops it). On today, the amount the period running now uses.
+    // The one place the engine answers this; the cards-now walk applies only when it is false for today.
+    function playOn(day) {
+      const d = typeof day === 'string' ? dayNum(day) : day;
+      if (!freeSrc) return false;
+      if (d === today) return !!planLeft.free;
+      if (!periodStream) return stepAmount(freeSrc.steps, d) != null;
+      const starts = pays.map(startDayOf).filter(x => x <= d), start = starts.length ? Math.max(...starts) : null;
+      return periodAmount(freeSrc, start, start === null ? null : occOn(start, d)) != null;
+    }
+    const cardsNowOn = !playOn(today);
+    const paysInFull = id => Object.keys(cards).some(c => cards[c].payFrom === id && cur(c) === cur(id) && !cards[c].carries);
+    const datedHeadroom = {};
     const realWalks = {};
     for (const id in banks) {
       const isClosed = closedOn(id) !== null && !reopened(id);
@@ -1278,17 +1314,21 @@
       if (isClosed && banks[id].bank !== 0) throw new Error(`${acct[id].name} is closed with ${fmt(banks[id].bank, cur(id))} in it: a closing is refused unless its figure is zero or moved out [P6]`);
       const a = acct[id], minimum = isClosed ? 0 : minimumOf(id);
       const w = walk(id, horizon, minimum), rw = walk(id, horizon, minimum, true);
+      // [CARDS_IN_HEADLINE 1.4] with no play amount: what the account can spare (headroom and its sum) from the cards-now
+      // walk; its lowest point, first day under and the goal warning stay on the dated walk, as do the real walk's
+      const wc = cardsNowOn && paysInFull(id) ? walk(id, horizon, minimum, false, true) : w;
+      datedHeadroom[id] = w.headroom;
       const r = res.accounts[id] = {
         bank: banks[id].bank, asOf: dayStr(banks[id].asOfDay), ageDays: today - banks[id].asOfDay,
         checked: banks[id].checked, loggedIn: banks[id].loggedIn, loggedOut: banks[id].loggedOut,
-        currency: a.cur, minimum, lowest: w.lowest, lowestDay: dayStr(w.lowestDay), headroom: w.headroom,
+        currency: a.cur, minimum, lowest: w.lowest, lowestDay: dayStr(w.lowestDay), headroom: wc.headroom,
         firstUnder: w.firstUnder ? dayStr(w.firstUnder.day) : null,   // [LISTFIX2] the first day the full walk (plan lines and goals too) goes under
         spendFrom: isClosed ? false : a.spendFrom != null ? a.spendFrom : !!SPEND_TYPES[a.type] && a.cur === home && !backsGoal(id),
-        why: whyText(w.why, w.headroom, a.cur), whyParts: w.why.map(p => ({ label: p.label, amount: p.amount })),
+        why: whyText(wc.why, wc.headroom, a.cur), whyParts: wc.why.map(p => ({ label: p.label, amount: p.amount })),
         // [LISTFIX2 A1] a gap that is never spending is marked `apart` (an investment's rise or fall [T watch], another
         // currency [T5]), as the lines count it, so a screen listing gaps as spending leaves it out
         fillers: banks[id].fillers.map(f => (heldGain(id, f) ? Object.assign({}, f, { held: true }) : acct[id].type === 'investment' || cur(id) !== home ? Object.assign({}, f, { apart: true }) : f)) };   // [X4] a held gain is named, so a screen listing gaps leaves it out (LISTFIX A1)   // [S4] the parts, for screens/money.js sumLine
-      if (w.todayParts) { r.todayParts = w.todayParts; r.todayEnd = w.todayParts.reduce((t, x) => t + x.amount, w.start); }
+      if (wc.todayParts) { r.todayParts = wc.todayParts; r.todayEnd = wc.todayParts.reduce((t, x) => t + x.amount, wc.start); }
       // [BM2] the real-money walk: its lowest point, and its sum for the screens (the "Short by" headline is its total)
       r.real = { lowest: rw.lowest, lowestDay: dayStr(rw.lowestDay), headroom: rw.headroom, whyParts: rw.why.map(p => ({ label: p.label, amount: p.amount })) };
       // what is set aside in it today (goals and other kept places); canSetAside is worked out below, once the next pay is known
@@ -1347,6 +1387,15 @@
     const raw = up - shortfalls;
     const oldest = Object.keys(res.accounts).reduce((d, id) => Math.min(d, dayNum(res.accounts[id].asOf)), today);
     res.safeToSpend = { headline: Math.max(0, cap === null ? raw : Math.min(cap, raw)), shortfall: Math.max(0, -raw), cappedByFreeToSpend: cap !== null && cap < raw, oldestInput: dayStr(oldest) };
+    // [CARDS_IN_HEADLINE 2, R1] with no play amount: what is owed now on the cards paid in full from the home-currency
+    // accounts (taken off today), and the shortfall the dated walk would have, so a screen can say the cards are the
+    // cause (`cards_over`) when only they make it short. Left out when no card was taken off.
+    if (cardsNowOn) {
+      const owed = Object.keys(cards).filter(c => !cards[c].carries && res.accounts[cards[c].payFrom] && cur(c) === cur(cards[c].payFrom) && cur(c) === home).reduce((t, c) => t + Math.max(0, cards[c].owedNow), 0);
+      const dUp = homeSpend.reduce((t, id) => t + Math.max(0, datedHeadroom[id]), 0);
+      const dShort = Object.keys(res.accounts).filter(id => res.accounts[id].currency === home).reduce((t, id) => t + Math.max(0, -datedHeadroom[id]), 0);
+      if (owed) res.safeToSpend.cardsNow = { owed, datedShortfall: Math.max(0, dShort - dUp) };
+    }
     // [BL3, replaces B1 for the headline] what the screens say when short: the amount is the sum's own total (how far
     // the account's walk ends under its minimum, or zero), before the first pay that brings money in after its lowest
     // point (null when none does); the first day it goes under is named beside it (`day`), with how far under then (`first`)
@@ -1485,6 +1534,7 @@
     const listed = items.filter(o => !o.settled && o.land <= today && fallsDue(o) && o.amount);
     const matched = items.filter(o => settledBy[o.id] && settledBy[o.id].byImport && o.land > lastCheckIn && o.land <= today && o.amount);
     res.checkIn = { since: dayStr(lastCheckIn), toConfirm: listed.filter(o => !o.otherCur).map(itemOut), apart: listed.filter(o => o.otherCur).map(itemOut), matched: matched.map(itemOut) };
+    Object.defineProperty(res, 'playOn', { value: playOn, enumerable: false });   // [CASH_PLAN 17 F1] r.playOn('YYYY-MM-DD')
     return res;
   }
 
