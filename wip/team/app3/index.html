@@ -14304,8 +14304,6 @@ const CHAT3_WORDS = {
   failed: 'That didn\'t go through. Send it again, or finish another way:',
   /* why a change card asks first (M6): the core's card.ask; its card.why is the AI's own words, not shown here */
   ask: { delete: 'This takes something away. Do it?', large: 'This is more than safe to spend. Do it?', guess: 'You didn\'t type this amount, it\'s the AI\'s guess. Is it right?', gap: 'This is far from what the app expected. Is the figure right?' },
-  upload: 'The whole file goes to the AI, with your name, address, employer and account number. On a payslip, crop out your My Number.',
-  noFiles: 'Reading files in the chat comes next. For now, type the figures, or tap Add statements on Home.',
   fillKept: 'To change something, tell me or change it on its screen',
 };
 
@@ -14455,7 +14453,6 @@ function chat3Inner() {
     <div class="a3-chat-row"><label class="a3-vh" for="a3ChatIn">${chat3Full() ? 'Your answer' : 'Ask or tell me something'}</label>
       <textarea class="a3-in a3-text" id="a3ChatIn" rows="1" maxlength="1000" placeholder="${chat3Full() ? 'Your answer' : 'Ask or tell me something'}"></textarea>
       <button type="button" class="a3-btn solid" id="a3ChatSend">Send</button></div>
-    <div class="a3-chat-ways"><button type="button" class="a3-link" id="a3ChatFile">Send a file</button></div><div id="a3ChatFileBox"></div>
     <p class="a3-sub" data-privacy="chat">${esc3(CHAT3_WORDS.privacy)}</p>
     <details class="a3-ask-sent"><summary>See what is sent</summary><pre id="a3ChatSent"></pre></details>`;
 }
@@ -14496,7 +14493,6 @@ function chat3Wire(host) {
   host.querySelector('#a3ChatSend').addEventListener('click', () => chat3Go());
   const close = host.querySelector('#a3ChatClose');
   if (close) close.addEventListener('click', () => { CHAT3.open = false; $('#a3Chat').removeAttribute('data-open'); });
-  host.querySelector('#a3ChatFile').addEventListener('click', chat3FileNotice);
   host.querySelectorAll('[data-chatundo]').forEach(b => b.addEventListener('click', () => chat3Undo(b.dataset.chatundo)));
   host.querySelectorAll('[data-chatok]').forEach(b => b.addEventListener('click', () => chat3Act(() => CHAT3C.confirm(CHAT3.state, b.dataset.chatok, chat3Deps()))));
   host.querySelectorAll('[data-chatnot]').forEach(b => b.addEventListener('click', () => chat3Act(() => CHAT3C.notNow(CHAT3.state, b.dataset.chatnot))));
@@ -14604,14 +14600,6 @@ async function chat3Act(fn) {
 async function chat3Undo(turnId) {
   const r = await chat3Act(() => CHAT3C.undo(CHAT3.state, turnId, chat3Deps()));
   if (r && r.ok !== false) MSG3.post({ kind: 'toast', key: 'chat3', text: 'Undone' });
-}
-/* before a file: what the whole file carries (BV6) */
-function chat3FileNotice() {
-  const box = $('#a3ChatFileBox'); if (!box) return;
-  box.innerHTML = `<div class="a3-card" data-card="chat-upload"><p class="a3-sub" data-privacy="upload">${esc3(CHAT3_WORDS.upload)}</p>
-    <div class="a3-actions"><label class="a3-btn a3-file">Choose the file<input type="file" accept=".csv,.tsv,.txt,.pdf,image/*" id="a3ChatPick"></label><button type="button" class="a3-btn" id="a3ChatFileX">Not now</button></div><p class="a3-sub" id="a3ChatFileSay"></p></div>`;
-  $('#a3ChatFileX').addEventListener('click', () => { box.innerHTML = ''; });
-  $('#a3ChatPick').addEventListener('change', () => { $('#a3ChatFileSay').textContent = CHAT3_WORDS.noFiles; });
 }
 /* "Set up on the screens": setup3, filled from the draft (ANSWERS3.toForm, the one shared answers function); the boxes
    are setup3's own, filled as a person would, so its Save is the same */

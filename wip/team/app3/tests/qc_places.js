@@ -125,10 +125,10 @@ const PLACES = [
   sheet('Settings: I have a code', 'book', 'a3Set', '#a3SetGo', '#a3SetClose', async p => { await p.waitForSelector('#a3CloudHave', { timeout: 3000 }); await tap(p, '#a3CloudHave'); }),
   sheet('Reminders', 'book', 'a3Rem', '#a3RemGo', '#a3RemClose'),
   /* the assistant (AI_JOIN_FIXES G): before setup it is the first screen itself (the welcome, its box "Your answer");
-     with the site's AI off, as on a plain file, it offers "Use any AI" (copy the questions, paste the answer back) and
-     "Send a file". After setup it is the bar at the foot of every screen, opened by a tap on it or on Ask */
-  { name: 'First screen: the assistant off, Use any AI and Send a file', state: 'empty', sheet: null, root: '#a3Home', out: 'tab',
-    open: async p => { await tap(p, '#a3ChatAny', 250); await tap(p, '#a3ChatFile', 200); } },
+     with the site's AI off, as on a plain file, it offers "Use any AI" (copy the questions, paste the answer back).
+     After setup it is the bar at the foot of every screen, opened by a tap on it or on Ask */
+  { name: 'First screen: the assistant off, Use any AI', state: 'empty', sheet: null, root: '#a3Home', out: 'tab',
+    open: async p => { await tap(p, '#a3ChatAny', 250); } },
   { name: 'The assistant', state: 'book', sheet: null, root: '#a3Chat', out: '#a3ChatClose', closed: () => !document.querySelector('#a3Chat').hasAttribute('data-open'),
     open: async p => { await tap(p, '#a3AskGo', 350); } },
   sheet('Add statements', 'book', 'a3Stmt', '#a3StmtGo', '#a3StmtX'),
