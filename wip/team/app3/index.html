@@ -11896,7 +11896,8 @@ function tryBand3() {
   t.innerHTML = `<span>Made-up numbers shaped like a real month. Nothing you do here is saved</span>
     <label class="a3-day">Show the page as on <input type="date" id="a3Day" value="${esc3(E3.today())}"></label>
     <button type="button" class="a3-btn" id="a3TryOut">Set up with my own numbers</button>`;
-  $('#a3Day').addEventListener('change', e => { E3.setToday(e.target.value); if (!$('#a3Check').hidden) closeCheck3(); renderHome3(); });
+  /* a cleared day box goes back to the day the page is showing: the box never sits empty over a page that shows a day */
+  $('#a3Day').addEventListener('change', e => { if (!e.target.value) { e.target.value = E3.today(); return; } E3.setToday(e.target.value); if (!$('#a3Check').hidden) closeCheck3(); renderHome3(); });
   $('#a3TryOut').addEventListener('click', leaveTry3);
 }
 /* out of the made-up numbers: nothing of them is written; this device's own book shows when it keeps one, else the
@@ -13783,7 +13784,8 @@ async function chat3Ask() {
   if (!E3.book) {
     if ($('#a3Setup') && !$('#a3Setup').hidden) closeSetup3();
     showTab3('home');
-    const b = $('#a3Home #a3ChatIn'); if (b) b.focus();
+    /* the first screen's answer box can sit below a phone's screen: bring it into view, or the tap seems to do nothing */
+    const b = $('#a3Home #a3ChatIn'); if (b) { b.focus(); setTimeout(() => b.scrollIntoView({ block: 'center' }), 0); }
     return;
   }
   if ($('#a3Chat').hidden) renderChat3();
@@ -13990,7 +13992,7 @@ function openRem3() {
   $('#a3RemAfter').addEventListener('change', e => { REM3.afterPay = e.target.checked; rem3Paint(); });
   $('#a3RemMid').addEventListener('change', e => { REM3.mid = e.target.checked; rem3Paint(); });
   $('#a3RemBefore').addEventListener('change', e => { REM3.before = Number(e.target.value); rem3Paint(); });
-  $('#a3RemTime').addEventListener('change', e => { REM3.time = e.target.value || '09:00'; rem3Paint(); });
+  $('#a3RemTime').addEventListener('change', e => { if (!e.target.value) e.target.value = REM3.time; /* a cleared time goes back to the time in use, shown in the box */ REM3.time = e.target.value; rem3Paint(); });
   $('#a3RemBills').addEventListener('change', e => { const c = e.target.closest('[data-rembill]'); if (!c) return; REM3.off[c.dataset.rembill] = !c.checked; rem3Paint(); });
   $('#a3RemIcs').addEventListener('click', rem3Save);
   $('#a3RemClose').addEventListener('click', closeRem3);
