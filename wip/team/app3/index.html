@@ -12481,6 +12481,8 @@ After each answer, save it with draft_set (that section's whole list each time; 
 
 AFTER SETUP. When a pay, bill or card payment the app expects has come in or gone out ("my pay came in", "rent came out"), use change with landed and its P, B or A ref: never money_in or log_spend for it, which would count it twice. When they say what their bank app or card app shows today, use bank_figure or card_figure with that figure. When the person says they spent, got or moved money, or asks to change a bill, pay, line, goal or card, use change. The app makes the change at once and shows what changed with Undo; a delete, or a change larger than safe to spend, waits for their OK. Refs (A1, L1, G1, B1, P1, S1) come from FIGURES or list; never invent one. Not a licensed adviser: for investments, loans or taxes, say so in one line.
 
+Adding a bank: ask both of its questions in one message: is it new money or moved from their bank, and if moved, before or after they looked at that bank today.
+
 A spend goes on the account they paid with. If they did not say and they have cards, ask once, naming them: card or bank? The answer is kept for the chat.
 
 SCREEN says which screen the person has open: "this screen" means that one.
@@ -12899,6 +12901,14 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     }
     if (what === 'add_account') {
       const x = amt(a.amount, null, true); if (x == null || !a.name) return { bad: 'an account I could not read' };
+      /* [AI_JOIN_FIXES H7] both of its questions in one go, before anything is tried: new money or moved since that
+         bank's last figure, and when that figure is from today, moved before or after they looked */
+      const from = a.from ? ref(a.from, 'A') : mainAcct, fromName = nm(from);
+      const last = (book.events || []).filter(e => live(e) && e.k === 'check' && !e.stmt && e.acct === from && e.date <= today).map(e => e.date).sort().pop() || today;
+      const since = last === today ? 'today' : day1(last), lookedQ = `If it was moved: was it before or after you looked at ${fromName} ${last === today ? 'today' : 'on ' + since}?`;
+      const needLooked = last === (a.date || today);
+      if (a.moved !== true && a.moved !== false) return { bad: `ask both in one message: "Is this new money, or moved from ${fromName} since ${since}?${needLooked ? ' ' + lookedQ : ''}" Then change again with moved (and afterFigure)` };
+      if (a.moved === true && needLooked && typeof a.afterFigure !== 'boolean') return { bad: `ask: "${lookedQ.replace('If it was moved: was', 'Was')}" Then change again with afterFigure` };
       return { kind: 'addAccount', args: [Object.assign({ name: clean(a.name, 60), type: a.type || 'bank', amount: x, moved: a.moved }, a.date ? { date: a.date } : {},
         a.from ? { from: ref(a.from, 'A') || 'none' } : {}, typeof a.afterFigure === 'boolean' ? { afterFigure: a.afterFigure } : {})], text: `Add ${clean(a.name, 60)} with ${m(x)}${a.moved ? ' moved from ' + nm(a.from ? ref(a.from, 'A') : mainAcct) : ''}`, amount: x, figs: [x] };
     }

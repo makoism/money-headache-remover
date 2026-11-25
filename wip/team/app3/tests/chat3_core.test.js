@@ -517,6 +517,22 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     c = r.shown.find(x => x.who === 'card' && x.card.kind === 'change');
     ok(c && c.card.status === 'done' && /from Main bank/.test(c.card.lines[0]), JSON.stringify(c && c.card));
   });
+  await t('[H7] adding a bank asks both of its questions in one go', async () => {
+    const h = page('2026-11-24'); const { state, deps: d0 } = await runSetup(h, FAKE.make(steps(SETUP)));
+    const D = f => Object.assign(h.deps(f), { door: d0.door });
+    let res = '';
+    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'add_account', name: 'Savings', amount: 50000 }] })]), body => { res = FAKE.results(body)[0].text; return say('ok'); }]);
+    const r = await K.turn(state, 'add my savings account, it has 50,000', D(f));
+    ok(/^Nothing changed: /.test(res), res);
+    ok(/Is this new money, or moved from Main bank since today\?/.test(res) && /before or after you looked at Main bank today\?/.test(res) && /one message/.test(res), res);
+    eq(r.shown.filter(x => x.who === 'card' && x.card.kind === 'change').length, 0, 'no refused card: the AI asks both first');
+    ok(/Adding a bank/.test(K.SYSTEM) && /both/.test(K.SYSTEM), 'the AI is told to ask both at once');
+    /* both answered: it goes in */
+    const f2 = FAKE.make([say('', [call('change', { steps: [{ do: 'add_account', name: 'Savings', amount: 50000, moved: false }] })]), say('Added.')]);
+    const r2 = await K.turn(r.state, 'new money', D(f2));
+    const c = r2.shown.find(x => x.who === 'card' && x.card.kind === 'change');
+    ok(c && c.card.status === 'done', JSON.stringify(c && c.card));
+  });
   console.log(bad ? `chat3_core: ${bad} of ${n} FAILED` : `chat3_core: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })();
