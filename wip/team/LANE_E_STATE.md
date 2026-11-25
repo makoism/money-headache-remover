@@ -28,21 +28,24 @@ Plan: wip/team/foundation_review/CONTROLS_PLAN.md (with its BZ corrections). Sli
 
 Files most touched: app3/src/plan3.js, plan3_write.js, chat3_core.js, settings3.js, act3.js. MAIN 20 is on chat3_core/setup3 for the candidate: merge ai-join in often.
 
-## Branches
-| Branch | Hash | State | Owes |
+## Branches (stacked: each slice branch holds the ones before it; merge in order 1, 2, 3, 4, 5)
+| Branch | Tip | State | Owes |
 |---|---|---|---|
-| lane/e-state | this page | state page | keep current |
-| lane/controls-1 | ecfbad9e | slice 1 built: controls3.js + tests/controls3.test.js (a1671887), Plan > Accounts + Add an account + account sheet (1f040bdb), assistant change_account (661a70c0), ai-join b54ace71 merged | check3 full (run 1: only e3_stmt failed, a timing flake that passes alone 3 times; run 2 going), round folder qc_reports/2026-11-26_controls1 (scope.txt asked of the coordinator), then qc-controls + qc-assistant, then ready report |
-| lane/controls-2 | 072668a3 (+ uncommitted in .claude/worktrees/c2) | slice 2: closeAccount, reopenAccount, removeAccount steps committed; screens (Close this account sheet, Closed list with Reopen, Remove this account) and assistant close_account / reopen_account / remove_account written, node tests pass | page tests e3_acctclose (passes alone), e3_removes, e3_fakeai_page, e3_names, e3_layout; commit; then check3 full, qc-controls + qc-foundation + qc-data-safety |
+| lane/controls-1 | 94ccc2fb | slice 1: controls table, Plan > Accounts, Add an account, rename + own Keep at least, assistant change_account. check3 full ALL GOOD, round folder qc_reports/2026-11-26_controls1 (scope.txt by coordinator, screens) | qc-assistant FAIL, 1 blocker: plan3_write.js changeAccount says "Keep at least for your main bank is in Settings" but Settings has none until slice 5: on slice 1 say it cannot be changed after setup yet (slice 5 puts the Settings words back). Confusing to fix cheaply: "remove" of a G ref says "ref I do not know" (should say goals: Plan, tap the goal); statements words. qc-controls running at the time of writing. Then confirming runs |
+| lane/controls-2 | 8a801015 | slice 2: close/reopen/remove a bank, cash or e-wallet, screens + assistant. quick ALL GOOD (26 tests) | merge controls-1 fixes; full check; qc-controls, qc-foundation, qc-data-safety |
+| lane/controls-3 | 1f53a3e8 | slice 3: payOff, close a card at zero, remove a card or loan added by mistake, Pay it off now, assistant add_loan, change_card, change_loan, pay_off. quick ALL GOOD | a loan's Still owed today NOT built: the engine reads a loan from its opening only (engine rule, ask coordinator). Full check, qc-controls, qc-foundation |
+| lane/controls-4 | ee399ac4 (slice 4 ends at b8031830; ee399ac4 is slice 5's first commit, a force push was refused) | slice 4: journal entries keep their Undo words; Settings > Recent changes with Undo after a reload | it lacks the slice 2/3 lint fixes: use lane/controls-5 for the full check. qc-controls, qc-data-safety |
+| lane/controls-5 | (latest, after the merge of controls-3) | slice 5: act3 setField (home.main, home.country), setKeep, setCountry, Settings > Money Keep at least + Where you bank, assistant set_keep, set_country. quick ALL GOOD with slices 2 to 4 (e3_undoreload, e3_keepcountry, e3_cardclose, e3_acctclose, e3_accounts, e3_removes, e3_plan, e3_backup, e3_tabs, e3_boxwalk, e3_fakeai_page) | full check, qc-controls, qc-foundation, qc-data-safety |
 
 ## Notes for the next session
-- Worktrees: main checkout on lane/controls-1; .claude/worktrees/c2 on lane/controls-2; .claude/worktrees/estate on lane/e-state.
-- Fresh machine: tools line in RESUME (npm install puppeteer-core acorn acorn-walk in /home/claude/work/tools), `git fetch --unshallow origin lane/ai-join wip-38.31 main`. check3 quick without named tests runs almost everything (ai-join differs a lot from wip-38.31): name the page tests.
-- In page tests, scope selectors to #a3Plan: Home has its own [data-acct] rows.
-- Assistant tests: K.confirm does not call the model; refs of closed accounts come after the open ones (chat3_core figures).
-- Slice 3 notes: a pay-off is a `repay` event { k: 'repay', acct: payFrom, acct2: card, to: card, a }; trace a worked example (card owed 23,000 paid off today: the next payment day shows 0, bank falls 23,000 today, safe to spend unchanged or up) before building.
+- Worktrees: main checkout on lane/controls-1 (reviewers use it: do not edit while one runs); .claude/worktrees/c2 (controls-2), c3 (controls-3), c4 (controls-5), estate (lane/e-state).
+- Fresh machine: tools (npm install puppeteer-core acorn acorn-walk in /home/claude/work/tools), `git fetch --unshallow origin lane/ai-join wip-38.31 main`. Name the page tests for quick.
+- Lints that bite: no_maths flags `a.length > 1 ?` and `x + (cond ? ...)` concatenations (use templates and `k[1] ?`); wording lint forbids semicolons in words; chat3_core SYSTEM must stay under 9,000 characters and each SCREENS line at least 6 words; e3_removes counts remove buttons by `label: '...'` literals; e3_fakeai_page counts Plan sheets (now 11).
+- Page tests: scope selectors to #a3Plan; Home has its own [data-acct].
+- Assistant tests: refs are rebuilt each turn (a closed account moves to the end): list again before using a ref in a later turn.
+- Remaining slices: 6 goals (removeGoal with money back to spending or into another goal; change_goal, take_out), 7 second income (Add a pay screen, endPay with BZ2 dated startsPeriod entry, assistant end_pay), 8 bank check changed/removed later, 9 currency Start again.
 
 ## Next steps
-1. Slice 1: when check3 full is ALL GOOD, copy it to the round folder, screen pack, ask for scope.txt if not there, run qc-controls and qc-assistant (opus, brief opens with "read wip/team/MAKO_SAYS.md first", agent file + build path + round folder only).
-2. Slice 2: page tests, commit, merge ai-join, full check, reviewers.
-3. Slice 3 (cards and loans).
+1. When qc-controls on slice 1 reports: fix its blockers and qc-assistant's blocker in the main checkout (lane/controls-1), quick check, full check, confirming runs (ask the coordinator for confirm_*.txt).
+2. Merge controls-1 into 2, 2 into 3, 3 into 5; full check on lane/controls-5; ask the coordinator whether one round can cover slices 2 to 5 (qc-controls, qc-foundation, qc-data-safety, qc-assistant).
+3. Slice 6.
