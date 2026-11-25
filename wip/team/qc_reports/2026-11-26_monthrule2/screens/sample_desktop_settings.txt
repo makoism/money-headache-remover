@@ -1,0 +1,36 @@
+the burrow
+Settings
+Reminders
+Ask
+
+Made-up numbers shaped like a real month. Nothing you do here is saved
+Show the page as on
+Set up with my own numbers
+Settings
+Money
+
+Amounts are shown in JPY.
+
+It stays the same once money is written down
+
+Made-up numbers: nothing here is saved, backed up or sent.
+
+Code word for the AI
+
+No code word is kept on this device. One is needed only when the page's owner asks for it.
+
+Code word
+Keep it
+Done
+The assistant
+Close
+
+The assistant is off right now. You can still finish everything:
+
+Use any AI
+
+What you type, today's figures with the names of your accounts, bills and income, and the setup answers so far go to Claude, the AI made by Anthropic, through this page's own server. Your notes, shops and single spends are not sent unless you type them. The chat stays on this device.
+
+See what is sent
+Ask or tell me something
+Send

@@ -1,0 +1,30 @@
+the burrow
+Settings
+Reminders
+Ask
+
+Home
+Receipts
+Plan
+Welcome to the burrow
+
+Hi, I'll set up your Burrow with you. I ask a few questions, about 10 minutes. You type, and I'll say where to find each figure. What you tell me stays on this phone until you say fill it in.
+
+You tell me what's in your bank today, what comes in and what goes out and when. From that the app works out what's safe to spend until your next pay. Everything I fill in shows on the screens so you can check it.
+
+Which country do you bank in, and in which currency? The country moves pay and bills off weekends and holidays.
+
+The assistant is off right now. You can still finish everything:
+
+Set up on the screens
+Use any AI
+Your answer
+Send
+
+What you type, today's figures with the names of your accounts, bills and income, and the setup answers so far go to Claude, the AI made by Anthropic, through this page's own server. Your notes, shops and single spends are not sent unless you type them. The chat stays on this device.
+
+See what is sent
+Set up on the screens instead
+See it with made-up numbers first
+I already use the burrow on another device
+Set up first
