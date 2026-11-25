@@ -55,7 +55,10 @@ const typeIn = async (p, sel, v) => { await p.click(sel, { clickCount: 3 }); awa
     const list = await p.$$eval('[data-card=maystill] li', ls => ls.map(l => l.textContent)).catch(() => []);
     ck(day + ': what may still go through is listed by name: ' + names.join(', '), names.every(nm => list.some(t => t.indexOf(nm) === 0)), JSON.stringify(list));
     const r = T.L.lookahead(T.book(), day);
-    ck(day + ': the list is the engine\'s, item for item', list.length === r.mayStillPost.length, list.length + ' vs ' + r.mayStillPost.length);
+    /* [C10] a late card or loan payment is listed once, in the overdue card, so it is not in this list */
+    const odItems = [].concat(...[r.cards, r.owed || {}].map(m => [].concat(...Object.values(m).map(x => (x.overdue || []).map(o => o.item)))));
+    const mayWant = r.mayStillPost.filter(o => !odItems.includes(o.item));
+    ck(day + ': the list is the engine\'s, item for item (less the overdue card payments, listed in their own card)', list.length === mayWant.length, list.length + ' vs ' + mayWant.length);
     if (day === '2026-11-28') await T.shot(p, 'home_maystill_' + day);
   }
   /* ---- BI4b ---- */

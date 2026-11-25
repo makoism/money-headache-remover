@@ -63,4 +63,20 @@ module.exports = [
     const l = await (await t.page(ctx)).evaluate(async () => { const c = (await (await window.BurrowStore.open()).load()).copy; return [c.events.length, c.home.mode.v]; });
     t.assert.eq(l, [12, 'wallet'], 'both kept');
   } },
+
+  { name: 'discard (Undo of the setup chat\'s fill): the book and its records go, the device record and kept copies stay, the other tab is refused, a new setup saves', run: async t => {
+    const ctx = await t.context();
+    const a = await t.page(ctx), b = await t.page(ctx);
+    await a.evaluate(OPEN); await a.evaluate(async () => { window.C = window.makeCopy(10); await window.S.save(window.C, { full: true }); await window.S.putDevice({ cloud: { on: false } }); await window.S.keepCopy(window.C, 'before'); });
+    await b.evaluate(OPEN);
+    const d = await a.evaluate(async () => { const r = await window.S.discard(); const l = await window.S.load(); return [r.ok, l.empty, l.copy, l.device, (await window.S.keptCopies()).length]; });
+    t.assert.eq(d, [true, true, null, { cloud: { on: false } }, 1], 'gone; device record and the kept copy stay');
+    await b.evaluate(`window.spend = ${spend.toString()}`);
+    const rb = await b.evaluate(async () => { window.spend('tabbbbbbbb', '2026-11-24T12:01:00.000+09:00'); return window.S.save(window.C); });
+    t.assert.eq([rb.ok, rb.why], [false, 'behind'], 'the other tab cannot write the book back');
+    const cu = await b.evaluate(async () => { const ch = await window.S.catchUp(); return [ch.gone, ch.book, ch.events.length]; });
+    t.assert.eq(cu, [true, null, 0], 'its catch up says the book is gone');
+    const again = await a.evaluate(async () => { window.C = window.makeCopy(3); const s = await window.S.save(window.C, { full: true }); const l = await (await window.BurrowStore.open()).load(); return [s.ok, l.empty, l.copy && l.copy.events.length]; });
+    t.assert.eq(again, [true, false, 3], 'a new setup saves on the same device');
+  } },
 ];

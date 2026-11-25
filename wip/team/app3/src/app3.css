@@ -11,6 +11,12 @@ body::before { content: none; }
 .a3 { max-width: 640px; margin: 0 auto; padding: 16px 16px 96px; display: flex; flex-direction: column; gap: var(--gap-card); }
 #a3Home { display: flex; flex-direction: column; gap: var(--gap-card); }
 .a3-top { display: flex; flex-direction: column; gap: 6px; }
+/* M1 "always on screen": where there is no assistant bar or column (before setup: the first screen, Settings and
+   Reminders on a new device), the header line with Ask stays at the top while the page scrolls. One rule for every
+   such screen; with the bar or the column there (body.a3-has-chat) the box itself is always on screen */
+body:not(.a3-has-chat) .a3-top { display: contents; }
+body:not(.a3-has-chat) .a3-brand { position: sticky; top: 0; z-index: 3; background: var(--bg); margin: 0; padding: 8px 0 6px; }
+body:not(.a3-has-chat) .a3-try { margin-top: 6px; }
 .a3-brand { margin: 8px 0 0; font-family: var(--fd); font-size: var(--t-h3); display: flex; align-items: center; gap: 10px; color: var(--ink2); }
 .a3-brand .pix { display: inline-block; }
 .a3-day { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; color: var(--ink); }
@@ -155,6 +161,42 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 32px; }
 .a3-rows li.a3-hashelp > .a3-rcrow { flex: 1 1 100%; }
 .a3-helprow { flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .a3-helprow .burrow-help-text { flex: 1 1 100%; margin: 0; }
+/* the assistant (chat3.js, AI first): a bar at the foot of a phone that opens to a sheet over the lower part, a column
+   on the right on a wide screen, and the whole first screen before setup (the welcome, inside #a3Home) */
+.a3-chat { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; background: var(--bg); border-top: 1px solid var(--hair); padding: 8px 16px calc(8px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 8px; }
+.a3-chat[data-open] { height: 62vh; height: 62dvh; box-shadow: 0 -8px 24px rgba(0,0,0,.25); }
+.a3-chat:not([data-open]) .a3-chat-body, .a3-chat:not([data-open]) .a3-chat-head { display: none; }
+.a3-chat-body { flex: 1 1 auto; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 10px; }
+.a3-chat-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.a3-chat-head h2 { margin: 0; font-size: var(--t-cap); color: var(--ink2); font-weight: 600; }
+.a3-chat-row { display: flex; gap: 8px; align-items: flex-end; }
+.a3-chat-row .a3-in { flex: 1 1 auto; min-width: 0; width: auto; min-height: 44px; padding: 10px 14px; text-align: left; resize: none; }
+.a3-chat-row .a3-btn { flex: none; }
+.a3-chat-log { display: flex; flex-direction: column; gap: 10px; }
+.a3-chat-log:empty { display: none; }
+.a3-chat-card { align-self: stretch; }
+.a3-chat-card h3 { margin: 0 0 4px; font-size: var(--t-sm); }
+.a3-chat-saved { align-self: flex-start; margin: 0; font-size: var(--t-cap); color: var(--ink2); }
+.a3-chat-ways { display: flex; flex-wrap: wrap; gap: 8px; }
+.a3-chat-copy { width: 100%; min-height: 120px; text-align: left; font-size: var(--t-cap); }
+.a3-welcome .a3-chat-log { margin-top: 12px; }
+.a3-vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.a3-chat-lines { margin: 4px 0 0; padding-left: 18px; font-size: var(--t-sm); }
+.a3-chat-figs li { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; }
+/* below the wide screen the page is a column: the page scrolls on its own above the bar, so the bar never sits on top of
+   anything (as the message band, screens/messages.js BAND_CSS) */
+@media (max-width: 999px) {
+  body.a3-has-chat { height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+  body.a3-has-chat .a3 { flex: 1 1 auto; min-height: 0; overflow-y: auto; scroll-padding-top: 72px; width: 100%; max-width: none; margin: 0; padding: 16px max(16px, calc((100% - 608px) / 2)) 24px; }
+  body.a3-has-chat .a3-chat { position: static; flex: none; }
+}
+@media (min-width: 1000px) {
+  .a3-chat { left: auto; top: 0; width: 360px; border-top: 0; border-left: 1px solid var(--hair); height: 100vh; height: 100dvh; padding: 16px; }
+  .a3-chat[data-open] { height: 100vh; height: 100dvh; box-shadow: none; }
+  .a3-chat:not([data-open]) .a3-chat-body, .a3-chat:not([data-open]) .a3-chat-head { display: flex; }
+  body.a3-has-chat { padding-right: 360px; }
+}
+.a3-chat-check { color: var(--warn); font-size: var(--t-cap); }
 .a3-word { margin-bottom: 14px; }   /* the code word box above the question or the files (stmt3_ai.js) */
 /* [item 14] setup: each section's Save with its state beside it; the message band (Saved, Undo) stays in sight under
    the tabs while setup is open, and a box focused for an answer is not hidden under it */

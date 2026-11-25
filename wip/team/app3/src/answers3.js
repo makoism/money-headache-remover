@@ -6,7 +6,7 @@
    the book, and asks (its `asked`, `askedStatements`) which answers the day needs.
 
    The answers (ANSWERS3's shape; amounts in minor units; accounts are named by their names):
-     { country: 'JP' | 'PH' | 'XX', currency?: from the form only (the chat never sets it),
+     { country: 'JP' | 'PH' | 'XX', currency: 'JPY' | 'PHP' | 'USD' | 'EUR' (its own answer, in the chat too),
        banks: [{ name, amount, type?: 'bank' | 'cash' | 'ewallet' | 'wallet', on: day the figure was given,
                  payToday?: { landed, day } }],      the first is the main bank
        pays:  [{ name, amount | null, every: 'month' | 'days' | 'weeks' | 'none', day?, day2?, n?, start?, shift?, bank? }],
@@ -24,7 +24,7 @@
      questions(answers, { day }) -> { asked: { key: [days] }, statements: { key: { closed, payment } }, payToday: bool }
      need(answers, { day }) -> [words]    what a fill on that day still needs: today's figures (BV3), each asked
                                           answer for these very days (BV4, BV2.8), "has today's pay landed?" (BV2.13)
-     toForm(answers) -> setup3's form     fromForm(form, { day }) -> answers
+     toForm(answers, { day }) -> setup3's form (a bank, account or card figure not given on `day` leaves its box empty)     fromForm(form, { day }) -> answers
    setup3's form (its boxes as plain values; account choices are setup3's keys 'bank1', 'acct2', ...):
      { bankName, bank, cur, country, accts: [{ name, amount, type }], payToday: 'yes' | 'no' | null,
        pay: { name, amount, every: 'month' | 'days' | 'weeks1'..'weeks4' | 'none', day, day2, start, shift, acct },
@@ -152,9 +152,18 @@
   /* what a fill on that day still needs, in the words the chat asks it */
   function need(ans, o) {
     const out = [], day = o.day;
-    if (!(ans.banks || []).length) return ['Which bank does your pay go into?'];
+    /* [AI_JOIN_FIXES C; M2, M7, M42] a whole answer: the country, the currency (its own answer), a pay or "no fixed pay",
+       and everyday money and the minimum each answered or skipped in words (null), never left unasked (undefined) */
+    const late = [];
+    if (!ans.country) out.push('Which country do you bank in?');
+    if (!ans.currency) out.push('Which currency? Yen, pesos, dollars or euros');
+    if (!(ans.pays || []).length) late.push('How are you paid? A day each month, every week or two, or no fixed pay');
+    if (ans.free === undefined) late.push('How much for food and everyday stuff each pay period? Or skip it');
+    if (ans.min === undefined) late.push('Keep at least how much in your bank? Or no minimum');
+    if (!(ans.banks || []).length) return out.concat(['Which bank does your pay go into?'], late);
     for (const b of ans.banks) if (!Number.isInteger(b.amount) || b.on !== day) out.push('What does ' + b.name + ' show today?');
     for (const c of ans.cards || []) if (!Number.isInteger(c.owed) || c.on !== day) out.push('What is on ' + c.name + ' today?');
+    out.push(...late);
     let q;
     try { q = questions(ans, o); } catch (e) { return out.concat([e.message]); }
     for (const b of ans.bills || []) {
@@ -180,24 +189,28 @@
         if (!b.payToday || typeof b.payToday.landed !== 'boolean' || b.payToday.day !== day) out.push("Has today's pay already landed in " + b.name + "'s figure?");
       }
     }
-    try { toBuild(ans, { day, told: day + 'T00:00:00.000Z', currency: o.currency }); } catch (e) { out.push(e.message); }
+    try { toBuild(ans, { day, told: day + 'T00:00:00.000Z', currency: o.currency }); } catch (e) { if (!out.includes(e.message)) out.push(e.message); }
     return out;
   }
 
   /* ---- setup3's form ---- */
   const acctKey = (ans, name) => { if (name == null || name === '') return 'bank1'; const i = (ans.banks || []).findIndex(b => keyOf('banks', b.name) === keyOf('banks', name)); return i <= 0 ? 'bank1' : 'acct' + (i + 1); };
   const formEvery = p => (p.every === 'weeks' ? 'weeks' + (p.n || 1) : p.every || 'month');
-  function toForm(ans) {
+  function toForm(ans, o) {
+    /* [AI_JOIN_FIXES F] a figure is today's only when it was given today: one from another day leaves its box empty, so
+       the screens ask for it again and fromForm never stamps yesterday's figure with today (M36, M37) */
+    const day = (o && o.day) || null, today = x => (x && x.on === day && day ? x : null);
     const b0 = ans.banks[0], pays = ans.pays || [], p0 = pays[0] || { name: '', amount: null, every: 'month', day: 25 };
+    const pt = (ans.banks.find(b => b.payToday && b.payToday.day === day) || {}).payToday;
     const payOf = p => ({ name: p.name, amount: p.amount == null ? null : p.amount, every: formEvery(p), day: p.day != null ? p.day : null,
       day2: p.day2 != null ? p.day2 : null, start: p.start || null, acct: acctKey(ans, p.bank) });
     return {
-      bankName: b0.name, bank: b0.amount, cur: ans.currency || CUR_OF[ans.country] || 'JPY', country: ans.country || 'XX',
-      payToday: (ans.banks.find(b => b.payToday) || {}).payToday ? (ans.banks.find(b => b.payToday).payToday.landed ? 'yes' : 'no') : null,
-      accts: ans.banks.slice(1).map(b => ({ name: b.name, amount: b.amount, type: b.type || 'bank' })),
+      bankName: b0.name, bank: today(b0) ? b0.amount : null, cur: ans.currency || CUR_OF[ans.country] || 'JPY', country: ans.country || 'XX',
+      payToday: pt ? (pt.landed ? 'yes' : 'no') : null,
+      accts: ans.banks.slice(1).map(b => ({ name: b.name, amount: today(b) ? b.amount : null, type: b.type || 'bank' })),
       pay: Object.assign(payOf(p0), { shift: p0.every === 'none' ? 'before' : p0.shift || 'before' }),
       pays: pays.slice(1).map(payOf),
-      cards: (ans.cards || []).map(c => ({ name: c.name, owed: c.owed, payDay: c.payDay, closeDay: c.closeDay == null ? 'not sure' : c.closeDay,
+      cards: (ans.cards || []).map(c => ({ name: c.name, owed: today(c) ? c.owed : null, payDay: c.payDay, closeDay: c.closeDay == null ? 'not sure' : c.closeDay,
         payFrom: acctKey(ans, c.payFrom), shift: c.shift || 'after', statement: c.statement && Number.isInteger(c.statement.a) ? c.statement.a : null })),
       bills: (ans.bills || []).map(b => ({ name: b.name, amount: b.amount, every: b.every === 'year' ? 'year' : 'month',
         month: b.every === 'year' ? String(b.month).padStart(2, '0') : null, day: b.day, from: acctKey(ans, b.from), takenOut: b.out && b.out.out === false ? 'no' : 'yes' })),

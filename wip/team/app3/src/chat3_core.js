@@ -67,6 +67,7 @@
    The draft's sections (draft_set and K.draftEdit take one section and its whole value; amounts are whole yen or cents,
    minor units; accounts are named by their names; ANSWERS3 fills every hidden field, never the AI, BV1):
      country  'JP' | 'PH' | 'XX'
+     currency 'JPY' | 'PHP' | 'USD' | 'EUR'   its own answer; amounts saved before it changed are dropped and asked again
      banks    [{ name, amount, type?: 'bank' | 'cash' | 'ewallet' }]   the first is the main bank; each figure keeps its
               `on` day (set here, never by the AI)
      pays     [{ name, amount, every: 'month' | 'days' | 'weeks' | 'none', day?, day2?, n?, start?, shift?: 'before' |
@@ -118,16 +119,16 @@
   /* ---- the 15 setup questions (AI_FIRST_PLAN section 2, with BV7, BV2.13 and BW: how many banks, one is fine).
      Drafts for Mako's copy pass. ---- */
   const GUIDE = [
-    { n: 1, key: 'welcome', ask: "Hi, I'll set up your Burrow with you. I ask a few questions, about 10 minutes. You can type, or send me a statement or payslip and I'll read it. What you tell me stays on this phone until you say fill it in." },
+    { n: 1, key: 'welcome', ask: "Hi, I'll set up your Burrow with you. I ask a few questions, about 10 minutes. You type, and I'll say where to find each figure. What you tell me stays on this phone until you say fill it in." },
     { n: 2, key: 'how', ask: "You tell me what's in your bank today, what comes in and what goes out and when. From that the app works out what's safe to spend until your next pay. Everything I fill in shows on the screens so you can check it." },
-    { n: 3, key: 'country', ask: 'Which country do you bank in? It moves pay and bills off weekends and holidays.' },
+    { n: 3, key: 'country', ask: 'Which country do you bank in, and in which currency? The country moves pay and bills off weekends and holidays.' },
     { n: 4, key: 'banks', ask: 'How many banks do you use? One is fine to start, you can add more later. Which bank does your pay go into?' },
-    { n: 5, key: 'banks', ask: "What does that bank's app show right now? If you don't know: open the bank app. The big number on the first screen is it. Or send me a screenshot." },
+    { n: 5, key: 'banks', ask: "What does that bank's app show right now? If you don't know: open the bank app. The big number on the first screen is it. Not sure right now? We can leave it for later, and I'll ask again before I fill anything in." },
     { n: 6, key: 'pays', ask: 'How are you paid? On a day each month, twice a month, every week or two, or whenever work comes in?' },
     { n: 7, key: 'pays', ask: "Which day does it land? If that's a weekend or holiday does it come the day before or after?" },
     { n: 8, key: 'pays', ask: "How much lands in your bank each time? Then always: is that before or after tax? If before or not sure: I need what lands in the bank, after tax. On a Japanese payslip it's 差引支給額 (take-home)." },
     { n: 9, key: 'pays', ask: 'Anything else coming in, like a side job? Is it the same amount each time? If it lands the same day you can give me one total.' },
-    { n: 10, key: 'cards', ask: "Do you have credit cards? For each one: what's on it right now (it's in the card app), which day it's paid and from which bank. Do you know its statement close day (締め日)? Not sure is fine." },
+    { n: 10, key: 'cards', ask: "Do you have credit cards? For each one: what's on it right now (it's in the card app), which day it's paid and from which bank. Do you know its statement close day (締め日)? It's on the card's monthly statement, or in the card app with the payment details. Not sure is fine." },
     { n: 11, key: 'bills', ask: "Which bills come out of your bank? Rent, power, phone, internet, subscriptions. How much and which day for each. Bills you pay by card go with the card, not here." },
     { n: 12, key: 'asked', ask: 'For each bill in NEEDED that was due since your last pay: "Phone was due on 20 Nov. Has it come out of your bank already?" For each card statement in NEEDED: how much was on it. If a pay lands today: has it already landed in that figure?' },
     { n: 13, key: 'free', ask: "How much do you want for food and everyday stuff each pay period? Groceries, eating out, getting around, fun. Leave it blank if you don't know yet." },
@@ -142,23 +143,40 @@ How to talk: plain words, short sentences, one question per message, like a frie
 
 The person can ask anything about the app at any point (use explain for how it works). Answer, then go back to the next setup question.
 
+When they don't know a figure: say where to find it, then give a way on. A bank's figure can be left for later: save that bank with amount null, go on, and it is asked again before fill_book. A close day can be "not sure".
+
+Files: you can't read files, statements, payslips or pictures yet. Never offer to. If they want to send one, say in one line that reading files comes later, and ask them to type the figures.
+
 SETUP (when FIGURES says there is no book yet). Ask these in order, one per message, skipping what DRAFT already has:
 ${GUIDE.map(g => g.n + '. ' + g.ask).join('\n')}
 After each answer, save it with draft_set (that section's whole list each time; nothing is in the app until fill_book). A pay needs afterTax true: only save a pay once the person said the amount is after tax. A second income needs same: true or false. Never fill in a minimum or a figure the person did not give. NEEDED lists what fill_book still needs; ask for those. fill_book only when the person says to fill it in.
 
-AFTER SETUP. When a pay, bill or card payment the app expects has come in or gone out ("my pay came in", "rent came out"), use change with landed and its P, B or A ref: never money_in or log_spend for it, which would count it twice. When they say what their bank app or card app shows today, use bank_figure or card_figure with that figure. When the person says they spent, got or moved money, or asks to change a bill, pay, line, goal or card, use change. The app makes the change at once and shows what changed with Undo; a delete, or a change larger than safe to spend, waits for their OK. Refs (A1, L1, G1, B1, P1, S1) come from FIGURES or list; never invent one. Not a licensed adviser: for investments, loans or taxes, say so in one line.`;
+AFTER SETUP. When a pay, bill or card payment the app expects has come in or gone out ("my pay came in", "rent came out"), use change with landed and its P, B or A ref: never money_in or log_spend for it, which would count it twice. When they say what their bank app or card app shows today, use bank_figure or card_figure with that figure. When the person says they spent, got or moved money, or asks to change a bill, pay, line, goal or card, use change. The app makes the change at once and shows what changed with Undo; a delete, or a change larger than safe to spend, waits for their OK. Refs (A1, L1, G1, B1, P1, S1) come from FIGURES or list; never invent one. Not a licensed adviser: for investments, loans or taxes, say so in one line.
+
+Adding a bank: ask both of its questions in one message: is it new money or moved from their bank, and if moved, before or after they looked at that bank today.
+
+A spend goes on the account they paid with. If they did not say and they have cards, ask once, naming them: card or bank? The answer is kept for the chat.
+
+SCREEN says which screen the person has open: "this screen" means that one.
+WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line): a loan: Plan, Add a loan. A card's pay day or close day: Plan, tap the card. Change a goal or take money out of it: Plan, tap the goal. Change a spend: Receipts, tap it. Statements: Home, Add statements. Reminders: Reminders at the top. A backup or the cloud copy: Settings.`;
+  /* [AI_JOIN_FIXES H4] a change it can't make says where it is on the screens (the same map as SYSTEM) */
+  const WHERE = [[/loan/, 'Plan, Add a loan'], [/card/, 'Plan, tap the card'], [/goal|take_out/, 'Plan, tap the goal'], [/spend|receipt/, 'Receipts, tap it'],
+    [/statement/, 'Home, Add statements'], [/remind/, 'Reminders at the top'], [/backup|cloud/, 'Settings']];
+  const whereOf = what => { const w = WHERE.find(([re]) => re.test(what)); return w ? 'On the screens: ' + w[1] : 'Say where from WHERE ON THE SCREENS'; };
+  const SCREEN_NAMES = { home: 'Home', plan: 'Plan', receipts: 'Receipts', settings: 'Settings', check: 'Check your bank', stmt: 'Add statements', reminders: 'Reminders', setup: 'setup on the screens', welcome: 'the first screen' };
 
   /* ---- the tools (BU2: no figures or draft read tool) ---- */
   const num = { type: 'number', description: 'A plain number in the currency, no symbol.' };
   const str = d => ({ type: 'string', description: d });
   const DO = ['landed', 'bank_figure', 'card_figure', 'log_spend', 'refund', 'money_in', 'move_money', 'remove', 'add_bill', 'change_bill', 'end_bill', 'add_pay', 'add_line', 'change_line', 'end_line', 'set_free', 'add_goal', 'set_aside', 'add_card', 'add_account'];
-  const SECTIONS = ['country', 'banks', 'pays', 'cards', 'bills', 'asked', 'statements', 'payToday', 'free', 'min'];
+  const CURS = ['JPY', 'PHP', 'USD', 'EUR'];
+  const SECTIONS = ['country', 'currency', 'banks', 'pays', 'cards', 'bills', 'asked', 'statements', 'payToday', 'free', 'min'];
   const TOOLS = [
     { name: 'list', description: 'Records with their refs: accounts, pays, bills, cards, lines, goals, or the recent spends of one account (amount, date and ref only).',
       input_schema: { type: 'object', properties: { what: { type: 'string', enum: ['accounts', 'pays', 'bills', 'cards', 'lines', 'goals', 'spends'] }, account: str('An account ref like A1, for spends.') }, required: ['what'] } },
     { name: 'explain', description: 'How a part of the app works, in the app\'s own words.',
       input_schema: { type: 'object', properties: { topic: { type: 'string', enum: ['safeToSpend', 'period', 'status', 'cards', 'free', 'goals', 'check', 'undo', 'setup', 'sent'] } }, required: ['topic'] } },
-    { name: 'draft_set', description: 'Save one setup section into the draft, its whole value. Nothing reaches the app until fill_book. Sections: country "JP"|"PH"|"XX"; banks [{name, amount, type?, confirmed?}] (first is where pay lands; confirmed true when the person gave the figure again today); pays [{name, amount, every: month|days|weeks|none, day?, day2?, n?, start?, shift?: before|after, bank?, afterTax, same?}]; cards [{name, owed, payDay, closeDay: day|"last"|"not sure", shift?, payFrom?, confirmed?}]; bills [{name, amount, day, every?: month|year, month?, from?}]; asked [{name, out: true|false}]; statements [{name, amount|"not sure"}]; payToday {landed: true|false}; free amount|null; min amount|null.',
+    { name: 'draft_set', description: 'Save one setup section into the draft, its whole value. Nothing reaches the app until fill_book. Sections: country "JP"|"PH"|"XX"; currency "JPY"|"PHP"|"USD"|"EUR" (a change of currency drops the amounts saved before it: ask each again); banks [{name, amount, type?, confirmed?}] (first is where pay lands; confirmed true when the person gave the figure again today); pays [{name, amount, every: month|days|weeks|none, day?, day2?, n?, start?, shift?: before|after, bank?, afterTax, same?}]; cards [{name, owed, payDay, closeDay: day|"last"|"not sure", shift?, payFrom?, confirmed?}]; bills [{name, amount, day, every?: month|year, month?, from?}]; asked [{name, out: true|false}]; statements [{name, amount|"not sure"}]; payToday {landed: true|false}; free amount|null; min amount|null.',
       input_schema: { type: 'object', properties: { section: { type: 'string', enum: SECTIONS }, value: { description: 'The section\'s whole value.' } }, required: ['section', 'value'] } },
     { name: 'fill_book', description: 'Turn the draft into the person\'s Burrow. Only when they said to fill it in. Refused while NEEDED is not empty.', input_schema: { type: 'object', properties: {} } },
     { name: 'change', description: 'Make up to ' + MAX_STEPS + ' changes, each a named step: ' + DO.join(', ') + '. landed {ref: the P, B or card A ref, amount? only if it was different, date? the day it landed}; bank_figure and card_figure {account, amount}. Fields: amount, account (A ref), every (add_bill: month|year|months, with month 1..12 for a year, n and start for months), from and to (A refs), line (L ref), goal (G ref), ref (the record: S, B, P, L or G ref), date (YYYY-MM-DD, today or before), note, name, day, day2, every (month|days|weeks1..4|none), start, when (now|next|once), target, due, owed, payDay, closeDay, type (bank|cash|ewallet), moved (true|false), from (the A ref the money came from), afterFigure (true|false: moved after they looked at that bank on the day of its figure).',
@@ -209,7 +227,7 @@ AFTER SETUP. When a pay, bill or card payment the app expects has come in or gon
     return p.ok && (zero ? p.minor >= 0 : p.minor > 0) ? p.minor : undefined;
   }
   const dayOk = d => Number.isInteger(d) && d >= 1 && d <= 31;
-  const TITLES = { country: 'Country', banks: 'Your bank', pays: 'Pay', cards: 'Cards', bills: 'Bills', asked: 'Bills since your last pay', statements: 'Card statements', payToday: "Today's pay", free: 'Free to spend', min: 'Keep at least' };
+  const TITLES = { country: 'Country', currency: 'Currency', banks: 'Your bank', pays: 'Pay', cards: 'Cards', bills: 'Bills', asked: 'Bills since your last pay', statements: 'Card statements', payToday: "Today's pay", free: 'Free to spend', min: 'Keep at least' };
   /* one section into a copy of the draft, checked; { ok, draft, text } or { ok: false, text } */
   function draftSet(draft0, section, value, today) {
     const d = clone(draft0) || emptyDraft(), cur = curOf(d), no = text => ({ ok: false, text });
@@ -219,18 +237,29 @@ AFTER SETUP. When a pay, bill or card payment the app expects has come in or gon
     if (section === 'country') {
       if (!['JP', 'PH', 'XX'].includes(value)) return no('Country is JP, PH or XX (somewhere else)');
       d.country = value;
+    } else if (section === 'currency') {
+      /* [AI_JOIN_FIXES C] the currency is its own answer. Amounts saved before the currency they are read in changed
+         (50,000 yen units would show as 500.00 pesos) are dropped and asked again, never converted or kept: see the
+         end of this function */
+      const v = String(value || '').toUpperCase();
+      if (!CURS.includes(v)) return no('Currency is JPY, PHP, USD or EUR');
+      d.currency = v;
     } else if (section === 'banks') {
       const v = list(value); if (!v || !v.length) return no('Give at least one bank');
       const out = [];
       for (const x of v) {
         const name = nameOf(x), a = amountIn(x.amount, cur, true), p = prev('banks', name);
         if (!name) return no('Each bank needs a name');
-        if (a === undefined || a === null) return no('What does ' + name + ' show today? A plain number');
+        if (a === undefined) return no('What does ' + name + ' show today? A plain number, or null to leave it for later');
+        /* [AI_JOIN_FIXES H3] "I don't know": the bank is kept with its figure for later, asked again before the fill */
+        if (a === null) { out.push(Object.assign({ name, amount: null, on: null, later: true }, x.type && x.type !== 'bank' ? { type: x.type } : {})); continue; }
         if (x.type && !['bank', 'cash', 'ewallet', 'wallet'].includes(x.type)) return no(name + ': a bank, cash or an e-wallet');
         const on = p && p.amount === a && !x.confirmed ? p.on : today;
         out.push(Object.assign({ name, amount: a, on }, x.type && x.type !== 'bank' ? { type: x.type } : {}, p && p.payToday && on === p.on ? { payToday: p.payToday } : {}));
       }
       d.banks = out;
+      const later = out.filter(b => b.later).map(b => b.name);
+      if (later.length && curOf(d) === cur) return { ok: true, draft: d, text: 'Saved: ' + TITLES.banks + '. ' + later.join(' and ') + ': the figure is for later, asked again before I fill anything in' };
     } else if (section === 'pays') {
       const v = list(value) || []; const out = [];
       for (let i = 0; i < v.length; i++) {
@@ -309,16 +338,27 @@ AFTER SETUP. When a pay, bill or card payment the app expects has come in or gon
       if (a === undefined) return no('A plain number, or null to leave it blank');
       d[section] = a;
     } else return no('No such section: ' + String(section).slice(0, 20));
+    if (curOf(d) !== cur) {   // the currency the amounts are read in changed (by the currency answer, or by the country before it)
+      let n = 0;
+      for (const b of d.banks) if (b.amount != null) { b.amount = null; b.on = null; delete b.payToday; n++; }
+      for (const c of d.cards) if (c.owed != null) { c.owed = null; c.on = null; delete c.statement; n++; }
+      for (const x of d.pays) if (x.amount != null) { x.amount = null; n++; }
+      for (const x of d.bills) if (x.amount != null) { x.amount = null; n++; }
+      for (const k of ['free', 'min']) if (d[k] != null) { delete d[k]; n++; }
+      if (n) return { ok: true, draft: d, text: 'Saved: ' + TITLES[section] + '. The amounts from before were typed before the currency was known, so each is asked again' };
+    }
     return { ok: true, draft: d, text: 'Saved: ' + TITLES[section] };
   }
   /* the draft in plain lines (what is sent, and the draft card) */
   function draftLines(d) {
     const cur = curOf(d), m = a => (a == null ? 'blank' : SM.format(a, cur)), out = [];
     out.push({ key: 'country', title: TITLES.country, lines: d.country ? [{ JP: 'Japan', PH: 'The Philippines', XX: 'Somewhere else (weekends only)' }[d.country]] : [] });
-    out.push({ key: 'banks', title: TITLES.banks, lines: d.banks.map(b => `${b.name}: ${m(b.amount)} on ${day1(b.on)}` + (b.payToday ? `, today's pay ${b.payToday.landed ? 'already in it' : 'not in it yet'}` : '')) });
-    out.push({ key: 'pays', title: TITLES.pays, lines: d.pays.map(p => `${p.name}: ${p.amount == null ? 'no fixed amount' : m(p.amount) + ' after tax'}, ${p.every === 'none' ? 'no fixed day' : p.every === 'weeks' ? 'every ' + (p.n > 1 ? p.n + ' weeks' : 'week') + ' from ' + day1(p.start) : 'on day ' + p.day + (p.day2 ? ' and ' + p.day2 : '') + ' each month'}` + (p.every !== 'none' ? `, a weekend or holiday: the working day ${p.shift || 'before'}` : '')) });
-    out.push({ key: 'cards', title: TITLES.cards, lines: d.cards.map(c => `${c.name}: ${m(c.owed)} on ${day1(c.on)}, paid on day ${c.payDay}, statement closes ${c.closeDay === 'not sure' ? 'not sure' : c.closeDay === 'last' ? 'the last day' : 'day ' + c.closeDay}` + (c.statement ? `, ${c.statement.a === 'not sure' ? 'all of it' : m(c.statement.a)} on the statement of ${day1(c.statement.closed)}` : '')) });
-    out.push({ key: 'bills', title: TITLES.bills, lines: d.bills.map(b => `${b.name}: ${m(b.amount)} on day ${b.day}${b.every === 'year' ? ' of month ' + b.month : ' each month'}` + (b.out ? `, the one of ${b.out.days.map(day1).join(' and ')} ${b.out.out ? 'already out' : 'not out yet'}` : '')) });
+    out.push({ key: 'currency', title: TITLES.currency, lines: d.currency ? [{ JPY: 'Yen', PHP: 'Philippine pesos', USD: 'US dollars', EUR: 'Euros' }[d.currency]] : [] });
+    const again = 'asked again';
+    out.push({ key: 'banks', title: TITLES.banks, lines: d.banks.map(b => b.amount == null ? `${b.name}: ${b.later ? 'for later' : again}` : `${b.name}: ${m(b.amount)} on ${day1(b.on)}` + (b.payToday ? `, today's pay ${b.payToday.landed ? 'already in it' : 'not in it yet'}` : '')) });
+    out.push({ key: 'pays', title: TITLES.pays, lines: d.pays.map(p => `${p.name}: ${p.amount == null ? (p.every === 'none' ? 'no fixed amount' : 'amount ' + again) : m(p.amount) + ' after tax'}, ${p.every === 'none' ? 'no fixed day' : p.every === 'weeks' ? 'every ' + (p.n > 1 ? p.n + ' weeks' : 'week') + ' from ' + day1(p.start) : 'on day ' + p.day + (p.day2 ? ' and ' + p.day2 : '') + ' each month'}` + (p.every !== 'none' ? `, a weekend or holiday: the working day ${p.shift || 'before'}` : '')) });
+    out.push({ key: 'cards', title: TITLES.cards, lines: d.cards.map(c => `${c.name}: ${c.owed == null ? again : m(c.owed) + ' on ' + day1(c.on)}, paid on day ${c.payDay}, statement closes ${c.closeDay === 'not sure' ? 'not sure' : c.closeDay === 'last' ? 'the last day' : 'day ' + c.closeDay}` + (c.statement ? `, ${c.statement.a === 'not sure' ? 'all of it' : m(c.statement.a)} on the statement of ${day1(c.statement.closed)}` : '')) });
+    out.push({ key: 'bills', title: TITLES.bills, lines: d.bills.map(b => `${b.name}: ${b.amount == null ? 'amount ' + again : m(b.amount)} on day ${b.day}${b.every === 'year' ? ' of month ' + b.month : ' each month'}` + (b.out ? `, the one of ${b.out.days.map(day1).join(' and ')} ${b.out.out ? 'already out' : 'not out yet'}` : '')) });
     out.push({ key: 'free', title: TITLES.free, lines: d.free === undefined ? [] : [m(d.free) + (d.free != null ? ' each pay period' : '')] });
     out.push({ key: 'min', title: TITLES.min, lines: d.min === undefined ? [] : [d.min == null ? 'no minimum' : m(d.min)] });
     return out;
@@ -338,11 +378,17 @@ AFTER SETUP. When a pay, bill or card payment the app expects has come in or gon
   /* ---- what is sent ---- */
   function stateText(state, ctx) {
     const book = ctx.book, out = ['FIGURES (worked out by the app for today, exact)', figures(book, ctx.today).text];
+    if (ctx.screen && SCREEN_NAMES[ctx.screen]) out.push('', 'SCREEN: the person has ' + SCREEN_NAMES[ctx.screen] + ' open.');
+    const pw = book && state.payWith && (book.accounts || []).find(x => x.id === state.payWith && live(x));
+    if (pw) out.push('', 'They said they pay with ' + pw.name + ': a spend with no account named goes on it, unless they say otherwise.');
     if (!book) {
       const d = state.draft || emptyDraft(), card = draftCard(d, ctx.today);
       out.push('', 'DRAFT (saved on this device, not in the app yet). Today is ' + SN.dayLabel(ctx.today, true) + '. Currency: ' + curOf(d) + '.');
       for (const s of card.sections) out.push(s.title + ': ' + (s.lines.length ? s.lines.join('; ') : 'not asked yet'));
       out.push('NEEDED before fill_book: ' + (card.need.length ? card.need.join(' ') : 'nothing. Show the draft and ask whether to fill it in.'));
+      /* [AI_JOIN_FIXES H2] the first screen asked the first question before anything was typed */
+      if (state.turns.filter(t => t.who === 'person').length <= 1 && !state.turns.some(t => t.who === 'ai'))
+        out.push('', 'The first screen already showed the welcome and asked: ' + GUIDE[2].ask + ' Their first message answers that, or asks something first. Do not greet again.');
     }
     return out.join('\n');
   }
@@ -374,7 +420,7 @@ AFTER SETUP. When a pay, bill or card payment the app expects has come in or gon
     const body = request(state, message, [], ctxOf(deps));
     return body.system + '\n\n' + body.messages.map(m => (m.role === 'user' ? 'YOU\n' : 'THE AI\n') + m.content.map(c => c.text || '').join('\n')).join('\n\n');
   }
-  const ctxOf = deps => ({ book: deps.book ? deps.book() : null, today: deps.today(), anon: deps.anon, invite: deps.invite });
+  const ctxOf = deps => ({ book: deps.book ? deps.book() : null, today: deps.today(), anon: deps.anon, invite: deps.invite, screen: deps.screen ? deps.screen() : null });
 
   /* ---- the explain topics (help words where they exist; drafts for Mako's copy pass) ---- */
   const EXPLAIN = {
@@ -454,6 +500,18 @@ AFTER SETUP. When a pay, bill or card payment the app expects has come in or gon
       if (x == null) return { bad: 'a figure I could not read' };
       return { kind: 'checkIn', ci: { figures: { [id]: x } }, text: `${rec.name} shows ${m(x, rec.cur)} today`, amount: 0, figs: [x] };
     }
+    /* [AI_JOIN_FIXES H6; M30] a spend with no account named while there are cards: the account the person named for
+       this chat, else asked once ("card or bank?"), never the main bank unasked */
+    if (what === 'log_spend' && (a.account == null || a.account === '')) {
+      if (ctx.payWith && acctRec(ctx.payWith) && !acctRec(ctx.payWith).gone) a = Object.assign({}, a, { account: Object.keys(refs).find(k => refs[k] === ctx.payWith) });
+      else {
+        const own = (book.accounts || []).filter(x => live(x) && !x.closed), cards = own.filter(x => x.type === 'card');
+        if (cards.length) {
+          const names = cards.concat(own.filter(x => x.type !== 'card' && x.type !== 'loan')).map(x => x.name);
+          return { bad: 'which account paid for it. Ask once, in one question naming them: "Card or bank? ' + names.slice(0, -1).join(', ') + ' or ' + names[names.length - 1] + '". Then change again with that account; the answer is kept for this chat', payWith: true };
+        }
+      }
+    }
     if (what === 'log_spend' || what === 'refund' || what === 'money_in') {
       const acct = acctOr(a.account), cur = acct && (acctRec(acct) || {}).cur, x = amt(a.amount, cur), d = date(a.date);
       const line = what === 'money_in' ? null : lineOf(a.line);
@@ -461,7 +519,7 @@ AFTER SETUP. When a pay, bill or card payment the app expects has come in or gon
       const args = { date: d, a: x, acct }; if (line && (what === 'log_spend' || a.line)) args.line = line; const n = note(a.note); if (n) args.note = n;
       const kind = { log_spend: 'logSpend', refund: 'refund', money_in: 'moneyIn' }[what];
       const text = what === 'log_spend' ? `Log ${m(x, cur)} on ${lineName(line)} from ${nm(acct)}, ${on(d)}` : what === 'refund' ? `Log ${m(x, cur)} back into ${nm(acct)}, ${on(d)}` : `Log ${m(x, cur)} in to ${nm(acct)}, ${on(d)}`;
-      return { kind, args: [args], text: text + (n ? ' (' + n + ')' : ''), amount: x, ref: line && line !== 'free' ? a.line : null };
+      return { kind, args: [args], text: text + (n ? ' (' + n + ')' : ''), amount: x, ref: line && line !== 'free' ? a.line : null, named: what === 'log_spend' && a.account != null && a.account !== '' ? acct : null };
     }
     if (what === 'move_money') {
       const from = ref(a.from, 'A'), to = ref(a.to, 'A'), x = amt(a.amount), d = date(a.date);
@@ -515,10 +573,18 @@ AFTER SETUP. When a pay, bill or card payment the app expects has come in or gon
     }
     if (what === 'add_account') {
       const x = amt(a.amount, null, true); if (x == null || !a.name) return { bad: 'an account I could not read' };
+      /* [AI_JOIN_FIXES H7] both of its questions in one go, before anything is tried: new money or moved since that
+         bank's last figure, and when that figure is from today, moved before or after they looked */
+      const from = a.from ? ref(a.from, 'A') : mainAcct, fromName = nm(from);
+      const last = (book.events || []).filter(e => live(e) && e.k === 'check' && !e.stmt && e.acct === from && e.date <= today).map(e => e.date).sort().pop() || today;
+      const since = last === today ? 'today' : day1(last), lookedQ = `If it was moved: was it before or after you looked at ${fromName} ${last === today ? 'today' : 'on ' + since}?`;
+      const needLooked = last === (a.date || today);
+      if (a.moved !== true && a.moved !== false) return { bad: `ask both in one message: "Is this new money, or moved from ${fromName} since ${since}?${needLooked ? ' ' + lookedQ : ''}" Then change again with moved (and afterFigure)` };
+      if (a.moved === true && needLooked && typeof a.afterFigure !== 'boolean') return { bad: `ask: "${lookedQ.replace('If it was moved: was', 'Was')}" Then change again with afterFigure` };
       return { kind: 'addAccount', args: [Object.assign({ name: clean(a.name, 60), type: a.type || 'bank', amount: x, moved: a.moved }, a.date ? { date: a.date } : {},
         a.from ? { from: ref(a.from, 'A') || 'none' } : {}, typeof a.afterFigure === 'boolean' ? { afterFigure: a.afterFigure } : {})], text: `Add ${clean(a.name, 60)} with ${m(x)}${a.moved ? ' moved from ' + nm(a.from ? ref(a.from, 'A') : mainAcct) : ''}`, amount: x, figs: [x] };
     }
-    return { bad: what ? 'a change I can\'t make (' + what.slice(0, 30) + ')' : 'a change I could not read' };
+    return { bad: what ? 'a change I can\'t make (' + what.slice(0, 30) + '). ' + whereOf(what) : 'a change I could not read' };
   }
   const ACT = { logSpend: 1, refund: 1, moneyIn: 1, moveMoney: 1, remove: 1 };
   function runOne(door, s, opts, deps) {
@@ -560,6 +626,29 @@ AFTER SETUP. When a pay, bill or card payment the app expects has come in or gon
   const resultOf = card => card.status === 'done' ? 'Done, with Undo on the card. ' + card.rows.map(r => `${r.label}: ${r.before == null ? '-' : r.before} to ${r.after == null ? '-' : r.after} (minor units)`).join('; ')
     : card.status === 'ask' ? 'Waiting for the person\'s OK: ' + card.why : 'Not changed: ' + card.why;
 
+  /* [AI_JOIN_FIXES H5] each bank figure step whose gap (the engine's filler on the book the check would make) is larger
+     than safe to spend: Map step -> the gap in words. Comparisons only; every figure is the engine's */
+  function farFigures(plan, book, today, deps, safe) {
+    const far = new Map(), home = G.homeOn(book, today), m = (x, c) => SM.format(x, c || home);
+    if (!deps.door || typeof deps.door.dry !== 'function') return far;
+    const r0 = LA.lookahead(book, today);
+    for (const s of plan) {
+      if (s.kind !== 'checkIn' || !s.ci.figures) continue;
+      let r1;
+      try {
+        const out = CK.checkIn(book, Object.assign({ day: today, told: deps.told(), newId: deps.newId, unticked: [] }, s.ci));
+        r1 = LA.lookahead(deps.door.dry('addRecords', 'Check your bank', out), today);
+      } catch (e) { continue; }
+      for (const id of Object.keys(s.ci.figures)) {
+        const a = r1.accounts[id], f = a && (a.fillers || []).slice(-1)[0], was = r0.accounts[id];
+        if (!f || f.to !== today || !was) continue;
+        const cur = ((book.accounts || []).find(x => x.id === id) || {}).cur;
+        if (f.gain > 0 && f.gain > safe) far.set(s, `The app expected ${m(was.bank, cur)}: ${m(f.gain, cur)} more than it had`);
+        else if (f.amount > 0 && f.amount > safe) far.set(s, `The app expected ${m(was.bank, cur)}: ${m(f.amount, cur)} less than it had`);
+      }
+    }
+    return far;
+  }
   /* ---- one tool call ---- */
   function addTurn(state, t, shown) {
     const turn = Object.assign({ id: 't' + (++state.seq) }, t);
@@ -588,9 +677,12 @@ AFTER SETUP. When a pay, bill or card payment the app expects has come in or gon
       const refs = allRefs(book, today), plan = [], dropped = [];
       for (const a of raw) {
         if (plan.length >= MAX_STEPS) { dropped.push('more than ' + MAX_STEPS + ' at a time'); continue; }
-        const s = stepOf(a, { book, today, refs });
-        if (s.bad) dropped.push(s.bad); else plan.push(s);
+        const s = stepOf(a, { book, today, refs, payWith: state.payWith });
+        if (s.bad) { dropped.push(s.bad); if (s.payWith) state.askPay = true; } else plan.push(s);
       }
+      /* [AI_JOIN_FIXES H6] the answer to "card or bank?" is kept for this chat */
+      const named = plan.find(s => s.named);
+      if (state.askPay && named) { state.payWith = named.named; state.askPay = false; }
       if (!plan.length) return 'Nothing changed: ' + (dropped.join('; ') || 'no steps');
       /* [BW] a delete, or a change larger than safe to spend, asks first; [AI_FIRST_PLAN 7] an amount the person did not
          type is a guess and asks first too */
@@ -602,10 +694,14 @@ AFTER SETUP. When a pay, bill or card payment the app expects has come in or gon
       /* every figure in a step (an amount, a target, what is owed, even 0) must be one the person typed */
       const figsOf = s => (s.figs || (s.amount ? [s.amount] : []));
       const guess = plan.filter(s => figsOf(s).some(f => !new RegExp('(^|[^\\d.])' + plain(f) + '(?![\\d])').test(typed)));
-      const card = { kind: 'change', status: 'ask', lines: plan.map(s => s.text + (guess.includes(s) ? ' (my guess)' : '')), rows: [], plan, dropped };
-      if (del || big || guess.length) {
-        card.ask = del ? 'delete' : big ? 'large' : 'guess';
-        card.why = del ? 'this removes something' : big ? 'this is more than safe to spend' : 'I guessed an amount';
+      /* [AI_JOIN_FIXES H5; M6's third reason] a bank figure far from what the app expected (the engine's own gap for that
+         check, on the book the step would make, larger than safe to spend) asks first, with the gap in words: an extra
+         zero never goes in silently */
+      const far = farFigures(plan, book, today, deps, safe);
+      const card = { kind: 'change', status: 'ask', lines: plan.map(s => s.text + (far.has(s) ? '. ' + far.get(s) : '') + (guess.includes(s) ? ' (my guess)' : '')), rows: [], plan, dropped };
+      if (del || big || far.size || guess.length) {
+        card.ask = del ? 'delete' : big ? 'large' : far.size ? 'gap' : 'guess';
+        card.why = del ? 'this removes something' : big ? 'this is more than safe to spend' : far.size ? 'the figure is far from what the app expected' : 'I guessed an amount';
         addTurn(state, { who: 'card', text: card.lines.join('. '), at: deps.told(), card }, shown);
         return resultOf(card) + (dropped.length ? ' Left out: ' + dropped.join('; ') : '');
       }
@@ -743,7 +839,7 @@ QUESTIONS
 ${GUIDE.slice(2, 14).map(g => '- ' + g.ask).join('\n')}
 
 ANSWER SHAPE (amounts are plain numbers, no symbol; days of the month are numbers)
-{"country": "JP" | "PH" | "XX",
+{"country": "JP" | "PH" | "XX", "currency": "JPY" | "PHP" | "USD" | "EUR",
  "banks": [{"name": "Main bank", "amount": 0}],
  "pays": [{"name": "Pay", "amount": 0, "every": "month" | "days" | "weeks" | "none", "day": 25, "shift": "before" | "after", "afterTax": true, "same": true}],
  "cards": [{"name": "Card", "owed": 0, "payDay": 10, "closeDay": "not sure", "shift": "after"}],
@@ -786,6 +882,8 @@ ${card.need.length && state.draft ? 'STILL NEEDED: ' + card.need.join(' ') : ''}
     ROUNDS, TURNS, KEEP, MAX_TOKENS, MAX_STEPS, TIER: 'default', EFFORT: 'low', GUIDE, TOOLS, SYSTEM,
     fresh: () => ({ v: 1, turns: [], draft: null, fill: null, seq: 0 }),
     turn, confirm, notNow, undo, startOver, draftEdit,
+    /* [AI_JOIN_FIXES H2] what the first screen says before anything is typed: the welcome, and the first question */
+    welcome: () => [GUIDE[0].ask, GUIDE[1].ask, GUIDE[2].ask],
     fillNow: (s, deps) => fillNow(s, deps),
     copyPrompt, pasteBack,
     request, read, figures, draftCard: (d, today) => draftCard(d, today), fillCheck, sentText,

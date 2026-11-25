@@ -55,7 +55,7 @@ const { ck } = T;
   ck('a second tap closes them', !h.shown && h.open === 'false', JSON.stringify(h));
   h = await helpOf('period');
   ck('the pay period has its "?", and on 23 Nov nothing moved', h && h.text === H.words('period').join(' '), JSON.stringify(h));
-  /* a kept book: the status line has its "?"; on 5 Jan the next pay is due 10 Jan (a Sunday) and lands 12 Jan */
+  /* a kept book: the status line has its "?"; on 5 Jan the next pay is due 10 Jan (a Sunday) and lands Fri 8 Jan, the working day before */
   const prof = require('fs').mkdtempSync(require('os').tmpdir() + '/a3prof-');
   const k = await T.open({ profile: prof });
   await k.p.goto(T.URL0 + '?today=2026-12-10'); await T.w(300);
@@ -65,7 +65,7 @@ const { ck } = T;
   await k.p.goto(T.URL0 + '?today=2027-01-05'); await T.w(400);
   const ks = await k.p.evaluate(() => ({ st: (document.querySelector('[data-card=status] .burrow-help-text') || {}).textContent, per: (document.querySelector('[data-card=period] .burrow-help-text') || {}).textContent }));
   ck('the status line has its "?"', ks.st === H.words('status').join(' '), JSON.stringify(ks));
-  ck('the pay period says why its dates moved: due 10 Jan, lands 12 Jan', ks.per === H.words('period').concat(H.words('periodMoved', { due: '10 Jan', landed: '12 Jan' })).join(' '), JSON.stringify(ks));
+  ck('the pay period says why its dates moved: due 10 Jan, lands 8 Jan', ks.per === H.words('period').concat(H.words('periodMoved', { due: '10 Jan', landed: '8 Jan' })).join(' '), JSON.stringify(ks));
   ck('no page errors (kept book)', k.errs.length === 0, k.errs.join(' | '));
   await k.b.close();
   ck('no page errors', errs.length === 0, errs.join(' | '));

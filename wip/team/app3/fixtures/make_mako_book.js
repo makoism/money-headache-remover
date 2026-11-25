@@ -4,9 +4,9 @@
    in full from the bank on the 10th and the 11th, close days "not sure" (each card is due in full on its payment day, H4);
    bills on their due days (rent, power, phone, internet); no minimum (M1: skipped means none); set up Fri 20 Nov 2026,
    after the November pay and card payments.
-   The weekend where a card leaves before pay lands (WIRING_PLAN "Watch"): pay moves to the next working day and card B
-   is taken the working day before. In January 2027 the 10th is a Sunday and the 11th a holiday, so card B leaves on
-   Fri 8 Jan while both pays and card A land on Tue 12 Jan. Card spending after the December payments is dated ahead (18 to 29 Dec), so
+   The weekend, shaped like Mako's month (back-test C8): his pay moves to the working day BEFORE a weekend or holiday,
+   and so does card B; card A is taken the next working day. In January 2027 the 10th is a Sunday and the 11th a
+   holiday, so both pays land and card B leaves on Fri 8 Jan, and card A leaves on Tue 12 Jan. Card spending after the December payments is dated ahead (18 to 29 Dec), so
    the cards fill up again as the shown day moves into January; up to 16 Dec the cards hold only what they held at
    setup (the statements lane's test reads the book on that day).
    The scenario is turned into the saved shape by the engine's own converter, then every id is rewritten into the
@@ -26,8 +26,8 @@ const SC = {
       payment: { day: 11, from: 'bank', pays: 'in full', weekend_holiday: 'move earlier' }, opening: { date: '2026-11-20', current: 23000 } }
   ],
   income: [
-    { id: 'pay_main', name: 'Main job', account: 'bank', amount: 180000, schedule: { frequency: 'monthly', day: 10 }, weekend_holiday: 'move later', starts_period: true },
-    { id: 'pay_side', name: 'Side job', account: 'bank', amount: 60000, schedule: { frequency: 'monthly', day: 10 }, weekend_holiday: 'move later' }
+    { id: 'pay_main', name: 'Main job', account: 'bank', amount: 180000, schedule: { frequency: 'monthly', day: 10 }, weekend_holiday: 'move earlier', starts_period: true },
+    { id: 'pay_side', name: 'Side job', account: 'bank', amount: 60000, schedule: { frequency: 'monthly', day: 10 }, weekend_holiday: 'move earlier' }
   ],
   bills: [
     { id: 'rent', name: 'Rent', account: 'bank', amount: 72000, schedule: { frequency: 'monthly', day: 27 }, weekend_holiday: 'move later' },

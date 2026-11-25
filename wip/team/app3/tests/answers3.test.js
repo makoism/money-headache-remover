@@ -23,7 +23,7 @@ const DAY = '2026-11-24', TOLD = DAY + 'T10:00:00.000+09:00';
 
 /* Mako's shape as the chat's draft holds it (what he said; nothing hidden) */
 const mako = () => ({
-  country: 'JP',
+  country: 'JP', currency: 'JPY',
   banks: [{ name: 'Main bank', amount: 286000, on: DAY }],
   pays: [{ name: 'Pay', amount: 240000, every: 'month', day: 10, shift: 'before' }],
   cards: [{ name: 'Card A', owed: 54000, on: DAY, payDay: 10, closeDay: 'not sure', shift: 'after' },
@@ -76,7 +76,7 @@ t('same answers, same book: the chat\'s answers and setup3\'s give the same save
   eq(a, b);
 });
 t('answers back into setup3\'s form and back again: the same answers and the same book', () => {
-  const f = A.toForm(mako());
+  const f = A.toForm(mako(), { day: DAY });
   eq(f.bankName, 'Main bank'); eq(f.bank, 286000); eq(f.cur, 'JPY'); eq(f.country, 'JP');
   eq([f.pay.every, f.pay.day, f.pay.shift, f.pay.amount], ['month', 10, 'before', 240000]);
   eq(f.cards.map(c => [c.name, c.owed, c.payDay, c.closeDay, c.shift, c.payFrom]), [['Card A', 54000, 10, 'not sure', 'after', 'bank1'], ['Card B', 23000, 11, 'not sure', 'before', 'bank1']]);
@@ -89,7 +89,7 @@ t('the form\'s other lives: two banks, a second income on its own days, every 2 
   const m = { country: 'PH', banks: [{ name: 'BDO', amount: 50000, on: DAY }, { name: 'GCash', amount: 3000, type: 'ewallet', on: DAY }],
     pays: [{ name: 'Pay', amount: 20000, every: 'weeks', n: 2, start: '2026-11-20' }, { name: 'Gigs', amount: null, every: 'none', bank: 'GCash' }],
     cards: [], bills: [{ name: 'Insurance', amount: 12000, every: 'year', month: 3, day: 15, from: 'BDO' }], free: 8000, min: 5000 };
-  const f = A.toForm(m);
+  const f = A.toForm(m, { day: DAY });
   eq([f.pay.every, f.pay.start], ['weeks2', '2026-11-20']); eq([f.pays[0].every, f.pays[0].acct], ['none', 'acct2']);
   eq(f.accts, [{ name: 'GCash', amount: 3000, type: 'ewallet' }]); eq([f.bills[0].every, f.bills[0].month, f.bills[0].day], ['year', '03', 15]);
   const x = A.toBuild(A.fromForm(f, { day: DAY }), { day: DAY, told: TOLD });
@@ -153,7 +153,7 @@ t('wrong answers are refused with words, never guessed', () => {
 });
 t('fromForm: a blank day of one pay is refused, never turned into today; the pay-today answer goes on every bank a pay lands in today (qc-foundation WATCH)', () => {
   const f = A.toForm({ country: 'JP', banks: [{ name: 'Main bank', amount: 100000, on: DAY }, { name: 'Second', amount: 5000, on: DAY }],
-    pays: [{ name: 'Pay', amount: 20000, every: 'weeks', n: 2, start: '2026-11-20' }], cards: [], bills: [], free: null, min: null });
+    pays: [{ name: 'Pay', amount: 20000, every: 'weeks', n: 2, start: '2026-11-20' }], cards: [], bills: [], free: null, min: null }, { day: DAY });
   f.pay.start = null;
   let msg = ''; try { A.fromForm(f, { day: DAY }); } catch (e) { msg = e.message; }
   eq(msg, 'Type the day of one pay, the last one or the next one');
@@ -162,11 +162,30 @@ t('fromForm: a blank day of one pay is refused, never turned into today; the pay
   eq(msg, 'Type the day of one pay, the last one or the next one');
   /* both banks get a pay on 24 Nov: the answer sits on each */
   const g = A.toForm({ country: 'JP', banks: [{ name: 'Main bank', amount: 100000, on: DAY }, { name: 'Second', amount: 5000, on: DAY }],
-    pays: [{ name: 'Pay', amount: 20000, every: 'month', day: 24 }, { name: 'Side', amount: 9000, every: 'month', day: 24, bank: 'Second' }], cards: [], bills: [], free: null, min: null });
+    pays: [{ name: 'Pay', amount: 20000, every: 'month', day: 24 }, { name: 'Side', amount: 9000, every: 'month', day: 24, bank: 'Second' }], cards: [], bills: [], free: null, min: null }, { day: DAY });
   g.payToday = 'no';
   const back = A.fromForm(g, { day: DAY });
   eq(back.banks.map(b => b.payToday), [{ landed: false, day: DAY }, { landed: false, day: DAY }]);
   eq(A.need(back, { day: DAY }), []);
+});
+/* [AI_JOIN_FIXES F] "Set up on the screens" never carries an old figure as today's (qc-foundation 7; M36, M37) */
+t('toForm on a later day: a bank, account or card figure not from today leaves its box empty; the rest is kept (AI_JOIN_FIXES F)', () => {
+  const m = mako(); m.banks.push({ name: 'GCash', amount: 3000, type: 'ewallet', on: '2026-11-23' });
+  m.banks[0].on = '2026-11-23'; m.cards[0].on = '2026-11-23';
+  m.banks[0].payToday = { landed: true, day: '2026-11-23' };
+  const f = A.toForm(m, { day: DAY });
+  eq([f.bankName, f.bank], ['Main bank', null], 'main bank');
+  eq(f.accts, [{ name: 'GCash', amount: null, type: 'ewallet' }], 'second account');
+  eq(f.cards.map(c => [c.name, c.owed, c.payDay]), [['Card A', null, 10], ['Card B', 23000, 11]], 'cards');
+  eq(f.payToday, null, 'the pay-today answer was for another day');
+  eq([f.pay.amount, f.bills.length], [240000, 4], 'pay and bills kept');
+  /* and fromForm never stamps an empty box with today: the answers still ask for it */
+  const back = A.fromForm(f, { day: DAY });
+  ok(A.need(back, { day: DAY }).includes('What does Main bank show today?'), JSON.stringify(A.need(back, { day: DAY })));
+  ok(A.need(back, { day: DAY }).includes('What is on Card A today?'));
+  /* the same draft on its own day: every figure in its box */
+  const g = A.toForm(mako(), { day: DAY });
+  eq([g.bank, g.cards[0].owed], [286000, 54000]);
 });
 console.log(bad ? `answers3: ${bad} of ${n} FAILED` : `answers3: ALL PASS (${n})`);
 process.exit(bad ? 1 : 0);

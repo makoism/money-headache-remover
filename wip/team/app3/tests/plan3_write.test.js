@@ -577,7 +577,7 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
   const at = (b, d) => { const r = L.lookahead(b, d, { periods: true }); return { period: r.period && [r.period.start, r.period.end], food: r.period && r.period.lines.map(l => l.left), past: (r.periods || []).map(p => [p.start, p.end, p.lines.map(l => l.left)]) }; };
   await t('[BZ2] "my job ended, the new one pays 300,000 on the 25th" on 5 Jan: end both pays, add the new one; each period follows the pay that held the flag then', async () => {
     const h = await jobLife(), before = at(h.book, '2027-01-05');
-    eq(before.period, ['2026-12-10', '2027-01-11']);
+    eq(before.period, ['2026-12-10', '2027-01-07']);   // the made-up book's pay moves to the working day before since homefix (b75f0258): 10 Jan 2027 is a Sunday, so pay lands Fri 8 Jan (it was Tue 12 Jan when this test was written on lane/controls-base)
     ok((await h.go('endBill', MAINJ, {})).ok);
     eq([holderOn(h.book, '2027-01-05'), holderOn(h.book, '2027-01-06')], [MAINJ, SIDEJ], 'ending the pay holding it moves it to the other pay with a fixed day, from the day after');
     ok((await h.go('endBill', SIDEJ, {})).ok);

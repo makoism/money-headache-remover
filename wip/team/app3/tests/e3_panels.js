@@ -27,7 +27,8 @@ const only = (s, tab) => s.panels.length === 1 && s.panels[0] === tab && s.sheet
     const s = await seen(p);
     ck(`${a} then ${c}: only ${c} shows`, only(s, c), JSON.stringify(s));
   }
-  for (const t of TABS) for (const [go, sheet, close] of [['#a3SetGo', 'a3Set', '#a3SetClose'], ['#a3RemGo', 'a3Rem', '#a3RemClose'], ['#a3AskGo', 'a3Ask', '#a3AskClose']]) {
+  /* [AI_JOIN_FIXES G] the old Ask sheet is gone (the header Ask opens the assistant panel, walked in e3_chat 10 and 12) */
+  for (const t of TABS) for (const [go, sheet, close] of [['#a3SetGo', 'a3Set', '#a3SetClose'], ['#a3RemGo', 'a3Rem', '#a3RemClose']]) {
     await p.tap(`[data-tab="${t}"]`); await T.w(120);
     await p.tap(go); await T.w(200);
     const open = await seen(p);

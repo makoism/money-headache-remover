@@ -39,6 +39,7 @@ function page(day) {
 }
 const say = (words, calls) => ({ words, calls });
 const call = (name, input) => ({ name, input });
+const edits2 = (h, st0, list) => { let st = st0; const deps = h.deps(FAKE.make([])); for (const [sec, v] of list) { const r = K.draftEdit(st, sec, v, deps); ok(r.ok, sec + ': ' + r.text); st = r.state; } return st; };
 const lastNote = r => r.shown.filter(x => x.who === 'note').map(x => x.text);
 const safe = h => L.lookahead(h.book, h.day).safeToSpend.headline;
 
@@ -51,7 +52,7 @@ const MAKO = {
 /* the whole setup conversation: [what Mako says, the AI's recorded replies for that turn] */
 const SETUP = [
   ['hi', [say(K.GUIDE[0].ask + ' ' + K.GUIDE[1].ask + ' ' + K.GUIDE[2].ask)]],
-  ['Japan', [say('', [call('draft_set', { section: 'country', value: 'JP' })]), say(K.GUIDE[3].ask)]],
+  ['Japan, yen', [say('', [call('draft_set', { section: 'country', value: 'JP' }), call('draft_set', { section: 'currency', value: 'JPY' })]), say(K.GUIDE[3].ask)]],
   ['Just one, Main bank', [say(K.GUIDE[4].ask)]],
   ['what does safe to spend mean?', [say('', [call('explain', { topic: 'safeToSpend' })]), (body) => say(FAKE.results(body)[0].text + ' So, what does Main bank show right now?')]],
   ['286,000', [say('', [call('draft_set', { section: 'banks', value: MAKO.banks })]), say(K.GUIDE[5].ask)]],
@@ -130,8 +131,8 @@ const steps = list => [].concat(...list.map(([, r]) => r));
   /* day to day: a spend by chat, Undo, a delete that asks first */
   let S2 = S1;
   await t('"I spent 1,200 on lunch": made at once with the engine\'s before and after; safe 200,200; Undo puts back 201,400 (BW)', async () => {
-    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'log_spend', amount: 1200, note: 'lunch' }] })]), body => { ok(/^Done/.test(FAKE.results(body)[0].text), FAKE.results(body)[0].text); return say('Logged. Safe to spend is now 200,200.'); }]);
-    const r = await K.turn(S2, 'I spent 1,200 on lunch', Object.assign(h.deps(f), { door: deps.door }));
+    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'log_spend', amount: 1200, note: 'lunch', account: 'A1' }] })]), body => { ok(/^Done/.test(FAKE.results(body)[0].text), FAKE.results(body)[0].text); return say('Logged. Safe to spend is now 200,200.'); }]);
+    const r = await K.turn(S2, 'I spent 1,200 on lunch from Main bank', Object.assign(h.deps(f), { door: deps.door }));
     S2 = r.state;
     eq(safe(h), 200200);
     const c = r.shown.find(x => x.who === 'card').card;
@@ -142,9 +143,9 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     eq(safe(h), 201400);
   });
   await t('what is sent never holds a record id or a note; the list tool gives amounts and dates only (BV6)', async () => {
-    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'log_spend', amount: 900, note: 'secret coffee at Blue Door' }] })]), say('Logged.'),
+    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'log_spend', amount: 900, note: 'secret coffee at Blue Door', account: 'A1' }] })]), say('Logged.'),
       say('', [call('list', { what: 'spends', account: 'A1' })]), say('Here they are.')]);
-    let r = await K.turn(S2, 'I spent 900 on a coffee', Object.assign(h.deps(f), { door: deps.door })); S2 = r.state;
+    let r = await K.turn(S2, 'I spent 900 on a coffee from Main bank', Object.assign(h.deps(f), { door: deps.door })); S2 = r.state;
     r = await K.turn(S2, 'what did I spend?', Object.assign(h.deps(f), { door: deps.door })); S2 = r.state;
     const sent = JSON.stringify(f.bodies.slice(2));
     const ids = [].concat(...['accounts', 'schedules', 'events'].map(k => h.book[k].map(x => x.id)));
@@ -163,7 +164,7 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     eq(safe(h), 201400 - 900 + 5200);
   });
   await t('a change larger than safe to spend asks first (BW)', async () => {
-    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'log_spend', amount: 300000 }] })]), say('That is more than safe to spend. Tap OK if it is right.')]);
+    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'log_spend', amount: 300000, account: 'A1' }] })]), say('That is more than safe to spend. Tap OK if it is right.')]);
     const before = safe(h);
     const r = await K.turn(S2, 'I spent 300,000 on a sofa', Object.assign(h.deps(f), { door: deps.door }));
     const c = r.shown.find(x => x.who === 'card').card;
@@ -171,7 +172,7 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const nn = await K.notNow(r.state, r.shown.find(x => x.who === 'card').id); eq(nn.state.turns.find(x => x.card && x.card.ask === 'large').card.status, 'not now');
   });
   await t('an amount the person did not type is a guess and asks first', async () => {
-    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'log_spend', amount: 1500 }] })]), say('Is 1,500 right?')]);
+    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'log_spend', amount: 1500, account: 'A1' }] })]), say('Is 1,500 right?')]);
     const r = await K.turn(S2, 'I had lunch', Object.assign(h.deps(f), { door: deps.door }));
     const c = r.shown.find(x => x.who === 'card').card;
     eq([c.status, c.ask, c.lines], ['ask', 'guess', ['Log ¥1,500 on Free to spend from Main bank, today (my guess)']]);
@@ -347,8 +348,8 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const h8 = page('2026-11-24'); h8.book = (await (async () => { const hh = page('2026-11-24'); await runSetup(hh, FAKE.make(steps(SETUP))); return hh.book; })());
     const d8 = h8.deps(FAKE.make([]));
     const one = async input => (await K.handle(K.fresh(), { id: 'x', name: 'change', input }, d8)).result;
-    ok(/^Nothing changed: a log spend I could not read/.test(await one({ steps: [{ do: 'log_spend', amount: 'twelve hundred' }] })));
-    ok(/^Nothing changed: a log spend I could not read/.test(await one({ steps: [{ do: 'log_spend', amount: 100, date: '2026-12-01' }] })));
+    ok(/^Nothing changed: a log spend I could not read/.test(await one({ steps: [{ do: 'log_spend', amount: 'twelve hundred', account: 'A1' }] })));
+    ok(/^Nothing changed: a log spend I could not read/.test(await one({ steps: [{ do: 'log_spend', amount: 100, date: '2026-12-01', account: 'A1' }] })));
     ok(/^Nothing changed: a end bill for a ref I do not know/.test(await one({ steps: [{ do: 'end_bill', ref: 'B9' }] })));
     ok(/^Nothing changed: a change I can't make \(transfer_all\)/.test(await one({ steps: [{ do: 'transfer_all' }] })));
     const seven = []; for (let i = 0; i < 7; i++) seven.push({ do: 'add_line', name: 'Line ' + i, amount: 100 });
@@ -360,7 +361,7 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const text = K.copyPrompt(K.fresh(), h9.day);
     ok(/before or after tax/.test(text) && /How many banks/.test(text) && /"pays"/.test(text) && /afterTax/.test(text), 'the questions and the answer shape');
     ok(!/[a-z0-9]{6}-[a-z0-9]{10}-\d/.test(text), 'no ids');
-    const reply = 'Here you go:\n```json\n' + JSON.stringify({ country: 'JP', banks: MAKO.banks, pays: MAKO.pays, cards: MAKO.cards, bills: MAKO.bills, free: null, min: null }) + '\n```';
+    const reply = 'Here you go:\n```json\n' + JSON.stringify({ country: 'JP', currency: 'JPY', banks: MAKO.banks, pays: MAKO.pays, cards: MAKO.cards, bills: MAKO.bills, free: null, min: null }) + '\n```';
     let r = K.pasteBack(K.fresh(), reply, d9);
     ok(r.ok, r.text);
     eq(r.state.draft.banks[0], { name: 'Main bank', amount: 286000, on: '2026-11-24' });
@@ -381,6 +382,156 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const f = FAKE.make([say('Safe to spend is 201,400 until 10 Dec, so a 9,000 dinner fits. You will have about 150,000 left.')]);
     const r = await K.turn(K.fresh(), 'can I afford a 9,000 dinner?', h10.deps(f));
     eq(r.shown.find(x => x.who === 'ai').check, ['150,000']);
+  });
+  /* ---- AI_JOIN_FIXES C: "Fill in my Burrow" needs a whole answer (qc-foundation 3 and 6, qc-assistant blocker 6) ---- */
+  const edits = (h, list) => { let st = K.fresh(); const deps = h.deps(FAKE.make([])); for (const [sec, v] of list) { const r = K.draftEdit(st, sec, v, deps); ok(r.ok, sec + ': ' + r.text); st = r.state; } return st; };
+  await t('[C] the bank answer alone is not enough: the fill waits for the country, the currency, a pay, everyday money and the minimum', async () => {
+    const h = page('2026-11-24'), st = edits(h, [['banks', [{ name: 'Main bank', amount: 286000 }]]]);
+    const card = K.draftCard(st.draft, h.day);
+    eq(card.ready, false);
+    eq(card.need, ['Which country do you bank in?', 'Which currency? Yen, pesos, dollars or euros', 'How are you paid? A day each month, every week or two, or no fixed pay', 'How much for food and everyday stuff each pay period? Or skip it', 'Keep at least how much in your bank? Or no minimum']);
+    const f = await K.fillNow(st, h.deps(FAKE.make([])));
+    ok(!f.ok && h.book === null && /Which country/.test(f.text), f.text);
+  });
+  await t('[C] a whole answer with "no fixed pay", everyday money skipped and no minimum can be filled', async () => {
+    const h = page('2026-11-24'), st = edits(h, [['country', 'XX'], ['currency', 'USD'], ['banks', [{ name: 'Main bank', amount: '1234.56' }]], ['pays', [{ name: 'Work', every: 'none' }]], ['free', null], ['min', null]]);
+    eq(K.draftCard(st.draft, h.day).need, []);
+    const f = await K.fillNow(st, h.deps(FAKE.make([])));
+    ok(f.ok, f.text);
+    eq([h.book.home && L.lookahead(h.book, h.day).safeToSpend.headline, JSON.stringify(h.book).includes('"USD"')], [123456, true], 'dollars with cents: 1,234.56 is 123456 cents');
+  });
+  await t('[C] the currency is its own answer: an amount typed before it changed is asked again, never read in the old currency (50,000 then pesos is not 500.00)', async () => {
+    const h = page('2026-11-24');
+    let st = edits(h, [['banks', [{ name: 'Main bank', amount: 50000 }]], ['bills', [{ name: 'Rent', amount: 9000, day: 27 }]], ['free', 3000]]);
+    const r = K.draftEdit(st, 'country', 'PH', h.deps(FAKE.make([])));
+    ok(r.ok && /asked again/.test(r.shown[0].text), r.shown[0].text);
+    st = edits2(h, r.state, [['currency', 'PHP']]);
+    const u = K.draftEdit(edits2(h, st, [['banks', [{ name: 'Main bank', amount: 700 }]]]), 'currency', 'USD', h.deps(FAKE.make([])));
+    ok(u.ok && /asked again/.test(u.shown[0].text) && !/700/.test(JSON.stringify(K.draftCard(u.state.draft, h.day))), 'pesos to dollars asks again too');
+    const card = K.draftCard(st.draft, h.day), words = JSON.stringify(card);
+    ok(!/500\.00|50,000|9,000|90\.00/.test(words), words);
+    ok(card.need.filter(x => x === 'What does Main bank show today?').length === 1 && card.need.some(x => /everyday/.test(x)), JSON.stringify(card.need));
+    st = edits2(h, st, [['banks', [{ name: 'Main bank', amount: 50000 }]]]);
+    ok(K.draftCard(st.draft, h.day).need.includes('How much is Rent?'), 'then the bill\'s amount is asked again: ' + JSON.stringify(K.draftCard(st.draft, h.day).need));
+    ok(/₱50,000 on/.test(JSON.stringify(K.draftCard(st.draft, h.day))), JSON.stringify(K.draftCard(st.draft, h.day).sections[2]));
+  });
+  await t('[C] saying the currency the amounts were already read in loses nothing (Japan, then 286,000, then "yen")', async () => {
+    const h = page('2026-11-24'), st = edits(h, [['country', 'JP'], ['banks', [{ name: 'Main bank', amount: 286000 }]], ['currency', 'JPY']]);
+    ok(/¥286,000/.test(JSON.stringify(K.draftCard(st.draft, h.day))));
+    ok(!K.draftCard(st.draft, h.day).need.includes('What does Main bank show today?'));
+  });
+  /* ---- AI_JOIN_FIXES H: what the assistant is told ---- */
+  await t('[H1] it never offers to read a file, statement, payslip or screenshot: nothing it is told offers one, and it is told it cannot yet', async () => {
+    const told = K.SYSTEM + ' ' + K.GUIDE.map(g => g.ask).join(' ');
+    ok(!/send me|I'll read|screenshot|upload|photo/i.test(told), (told.match(/.{0,60}(send me|I'll read|screenshot|upload|photo).{0,60}/i) || [''])[0]);
+    ok(/can't read files/i.test(K.SYSTEM) && /type the figures/i.test(K.SYSTEM), 'it is told it cannot read files yet, and to ask for the figures typed');
+    const body = (await (async () => { const f = FAKE.make([say('ok')]); await K.turn(K.fresh(), 'hi', page('2026-11-24').deps(f)); return f.bodies[0]; })());
+    ok(!/send me|I'll read|screenshot/i.test(body.system), 'what is sent says the same');
+  });
+  await t('[H2] the first screen already asks the first question: the welcome ends with it, and the first request says it was asked', async () => {
+    const w = K.welcome();
+    eq(w.length, 3); ok(/^Which country do you bank in, and in which currency\?/.test(w[2]), w[2]);
+    const f = FAKE.make([say('ok')]); await K.turn(K.fresh(), 'Japan, yen', page('2026-11-24').deps(f));
+    const sent = JSON.stringify(f.bodies[0].messages);
+    ok(/The first screen already showed the welcome and asked: Which country do you bank in/.test(sent), 'the first request says the question was asked');
+    const f2 = FAKE.make([say('ok'), say('ok')]); const h2 = page('2026-11-24');
+    const r1 = await K.turn(K.fresh(), 'Japan, yen', h2.deps(f2)); await K.turn(r1.state, 'Main bank', h2.deps(f2));
+    ok(!/The first screen already showed/.test(JSON.stringify(f2.bodies[1].messages)), 'only before the first answer');
+  });
+  await t('[H3] "I don\'t know" has a way on: the bank figure can be left for later with the draft kept; the close day says where to find it', async () => {
+    const h = page('2026-11-24');
+    let st = edits2(h, K.fresh(), [['country', 'JP'], ['currency', 'JPY']]);
+    const r = K.draftEdit(st, 'banks', [{ name: 'Main bank', amount: null }], h.deps(FAKE.make([])));
+    ok(r.ok, r.text); st = r.state;
+    ok(/for later/.test(r.shown[0].text), r.shown[0].text);
+    eq(st.draft.banks.map(b => [b.name, b.amount]), [['Main bank', null]]);
+    const card = K.draftCard(st.draft, h.day);
+    ok(card.need.includes('What does Main bank show today?'), 'still asked before the fill');
+    eq(card.sections.find(x => x.key === 'banks').lines, ['Main bank: for later']);
+    st = edits2(h, st, [['pays', MAKO.pays]]);
+    eq(st.draft.banks[0].name, 'Main bank', 'the draft goes on with it');
+    st = edits2(h, st, [['banks', [{ name: 'Main bank', amount: 286000 }]]]);
+    eq([st.draft.banks[0].amount, st.draft.banks[0].on], [286000, '2026-11-24']);
+    ok(/leave it for later/i.test(K.GUIDE[4].ask), K.GUIDE[4].ask);
+    ok(/card app|statement/.test(K.GUIDE[9].ask) && /close day/i.test(K.GUIDE[9].ask) && /(find|it's on|it is on)/i.test(K.GUIDE[9].ask), K.GUIDE[9].ask);
+    ok(/don't know/i.test(K.SYSTEM) && /for later/.test(K.SYSTEM), 'the AI is told the way on');
+  });
+  await t('[H4] it is told which screen is open and what the screens can do that it cannot; a refusal says where', async () => {
+    const h = page('2026-11-24'); const { state, deps: d0 } = await runSetup(h, FAKE.make(steps(SETUP)));
+    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'change_card', ref: 'A2', payDay: 12 }] })]), say('ok'), say('ok')]);
+    const deps = Object.assign(h.deps(f), { door: d0.door, screen: () => 'plan' });
+    const r = await K.turn(state, 'Card A is paid on the 12th now', deps);
+    const sent = JSON.stringify(f.bodies[0].messages);
+    ok(/SCREEN: the person has Plan open/.test(sent), 'the open screen is sent');
+    const res = FAKE.results(f.bodies[1])[0].text;
+    ok(/^Nothing changed: /.test(res) && /Plan, tap the card/.test(res), res);
+    ok(/WHERE ON THE SCREENS/.test(K.SYSTEM) && /Add a loan/.test(K.SYSTEM) && /Receipts, tap it/.test(K.SYSTEM) && /Settings/.test(K.SYSTEM), 'the map of the screens');
+    eq(r.shown.filter(x => x.who === 'card' && x.card.kind === 'change').length, 0, 'nothing changed, no change card');
+    const f2 = FAKE.make([say('ok')]);
+    await K.turn(state, 'hi', Object.assign(h.deps(f2), { door: d0.door }));
+    ok(!/SCREEN:/.test(JSON.stringify(f2.bodies[0].messages)), 'no screen given, no line');
+  });
+  await t('[H5] a bank figure far from what the app expected asks first, with the gap in words; a near one goes in', async () => {
+    const h = page('2026-11-24'); const { state, deps: d0 } = await runSetup(h, FAKE.make(steps(SETUP)));
+    const refIn = (body, name) => { const m = new RegExp('(?:^|\\n)([A-Z]\\d+) \\| ' + name + ' \\|').exec(JSON.stringify(body.messages).replace(/\\n/g, '\n')); return m ? m[1] : null; };
+    const fig = (amount) => [body => say('', [call('change', { steps: [{ do: 'bank_figure', account: refIn(body, 'Main bank'), amount }] })]), say('ok')];
+    const main = h.book.home.main.v.acct, bank = () => L.lookahead(h.book, h.day).accounts[main].bank;
+    let f = FAKE.make(fig(3000000));
+    let r = await K.turn(state, 'my bank shows 3,000,000', Object.assign(h.deps(f), { door: d0.door }));
+    let c = r.shown.find(x => x.who === 'card' && x.card.kind === 'change');
+    ok(c && c.card.status === 'ask' && c.card.ask === 'gap', JSON.stringify(c && c.card));
+    ok(/Main bank shows ¥3,000,000 today\. The app expected ¥286,000: ¥2,714,000 more than it had/.test(c.card.lines[0]), c.card.lines[0]);
+    eq(bank(), 286000, 'nothing written before the OK');
+    const ok2 = await K.confirm(r.state, c.id, Object.assign(h.deps(FAKE.make([])), { door: d0.door }));
+    ok(ok2.ok, ok2.text); eq(bank(), 3000000, 'after Do it');
+    await d0.door.undo(ok2.state.turns.find(x => x.id === c.id).card.steps[0], { quiet: true });
+    eq(bank(), 286000, 'Undo');
+    f = FAKE.make(fig(280000));
+    r = await K.turn(state, 'my bank shows 280,000', Object.assign(h.deps(f), { door: d0.door }));
+    c = r.shown.find(x => x.who === 'card' && x.card.kind === 'change');
+    ok(c && c.card.status === 'done', JSON.stringify(c && c.card)); eq(bank(), 280000, 'a figure near what was expected goes in at once');
+  });
+  await t('[H6] a spend with no account named, when cards exist, asks "card or bank?" once and remembers the answer for the chat', async () => {
+    const h = page('2026-11-24'); const { state, deps: d0 } = await runSetup(h, FAKE.make(steps(SETUP)));
+    const refIn = (body, name) => { const m = new RegExp('(?:^|\\n)([A-Z]\\d+) \\| ' + name + ' \\|').exec(JSON.stringify(body.messages).replace(/\\n/g, '\n')); return m ? m[1] : null; };
+    const D = f => Object.assign(h.deps(f), { door: d0.door });
+    let res = '';
+    let f = FAKE.make([say('', [call('change', { steps: [{ do: 'log_spend', amount: 900, note: 'lunch' }] })]), body => { res = FAKE.results(body)[0].text; return say('Card or bank? Card A, Card B or Main bank'); }]);
+    let r = await K.turn(state, 'I bought lunch, 900', D(f));
+    ok(/^Nothing changed: /.test(res) && /Card A, Card B or Main bank/.test(res) && /once/.test(res), res);
+    eq(r.shown.filter(x => x.who === 'card' && x.card.kind === 'change').length, 0, 'nothing logged');
+    eq(safe(h), 201400);
+    f = FAKE.make([body => say('', [call('change', { steps: [{ do: 'log_spend', amount: 900, note: 'lunch', account: refIn(body, 'Card A') }] })]), say('Logged on Card A.')]);
+    r = await K.turn(r.state, 'Card A', D(f));
+    let c = r.shown.find(x => x.who === 'card' && x.card.kind === 'change');
+    ok(c && c.card.status === 'done' && /from Card A/.test(c.card.lines[0]), JSON.stringify(c && c.card));
+    f = FAKE.make([say('', [call('change', { steps: [{ do: 'log_spend', amount: 400, note: 'coffee' }] })]), say('Logged.')]);
+    r = await K.turn(r.state, 'coffee 400', D(f));
+    c = r.shown.find(x => x.who === 'card' && x.card.kind === 'change');
+    ok(c && c.card.status === 'done' && /Log ¥400 on Free to spend from Card A/.test(c.card.lines[0]), JSON.stringify(c && c.card));
+    ok(/pay with Card A/.test(JSON.stringify(f.bodies[0].messages)), 'the AI is told the answer kept for the chat');
+    /* a book with no cards: a spend with no account goes on the main bank, as before */
+    const h2 = page('2026-11-24'); const { state: s2, deps: d2 } = await runSetup(h2, FAKE.make(steps(SETUP.map(x => x[0].startsWith('Card A') ? [x[0], [say('', [call('draft_set', { section: 'cards', value: [] })]), say(K.GUIDE[10].ask)]] : x))));
+    f = FAKE.make([say('', [call('change', { steps: [{ do: 'log_spend', amount: 900, note: 'lunch' }] })]), say('Logged.')]);
+    r = await K.turn(s2, 'I bought lunch, 900', Object.assign(h2.deps(f), { door: d2.door }));
+    c = r.shown.find(x => x.who === 'card' && x.card.kind === 'change');
+    ok(c && c.card.status === 'done' && /from Main bank/.test(c.card.lines[0]), JSON.stringify(c && c.card));
+  });
+  await t('[H7] adding a bank asks both of its questions in one go', async () => {
+    const h = page('2026-11-24'); const { state, deps: d0 } = await runSetup(h, FAKE.make(steps(SETUP)));
+    const D = f => Object.assign(h.deps(f), { door: d0.door });
+    let res = '';
+    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'add_account', name: 'Savings', amount: 50000 }] })]), body => { res = FAKE.results(body)[0].text; return say('ok'); }]);
+    const r = await K.turn(state, 'add my savings account, it has 50,000', D(f));
+    ok(/^Nothing changed: /.test(res), res);
+    ok(/Is this new money, or moved from Main bank since today\?/.test(res) && /before or after you looked at Main bank today\?/.test(res) && /one message/.test(res), res);
+    eq(r.shown.filter(x => x.who === 'card' && x.card.kind === 'change').length, 0, 'no refused card: the AI asks both first');
+    ok(/Adding a bank/.test(K.SYSTEM) && /both/.test(K.SYSTEM), 'the AI is told to ask both at once');
+    /* both answered: it goes in */
+    const f2 = FAKE.make([say('', [call('change', { steps: [{ do: 'add_account', name: 'Savings', amount: 50000, moved: false }] })]), say('Added.')]);
+    const r2 = await K.turn(r.state, 'new money', D(f2));
+    const c = r2.shown.find(x => x.who === 'card' && x.card.kind === 'change');
+    ok(c && c.card.status === 'done', JSON.stringify(c && c.card));
   });
   console.log(bad ? `chat3_core: ${bad} of ${n} FAILED` : `chat3_core: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);

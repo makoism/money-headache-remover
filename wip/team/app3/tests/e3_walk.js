@@ -4,7 +4,8 @@
    account, check-ins with items left unticked and ticked late, a bank statement pasted from any AI, Ask with a recorded
    made-up reply, plan changes, a backup restored on a fresh device, two tabs, Free to spend. After each step Home's
    safe to spend and the main bank's figure must be the hand-worked ones of the walk 4 report. Made-up yen only; no real
-   AI (a stand-in for the viewer's Claude answers with recorded made-up replies). */
+   AI: the spend by chat goes through the assistant panel (the header Ask, AI_JOIN_FIXES G) and the real core, with the
+   fake model (tests/fake_ai.js) behind a made-up relay address this test answers. */
 'use strict';
 const { finishSetup: finishSetup3 } = require('./setup_sections.js');   // setup is saved one section at a time (item 14)
 const fs = require('fs'), os = require('os'), path = require('path');
@@ -165,14 +166,30 @@ async function home(p, label, safe, bank) {
   await home(p, '15 Dec after the statement', 240500, 329900);
   await p.reload(); await w(400); await home(p, '15 Dec after a reload', 240500, 329900);
   await go(p, '2026-12-16'); await checkin(p, { 'Main bank': 329900, 'Trip account': 25000 }); await home(p, '16 Dec after the check', 240500, 329900);
-  /* s4b: Ask with a recorded made-up reply, plan changes */
-  await go(p, '2026-12-18');
-  await p.evaluate(() => { window.__replies = { 'I spent 1,500 on lunch today': { answer: 'Logged 1,500 lunch from your main bank, if you apply it.', actions: [{ do: 'log_spend', amount: 1500, note: 'lunch' }] } }; });
-  await p.click('#a3AskGo'); await w(250);
-  await p.fill('#a3AskIn', 'I spent 1,500 on lunch today'); await p.click('#a3AskSend'); await w(600);
-  await p.click('[data-ask=apply]'); await w(500);
-  await p.click('#a3AskClose'); await w(200);
-  await home(p, '18 Dec after a spend through Ask', 239000, 328400);
+  /* s4b: a spend told to the assistant (the header Ask opens the panel), plan changes. The made-up relay answers with
+     the fake model: the change names Main bank by the ref the request's FIGURES give it */
+  {
+    const FAKE = require('./fake_ai.js'), RELAY = 'https://relay.example';
+    const refOf = (body, name) => { const m = new RegExp('(?:^|\\n)([A-Z]\\d+) \\| ' + name.replace(/[^A-Za-z0-9 ]/g, '.') + ' \\|').exec(JSON.stringify(body.messages).replace(/\\n/g, '\n')); return m ? m[1] : null; };
+    const fake = FAKE.make([body => ({ words: '', calls: [{ name: 'change', input: { steps: [{ do: 'log_spend', amount: 1500, note: 'lunch', account: refOf(body, 'Main bank') }] } }] }), { words: 'Logged.' }]);
+    const cors = { 'access-control-allow-origin': '*', 'access-control-allow-headers': 'content-type, x-app' };
+    await p.addInitScript(base => { window.STMT3_RELAY = base; }, RELAY);
+    await p.route(RELAY + '/api/**', async route => {
+      const rq = route.request(), u = rq.url(), json = (st, j) => route.fulfill({ status: st, contentType: 'application/json', headers: cors, body: JSON.stringify(j) });
+      if (rq.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors });
+      if (u === RELAY + '/api/health') return json(200, { ok: true, ai: true });
+      try { return json(200, await fake.send(JSON.parse(rq.postData() || '{}'))); } catch (e) { return json(502, { error: { message: String(e.message) } }); }
+    });
+    await go(p, '2026-12-18');
+    await p.click('#a3AskGo'); await w(300);
+    await p.$eval('#a3Chat #a3ChatIn', e => { e.value = 'I spent 1,500 on lunch today from Main bank'; });
+    await p.$eval('#a3Chat #a3ChatSend', e => e.click());
+    for (let i = 0; i < 100 && await p.evaluate(() => !!document.querySelector('#a3ChatWait') || BurrowApp3.chat.CHAT3.busy); i++) await w(100);
+    await w(300);
+    ck('18 Dec: the spend by chat shows its card, done', !!(await p.$('[data-card=chat-change][data-status=done]')), await txt(p, '#a3ChatLog'));
+    await p.click('#a3ChatClose'); await w(200);
+    await home(p, '18 Dec after a spend through the assistant', 239000, 328400);
+  }
   await go(p, '2026-12-20');
   await tab(p, 'plan'); await p.click('[data-goal]'); await w(200); await p.fill('#pl-amount', '3000'); await p.click('[data-plbtn="2"]'); await w(400);
   const billBtn = async name => (await p.$$eval('[data-bill],[data-pay]', (bs, nm) => bs.filter(b => b.innerText.startsWith(nm)).map(b => b.dataset.bill || b.dataset.pay), name))[0];
@@ -226,7 +243,7 @@ async function home(p, label, safe, bank) {
   await q.setInputFiles('#a3BkFile', bkFile); await w(600);
   await q.fill('#a3BkOpen', 'abc12345'); await q.click('#a3BkOpenGo'); await w(1500);
   await q.click('#a3BkGo'); await w(600); await q.click('#a3SetClose'); await w(200);
-  ck('the backup restored on a fresh device shows the same Home', (await txt(q, '#a3Home')) === before);
+  ck('the backup restored on a fresh device shows the same Home', (await txt(q, '#a3Home')) === before, (a => { let i = 0; while (i < a.length && a[i] === before[i]) i++; return a.slice(Math.max(0, i - 150), i + 250) + ' ||| VS ||| ' + before.slice(Math.max(0, i - 150), i + 250); })(await txt(q, '#a3Home')));
   await c2.close();
   c = await ctx(dir); p = c.pages()[0] || await c.newPage();
   /* s7b: a move to the Trip account, money taken out of the goal, a refund */

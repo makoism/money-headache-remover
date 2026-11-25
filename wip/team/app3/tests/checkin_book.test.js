@@ -62,14 +62,15 @@ t('a changed amount is written as typed', () => {
   assert.strictEqual(o2.events.find(e => e.id === 'set:' + pick[0].item).a, 175000);
 });
 t('an amount that is not whole minor units is refused', () => assert.throws(() => W.checkIn(clone(book0), { ...known, day: DAY, told: DAY + 'T19:30+09:00', newId, figures: { [bank]: 12.5 }, ticked: [], unticked: [], amounts: {} })));
-/* the weekend in the try book: with everything due by 11 Dec ticked, card B leaves on Fri 8 Jan, before pay lands Tue 12 Jan */
-t('the try book has the weekend where card B leaves before pay lands', () => {
+/* the weekend in the try book, shaped like Mako's month: 10 Jan 2027 is a Sunday and 11 Jan a holiday, so pay moves to
+   the working day before, Fri 8 Jan, and card B (the 11th, moved earlier) leaves that day too */
+t('the try book has the weekend where pay lands the working day before, the day card B leaves', () => {
   const li = L.lookahead(book0, '2026-12-11').checkIn.toConfirm;
   const paid = W.apply(book0, W.checkIn(book0, { day: '2026-12-11', told: '2026-12-11T20:00+09:00', newId, figures: { [bank]: 300000 }, ticked: li.map(o => o.item), amounts: {},
     expected: Object.fromEntries(li.map(o => [o.item, o.amount])), lands: Object.fromEntries(li.map(o => [o.item, o.lands])) }));
   const jan = L.lookahead(paid, '2027-01-07');
   assert.strictEqual(jan.cards[cardB].next.payment_date, '2027-01-08');
-  assert.strictEqual(jan.daysToNextPay.next_pay, '2027-01-12');
+  assert.strictEqual(jan.daysToNextPay.next_pay, '2027-01-08');
 });
 console.log(bad ? 'CHECKIN BOOK FAIL ' + bad + ' of ' + n : 'CHECKIN BOOK PASS ' + n);
 process.exit(bad ? 1 : 0);

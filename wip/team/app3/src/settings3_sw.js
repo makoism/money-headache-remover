@@ -13,7 +13,7 @@ if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
       if (!had) { had = true; return; }
       if (fresh) return;
       fresh = true;
-      msg3('A new version of the app is ready. It opens the next time you come back to the app.');
+      msg3('A new version of the app is ready - it opens the next time you come back');
       document.addEventListener('visibilitychange', () => { if (document.hidden) location.reload(); });
     });
   });
