@@ -2,7 +2,7 @@
 // The month rule, second hole found by qc-foundation on the plan (qc_reports/2026-11-25_monthrule/foundation_plan.md,
 // blocker 2; MAKO_SAYS M36, M45): with no fixed pay, a plan line's days left in THIS month came off by the day
 // whatever was spent, so a line spent in full on the 5th was charged again for the 6th to the 31st.
-// The rule (waits for the coordinator's yes; RED on purpose and not in run_all until then): this month the walk holds
+// The rule (CA5, the coordinator's yes of 25 Nov 2026): this month the walk holds
 // what is left of the line, never below zero, as a pay period does; later months come off by the day (CA4).
 // Made-up yen: no fixed pay, bank 2,000,000, everyday 40,000 a month, Food 30,000 a month, set up 1 Nov 2026.
 // By the day: Food in January floor(30,000 / 31) = 967; in February floor(30,000 / 28) = 1,071. Everyday in January

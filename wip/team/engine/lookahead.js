@@ -1179,6 +1179,7 @@
         for (const l of lines) {
           for (let d = today + 1; d <= today + LATER_ON_DAYS; d++) {
             if (l === planLeft.free && d <= monthEnd0 && !freeAllDays) continue;
+            if (l !== planLeft.free && l.per !== 'week' && d <= monthEnd0) continue;   // [CA5] this month: what is left of the line is held by the walk
             const [y, mo] = ymOf(d);
             let want;
             if (l.per === 'week') {
@@ -1210,6 +1211,9 @@
       const placeLeft = {};
       if (!real) for (const g of keptIn[id] || []) { bal -= g.amount; placeLeft[g.id] = g.amount; why.push({ label: g.label || g.name + ', kept in it', amount: -g.amount }); }
       if (periodStream && !real) for (const l of (planLeft.lines || []).filter(x => x.acct === id && x.left)) { const left = Math.max(0, l.left); bal -= left; why.push({ label: l.name + ' left this period', amount: -left }); }
+      // [CA5] no fixed pay: this month a monthly line holds what is left of it (its month's amount less what was spent
+      // on it, never below zero), as a pay period does above; only later months come off by the day [CA4]
+      if (!periodStream && !real) for (const l of (planLeft.lines || []).filter(x => x.acct === id && x.per !== 'week' && x.left)) { const left = Math.max(0, l.left); bal -= left; why.push({ label: l.name + ' left this month', amount: -left }); }
       const steps = [];
       for (const o of items) {
         if (o.settled) continue;
