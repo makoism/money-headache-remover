@@ -575,6 +575,32 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     return h;
   }
   const at = (b, d) => { const r = L.lookahead(b, d, { periods: true }); return { period: r.period && [r.period.start, r.period.end], food: r.period && r.period.lines.map(l => l.left), past: (r.periods || []).map(p => [p.start, p.end, p.lines.map(l => l.left)]) }; };
+  /* [M77, M36, M51] Mako's shape, a full pay period with a spend in it: each of the three choices does what its words
+     say, in this period and in the next. No change counts "from today" or by the calendar month when pay has a fixed day */
+  await t('[M36, M51] a line and Free to spend changed on 25 Dec, 15 days into the period 10 Dec to 7 Jan: now, next, once', async () => {
+    for (const [when, nowLeft, nextFull, freeNow, freeNext] of [['now', 20000, 50000, 80000, 80000], ['next', 10000, 50000, 60000, 80000], ['once', 20000, 40000, 80000, 60000]]) {
+      DAY = '2026-11-25';
+      const b = mako(); b.events = b.events.filter(e => e.k === 'open' || e.k === 'check');
+      const h = setup(b);
+      ok((await h.go('addLine', { name: 'Food', amount: 40000 })).ok); ok((await h.go('setFree', { amount: 60000 })).ok);
+      const F = h.book.plan.budgets[0].id;
+      const tick = async (day, due) => { DAY = day; const o1 = MAINJ + '@' + due, o2 = SIDEJ + '@' + due;
+        const out = CKW.checkIn(h.book, { day, told: day + 'T13:00+09:00', newId: I.idMaker('p3wrck', Math.random), ticked: [o1, o2], expected: { [o1]: 180000, [o2]: 60000 }, lands: { [o1]: day, [o2]: day } });
+        ok((await h.A.addRecords('Check your bank', out)).ok, 'tick ' + day); };
+      await tick('2026-12-10', '2026-12-10');
+      DAY = '2026-12-15'; ok((await h.A.logSpend({ date: DAY, a: 30000, acct: CARD_A, line: F })).ok);
+      DAY = '2026-12-25';
+      let p = view(h.book).period;
+      eq([p.start, p.end, p.lines[0].left, p.free.left], ['2026-12-10', '2027-01-07', 10000, 60000], when + ' before');
+      ok((await h.go('changeLine', F, { amount: 50000, when })).ok); ok((await h.go('setFree', { amount: 80000, when })).ok);
+      const r = view(h.book); p = r.period;
+      eq([p.lines[0].left, p.free.left, r.safeToSpend.headline], [nowLeft, freeNow, freeNow], when + ' this period');
+      await tick('2027-01-08', '2027-01-10');
+      DAY = '2027-01-09'; p = view(h.book).period;
+      eq([p.start, p.lines[0].amount, p.lines[0].left, p.free.left], ['2027-01-08', nextFull, nextFull, freeNext], when + ' next period');
+    }
+    DAY = '2026-11-25';
+  });
   await t('[BZ2] "my job ended, the new one pays 300,000 on the 25th" on 5 Jan: end both pays, add the new one; each period follows the pay that held the flag then', async () => {
     const h = await jobLife(), before = at(h.book, '2027-01-05');
     eq(before.period, ['2026-12-10', '2027-01-07']);   // the made-up book's pay moves to the working day before since homefix (b75f0258): 10 Jan 2027 is a Sunday, so pay lands Fri 8 Jan (it was Tue 12 Jan when this test was written on lane/controls-base)
