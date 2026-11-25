@@ -1,9 +1,18 @@
 # Cards in the headline: everything owed on the cards comes off safe to spend
 
-Planning helper, 25 Nov 2026, branch lane/cardsplan (made from lane/ai-join at c952278b). The plan only. Nothing is built until Mako says yes through the coordinator, then qc-foundation reads this plan before the first line changes. Format copied from THREE_VALUES_PLAN.md and AFTER_CARDS_PLAN.md. Every figure here is made up.
+Planning helper, 25 Nov 2026, branch lane/cardsplan (made from lane/ai-join at c952278b). Format copied from THREE_VALUES_PLAN.md and AFTER_CARDS_PLAN.md. Every figure here is made up.
 
-## The question for Mako
-Should everything owed on his cards come off "safe to spend" at once? Today (with Free to spend not set) a card spend whose card is paid on or after the next pay leaves safe to spend where it was. The proposed meaning: **safe to spend = the bank today, less bills before the next pay, less everything owed on the cards.**
+## Settled: what is built, and where (26 Nov 2026)
+This is no longer a question for Mako. He settled it on 26 Nov, and the coordinator ruled the scope:
+- **M90** ("Number one, obviously"): setup always asks for a play amount; safe to spend is the play money left this pay period and every card spend comes off it at once; the bank after the cards are paid stays on Home; **if someone skips the play amount, what is on the cards comes off safe to spend too.**
+- **M93**: play money is cash in the wallet; groceries and other expenses go on the card ("Play money is cash, everything else is card").
+- **M95**: play money is updated roughly, by asking how much was spent or how much cash is left.
+- **Ruling R1** (CASH_PLAN.md section 14, coordinator 15): yes, **only where the play amount is skipped**. This plan's rule (the cards-now walk) applies only while no play amount is in force on the day (`playOn(day)` in lookahead.js, CASH_PLAN.md section 17 F1). With a play amount in force, nothing about the headline changes: safe to spend is play money left, and only play spends on a card come off it (R5). The words name the cards as the cause, with a one-line way out: "Set a play amount" (M91).
+- CASH_PLAN.md sections 17, 16, 15 and 14 win over this file wherever they differ. Where the sections below describe what happens "with Free to spend set", read them as the reasoning that was weighed: that branch is not built (its figures stay as today's engine gives them, byte for byte).
+- Built as CASH_PLAN slice 1 on lane/cash-1, test first. qc-foundation read this plan (qc_reports/2026-11-26_cardsplan/foundation.md, F1 only, taken in CASH_PLAN section 17).
+
+## The meaning (settled by M90 and R1)
+With no play amount in force: **safe to spend = the bank today, less bills before the next pay, less everything owed on the cards paid in full.** Today (before this slice) a card spend whose card is paid on or after the next pay leaves safe to spend where it was.
 
 ## Mako's lines it serves and touches
 - Serves: M7 (see what is safe to spend, "nothing is unknown"), M12 (clarity), M30 (almost all spending is on the cards, so the bank alone is not the truth), M36 (the picture adds up), M40 (cards: what is on each, when paid, the bank after), M45 (no coin counted twice), M51 (one meaning per word), M77 (a fact becomes a failing test the same day).
@@ -11,7 +20,7 @@ Should everything owed on his cards come off "safe to spend" at once? Today (wit
 - The main way in (M1, M4, M5): he logs a card spend by telling the assistant. The change card must show safe to spend dropping by the spend. Today it shows "stays the same" with a line explaining why (chat3_core.js noteOf). After this change that line goes.
 
 ## This was decided once before (read this first)
-DECISIONS_ROUND2 F14 (line 60) answered scenarios/README.md Q14 (line 413): "Cards are not taken off as one lump today: the walk takes each statement off on its payment day ... It replaces 'everything on the card today'". So the proposed meaning is the reading F14 replaced. Every scenario ask that F14 touched still carries the old reading as `alt.Q14` (with its own hand-worked "why"). That gives this plan a ready cross check (section 6). Q14 also names the life it hurts: "Ramil, paid weekly, two pays land before his card payment, so this says his e-wallet is 700 short on 2 Dec when it is not." Mako should hear that cost with the question (section 8).
+DECISIONS_ROUND2 F14 (line 60) answered scenarios/README.md Q14 (line 413): "Cards are not taken off as one lump today: the walk takes each statement off on its payment day ... It replaces 'everything on the card today'". So the proposed meaning is the reading F14 replaced. Every scenario ask that F14 touched still carries the old reading as `alt.Q14` (with its own hand-worked "why"). That gives this plan a ready cross check (section 6). Q14 also names the life it hurts: "Ramil, paid weekly, two pays land before his card payment, so this says his e-wallet is 700 short on 2 Dec when it is not." M90 and R1 settled it with that cost known (section 8).
 
 ## The working checked against the engine
 I built Mako's made-up book with engine/build_book.js (ANSWERS from engine/test/mako_madeup.js, set up 24 Nov, Phone already out, ids from ids.js idMaker) and ran lookahead on today's engine and on a scratch copy with the change (the copy lives only in my scratchpad; nothing in the repo was changed). The scratch copy did steps 1 to 3 of the change below and used the cards-now walk for the whole account (it did not yet keep the goal warning on the dated walk); every figure in this plan comes from it or from today's engine, as marked.
@@ -152,7 +161,7 @@ qc-foundation on this plan before slice 1; qc-numbers and qc-assistant after sli
 Safe to spend on Home is lower by what is on his cards: 124,400 instead of 201,400 in the example. The sum under it names each card ("Card A, owed now"). Every card spend, by chat or on Receipts, takes the same amount off safe to spend at once, and the change card shows it going down. The cards box and its "after your cards are paid" line read as today. With Free to spend set, the big figure usually does not move; what the bank can spare beyond the plan does.
 
 ### For Mako's run (the coordinator brings these, with the app in front of him)
-- Yes or no to the meaning, told with its cost: a person paid weekly or every two weeks sees the whole card bill come off this week's figure even though later pays cover it (weekly-11: "700 short" when the bank never goes below zero). Recommendation: yes for him (his pay and cards land together, M27, M28, M30), and the words name the cards as the cause.
+- Settled by M90 and R1, not asked again (M85). Listed for his run only so he sees it working: a person with no play amount, paid weekly or every two weeks, sees the whole card bill come off this week's figure even though later pays cover it (weekly-11: the e-wallet reads 700 under when the bank never goes below zero). The words name the cards as the cause, with "Set a play amount" as the way out (M91).
 - Cards that carry a balance: kept on their payment days (recommendation), or the whole balance now.
 - Bills charged to a card and not posted yet (a subscription on the card due before pay): kept on the card's payment day (as built here), or taken now like a bank bill before pay.
 - The new words: help.js, the `cards_over` reason, the note on a card spend that does not move the headline, EXPLAIN.cards, the Receipts line.
