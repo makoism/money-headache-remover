@@ -16,10 +16,13 @@ What else could be true in that moment: (a) he has not ticked January's payment,
 ## The rule (engine/lookahead.js loanInfo)
 1. A loan check is a `check` event on the loan account (`k: 'check', acct: <loan>, date, a: owed`), not a statement and not the opening's own check. Today a loan reads only its opening (loanInfo uses `openingOf(id)`); later checks are ignored.
 2. The latest live loan check dated on or before `knownTo` sets `owed` on its day: the walk of `changes` and interest starts from it instead of from the opening (records inside the check, by `inside(e, check, id)` as for a bank or card check, are not counted again). Interest (`a.apr`) runs from the check day.
-3. Payments before the check (a). Two ways; the recommendation is (i):
-   (i) An unticked payment that landed before the check stays an item to tick (overdue, with its usual amount), because it is money that left, or will leave, the paying bank: the bank side still expects it. When it is ticked later, its repay record is dated before the check, so it is inside the check and does not lower what is owed again (no coin counted twice, M45). Its amount on the loan side is already in the figure typed.
-   (ii) The check covers it, as the opening covers what lands on or before it. Simpler, but the bank then no longer expects that payment: if it did leave the bank, the bank's next check finds a gap and counts it as spending, which is untrue.
-   A payment already ticked keeps its record either way.
+3. Payments before the check (a) [qc-foundation 2026-11-26_loancheck_plan finding 1]. The engine never guesses. At the moment of the check (Plan sheet, Check your bank, the assistant), for each unticked payment of this loan landing on or before the check day, the person is asked: "Has the 27 Jan payment of 30,000 left your bank?"
+   - Yes: it is ticked in the same step (same `grp`, so it is inside the check by sameMoment; the bank still has it leave).
+   - No, not yet: the check carries `notYet: [<occurrence>]`, as the opening check already does (lookahead.js notYetOf / inside's AB4 rule, extended from the opening to every loan check); the payment stays to tick, and a later tick of it (dated by landedFrom, maybe after the check) is not inside the check and lowers what is owed once, which is right because the figure typed still held it.
+   - Not sure, later (M91): the same as No, not yet (the lender's figure is never lowered twice, and the bank still expects the payment).
+   So `unpaid` holds only payments the figure typed still includes. A payment already ticked keeps its record.
+   Rejected: covering it with the check, as the opening covers what lands before it: the bank would no longer expect a payment that did leave, and its next check would count it as spending (M45, M36).
+2b. Payment days on or before the check day keep the walk from the base before it (the opening or the earlier check); `min(owedThen, owedNow)` applies only to days after the check. A check of 0 asks the same question first [finding 2].
 4. Same day as a payment (b): a check is read at its `told` moment; a payment ticked before the check on that day is inside it (the existing `sameMoment` / key order, as for cards). An unticked payment landing that day follows rule 3 (i).
 5. Two checks: the latest by date, then by told, wins (c). Earlier ones stay as history; Undo of the latest brings the one before back.
 6. A check of 0 (d): owed 0, no more payment items; Close this loan is then allowed (closeLoan already requires owedNow 0). No automatic close.
@@ -27,16 +30,16 @@ What else could be true in that moment: (a) he has not ticked January's payment,
 8. Nothing else reads a loan check: safe to spend changes only through the loan's payment items (the next payment's amount may now be smaller when what is left is less than the usual payment, which is the existing `Math.min(bal, asks)`).
 
 ## Saved data
-No new field. A loan check is the same `check` event a bank or card uses, written through ACT3 with id, told, at, by, grp. Old books have none, so nothing changes for them. Undo is the door's own (the event marked gone).
+No new field (`notYet` is already on opening checks). A loan check is the same `check` event a bank or card uses, written through ACT3 with id, told, at, by, grp. Old books can hold checks on a loan already [finding 3]: a moved debt's `mv:check:debt:*` (move.js, no grp, same day and amount as its opening) and closeLoan's check of 0; a test shows owed and items unchanged on such a book before and after the rule. Undo is the door's own (the event marked gone).
 
 ## Doors (screens and assistant, M3, M13)
 - Plan, a loan's sheet: a "Still owed today" box with today's figure filled in, and a day box (today by default). Save writes PLAN3W.checkLoan(w, id, { amount, date }). Empty or the same figure: "Nothing changed". A wrong value: the form's usual words.
 - Check your bank: each live loan gets an optional "Still owed today" box, like a card's; blank means not looked (no check written).
-- Assistant: card_figure accepts a loan A ref (renamed in the words "a card or loan figure"), and Check your bank's step through CK.checkIn passes it on. The change card shows before and after.
+- Assistant: card_figure accepts a loan A ref ("a card or loan figure") and a `date` (today or before), and `paid` answers for the question of rule 3 (occurrence refs: yes, no or later); the change card shows before and after. `remove` takes the loan check's ref so the assistant can take one back [grid gap], besides Undo on its card.
 - Undo: the change card, the Undo bar, Settings > Recent changes (slice 4), and after a reload.
 
 ## Tests first (one commit each)
-1. engine: tests in engine tests for rules 2 to 7 with worked figures (Kenji's month by hand: 900,000 from 20 Nov, 30,000 on 27 Nov ticked, 27 Dec ticked, 27 Jan not ticked, check 812,400 on 3 Feb: owed 812,400, 27 Jan still to tick (30,000 from the bank) and ticking it leaves owed at 812,400, next payment 30,000 on 27 Feb, apr 0); a check of 0 ends the payments; a past check; two checks and Undo; the nine-orders test (lesson 4 addendum) on a book with a loan check.
+1. engine: tests in engine tests for rules 2 to 7 with worked figures (Kenji's month by hand: 900,000 from 20 Nov, 30,000 on 27 Nov ticked, 27 Dec ticked, 27 Jan not ticked, check 812,400 on 3 Feb with 27 Jan answered Yes (ticked in the step) and, in a second book, answered No (then a bank check on 5 Feb and the tick on 10 Feb lower owed once, to 782,400 only because the figure still held it); the next payment 30,000 on 27 Feb, apr 0); a check of 0 ends the payments; a past check; two checks and Undo; the nine-orders test (lesson 4 addendum) on a book with a loan check, two devices' checks on one day included; a moved book with a debt and a closed loan unchanged; a later apr change counts from the latest check.
 2. plan3_write checkLoan (refusals: before the opening, after today, before an existing check, not a loan, closed).
 3. Plan loan sheet box, page test (e3_loancheck.js): type, save, figure shown, Undo, reload.
 4. Check your bank loan box and the assistant's card_figure on a loan (chat3_core.test.js).
