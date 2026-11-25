@@ -376,15 +376,63 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       d[section] = a;
     } else return no('No such section: ' + String(section).slice(0, 20));
     if (curOf(d) !== cur) {   // the currency the amounts are read in changed (by the currency answer, or by the country before it)
-      let n = 0;
-      for (const b of d.banks) if (b.amount != null) { b.amount = null; b.on = null; delete b.payToday; n++; }
-      for (const c of d.cards) if (c.owed != null) { c.owed = null; c.on = null; delete c.statement; n++; }
-      for (const x of d.pays) if (x.amount != null) { x.amount = null; n++; }
-      for (const x of d.bills) if (x.amount != null) { x.amount = null; n++; }
-      for (const k of ['free', 'min']) if (d[k] != null) { delete d[k]; n++; }
+      const n = dropAmounts(d);
       if (n) return { ok: true, draft: d, text: 'Saved: ' + TITLES[section] + '. The amounts from before were typed before the currency was known, so each is asked again' };
     }
     return { ok: true, draft: d, text: 'Saved: ' + TITLES[section] };
+  }
+  /* the amounts typed before the currency they are read in changed: dropped, asked again (never converted); keep: the
+     sections whose amounts came in the new currency */
+  function dropAmounts(d, keep) {
+    let n = 0;
+    if (!(keep && keep.banks)) for (const b of d.banks) if (b.amount != null) { b.amount = null; b.on = null; delete b.payToday; n++; }
+    for (const c of d.cards) if (c.owed != null) { c.owed = null; c.on = null; delete c.statement; n++; }
+    for (const x of d.pays) if (x.amount != null) { x.amount = null; n++; }
+    for (const x of d.bills) if (x.amount != null) { x.amount = null; n++; }
+    for (const k of ['free', 'min']) if (d[k] != null) { delete d[k]; n++; }
+    return n;
+  }
+  /* ---- [qc-assistant run 4, fix B] the setup screens' sections and the chat's draft: one set of answers before the book
+     exists. A section's Save on the screens writes that section's answers (ANSWERS3.fromForm, amounts in minor units,
+     never read as typed) into the draft; its Undo puts the draft back; the newest answer wins both ways. state.screens
+     holds, per section, what the screens' last Save wrote (the stamp) ---- */
+  const SCREEN_SECS = { bank: ['country', 'currency', 'banks'], pay: ['pays'], free: ['free'], cards: ['cards'], bills: ['bills'], min: ['min'] };
+  const secJson = (d, sec) => JSON.stringify(SCREEN_SECS[sec].map(k => (d && d[k] !== undefined ? d[k] : null)));   // null and missing are one answer
+  function fromScreens(state0, sec, ans) {
+    const state = clone(state0) || {}, keys = SCREEN_SECS[sec];
+    if (state.fill || !keys || !ans) return { state, before: null, wrote: null };
+    const before = state.draft ? clone(state.draft) : null, d = state.draft || emptyDraft(), curWas = curOf(d);
+    if (sec === 'bank') {
+      /* [qc-foundation 1] an account renamed in place (the same row) is renamed where the pays, cards and bills name it */
+      const ren = {};
+      (ans.banks || []).forEach((b, i) => { const o = d.banks[i]; if (o && ANS.keyOf('banks', o.name) !== ANS.keyOf('banks', b.name)) ren[ANS.keyOf('banks', o.name)] = b.name; });
+      const to = n => (n != null && ren[ANS.keyOf('banks', n)]) || n;
+      d.pays.forEach(p => { if (p.bank) p.bank = to(p.bank); });
+      d.cards.forEach(c => { if (c.payFrom) c.payFrom = to(c.payFrom); });
+      d.bills.forEach(b => { if (b.from) b.from = to(b.from); });
+    }
+    for (const k of keys) { if (ans[k] === undefined) delete d[k]; else d[k] = clone(ans[k]); }
+    if (curOf(d) !== curWas) dropAmounts(d, { banks: true });
+    state.draft = d;
+    state.screens = Object.assign({}, state.screens, { [sec]: secJson(d, sec) });
+    return { state, before, wrote: JSON.stringify(d) };
+  }
+  function undoScreens(state0, sec, before, wrote) {
+    const state = clone(state0), keys = SCREEN_SECS[sec];
+    if (state.fill || !keys || wrote == null) return { state, ok: false, text: state.fill ? 'Setup is done. Change it on the screens or ask me' : 'Nothing to undo' };
+    if (JSON.stringify(state.draft) === wrote) state.draft = clone(before);
+    else if (state.draft && state.screens && secJson(state.draft, sec) === state.screens[sec]) {
+      const was = before || emptyDraft();
+      for (const k of keys) { if (was[k] === undefined) delete state.draft[k]; else state.draft[k] = clone(was[k]); }
+    } else return { state, ok: true };   // the chat changed that section since: its newer answer stays
+    state.screens = Object.assign({}, state.screens, { [sec]: secJson(state.draft, sec) });
+    return { state, ok: true };
+  }
+  function chatNewer(state, sec) {
+    const d = state && state.draft, keys = SCREEN_SECS[sec];
+    if (!d || !keys) return false;
+    const holds = sec === 'bank' ? (d.banks || []).length > 0 : Array.isArray(d[keys[0]]) ? d[keys[0]].length > 0 : d[keys[0]] != null;
+    return holds && (!state.screens || state.screens[sec] !== secJson(d, sec));
   }
   /* the draft in plain lines (what is sent, and the draft card) */
   function draftLines(d) {
@@ -987,6 +1035,7 @@ ${card.need.length && state.draft ? 'STILL NEEDED: ' + card.need.join(' ') : ''}
     ROUNDS, TURNS, KEEP, MAX_TOKENS, MAX_STEPS, TIER: 'default', EFFORT: 'low', GUIDE, TOOLS, SYSTEM, SCREENS,
     fresh: () => ({ v: 1, turns: [], draft: null, fill: null, seq: 0 }),
     turn, confirm, notNow, undo, startOver, draftEdit,
+    SCREEN_SECS, fromScreens, undoScreens, chatNewer,
     /* [AI_JOIN_FIXES H2] what the first screen says before anything is typed: the welcome, and the first question */
     welcome: () => [GUIDE[0].ask, GUIDE[1].ask, GUIDE[2].ask],
     fillNow: (s, deps) => fillNow(s, deps),

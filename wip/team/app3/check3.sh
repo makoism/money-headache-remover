@@ -88,6 +88,7 @@ page|tests/e3_band.js|e3_band: ALL PASS||300|the message band and its Undo are o
 page|tests/e3_paytoday.js|e3_paytoday: ALL PASS||300|setup on a day the pay lands asks whether it is already in the bank figure (BV2.13; setup3 through answers3)
 page|tests/e3_fakeai_page.js|e3_fakeai_page: ALL PASS||300|reviewers' way to the assistant: openWithFakeAI on a plain copy (fake_ai_page.js)
 page|tests/e3_chatwalk.js|e3_chatwalk: ALL PASS||600|the setup chat walked through the real page with the fake model: Mako's shape to safe to spend 201,400 and Main bank 286,000 on 24 Nov, Undo the fill, a reload, one spend by chat and its Undo (AI first, slice 1 gate)
+page|tests/e3_twodrafts.js|e3_twodrafts: ALL PASS||400|one set of setup answers before the book: a section saved on the setup screens goes into the chat's draft, its Undo too, the newest answer wins both ways, yen and dollars (qc-assistant run 4)
 page|tests/e3_chat.js|e3_chat: ALL PASS||300|the assistant panel: the welcome as the first screen, the ways when the AI is off, the relay, cards with Undo and asking first, the bar and the column
 page|tests/e3_fillundo.js|e3_fillundo: ALL PASS||300|the setup chat's fill and its Undo: two tabs, the cloud copy held back while it can be undone (BV2.9)
 page|tests/e3_ailog.js|e3_ailog: ALL PASS||300|the assistant's error log (AI_JOIN_FIXES J): failed exchanges on this device only, no words or figures, Copy and Clear with Undo in Settings, kept after a reload, never in the book
@@ -158,8 +159,8 @@ page_tests_for() {   # page_tests_for <changed path, relative to app3/>
     src/checkin3.js)          echo e3_checkin e3_checkgap e3_cardfig e3_reload e3_bankparts e3_payday e3_overdrawn e3_cardpay ;;
     src/receipts3.js)         echo e3_removes e3_receipts e3_listfix e3_moneyin e3_bigspend e3_stmt_once e3_period e3_names e3_doors e3_moved1 e3_cardgap ;;
     src/plan3.js|src/plan3_write.js) echo e3_removes e3_aijoin e3_plan e3_rhythms e3_lineshare e3_homeplan e3_paychange e3_names ;;
-    src/setup3.js|src/answers3.js) echo e3_fillcard e3_setup e3_setupfix e3_setup6 e3_income2 e3_weeks3 e3_first e3_onepay e3_overdrawn e3_paytoday e3_chatwalk e3_chat ;;
-    src/chat3*.js)            echo e3_ailog e3_aiwords e3_fillcard e3_cloudfirst e3_aijoin e3_chat e3_chatwalk e3_fakeai_page e3_fillundo e3_invite e3_back e3_cloudhold ;;
+    src/setup3.js|src/answers3.js) echo e3_twodrafts e3_fillcard e3_setup e3_setupfix e3_setup6 e3_income2 e3_weeks3 e3_first e3_onepay e3_overdrawn e3_paytoday e3_chatwalk e3_chat ;;
+    src/chat3*.js)            echo e3_twodrafts e3_ailog e3_aiwords e3_fillcard e3_cloudfirst e3_aijoin e3_chat e3_chatwalk e3_fakeai_page e3_fillundo e3_invite e3_back e3_cloudhold ;;
     src/start3.js)            echo e3_first e3_file e3_try e3_chat e3_cloudtake ;;
     src/back3.js)             echo e3_back e3_undobar e3_checkin e3_plan e3_receipts e3_setupfix e3_stmt e3_remind e3_backup e3_tabs e3_stalesheet e3_cloudhold ;;
     src/stmt3*.js)            echo e3_stmt e3_stmt_once e3_walk4 e3_invite e3_chat ;;

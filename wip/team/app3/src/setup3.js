@@ -437,13 +437,16 @@ function markAll3() {
      still need Save, and why */
   const todo = $('#a3SetupTodo');
   if (todo) {
-    const open = setup3.fromChat ? SEC3.filter(([sec]) => state3(sec) === 'changed' || state3(sec) === 'stale').map(([, name]) => name) : [];
+    /* only the sections the chat filled are said to be from the chat; one typed by hand is just not saved yet */
+    const open = setup3.fromChat ? SEC3.filter(([sec]) => state3(sec) === 'changed' || state3(sec) === 'stale') : [], chat = setup3.fromChatSecs;
+    const from = open.filter(([sec]) => !chat || chat.has(sec)).map(([, name]) => name), hand = open.filter(([sec]) => chat && !chat.has(sec)).map(([, name]) => name);
     todo.hidden = !open.length;
-    todo.textContent = open.length ? `Filled in from the chat, not saved yet: ${open.join(', ')}. Press Save under each` : '';
+    todo.textContent = open.length ? [from.length ? `Filled in from the chat, not saved yet: ${from.join(', ')}` : '', hand.length ? `Not saved yet: ${hand.join(', ')}` : ''].filter(Boolean).join('. ') + '. Press Save under each' : '';
   }
 }
 /* "Set up on the screens" filled the boxes from the chat's answers (chat3.js) */
-function setupFromChat3() { if (setup3) { setup3.fromChat = true; markAll3(); } }
+/* secs: the sections the chat filled (all, when not given) */
+function setupFromChat3(secs) { if (setup3) { setup3.fromChat = true; if (secs) setup3.fromChatSecs = new Set([...(setup3.fromChatSecs || []), ...secs]); markAll3(); } }
 /* puts a section back as a snapshot holds it: its rows, then every box (the account choices need the rows first) */
 function put3(sec, snap) {
   const kind = SEC_ROWS3[sec];
@@ -502,11 +505,14 @@ async function saveSec3(sec) {
   if (!setup3) return;
   if (ok !== true) { el.querySelector(`[data-saved="${sec}"]`).textContent = 'This could not be saved on this device. Nothing changed'; return; }
   setup3.saved = sections; setup3.days = days;
+  if (setup3.fromChatSecs) setup3.fromChatSecs.delete(sec);
+  /* [qc-assistant run 4, fix B] the section goes into the chat's draft too: one set of answers (chat3.js) */
+  const cw = typeof chat3FromScreens === 'function' ? chat3FromScreens(sec) : null;
   markAll3();
-  MSG3.post({ kind: 'undo', key: 'act3', text: `${secName3(sec)}: saved`, action: { label: 'Undo', run: () => undoSec3(sec, before, beforeDay, now) } });
+  MSG3.post({ kind: 'undo', key: 'act3', text: `${secName3(sec)}: saved`, action: { label: 'Undo', run: () => undoSec3(sec, before, beforeDay, now, cw) } });
 }
 /* Undo a section's Save: the section as it was before it (or as it started); refused when it was saved again since */
-async function undoSec3(sec, before, beforeDay, now) {
+async function undoSec3(sec, before, beforeDay, now, cw) {
   const open = !!setup3, kept = open ? null : ((await E3.rec('setup')) || {});
   const saved = open ? setup3.saved : (kept.sections || {}), savedDays = open ? setup3.days : (kept.days || {});
   if (!same3(saved[sec] || null, now)) { MSG3.post({ kind: 'toast', key: 'act3', text: 'Something changed it since. Undo that change first' }); return; }
@@ -521,6 +527,9 @@ async function undoSec3(sec, before, beforeDay, now) {
   if (me) me.busy = false;
   if (ok !== true) { MSG3.post({ kind: 'toast', key: 'act3', text: 'This could not be saved on this device. Nothing changed' }); return; }
   if (me && setup3 === me) { setup3.saved = sections; setup3.days = days; put3(sec, before || setup3.base[sec]); }
+  /* [fix B] the chat's draft goes back too; a section back as it started shows the chat's answer again, not saved */
+  if (typeof chat3UndoScreens === 'function') await chat3UndoScreens(sec, cw);
+  if (!before && me && setup3 === me && typeof chat3RefillSec === 'function') chat3RefillSec(sec);
   MSG3.post({ kind: 'toast', key: 'act3', text: 'Undone' });
 }
 /* opening setup again: every saved section comes back, in order (the accounts first: the others choose from them) */

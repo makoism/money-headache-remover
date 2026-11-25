@@ -11243,13 +11243,16 @@ function markAll3() {
      still need Save, and why */
   const todo = $('#a3SetupTodo');
   if (todo) {
-    const open = setup3.fromChat ? SEC3.filter(([sec]) => state3(sec) === 'changed' || state3(sec) === 'stale').map(([, name]) => name) : [];
+    /* only the sections the chat filled are said to be from the chat; one typed by hand is just not saved yet */
+    const open = setup3.fromChat ? SEC3.filter(([sec]) => state3(sec) === 'changed' || state3(sec) === 'stale') : [], chat = setup3.fromChatSecs;
+    const from = open.filter(([sec]) => !chat || chat.has(sec)).map(([, name]) => name), hand = open.filter(([sec]) => chat && !chat.has(sec)).map(([, name]) => name);
     todo.hidden = !open.length;
-    todo.textContent = open.length ? `Filled in from the chat, not saved yet: ${open.join(', ')}. Press Save under each` : '';
+    todo.textContent = open.length ? [from.length ? `Filled in from the chat, not saved yet: ${from.join(', ')}` : '', hand.length ? `Not saved yet: ${hand.join(', ')}` : ''].filter(Boolean).join('. ') + '. Press Save under each' : '';
   }
 }
 /* "Set up on the screens" filled the boxes from the chat's answers (chat3.js) */
-function setupFromChat3() { if (setup3) { setup3.fromChat = true; markAll3(); } }
+/* secs: the sections the chat filled (all, when not given) */
+function setupFromChat3(secs) { if (setup3) { setup3.fromChat = true; if (secs) setup3.fromChatSecs = new Set([...(setup3.fromChatSecs || []), ...secs]); markAll3(); } }
 /* puts a section back as a snapshot holds it: its rows, then every box (the account choices need the rows first) */
 function put3(sec, snap) {
   const kind = SEC_ROWS3[sec];
@@ -11308,11 +11311,14 @@ async function saveSec3(sec) {
   if (!setup3) return;
   if (ok !== true) { el.querySelector(`[data-saved="${sec}"]`).textContent = 'This could not be saved on this device. Nothing changed'; return; }
   setup3.saved = sections; setup3.days = days;
+  if (setup3.fromChatSecs) setup3.fromChatSecs.delete(sec);
+  /* [qc-assistant run 4, fix B] the section goes into the chat's draft too: one set of answers (chat3.js) */
+  const cw = typeof chat3FromScreens === 'function' ? chat3FromScreens(sec) : null;
   markAll3();
-  MSG3.post({ kind: 'undo', key: 'act3', text: `${secName3(sec)}: saved`, action: { label: 'Undo', run: () => undoSec3(sec, before, beforeDay, now) } });
+  MSG3.post({ kind: 'undo', key: 'act3', text: `${secName3(sec)}: saved`, action: { label: 'Undo', run: () => undoSec3(sec, before, beforeDay, now, cw) } });
 }
 /* Undo a section's Save: the section as it was before it (or as it started); refused when it was saved again since */
-async function undoSec3(sec, before, beforeDay, now) {
+async function undoSec3(sec, before, beforeDay, now, cw) {
   const open = !!setup3, kept = open ? null : ((await E3.rec('setup')) || {});
   const saved = open ? setup3.saved : (kept.sections || {}), savedDays = open ? setup3.days : (kept.days || {});
   if (!same3(saved[sec] || null, now)) { MSG3.post({ kind: 'toast', key: 'act3', text: 'Something changed it since. Undo that change first' }); return; }
@@ -11327,6 +11333,9 @@ async function undoSec3(sec, before, beforeDay, now) {
   if (me) me.busy = false;
   if (ok !== true) { MSG3.post({ kind: 'toast', key: 'act3', text: 'This could not be saved on this device. Nothing changed' }); return; }
   if (me && setup3 === me) { setup3.saved = sections; setup3.days = days; put3(sec, before || setup3.base[sec]); }
+  /* [fix B] the chat's draft goes back too; a section back as it started shows the chat's answer again, not saved */
+  if (typeof chat3UndoScreens === 'function') await chat3UndoScreens(sec, cw);
+  if (!before && me && setup3 === me && typeof chat3RefillSec === 'function') chat3RefillSec(sec);
   MSG3.post({ kind: 'toast', key: 'act3', text: 'Undone' });
 }
 /* opening setup again: every saved section comes back, in order (the accounts first: the others choose from them) */
@@ -13665,15 +13674,63 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       d[section] = a;
     } else return no('No such section: ' + String(section).slice(0, 20));
     if (curOf(d) !== cur) {   // the currency the amounts are read in changed (by the currency answer, or by the country before it)
-      let n = 0;
-      for (const b of d.banks) if (b.amount != null) { b.amount = null; b.on = null; delete b.payToday; n++; }
-      for (const c of d.cards) if (c.owed != null) { c.owed = null; c.on = null; delete c.statement; n++; }
-      for (const x of d.pays) if (x.amount != null) { x.amount = null; n++; }
-      for (const x of d.bills) if (x.amount != null) { x.amount = null; n++; }
-      for (const k of ['free', 'min']) if (d[k] != null) { delete d[k]; n++; }
+      const n = dropAmounts(d);
       if (n) return { ok: true, draft: d, text: 'Saved: ' + TITLES[section] + '. The amounts from before were typed before the currency was known, so each is asked again' };
     }
     return { ok: true, draft: d, text: 'Saved: ' + TITLES[section] };
+  }
+  /* the amounts typed before the currency they are read in changed: dropped, asked again (never converted); keep: the
+     sections whose amounts came in the new currency */
+  function dropAmounts(d, keep) {
+    let n = 0;
+    if (!(keep && keep.banks)) for (const b of d.banks) if (b.amount != null) { b.amount = null; b.on = null; delete b.payToday; n++; }
+    for (const c of d.cards) if (c.owed != null) { c.owed = null; c.on = null; delete c.statement; n++; }
+    for (const x of d.pays) if (x.amount != null) { x.amount = null; n++; }
+    for (const x of d.bills) if (x.amount != null) { x.amount = null; n++; }
+    for (const k of ['free', 'min']) if (d[k] != null) { delete d[k]; n++; }
+    return n;
+  }
+  /* ---- [qc-assistant run 4, fix B] the setup screens' sections and the chat's draft: one set of answers before the book
+     exists. A section's Save on the screens writes that section's answers (ANSWERS3.fromForm, amounts in minor units,
+     never read as typed) into the draft; its Undo puts the draft back; the newest answer wins both ways. state.screens
+     holds, per section, what the screens' last Save wrote (the stamp) ---- */
+  const SCREEN_SECS = { bank: ['country', 'currency', 'banks'], pay: ['pays'], free: ['free'], cards: ['cards'], bills: ['bills'], min: ['min'] };
+  const secJson = (d, sec) => JSON.stringify(SCREEN_SECS[sec].map(k => (d && d[k] !== undefined ? d[k] : null)));   // null and missing are one answer
+  function fromScreens(state0, sec, ans) {
+    const state = clone(state0) || {}, keys = SCREEN_SECS[sec];
+    if (state.fill || !keys || !ans) return { state, before: null, wrote: null };
+    const before = state.draft ? clone(state.draft) : null, d = state.draft || emptyDraft(), curWas = curOf(d);
+    if (sec === 'bank') {
+      /* [qc-foundation 1] an account renamed in place (the same row) is renamed where the pays, cards and bills name it */
+      const ren = {};
+      (ans.banks || []).forEach((b, i) => { const o = d.banks[i]; if (o && ANS.keyOf('banks', o.name) !== ANS.keyOf('banks', b.name)) ren[ANS.keyOf('banks', o.name)] = b.name; });
+      const to = n => (n != null && ren[ANS.keyOf('banks', n)]) || n;
+      d.pays.forEach(p => { if (p.bank) p.bank = to(p.bank); });
+      d.cards.forEach(c => { if (c.payFrom) c.payFrom = to(c.payFrom); });
+      d.bills.forEach(b => { if (b.from) b.from = to(b.from); });
+    }
+    for (const k of keys) { if (ans[k] === undefined) delete d[k]; else d[k] = clone(ans[k]); }
+    if (curOf(d) !== curWas) dropAmounts(d, { banks: true });
+    state.draft = d;
+    state.screens = Object.assign({}, state.screens, { [sec]: secJson(d, sec) });
+    return { state, before, wrote: JSON.stringify(d) };
+  }
+  function undoScreens(state0, sec, before, wrote) {
+    const state = clone(state0), keys = SCREEN_SECS[sec];
+    if (state.fill || !keys || wrote == null) return { state, ok: false, text: state.fill ? 'Setup is done. Change it on the screens or ask me' : 'Nothing to undo' };
+    if (JSON.stringify(state.draft) === wrote) state.draft = clone(before);
+    else if (state.draft && state.screens && secJson(state.draft, sec) === state.screens[sec]) {
+      const was = before || emptyDraft();
+      for (const k of keys) { if (was[k] === undefined) delete state.draft[k]; else state.draft[k] = clone(was[k]); }
+    } else return { state, ok: true };   // the chat changed that section since: its newer answer stays
+    state.screens = Object.assign({}, state.screens, { [sec]: secJson(state.draft, sec) });
+    return { state, ok: true };
+  }
+  function chatNewer(state, sec) {
+    const d = state && state.draft, keys = SCREEN_SECS[sec];
+    if (!d || !keys) return false;
+    const holds = sec === 'bank' ? (d.banks || []).length > 0 : Array.isArray(d[keys[0]]) ? d[keys[0]].length > 0 : d[keys[0]] != null;
+    return holds && (!state.screens || state.screens[sec] !== secJson(d, sec));
   }
   /* the draft in plain lines (what is sent, and the draft card) */
   function draftLines(d) {
@@ -14276,6 +14333,7 @@ ${card.need.length && state.draft ? 'STILL NEEDED: ' + card.need.join(' ') : ''}
     ROUNDS, TURNS, KEEP, MAX_TOKENS, MAX_STEPS, TIER: 'default', EFFORT: 'low', GUIDE, TOOLS, SYSTEM, SCREENS,
     fresh: () => ({ v: 1, turns: [], draft: null, fill: null, seq: 0 }),
     turn, confirm, notNow, undo, startOver, draftEdit,
+    SCREEN_SECS, fromScreens, undoScreens, chatNewer,
     /* [AI_JOIN_FIXES H2] what the first screen says before anything is typed: the welcome, and the first question */
     welcome: () => [GUIDE[0].ask, GUIDE[1].ask, GUIDE[2].ask],
     fillNow: (s, deps) => fillNow(s, deps),
@@ -14603,36 +14661,85 @@ async function chat3Undo(turnId) {
   if (r && r.ok !== false) MSG3.post({ kind: 'toast', key: 'chat3', text: 'Undone' });
 }
 /* "Set up on the screens": setup3, filled from the draft (ANSWERS3.toForm, the one shared answers function); the boxes
-   are setup3's own, filled as a person would, so its Save is the same */
+   are setup3's own, filled as a person would, so its Save is the same.
+   [qc-assistant run 4, fix B] one set of answers before the book exists, the newest winning section by section: setup3
+   first puts back what was saved or typed on the screens (its own draft). A section typed there and not saved stays as
+   typed. A section saved there stays unless the chat changed it since (CHAT3C.chatNewer). Every other section the chat
+   holds is filled from the chat, and when the bank is, so are the sections that point at its accounts. */
 async function chat3Screens() {
-  /* setup3 first puts back what was saved or typed on the screens before (lane/setupfix, its own draft). When it
-     holds something, that stays as it is: the chat's answers are never typed over it, or added to it a second time */
   await openSetup3();
-  if (!$('#a3SetupBack') || !$('#a3SetupBack').hidden) return;
-  const d = CHAT3.state && CHAT3.state.draft;
-  if (!d || !(d.banks || []).length || typeof ANSWERS3 !== 'object') return;
-  try { chat3FormFill(ANSWERS3.toForm(d, { day: E3.today() })); setupFromChat3(); } catch (e) { /* the form stays as it was: every box can still be typed */ }
+  const st = CHAT3.state, d = st && st.draft;
+  if (!setup3 || !d || !(d.banks || []).length || typeof ANSWERS3 !== 'object') return;
+  const holds = sec => CHAT3C.chatNewer(Object.assign({}, st, { screens: {} }), sec);
+  const typed = sec => state3(sec) === 'changed';
+  const take = new Set(SEC3.map(([sec]) => sec).filter(sec => !typed(sec) && holds(sec) && (!setup3.saved[sec] || CHAT3C.chatNewer(st, sec))));
+  if (take.has('bank')) for (const sec of ['pay', 'cards', 'bills']) if (!typed(sec) && holds(sec)) take.add(sec);
+  if (!take.size) return;
+  try {
+    const f = ANSWERS3.toForm(d, { day: E3.today() });
+    for (const sec of take) if (setup3.saved[sec]) put3(sec, setup3.base[sec]);   // its rows go, the chat's come
+    chat3FormFill(f, take);
+    setupFromChat3(take);
+  } catch (e) { /* the form stays as it was: every box can still be typed */ }
 }
-function chat3FormFill(f) {
+/* a section's Save on the screens, into the chat's draft: { before, wrote } for its Undo, or null (a book, the made-up
+   numbers, nothing to write). Amounts go as the screens read them, in minor units */
+function chat3FromScreens(sec) {
+  if (E3.book || E3.mode === 'try' || !CHAT3.state || typeof ANSWERS3 !== 'object') return null;
+  let ans;
+  try {
+    const f = form3(false);
+    /* another section's blank day of one pay must not stop this one: only this section's answers are taken */
+    if (sec !== 'pay') { f.pay.start = f.pay.start || E3.today(); (f.pays || []).forEach(x => { x.start = x.start || E3.today(); }); }
+    ans = ANSWERS3.fromForm(f, { day: E3.today() });
+  } catch (e) { return null; }
+  const r = CHAT3C.fromScreens(CHAT3.state, sec, ans);
+  if (r.wrote == null) return null;
+  CHAT3.state = r.state;
+  chat3Save();
+  return { before: r.before, wrote: r.wrote };
+}
+/* that Save's Undo, in the chat's draft too (the chat's newer answer for that section stays) */
+async function chat3UndoScreens(sec, cw) {
+  if (!cw || !CHAT3.state) return;
+  const r = CHAT3C.undoScreens(CHAT3.state, sec, cw.before, cw.wrote);
+  if (r.ok === false) return;
+  CHAT3.state = r.state;
+  await chat3Save();
+  if (!setup3) chat3Redraw();
+}
+/* after an Undo leaves a section as it started, the chat's answer for it is shown again (not saved) */
+function chat3RefillSec(sec) {
+  const st = CHAT3.state, d = st && st.draft;
+  if (!setup3 || !d || !(d.banks || []).length || !CHAT3C.chatNewer(Object.assign({}, st, { screens: {} }), sec)) return;
+  try { chat3FormFill(ANSWERS3.toForm(d, { day: E3.today() }), new Set([sec])); setupFromChat3(new Set([sec])); } catch (e) { /* as it started */ }
+}
+function chat3FormFill(f, only) {
+  const on = sec => !only || only.has(sec);
   const cur = f.cur || 'JPY';
   const amt = (el, v) => { if (el && v != null) el.value = SM.toInput(v, cur); };
   const val = (el, v) => { if (el && v != null) { el.value = String(v); el.dispatchEvent(new Event('change', { bubbles: true })); } };
   const txt = (el, v) => { if (el && v != null) el.value = v; };
   const last = sel => $$(sel).pop();
+  if (on('bank')) {
   val($('#s3Cur'), cur); val($('#s3Country'), f.country);
   txt($('#s3BankName'), f.bankName); amt($('#s3Bank'), f.bank);
   for (const a of f.accts || []) { $('#s3AddAcct').click(); const row = last('#a3Setup [data-row^=acct]'); txt(row.querySelector('[data-f=name]'), a.name); amt(row.querySelector('[data-f=amount]'), a.amount); val(row.querySelector('[data-f=type]'), a.type); }
+  }
   const p = f.pay || {};
+  if (on('pay')) {
   txt($('#s3PayName'), p.name); amt($('#s3PayAmt'), p.amount); val($('#s3PayEvery'), p.every); val($('#s3PayDay'), p.day); val($('#s3PayDay2'), p.day2);
   txt($('#s3PayStart'), p.start); val($('#s3PayShift'), p.shift); val($('#s3PayAcct'), p.acct);
   for (const x of f.pays || []) { $('#s3AddPay').click(); const row = last('#a3Setup [data-row^=pay]'); txt(row.querySelector('[data-f=name]'), x.name); amt(row.querySelector('[data-f=amount]'), x.amount); val(row.querySelector('[data-f=every]'), x.every); val(row.querySelector('[data-f=day]'), x.day); val(row.querySelector('[data-f=day2]'), x.day2); txt(row.querySelector('[data-f=start]'), x.start); val(row.querySelector('[data-f=acct]'), x.acct); }
-  for (const c of f.cards || []) { $('#s3AddCard').click(); const row = last('#a3Setup [data-row^=card]'); txt(row.querySelector('[data-f=name]'), c.name); amt(row.querySelector('[data-f=owed]'), c.owed); val(row.querySelector('[data-f=payDay]'), c.payDay); val(row.querySelector('[data-f=closeDay]'), c.closeDay); val(row.querySelector('[data-f=payFrom]'), c.payFrom); val(row.querySelector('[data-f=shift]'), c.shift); amt(row.querySelector('[data-f=statement]'), c.statement); }
-  for (const b of f.bills || []) { $('#s3AddBill').click(); const row = last('#a3Setup [data-row^=bill]'); txt(row.querySelector('[data-f=name]'), b.name); amt(row.querySelector('[data-f=amount]'), b.amount); val(row.querySelector('[data-f=every]'), b.every); val(row.querySelector('[data-f=month]'), b.month); val(row.querySelector('[data-f=day]'), b.day); val(row.querySelector('[data-f=from]'), b.from); }
-  amt($('#s3Free'), f.free); amt($('#s3Min'), f.min);
+  }
+  if (on('cards')) for (const c of f.cards || []) { $('#s3AddCard').click(); const row = last('#a3Setup [data-row^=card]'); txt(row.querySelector('[data-f=name]'), c.name); amt(row.querySelector('[data-f=owed]'), c.owed); val(row.querySelector('[data-f=payDay]'), c.payDay); val(row.querySelector('[data-f=closeDay]'), c.closeDay); val(row.querySelector('[data-f=payFrom]'), c.payFrom); val(row.querySelector('[data-f=shift]'), c.shift); amt(row.querySelector('[data-f=statement]'), c.statement); }
+  if (on('bills')) for (const b of f.bills || []) { $('#s3AddBill').click(); const row = last('#a3Setup [data-row^=bill]'); txt(row.querySelector('[data-f=name]'), b.name); amt(row.querySelector('[data-f=amount]'), b.amount); val(row.querySelector('[data-f=every]'), b.every); val(row.querySelector('[data-f=month]'), b.month); val(row.querySelector('[data-f=day]'), b.day); val(row.querySelector('[data-f=from]'), b.from); }
+  if (on('free')) amt($('#s3Free'), f.free);
+  if (on('min')) amt($('#s3Min'), f.min);
   /* the questions the day asks (bills already out, a statement), from the boxes just filled, then their answers */
   $('#a3Setup').dispatchEvent(new Event('change', { bubbles: true }));
-  (f.bills || []).forEach((b, i) => val($$('#a3Setup [data-row^=bill]')[i].querySelector('[data-f=takenOut]'), b.takenOut));
-  if (f.payToday && $('#s3PayToday')) val($('#s3PayToday'), f.payToday);   // setup3's own question (lane/setupfix), when it has it
+  if (on('bills')) (f.bills || []).forEach((b, i) => val($$('#a3Setup [data-row^=bill]')[i].querySelector('[data-f=takenOut]'), b.takenOut));
+  if (on('bank') && f.payToday && $('#s3PayToday')) val($('#s3PayToday'), f.payToday);   // setup3's own question (lane/setupfix), when it has it
 }
 /* "Use any AI": the core's questions and answer shape as one request to copy (CHAT3C.copyPrompt); the answer pasted
    back goes through the same draft checks (CHAT3C.pasteBack), then the same draft card and Fill */

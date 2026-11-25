@@ -717,6 +717,93 @@ const steps = list => [].concat(...list.map(([, r]) => r));
       ok(line && line.includes('| ' + SMn.format(view.amount, x.cur || 'JPY') + ' |'), kind + ': the line sent is ' + line + ', the engine says ' + view.amount);
     }
   });
+  /* [qc-assistant run 4, fix B ruled 26 Nov] one set of setup answers before the book exists: a section's Save on the
+     setup screens writes that section into the chat's draft (K.fromScreens), its Undo puts the draft back
+     (K.undoScreens), the newest answer wins both ways (K.chatNewer). Amounts are minor units, never read as typed.
+     Made-up: Sora Bank 250,000 told in the chat on Tue 24 Nov 2026, 260,000 saved on the screens, 270,000 told later */
+  {
+    const AN = require('../src/answers3.js'), DAY2 = '2026-11-24';
+    const deps = { today: () => DAY2, told: () => DAY2 + 'T10:00:00.000+09:00', book: () => null };
+    const told = (st, sec, v) => { const r = K.draftEdit(st, sec, v, deps); if (!r.ok) throw new Error(r.text); return r.state; };
+    const form = (cur, over) => Object.assign({ bankName: 'Sora Bank', bank: 260000, cur, country: cur === 'JPY' ? 'JP' : 'XX', accts: [], payToday: null,
+      pay: { name: 'Pay', amount: null, every: 'month', day: 25, day2: null, start: null, shift: 'before', acct: 'bank1' }, pays: [], cards: [], bills: [], free: null, min: null }, over);
+    const chat = cur => { let st = K.fresh(); st = told(st, 'country', cur === 'JPY' ? 'JP' : 'XX'); st = told(st, 'currency', cur); st = told(st, 'banks', [{ name: 'Sora Bank', amount: cur === 'JPY' ? '250000' : '2500' }]);
+      return told(st, 'pays', [{ name: 'Pay', amount: cur === 'JPY' ? '240000' : '3000', every: 'month', day: 10, afterTax: true }]); };
+    await t('[fix B] a bank Save on the screens (250,000 to 260,000) writes the chat\'s draft; the chat\'s other answers stay', async () => {
+      ok(typeof K.fromScreens === 'function', 'K.fromScreens is there');
+      const r = K.fromScreens(chat('JPY'), 'bank', AN.fromForm(form('JPY'), { day: DAY2 }));
+      eq(r.state.draft.banks.map(b => [b.name, b.amount, b.on]), [['Sora Bank', 260000, DAY2]], 'banks');
+      eq(r.state.draft.pays.map(p => [p.name, p.amount, p.day]), [['Pay', 240000, 10]], 'the chat\'s pay is not touched');
+      ok(K.draftCard(r.state.draft, DAY2).sections.find(x => x.key === 'banks').lines[0].includes('260,000'), '"Your answers so far" reads 260,000');
+      eq(K.chatNewer(r.state, 'bank'), false, 'right after the Save the chat holds nothing newer');
+    });
+    await t('[fix B] Undo of that Save puts the chat\'s draft back to 250,000', async () => {
+      const st0 = chat('JPY'), r = K.fromScreens(st0, 'bank', AN.fromForm(form('JPY'), { day: DAY2 }));
+      const u = K.undoScreens(r.state, 'bank', r.before, r.wrote);
+      eq(u.state.draft, st0.draft, 'the draft as before the Save');
+    });
+    await t('[fix B] an answer changed in the chat AFTER the screens\' Save wins (270,000), at the fill and against an Undo', async () => {
+      const r = K.fromScreens(chat('JPY'), 'bank', AN.fromForm(form('JPY'), { day: DAY2 }));
+      const st = told(r.state, 'banks', [{ name: 'Sora Bank', amount: '270000' }]);
+      eq(K.chatNewer(st, 'bank'), true, 'the chat holds a newer bank');
+      eq(K.chatNewer(st, 'pay'), true, 'a section the screens never saved and the chat holds counts as newer');
+      eq(K.chatNewer(st, 'cards'), false, 'a section the chat does not hold is not newer');
+      eq(st.draft.banks[0].amount, 270000, 'the draft (what the fill writes) holds 270,000');
+      eq(K.undoScreens(st, 'bank', r.before, r.wrote).state.draft.banks[0].amount, 270000, 'Undo of the older screens Save leaves the newer chat answer');
+      /* the chat changed another section since: Undo still takes back the bank Save only */
+      const st2 = told(r.state, 'min', null), u2 = K.undoScreens(st2, 'bank', r.before, r.wrote).state.draft;
+      eq([u2.banks[0].amount, u2.min], [250000, null], 'Undo with another section changed since');
+    });
+    await t('[fix B] the same in a cents currency: 2,500.00 in the chat, 2,600.50 saved on the screens, Undo', async () => {
+      const st0 = chat('USD'), r = K.fromScreens(st0, 'bank', AN.fromForm(form('USD', { bank: 260050 }), { day: DAY2 }));
+      eq([r.state.draft.currency, r.state.draft.banks[0].amount, r.state.draft.pays[0].amount], ['USD', 260050, 300000], 'cents kept as minor units');
+      ok(K.draftCard(r.state.draft, DAY2).sections.find(x => x.key === 'banks').lines[0].includes('2,600.50'), 'the card reads 2,600.50');
+      eq(K.undoScreens(r.state, 'bank', r.before, r.wrote).state.draft.banks[0].amount, 250000, 'Undo');
+    });
+    await t('[fix B] a currency changed on the screens drops the chat\'s other amounts, as draft_set does; Undo brings them back', async () => {
+      const st0 = chat('JPY'), r = K.fromScreens(st0, 'bank', AN.fromForm(form('EUR', { bank: 260000 }), { day: DAY2 }));
+      eq([r.state.draft.currency, r.state.draft.banks[0].amount, r.state.draft.pays[0].amount], ['EUR', 260000, null], 'the pay is asked again');
+      eq(K.undoScreens(r.state, 'bank', r.before, r.wrote).state.draft, st0.draft, 'Undo');
+    });
+    await t('[fix B] every section maps: pay, free, cards, bills, min; and nothing is written once the draft became a book', async () => {
+      const f = form('JPY', { pay: { name: 'Pay', amount: 245000, every: 'month', day: 10, day2: null, start: null, shift: 'before', acct: 'bank1' }, free: 40000, min: 10000,
+        cards: [{ name: 'Card A', owed: 54000, payDay: 10, closeDay: 'not sure', payFrom: 'bank1', shift: 'after', statement: null }],
+        bills: [{ name: 'Rent', amount: 72000, every: 'month', month: null, day: 27, from: 'bank1', takenOut: 'yes' }] });
+      let st = chat('JPY');
+      for (const sec of ['pay', 'free', 'cards', 'bills', 'min']) st = K.fromScreens(st, sec, AN.fromForm(f, { day: DAY2 })).state;
+      eq([st.draft.pays[0].amount, st.draft.free, st.draft.min, st.draft.cards[0].owed, st.draft.cards[0].on, st.draft.bills[0].amount, st.draft.banks[0].amount], [245000, 40000, 10000, 54000, DAY2, 72000, 250000]);
+      const filled = Object.assign({}, st, { fill: { at: 'x', day: DAY2, grp: 'g' } });
+      const r = K.fromScreens(filled, 'min', AN.fromForm(form('JPY', { min: 1 }), { day: DAY2 }));
+      eq([r.state.draft.min, r.wrote], [10000, null], 'no write after the fill');
+    });
+    await t('[fix B, qc-foundation 1] an account renamed in place on the screens is renamed in the chat\'s pays, cards and bills', async () => {
+      let st = chat('JPY');
+      st = told(st, 'banks', [{ name: 'Sora Bank', amount: '250000' }, { name: 'Kumo Bank', amount: '30000' }]);
+      st = told(st, 'cards', [{ name: 'Card A', owed: '5000', payDay: 10, closeDay: 'not sure', payFrom: 'Kumo Bank' }]);
+      st = told(st, 'bills', [{ name: 'Rent', amount: '72000', day: 27, from: 'Kumo Bank' }]);
+      const r = K.fromScreens(st, 'bank', AN.fromForm(form('JPY', { accts: [{ name: 'Kumo Savings', amount: 30000, type: 'bank' }] }), { day: DAY2 }));
+      eq([r.state.draft.banks[1].name, r.state.draft.cards[0].payFrom, r.state.draft.bills[0].from], ['Kumo Savings', 'Kumo Savings', 'Kumo Savings']);
+    });
+    await t('[fix B, qc-foundation 5, 6] null and missing are the same answer; Undo after the fill changes nothing', async () => {
+      const r = K.fromScreens(chat('JPY'), 'free', AN.fromForm(form('JPY'), { day: DAY2 }));
+      const st = JSON.parse(JSON.stringify(r.state)); delete st.draft.free;
+      eq(K.chatNewer(st, 'free'), false, 'free missing against free null');
+      const filled = Object.assign({}, r.state, { fill: { at: 'x', day: DAY2, grp: 'g' } });
+      const u = K.undoScreens(filled, 'free', r.before, r.wrote);
+      eq([u.ok, u.state.draft], [false, filled.draft], 'refused after the fill');
+    });
+    await t('[fix B, qc-foundation 7] round trip: the chat\'s answers, every section saved on the screens, give the screens\' own book input', async () => {
+      const f = form('JPY', { accts: [{ name: 'Wallet', amount: 8000, type: 'cash' }], pay: { name: 'Pay', amount: 245000, every: 'month', day: 10, day2: null, start: null, shift: 'before', acct: 'bank1' }, free: 40000, min: null,
+        cards: [{ name: 'Card A', owed: 54000, payDay: 10, closeDay: 'not sure', payFrom: 'bank1', shift: 'after', statement: null }],
+        bills: [{ name: 'Rent', amount: 72000, every: 'month', month: null, day: 27, from: 'bank1', takenOut: 'yes' }, { name: 'Phone', amount: 4800, every: 'month', month: null, day: 20, from: 'bank1', takenOut: 'yes' }] });
+      const ans = AN.fromForm(f, { day: DAY2 });
+      let st = chat('JPY');
+      for (const sec of ['bank', 'pay', 'free', 'cards', 'bills', 'min']) st = K.fromScreens(st, sec, ans).state;
+      const o = { day: DAY2, told: DAY2 + 'T10:00:00.000+09:00' };
+      eq(AN.toBuild(st.draft, o), AN.toBuild(ans, o), 'the same book input');
+      eq(K.fillCheck(st.draft, DAY2, 'none').ok, true, 'the chat\'s fill asks nothing more');
+    });
+  }
   console.log(bad ? `chat3_core: ${bad} of ${n} FAILED` : `chat3_core: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })();
