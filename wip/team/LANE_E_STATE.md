@@ -50,6 +50,11 @@ Files most touched: app3/src/plan3.js, plan3_write.js, chat3_core.js, settings3.
 - qc-assistant confusing, not fixed: change cards show only safe to spend for rent/goal/end-bill (add the item's own before/after row); "remove" of a G ref says "ref I do not know" (say: Plan, tap the goal; slice 6 builds it); statements words after setup (Home, Add statements).
 - qc-controls FAIL, blockers: (1) Reminders not kept after a reload, screen looks saved (scope says queued; harm worse); (2) a yearly bill cannot be added after setup (Add a bill has no How often); (3) a card added after setup is always paid from the main bank, and a card's paying account and weekend rule cannot be changed; (4) a bill's paying account cannot be changed; (5) no loan, goal or line in setup (coordinator to rule if M2 scope covers it). Asked the coordinator which go in which slice. Also its COUNT says 1 BROKEN where the grid has 2.
 
+## Other lanes (26 Nov)
+- Coordinator: LANE E goes first on plan3_write.js and card rows; LANE D merges ready controls branches before it builds M88 to M97.
+- LANE D / LANE G: lane/whichdoor changes act3.js (writer swap op, plan sets w.at/w.by, journal `swapped`, undo handles swapped, api.answerSync, a "not set" marker in swap). My act3 changes (plan words arg, setField, undo list 'home', exports) are NOT merged with it: told both lanes; whoever merges second keeps both. Merge lane/whichdoor into lane/controls-5 before its reviewers if it has landed in ai-join.
+- LANE F/G cash plan (lane/cash-1...) changes lookahead, cards words, chat3_core noteOf, setFree in plan3_write; it merges my ready branches before touching plan3/setup3/settings3/act3. It wants: card paying bank and paid-in-full change (not built: slice 1b), assistant change steps for card spend, refund, payment tick, card figure (not built).
+
 ## Next steps
 1. Coordinator rulings on: qc-controls blockers 1 to 5 (proposed: 2, 3, 4 as a new slice 1b on lane/controls-1, before the confirming runs; 1 and 5 for the coordinator); the engine rule for a loan's Still owed today (a check on a loan resets what is owed, as for cards); one review round for slices 2 to 5 together.
 2. Then: build 1b, quick, full, confirming runs; merge 1 into 2, 3, 5 (keep slice 5's Settings words); full check on lane/controls-5; reviewers.
