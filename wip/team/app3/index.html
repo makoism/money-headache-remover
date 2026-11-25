@@ -3156,7 +3156,7 @@ html:has(.a3-setup-open) { scroll-padding-top: 150px; }
         return win ? { start, left: start - spent - fees + placed + adjusted } : start - spent - fees + placed + adjusted;
       };
       const amountOf = (src, per) => (past ? perPeriod({ per, amount: periodAmount(src, win.start, win.occ) }, win.start, win.next, win.occ)
-        : periodStream ? nowAmount(src, per) : periodAmount(src, countFrom(moneyAcct(lineAcct(src))), null));
+        : periodStream ? nowAmount(src, per) : periodAmount(src, today, null));   // [CA6] no fixed pay: the amount in force today (a change counts from today)
       // [BJ2] a line or Free to spend with no amount in this period (set later) is not in it
       const lines = lineSrcs.map(l => { const id = moneyAcct(lineAcct(l)), a = amountOf(l, l.per); if (a == null) return null; const left = leftOf(l.id, id, a), pt = partsOf[l.id]; return { name: l.name, acct: id, per: l.per, amount: a, left, counts: pt.start, spent: pt.spent, src: l }; }).filter(Boolean);
       const fid = freeSrc && moneyAcct(lineAcct(freeSrc)), fa = freeSrc && amountOf(freeSrc, fPer);
@@ -3273,7 +3273,7 @@ html:has(.a3-setup-open) { scroll-padding-top: 150px; }
               const day7 = (((d - f) % 7) + 7) % 7 === 6; want = Math.floor(l.amount / 7) + (day7 ? l.amount - 7 * Math.floor(l.amount / 7) : 0); }
             else {
               // [CA4] a later month is charged the amount in force on its first day (a change made this month, or one
-              // set to start then); this month keeps the amount it began with [BQ3]
+              // set to start then); [CA6] this month's days use the amount in force today
               const first = dayIn(y, mo, 1), monthDays = dayIn(y, mo + 1, 1) - first;
               const amount = d > monthEnd0 && l.src ? stepAmount(l.src.steps, first) || 0 : l.amount;
               const perDay = Math.floor(amount / monthDays);

@@ -40,3 +40,5 @@ Also from the review, to do in this branch: say in CA4 that the start month's sh
 **Not chosen:** sharing the month by days between the old and the new amount (old for the days gone, new for the days left). It is closer to "from today" in arithmetic, but gives a figure nobody typed and nobody can find, the fault the month rule itself removes.
 **The failing test (committed, not in run_all):** engine/test/month_change.test.js, four hand-worked cases: raised, lowered, a plan line raised (can spare 1,872,770), and a change in the month of setup.
 **What else may move:** any test that changes a monthly amount mid-month with no fixed pay (a trial run will list them; each reworked by hand). The pay-period path is untouched.
+
+**Review and build (25 Nov):** qc-foundation PASS on this section (qc_reports/2026-11-25_monthrule/foundation_plan_ca6.md). Built as one line (the by-day branch of amountOf reads the amount in force today); the test has the reviewer's walk as ten hand-worked cases and is in run_all; nothing else in the engine suite moved. Side effect named by the review: a weekly line with no fixed pay also changes from today.
