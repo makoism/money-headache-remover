@@ -30,6 +30,18 @@ Note
 Log spend
 What you logged
 Search
+
+3 things are dated after today. They do not count until their day. If a day is wrong, tap it, remove it and log it again
+
+Free to spend
+18 Dec 2026, Card A
+¥18,000
+Free to spend
+20 Dec 2026, Card B
+¥9,500
+Free to spend
+29 Dec 2026, Card B
+¥7,400
 Earlier
 
 10 Nov to today's pay
