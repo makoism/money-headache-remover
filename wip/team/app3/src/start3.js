@@ -21,7 +21,8 @@ function tryBand3() {
   t.innerHTML = `<span>Made-up numbers shaped like a real month. Nothing you do here is saved</span>
     <label class="a3-day">Show the page as on <input type="date" id="a3Day" value="${esc3(E3.today())}"></label>
     <button type="button" class="a3-btn" id="a3TryOut">Set up with my own numbers</button>`;
-  $('#a3Day').addEventListener('change', e => { E3.setToday(e.target.value); if (!$('#a3Check').hidden) closeCheck3(); renderHome3(); });
+  /* a cleared day box goes back to the day the page is showing: the box never sits empty over a page that shows a day */
+  $('#a3Day').addEventListener('change', e => { if (!e.target.value) { e.target.value = E3.today(); return; } E3.setToday(e.target.value); if (!$('#a3Check').hidden) closeCheck3(); renderHome3(); });
   $('#a3TryOut').addEventListener('click', leaveTry3);
 }
 /* out of the made-up numbers: nothing of them is written; this device's own book shows when it keeps one, else the
