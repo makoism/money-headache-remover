@@ -226,5 +226,24 @@ const log = p => p.$eval('#a3ChatLog', e => e.textContent.replace(/\s+/g, ' '));
     } catch (e) { ck('F: the check ran to its end', false, e.stack); }
     finally { await o.b.close(); }
   }
+  {
+    /* [qc-assistant run 3 blocker 1] the link at the foot of the first screen ("Set up on the screens instead") is the
+       same door as "Set up on the screens": the chat's answers are in the boxes, and the screen says so */
+    const R = require('./chat_real.js');
+    const o = await T.open({ profile: fs.mkdtempSync(os.tmpdir() + '/a3chatwalkG-') });
+    try {
+      const ai = await R.relay(o.p);
+      await o.p.goto(T.URL0 + '?today=2026-11-24'); await T.w(700);
+      ai.push(R.say('', [R.call('draft_set', { section: 'banks', value: [{ name: 'Main bank', amount: 286000 }] }), R.call('draft_set', { section: 'cards', value: [MAKO.cards[0]] })]), R.say('Got it.'));
+      await R.tell(o.p, 'Main bank 286,000, Card A 54,000 paid on the 10th');
+      await o.p.$eval('#a3SetupGo', e => e.click()); await T.w(500);
+      const g = await o.p.evaluate(() => ({ name: document.querySelector('#s3BankName').value, bank: document.querySelector('#s3Bank').value.replace(/,/g, ''),
+        cards: [...document.querySelectorAll('#a3Setup [data-row^=card]')].map(r => [r.querySelector('[data-f=name]').value, r.querySelector('[data-f=owed]').value.replace(/,/g, '')]),
+        said: /Filled in from the chat/.test(document.querySelector('#a3Setup').textContent) }));
+      ck('G: "Set up on the screens instead" fills the boxes from the chat: Main bank 286,000, Card A 54,000, and says so', g.name === 'Main bank' && g.bank === '286000' && JSON.stringify(g.cards) === '[["Card A","54000"]]' && g.said, JSON.stringify(g));
+      ck('G: no page errors', !o.errs.length, o.errs.join(' | '));
+    } catch (e) { ck('G: the check ran to its end', false, e.stack); }
+    finally { await o.b.close(); }
+  }
   T.done('e3_chatwalk');
 })().catch(e => { console.log('FAIL crashed ' + (e && e.stack || e)); process.exit(1); });
