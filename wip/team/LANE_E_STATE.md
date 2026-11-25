@@ -55,6 +55,12 @@ Files most touched: app3/src/plan3.js, plan3_write.js, chat3_core.js, settings3.
 - LANE D / LANE G: lane/whichdoor changes act3.js (writer swap op, plan sets w.at/w.by, journal `swapped`, undo handles swapped, api.answerSync, a "not set" marker in swap). My act3 changes (plan words arg, setField, undo list 'home', exports) are NOT merged with it: told both lanes; whoever merges second keeps both. Merge lane/whichdoor into lane/controls-5 before its reviewers if it has landed in ai-join.
 - LANE F/G cash plan (lane/cash-1...) changes lookahead, cards words, chat3_core noteOf, setFree in plan3_write; it merges my ready branches before touching plan3/setup3/settings3/act3. It wants: card paying bank and paid-in-full change (not built: slice 1b), assistant change steps for card spend, refund, payment tick, card figure (not built).
 
+## Rulings (coordinator 15, 26 Nov about 08:19 JST; report to coordinator 16 session_01BFpKEXBhaZ6NZ92Lntxb2A from now on)
+- Slice 1b on lane/controls-1, before the confirming runs: a yearly bill (How often) on Add a bill after setup; a card's paying bank chosen on Add a card and changed on its sheet (and its weekend rule); a bill's paying account changed; Reminders: keep the changes (a saved, undoable list), or if that is not small, the Reminders screen says plainly changes are not kept yet and shows nothing that looks saved.
+- Setup with no loan, goal or line: to scope.txt (the coordinator's).
+- Engine rule YES: a check on a loan sets what is owed from its day, as for cards. Write a short plan, run qc-foundation on it, then build (slice 3 follow-up).
+- One review round for slices 2 to 5 together on lane/controls-5, after slice 1's fix is merged in and a full check.
+
 ## Next steps
 1. Coordinator rulings on: qc-controls blockers 1 to 5 (proposed: 2, 3, 4 as a new slice 1b on lane/controls-1, before the confirming runs; 1 and 5 for the coordinator); the engine rule for a loan's Still owed today (a check on a loan resets what is owed, as for cards); one review round for slices 2 to 5 together.
 2. Then: build 1b, quick, full, confirming runs; merge 1 into 2, 3, 5 (keep slice 5's Settings words); full check on lane/controls-5; reviewers.
