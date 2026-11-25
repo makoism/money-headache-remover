@@ -10823,7 +10823,16 @@ function shape3() {
 function askTaken3() {
   if (!setup3) return;
   let q = { asked: {}, statements: {}, payToday: false };
-  try { q = ANSWERS3.questions(answers3(false), { day: E3.today(), currency: $('#s3Cur').value }); } catch (e) { /* not yet a whole set of answers */ }
+  /* [AI_JOIN_FIXES I2] a pay every n weeks with the day of one still blank: today stands in for that day so the day's
+     questions are still asked (fromForm itself refuses a blank day); marked, so today is never taken as a pay landing
+     today, and See my money still asks for the day */
+  try {
+    const f = form3(false), today = E3.today();
+    let noStart = false;
+    for (const p of [f.pay].concat(f.pays)) if (p && String(p.every).startsWith('weeks') && !p.start) { p.start = today; noStart = true; }
+    q = ANSWERS3.questions(ANSWERS3.fromForm(f, { day: today }), { day: today, currency: $('#s3Cur').value });
+    if (noStart) q.payToday = false;
+  } catch (e) { /* not yet a whole set of answers */ }
   const yr = (E3.today() || '').slice(0, 4), key = (sec, row, dflt) => ANSWERS3.keyOf(sec, (row.querySelector('[data-f=name]').value || '').trim() || dflt);
   /* [BV2.13] the pay lands today: is it in the figure typed? */
   $('#a3Setup [data-q=payToday]').hidden = !q.payToday;
