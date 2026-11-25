@@ -33,6 +33,15 @@ async function figsMatch(p, book, what) {
   ck('the made-up book is kept through the store', put && put.ok, JSON.stringify(put));
   await p.reload(); await T.w(400);
 
+  /* [C2] Free to spend left caps safe to spend here (the engine: the accounts can spare 158,334, Free to spend has 40,000
+     left), and Home says so in one plain line a first-time reader can repeat, with the engine's two figures */
+  {
+    const r0 = T.L.lookahead(bk0, DAY), say = await p.$eval('#a3Home [data-fig=capsay]', e => e.textContent.replace(/\u2060/g, '')).catch(() => null);
+    ck('C2: the engine caps safe to spend by Free to spend left', r0.safeToSpend.cappedByFreeToSpend === true && r0.safeToSpend.headline === 40000 && r0.safeToSpend.whyParts[0].amount === 158334, JSON.stringify(r0.safeToSpend));
+    ck('C2: Home says why the figure is what it is, in one line', say === 'Your accounts can spare ¥158,334, but only ¥40,000 of your Free to spend is left this period, so ¥40,000 is safe to spend', say);
+    const order = await p.$$eval('#a3Home [data-card=safe] [data-fig]', es => es.map(e => e.dataset.fig));
+    ck('C2: the line sits right under the big figure, above the sums', order.indexOf('capsay') === order.indexOf('safe') + 1, order.join());
+  }
   /* the tab */
   await p.tap('[data-tab="receipts"]'); await T.w(200);
   ck('the Receipts tab shows its panel and hides Home', await p.$eval('#a3Rc', e => !e.hidden) && await p.$eval('#a3Home', e => e.hidden));
@@ -52,7 +61,8 @@ async function figsMatch(p, book, what) {
   r = await figsMatch(p, bk, 'after the spend');
   ck('the figures say what they were', await fig(p, 'rc-free-was') === T.L.lookahead(bk0, DAY).period.free.left);
   let m = await bar(p);
-  ck('the Undo bar says what was logged', !!m && /^Logged ¥1,200 on Free to spend$/.test(m.text) && m.button === 'Undo', JSON.stringify(m));
+  /* [C2] while Free to spend left caps safe to spend, the bar says the spend lowers both, and why */
+  ck('the Undo bar says what was logged, and that safe to spend goes down with it (C2)', !!m && m.text === 'Logged ¥1,200 on Free to spend. Safe to spend goes down with it, it\'s what\'s left of your Free to spend' && m.button === 'Undo', JSON.stringify(m));
   ck('the list shows it in this period', (await rows(p)).some(x => x.id === spend.id && /Free to spend/.test(x.text) && /coffee/.test(x.text) && /¥1,200/.test(x.text)), JSON.stringify(await rows(p)));
   ck('under the list: Tap a spend to change it', await p.$eval('#rcList', e => { const h = e.querySelector('[data-hint=rc-tap]'); return !!h && h.textContent === 'Tap a spend to change it' && h.previousElementSibling && h.previousElementSibling.matches('ul'); }));
   ck('the amount box is empty and ready for the next one', await p.$eval('#rcAmt', e => e.value) === '' && await p.evaluate(() => document.activeElement.id) === 'rcAmt');

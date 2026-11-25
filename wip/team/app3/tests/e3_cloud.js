@@ -51,6 +51,8 @@ const until = async (f, ms) => { for (let i = 0; i < (ms || 8000) / 100; i++) { 
     ck('a short code is refused with what a code looks like', /20 letters and digits/.test(await B.p.$eval('#a3CloudErr', e => e.textContent)));
     await B.p.$eval('#a3CloudCode', e => { e.value = ''; }); await B.p.type('#a3CloudCode', 'mhr-' + code.toLowerCase()); await B.p.click('#a3CloudUse');
     ck('the code finds the cloud copy and B takes it', await until(async () => { const b = await stored(B.p); return !!b && b.schedules.length === book.schedules.length; }));
+    /* [S23] after joining, the open Settings sheet is drawn again: the currency, never "chosen in setup" */
+    ck('S23: B\'s Settings shows the currency once the cloud copy is here', await until(async () => (await B.p.$eval('[data-set=cur]', e => e.textContent).catch(() => null)) === 'JPY') && !/chosen in setup/.test(await B.p.$eval('[data-card=money]', e => e.textContent)), await B.p.$eval('[data-card=money]', e => e.textContent));
     await B.p.click('#a3SetClose'); await T.w(200);
     ck('B\'s Home shows the book', /Safe to spend/.test(await B.p.$eval('#a3Home', e => e.textContent)));
 

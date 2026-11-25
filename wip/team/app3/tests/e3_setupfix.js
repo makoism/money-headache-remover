@@ -311,5 +311,123 @@ async function openSetup(day) {
     ck(answer + ': the next pay never reads "in null days"', !/null/.test(home), home);
     await c.close();
   }
+  /* 7: an amount typed with a comma stays saved (qc-novice on 3a4f514, three phones: "182,400" saved, then the part fell
+     back to "Not saved yet" when the next part was saved, and See my money refused). A part is compared by the VALUE of
+     each amount box, never its text. Save is pressed without leaving the box first, as a phone's tap on a button does. */
+  {
+    const { c, p } = await openSetup('2026-11-24');
+    const put = (sel, t) => p.$eval(sel, (e, t) => { e.focus(); e.value = t; e.dispatchEvent(new Event('input', { bubbles: true })); }, t);
+    const press = sec => p.$eval(`#a3Setup [data-save=${sec}]`, e => e.click());
+    await put('#s3Bank', '182,400'); await press('bank'); await w(300);
+    ck('comma: the bank part says Saved', (await stateOf(p, 'bank')) === 'saved', await savedWords(p, 'bank'));
+    await put('#s3PayAmt', '231,000'); await p.selectOption('#s3PayDay', '25'); await press('pay'); await w(300);
+    ck('comma: after the pay part is saved, the bank part is still Saved', (await stateOf(p, 'bank')) === 'saved', await savedWords(p, 'bank'));
+    await put('#s3Free', '６０，０００'); await press('free'); await w(300);
+    await p.click('#s3AddCard'); await w(100); await put('[data-row=card1] [data-f=owed]', '48,000'); await press('cards'); await w(300);
+    await p.click('#s3AddBill'); await w(100); await put('[data-row=bill1] [data-f=name]', 'Rent'); await put('[data-row=bill1] [data-f=amount]', '72 000'); await press('bills'); await w(300);
+    await put('#s3Min', '¥10,000'); await press('min'); await w(300);
+    await p.evaluate(() => document.activeElement && document.activeElement.blur()); await w(200);
+    const states = []; for (const sec of ['bank', 'pay', 'free', 'cards', 'bills', 'min']) states.push(sec + ':' + await stateOf(p, sec));
+    ck('comma: all six parts are still Saved after every box is left', states.every(x => /:saved$/.test(x)), states.join(' '));
+    await p.reload(); await w(500);
+    if (await p.$('#a3SetupGo')) { await p.click('#a3SetupGo').catch(() => {}); await w(300); }
+    const states2 = []; for (const sec of ['bank', 'pay', 'free', 'cards', 'bills', 'min']) states2.push(sec + ':' + await stateOf(p, sec));
+    ck('comma: all six parts are Saved after a reload', states2.every(x => /:saved$/.test(x)), states2.join(' '));
+    await p.click('#a3SetupSave'); await w(700);
+    ck('comma: See my money keeps the book', await p.$eval('#a3Setup', e => e.hidden), await txt(p, '#a3SetupErr'));
+    const bk = await L.readBook(p);
+    const bank = bk && bk.events.find(x => x.k === 'check');
+    ck('comma: the bank in the book is 182,400', !!bank && JSON.stringify(bank).includes('182400'), JSON.stringify(bank));
+    ck('comma: Home shows the bank as ¥182,400', (await homeBank(p)) === 182400, await homeBank(p));
+    await c.close();
+  }
+  /* 6: leaving a box never moves the row's Remove (found by LANE B): what a row shows is worked out while the person
+     types, so a tap on Remove straight after typing lands on Remove. A real tap at the place the button was. */
+  {
+    const { c, p } = await openSetup('2026-11-24');
+    await typeIn(p, '#s3Bank', '300000'); await typeIn(p, '#s3PayAmt', '250000'); await p.selectOption('#s3PayDay', '25');
+    const top = sel => p.$eval(sel, e => Math.round(e.getBoundingClientRect().top + scrollY));
+    for (const [kind, add, f, typed] of [['bill', '#s3AddBill', 'name', 'Gym and swimming'], ['bill', '#s3AddBill', 'amount', '4800'], ['card', '#s3AddCard', 'owed', '52000'], ['card', '#s3AddCard', 'name', 'Everyday card'], ['pay', '#s3AddPay', 'amount', '30000']]) {
+      await p.click(add); await w(150);
+      const row = kind === 'pay' ? '[data-row=pay2]' : `[data-row^=${kind}]`, rm = row + ' [data-remove]';
+      await p.focus(`${row} [data-f=${f}]`); await p.keyboard.type(typed, { delay: 20 }); await w(400);
+      const before = await top(rm);
+      const box = await p.$eval(rm, e => { e.scrollIntoView({ block: 'center' }); const r = e.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
+      await p.mouse.click(box.x, box.y); await w(250);
+      const gone = !(await p.$(row));
+      ck(`${kind}, after typing its ${f}: a tap where Remove was takes the row out`, gone, gone ? '' : `Remove was at ${before}, now at ${await top(rm)}`);
+      if (!gone) { await p.click(rm); await w(150); }
+    }
+    await c.close();
+  }
+  /* 7: an account taken out of setup never moves a bill, a card or a pay onto another account (setup3 reads its boxes
+     through answers3, which names accounts by their place; a row keeps its own key when one before it is removed) */
+  {
+    const { c, p } = await openSetup('2026-11-24');
+    await typeIn(p, '#s3Bank', '300000'); await typeIn(p, '#s3PayAmt', '250000'); await p.selectOption('#s3PayDay', '25');
+    await p.click('#s3AddAcct'); await w(120);
+    await typeIn(p, '[data-row=acct2] [data-f=name]', 'Coin jar'); await typeIn(p, '[data-row=acct2] [data-f=amount]', '900'); await p.selectOption('[data-row=acct2] [data-f=type]', 'cash');
+    await p.click('#s3AddAcct'); await w(120);
+    await typeIn(p, '[data-row=acct3] [data-f=name]', 'Second bank'); await typeIn(p, '[data-row=acct3] [data-f=amount]', '41000'); await p.selectOption('[data-row=acct3] [data-f=type]', 'bank');
+    await p.click('#s3AddBill'); await w(120);
+    await typeIn(p, '[data-row=bill1] [data-f=name]', 'Gym'); await typeIn(p, '[data-row=bill1] [data-f=amount]', '4800'); await p.selectOption('[data-row=bill1] [data-f=day]', '28');
+    await p.selectOption('[data-row=bill1] [data-f=from]', 'acct3');
+    await p.click('#s3AddCard'); await w(120);
+    await typeIn(p, '[data-row=card1] [data-f=name]', 'Everyday card'); await typeIn(p, '[data-row=card1] [data-f=owed]', '12000');
+    await p.selectOption('[data-row=card1] [data-f=payFrom]', 'acct3');
+    await p.click('[data-row=acct2] [data-remove]'); await w(250);
+    ck('account removed: the bill and the card still say Second bank', (await val(p, '[data-row=bill1] [data-f=from]')) === 'acct3' && (await val(p, '[data-row=card1] [data-f=payFrom]')) === 'acct3' && !(await p.$('[data-row=acct2]')));
+    const err = await saveSections(p);
+    await p.click('#a3SetupSave'); await w(700);
+    const bk = (await device(p)).book;
+    const acct = id => (((bk || {}).accounts || []).find(a => a.id === id) || {}).name;
+    const names = ((bk || {}).accounts || []).map(a => a.name);
+    const bill = ((bk || {}).schedules || []).find(s => s.kind === 'bill' && s.name === 'Gym');
+    const card = ((bk || {}).accounts || []).find(a => a.name === 'Everyday card');
+    const field = x => (x && typeof x === 'object' && 'v' in x ? x.v : x);   // a stamped field or a plain one
+    ck('account removed: the book is kept, with Second bank and no Coin jar', !err && !!bk && names.includes('Second bank') && !names.includes('Coin jar'), err || JSON.stringify(names));
+    ck('account removed: the Gym bill leaves from Second bank', !!bill && acct(bill.acct) === 'Second bank', bill && acct(bill.acct));
+    ck('account removed: the card is paid from Second bank', !!card && acct(field(card.payFrom)) === 'Second bank', JSON.stringify(card && card.payFrom));
+    await c.close();
+  }
+  /* 8 (AI_JOIN_FIXES I1): two bills (or two cards) with no name: the words sit next to the rows, at that section's own
+     Save, not only at See my money; the section is not saved until each has its own name */
+  {
+    const { c, p } = await openSetup('2026-11-24');
+    await p.click('#s3AddBill'); await w(120); await p.click('#s3AddBill'); await w(120);
+    await typeIn(p, '[data-row=bill1] [data-f=amount]', '4800'); await typeIn(p, '[data-row=bill2] [data-f=amount]', '5200');
+    await saveSec(p, 'bills');
+    ck('I1: two bills with no name: said next to the second one at Save', (await errOf(p, 's3-bill2-n')) === 'There are two called Bill. Give each its own name', await errOf(p, 's3-bill2-n'));
+    ck('I1: its name box is focused, and the section is not saved', (await focused(p)) === 's3-bill2-n' && (await stateOf(p, 'bills')) !== 'saved', await focused(p));
+    await typeIn(p, '[data-row=bill2] [data-f=name]', 'Internet'); await w(400);   // the row's question words follow the name a moment after typing
+    await saveSec(p, 'bills');
+    ck('I1: named, it saves', (await stateOf(p, 'bills')) === 'saved', await errOf(p, 's3-bill2-n'));
+    await p.click('#s3AddCard'); await w(120); await p.click('#s3AddCard'); await w(120);
+    await typeIn(p, '[data-row=card1] [data-f=owed]', '1000'); await typeIn(p, '[data-row=card2] [data-f=owed]', '2000');
+    await saveSec(p, 'cards');
+    ck('I1: two cards with no name: said next to the second one at Save', (await errOf(p, 's3-card2-n')) === 'There are two called Card. Give each its own name', await errOf(p, 's3-card2-n'));
+    await c.close();
+  }
+  /* 9 (AI_JOIN_FIXES I2): pay every 2 weeks with the day of one still blank: the day's questions are still asked, as the
+     setup screens did before the join (today stands in for that day, marked, so it is never taken as a pay landing today):
+     a card set up between its close (15 Nov) and its payment (10 Dec) is asked how much was on that statement. Once the
+     day of one pay is typed, the bills since that pay are asked too */
+  {
+    const { c, p } = await openSetup('2026-11-24');
+    await p.selectOption('#s3PayEvery', 'weeks2'); await w(150);
+    await p.click('#s3AddCard'); await w(120);
+    await typeIn(p, '[data-row=card1] [data-f=name]', 'Card A'); await typeIn(p, '[data-row=card1] [data-f=owed]', '54000');
+    await p.selectOption('[data-row=card1] [data-f=payDay]', '10'); await p.selectOption('[data-row=card1] [data-f=closeDay]', '15');
+    await p.click('#s3AddBill'); await w(120);
+    await typeIn(p, '[data-row=bill1] [data-f=name]', 'Phone'); await typeIn(p, '[data-row=bill1] [data-f=amount]', '4800'); await p.selectOption('[data-row=bill1] [data-f=day]', '20');
+    await w(300);
+    const st = await p.$eval('[data-row=card1] [data-q=stmt]', e => (e.hidden ? '(hidden) ' : '') + e.querySelector('label').textContent);
+    ck('I2: the day of one pay blank: the card\'s statement question is still asked', st === 'How much of it was on the statement that closed on 15 Nov?', st);
+    ck('I2: and today is never taken as a pay day: no pay-today question', await p.$eval('#a3Setup [data-q=payToday]', e => e.hidden));
+    await typeIn(p, '#s3PayStart', '2026-11-13'); await w(300);
+    const q = await p.$eval('[data-row=bill1] [data-q=takenOut]', e => (e.hidden ? '(hidden) ' : '') + e.querySelector('label').textContent);
+    ck('I2: the day typed (13 Nov): the bill of 20 Nov is asked', q === 'Did the Phone of 20 Nov leave your bank?', q);
+    await c.close();
+  }
   await L.finish();
 })().catch(e => { console.log('FAIL crashed ' + e.stack); process.exit(1); });

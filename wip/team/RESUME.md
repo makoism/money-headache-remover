@@ -4,6 +4,44 @@ Written 2026-11-18 on branch `wip-38.31`. Read this whole file before touching a
 
 ## 0. Handoff (latest first)
 
+**2026-11-24 18:55 JST, MAIN 16 (Fable), state.** Read wip/team/MAKO_SAYS.md first. Report to Coordinator 11 (session_01BFpKEXW1AERpCVxch4xuXD). LANE B is session_01BFpKEZBRWqdY7tLMMx4sDU.
+- **Lost time:** every session was stopped by the 5-hour usage limit from about 14:40 to 17:50 JST.
+- **Candidate 2:** wip-38.31 at c2bea7d = 9c65e8d + lane/blockers fd3e020 + two setup fixes. check3 full ALL GOOD.
+  - The comma fault (coordinator's first job): a setup part was compared by box text; now by value (setup3.js amountText3, snap3). Tests: e3_setupfix part 7, and e3_amounts types commas, a space, full-width digits and a yen sign into every amount box.
+  - The bill Remove shift: a row's questions are reworded while typing (shapeSoon3), not on leaving the box. Test: e3_setupfix part 6.
+  - Round folder qc_reports/2026-11-24_candidate2 (check3.txt, screens, scope.txt). Running: qc-controls, qc-novice, qc-north-star, qc-layout-touch.
+  - The main commit is prepared in the worktree .claude/worktrees/republish (branch republish-c2bea7d, from origin/main, same private path; the path is in the scratchpad file app3_path.txt and on origin/republish-9c65e8d). Make it again after any fix, then send the hash to the coordinator with the scope list.
+- **lane/homefix is NOT merged.** qc-novice FAILED it (qc_reports/2026-11-24_homefix_3a4f514). It needs foundation_review/TWO_FIGURES_PLAN.md (on lane/next): two named figures when the everyday budget is the limit ("Everyday money left until pay", "Your bank can spare", agreed with the coordinator, MAKO_SAYS not settled 8), the pay-day headline, and a later-dated pay change shown on Plan. qc-foundation is on the plan. Then qc-novice part 4 and qc-numbers.
+- **M67 (a spend on phone two waits for Send now) is NOT fixed.** Cause: nothing takes the cloud copy while the page stays open, and a send waits 90 s after any sync (cloud3_page.js). foundation_review/SYNC_PULL_PLAN.md (on lane/next) failed qc-foundation once (qc_reports/2026-11-24_sync_pull_plan); version 2 at the end of that file takes the three faults in and needs qc-foundation again before building.
+- **Branches of mine:**
+  - lane/next (worktree .claude/worktrees/next): wip-38.31 + homefix + blockers + the two setup fixes, plus the two plans. Local only so far.
+  - lane/cand2: the candidate; the same as wip-38.31.
+  - lane/ai-merge (a helper's worktree, running): lane/ai-core + lane/ai-panel joined onto lane/next, setup3.js by hand. Needs a row in back3.js LAYERS for any new sheet (LANE B's note). When green: qc-assistant and qc-foundation, then merge. This is queue item 2, the top priority after the candidate.
+- **Then:** lane/controls-base (full check3 and a qc-foundation confirm), CONTROLS_PLAN slices, lane/restore fixes (with LANE B), lane/s2b, SORTED "no queue" items.
+- **While reviewers run** the main checkout must stay on the candidate (they open wip/team/app3/index.html there). Work in worktrees.
+
+**2026-11-24 13:45 JST, MAIN 15 handoff to MAIN 16 (Fable).** Read wip/team/MAKO_SAYS.md first.
+- **Candidate:**
+  - wip-38.31 at 9c65e8d: setupfix, install, invite, checkspeed, candfix. check3 ALL GOOD.
+  - Main commit f773b80 is on branch republish-9c65e8d. It touches only public/n/<path>/, now 5 files (index.html, sw3.js, the manifest and two icons for M33).
+  - Round folder: qc_reports/2026-11-24_candidate_9c65e8d. qc-north-star FAILed (expected: AI first and M13 are not in this candidate). qc-controls is running.
+  - Screenshots are in the MAIN 15 scratchpad.
+- **New finding for MAIN 16 (qc-north-star blocker 4, M67):** a spend logged on phone two reached phone one only after "Send now". Check the pull timer and visibility pull in cloud3_page.js.
+- **Branches to merge, and what each still owes:**
+  - **lane/blockers:** LANE B owns it (session_01BFpKEZBRWqdY7tLMMx4sDU). MAIN 15 does not message or merge it. MAIN 16 merges it after its check3 and reviews.
+  - **lane/restore (e6e7034):** qc-foundation narrow FAIL (qc_reports/2026-11-24_restore_confirm): a setting added after the backup returns; Put it back and Drop it must ask first; pull before a restore when online. Not restarted here (refused), so MAIN 16 takes it.
+  - **lane/homefix:** Fable, running here. It needs qc-novice part 4 before it merges.
+  - **lane/controls-base (9fcbf91):** all 4 base items and BZ2 are done. It needs a full check3 and a qc-foundation confirm, then merge. It includes ai-core b59f994.
+  - **lane/ai-core (cc12d71) and lane/ai-panel (7dd019d):** both finished. They merge together after the candidate. setup3.js is joined by hand with setupfix (both rewrite form3; take setupfix's sections plus ai-panel's answers3 path).
+  - **lane/s2b (87965d5):** done. It merges after the candidate (BX).
+- **First for MAIN 16:** in setup, leaving a bill's name box moves its Remove button down about 25 px, so a tap on Remove right after typing misses (found by LANE B, setup3.js).
+- **lane/homefix (3a4f514):** all 10 items done; qc-novice is reviewing it (qc_reports/2026-11-24_homefix_3a4f514).
+- **Queue after those:**
+  - the CONTROLS_PLAN slices 1 to 14
+  - SORTED.md "no queue" items
+  - the layout faults seen in the screenshots: drop-downs clip at 390, the Saved band covers the section title, the tab bar shows over setup
+  - LANE B's jobs: qcscripts, webkit, the ENDPERIOD plan, and reminders once controls-base is merged
+
 **2026-11-24 12:30 JST, MAIN 15, Mako (NF19, M82): helpers and reviewers run on Fable.** Pass model "fable" on every Agent call. Lanes that are mid-task are not restarted. After the candidate is sent, MAIN 15 writes this handoff and Coordinator 11 starts MAIN 16 on Fable.
 - **Open lanes and what each owes:**
   - **setupfix** (worktree agent-ae677ae9ec4601481, not pushed): the pay-landed question, the Home note for today's pay (F1 conditions), and its report.

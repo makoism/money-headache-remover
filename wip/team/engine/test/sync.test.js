@@ -55,11 +55,59 @@ t('every case of sync_v1.json was asked (66 when written)', () => ok(cases >= 66
   delete require.cache[fuzzPath];
 }
 
+// [BZ1] the saved Undo journal: joined by id, never a question, the latest 200 kept, old copies with none read as before
+{
+  const at = n => `2026-11-24T1${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}:00.000+09:00`;
+  const step = (n, by, extra) => Object.assign({ id: by + '-s' + String(n).padStart(4, '0'), label: 'logSpend', moment: at(n), day: '2026-11-24', by, added: [], edited: [], removed: [], revived: [] }, extra || {});
+  const book = j => Object.assign({ rev: 3, accounts: [], events: [] }, j ? { journal: j } : {});
+  t('[BZ1] two journals join by id with no question; an undone entry wins over the same entry not undone', () => {
+    const a = step(1, 'k7m2qa'), b = step(2, 'p4r9zz'), c = step(3, 'k7m2qa');
+    const base = book([a]), mine = book([Object.assign({}, a, { undone: 'k7m2qa-u1' }), c]), theirs = book([a, b]);
+    const out = S.sync(base, mine, theirs);
+    eq(out.journal.map(x => x.id), [a.id, b.id, c.id]);
+    eq(out.journal[0].undone, 'k7m2qa-u1');
+    eq(out.keptVersions, undefined);
+    eq(S.afterSync(out).questions, []);
+  });
+  t('[BZ1] the joined journal keeps the latest 200 steps, so pruned steps do not come back from the base', () => {
+    const all = Array.from({ length: 230 }, (_, i) => step(i, 'k7m2qa'));
+    const out = S.sync(book(all.slice(0, 210)), book(all.slice(30, 230)), book(all.slice(5, 210)));
+    eq(out.journal.length, 200);
+    eq(out.journal[0].id, all[30].id);
+  });
+  t('[BZ1 migration] a copy with no journal joins with one that has it, and two copies with none stay with none', () => {
+    const a = step(1, 'k7m2qa');
+    eq(S.sync(book(), book([a]), book()).journal.map(x => x.id), [a.id]);
+    eq(S.sync(book(), book(), book([a])).journal.map(x => x.id), [a.id]);
+    eq('journal' in S.sync(book(), book(), book()), false);
+  });
+}
+
+// [BZ4, qc-foundation WATCH] accounts keep their kind in `type` (SCHEMA_V3), never `kind`
+{
+  const CARD = 'k7m2qa-f3n8p1x6wd-2', T = d => d + 'T20:00:00.000+09:00';
+  const acc = { id: CARD, name: 'Card A', type: 'card', cur: 'JPY', at: T('2026-11-20'), by: 'k7m2qa', told: T('2026-11-20') };
+  t('[BZ4] a card\'s match window at a sync is 7 working days: an imported line 3 working days after a typed spend replaces it', () => {
+    const base = { rev: 3, accounts: [acc], events: [] };
+    const mine = { rev: 3, accounts: [acc], events: [{ id: 'k7m2qa-abcdefghij-1', k: 'spend', acct: CARD, a: 4200, date: '2026-12-01', told: T('2026-12-01'), at: T('2026-12-01'), by: 'k7m2qa' }] };
+    const theirs = { rev: 3, accounts: [acc], events: [{ id: 'imp:' + CARD + ':ref:A1', k: 'spend', acct: CARD, a: 4200, date: '2026-12-04', told: T('2026-12-06'), at: T('2026-12-06'), by: 'p4r9zz' }] };
+    const out = S.sync(base, mine, theirs);
+    const typed = out.events.find(e => e.id === 'k7m2qa-abcdefghij-1');
+    eq([!!typed.gone, typed.goneBy], [true, 'imp:' + CARD + ':ref:A1']);
+  });
+  t('[BZ4] a closed card\'s figure at its close has the owed sign: owed 10,000, then a 2,000 spend, is 12,000 owed', () => {
+    const a = Object.assign({}, acc, { closed: '2026-12-05' });
+    const evs = [{ id: 'k7m2qa-abcdefghij-2', k: 'check', acct: CARD, a: 10000, date: '2026-12-01', told: T('2026-12-01') },
+      { id: 'k7m2qa-abcdefghij-3', k: 'spend', acct: CARD, a: 2000, date: '2026-12-03', told: T('2026-12-03') }];
+    eq(S.figureAtClose(a, evs), 12000);
+  });
+}
+
 // 3. it runs in a page
-t('sync.js loads in a page after dates, units, ids and schedules (no require, no Buffer)', () => {
+t('sync.js loads in a page after dates, units, ids, schedules and ledger (no require, no Buffer)', () => {
   const ctx = { TextEncoder, console };
   ctx.window = ctx; vm.createContext(ctx);
-  for (const f of ['dates.js', 'units.js', 'ids.js', 'schedules.js', 'sync.js']) vm.runInContext(fs.readFileSync(path.join(__dirname, '..', f), 'utf8'), ctx, { filename: f });
+  for (const f of ['dates.js', 'units.js', 'ids.js', 'schedules.js', 'ledger.js', 'sync.js']) vm.runInContext(fs.readFileSync(path.join(__dirname, '..', f), 'utf8'), ctx, { filename: f });
   const P = ctx.BurrowEngine.sync;
   ok(P && typeof P.syncDevice === 'function');
   eq(JSON.stringify(P.impIds({ account: 'bank', lines: [{ ref: 'ä 1', date: '2026-12-01', a: 5, dir: 'out' }] })), '["imp:bank:ref:%C3%A4%201"]');

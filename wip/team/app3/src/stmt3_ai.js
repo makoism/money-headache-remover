@@ -53,8 +53,16 @@ const STMT3_AI = (() => {
       const j = await r.json().catch(() => null);
       if (j && j.error && j.error.code === 'invite_required') { setWord(''); const e = new Error(WORD_BAD); e.word = true; throw e; }
     }
-    if (r.status === 429) throw new Error(busy || 'too many requests right now, try again in a minute');
-    if (!r.ok) throw new Error('the AI did not answer (' + r.status + ')');
+    if (!r.ok) {
+      /* [C5] the server words each refusal itself (the daily limit, no key, no credit, a refused request): its message is
+         shown as it is, less its last full stop (the callers add their own). With no message, the old plain words */
+      const j = await r.json().catch(() => null), said = j && j.error && typeof j.error.message === 'string' ? j.error.message.trim().replace(/\.$/, '') : '';
+      /* each Error carries the server's status and its own code (relay_unconfigured is the relay's "off") */
+      const fail = m => Object.assign(new Error(m), { status: r.status, code: (j && j.error && typeof j.error.code === 'string') ? j.error.code : '' });
+      if (said && (r.status === 400 || r.status === 429 || r.status === 503)) throw fail(said);
+      if (r.status === 429) throw fail(busy || 'too many requests right now, try again in a minute');
+      throw fail('the AI did not answer (' + r.status + ')');
+    }
     return r.json();
   }
   /* the box for the code word, put in `slot` (Ask and Add statements); `bad` says why it shows again. On Keep the word
@@ -124,5 +132,5 @@ const STMT3_AI = (() => {
     const raw = r.how === 'relay' ? await viaRelay(r.base, prompt, file, text) : await viaClaude(r.fn, prompt, file, text);
     return STMT3R.cleanRead(raw, file.name, today);
   }
-  return { connect, readFile, post, needWord, word, setWord, wordBox, WORD_BAD, reset: () => { route = null; healthGot = null; } };
+  return { connect, readFile, post, health, needWord, word, setWord, wordBox, WORD_BAD, reset: () => { route = null; healthGot = null; } };
 })();

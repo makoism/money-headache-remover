@@ -27,8 +27,16 @@ async function warns(bk, day) {
   const status = clean(await p.$eval('[data-card=status]', e => e.textContent).catch(() => ''));
   const all = await p.$eval('#a3Home', e => e.textContent);
   const cap = await p.$eval('[data-fig=cap]', e => e.textContent).then(clean).catch(() => null);
+  /* [C3, M47] how the short line looks (its classes and colours beside a plain amber warning's), the status level, and every sum line */
+  const look = await p.evaluate(() => {
+    const s = document.querySelector('[data-fig=short]'), st = document.querySelector('[data-card=status]');
+    const probe = document.createElement('p'); probe.className = 'a3-warn'; document.querySelector('#a3Home').appendChild(probe);
+    const amber = getComputedStyle(probe).color, amberBg = getComputedStyle(probe).backgroundColor; probe.remove();
+    return { cls: s ? s.className : null, color: s ? getComputedStyle(s).color : null, bg: s ? getComputedStyle(s).backgroundColor : null, amber, amberBg, level: st ? st.dataset.level : null,
+      sums: [...document.querySelectorAll('[data-card=safe] .a3-sum')].map(e => e.dataset.fig) };
+  });
   await b.close();
-  return { out, status, all, errs, short, cap };
+  return { out, status, all, errs, short, cap, look };
 }
 (async () => {
   {
@@ -62,7 +70,11 @@ async function warns(bk, day) {
     bills: [{ key: 'rent', name: 'Rent', from: 'b', amount: 60000, day: rentDay, shift: 'none' }] }, { newId: I.idMaker('b1home', () => 0.5) }).book;
   const jpBook0 = (bank, pay, rentDay) => { const bk = jpBook(bank, pay, rentDay); if (!pay) bk.schedules.find(x => x.kind === 'income').steps[0].amount = 0; return bk; };   // [BL1] setup refuses a pay of 0; a book written before that still reads
   {
-    const { out, status, short, errs } = await warns(jpBook(30000, 50000, 24), '2026-11-23');
+    const { out, status, short, errs, look } = await warns(jpBook(30000, 50000, 24), '2026-11-23');
+    /* [C3, M47] short is a plain amber line, never red, and its sum is printed once */
+    ck('D: the short line is amber, never red (M47)', look.cls === 'a3-warn' && look.color === look.amber && look.bg === look.amberBg, JSON.stringify(look));
+    ck('D: the status level for short is not "bad"', look.level === 'warn', look.level);
+    ck('D: one sum line under short, not the same sum twice', look.sums.join() === 'shortwhy', look.sums.join());
     ck('D: [BL3] short by the sum\'s own total before the pay after the lowest point, the first day under beside it', short === 'Short by ¥40,000 before the pay on 25 Dec, below zero from 24 Nov', short);
     const w = out.find(x => x.code === 'below_minimum');
     ck('D: the warning names 24 Nov and 30,000', w && w.text === 'Main bank goes ¥30,000 below zero on 24 Nov', JSON.stringify(out));
@@ -134,11 +146,13 @@ async function warns(bk, day) {
     bk.events.push({ id: 's6sp', k: 'spend', acct, date: '2026-11-26', a: 70000, told: '2026-11-26T12:00+09:00' });
     const r = T.L.lookahead(bk, '2026-11-27'), over = r.safeToSpend.freeOver;
     ck('F: the engine says Free to spend is over', over > 0 && r.period.free.left === -over, JSON.stringify(r.safeToSpend));
-    const { cap, errs } = await warns(bk, '2026-11-27');
+    const { cap, errs, all } = await warns(bk, '2026-11-27');
     ck('F: the sum on Home names the overspend', cap && cap.includes(`over this period) = ¥0`), cap);
     /* [BM3] each part names its own amount: the cap takes all of what the accounts can spare, so it says "all of it" */
     const spare = r.safeToSpend.whyParts[0].amount.toLocaleString('en');
     ck('F: BM3 the cap part says all of it, beside its own amount', cap === `¥${spare} (what your accounts can spare) \u2212 ¥${spare} (all of it: Free to spend is ¥${over.toLocaleString('en')} over this period) = ¥0`, cap);
+    /* [C2] Free to spend is over, so it caps safe to spend at nothing: one plain line says so, with the engine's figure */
+    ck('F: C2 Home says why nothing is safe to spend, in one line', all.replace(/\u2060/g, '').includes(`Your accounts can spare ¥${spare}, but your Free to spend is used up this period, so nothing is safe to spend`), (all.replace(/\u2060/g, '').match(/Your accounts can spare.{0,120}/) || [])[0]);
     ck('F: no page errors', errs.length === 0, errs.join(' | '));
   }
   /* J. [BM2, numbers QC finding 2] Set up Thu 10 Dec with Main bank 359,000 (the pay of the 10th in), Pay 200,000 on the

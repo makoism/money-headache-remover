@@ -8,9 +8,11 @@
      ctx.origin    'typed' or 'sample' (required, from provenance.js): sample numbers are never judged as the person's
      ctx.names     { accountId: 'Main bank' } for the words, optional
      ctx.staleDays a bank figure older than this asks for a check-in (7 until Mako says otherwise)
+     ctx.oldDays   a bank figure older than this leads with "Check your bank", above a pay not in yet (14) [N26]
 
    One state, in this order (the first that is true wins, the rest go in `also` so they can sit under it):
-     sample > empty > short > warning > set_aside > plan_over > question > late > check > zero > no_free > ok
+     sample > empty > short > warning > set_aside > plan_over > question > check (old) > late > check > zero > no_free > ok
+   check (old) [N26]: the last bank check is over ctx.oldDays old, so a pay "not in yet" is only a guess; the check leads
    plan_over [LISTFIX A2]: the real money is fine (no short, no warning) but the plan lines need more than the accounts
    can spare, so nothing is safe to spend; it says so and by how much, never "it turns safe once your pay is in"
    no_free [north star F1]: a pay period with neither Free to spend nor a budget line, so safe to spend leaves nothing
@@ -24,11 +26,13 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (money, names) {
   'use strict';
 
+  const OLD_DAYS = 14;    // [N26] past this, "Check your bank" leads, above "Pay not in yet"
   const STALE_DAYS = 7;   // for Mako: how old a bank figure may get before the status asks for a check-in
-  const LEVEL = { sample: 'wait', empty: 'wait', short: 'bad', warning: 'bad', set_aside: 'bad', plan_over: 'bad', question: 'wait', late: 'wait', check: 'wait', zero: 'wait', no_free: 'wait', ok: 'good' };
+  /* [C3, M47] short and under a minimum (or below zero) are 'warn', plain amber: never 'bad', never red */
+  const LEVEL = { sample: 'wait', empty: 'wait', short: 'warn', warning: 'warn', set_aside: 'bad', plan_over: 'bad', question: 'wait', late: 'wait', check: 'wait', zero: 'wait', no_free: 'wait', ok: 'good' };
   /* engine warning codes (lookahead_ref.js): which change the state, which are notes under it */
   const WARNING_STATE = { below_minimum: 'warning', set_aside_over: 'set_aside', check_again: 'question', gain_to_ask: 'question', minimum_other_currency: 'question' };
-  const NOTE_ONLY = ['card_other_currency', 'loan_other_currency', 'income_other_currency', 'spend_other_currency', 'reopened'];
+  const NOTE_ONLY = ['card_other_currency', 'loan_other_currency', 'income_other_currency', 'spend_other_currency', 'reopened', 'revived'];
 
   /* every word the status says, all drafts for Mako's copy pass (VOICE: one-line notes have no full stop) */
   const W = (text) => ({ text, forMako: true });
@@ -41,7 +45,7 @@
     'state.plan_over': W('Your plan needs more than you have'),
     'state.question': W('A question for you'),
     'state.late': W('Pay not in yet'),
-    'state.check': W('Time to check in'),
+    'state.check': W('Check your bank'),
     'state.zero': W('Nothing safe to spend yet'),
     'state.no_free': W('Add your everyday spending'),
     'state.ok': W('Fine for now'),
@@ -86,6 +90,7 @@
     'next.set_free': W('Set Free to spend'),
     /* the engine's warnings, worded here from their data (account, amount, day, minimum or none), never its text */
     'warn.below_zero': W('{account} goes {amount} below zero on {day}'),
+    'warn.below_zero_now': W('{account} is below zero today. Everything here counts from what it shows'),   // [M47, K29] the bank itself is under: said as it is, in amber, no shame
     'warn.below_minimum': W('{account} goes {amount} below its minimum of {minimum} on {day}'),
     'warn.later_on': W('Later on: {account} goes below zero in {month}'),
     'warn.later_low_zero': W('Later on: {account} goes {amount} below zero on {day}'),
@@ -95,6 +100,8 @@
     'warn.check_again': W('The {account} figure of {day} was wrong: what does it show now'),
     'warn.gain_to_ask': W('{account} shows {amount} more than the app had: was that figure right'),
     'warn.reopened': W('{account} was closed, but money came into it, so it is open again'),
+    'warn.revived': W('{account} was removed, but money was logged on it on another device, so it is back'),
+    'warn.revived_item': W('{name} was removed, but something logged on another device uses it, so it is back'),
     'warn.minimum_other_currency': W('The minimum kept for {account} is in another currency: what is its minimum in its own'),
     'warn.card_other_currency': W('{card} is paid from {account} in another currency: it is not taken off safe to spend until it is paid'),
     'warn.loan_other_currency': W('{loan} is paid from {account} in another currency: it is not taken off safe to spend until it is paid'),
@@ -138,7 +145,8 @@
     const accounts = r.accounts || {};
     const stp = r.safeToSpend || {};
     const pay = r.daysToNextPay || {};
-    const until = pay.next_pay || null;
+    /* [C8] the pay safe to spend runs to (safeToSpend.until): on pay day that is the pay after today's, never today */
+    const until = stp.until || pay.next_pay || null;
     const warnings = r.warnings || [];
     const below = warnings.filter(w => w.code === 'below_minimum').sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0));
     if (!Object.keys(accounts).length) out.push({ state: 'empty', reason: { code: 'no_figures' }, next: { code: 'check_in' } });
@@ -162,12 +170,16 @@
        short, no below-zero warning) and no goal holds too much, so the shortfall is the plan's */
     if (stp.shortfall > 0 && !stp.short && !below.length && !warnings.some(w => w.code === 'set_aside_over'))
       out.push({ state: 'plan_over', reason: { code: 'plan_over', amount: stp.shortfall, currency: ctx.currency, day: planShortDay(accounts, ctx.currency) }, next: { code: 'plan_over' }, note: 'plan_over' });
+    /* [N26] the last bank check is old: checking the bank comes before a pay that only looks late */
+    const oldAfter = ctx.oldDays == null ? OLD_DAYS : ctx.oldDays;
+    const veryOld = Object.keys(accounts).some(id => accounts[id].ageDays > oldAfter);
+    if (veryOld) out.push({ state: 'check', reason: { code: 'old_figure', since: stp.oldestInput }, next: { code: 'check_in' }, note: 'old_figure' });
     const paySeen = (r.notSeenYet && r.notSeenYet.items || []).find(i => i.direction === 'in');
     if (pay.late || paySeen) out.push({ state: 'late', reason: { code: 'pay_late', since: pay.late ? pay.next_pay : paySeen.lands }, next: { code: 'check_in_when_it_lands' }, note: 'pay_late' });
     const toConfirm = (r.checkIn && r.checkIn.toConfirm) || [];
     if (toConfirm.length) out.push({ state: 'check', reason: { code: 'to_confirm', count: toConfirm.length, since: r.checkIn.since }, next: { code: 'check_in' }, note: 'to_confirm' });
     const stale = ctx.staleDays == null ? STALE_DAYS : ctx.staleDays;
-    if (Object.keys(accounts).some(id => accounts[id].ageDays > stale)) out.push({ state: 'check', reason: { code: 'old_figure', since: stp.oldestInput }, next: { code: 'check_in' }, note: 'old_figure' });
+    if (!veryOld && Object.keys(accounts).some(id => accounts[id].ageDays > stale)) out.push({ state: 'check', reason: { code: 'old_figure', since: stp.oldestInput }, next: { code: 'check_in' }, note: 'old_figure' });
     if (Object.keys(accounts).length && stp.headline === 0) {
       out.push({ state: 'zero', reason: { code: stp.cappedByFreeToSpend && until ? 'free_used_up' : 'nothing_safe', until }, next: until ? { code: 'wait_for_pay', until } : { code: 'log_money_in' } });
     }
@@ -209,11 +221,14 @@
     const currency = (accounts[w.account] || {}).currency || ctx.currency;
     if (w.code === 'below_minimum') {
       const minimum = minimumOf(w, accounts), amount = w.amount != null ? w.amount : w.short;
-      return fill(minimum ? 'warn.below_minimum' : 'warn.below_zero', { account: w.account, amount, minimum, day: w.day, currency }, ctx);
+      /* [M47, K29] the bank figure itself is below zero (the engine's own figure for it, nothing worked out here) */
+      const under = !minimum && (accounts[w.account] || {}).bank < 0;
+      return fill(minimum ? 'warn.below_minimum' : under ? 'warn.below_zero_now' : 'warn.below_zero', { account: w.account, amount, minimum, day: w.day, currency }, ctx);
     }
     if (w.code === 'set_aside_over') return fill('warn.set_aside_over', { who: whoOf(w), account: w.account, amount: w.amount, day: w.day, currency }, ctx);
     if (w.code === 'check_again') return fill('warn.check_again', { account: w.account, day: w.day }, ctx);
     if (w.code === 'gain_to_ask') return fill('warn.gain_to_ask', { account: w.account, amount: w.gain, currency }, ctx);
+    if (w.code === 'revived') return w.account ? fill('warn.revived', { account: w.account }, ctx) : fill('warn.revived_item', { name: w.name || 'Something' }, ctx);   // [BZ3]
     if (w.code === 'card_other_currency') return fill('warn.card_other_currency', { account: w.account, card: w.card }, ctx);
     if (w.code === 'loan_other_currency') return fill('warn.loan_other_currency', { account: w.account, loan: w.loan }, ctx);
     if (WORDS['warn.' + w.code]) return fill('warn.' + w.code, { account: w.account }, ctx);
@@ -265,5 +280,5 @@
     return deepFreeze(s);
   }
 
-  return { statusOf, warningText, laterText, laterLowText, moveText, WORDS, STALE_DAYS };
+  return { statusOf, warningText, laterText, laterLowText, moveText, WORDS, STALE_DAYS, OLD_DAYS };
 });

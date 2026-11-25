@@ -13,7 +13,28 @@ const { ck } = T;
   ck('the engine has card A\'s 10 Dec payment overdue, and nothing next yet', r.cards[cardA].overdue.length === 1 && r.cards[cardA].overdue[0].amount === 54000 && !(r.cards[cardA].next && r.cards[cardA].next.amount), JSON.stringify(r.cards[cardA]));
   const line = await p.$eval(`[data-cardid="${cardA}"] .when`, e => e.textContent);
   ck('card A\'s line does not say nothing to pay yet', !/Nothing to pay yet/.test(line), line);
-  ck('it names the overdue payment: 54,000 due 10 Dec', /¥54,000/.test(line) && /10 Dec/.test(line), line);
+  /* [C10] the late payment is listed once, in the overdue card; the card's own line points to it */
+  ck('it says a payment is overdue and where it is listed', line === 'A payment is overdue, see above', line);
+  const odRow = (await p.$eval(`[data-card=overdue] [data-owed="${cardA}"]`, e => e.textContent)).replace(/\u2060/g, '');
+  ck('the overdue card names it: 54,000 due 10 Dec', /¥54,000 due 10 Dec/.test(odRow), odRow);
+  /* [C10] 12 Dec, nothing ticked: Card A (10 Dec, not seen) and Card B (11 Dec, late) are each listed once on Home, in
+     the overdue card above the cards box, never again under May still go through or Not seen yet; and the bank after the
+     cards says "today", the day the engine takes an overdue payment (BK1), never "on 12 Dec" for a card due 11 Dec */
+  {
+    await p.goto(T.URL0 + '?try=mako&today=2026-12-12'); await T.w(400);
+    const r12 = T.L.lookahead(bk, '2026-12-12'), cardB = bk.accounts.find(a => a.name === 'Card B').id;
+    ck('C10: the engine has both payments overdue, and takes them today', r12.cards[cardA].overdue.length === 1 && r12.cards[cardB].overdue.length === 1 && Object.values(r12.bankAfterCards)[0].cardDays.join() === '2026-12-12', JSON.stringify(r12.bankAfterCards));
+    const rows = await p.$$eval('#a3Home li', ls => ls.map(l => ({ card: l.closest('[data-card]').dataset.card, text: l.textContent.replace(/\u2060/g, '') })));
+    for (const [nm, d] of [['Card A', '10 Dec'], ['Card B', '11 Dec']]) {
+      const hits = rows.filter(x => x.text.includes(nm) && x.text.includes(d));
+      ck(`C10: ${nm}'s late payment of ${d} is listed once, in the overdue card`, hits.length === 1 && hits[0].card === 'overdue', JSON.stringify(hits));
+    }
+    const order = await p.$$eval('#a3Home [data-card]', es => es.map(e => e.dataset.card));
+    ck('C10: the overdue card sits right above the cards box', order.indexOf('overdue') >= 0 && order.indexOf('overdue') + 1 === order.indexOf('cards'), order.join());
+    ck('C10: the late bills and the late pay are still under Not seen yet', ['Rent', 'Power', 'Internet', 'Main job'].every(n => rows.some(x => x.card === 'notseen' && x.text.startsWith(n))), JSON.stringify(rows.filter(x => x.card === 'notseen')));
+    const ac = (await p.$eval('[data-fig=aftercards]', e => e.textContent)).replace(/\u2060/g, '');
+    ck('C10: the bank after the cards says today, not 12 Dec', ac.startsWith('After your cards are paid today: Main bank') && !/12 Dec/.test(ac) && /The overdue card payments are counted as going out today/.test(ac), ac);
+  }
   await p.goto(T.URL0 + '?try=mako&today=2026-12-10'); await T.w(400);
   const line10 = await p.$eval(`[data-cardid="${cardA}"] .when`, e => e.textContent);
   ck('on 10 Dec it still says when it comes out', line10 === 'Comes out on 10 Dec, the day your pay lands', line10);

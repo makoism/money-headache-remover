@@ -46,7 +46,7 @@
 
   function checkins(book, today, o) {
     o = Object.assign({ afterPay: true, mid: true, months: 12 }, o || {});
-    const pay = (book.schedules || []).find(s => live(s) && s.kind === 'income' && s.startsPeriod && !s.ends);
+    const holder = S.periodHolder((book.schedules || []).filter(live), today), pay = holder && !holder.ends ? holder : null;   // [BZ2] the pay holding the flag today
     const rule = pay && ruleNow(pay, today);
     if (!pay || !rule || rule.every === 'none') return { items: [], repeat: { afterPay: null, mid: null }, why: 'There is no pay day set, so there are no pay periods to remind you in. Set your pay day in Plan first' };
     const t = D.dayNum(today), end = endOf(today, o.months);
