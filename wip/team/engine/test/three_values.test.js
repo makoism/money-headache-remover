@@ -6,11 +6,22 @@
 // amount. Every figure below was worked by hand by qc-foundation on 24 Nov 2026 (made-up yen).
 //
 // KAI, no fixed pay: rent 85,000 on the 27th, everyday 60,000 a month, set up 1 Dec 2026.
-//   2026 and 2027 have 365 days: everyday by the day is floor(60,000 x 12 / 365) = 1,972.
-//   Seen 1 Dec the walk looks to 27 Jan: two rents (170,000) and January's everyday held by the walk, 27 x 1,972 =
-//   53,244. canSpare = 420,000 - 170,000 - 53,244 = 196,756. Everyday left 60,000 to 31 Dec. No job 136,756.
-//   Before the fix the headline took December's everyday money off twice: with 300,000 in the bank it read 17,578
-//   where 60,000 is right, and with 250,000 it read 0 where 26,756 is right.
+//   The month rule (CA4, 25 Nov 2026; MONTHRULE_PLAN): a later month's everyday money comes off by the day at
+//   floor(amount / the month's days), its last day carrying the rest. January (31 days): floor(60,000 / 31) = 1,935 a
+//   day, the 31st 60,000 - 30 x 1,935 = 1,950. February 2027 (28 days): floor(60,000 / 28) = 2,142 a day.
+//   (Before CA4 the rate was floor(60,000 x 12 / 365) = 1,972 every day; each figure below was reworked by hand.)
+//   Seen 1 Dec the walk looks to 27 Jan: two rents (170,000) and January's everyday held by the walk, 27 x 1,935 =
+//   52,245. canSpare = 420,000 - 170,000 - 52,245 = 197,755. Everyday left 60,000 to 31 Dec. No job 137,755.
+//   Seen 15 Dec the walk looks to 29 Jan: 29 x 1,935 = 56,115. canSpare = 420,000 - 170,000 - 56,115 = 193,885.
+//   Seen 21 Dec (75,000 spent) it looks to 4 Feb: all of January, 60,000, and 4 x 2,142 = 8,568, so 68,568 held.
+//     canSpare = 420,000 - 75,000 - 170,000 - 68,568 = 106,432.
+//   Set up 20 Dec it looks to 3 Feb: 60,000 + 3 x 2,142 = 66,426. canSpare = 420,000 - 170,000 - 66,426 = 183,574;
+//     December counts floor(60,000 x 12 / 31) = 23,225 (12 days of 31, I4, unchanged), so no job is 160,349.
+//   Seen 31 Dec (25,000 spent) it looks to 27 Feb, three rents (255,000): 60,000 + 27 x 2,142 = 57,834, so 117,834
+//     held. canSpare = 420,000 - 25,000 - 255,000 - 117,834 = 22,166. Seen 1 Jan January's money caps instead and only
+//     February's 57,834 is held: 395,000 - 255,000 - 57,834 = 82,166, no job 82,166 - 60,000 = 22,166.
+//   Before the three-values fix the headline took December's everyday money off twice: with 300,000 in the bank it
+//   read 17,578 where 60,000 is right, and with 250,000 it read 0.
 // PAY PERIOD: pay 300,000 on the 25th, rent 85,000 on the 27th, everyday 60,000, bank 182,400, set up 24 Nov 2026.
 //   One day of the 31 before the first pay counts: floor(60,000 / 31) = 1,935.
 const { t, done, eq, ok } = require('./t.js');
@@ -49,29 +60,29 @@ function ties(r) {
 const kai = (bank, o) => make(Object.assign({ day: '2026-12-01', bank }, o || {}));
 const paid = (o) => make(Object.assign({ day: '2026-11-24', bank: 182400, pay: true }, o || {}));
 
-t('Kai, 1 Dec: can spare 196,756, everyday left 60,000 to 31 Dec, no job 136,756, headline 60,000', () => {
+t('Kai, 1 Dec: can spare 197,755, everyday left 60,000 to 31 Dec, no job 137,755, headline 60,000', () => {
   const r = kai(420000).see('2026-12-01');
-  eq(three(r), [196756, 60000, 136756, 60000]);
+  eq(three(r), [197755, 60000, 137755, 60000]);
   eq([r.everyday.full, r.everyday.counts, r.everyday.spent, r.everyday.lastDay, r.everyday.kind], [60000, 60000, 0, '2026-12-31', 'month']);
   eq([r.canSpare.lastDay, r.canSpare.through], ['2026-12-31', r.horizon]);
   ties(r);
 });
-t('Kai, seen 15 Dec, nothing logged: 192,812, 60,000, 132,812', () => { const r = kai(420000).see('2026-12-15'); eq(three(r), [192812, 60000, 132812, 60000]); ties(r); });
-t('Kai, 25,000 spent on 10 Dec, seen 15 Dec: 167,812, 35,000 left, 132,812, headline 35,000', () => {
+t('Kai, seen 15 Dec, nothing logged: 193,885, 60,000, 133,885', () => { const r = kai(420000).see('2026-12-15'); eq(three(r), [193885, 60000, 133885, 60000]); ties(r); });
+t('Kai, 25,000 spent on 10 Dec, seen 15 Dec: 168,885, 35,000 left, 133,885, headline 35,000', () => {
   const r = kai(420000).spend('2026-12-10', 25000).see('2026-12-15');
-  eq(three(r), [167812, 35000, 132812, 35000]); eq(r.everyday.spent, 25000); ties(r);
+  eq(three(r), [168885, 35000, 133885, 35000]); eq(r.everyday.spent, 25000); ties(r);
 });
-t('Kai, 75,000 spent, seen 21 Dec: 105,962, 15,000 over, no job 105,962, headline 0', () => {
+t('Kai, 75,000 spent, seen 21 Dec: 106,432, 15,000 over, no job 106,432, headline 0', () => {
   const r = kai(420000).spend('2026-12-10', 75000).see('2026-12-21');
-  eq(three(r), [105962, -15000, 105962, 0]); ties(r);
+  eq(three(r), [106432, -15000, 106432, 0]); ties(r);
 });
-t('Kai set up 20 Dec: everyday counts 23,225 of 60,000, can spare 182,934, no job 159,709', () => {
+t('Kai set up 20 Dec: everyday counts 23,225 of 60,000, can spare 183,574, no job 160,349', () => {
   const r = make({ day: '2026-12-20', bank: 420000 }).see('2026-12-20');
-  eq([r.everyday.full, r.everyday.counts], [60000, 23225]); eq(three(r), [182934, 23225, 159709, 23225]); ties(r);
+  eq([r.everyday.full, r.everyday.counts], [60000, 23225]); eq(three(r), [183574, 23225, 160349, 23225]); ties(r);
 });
-t('Kai with 300,000: 76,756, 60,000, 16,756, and the headline is 60,000 (it read 17,578)', () => { const r = kai(300000).see('2026-12-01'); eq(three(r), [76756, 60000, 16756, 60000]); ties(r); });
-t('Kai with 250,000: 26,756, no job 0, and the headline is 26,756 (it read 0)', () => { const r = kai(250000).see('2026-12-01'); eq(three(r), [26756, 60000, 0, 26756]); ties(r); });
-t('Kai with 200,000: short, can spare -23,244, no job 0, headline 0', () => { const r = kai(200000).see('2026-12-01'); eq(three(r), [-23244, 60000, 0, 0]); ties(r); });
+t('Kai with 300,000: 77,755, 60,000, 17,755, and the headline is 60,000 (it read 17,578)', () => { const r = kai(300000).see('2026-12-01'); eq(three(r), [77755, 60000, 17755, 60000]); ties(r); });
+t('Kai with 250,000: 27,755, no job 0, and the headline is 27,755 (it read 0)', () => { const r = kai(250000).see('2026-12-01'); eq(three(r), [27755, 60000, 0, 27755]); ties(r); });
+t('Kai with 200,000: short, can spare -22,245, no job 0, headline 0', () => { const r = kai(200000).see('2026-12-01'); eq(three(r), [-22245, 60000, 0, 0]); ties(r); });
 t('an everyday amount of 0 is an amount: can spare 250,000, no job 250,000, headline 0', () => {
   const r = kai(420000, { free: 0 }).see('2026-12-01');
   eq(three(r), [250000, 0, 250000, 0]); eq([r.everyday.full, r.everyday.counts, r.everyday.spent], [0, 0, 0]); ties(r);
@@ -80,11 +91,11 @@ t('no everyday amount: everyday is null, no job 250,000, headline 250,000', () =
   const r = kai(420000, { free: null }).see('2026-12-01');
   eq(r.everyday, null); eq([r.canSpare.amount, r.noJob.amount, r.safeToSpend.headline], [250000, 250000, 250000]); ties(r);
 });
-t('Kai, 25,000 spent, seen 31 Dec (three rents ahead): 25,606, 35,000, no job 0, headline 25,606', () => {
-  const r = kai(420000).spend('2026-12-10', 25000).see('2026-12-31'); eq(three(r), [25606, 35000, 0, 25606]); ties(r);
+t('Kai, 25,000 spent, seen 31 Dec (three rents ahead): 22,166, 35,000, no job 0, headline 22,166', () => {
+  const r = kai(420000).spend('2026-12-10', 25000).see('2026-12-31'); eq(three(r), [22166, 35000, 0, 22166]); ties(r);
 });
-t('the same, seen 1 Jan: 86,756, a new month\'s 60,000, no job 26,756, headline 60,000', () => {
-  const r = kai(420000).spend('2026-12-10', 25000).see('2027-01-01'); eq(three(r), [86756, 60000, 26756, 60000]); eq(r.everyday.lastDay, '2027-01-31'); ties(r);
+t('the same, seen 1 Jan: 82,166, a new month\'s 60,000, no job 22,166, headline 60,000', () => {
+  const r = kai(420000).spend('2026-12-10', 25000).see('2027-01-01'); eq(three(r), [82166, 60000, 22166, 60000]); eq(r.everyday.lastDay, '2027-01-31'); ties(r);
 });
 
 t('pay period, 24 Nov, the day before pay: 182,400, 1,935, 180,465, headline 1,935 (unchanged)', () => {
