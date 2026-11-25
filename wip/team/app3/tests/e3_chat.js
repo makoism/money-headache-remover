@@ -12,7 +12,7 @@
    5. The chat is kept on this device: the same turns after a reload.
    6. With a book: a bar at the foot of a phone that opens to a sheet; a column on the right at 1280.
    7. Cards: a change made shows its lines and the engine's figures before and after with Undo; one that asks first has
-      Do it and Not now; the fill card has Undo while the fill can be undone and Start over (asked first) after.
+      Do it and Not now; the fill card has Undo while the fill can be undone, and after that says how to change things.
    8. Before a file: the upload notice. No page errors; no sideways scroll at 320.
    9. The code word (stmt3_ai's box, reused): asked before the first message when none is kept; a wrong one asked again. */
 'use strict';
@@ -154,9 +154,9 @@ async function say(p, text) { await p.$eval('#a3ChatIn', (e, v) => { e.value = v
     ck('while the fill can be undone its button is Undo', (await p.$eval('[data-card=chat-fill] [data-chatundo]', e => e.textContent)) === 'Undo');
     await p.evaluate(async () => { const { E3, ACT3 } = BurrowApp3; await ACT3.logSpend({ date: E3.today(), a: 500, acct: E3.book.accounts[0].id, line: 'free' }); });
     await T.w(400);
-    ck('once something else is written it is Start over', (await p.$eval('[data-card=chat-fill] [data-chatundo]', e => e.textContent)) === 'Start over');
-    await p.click('[data-card=chat-fill] [data-chatundo]'); await T.w(400);
-    ck('Start over asks first, then goes through the core', /^Start over\?/.test(p.__dialog || '') && (await p.evaluate(() => window.__calls.filter(c => c[0] === 'startOver').length)) === 1);
+    /* [AI_JOIN_FIXES D] Start over is retired: it could never work once the hold was gone (the two checks here used a
+       stand-in core and never met the store). The card now says how to change things; e3_fillcard walks it with the real core */
+    ck('once something else is written the fill card has no button and says how to change things', !(await p.$('[data-card=chat-fill] button')) && /To change something, tell me or change it on its screen/.test(await p.$eval('[data-card=chat-fill]', e => e.textContent)));
     await say(p, 'guess');
     ck('an amount the AI made up is marked Check this', /Check this: 9,999 is the AI's own figure/.test(await p.$eval('#a3ChatLog', e => e.textContent)));
     /* 8 */
