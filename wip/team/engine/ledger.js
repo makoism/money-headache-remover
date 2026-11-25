@@ -160,7 +160,53 @@
     return { ok: p.total === p.have && !bad.length, total: p.total, have: p.have, cards: bad };
   }
 
-  const api = { TYPES, TWO, owed, yours, live, fieldValue, homeOn, ctx, accountMoves, apply, sums, placesOf, proof };
+  // [BZ3] A removed account, line or schedule that a live record names comes back, as a late spend reopens a closed
+  // account (AP1): money that happened always joins up (M67). The namers: a live event's `acct`, `acct2`, `card`, `line`,
+  // `stream` and settled occurrences; a live schedule's `acct` and `acct2`; a live line's `acct`; a live account's
+  // `payFrom`. With an account come its own records removed in the same step (the same `goneBy`, naming it). Read from the
+  // data, nothing written: the book given back is a copy with those records live, and `revived` lists what came back and
+  // the live records that named it, for the look ahead's warning and afterSync's notice. Nothing removed: the same book.
+  function revive(book) {
+    const lists = { account: book.accounts || [], line: (book.plan && book.plan.budgets) || [], schedule: book.schedules || [] };
+    const gone = {};
+    let any = false;
+    for (const k of Object.keys(lists)) { gone[k] = new Map(); for (const r of lists[k]) if (r && r.gone && r.id) { gone[k].set(r.id, r); any = true; } }
+    if (!any) return { book, revived: [] };
+    const back = { account: new Map(), line: new Map(), schedule: new Map() };
+    const occOf = x => (x && typeof x === 'object' ? x.s : typeof x === 'string' && x.indexOf('@') > 0 ? x.slice(0, x.lastIndexOf('@')) : null);
+    const name = (kind, id, by) => { if (id != null && gone[kind].has(id)) { const l = back[kind].get(id) || []; if (!l.includes(by)) l.push(by); back[kind].set(id, l); } };
+    const isLive = (kind, r) => r && !r.gone && r.id || (r && r.id && back[kind].has(r.id));
+    for (let round = 0; round < 3; round++) {
+      const before = back.account.size + back.line.size + back.schedule.size;
+      for (const e of book.events || []) {
+        if (!e || e.gone) continue;
+        for (const a of [e.acct, e.acct2, e.card]) name('account', a, e.id);
+        name('line', e.line, e.id);
+        name('schedule', e.stream, e.id);
+        for (const x of [].concat(e.settles || [])) name('schedule', occOf(x), e.id);
+      }
+      for (const s of lists.schedule) if (isLive('schedule', s)) { name('account', s.acct, s.id); name('account', s.acct2, s.id); }
+      for (const l of lists.line) if (isLive('line', l)) name('account', l.acct, l.id);
+      for (const a of lists.account) if (isLive('account', a)) name('account', a.payFrom, a.id);
+      if (back.account.size + back.line.size + back.schedule.size === before) break;
+    }
+    if (!back.account.size && !back.line.size && !back.schedule.size) return { book, revived: [] };
+    const strip = r => { const o = Object.assign({}, r); delete o.gone; delete o.goneBy; return o; };
+    // an account's own records removed with it: the same step (`goneBy`), or, with no step named on the record, the same day
+    const mateOf = (e, a) => { const g = gone.account.get(a); return !!g && (e.goneBy ? e.goneBy === g.goneBy : e.gone === g.gone); };
+    const mate = e => e && e.gone && [e.acct, e.acct2].some(a => a != null && back.account.has(a) && mateOf(e, a));
+    const out = Object.assign({}, book, {
+      accounts: (book.accounts || []).map(a => (a && back.account.has(a.id) ? strip(a) : a)),
+      schedules: (book.schedules || []).map(s => (s && back.schedule.has(s.id) ? strip(s) : s)),
+      events: (book.events || []).map(e => (mate(e) ? strip(e) : e)),
+    });
+    if (book.plan) out.plan = Object.assign({}, book.plan, { budgets: lists.line.map(l => (l && back.line.has(l.id) ? strip(l) : l)) });
+    const revived = [];
+    for (const kind of ['account', 'line', 'schedule']) for (const [id, by] of [...back[kind]].sort((x, y) => (x[0] < y[0] ? -1 : 1))) revived.push({ kind, id, name: gone[kind].get(id).name || null, by: by.slice().sort() });
+    return { book: out, revived };
+  }
+
+  const api = { TYPES, TWO, owed, yours, live, fieldValue, homeOn, ctx, accountMoves, apply, sums, placesOf, proof, revive };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else (root.BurrowEngine = root.BurrowEngine || {}).ledger = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

@@ -36,17 +36,41 @@ for (const day of ['2026-12-05', '2026-12-20', '2027-01-12']) {
     eq(LA.lookahead(swapped(b), day).safeToSpend.headline, LA.lookahead(b, day).safeToSpend.headline);
   });
 }
-t('the pay marked most recently starts the period: mark the second pay later and the period follows it, then the first again', () => {
-  const b = book(), inc = b.schedules.filter(s => s.kind === 'income');
-  const first = inc.find(s => s.name === 'Pay'), second = inc.find(s => s.name === 'Second pay');
-  second.at = String(first.at) + '~';   // a later clock than the first pay's
-  const follows = x => IDS.scheduleOf(LA.lookahead(x, '2026-12-27').period.nextPay.occ);   // the pay the period runs to
-  for (const x of [b, swapped(b)]) eq(follows(x), second.id);
-  first.at = String(second.at) + '~';
-  for (const x of [b, swapped(b)]) eq(follows(x), first.id);
+// The one rule (DECISIONS_ROUND2 BZ2 with CA2): the mark carries its date; the pay holding it on a day has the newest
+// entry on or before that day, by `from`, then `at`, then a fixed day, and last the greater id. Never the list's order.
+const S = require('../schedules.js');
+const pays = b => { const inc = b.schedules.filter(s => s.kind === 'income'); return { first: inc.find(s => s.name === 'Pay'), second: inc.find(s => s.name === 'Second pay') }; };
+t('two bare marks (an old book): the greater id holds it, the same in both list orders', () => {
+  const b = book(), { first, second } = pays(b), want = String(first.id) > String(second.id) ? first.id : second.id;
+  for (const x of [b, swapped(b)]) eq(S.periodHolder(x.schedules, '2026-12-20').id, want);
 });
-t('with the same clock on both, the id decides, the same in both orders', () => {
-  const b = book(); b.schedules.filter(s => s.kind === 'income').forEach(s => { s.at = 'same'; });
-  eq(shape(swapped(b), '2026-12-20'), shape(b, '2026-12-20'));
+t('a dated move: the second pay holds it from 20 Dec, so the periods follow the first pay before and the second after', () => {
+  const b = book(), { first, second } = pays(b);
+  first.startsPeriod = true;
+  second.startsPeriod = [{ from: '2026-12-20', at: '2026-12-20T09:00:00.000+09:00', by: 'k3f9aq' }];
+  for (const x of [b, swapped(b)]) {
+    eq([S.periodHolder(x.schedules, '2026-12-19').id, S.periodHolder(x.schedules, '2026-12-20').id, S.periodHolder(x.schedules, '2027-03-01').id], [first.id, second.id, second.id]);
+    // before the move the period runs to the first pay's next day, the 10th
+    eq(IDS.scheduleOf(LA.lookahead(x, '2026-12-05').period.nextPay.occ), first.id);
+  }
+  for (const d of ['2026-12-27', '2027-01-12']) eq(shape(swapped(b), d), shape(b, d));
+});
+t('two moves dated the same day: the one written later (its `at`) holds it; written at the same moment, the greater id', () => {
+  const b = book(), { first, second } = pays(b);
+  first.startsPeriod = [{ from: '2026-12-20', at: '2026-12-20T09:00:00.000+09:00' }];
+  second.startsPeriod = [{ from: '2026-12-20', at: '2026-12-20T09:05:00.000+09:00' }];
+  for (const x of [b, swapped(b)]) eq(S.periodHolder(x.schedules, '2026-12-21').id, second.id);
+  second.startsPeriod = [{ from: '2026-12-20', at: '2026-12-20T09:00:00.000+09:00' }];
+  const want = String(first.id) > String(second.id) ? first.id : second.id;
+  for (const x of [b, swapped(b)]) eq(S.periodHolder(x.schedules, '2026-12-21').id, want);
+});
+t('a job change mid-year, fed in six list orders: the same periods and the same safe to spend every time', () => {
+  const b = book(), { second } = pays(b);
+  second.startsPeriod = [{ from: '2027-06-01', at: '2027-06-01T09:00:00.000+09:00' }];
+  const orders = [x => x, x => x.reverse(), x => x.sort((p, q) => (p.id < q.id ? -1 : 1)), x => x.sort((p, q) => (p.id < q.id ? 1 : -1)), x => x.slice(1).concat(x.slice(0, 1)), x => x.slice(2).concat(x.slice(0, 2))];
+  for (const day of ['2027-05-20', '2027-06-02', '2027-07-12']) {
+    const want = [shape(b, day), LA.lookahead(b, day).safeToSpend.headline];
+    for (const o of orders) { const x = Object.assign({}, b, { schedules: o(b.schedules.slice()), events: o(b.events.slice()) }); eq([shape(x, day), LA.lookahead(x, day).safeToSpend.headline], want); }
+  }
 });
 done('two_pays_order.test.js');
