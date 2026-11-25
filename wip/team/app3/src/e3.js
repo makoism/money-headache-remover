@@ -120,6 +120,11 @@ const E3 = (() => {
        rec('copy:<at>')            one kept copy { id, why, at, copy }
        rec('cloud') / rec('cloud', v)   the cloud copy's device-only state, in the store's `device` record (SCHEMA_V3 2.2)
      A try book keeps nothing. */
+  /* [coordinator's ruling 26 Nov, M61] the device record is read and written whole: every read and every write of it goes
+     through one queue, in the order asked, so two keys written at once are both kept (before, one write was lost and
+     still said true). Nothing else in the app writes the device record (store/idb.js putDevice is called only here) */
+  let devQ = Promise.resolve();
+  const devTurn = fn => { const r = devQ.then(fn, fn); devQ = r.catch(() => {}); return r; };
   async function rec(key, value) {
     if (mode === 'try' || !store) return value === undefined ? null : false;
     try {
@@ -127,9 +132,11 @@ const E3 = (() => {
       if (key === 'drop') return await store.removeCopy(value);
       if (key === 'copies') return (await store.keptCopies()).sort((x, y) => (Date.parse(y.at) || 0) - (Date.parse(x.at) || 0) || (x.id < y.id ? 1 : -1));   // by moment: each `at` carries its own offset
       if (key.startsWith('copy:')) return await store.keptCopy(key);
-      const d = (await store.getDevice()) || {};
-      if (value === undefined) return d[key] === undefined ? null : d[key];
-      return await store.putDevice(Object.assign({}, d, { [key]: value }));
+      return await devTurn(async () => {
+        const d = (await store.getDevice()) || {};
+        if (value === undefined) return d[key] === undefined ? null : d[key];
+        return await store.putDevice(Object.assign({}, d, { [key]: value }));
+      });
     } catch (e) { return value === undefined ? null : false; }
   }
   function view(day) {
@@ -187,9 +194,7 @@ const E3 = (() => {
     if (mode !== 'kept' || !hold || !store) return false;
     const r = await store.discard();
     if (!r.ok) return false;
-    const d = (await store.getDevice()) || {};
-    delete d.fillHold;
-    try { await store.putDevice(d); } catch (e) { /* the mark goes with the next fill */ }
+    try { await devTurn(async () => { const d = (await store.getDevice()) || {}; delete d.fillHold; await store.putDevice(d); }); } catch (e) { /* the mark goes with the next fill */ }
     book = null; mode = 'none'; hold = false;
     return true;
   }

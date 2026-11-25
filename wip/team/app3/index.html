@@ -1500,6 +1500,7 @@ details summary { min-height: 44px; }
    "Landed on") takes the row's full width instead of the tick's narrow column (qc-layout blocker 1) */
 .a3-in[type="date"] { min-width: min(100%, 10.5em); }
 .a3-tick > .a3-field { grid-column: 1 / -1; }
+.a3-came { border: 0; padding: 0; margin: 8px 0 0; min-width: 0; } .a3-came .a3-q { padding: 0; margin-bottom: 6px; font-size: var(--t-sm); } .a3-came .a3-segs { flex-wrap: wrap; } .a3-came input[type=date] { margin-top: 8px; }
 </style>
 </head>
 <body>
@@ -3607,10 +3608,20 @@ details summary { min-height: 44px; }
       const inStretch = cardSteps.filter(x => x.day <= last);
       const laterCardDays = [];
       for (const c of mine) if (firstOf[c] != null) for (const d of cards[c].landsBetween(firstOf[c], last)) if (!cardSteps.some(x => x.card === c && x.day === d)) laterCardDays.push({ card: c, day: dayStr(d) });
+      // [qc-numbers monthrule2 blocker 4] a card paid in full whose close day is "not sure": the figure says it counts
+      // everything on the card now, so what is on it beyond the payments in the stretch (a spend after an overdue
+      // payment, held for the next payment) goes out with that card's first payment
+      const extraOn = {};
+      for (const c of mine) {
+        if (firstOf[c] == null || acct[c].inFull === false || !cards[c].cardItems.some(x => x.statement === 'all owed')) continue;
+        const taken = inStretch.filter(x => x.card === c).reduce((t, x) => t - x.amount, 0), extra = cards[c].owedNow - taken;
+        if (extra > 0) extraOn[firstOf[c]] = (extraOn[firstOf[c]] || 0) + extra;
+      }
       let bal = w.start, dip = null;
       const upTo = real.filter(x => x.day <= last);
       for (let i = 0; i < upTo.length; i++) {
         bal += upTo[i].amount + (upTo[i].fromPlace ? -upTo[i].fromPlace.amount : 0);
+        if (upTo[i].card && extraOn[upTo[i].day] && firstOf[upTo[i].card] === upTo[i].day) { bal -= extraOn[upTo[i].day]; delete extraOn[upTo[i].day]; }
         if (upTo[i + 1] && upTo[i + 1].day === upTo[i].day) continue;
         if (upTo[i].day < last && bal < 0 && (!dip || -bal > dip.amount)) dip = { day: dayStr(upTo[i].day), amount: -bal };
       }
@@ -8016,6 +8027,15 @@ RULES
         .map(x => ({ x, g: Math.abs(dayNum(x.lands) - dayNum(l.date)) })).filter(y => y.g <= 10).sort((p1, p2) => p1.g - p2.g || (p1.x.lands < p2.x.lands ? -1 : 1))[0];
       if (best) { l.settles = [best.x.item]; l.status = 'settles'; taken.add(best.x.item); }
     }
+    // [monthrule2 1b, way c part a] a pay ticked at a check is dated its due day; a statement line that replaces it with
+    // another day moves it (statement over typed) and the review says so, never silently: { s, was, now, starts }
+    const moved = [];
+    for (const l of all) {
+      const t = l.status === 'typed' && kept[l.typed];
+      if (!t || t.k !== 'in' || t.sub !== 'pay' || t.date === l.date || !(t.settles || []).length) continue;
+      const sc = (book.schedules || []).find(x => x && !x.gone && x.id === t.settles[0].s);
+      if (sc) moved.push({ s: sc.id, was: t.date, now: l.date, starts: !!sc.startsPeriod });
+    }
     const statements = [];
     for (const g of byRead) {
       const st = g.read.statement;
@@ -8031,7 +8051,7 @@ RULES
       if (l.dir === 'in') m.inA += l.a; else m.outA += l.a;
     }
     const count = s => all.filter(l => l.status === s).length;
-    return { today, lines: all, statements, merchants: Object.values(merchants).sort((x, y) => (y.inA + y.outA) - (x.inA + x.outA)),
+    return { today, lines: all, moved, statements, merchants: Object.values(merchants).sort((x, y) => (y.inA + y.outA) - (x.inA + x.outA)),
       counts: { read: all.length, repeat: count('repeat'), typed: count('typed'), settles: count('settles'), meets: count('meets'), new: count('new'), pick: count('pick'), askmove: count('askmove') },
       reads: byRead.map(g => ({ idx: g.idx, file: g.read.file, acct: g.acct.id, from: g.read.from, to: g.read.to, rows: g.lines.length, notes: g.read.notes || [] })) };
   }
@@ -8066,6 +8086,7 @@ RULES
         if (t.told) e.told = t.told;                          // [O1] it keeps the typed record's told
         if (!e.line && t.line) e.line = t.line;               // [BC4] and its budget line, so a coffee typed on Food stays on Food
         if (!e.place && t.place) e.place = t.place;
+        if (!e.sub && t.sub && t.k === e.k) e.sub = t.sub;     // [monthrule2 blocker 1] and what it is: a typed refund stays a refund
       }
       if (l.status === 'meets' && l.metImport) { e.gone = o.told ? o.told.slice(0, 10) : l.date; e.goneBy = l.meets; }   // the same payment, already read from the other side
       events.push(e);
@@ -8125,7 +8146,12 @@ RULES
     return { bank: d.balance !== null ? { a: m(d.balance), date: d.balanceDate } : null, pay: d.pay !== null ? { a: m(d.pay), how: d.how } : null, bills, cards: d.card !== null ? m(d.card) : null };
   }
 
-  const api = { plan, records, catsToKeep, knownCats, knownCards, knownMoves, setupHints, expectedOf, use };
+  /* the review's one line for a pay whose day a statement moved (name: schedule id to its name; day: a date to words) */
+  function movedWords(m, name, day) {
+    const end = new Date((dayNum(m.now) - 1) * MS).toISOString().slice(0, 10);
+    return `Your ${name(m.s)} came in on ${day(m.now)}, not ${day(m.was)}` + (m.starts ? `, so your last period now ends ${day(end)}` : '');
+  }
+  const api = { plan, records, movedWords, catsToKeep, knownCats, knownCards, knownMoves, setupHints, expectedOf, use };
   if (node) module.exports = api;
   else root.STMT3P = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
@@ -8568,6 +8594,11 @@ const E3 = (() => {
        rec('copy:<at>')            one kept copy { id, why, at, copy }
        rec('cloud') / rec('cloud', v)   the cloud copy's device-only state, in the store's `device` record (SCHEMA_V3 2.2)
      A try book keeps nothing. */
+  /* [coordinator's ruling 26 Nov, M61] the device record is read and written whole: every read and every write of it goes
+     through one queue, in the order asked, so two keys written at once are both kept (before, one write was lost and
+     still said true). Nothing else in the app writes the device record (store/idb.js putDevice is called only here) */
+  let devQ = Promise.resolve();
+  const devTurn = fn => { const r = devQ.then(fn, fn); devQ = r.catch(() => {}); return r; };
   async function rec(key, value) {
     if (mode === 'try' || !store) return value === undefined ? null : false;
     try {
@@ -8575,9 +8606,11 @@ const E3 = (() => {
       if (key === 'drop') return await store.removeCopy(value);
       if (key === 'copies') return (await store.keptCopies()).sort((x, y) => (Date.parse(y.at) || 0) - (Date.parse(x.at) || 0) || (x.id < y.id ? 1 : -1));   // by moment: each `at` carries its own offset
       if (key.startsWith('copy:')) return await store.keptCopy(key);
-      const d = (await store.getDevice()) || {};
-      if (value === undefined) return d[key] === undefined ? null : d[key];
-      return await store.putDevice(Object.assign({}, d, { [key]: value }));
+      return await devTurn(async () => {
+        const d = (await store.getDevice()) || {};
+        if (value === undefined) return d[key] === undefined ? null : d[key];
+        return await store.putDevice(Object.assign({}, d, { [key]: value }));
+      });
     } catch (e) { return value === undefined ? null : false; }
   }
   function view(day) {
@@ -8635,9 +8668,7 @@ const E3 = (() => {
     if (mode !== 'kept' || !hold || !store) return false;
     const r = await store.discard();
     if (!r.ok) return false;
-    const d = (await store.getDevice()) || {};
-    delete d.fillHold;
-    try { await store.putDevice(d); } catch (e) { /* the mark goes with the next fill */ }
+    try { await devTurn(async () => { const d = (await store.getDevice()) || {}; delete d.fillHold; await store.putDevice(d); }); } catch (e) { /* the mark goes with the next fill */ }
     book = null; mode = 'none'; hold = false;
     return true;
   }
@@ -9837,7 +9868,15 @@ function openCheck3() {
   /* [BI1] an item left unticked at an earlier check-in did not land before that check: the sheet asks the day it landed,
      the day after that check by default (the engine's landedFrom gives it) */
   const from = {}; for (const o of list) { const f = BurrowEngine.checkin.landedFrom(E3.book, { day }, o.item); if (f && o.lands < f) from[o.item] = f > day ? day : f; }
-  check3 = { day, list, from, sure: {}, ver: ACT3.ver() };   // [STALE_SHEET_PLAN] the book as this sheet saw it
+  /* [monthrule2 1b, coordinator's ruling way c; M31, M38, M44] a pay ticked after its due day: when did it come in? The due
+     day is picked, so one tap goes on as before; Today, or another day in a date box. Asked once per pay, on this sheet */
+  const isPay = it => (E3.book.schedules || []).some(s => s && !s.gone && s.kind === 'income' && s.id === BurrowEngine.ids.scheduleOf(it));
+  const came = {}; for (const o of list) if (!from[o.item] && o.lands < day && isPay(o.item)) came[o.item] = { pick: 'due', min: BurrowEngine.checkin.landedFrom(E3.book, { day }, o.item) || '' };
+  check3 = { day, list, from, came, sure: {}, ver: ACT3.ver() };   // [STALE_SHEET_PLAN] the book as this sheet saw it
+  const wd = d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date(d + 'T00:00:00Z').getUTCDay()] + ' ' + day3(d, yr);
+  const cameRow = (o, i) => (came[o.item] ? `<fieldset class="a3-field a3-came" data-camein="${esc3(o.item)}"><legend class="a3-q">When did it come in?</legend>
+      <div class="a3-segs"><button type="button" class="a3-seg a3-seg-s" data-came="due" aria-pressed="true">${esc3(wd(o.lands))} (the due day)</button><button type="button" class="a3-seg a3-seg-s" data-came="today" aria-pressed="false">Today, ${esc3(wd(day))}</button><button type="button" class="a3-seg a3-seg-s" data-came="other" aria-pressed="false">Another day</button></div>
+      <input class="a3-in" type="date" id="a3cm${i}" aria-label="The day ${esc3(E3.occName(o.item))} came in" data-cameday="${esc3(o.item)}" value="${esc3(o.lands)}"${came[o.item].min ? ` min="${esc3(came[o.item].min)}"` : ''} max="${esc3(day)}" hidden></fieldset>` : '');
   const landedRow = (o, i) => (from[o.item] ? `<div class="a3-field a3-landed"><label for="a3l${i}">Landed on</label>
       <input class="a3-in" type="date" id="a3l${i}" data-landed="${esc3(o.item)}" value="${esc3(from[o.item])}" min="${esc3(from[o.item])}" max="${esc3(day)}"></div>` : '');
   const rows = list.map((o, i) => `<div class="a3-tick" data-item="${esc3(o.item)}">
@@ -9845,6 +9884,7 @@ function openCheck3() {
       <label for="a3t${i}"><span>${esc3(E3.occName(o.item))}</span><span class="when" id="a3d${i}">${esc3(day3(o.lands, yr))}, ${esc3(E3.nameOf(o.account))}</span></label>
       <input class="a3-in" data-amount type="text" inputmode="decimal" autocomplete="off" aria-label="Amount for ${esc3(E3.occName(o.item))}" data-amt="${esc3(o.item)}" value="${SM.toInput(o.amount, E3.curOf(o.account))}">
       ${landedRow(o, i)}
+      ${cameRow(o, i)}
     </div>`).join('');
   const figs = Object.keys(r.accounts).map(id => `<div class="a3-field"><label for="a3f-${esc3(id)}">What does ${esc3(E3.nameOf(id))} show today?</label>
       <input class="a3-in" data-amount type="text" inputmode="decimal" autocomplete="off" id="a3f-${esc3(id)}" data-bankfig="${esc3(id)}" placeholder="${esc3(SM.symbol(r.accounts[id].currency).trim())}">
@@ -9877,6 +9917,13 @@ function openCheck3() {
     const o = (check3.payAsk || {})[el.dataset.payyes]; if (!o) return;
     const row = [...sheet.querySelectorAll('.a3-tick')].find(x => x.dataset.item === o.item), box = row && row.querySelector('input[type=checkbox]');
     if (box && !box.checked) { box.checked = true; box.dispatchEvent(new Event('change', { bubbles: true })); }
+    checkPreview3();
+  }));
+  sheet.querySelectorAll('[data-came]').forEach(el => el.addEventListener('click', () => {
+    const box = el.closest('[data-camein]'), c = check3.came[box.dataset.camein];
+    c.pick = el.dataset.came;
+    box.querySelectorAll('[data-came]').forEach(x => x.setAttribute('aria-pressed', String(x === el)));
+    const d = box.querySelector('[data-cameday]'); d.hidden = c.pick !== 'other'; if (!d.hidden) d.focus();
     checkPreview3();
   }));
   checkPreview3();
@@ -9913,6 +9960,13 @@ function readCheck3(strict) {
     if (ld) {
       if (!ld.value || ld.value < check3.from[o.item] || ld.value > check3.day) { if (strict) return bad(`${E3.occName(o.item)} was not in your last check, so it landed between ${day3(check3.from[o.item], check3.day.slice(0, 4))} and today`, ld); continue; }
       landed[o.item] = ld.value;
+    }
+    const c = (check3.came || {})[o.item];
+    if (c && c.pick === 'today') landed[o.item] = check3.day;
+    if (c && c.pick === 'other') {
+      const cd = row.querySelector('[data-cameday]');
+      if (!cd.value || cd.value > check3.day || (c.min && cd.value < c.min)) { if (strict) return bad(`Pick the day ${E3.occName(o.item)} came in, ${c.min ? `between ${day3(c.min, check3.day.slice(0, 4))} and today` : 'today or before'}`, cd); continue; }
+      landed[o.item] = cd.value;
     }
   }
   return { figures, ticked, amounts, expected, lands, landed };
@@ -10037,7 +10091,7 @@ async function saveCheck3() {
    write goes through ACT3 (src/act3.js), which gives the Undo bar. Free to spend left and safe to spend are the
    engine's, before and after: for a draft the engine is asked about the book the draft would make (ACT3.dry). This
    file chooses, writes and places; it never adds, takes away or rounds (tests: no_maths.js, e3_receipts.js). */
-const RC3 = { mode: 'spend', edit: null, at: null, search: '', last: null, held: null };
+const RC3 = { mode: 'spend', edit: null, at: null, search: '', last: null, held: null, from: null };
 const RC_KIND3 = { spend: 'logSpend', refund: 'refund', moved: 'moveMoney', in: 'moneyIn' };
 const RC_SPEND_FROM3 = { bank: 1, cash: 1, ewallet: 1, wallet: 1, card: 1, paylater: 1 };
 const RC_OWN3 = { bank: 1, cash: 1, ewallet: 1, wallet: 1 };
@@ -10165,7 +10219,9 @@ function rcFormHtml3() {
   const pick = (cur, list, dflt) => (cur != null ? cur : list.some(o => o.v === dflt) ? dflt : list[0] && list[0].v);
   const fromList = acctOpts(m === 'moved' || m === 'in' ? RC_OWN3 : RC_SPEND_FROM3);
   const mainId = main && main.acct;
-  const fromSel = pick(e ? e.acct : null, fromList, mainId);
+  /* [qc-numbers monthrule2 blocker 2] the From a person picked wins (also on a change), so To is every own account but that one */
+  const held = RC3.from && fromList.some(o => o.v === RC3.from) ? RC3.from : null;
+  const fromSel = pick(held || (e ? e.acct : null), fromList, mainId);
   let fields = '';
   /* [K18] money moves only between your own accounts: with one, there is nowhere to move it to, so the form says so
      instead of an empty To list and a Save that fails (a way to add an account goes here once the app has one) */
@@ -10245,14 +10301,14 @@ function rcWire3() {
   BurrowScreens.inputs.bind(amt, { kind: 'amount', code: E3.home(), optional: true });
   for (const el of document.querySelectorAll('#rcForm input, #rcForm select')) { el.addEventListener('input', rcPreview3); el.addEventListener('change', rcPreview3); }
   const from = $('#rcFrom');
-  if (from) from.addEventListener('change', () => { const keep = rcKeep3(); $('#rcForm').innerHTML = rcFormHtml3(); rcPut3(keep); rcWire3(); });
+  if (from) from.addEventListener('change', () => { const keep = rcKeep3(); RC3.from = from.value; $('#rcForm').innerHTML = rcFormHtml3(); rcPut3(keep); rcWire3(); });
   $('#rcSave').addEventListener('click', () => rcSave3());
   $('#rcAskYes').addEventListener('click', () => rcSave3(true));
   $('#rcAskNo').addEventListener('click', () => { rcAskOff3(); $('#rcAmt').focus(); });
   amt.addEventListener('keydown', e => { if (e.key === 'Enter') rcSave3(); });
   amt.addEventListener('input', rcAskOff3);
   if ($('#rcRemove')) $('#rcRemove').addEventListener('click', rcRemove3);
-  if ($('#rcCancel')) $('#rcCancel').addEventListener('click', () => { RC3.edit = null; RC3.mode = 'spend'; renderRc3(); });
+  if ($('#rcCancel')) $('#rcCancel').addEventListener('click', () => { RC3.from = null; RC3.edit = null; RC3.mode = 'spend'; renderRc3(); });
   rcPreview3();
 }
 /* what was typed survives a change of mode or account */
@@ -10304,7 +10360,7 @@ async function rcSave3(sure) {
   const r = RC3.edit ? await ACT3.edit(RC3.edit.id, rcFields3(x), { undo: said, seen: rcSeen3() }) : await ACT3[RC_KIND3[RC3.mode]](x, { undo: said });
   if (!r.ok) { $('#rcErr').textContent = r.text; rcLook3(r); return; }   // the form may have been drawn again meanwhile (another tab)
   RC3.last = before;
-  if (RC3.edit) { RC3.edit = null; RC3.mode = 'spend'; }
+  if (RC3.edit) { RC3.from = null; RC3.edit = null; RC3.mode = 'spend'; }
   renderRc3();
   const a = $('#rcAmt'); if (a) a.focus();
 }
@@ -10315,7 +10371,7 @@ const rcSeen3 = () => ({ [RC3.edit.id]: (RC3.edit.at || '') + '|' + (RC3.edit.by
 function rcLook3(r) {
   if (r.why !== 'other' || !RC3.edit) return;
   const now = ((E3.book && E3.book.events) || []).find(e => e.id === RC3.edit.id && !e.gone);
-  if (!now) { const t = $('#rcErr').textContent; RC3.edit = null; RC3.mode = 'spend'; renderRc3(); $('#rcErr').textContent = t; return; }
+  if (!now) { const t = $('#rcErr').textContent; RC3.from = null; RC3.edit = null; RC3.mode = 'spend'; renderRc3(); $('#rcErr').textContent = t; return; }
   RC3.edit = JSON.parse(JSON.stringify(now));
   if (typeof rcList3 === 'function') rcList3();
 }
@@ -10328,12 +10384,12 @@ async function rcRemoveGo3() {
   const before = rcFigs3(E3.book);
   const r = await ACT3.remove(e.id, { undo: `Removed ${money3(e.a, E3.curOf(e.acct))}, ${rcWhat3(e)}`, seen: rcSeen3() });
   if (!r.ok) { $('#rcErr').textContent = r.text; rcLook3(r); return; }
-  RC3.last = before; RC3.edit = null; RC3.mode = 'spend';
+  RC3.last = before; RC3.from = null; RC3.edit = null; RC3.mode = 'spend';
   renderRc3();
 }
 function rcOpen3(id) {
   const e = rcRows3().concat(rcAhead3()).find(x => x.id === id); if (!e) return;
-  RC3.edit = JSON.parse(JSON.stringify(e)); RC3.mode = e.k === 'transfer' ? 'moved' : rcMoneyIn3(e) ? 'in' : e.k === 'in' ? 'refund' : 'spend';
+  RC3.from = null; RC3.edit = JSON.parse(JSON.stringify(e)); RC3.mode = e.k === 'transfer' ? 'moved' : rcMoneyIn3(e) ? 'in' : e.k === 'in' ? 'refund' : 'spend';
   $('#rcForm').innerHTML = rcFormHtml3(); rcWire3();
   $('#rcForm').scrollIntoView({ block: 'start' }); $('#rcAmt').focus();
 }
@@ -10421,7 +10477,7 @@ function rcList3() {
 
 /* [NS-FIX 3] Home's "Log a spend": Receipts' own log form, in spend mode, with the amount box ready (no second form) */
 function rcLogFromHome3() {
-  RC3.edit = null; RC3.mode = 'spend';
+  RC3.from = null; RC3.edit = null; RC3.mode = 'spend';
   showTab3('receipts'); renderRc3();
   const f = $('#rcForm'); if (f) f.scrollIntoView({ block: 'start' });
   const a = $('#rcAmt'); if (a) a.focus();
@@ -10429,7 +10485,7 @@ function rcLogFromHome3() {
 /* every saved write and Undo draws Home and Receipts again */
 if (ACT3) ACT3.onChange((step, opts) => {
   if (opts && opts.isUndo) RC3.last = null;   // "was" figures belong to the step just taken back
-  if (RC3.edit && !rcRows3().concat(rcAhead3()).some(e => e.id === RC3.edit.id)) { RC3.edit = null; RC3.mode = 'spend'; }
+  if (RC3.edit && !rcRows3().concat(rcAhead3()).some(e => e.id === RC3.edit.id)) { RC3.from = null; RC3.edit = null; RC3.mode = 'spend'; }
   try { renderHome3(); } catch (e) { /* Home draws itself next time */ }
   renderRc3();
 });
@@ -12235,8 +12291,18 @@ function offAsk3() {
       <button type="button" class="a3-btn" id="a3CloudDel">Delete the cloud copy</button>
       <button type="button" class="a3-btn" id="a3CloudKeep">Keep it on</button></div>`;
   $('#a3CloudStop').addEventListener('click', () => turnOff3(false));
-  $('#a3CloudDel').addEventListener('click', () => turnOff3(true));
+  $('#a3CloudDel').addEventListener('click', delAsk3);
   $('#a3CloudKeep').addEventListener('click', () => { $('#a3CloudForm').innerHTML = ''; });
+}
+/* [coordinator's ruling 26 Nov, M61, M66] Delete asks first: the server then keeps only the mark that it was deleted, so
+   every earlier saved version goes too. Keep it is the easy choice and sends nothing */
+function delAsk3() {
+  $('#a3CloudForm').innerHTML = `<p class="a3-warn" data-cloud="delask">Delete the cloud copy for good? The earlier saved versions on the server go too, and this cannot be undone. The money on this device stays</p>
+    <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3CloudDelNo">Keep it</button>
+      <button type="button" class="a3-btn" id="a3CloudDelYes">Delete it for good</button></div>`;
+  $('#a3CloudDelNo').addEventListener('click', () => { $('#a3CloudForm').innerHTML = ''; });
+  $('#a3CloudDelYes').addEventListener('click', () => turnOff3(true));
+  $('#a3CloudDelNo').focus();
 }
 async function turnOff3(del) {
   const st = await cloudState3();
@@ -13097,7 +13163,7 @@ function stmt3Review() {
   const said = [c.settles ? c.settles + ' are bills, pay or card payments you expected' : '', c.typed ? `${c.typed} ${c.typed === 1 ? 'is one you typed' : 'are ones you typed'}` : '',
     c.meets ? c.meets + ' read twice, from your bank and your card' : '', c.repeat ? c.repeat + ' already here, left out' : '', c.pick ? `${c.pick} ${c.pick === 1 ? 'card payment needs' : 'card payments need'} you to say which card` : '', c.askmove ? `${c.askmove} sent out: ${c.askmove === 1 ? 'is it' : 'are they'} a move to your own account?` : ''].filter(Boolean);
   const sheet = stmt3Show(`<h1 id="a3StmtT">What was read</h1>
-    <section class="a3-card"><h2>${c.read} ${c.read === 1 ? 'line' : 'lines'}</h2><p class="a3-sub" data-fig="stmtsum">${esc3(said.join('. ') || 'All new')}</p>
+    <section class="a3-card"><h2>${c.read} ${c.read === 1 ? 'line' : 'lines'}</h2><p class="a3-sub" data-fig="stmtsum">${esc3(said.join('. ') || 'All new')}</p>${(p.moved || []).map(m => `<p class="a3-warn" data-fig="stmtmoved">${esc3(STMT3P.movedWords(m, E3.nameOf, d => day3(d, yr)))}</p>`).join('')}
       <ul class="a3-rows">${readRows}</ul></section>
     ${asks ? `<section class="a3-card" id="a3StmtMoves"><h2>Is this a move to one of your accounts?</h2><p class="a3-sub">Money moved between your own accounts is not spending. It is added once you answer</p>${asks}</section>` : ''}
     ${picks ? `<section class="a3-card" id="a3StmtPicks"><h2>Which card does this pay?</h2><p class="a3-sub">These left your bank as a card payment, and more than one card could be the one. It is added once you choose</p>${picks}</section>` : ''}

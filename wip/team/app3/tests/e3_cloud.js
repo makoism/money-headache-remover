@@ -108,7 +108,18 @@ const until = async (f, ms) => { for (let i = 0; i < (ms || 8000) / 100; i++) { 
     const words = await A.p.$eval('[data-cloud=offask]', e => e.textContent);
     ck('turning off says what is lost each way', /stays for your other devices/.test(words) && /opens nothing/.test(words) && /backup file/.test(words));
     ck('it says another device that still has it on stops sending, and says so', /Another device that still has it on stops sending, and says so/.test(words) && !/sends it up again/.test(words), words);
-    await A.p.click('#a3CloudDel');
+    /* [coordinator's ruling 26 Nov, M61, M66; qc-data-safety on lane/whichdoor blocker 1] Delete asks first, says the
+       earlier saved versions on the server go too and it cannot be undone; Keep it is the easy choice and sends nothing */
+    const dels = () => vault.log.filter(x => x.method === 'DELETE').length, del0 = dels();
+    await A.p.click('#a3CloudDel'); await T.w(300);
+    const ask = await A.p.$eval('[data-cloud=delask]', e => e.textContent).catch(() => '');
+    ck('Delete asks first: the earlier saved versions go too, it cannot be undone, nothing deleted yet', /earlier saved versions/.test(ask) && /cannot be undone/.test(ask) && dels() === del0 && vault.rows.size > 0, ask);
+    ck('Keep it is the easy choice (first, solid, focused)', await A.p.evaluate(() => { const k = document.querySelector('#a3CloudDelNo'); return !!k && k.classList.contains('solid') && document.activeElement === k; }));
+    await A.p.click('#a3CloudDelNo'); await T.w(400);
+    ck('Keep it sends nothing and the cloud copy stays on', dels() === del0 && vault.rows.size > 0 && !/^Off\./.test(await state(A.p)), await state(A.p));
+    await A.p.click('#a3CloudOff'); await T.w(100);
+    await A.p.click('#a3CloudDel'); await T.w(200);
+    await A.p.click('#a3CloudDelYes');
     ck('the cloud copy is deleted and A is off', await until(async () => vault.rows.size === 0 && /^Off\./.test(await state(A.p))));
     ck('A\'s money stays', (await stored(A.p)).schedules.find(x => x.id === sid).name === 'Main job (desk)');
 
