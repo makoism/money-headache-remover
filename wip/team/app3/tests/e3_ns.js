@@ -50,7 +50,10 @@ const { ck } = T;
   let h = await helpOf('safe');
   ck('safe to spend has a "?" with its lines hidden, beside an unchanged heading', h && h.btn === '?' && h.open === 'false' && !h.shown && h.head === 'Safe to spend until next pay on 10 Dec', JSON.stringify(h));
   await p.click('[data-card=safe] .burrow-help'); await T.w(100); h = await helpOf('safe');
-  ck('a tap opens the lines: the help piece\'s words', h.shown && h.open === 'true' && h.text === H.words('safeToSpend').join(' '), JSON.stringify(h));
+  // old H.words('safeToSpend') ("Bills and card payments due by then"); now H.words('safeToSpendCards') ("Bills due by then
+  // and everything on your cards now"): the made-up Mako book has no play amount (plan.shares is empty) and owes on
+  // Card A and Card B, so everything on the cards comes off safe to spend now (M90, R1) and the "?" says so
+  ck('a tap opens the lines: the help piece\'s words', h.shown && h.open === 'true' && h.text === H.words('safeToSpendCards').join(' '), JSON.stringify(h));
   await p.click('[data-card=safe] .burrow-help'); await T.w(100); h = await helpOf('safe');
   ck('a second tap closes them', !h.shown && h.open === 'false', JSON.stringify(h));
   h = await helpOf('period');
