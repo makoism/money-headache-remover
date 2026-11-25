@@ -21,12 +21,13 @@ function tryBand3() {
   t.innerHTML = `<span>Made-up numbers shaped like a real month. Nothing you do here is saved</span>
     <label class="a3-day">Show the page as on <input type="date" id="a3Day" value="${esc3(E3.today())}"></label>
     <button type="button" class="a3-btn" id="a3TryOut">Set up with my own numbers</button>`;
-  $('#a3Day').addEventListener('change', e => { E3.setToday(e.target.value); if (!$('#a3Check').hidden) closeCheck3(); renderHome3(); });
+  /* a cleared day box goes back to the day the page is showing: the box never sits empty over a page that shows a day */
+  $('#a3Day').addEventListener('change', e => { if (!e.target.value) { e.target.value = E3.today(); return; } E3.setToday(e.target.value); if (!$('#a3Check').hidden) closeCheck3(); renderHome3(); });
   $('#a3TryOut').addEventListener('click', leaveTry3);
 }
-/* out of the made-up numbers: nothing of them is written; this device's own book shows when it keeps one, else setup
-   (o.toChat: the assistant instead, AI_JOIN_FIXES G) */
-async function leaveTry3(o) {
+/* out of the made-up numbers: nothing of them is written; this device's own book shows when it keeps one, else the
+   assistant on the first screen (AI_JOIN_FIXES I4: never the setup forms; "Set up on the screens instead" is there) */
+async function leaveTry3() {
   if (SET3.open) closeSet3();
   if (REM3.open) closeRem3();
   if (!$('#a3Stmt').hidden) stmt3Close();
@@ -38,7 +39,6 @@ async function leaveTry3(o) {
   if (typeof chat3Kept === 'function') await chat3Kept();   // the chat kept on this device, never the made-up visit's
   renderHome3();
   if (typeof renderChat3 === 'function') renderChat3();
-  if (!E3.book && !(o && o.toChat === true)) openSetup3();
 }
 (async () => {
   try { $('#a3Pix').innerHTML = pix('sprout', 2); } catch (e) { /* art is a nicety */ }

@@ -75,6 +75,7 @@ async function download(p, dir, click) {
     const otherFile = fileOf('other.json', (await B.make(other)).text);
     await (await p.$('#a3BkFile')).uploadFile(otherFile); await T.w(400);
     ck('restoring asks first and says what is here is kept', /replaces the money on this device.*kept/.test(await p.$eval('[data-set=restoreask]', e => e.textContent)));
+    ck('with the cloud copy off it says money logged after the backup goes from this device, and how to get it back', (await p.$eval('[data-set=restoreask]', e => e.textContent)).includes('Anything you logged after this backup was made goes from this device. Put it back brings it back.'));
     await p.click('#a3BkGo'); await T.w(500);
     ck('restored', /Restored/.test(await msg(p)));
     ck('the book is the backup now', (await stored(p, 'book')).book.schedules[0].name === 'Main job (from backup)');
@@ -99,7 +100,11 @@ async function download(p, dir, click) {
     await (await p.$('#a3BkFile')).uploadFile(oldApp); await T.w(400);
     ck('an old app backup is refused: version one starts empty', /old app/.test(await msg(p)) && !(await p.$('#a3BkGo')));
     // put it back
-    await p.click('#a3BkBack'); await T.w(600);
+    await p.click('#a3BkBack'); await T.w(400);
+    const backAsk = await p.$eval('[data-set=backask]', e => e.textContent).catch(() => '');
+    ck('Put it back asks first; with the cloud copy off it speaks of this device only', backAsk === 'Put this copy back? Nothing was added since it was kept, and 1 thing changed since goes back to how it was, from this device. What is here now is kept first, and its own Put it back brings it back.', backAsk);
+    ck('nothing changes while it asks', (await stored(p, 'book')).book.schedules[0].name === 'Main job (from backup)');
+    await p.click('#a3BkBackGo').catch(() => {}); await T.w(600);
     ck('Put it back brings the kept copy back', (await stored(p, 'book')).book.schedules[0].name === bk.schedules[0].name && /Put back/.test(await msg(p)));
     await p.click('#a3SetClose'); await T.w(200);
     await p.reload(); await T.w(400);
@@ -153,7 +158,8 @@ async function download(p, dir, click) {
     await p.tap('[data-tab="plan"]'); await T.w(400);
     ck('C9: Plan shows the restored book', /Main job \(from backup\)/.test(await p.$eval('#a3Plan', e => e.textContent)));
     await p.click('#a3SetGo'); await T.w(300);
-    await p.click('#a3BkBack'); await T.w(600);
+    await p.click('#a3BkBack'); await T.w(400);
+    await p.click('#a3BkBackGo'); await T.w(600);   // Put it back asks first (lane/restore)
     await p.click('#a3SetClose'); await T.w(300);
     ck('C9: after Put it back, Plan shows the old name at once', !(await p.$eval('#a3Plan', e => e.hidden)) && !/from backup/.test(await p.$eval('#a3Plan', e => e.textContent)));
     ck('no page errors (C9)', errs.length === 0, errs.join(' | '));

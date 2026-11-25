@@ -102,7 +102,9 @@ async function chat3Route() {
 }
 
 /* ---- drawing ---- */
-const chat3Full = () => !E3.book;   // before setup the panel is the first screen
+/* before setup the panel is the first screen; while the setup screens are open it is the bar (AI_JOIN_FIXES I4) */
+const chat3SetupOpen = () => !!$('#a3Setup') && !$('#a3Setup').hidden;
+const chat3Full = () => !E3.book && !chat3SetupOpen();
 function chat3Figs(rows) {
   const cur = E3.book ? E3.home() : 'JPY';
   if (!rows || !rows.length) return '';
@@ -166,7 +168,12 @@ function chat3Inner() {
 function renderChat3() {
   const aside = $('#a3Chat');
   if (!aside) return;
-  if (chat3Full() || E3.mode === 'try') { aside.hidden = true; aside.innerHTML = ''; aside.removeAttribute('data-open'); document.body.classList.remove('a3-has-chat'); return; }
+  /* [AI_JOIN_FIXES I4] the bar is there in the made-up numbers too (that visit's chat is never kept), and on the setup
+     screens, where the welcome's own box is taken away so there is only ever one chat box */
+  if (chat3Full()) { aside.hidden = true; aside.innerHTML = ''; aside.removeAttribute('data-open'); document.body.classList.remove('a3-has-chat'); return; }
+  /* the setup screens are open over the welcome: its chat parts go (its ways in stay), so the bar is the one chat box */
+  const w = !E3.book && $('#a3Home .a3-welcome');
+  if (w && w.querySelector('#a3ChatIn')) [...w.children].forEach(c => { if (!c.matches('h2, .a3-actions')) c.remove(); });
   aside.hidden = false; document.body.classList.add('a3-has-chat');
   const keep = $('#a3ChatIn') && $('#a3ChatIn').closest('#a3Chat') ? $('#a3ChatIn').value : '';
   aside.innerHTML = `<div class="a3-chat-head"><h2>The assistant</h2><button type="button" class="a3-link" id="a3ChatClose">Close</button></div>
@@ -179,8 +186,10 @@ function renderChat3() {
 }
 /* before setup: the whole first screen, with the ways in that were there before */
 function renderWelcome3(host) {
-  host.innerHTML = `<section class="a3-card a3-welcome" data-card="first"><h2>Welcome to the burrow</h2>${chat3Inner()}
+  const open = chat3SetupOpen();   // the setup screens are open over it: the bar is the chat, the welcome keeps its ways in
+  host.innerHTML = `<section class="a3-card a3-welcome" data-card="first"><h2>Welcome to the burrow</h2>${open ? '' : chat3Inner()}
     <div class="a3-actions"><button type="button" class="a3-btn" id="a3SetupGo">Set up on the screens instead</button><button type="button" class="a3-btn" id="a3TryGo">See it with made-up numbers first</button><button type="button" class="a3-btn" id="a3OtherGo">I already use the burrow on another device</button></div></section>`;
+  if (open) { renderChat3(); return; }
   chat3Wire(host);
 }
 function chat3Wire(host) {
@@ -241,6 +250,7 @@ async function chat3Go() {
   }
   await chat3Save();
   CHAT3.busy = false;
+  if (CHAT3.word || res.stop === 'error') await chat3LogFail(q, CHAT3.word ? CHAT3.word : res.error);
   if (CHAT3.word) {
     const bad = CHAT3.word; CHAT3.word = null;
     chat3Redraw(); const b = $('#a3ChatIn'); if (b) b.value = q; chat3Word(bad); return;
@@ -260,6 +270,28 @@ async function chat3Go() {
   }
   CHAT3.failed = false;
   chat3Redraw();
+}
+/* [AI_JOIN_FIXES J] the assistant's error log: each exchange that failed, on this device only (the device record through
+   E3.rec, never the book, so never in a backup file or the cloud copy), the last 20. When, the kind of ask, the error
+   words shown (no digits) and the server's status. Never the person's words, and no money figures */
+const AILOG_KEEP = 20;
+function chat3Kind(q) {
+  if (!E3.book) return 'a setup answer';
+  return /\?\s*$|^(what|how|why|when|where|which|who|is|are|am|can|could|do|does|did|should|will|would)\b/i.test(q.trim()) ? 'a question' : 'a change';
+}
+async function chat3LogFail(q, error) {
+  try {
+    const e = CHAT3.lastErr || {};
+    const words = String(error || 'no answer').replace(/\s*\(\d+\)/g, '').replace(/[\d０-９]+([.,][\d０-９]+)*/g, '').replace(/\s{2,}/g, ' ').trim().slice(0, 200);
+    const log = ((await E3.rec('aiLog')) || []).concat([{ at: new Date().toISOString(), kind: chat3Kind(q), error: words, status: Number(e.status) || 0 }]);
+    while (log.length > AILOG_KEEP) log.shift();   // the last 20: the oldest goes first
+    await E3.rec('aiLog', log);
+  } catch (x) { /* the log is a help, never in the way */ }
+}
+/* the log as plain text to copy: one line on what it holds, then one line a failure */
+function chat3LogText(log) {
+  return ["The assistant's error log from this device: when, the kind of message, the error shown and the server's answer. It holds no money figures and none of your words."]
+    .concat((log || []).map(e => `${e.at} | ${e.kind} | ${e.error} | server: ${e.status ? e.status : 'no answer'}`)).join('\n');
 }
 async function chat3Act(fn) {
   if (CHAT3.busy) return;
@@ -344,11 +376,11 @@ async function chat3AnyCheck() {
    welcome is the panel: the cursor goes to its box. A sheet open over the page (Settings, setup) closes first */
 async function chat3Ask() {
   if (typeof SET3 === 'object' && SET3.open) closeSet3();
-  if (E3.mode === 'try') await leaveTry3({ toChat: true });
   if (!E3.book) {
     if ($('#a3Setup') && !$('#a3Setup').hidden) closeSetup3();
     showTab3('home');
-    const b = $('#a3Home #a3ChatIn'); if (b) b.focus();
+    /* the first screen's answer box can sit below a phone's screen: bring it into view, or the tap seems to do nothing */
+    const b = $('#a3Home #a3ChatIn'); if (b) { b.focus(); setTimeout(() => b.scrollIntoView({ block: 'center' }), 0); }
     return;
   }
   if ($('#a3Chat').hidden) renderChat3();

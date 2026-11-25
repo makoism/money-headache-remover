@@ -163,6 +163,7 @@ async function openSetup3() {
   </div>`;
   host.hidden = false; $('#a3Home').hidden = true; scrollTo(0, 0);
   $('#a3').classList.add('a3-setup-open');
+  if (typeof renderChat3 === 'function') renderChat3();   // [AI_JOIN_FIXES I4] the assistant's bar is there on the setup screens
   host.querySelectorAll('[data-money]').forEach(el => bindMoney3(el));
   /* the sheet's own listeners, once: the sheet stays, only its inside is drawn again on each open */
   if (!host.dataset.wired) {
@@ -237,7 +238,7 @@ function clearErr3(el) {
 }
 /* Back: setup closes; every saved section stays in the draft on this device */
 function closeSetup3() { if (setup3 && setup3.base) { clearTimeout(setup3.typedT); keepDraft3(setup3.saved, setup3.days); } endSetup3(); renderHome3(); }
-function endSetup3() { if (setup3) clearTimeout(setup3.typedT); $('#a3Setup').hidden = true; $('#a3Setup').innerHTML = ''; setup3 = null; $('#a3Home').hidden = false; $('#a3').classList.remove('a3-setup-open'); }
+function endSetup3() { if (setup3) clearTimeout(setup3.typedT); $('#a3Setup').hidden = true; $('#a3Setup').innerHTML = ''; setup3 = null; $('#a3Home').hidden = false; if (typeof renderChat3 === 'function') renderChat3(); $('#a3').classList.remove('a3-setup-open'); }
 /* [BV1] the boxes as plain values: setup3's form shape in answers3.js (ANSWERS3, the one answers-to-book function the
    chat and "Use any AI" use too). strict: a missing or wrong amount is asked for next to its box, which is focused
    (throws 'asked'); a box not typed and not asked for is null, for the questions the day asks.

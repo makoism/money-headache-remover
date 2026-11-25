@@ -71,7 +71,7 @@ const STMT3_AI = (() => {
     if (!slot) return;
     slot.innerHTML = `<div class="a3-field a3-word" id="a3Word"><label for="a3WordIn">Code word for the AI (ask the owner)</label>
       <input class="a3-in a3-text" id="a3WordIn" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="a3WordH">
-      <p class="a3-sub" id="a3WordH">Kept on this device only, and sent only to this page's own server.</p>
+      <p class="a3-sub" id="a3WordH">Kept on this device only, and sent only to this page's own server</p>
       <p class="a3-err" id="a3WordErr" role="alert"></p>
       <div class="a3-actions"><button type="button" class="a3-btn" id="a3WordKeep">Keep it</button></div></div>`;
     const err = slot.querySelector('#a3WordErr'), say = t => { err.textContent = t || ''; err.hidden = !t; };

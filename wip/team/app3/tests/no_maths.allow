@@ -16,3 +16,4 @@ cloud3_page.js :: Math.max(CLOUD_SOON3, C3.lastSync + CLOUD_EVERY3 - Date.now())
 e3.js :: Date.now() + (sec === '01' ? 1 : 0) :: a check-in's check told one millisecond after its records; a clock, not money
 chat3.js :: abc[b % abc.length] :: a random letter of the assistant's device id (BU3); not money
 plan3_write.js :: SC.dayNum(date) - 1 :: a moved account opens the day before its move (qc-foundation F3); a day, not money
+e3.js :: (Date.parse(y.at) || 0) - (Date.parse(x.at) || 0) :: kept whole copies listed newest first by moment (each at has its own offset); a clock, not money

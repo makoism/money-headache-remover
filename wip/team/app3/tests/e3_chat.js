@@ -312,6 +312,26 @@ async function say(p, text) { await p.$eval('#a3ChatIn', (e, v) => { e.value = v
     ck('G: Ask from Settings: Settings closes and the panel opens', !(await shows(p, '#a3Set')) && await p.evaluate(() => document.querySelector('#a3Chat').hasAttribute('data-open')));
     all.push(...errs); await b.close();
   }
+  /* ---- 13: the bar is there in the made-up numbers and on "Set up on the screens" (AI_JOIN_FIXES I4) ---- */
+  {
+    const { b, p, errs } = await T.open({ profile: fs.mkdtempSync(os.tmpdir() + '/a3chat7-') });
+    await relay(p, { on: false });
+    await p.goto(T.URL0 + '?try=mako&today=' + DAY); await T.w(600);
+    const boxes = () => p.$$eval('#a3ChatIn', es => es.map(e => !!e.closest('#a3Chat') ? 'bar' : 'home'));
+    ck('I4: in the made-up numbers the assistant\'s bar is there', await shows(p, '#a3Chat #a3ChatIn') && JSON.stringify(await boxes()) === '["bar"]', JSON.stringify(await boxes()));
+    await p.click('#a3AskGo'); await T.w(400);
+    ck('I4: and the header Ask opens it there', await p.evaluate(() => document.querySelector('#a3Chat').hasAttribute('data-open')) && await shows(p, '#a3Try'));
+    await p.click('#a3ChatClose'); await T.w(300);
+    await p.click('#a3TryOut'); await T.w(600);
+    ck('I4: leaving the made-up numbers with no book lands on the assistant: one chat box, in the welcome', JSON.stringify(await boxes()) === '["home"]' && await shows(p, '#a3Home #a3ChatIn') && !(await shows(p, '#a3Setup')), JSON.stringify(await boxes()));
+    await p.click('#a3SetupGo'); await T.w(500);
+    ck('I4: on "Set up on the screens" the bar is there, the one chat box', await shows(p, '#a3Setup') && await shows(p, '#a3Chat #a3ChatIn') && JSON.stringify(await boxes()) === '["bar"]', JSON.stringify(await boxes()));
+    await p.$eval('#a3Chat #a3ChatIn', e => { e.value = 'what goes in the bank box?'; }); await p.$eval('#a3Chat #a3ChatSend', e => e.click()); await T.w(700);
+    ck('I4: a message from the bar on the setup screens goes through and is answered', p.__sent.length === 1 && /what goes in the bank box\?Heard: /.test(await p.$eval('#a3Chat', e => e.textContent)), String(p.__sent.length));
+    await p.click('#a3SetupX'); await T.w(500);
+    ck('I4: Back from the setup screens: the welcome again, one chat box', JSON.stringify(await boxes()) === '["home"]' && !(await shows(p, '#a3Chat')), JSON.stringify(await boxes()));
+    all.push(...errs); await b.close();
+  }
   const bad = all.filter(e => !/status of (500|401|429|503)|ERR_INTERNET_DISCONNECTED/.test(e));   // the relay made to fail on purpose
   ck('no page errors', !bad.length, bad.join(' | '));
   T.done('e3_chat');
