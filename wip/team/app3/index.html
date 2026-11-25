@@ -8076,6 +8076,7 @@ RULES
         if (t.told) e.told = t.told;                          // [O1] it keeps the typed record's told
         if (!e.line && t.line) e.line = t.line;               // [BC4] and its budget line, so a coffee typed on Food stays on Food
         if (!e.place && t.place) e.place = t.place;
+        if (!e.sub && t.sub && t.k === e.k) e.sub = t.sub;     // [monthrule2 blocker 1] and what it is: a typed refund stays a refund
       }
       if (l.status === 'meets' && l.metImport) { e.gone = o.told ? o.told.slice(0, 10) : l.date; e.goneBy = l.meets; }   // the same payment, already read from the other side
       events.push(e);

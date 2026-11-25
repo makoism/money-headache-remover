@@ -194,5 +194,23 @@ ck('setup hints come from the old reader\'s own sums: pay, rent', h.pay && h.pay
   const shop = P.plan(bk, [rd([{ date: '2026-12-08', text: 'TRIP ADVISOR TOURS', amount: 3000, dir: 'out', cat: 'play' }])], { today: D3, assign: [MB], cats: {} }).lines[0];
   ck('a shop line that shares a word with an account stays a spend', shop.k === 'spend' && shop.status === 'new');
 }
+// [qc-numbers monthrule2 blocker 1, coordinator 26 Nov 07:57; M44, M45] a typed refund given back to Free to spend, then
+// the bank statement shows the same 2,000 coming in: the statement line replaces the typed refund and is still a refund
+// on Free to spend. Before: it kept the line but lost "refund", so it became money in, the 2,000 never came back to Free
+// to spend, and Receipts had no refund to find. Made-up yen, Mako's book: spent 3,000 on 6 Dec, a 2,000 refund on 8 Dec.
+{
+  const PR = require('../../engine/periods.js'), D4 = '2026-12-16', bk = JSON.parse(JSON.stringify(book0));
+  bk.events.push({ id: 'k7m2qa-r5f1n8d2u4-1', k: 'spend', acct: BANK, date: '2026-12-06', a: 3000, line: 'free', note: 'shoes', told: '2026-12-06T12:00+09:00', at: '2026-12-06T12:00+09:00', src: { type: 'typed' } },
+    { id: 'k7m2qa-r5f1n8d2u4-2', k: 'in', sub: 'refund', acct: BANK, date: '2026-12-08', a: 2000, line: 'free', note: 'shoes back', told: '2026-12-08T12:00+09:00', at: '2026-12-08T12:00+09:00', src: { type: 'typed' } });
+  const rd = R.cleanRead({ kind: 'bank', rows: [{ date: '2026-12-06', text: 'SHOE SHOP', amount: 3000, dir: 'out' }, { date: '2026-12-08', text: 'SHOE SHOP REFUND', amount: 2000, dir: 'in' }] }, 'bank_refund.csv', D4);
+  const pr = P.plan(bk, [rd], { today: D4, assign: [BANK], cats: {} });
+  const lr = pr.lines.find(l => l.dir === 'in');
+  ck('[refund] the statement line replaces the typed refund', lr && lr.status === 'typed' && lr.typed === 'k7m2qa-r5f1n8d2u4-2', JSON.stringify(lr));
+  const orr = P.records(bk, pr, { told: D4 + 'T10:00+09:00' }), er = orr.events.find(e => e.id === lr.id);
+  ck('[refund] what is written is still a refund on Free to spend', er.k === 'in' && er.sub === 'refund' && er.line === 'free', JSON.stringify(er));
+  const af = JSON.parse(JSON.stringify(bk)); af.events = af.events.concat(orr.events);
+  const spentOf = b => { const x = PR.periods(b, D4); const w = [].concat(x.past || [], x.now ? [x.now] : []).find(q => q.start <= '2026-12-08' && q.end >= '2026-12-08'); return w && w.free ? w.free.spent : null; };
+  ck('[refund] Free to spend spent is the same before and after the import: 3,000 - 2,000 = 1,000 of it', spentOf(bk) === spentOf(af), JSON.stringify([spentOf(bk), spentOf(af)]));
+}
 console.log(bad ? `e3_stmt_plan: ${bad} FAIL of ${n}` : `e3_stmt_plan: ALL PASS (${n})`);
 process.exit(bad ? 1 : 0);
