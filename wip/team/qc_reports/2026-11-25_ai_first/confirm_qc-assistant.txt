@@ -1,0 +1,4 @@
+Written by the coordinator, 26 Nov 2026 05:00 JST. A confirming run for qc-assistant (see QC_COMMON.md, "A confirming run").
+Earlier report: qc-assistant.md in this folder (run 3, FAIL, one blocker: the second "Set up on the screens" link opened empty boxes; every line from runs 1 and 2 was MET).
+Changed since that report: commit 8af94cb2 only (both links to setup on the screens are one door, so the chat's answers fill the boxes from either; test e3_chatwalk G).
+Check: that blocker is gone from both links, with answers given in the chat first; and setup by chat and setup on the screens still both finish.

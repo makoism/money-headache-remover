@@ -5,7 +5,7 @@
    - Tab 2 misses tab 1's next save (its tab messages are held back, as when a phone puts a tab to sleep), then logs its
      own: the store refuses it as behind, tab 2 catches up and saves the same step again; both spends are kept and shown.
    - Both tabs change the same spend to different amounts (tab 2 again not hearing tab 1): tab 2's change is not saved
-     over tab 1's; it says "Changed in another tab. Shown again, try again", shows tab 1's amount, and keeps the typed
+     over tab 1's; it says "Nothing was saved, because this changed somewhere else while it was open", shows tab 1's amount, and keeps the typed
      amount in the box. Trying again then saves it.
    Nothing is lost on reload; no page errors. */
 'use strict';
@@ -71,7 +71,7 @@ const DEAFABLE = () => {
     bk = await saved(p1);
     ck('tab 2\'s change is not saved over tab 1\'s', bk.events.find(e => e.id === coffee).a === 1300);
     const err = await p2.$eval('#rcErr', e => e.textContent);
-    ck('it says "Changed in another tab. Shown again, try again"', /^Changed in another tab\. Shown again, try again/.test(err), err);
+    ck('it says nothing was saved because it changed somewhere else', /^Nothing was saved, because this changed somewhere else while it was open/.test(err), err);
     ck('the typed amount stays in the box', await p2.$eval('#rcAmt', e => e.value) === '1250');
     ck('tab 2 shows tab 1\'s amount again', (await rows(p2)).some(r => r.id === coffee && /1,300/.test(r.text)), JSON.stringify(await rows(p2)));
     await p2.tap('#rcSave'); await T.w(600);

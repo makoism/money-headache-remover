@@ -57,6 +57,71 @@ const fig = (p, sel) => p.$eval(sel, e => Number((e.dataset.amt !== undefined ? 
     all.push(...d.errs); await d.close();
   }
   {
+    /* [qc-assistant blocker 2; M36, M51] "why is it that much?": every sum Home writes under safe to spend is in what the
+       assistant is sent, word for word (the engine's own parts, one source) */
+    const d = await open('2026-11-24');
+    const ai = await openWithFakeAI(d.p, { steps: MAKO_SETUP.steps.concat([{ calls: [{ name: 'change', input: { steps: [{ do: 'set_free', amount: 30000 }] } }] }, { words: 'Set.' }]) });
+    for (const line of MAKO_SETUP.lines) await tell(d.p, line);
+    await tell(d.p, 'set Free to spend to 30,000');
+    await d.p.waitForTimeout(500);
+    const sums = await d.p.$$eval('#a3Home [data-fig=why], #a3Home [data-fig=cap], #a3Home [data-fig=shortwhy]', els => els.map(e => e.dataset.fig + ': ' + e.textContent.trim()));
+    await tell(d.p, 'why is it that much?');
+    const last = ai.bodies[ai.bodies.length - 1], sent = last.messages.map(m => m.content.map(c => c.text || '').join('\n')).join('\n');
+    const missing = sums.filter(x => !sent.includes(x.replace(/^\w+: /, '')));
+    ck('Home shows the held-back sum (Free to spend caps safe to spend: 16,000 of the 30,000 counts for the days left)', (await fig(d.p, '#a3Home [data-fig=safe]')) === 16000 && sums.some(x => /^cap: .*held back: Free to spend has only ¥16,000 left this period\) = ¥16,000$/.test(x)), JSON.stringify(sums));
+    ck('every sum under safe to spend on Home is sent to the assistant word for word', sums.length >= 2 && !missing.length, 'not sent: ' + JSON.stringify(missing));
+    all.push(...d.errs); await d.close();
+  }
+  {
+    /* [qc-assistant blocker 3; M17] the open sheet's own name is sent with each message, and every sheet Plan and
+       Receipts can open has its row in the one table */
+    const d = await open('2026-11-24');
+    const ai = await openWithFakeAI(d.p, { steps: MAKO_SETUP.steps });
+    for (const line of MAKO_SETUP.lines) await tell(d.p, line);
+    const screenLine = () => (ai.bodies[ai.bodies.length - 1].messages.map(m => m.content.map(c => c.text || '').join('\n')).join('\n').split('\n').filter(l => /^SCREEN: /.test(l)).pop() || '');
+    const rows = await d.p.evaluate(() => BurrowApp3.chat.CHAT3C.SCREENS);
+    const shut = async () => { if (await d.p.$('#a3Chat[data-open] #a3ChatClose')) await d.p.$eval('#a3ChatClose', e => e.click()); await d.p.waitForTimeout(150); };
+    const got = [];
+    await shut(); await d.p.$eval('.a3-tabs [data-tab=plan]', e => e.click()); await d.p.waitForTimeout(300);
+    for (const [sel, key] of [['#plAddCard', 'addCard'], ['#plAddLoan', 'addLoan'], ['#plAddBill', 'addBill'], ['#plAddGoal', 'addGoal'], ['#plAddLine', 'addLine'], ['#plSetFree', 'free'], ['[data-bill]', 'bill'], ['[data-pay]', 'pay'], ['[data-owed]', 'card']]) {
+      await shut(); await d.p.$eval('.a3-tabs [data-tab=home]', e => e.click()); await d.p.$eval('.a3-tabs [data-tab=plan]', e => e.click()); await d.p.waitForTimeout(250);
+      await d.p.$eval('#a3Plan ' + sel, e => e.click()); await d.p.waitForTimeout(250);
+      const title = await d.p.$eval('#a3Plan [data-card=plan-form] h2', e => e.textContent);
+      await tell(d.p, 'what does this screen do?');
+      const line = screenLine();
+      got.push([key, line.includes('"' + title + '"') && line.includes(rows[key].does)]);
+      if (!got[got.length - 1][1]) console.log('  ' + key + ': ' + line);
+    }
+    ck('on each of Plan\'s sheets the assistant is told the sheet\'s own name and what it is for (9 sheets)', got.length === 9 && got.every(x => x[1]), JSON.stringify(got.filter(x => !x[1])));
+    await shut(); await d.p.$eval('.a3-tabs [data-tab=home]', e => e.click()); await d.p.waitForTimeout(250);
+    await tell(d.p, 'what does this screen do?');
+    ck('on Home, with no sheet open, it is told Home and what Home is for', screenLine() === 'SCREEN: the person has Home open. ' + rows.home.does, screenLine());
+    all.push(...d.errs); await d.close();
+  }
+  {
+    /* two steps asked, one left out: the card says which was not done */
+    const d = await open('2026-11-24');
+    await openWithFakeAI(d.p, { steps: MAKO_SETUP.steps.concat([{ calls: [{ name: 'change', input: { steps: [{ do: 'add_goal', name: 'Trip', target: 100000 }, { do: 'set_aside', goal: 'G1', amount: 5000 }] } }] }, { words: 'Added the goal.' }]) });
+    for (const line of MAKO_SETUP.lines) await tell(d.p, line);
+    await tell(d.p, 'add a goal called Trip for 100,000 and set aside 5,000 for it');
+    const left = await d.p.$eval('[data-card=chat-change][data-status=done] [data-chat=left]', e => e.textContent).catch(() => null);
+    ck('two steps asked, one left out: the card says "Not done: money set aside for a goal"', left === 'Not done: money set aside for a goal. Say that part again on its own', String(left));
+    all.push(...d.errs); await d.close();
+  }
+  {
+    /* [M30, M77] lunch 900 on Card A with no Free to spend set: the card shows Card A's row and says why safe to spend stays */
+    const d = await open('2026-11-24');
+    const refIn = (body, name) => { const m = new RegExp('(?:^|\\n)([A-Z]\\d+) \\| ' + name + ' \\|').exec(JSON.stringify(body.messages).replace(/\\n/g, '\n')); return m ? m[1] : null; };
+    await openWithFakeAI(d.p, { steps: MAKO_SETUP.steps.concat([body => ({ calls: [{ name: 'change', input: { steps: [{ do: 'log_spend', amount: 900, account: refIn(body, 'Card A') }] } }] }), { words: 'Logged.' }]) });
+    for (const line of MAKO_SETUP.lines) await tell(d.p, line);
+    await tell(d.p, 'lunch 900 on Card A');
+    const card = '[data-card=chat-change][data-status=done]';
+    const words = await d.p.$eval(card, e => e.innerText).catch(() => '');
+    const note = await d.p.$eval(card + ' [data-chat=note]', e => e.textContent).catch(() => null);
+    ck('a card spend that leaves safe to spend at 201,400: the card shows Card A still owed 54,000 to 54,900 and says why', note === 'Safe to spend stays the same: Card A is paid from your bank on or after your next pay' && /Card A, still owed\s*¥54,000\s*¥54,900/.test(words) && (await fig(d.p, '#a3Home [data-fig=safe]')) === 201400, JSON.stringify([note, words]));
+    all.push(...d.errs); await d.close();
+  }
+  {
     const d = await open('2026-11-24');
     const ai = await openWithFakeAI(d.p, { invite: 'acorn' });
     await d.p.fill('#a3ChatIn', 'hi'); await d.p.click('#a3ChatSend'); await d.p.waitForTimeout(400);

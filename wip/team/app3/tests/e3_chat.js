@@ -13,7 +13,7 @@
    6. With a book: a bar at the foot of a phone that opens to a sheet; a column on the right at 1280.
    7. Cards: a change made shows its lines and the engine's figures before and after with Undo; one that asks first has
       Do it and Not now; the fill card has Undo while the fill can be undone, and after that says how to change things.
-   8. Before a file: the upload notice. No page errors; no sideways scroll at 320.
+   8. Nothing offers a file in the chat (not built). No page errors; no sideways scroll at 320.
    9. The code word (stmt3_ai's box, reused): asked before the first message when none is kept; a wrong one asked again.
    11. One failed call does not turn the assistant off (AI_JOIN_FIXES E), with the real core: the connection dropped for
       one message, then back: the next send makes a call; the same after a 429 and after a daily limit (503). Only the
@@ -173,15 +173,13 @@ async function say(p, text) { await p.$eval('#a3ChatIn', (e, v) => { e.value = v
     await say(p, 'guess');
     ck('an amount the AI made up is marked Check this', /Check this: 9,999 is the AI's own figure/.test(await p.$eval('#a3ChatLog', e => e.textContent)));
     /* 8 */
-    await p.click('#a3Chat #a3ChatFile'); await T.w(100);
-    ck('before a file: the whole file goes, with name, address, employer, account number; crop out My Number', /whole file goes to the AI, with your name, address, employer and account number/.test(await p.$eval('[data-privacy=upload]', e => e.textContent)) && /My Number/.test(await p.$eval('[data-privacy=upload]', e => e.textContent)));
+    /* files in the chat are not built: nothing on the page offers one (the coordinator's ruling, 26 Nov: the app must not offer what it cannot do) */
+    ck('no "Send a file" in the assistant, and no file box', !(await p.$('#a3ChatFile')) && !(await p.$('#a3Chat input[type=file]')) && !/Send a file/.test(await p.$eval('#a3Chat', e => e.textContent)));
     await p.setViewport({ width: 320, height: 700, isMobile: true, hasTouch: true }); await T.w(200);
-    ck('no sideways scroll at 320', await p.evaluate(() => document.documentElement.scrollWidth <= 320));
+    ck('no sideways scroll at 320', await p.evaluate(() => Math.max(document.documentElement.scrollWidth, document.getElementById('a3').scrollWidth) <= 320));
     /* the desktop check on a fresh page: leaving the phone size makes puppeteer reload the page, and a reload of the app with
        the file notice open (its file box) timed out once under load. The notice is closed and the size changed on a blank
        page, then the app opens at 1280 with the same book and chat kept on this device */
-    await p.click('#a3ChatFileX'); await T.w(100);
-    ck('the file notice closes', !(await p.$('#a3ChatFileBox [data-privacy=upload]')));
     await p.goto('about:blank');
     await p.setViewport({ width: 1280, height: 800 });
     await p.goto(T.URL0 + '?today=' + DAY); await T.w(700);

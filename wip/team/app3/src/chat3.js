@@ -17,8 +17,6 @@ const CHAT3_WORDS = {
   failed: 'That didn\'t go through. Send it again, or finish another way:',
   /* why a change card asks first (M6): the core's card.ask; its card.why is the AI's own words, not shown here */
   ask: { delete: 'This takes something away. Do it?', large: 'This is more than safe to spend. Do it?', guess: 'You didn\'t type this amount, it\'s the AI\'s guess. Is it right?', gap: 'This is far from what the app expected. Is the figure right?' },
-  upload: 'The whole file goes to the AI, with your name, address, employer and account number. On a payslip, crop out your My Number.',
-  noFiles: 'Reading files in the chat comes next. For now, type the figures, or add statements on Receipts.',
   fillKept: 'To change something, tell me or change it on its screen',
 };
 
@@ -79,7 +77,7 @@ function chat3Deps() {
     send: chat3Send, today: () => E3.today(), told: () => E3.told(), newId: () => E3.newId(),
     book: () => E3.book, mode: () => E3.mode, door: E3.book ? ACT3 : null,
     start: b => E3.fill(b), discard: () => E3.discard(),
-    anon: CHAT3.anon || '', invite: chat3Invite(), screen: chat3Screen,
+    anon: CHAT3.anon || '', invite: chat3Invite(), screen: chat3Screen, sheet: chat3Sheet,
   };
 }
 /* [AI_JOIN_FIXES H4] which screen is open, for the AI: a sheet over the page first, else the tab */
@@ -92,6 +90,14 @@ function chat3Screen() {
   if (open('#a3Check')) return 'check';
   const t = $('.a3-tabs [aria-current=page]');
   return t ? t.dataset.tab : 'home';
+}
+/* [qc-assistant blocker 3] the sheet on top of that screen, by its row in CHAT3C.SCREENS, with the title it shows */
+function chat3Sheet() {
+  if (!E3.book) return null;
+  if (PL3.form && PL3.form.sheet && $('#a3Plan [data-card=plan-form]') && !$('#a3Plan').hidden) return { key: PL3.form.sheet, title: PL3.form.title };
+  const rc = $('#rcCancel');
+  if (rc && !rc.closest('[hidden]')) return { key: 'record', title: 'Change this' };
+  return null;
 }
 /* is the site's AI there (/api/health says ai: true)? Asked once a page open; never from a plain file with no relay */
 async function chat3Route() {
@@ -118,7 +124,7 @@ function chat3Card(t) {
       : c.status === 'ask' ? `<p class="a3-sub" data-chat="status" data-ask="${esc3(c.ask || '')}">${esc3(CHAT3_WORDS.ask[c.ask] || CHAT3_WORDS.ask.large)}</p><div class="a3-actions"><button type="button" class="a3-btn solid" data-chatok="${id}">Do it</button><button type="button" class="a3-btn" data-chatnot="${id}">Not now</button></div>`
       : `<p class="a3-sub" data-chat="status">${esc3(c.status === 'undone' ? 'Taken back' : c.status === 'not now' ? 'Not done' : (c.why || 'The app refused it'))}</p>`;
     return `<div class="a3-card a3-chat-card" data-card="chat-change" data-turn="${id}" data-status="${esc3(c.status)}"><h3>${c.status === 'ask' ? 'A change to check' : c.status === 'refused' || c.status === 'not now' ? 'Not changed' : 'Changed'}</h3>
-      <ul class="a3-chat-lines">${(c.lines || []).map(l => `<li>${esc3(l)}</li>`).join('')}</ul>${chat3Figs(c.rows)}${foot}</div>`;
+      <ul class="a3-chat-lines">${(c.lines || []).map(l => `<li>${esc3(l)}</li>`).join('')}</ul>${(c.left || []).length ? `<p class="a3-warn" data-chat="left">Not done: ${esc3(c.left.join(', and '))}. Say that part again on its own</p>` : ''}${chat3Figs(c.rows)}${c.note && c.status === 'done' ? `<p class="a3-sub" data-chat="note">${esc3(c.note)}</p>` : ''}${foot}</div>`;
   }
   if (c.kind === 'draft') {
     return `<div class="a3-card a3-chat-card" data-card="chat-draft" data-turn="${id}"><h3>Your answers so far</h3>
@@ -160,7 +166,6 @@ function chat3Inner() {
     <div class="a3-chat-row"><label class="a3-vh" for="a3ChatIn">${chat3Full() ? 'Your answer' : 'Ask or tell me something'}</label>
       <textarea class="a3-in a3-text" id="a3ChatIn" rows="1" maxlength="1000" placeholder="${chat3Full() ? 'Your answer' : 'Ask or tell me something'}"></textarea>
       <button type="button" class="a3-btn solid" id="a3ChatSend">Send</button></div>
-    <div class="a3-chat-ways"><button type="button" class="a3-link" id="a3ChatFile">Send a file</button></div><div id="a3ChatFileBox"></div>
     <p class="a3-sub" data-privacy="chat">${esc3(CHAT3_WORDS.privacy)}</p>
     <details class="a3-ask-sent"><summary>See what is sent</summary><pre id="a3ChatSent"></pre></details>`;
 }
@@ -201,7 +206,6 @@ function chat3Wire(host) {
   host.querySelector('#a3ChatSend').addEventListener('click', () => chat3Go());
   const close = host.querySelector('#a3ChatClose');
   if (close) close.addEventListener('click', () => { CHAT3.open = false; $('#a3Chat').removeAttribute('data-open'); });
-  host.querySelector('#a3ChatFile').addEventListener('click', chat3FileNotice);
   host.querySelectorAll('[data-chatundo]').forEach(b => b.addEventListener('click', () => chat3Undo(b.dataset.chatundo)));
   host.querySelectorAll('[data-chatok]').forEach(b => b.addEventListener('click', () => chat3Act(() => CHAT3C.confirm(CHAT3.state, b.dataset.chatok, chat3Deps()))));
   host.querySelectorAll('[data-chatnot]').forEach(b => b.addEventListener('click', () => chat3Act(() => CHAT3C.notNow(CHAT3.state, b.dataset.chatnot))));
@@ -310,14 +314,6 @@ async function chat3Undo(turnId) {
   const r = await chat3Act(() => CHAT3C.undo(CHAT3.state, turnId, chat3Deps()));
   if (r && r.ok !== false) MSG3.post({ kind: 'toast', key: 'chat3', text: 'Undone' });
 }
-/* before a file: what the whole file carries (BV6) */
-function chat3FileNotice() {
-  const box = $('#a3ChatFileBox'); if (!box) return;
-  box.innerHTML = `<div class="a3-card" data-card="chat-upload"><p class="a3-sub" data-privacy="upload">${esc3(CHAT3_WORDS.upload)}</p>
-    <div class="a3-actions"><label class="a3-btn a3-file">Choose the file<input type="file" accept=".csv,.tsv,.txt,.pdf,image/*" id="a3ChatPick"></label><button type="button" class="a3-btn" id="a3ChatFileX">Not now</button></div><p class="a3-sub" id="a3ChatFileSay"></p></div>`;
-  $('#a3ChatFileX').addEventListener('click', () => { box.innerHTML = ''; });
-  $('#a3ChatPick').addEventListener('change', () => { $('#a3ChatFileSay').textContent = CHAT3_WORDS.noFiles; });
-}
 /* "Set up on the screens": setup3, filled from the draft (ANSWERS3.toForm, the one shared answers function); the boxes
    are setup3's own, filled as a person would, so its Save is the same */
 async function chat3Screens() {
@@ -404,4 +400,4 @@ async function startChat3() {
   E3.onSaved(() => { if (heldWas !== E3.held()) { heldWas = E3.held(); if (E3.book) renderChat3(); } });
   if (!E3.book) renderHome3(); else renderChat3();
 }
-root3.BurrowApp3.chat = { CHAT3, redraw: chat3Redraw, save: chat3Save };   // for the page tests (start3.js)
+root3.BurrowApp3.chat = { CHAT3, CHAT3C, redraw: chat3Redraw, save: chat3Save };   // for the page tests (start3.js)

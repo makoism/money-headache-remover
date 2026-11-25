@@ -5,7 +5,7 @@
    gone by, built from what happened (engine/periods.js). Every figure is the engine's; every write is one step through
    ACT3 (src/act3.js, its Undo bar) using the steps in src/plan3_write.js. This file chooses, writes and places; it never
    adds, takes away or rounds (tests: no_maths.js, e3_plan.js). */
-const PL3 = { form: null };
+const PL3 = { form: null, sheet: null };   // sheet: which sheet the next form is, its row in CHAT3C.SCREENS (set by each opener)
 const plLive3 = x => x && !x.gone;
 const plWords3 = { once: 'This pay period only', now: 'This pay period and after', next: 'From the next pay period' };
 
@@ -159,7 +159,11 @@ function drawPlan3() {
    button: { label, solid, step: vals => [label, w => ..., undo words] } */
 function plForm3(title, fields, buttons, note) {
   const host = $('#a3Plan'), cur = E3.home();
-  PL3.form = { title };
+  PL3.form = { title, sheet: PL3.sheet }; PL3.sheet = null;
+  /* [STALE_SHEET_PLAN, M61] what this sheet saw when it opened: the door refuses a save on anything that changed since.
+     Refused that way (here or by the store for a tab that is behind), the sheet closes to the list as it is now */
+  const seen = ACT3.seen();
+  const elsewhere = res => { if (res.ok || res.why !== 'other') return false; if (typeof BACK3 === 'object') BACK3.forget(); plClose3(); MSG3.post({ kind: 'notice', key: 'a3', text: res.text }); return true; };
   const input = f => {
     const id = 'pl-' + f.key, v = f.value == null ? '' : f.value;
     if (f.kind === 'pick') return `<select class="a3-in a3-sel" id="${id}">${f.options.map(o => `<option value="${esc3(o.v)}"${o.v === v ? ' selected' : ''}>${esc3(o.name)}</option>`).join('')}</select>`;
@@ -170,7 +174,7 @@ function plForm3(title, fields, buttons, note) {
   };
   host.innerHTML = `<section class="a3-card" data-card="plan-form"><h2>${esc3(title)}</h2>${note ? `<p class="a3-sub">${note}</p>` : ''}
     ${fields.map(f => `<div class="a3-field"><label for="pl-${f.key}">${esc3(f.label)}</label>${input(f)}${f.hint ? `<p class="a3-sub">${esc3(f.hint)}</p>` : ''}</div>`).join('')}
-    <p class="a3-err" id="plErr" role="alert"></p><div class="a3-actions" id="plAsk" hidden></div>
+    <p class="a3-err" id="plErr" role="alert"></p><div id="plSure"></div><div class="a3-actions" id="plAsk" hidden></div>
     <div class="a3-actions">${buttons.map((b, i) => `<button type="button" class="a3-btn${b.solid ? ' solid' : ''}" data-plbtn="${i}">${esc3(b.label)}</button>`).join('')}<button type="button" class="a3-btn" id="plBack">Back</button></div></section>`;
   for (const f of fields) if (f.kind === 'amount') BurrowScreens.inputs.bind($('#pl-' + f.key), { kind: 'amount', code: cur, optional: true });
   const read = () => {
@@ -188,8 +192,14 @@ function plForm3(title, fields, buttons, note) {
   host.querySelectorAll('[data-plbtn]').forEach(btn => btn.addEventListener('click', async () => {
     const got = read(), err = $('#plErr');
     if (got.bad) { err.textContent = got.bad; got.el.focus(); return; }
-    const b = buttons[Number(btn.dataset.plbtn)], [label, fn, undo] = b.step(got.vals);
-    const res = await ACT3.run(label, fn, { undo });
+    const b = buttons[Number(btn.dataset.plbtn)];
+    /* [M6, M61] a button that removes asks first (sure3): nothing is written until the yes */
+    if (b.sure && !btn.dataset.yes) { const [l0, f0] = b.step(got.vals), no = ACT3.refusal(l0, f0); if (no) { err.textContent = no; $('#plSure').innerHTML = ''; return; } }
+    if (b.sure && !btn.dataset.yes) { sure3($('#plSure'), b.sure[0], b.sure[1], () => { btn.dataset.yes = '1'; btn.click(); }); return; }
+    delete btn.dataset.yes;
+    const [label, fn, undo] = b.step(got.vals);
+    const res = await ACT3.run(label, fn, { undo, seen });
+    if (elsewhere(res)) return;
     const ask = $('#plAsk'); ask.hidden = true; ask.innerHTML = '';
     if (!res.ok) {
       err.textContent = res.text;
@@ -199,7 +209,8 @@ function plForm3(title, fields, buttons, note) {
         $('#plAnyway').addEventListener('click', async () => {
           const again = read();
           if (again.bad) { err.textContent = again.bad; again.el.focus(); return; }
-          const [l2, f2, u2] = b.anyway.step(again.vals), r2 = await ACT3.run(l2, f2, { undo: u2 });
+          const [l2, f2, u2] = b.anyway.step(again.vals), r2 = await ACT3.run(l2, f2, { undo: u2, seen });
+          if (elsewhere(r2)) return;
           if (!r2.ok) { err.textContent = r2.text; ask.hidden = true; ask.innerHTML = ''; return; }
           plClose3();
         });
@@ -219,6 +230,7 @@ function plWhen3(value) {
 
 /* a budget line, or Free to spend ('free'); id null adds a line */
 function plLineForm3(id) {
+  PL3.sheet = id === 'free' ? 'free' : id ? 'line' : 'addLine';
   const book = E3.book, p = E3.view(E3.today()).period;
   /* [slice 6, B4] no fixed pay: each month, by the day, from today */
   const each = p ? 'Each pay period' : 'Each month';
@@ -239,7 +251,7 @@ function plLineForm3(id) {
   const l = p ? p.lines.find(x => x.id === id) : { amount: BurrowEngine.schedules.stepOn(rec, BurrowEngine.dates.dayNum(E3.today())) };
   plForm3(rec.name, [{ key: 'name', label: 'Name', kind: 'text', value: rec.name }, { key: 'amount', label: each, kind: 'amount', value: l ? l.amount : null }].concat(p ? [plWhen3('next')] : []),
     [{ label: 'Save', solid: true, step: v => ['changeLine', w => PLAN3W.changeLine(w, id, { name: v.name, amount: l && v.amount === l.amount ? null : v.amount, when: v.when }), 'Line changed'] },
-     { label: 'End this line', step: () => ['endLine', w => PLAN3W.endLine(w, id), rec.name + ' ends after this pay period'] }],
+     { label: 'End this line', sure: [`End ${rec.name}?${p ? ' It stays for this pay period and stops after it' : ''}`, 'Yes, end it'], step: () => ['endLine', w => PLAN3W.endLine(w, id), rec.name + ' ends after this pay period'] }],
     'A change never changes a pay period gone by');
 }
 const PL_EVERY3 = [{ v: 'month', name: 'On a day each month' }, { v: 'days', name: 'On two days each month' }, { v: 'weeks1', name: 'Every week' }, { v: 'weeks2', name: 'Every 2 weeks' },
@@ -247,6 +259,7 @@ const PL_EVERY3 = [{ v: 'month', name: 'On a day each month' }, { v: 'days', nam
 const PL_DAY2_3 = '1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31'.split(' ').map(d => ({ v: d, name: d })).concat([{ v: 'last', name: 'the last day' }]);
 /* a bill; id null adds one */
 function plBillForm3(id) {
+  PL3.sheet = !id ? 'addBill' : (((E3.book.schedules || []).find(x => x.id === id) || {}).kind === 'income' ? 'pay' : 'bill');
   const book = E3.book, accts = plAccounts3({ bank: 1, cash: 1, ewallet: 1, wallet: 1, card: 1 }).map(a => ({ v: a.id, name: a.name }));
   if (!id) {
     plForm3('Add a bill', [{ key: 'name', label: 'Name', kind: 'text', hint: 'Like Rent or Phone' }, { key: 'amount', label: 'Amount', kind: 'amount' },
@@ -279,7 +292,7 @@ function plBillForm3(id) {
   [{ label: 'Save', solid: true, step: v => ['changeBill', w => PLAN3W.changeBill(w, id, { name: v.name, amount: v.amount, day: v.day, from: v.from,
     ...(every.length ? { every: v.every, day2: v.day2 === 'last' ? 'last' : Number(v.day2), start: v.start, lines: Object.fromEntries(perPay.map(l => [l.key, v['ln-' + l.key] == null ? l.amount : v['ln-' + l.key]])) } : {}) }), pay ? 'Pay changed' : 'Bill changed'] }]
     .concat(pay || !v0.next ? [] : [{ label: 'Change the next one only', step: v => ['changeOnce', w => PLAN3W.changeOnce(w, id, { due: v0.next.due, amount: v.amount }), s.name + ' on ' + day3(v0.next.land, 'any') + ' changed'] },
-      { label: 'End this bill', step: v => ['endBill', w => PLAN3W.endBill(w, id, { last: v.from }), s.name + ' ends'] }]),
+      { label: 'End this bill', sure: [`End ${s.name}? Nothing is due after the day in "Changes from"`, 'Yes, end it'], step: v => ['endBill', w => PLAN3W.endBill(w, id, { last: v.from }), s.name + ' ends'] }]),
   pay ? 'A change starts from the day in "Changes from". Pay periods before it stay as they were' : `"Change the next one only" changes the amount of the one on ${esc3(day3(v0.next ? v0.next.land : v0.changeFrom, 'any'))}. End this bill: nothing is due after the day in "Changes from"`);
   if (every.length) plPropose3(perPay, r0, everyNow);
 }
@@ -314,6 +327,7 @@ function plPropose3(perPay, r0, now) {
 }
 /* a goal; id null adds one */
 function plGoalForm3(id, fill) {
+  PL3.sheet = id ? 'goal' : 'addGoal';
   const book = E3.book;
   if (!id) {
     /* [slice 6] from a yearly cost's nudge: filled in with its name, amount and day */
@@ -334,16 +348,18 @@ function plGoalForm3(id, fill) {
 }
 /* a card's or a loan's days and payment */
 function plOwedForm3(id) {
+  PL3.sheet = ((E3.book.accounts || []).find(x => x.id === id) || {}).type === 'card' ? 'card' : 'loan';
   const a = E3.book.accounts.find(x => x.id === id), card = a.type === 'card';
   const fields = [{ key: 'name', label: 'Name', kind: 'text', value: a.name }, { key: 'payDay', label: 'Day of the month it is paid', kind: 'day', value: a.payDay }];
   if (card) fields.push({ key: 'cutDay', label: 'Day the statement closes', kind: 'day', value: a.cutDay, hint: 'Leave it empty if you are not sure: then all that is owed is due on each payment day' });
   else fields.push({ key: 'amount', label: 'Usual payment', kind: 'amount', value: a.amount });
   plForm3(a.name, fields, [{ label: 'Save', solid: true, step: v => ['changeOwed', w => PLAN3W.changeOwed(w, id, card ? { name: v.name, payDay: v.payDay, cutDay: v.cutDay } : { name: v.name, payDay: v.payDay, amount: v.amount }), a.name + ' changed'] }]
-    .concat(card ? [] : [{ label: 'Close this loan', step: () => ['closeLoan', w => PLAN3W.closeLoan(w, id), a.name + ' closed'] }]),
+    .concat(card ? [] : [{ label: 'Close this loan', sure: [`Close ${a.name}? It leaves your plan`, 'Yes, close it'], step: () => ['closeLoan', w => PLAN3W.closeLoan(w, id), a.name + ' closed'] }]),
     card ? '' : 'A loan closes once it is paid off');
 }
 /* a card after setup (QC F1): the same questions setup asks, written through ACT3 */
 function plCardForm3() {
+  PL3.sheet = 'addCard';
   const closes = [{ v: 'not sure', name: 'Not sure' }, { v: 'last', name: 'The last day' }].concat('1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31'.split(' ').map(d => ({ v: d, name: d })));
   plForm3('Add a card', [{ key: 'name', label: 'Name', kind: 'text', hint: 'Like Visa' }, { key: 'owed', label: 'What is on it now', kind: 'amount', hint: 'Type 0 if nothing is on it' },
     { key: 'payDay', label: 'Day of the month it is paid from your bank', kind: 'day' },
@@ -353,6 +369,7 @@ function plCardForm3() {
   'It is paid in full from your main bank. Its payment counts in what is due before next pay');
 }
 function plLoanForm3() {
+  PL3.sheet = 'addLoan';
   plForm3('Add a loan', [{ key: 'name', label: 'Name', kind: 'text', hint: 'Like Car loan' }, { key: 'owed', label: 'Still owed today', kind: 'amount' },
     { key: 'amount', label: 'Usual payment', kind: 'amount' }, { key: 'payDay', label: 'Day of the month it is paid', kind: 'day' }],
   [{ label: 'Add', solid: true, step: v => ['addLoan', w => PLAN3W.addLoan(w, { name: v.name, owed: v.owed, amount: v.amount, payDay: v.payDay }), 'Loan added'] }],

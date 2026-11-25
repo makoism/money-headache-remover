@@ -8,7 +8,7 @@ function openCheck3() {
   /* [BI1] an item left unticked at an earlier check-in did not land before that check: the sheet asks the day it landed,
      the day after that check by default (the engine's landedFrom gives it) */
   const from = {}; for (const o of list) { const f = BurrowEngine.checkin.landedFrom(E3.book, { day }, o.item); if (f && o.lands < f) from[o.item] = f > day ? day : f; }
-  check3 = { day, list, from, sure: {} };
+  check3 = { day, list, from, sure: {}, ver: ACT3.ver() };   // [STALE_SHEET_PLAN] the book as this sheet saw it
   const landedRow = (o, i) => (from[o.item] ? `<div class="a3-field a3-landed"><label for="a3l${i}">Landed on</label>
       <input class="a3-in" type="date" id="a3l${i}" data-landed="${esc3(o.item)}" value="${esc3(from[o.item])}" min="${esc3(from[o.item])}" max="${esc3(day)}"></div>` : '');
   const rows = list.map((o, i) => `<div class="a3-tick" data-item="${esc3(o.item)}">
@@ -194,7 +194,10 @@ async function saveCheck3() {
   const words = Object.keys(d.figures).map(id => { const g = gapWords3(before, id, day); return !g ? '' : logged[id] ? `${g.text.split('. ')[0]}, now logged as a spend on ${logged[id]}` : g.loss && g.ask.length ? `${g.text}. It counts as spending` : g.text; }).filter(Boolean);
   /* act3 is the only door: the check-in is one step, with its Undo bar */
   const said = [E3.mode === 'try' ? 'Bank checked. Made-up numbers, so nothing is saved' : 'Bank checked'].concat(words).join('. ');
-  const r = await ACT3.addRecords('Check your bank', out, { undo: said });
+  /* the gap found is worked out from the whole book: if anything changed somewhere else since the sheet opened, nothing is
+     saved and the sheet is drawn again from the book as it is now [M6, M61] */
+  const r = await ACT3.addRecords('Check your bank', out, { undo: said, ver: check3.ver });
+  if (!r.ok && r.why === 'other') { if (typeof BACK3 === 'object') BACK3.forget(); closeCheck3(); openCheck3(); $('#a3CheckErr').textContent = r.text; return; }
   if (!r.ok) { err.textContent = r.text; return; }
   closeCheck3(); renderHome3();
 }

@@ -139,7 +139,15 @@
     };
   }
 
-  const api = { DAY, ms, offsetOf, write, nowIso, dayNum, dayStr, addDays, daysBetween, todayStr, clockAsk, openDay,
+  // A short mark of a set of change stamps (app3/src/act3.js `ver`: "has anything in the book changed since I looked").
+  // Order-free: the stamps are sorted first. Not money: a plain text hash, with the count in front.
+  function markOf(stamps) {
+    const t = stamps.slice().sort().join('\n');
+    let h = 0;
+    for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) >>> 0;
+    return stamps.length + '.' + h.toString(36);
+  }
+  const api = { markOf, DAY, ms, offsetOf, write, nowIso, dayNum, dayStr, addDays, daysBetween, todayStr, clockAsk, openDay,
     nextAt, nextAtWarn, newestAt, makeClock, holdArriving, watchToday };
   root.BurrowClock = api;
   if (typeof module === 'object' && module.exports) module.exports = api;

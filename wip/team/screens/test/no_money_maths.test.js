@@ -112,6 +112,9 @@ test('lines marked "not money" are few and named here, so the mark is not a way 
   assert.deepStrictEqual(marked.sort(), [
     'messages.js: a count',
     'messages.js: milliseconds until the next message runs out',
+    'messages.js: px on the screen',
+    'messages.js: px on the screen',
+    'messages.js: px on the screen',
     'messages.js: time',
     'messages.js: time',
   ]);

@@ -19,9 +19,9 @@ const { ck } = T;
   await p.goto(T.URL0 + '?try=mako&today=2026-11-23'); await T.w(400);
   const glow = await p.evaluate(() => {
     const html = document.documentElement, st = getComputedStyle(html), before = getComputedStyle(document.body, '::before');
-    return { img: /radial-gradient/.test(st.backgroundImage), layer: before.content === 'none' || before.position !== 'fixed', tall: html.getBoundingClientRect().height >= html.scrollHeight - 1, scroll: html.scrollHeight };
+    return { img: /radial-gradient/.test(st.backgroundImage), layer: before.content === 'none' || before.position !== 'fixed', tall: html.getBoundingClientRect().height >= html.scrollHeight - 1, scroll: html.scrollHeight, inner: document.getElementById('a3').scrollHeight };
   });
-  ck('the glow is on the page itself, as tall as the page, with no layer fixed to one screen', glow.img && glow.layer && glow.tall && glow.scroll > 800, JSON.stringify(glow));
+  ck('the glow is on the page itself, as tall as the page, with no layer fixed to one screen', glow.img && glow.layer && glow.tall && glow.scroll >= 800 && glow.inner > 800, JSON.stringify(glow));   // since the message band has its own slot the long page scrolls inside #a3: the document is one screen tall and the glow, on the document, covers all of it
   /* the day each card figure was checked */
   await p.setViewport({ width: 390, height: 844, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
   const checked = () => p.evaluate(() => Object.fromEntries([...document.querySelectorAll('[data-cardid]')].map(e => [e.dataset.cardid, (e.querySelector('[data-fig=cardchecked]') || {}).textContent || null])));

@@ -101,6 +101,7 @@
   const E = node ? null : root.BurrowEngine;
   const LA = node ? require('../../engine/lookahead.js') : E.lookahead;
   const G = node ? require('../../engine/ledger.js') : E.ledger;
+  const PER = node ? require('../../engine/periods.js') : E.periods;
   const SM = node ? require('../../screens/money.js') : root.BurrowScreens.money;
   const SN = node ? require('../../screens/names.js') : root.BurrowScreens.names;
   const HELP = node ? require('../../screens/help.js') : root.BurrowScreens.help;
@@ -135,6 +136,34 @@
     { n: 14, key: 'min', ask: 'Keep at least ___ in your bank? Skip it and there is no minimum.' },
     { n: 15, key: 'fill', ask: 'Show what you have (the draft), then ask: shall I fill in your Burrow? When they say yes, call fill_book.' },
   ];
+  /* [qc-assistant blocker 3; M17] ONE table: what every screen and every sheet is for, in one plain line each. The
+     assistant is told all of it (SYSTEM), and with each message which screen is open and which sheet is on top
+     (stateText). A new screen or sheet needs its row here: tests/chat3_core.test.js counts the rows and
+     tests/e3_fakeai_page.js opens each of Plan's sheets. These are words for a person too: the wording lint reads them. */
+  const SCREENS = {
+    home: { name: 'Home', does: 'Home shows what is safe to spend until your next pay, what each account holds today, what is due before pay, and your goals' },
+    plan: { name: 'Plan', does: 'Plan shows your pay and bills, Free to spend and your budget lines, goals, cards and loans. Tap a row to change it' },
+    receipts: { name: 'Receipts', does: 'Receipts is where you log money that came in, went out or moved between your accounts, and see what you logged. Tap a record to change or remove it' },
+    settings: { name: 'Settings', does: 'Settings holds the backup file, the cloud copy, the code word for the AI and the assistant\'s error log' },
+    check: { name: 'Check your bank', does: 'Check your bank is where you type what your bank and cards show today. The app compares each with what it expected and asks about the gap' },
+    stmt: { name: 'Add statements', does: 'Add statements reads a bank or card statement file and shows what it read before anything is added' },
+    reminders: { name: 'Reminders', does: 'Reminders shows the days your bills are due and when to check your bank, and can add them to your calendar' },
+    setup: { name: 'setup on the screens', does: 'Setup on the screens asks for your bank, pay, cards and bills in sections, and each section saves on its own' },
+    welcome: { name: 'the first screen', does: 'The first screen is where setup starts, by answering in the chat or on the screens' },
+    free: { name: 'Free to spend', does: 'Sets Free to spend, the money you keep for food and everyday things' },
+    addLine: { name: 'Add a line', does: 'Adds a budget line, a name and an amount, like Food or Transport' },
+    line: { name: 'A budget line\'s own sheet', does: 'Changes the line\'s name or amount, or ends the line' },
+    addBill: { name: 'Add a bill', does: 'Adds a bill: its name, amount, the day it is due and what it is paid from' },
+    bill: { name: 'A bill\'s own sheet', does: 'Changes the bill\'s name, amount or day from a date you choose, changes the next one only, or ends the bill' },
+    pay: { name: 'A pay\'s own sheet', does: 'Changes the pay\'s name, amount, day or how often it lands, from a date you choose' },
+    addGoal: { name: 'Add a goal', does: 'Adds a goal: its name, the goal amount, a target date and where the money is kept' },
+    goal: { name: 'A goal\'s own sheet', does: 'Sets money aside for the goal, takes money out of it, or changes its name, amount or date' },
+    addCard: { name: 'Add a card', does: 'Adds a card: its name, what is on it now, the day it is paid from your bank and the day its statement closes' },
+    card: { name: 'A card\'s own sheet', does: 'Changes the card\'s name, the day it is paid and the day its statement closes' },
+    addLoan: { name: 'Add a loan', does: 'Adds a loan: its name, what is still owed, the usual payment and the day it is paid' },
+    loan: { name: 'A loan\'s own sheet', does: 'Changes the loan\'s name, the day it is paid or the usual payment, or closes the loan' },
+    record: { name: 'A record\'s own sheet', does: 'Changes or removes one thing you logged on Receipts' },
+  };
   const SYSTEM = `You are the assistant inside The Burrow, a money app the person has open right now. You set it up with them by talking, and after that you answer questions and make changes for them.
 
 Numbers: the app works out every figure. FIGURES (and DRAFT before setup) come with every message and are exact for today. Quote them; never work out a total of your own. Amounts you send are plain numbers in the currency, no symbol, exactly as the person gave them.
@@ -151,24 +180,30 @@ SETUP (when FIGURES says there is no book yet). Ask these in order, one per mess
 ${GUIDE.map(g => g.n + '. ' + g.ask).join('\n')}
 After each answer, save it with draft_set (that section's whole list each time; nothing is in the app until fill_book). A pay needs afterTax true: only save a pay once the person said the amount is after tax. A second income needs same: true or false. Never fill in a minimum or a figure the person did not give. NEEDED lists what fill_book still needs; ask for those. fill_book only when the person says to fill it in.
 
-AFTER SETUP. When a pay, bill or card payment the app expects has come in or gone out ("my pay came in", "rent came out"), use change with landed and its P, B or A ref: never money_in or log_spend for it, which would count it twice. When they say what their bank app or card app shows today, use bank_figure or card_figure with that figure. When the person says they spent, got or moved money, or asks to change a bill, pay, line, goal or card, use change. The app makes the change at once and shows what changed with Undo; a delete, or a change larger than safe to spend, waits for their OK. Refs (A1, L1, G1, B1, P1, S1) come from FIGURES or list; never invent one. Not a licensed adviser: for investments, loans or taxes, say so in one line.
+AFTER SETUP. When a pay, bill or card payment the app expects has come in or gone out ("my pay came in", "rent came out"), use change with landed and its P, B or A ref: never money_in or log_spend for it, which would count it twice. When they say what their bank app or card app shows today, use bank_figure or card_figure with that figure. When the person says they spent, got or moved money, or asks to change a bill, pay, line, goal or card, use change. The app makes the change at once and shows what changed with Undo; a delete, or a change larger than safe to spend, waits for their OK. An amount you send must be one the person typed since your last change; for a repeat ("another lunch") ask how much, never send the old amount again. Refs (A1, L1, G1, B1, P1, S1) come from FIGURES or list; never invent one. Not a licensed adviser: for investments, loans or taxes, say so in one line.
 
 Adding a bank: ask both of its questions in one message: is it new money or moved from their bank, and if moved, before or after they looked at that bank today.
 
 A spend goes on the account they paid with. If they did not say and they have cards, ask once, naming them: card or bank? The answer is kept for the chat.
 
-SCREEN says which screen the person has open: "this screen" means that one.
+SCREEN says which screen the person has open, and the sheet on top of it when there is one: "this screen" means the sheet if there is one, else the screen. Say what it is for in the words below.
+WHAT EACH SCREEN AND SHEET IS FOR:
+${Object.keys(SCREENS).map(k => SCREENS[k].name + ': ' + SCREENS[k].does).join('\n')}
 WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line): a loan: Plan, Add a loan. A card's pay day or close day: Plan, tap the card. Change a goal or take money out of it: Plan, tap the goal. Change a spend: Receipts, tap it. Statements: Home, Add statements. Reminders: Reminders at the top. A backup or the cloud copy: Settings.`;
   /* [AI_JOIN_FIXES H4] a change it can't make says where it is on the screens (the same map as SYSTEM) */
   const WHERE = [[/loan/, 'Plan, Add a loan'], [/card/, 'Plan, tap the card'], [/goal|take_out/, 'Plan, tap the goal'], [/spend|receipt/, 'Receipts, tap it'],
     [/statement/, 'Home, Add statements'], [/remind/, 'Reminders at the top'], [/backup|cloud/, 'Settings']];
   const whereOf = what => { const w = WHERE.find(([re]) => re.test(what)); return w ? 'On the screens: ' + w[1] : 'Say where from WHERE ON THE SCREENS'; };
-  const SCREEN_NAMES = { home: 'Home', plan: 'Plan', receipts: 'Receipts', settings: 'Settings', check: 'Check your bank', stmt: 'Add statements', reminders: 'Reminders', setup: 'setup on the screens', welcome: 'the first screen' };
 
   /* ---- the tools (BU2: no figures or draft read tool) ---- */
   const num = { type: 'number', description: 'A plain number in the currency, no symbol.' };
   const str = d => ({ type: 'string', description: d });
   const DO = ['landed', 'bank_figure', 'card_figure', 'log_spend', 'refund', 'money_in', 'move_money', 'remove', 'add_bill', 'change_bill', 'end_bill', 'add_pay', 'add_line', 'change_line', 'end_line', 'set_free', 'add_goal', 'set_aside', 'add_card', 'add_account'];
+  /* a step that was asked for and left out, in words for the person (the card says which was not done) */
+  const DO_WORDS = { landed: 'ticking off a pay or bill', bank_figure: 'a bank figure', card_figure: 'a card figure', log_spend: 'a spend', refund: 'a refund', money_in: 'money that came in',
+    move_money: 'money moved between accounts', remove: 'removing a record', add_bill: 'a new bill', change_bill: 'a change to a bill or pay', end_bill: 'ending a bill', add_pay: 'a new pay',
+    add_line: 'a new line', change_line: 'a change to a line', end_line: 'ending a line', set_free: 'a change to Free to spend', add_goal: 'a new goal', set_aside: 'money set aside for a goal',
+    add_card: 'a new card', add_account: 'a new account' };
   const CURS = ['JPY', 'PHP', 'USD', 'EUR'];
   const SECTIONS = ['country', 'currency', 'banks', 'pays', 'cards', 'bills', 'asked', 'statements', 'payToday', 'free', 'min'];
   const TOOLS = [
@@ -189,12 +224,14 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     const s = AQ.summary(book, today), refs = Object.assign({}, s.refs), out = [s.text];
     const home = G.homeOn(book, today);
     const sch = (book.schedules || []).filter(x => live(x) && (x.kind === 'income' || x.kind === 'bill'));
-    const lines = [];
+    const lines = [], view = PER.scheduleView(book, today);
     let p = 0, b = 0;
     for (const x of sch) {
       const ref = x.kind === 'income' ? 'P' + (++p) : 'B' + (++b); refs[ref] = x.id;
-      const rule = (x.rules || []).slice(-1)[0], step = (x.steps || []).slice(-1)[0];
-      lines.push(`${ref} | ${x.name} | ${step && step.amount != null ? SM.format(step.amount, x.cur || home) : 'no fixed amount'} | ${ruleWords(rule && rule.rule)}${x.ends ? ' | ends ' + day1(x.ends) : ''}`);
+      /* one figure, one source: the amount and the rhythm in force today are the engine's own answer (its schedule view,
+         the one Plan shows), never worked out again here from the saved lists (a change dated later is not today's) */
+      const v = view[x.id] || {};
+      lines.push(`${ref} | ${x.name} | ${v.amount != null ? SM.format(v.amount, x.cur || home) : 'no fixed amount'} | ${ruleWords(v.rule)}${x.ends ? ' | ends ' + day1(x.ends) : ''}`);
     }
     if (lines.length) out.push('Pays and bills (ref | name | amount | when):\n' + lines.join('\n'));
     return { text: out.join('\n'), refs };
@@ -378,7 +415,10 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
   /* ---- what is sent ---- */
   function stateText(state, ctx) {
     const book = ctx.book, out = ['FIGURES (worked out by the app for today, exact)', figures(book, ctx.today).text];
-    if (ctx.screen && SCREEN_NAMES[ctx.screen]) out.push('', 'SCREEN: the person has ' + SCREEN_NAMES[ctx.screen] + ' open.');
+    if (ctx.screen && SCREENS[ctx.screen]) {
+      const sc = SCREENS[ctx.screen], sh = ctx.sheet && SCREENS[ctx.sheet.key], title = sh && clean(ctx.sheet.title || sh.name, 60);
+      out.push('', 'SCREEN: the person has ' + sc.name + ' open' + (sh ? `, with the sheet "${title}"${title !== sh.name ? ' (' + sh.name + ')' : ''} on top. ${sh.does}` : '. ' + sc.does));
+    }
     const pw = book && state.payWith && (book.accounts || []).find(x => x.id === state.payWith && live(x));
     if (pw) out.push('', 'They said they pay with ' + pw.name + ': a spend with no account named goes on it, unless they say otherwise.');
     if (!book) {
@@ -420,7 +460,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     const body = request(state, message, [], ctxOf(deps));
     return body.system + '\n\n' + body.messages.map(m => (m.role === 'user' ? 'YOU\n' : 'THE AI\n') + m.content.map(c => c.text || '').join('\n')).join('\n\n');
   }
-  const ctxOf = deps => ({ book: deps.book ? deps.book() : null, today: deps.today(), anon: deps.anon, invite: deps.invite, screen: deps.screen ? deps.screen() : null });
+  const ctxOf = deps => ({ book: deps.book ? deps.book() : null, today: deps.today(), anon: deps.anon, invite: deps.invite, screen: deps.screen ? deps.screen() : null, sheet: deps.sheet ? deps.sheet() : null });
 
   /* ---- the explain topics (help words where they exist; drafts for Mako's copy pass) ---- */
   const EXPLAIN = {
@@ -607,12 +647,35 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       const a0 = r0.accounts[id], a1 = r1.accounts[id];
       if (a1 && a1.bank != null && (!a0 || a0.bank !== a1.bank)) rows.push({ key: 'bank:' + id, label: ((b1.accounts || []).find(x => x.id === id) || {}).name + ' today', before: a0 ? a0.bank : null, after: a1.bank });
     }
+    /* [qc-assistant run 2; M30] a card whose figure changed shows it: most spending goes on cards, and safe to spend
+       alone would read the same before and after. The engine's own cards.owedNow, named as Home names it */
+    for (const id of Object.keys(r1.cards || {})) {
+      const c0 = (r0.cards || {})[id], c1 = r1.cards[id];
+      if (c1 && c1.owedNow != null && (!c0 || c0.owedNow !== c1.owedNow)) rows.push({ key: 'card:' + id, label: ((b1.accounts || []).find(x => x.id === id) || {}).name + ', ' + SN.label('owed').toLowerCase(), before: c0 ? c0.owedNow : null, after: c1.owedNow });
+    }
     return rows;
+  }
+  /* [M30; the coordinator's ruling 26 Nov] a spend on a card that leaves the headline where it was: one true line says
+     why, from the engine's own dates (the card's next payment is on or after the next pay, so it is not due before it).
+     No day is promised: with a close day not sure, the statement it falls in is not known */
+  function noteOf(b0, b1, today) {
+    const r0 = LA.lookahead(b0, today), r1 = LA.lookahead(b1, today), pay = (r1.daysToNextPay || {}).next_pay;
+    if (!pay || r0.safeToSpend.headline !== r1.safeToSpend.headline) return null;
+    const ids = Object.keys(r1.cards || {}).filter(id => { const c0 = (r0.cards || {})[id], c1 = r1.cards[id]; return c0 && c1.owedNow > c0.owedNow && c1.next && c1.next.payment_date && c1.next.payment_date >= pay; });
+    if (!ids.length) return null;
+    const names = ids.map(id => ((b1.accounts || []).find(x => x.id === id) || {}).name);
+    return `${SN.label('safeToSpend')} stays the same: ${names.join(' and ')} ${names.length > 1 ? 'are' : 'is'} paid from your bank on or after your next pay`;
   }
   async function carryOut(state, card, deps) {
     const door = deps.door, before = deps.book(), today = deps.today(), done = [];
+    /* [STALE_SHEET_PLAN, M61] the card was made on the book as it was then (card.ver, the door's short mark: no figures in
+       it). If anything changed somewhere else since, the door refuses and nothing is carried out. After each of the
+       card's own steps the mark is taken again, so its own steps never refuse each other */
+    const marks = typeof door.ver === 'function' && card.ver != null;
+    let mark = marks ? card.ver : undefined;
     for (const s of card.plan) {
-      const res = await runOne(door, s, { quiet: true }, deps);
+      const res = await runOne(door, s, marks ? { quiet: true, ver: mark } : { quiet: true }, deps);
+      if (res.ok && marks) mark = door.ver();
       if (!res.ok) {
         for (const st of done.slice().reverse()) await door.undo(st.id, { quiet: true });
         card.status = 'refused'; card.why = s.text + ': ' + res.text;
@@ -620,7 +683,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       }
       done.push(res.step);
     }
-    card.status = 'done'; card.steps = done.map(s => s.id); card.rows = rowsOf(before, deps.book(), today, card.plan);
+    card.status = 'done'; card.steps = done.map(s => s.id); card.rows = rowsOf(before, deps.book(), today, card.plan); card.note = noteOf(before, deps.book(), today);
     return { ok: true };
   }
   const resultOf = card => card.status === 'done' ? 'Done, with Undo on the card. ' + card.rows.map(r => `${r.label}: ${r.before == null ? '-' : r.before} to ${r.after == null ? '-' : r.after} (minor units)`).join('; ')
@@ -649,6 +712,30 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     }
     return far;
   }
+  /* ---- [M6, ruled 26 Nov 2026] which amounts the person typed ----
+     An amount counts as typed by the person only if it is in their own messages since the assistant's last written
+     change (state.typedFrom: the turn count when the first message after that change came in), and each time a written
+     change uses an amount, one typing of it is used up (state.used). So "another lunch" never writes an old amount
+     again without a question, and an answer to "from when?" still counts the amount typed just before. */
+  const plainOf = (book, today) => a => SM.format(a, G.homeOn(book, today)).replace(/[^\d.]/g, '').replace(/\.0+$/, '');
+  const figsOf = s => (s.figs || (s.amount ? [s.amount] : []));
+  function typedFrom(state) {
+    if (state.typedFrom != null) return state.typedFrom;
+    /* a chat saved before this rule: from the last change the assistant made */
+    const last = state.turns.filter(t => t.who === 'card' && t.card && t.card.status === 'done').slice(-1)[0];
+    return last ? +String(last.id).slice(1) : 0;
+  }
+  function typedLeft(state) {
+    const from = typedFrom(state);
+    const text = state.turns.filter(t => t.who === 'person' && +String(t.id).slice(1) > from).slice(-TURNS).map(t => t.text).join(' ').normalize('NFKC').replace(/[,，]/g, '');
+    return f => (text.match(new RegExp('(^|[^\\d.])' + f.replace('.', '\\.') + '(?![\\d])', 'g')) || []).length - (state.used || []).filter(u => u === f).length;
+  }
+  function wrote(state, card, book, today) {
+    const plain = plainOf(book, today);
+    state.typedFrom = typedFrom(state);
+    state.used = (state.used || []).concat(...card.plan.map(s => figsOf(s).map(plain)));
+    state.wrote = true;
+  }
   /* ---- one tool call ---- */
   function addTurn(state, t, shown) {
     const turn = Object.assign({ id: 't' + (++state.seq) }, t);
@@ -657,7 +744,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     if (shown) shown.push(turn);
     return turn;
   }
-  async function handle(state, call, deps, shown, said) {
+  async function handle(state, call, deps, shown, frame) {
     const today = deps.today(), book = deps.book ? deps.book() : null, x = call.input || {};
     if (call.name === 'list') return list(book, today, x);
     if (call.name === 'explain') return explain(x.topic);
@@ -673,12 +760,24 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     if (call.name === 'fill_book') { const f = await fillNow(state, deps, shown, true); return f.ok ? 'Filled in. ' + f.text : 'Not filled in: ' + f.text; }
     if (call.name === 'change') {
       if (!book || !deps.door) return 'There is no book yet: finish setup first.';
+      /* [STALE_SHEET_PLAN, M61] the refs the AI holds are places in lists (S7 is the seventh spend told): if the book
+         changed somewhere else while it was answering, they may point at other things. Nothing is carried out */
+      const verNow = typeof deps.door.ver === 'function' ? deps.door.ver() : null;
+      if (frame && frame.ver != null && verNow !== frame.ver) {
+        frame.ver = verNow;
+        addTurn(state, { who: 'note', text: 'Nothing was changed, because something changed somewhere else while I was answering. Say it again', at: deps.told() }, shown);
+        return 'Not changed: the book changed somewhere else after FIGURES were sent, so the refs may be old. Nothing was done. Use list again before any change, or ask the person to say it again.';
+      }
       const raw = Array.isArray(x.steps) ? x.steps : [];
-      const refs = allRefs(book, today), plan = [], dropped = [];
+      const refs = allRefs(book, today), plan = [], dropped = [], left = [];
       for (const a of raw) {
-        if (plan.length >= MAX_STEPS) { dropped.push('more than ' + MAX_STEPS + ' at a time'); continue; }
+        if (plan.length >= MAX_STEPS) { dropped.push('more than ' + MAX_STEPS + ' at a time'); if (!left.includes('the changes after the first ' + MAX_STEPS)) left.push('the changes after the first ' + MAX_STEPS); continue; }
         const s = stepOf(a, { book, today, refs, payWith: state.payWith });
-        if (s.bad) { dropped.push(s.bad); if (s.payWith) state.askPay = true; } else plan.push(s);
+        if (s.bad) {
+          dropped.push(s.bad); if (s.payWith) state.askPay = true;
+          /* a note that tells the AI to ask something is no words for the person */
+          left.push(/^(ask|which account)/i.test(s.bad) ? 'one step that needs an answer from you first' : DO_WORDS[a && a.do] || 'a change the assistant can\'t make here');
+        } else plan.push(s);
       }
       /* [AI_JOIN_FIXES H6] the answer to "card or bank?" is kept for this chat */
       const named = plan.find(s => s.named);
@@ -689,16 +788,15 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       const safe = LA.lookahead(book, today).safeToSpend.headline;
       /* [qc-foundation F2] the size is the step's real figure: a new pay and new money count too */
       const big = plan.some(s => s.amount && s.amount > safe), del = plan.some(s => s.del);
-      const typed = String(said || '').normalize('NFKC').replace(/[,，]/g, '');
-      const plain = a => SM.format(a, G.homeOn(book, today)).replace(/[^\d.]/g, '').replace(/\.0+$/, '');
-      /* every figure in a step (an amount, a target, what is owed, even 0) must be one the person typed */
-      const figsOf = s => (s.figs || (s.amount ? [s.amount] : []));
-      const guess = plan.filter(s => figsOf(s).some(f => !new RegExp('(^|[^\\d.])' + plain(f) + '(?![\\d])').test(typed)));
+      /* every figure in a step (an amount, a target, what is owed, even 0) must be one the person typed, in their own
+         messages since the last written change, and not used up by a change already written [M6] */
+      const plain = plainOf(book, today), typedN = typedLeft(state);
+      const guess = plan.filter(s => figsOf(s).some(f => typedN(plain(f)) < 1));
       /* [AI_JOIN_FIXES H5; M6's third reason] a bank figure far from what the app expected (the engine's own gap for that
          check, on the book the step would make, larger than safe to spend) asks first, with the gap in words: an extra
          zero never goes in silently */
       const far = farFigures(plan, book, today, deps, safe);
-      const card = { kind: 'change', status: 'ask', lines: plan.map(s => s.text + (far.has(s) ? '. ' + far.get(s) : '') + (guess.includes(s) ? ' (my guess)' : '')), rows: [], plan, dropped };
+      const card = { kind: 'change', status: 'ask', ver: verNow, lines: plan.map(s => s.text + (far.has(s) ? '. ' + far.get(s) : '') + (guess.includes(s) ? ' (my guess)' : '')), rows: [], plan, dropped, left };
       if (del || big || far.size || guess.length) {
         card.ask = del ? 'delete' : big ? 'large' : far.size ? 'gap' : 'guess';
         card.why = del ? 'this removes something' : big ? 'this is more than safe to spend' : far.size ? 'the figure is far from what the app expected' : 'I guessed an amount';
@@ -706,6 +804,8 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
         return resultOf(card) + (dropped.length ? ' Left out: ' + dropped.join('; ') : '');
       }
       const res = await carryOut(state, card, deps);
+      if (res.ok) wrote(state, card, book, today);
+      if (frame && typeof deps.door.ver === 'function') frame.ver = deps.door.ver();   // the turn's own steps
       addTurn(state, { who: 'card', text: card.lines.join('. '), at: deps.told(), card }, shown);
       return (res.ok ? resultOf(card) : 'Not changed: ' + res.text) + (dropped.length ? ' Left out: ' + dropped.join('; ') : '');
     }
@@ -715,7 +815,8 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
   /* ---- one turn ---- */
   async function turn(state0, message, deps) {
     const state = clone(state0), shown = [];
-    const said = state.turns.filter(t => t.who === 'person').slice(-TURNS).map(t => t.text).join(' ') + ' ' + message;
+    /* [M6] the first message after a written change starts the typed amounts again */
+    if (state.wrote || state.typedFrom == null) { state.typedFrom = state.wrote ? state.seq : typedFrom(state); state.used = []; state.wrote = false; }
     addTurn(state, { who: 'person', text: clean(message, 4000), at: deps.told() }, shown);
     const rounds = [];
     const draftWas = JSON.stringify(state.draft);
@@ -726,6 +827,8 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       }
       return { state, shown, stop };
     };
+    /* the book as it is when the figures are sent, kept beside the chat state (never in it, never sent) */
+    const frame = { ver: deps.door && typeof deps.door.ver === 'function' && deps.book && deps.book() ? deps.door.ver() : null };
     for (let i = 0; i < ROUNDS; i++) {
       const body = request(state, clean(message, 4000), rounds, ctxOf(deps));
       let res;
@@ -744,7 +847,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       const results = [];
       for (const c of r.calls) {
         let out;
-        try { out = await handle(state, c, deps, shown, said); } catch (e) { out = 'That did not work: ' + (e && e.message); }
+        try { out = await handle(state, c, deps, shown, frame); } catch (e) { out = 'That did not work: ' + (e && e.message); }
         results.push({ type: 'tool_result', tool_use_id: c.id, content: String(out) });
       }
       rounds.push({ content: r.content, results });
@@ -759,6 +862,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     const state = clone(state0), t = findCard(state, id), shown = [];
     if (!t || t.card.kind !== 'change' || t.card.status !== 'ask') return { state, shown, ok: false, text: 'Nothing to confirm' };
     const res = await carryOut(state, t.card, deps);
+    if (res.ok) wrote(state, t.card, deps.book(), deps.today());
     t.text = t.card.lines.join('. ');
     addTurn(state, { who: 'note', text: res.ok ? 'Done' : 'Not changed: ' + res.text, at: deps.told() }, shown);
     return { state, shown, ok: res.ok, text: res.text };
@@ -823,6 +927,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     if (!(await deps.start(built.book))) return { state, shown, ok: false, text: 'This could not be saved on this device. Nothing changed' };
     const v = LA.lookahead(built.book, today), main = built.ids.bank1;
     state.fill = { at: told, told, day: today };
+    state.wrote = true;   // [M6] what was typed for setup is not typed for a later change
     const figs = { safe: v.safeToSpend.headline, bank: v.accounts[main].bank };
     addTurn(state, { who: 'card', text: 'Your Burrow is filled in', at: told, card: { kind: 'fill', status: 'done', figures: figs } }, shown);
     const cur = curOf(state.draft);
@@ -879,7 +984,7 @@ ${card.need.length && state.draft ? 'STILL NEEDED: ' + card.need.join(' ') : ''}
   }
 
   const api = {
-    ROUNDS, TURNS, KEEP, MAX_TOKENS, MAX_STEPS, TIER: 'default', EFFORT: 'low', GUIDE, TOOLS, SYSTEM,
+    ROUNDS, TURNS, KEEP, MAX_TOKENS, MAX_STEPS, TIER: 'default', EFFORT: 'low', GUIDE, TOOLS, SYSTEM, SCREENS,
     fresh: () => ({ v: 1, turns: [], draft: null, fill: null, seq: 0 }),
     turn, confirm, notNow, undo, startOver, draftEdit,
     /* [AI_JOIN_FIXES H2] what the first screen says before anything is typed: the welcome, and the first question */
@@ -887,7 +992,7 @@ ${card.need.length && state.draft ? 'STILL NEEDED: ' + card.need.join(' ') : ''}
     fillNow: (s, deps) => fillNow(s, deps),
     copyPrompt, pasteBack,
     request, read, figures, draftCard: (d, today) => draftCard(d, today), fillCheck, sentText,
-    handle: async (state0, call, deps) => { const state = clone(state0), shown = []; const result = await handle(state, call, deps, shown, ''); return { state, shown, result }; },
+    handle: async (state0, call, deps) => { const state = clone(state0), shown = []; const result = await handle(state, call, deps, shown); return { state, shown, result }; },
   };
   if (node) module.exports = api;
   else root.CHAT3C = api;
