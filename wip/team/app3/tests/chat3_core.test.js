@@ -298,6 +298,23 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const k6 = await K.confirm(r6.state, c6.id, d); ok(k6.ok, JSON.stringify(k6));
     ok(hp.book.accounts.find(a => a.id === loan.id).gone, 'removed');
   });
+  await t('[E5, M3, M13, M42] "keep at least 30,000 in my bank" and "I bank in the Philippines now": set_keep and set_country, each with a card and Undo; "no minimum" clears it', async () => {
+    const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
+    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'set_keep', amount: 30000 }] })]), say('Set.'),
+      say('', [call('change', { steps: [{ do: 'set_country', country: 'PH' }] })]), say('Changed.'),
+      say('', [call('change', { steps: [{ do: 'set_keep', amount: 0 }] })]), say('Cleared.')]);
+    const d = hp.deps(f);
+    const r1 = await K.turn(state, 'keep at least 30,000 in my bank', d);
+    const c1 = r1.shown.find(x => x.who === 'card');
+    eq([c1.card.status, hp.book.home.main.v.min && hp.book.home.main.v.min.a], ['done', 30000], JSON.stringify(c1.card));
+    ok(/Keep at least/.test(c1.card.lines.join(' ')), c1.card.lines.join(' | '));
+    const r2 = await K.turn(r1.state, 'I bank in the Philippines now', d);
+    eq([r2.shown.find(x => x.who === 'card').card.status, hp.book.home.country.v], ['done', 'PH']);
+    const u = await K.undo(r2.state, r2.shown.find(x => x.who === 'card').id, d); ok(u.ok, JSON.stringify(u));
+    eq(hp.book.home.country.v, 'JP');
+    const r3 = await K.turn(u.state || r2.state, 'no minimum please', d);
+    eq([r3.shown.find(x => x.who === 'card').card.status, hp.book.home.main.v.min], ['done', null]);
+  });
   await t('[M6] an answer to a follow-up question ("from when?") still counts the amount typed just before', async () => {
     const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
     const f = FAKE.make([say('From when: this one, or the next one?'),
