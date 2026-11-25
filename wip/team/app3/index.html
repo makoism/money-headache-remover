@@ -12481,6 +12481,8 @@ After each answer, save it with draft_set (that section's whole list each time; 
 
 AFTER SETUP. When a pay, bill or card payment the app expects has come in or gone out ("my pay came in", "rent came out"), use change with landed and its P, B or A ref: never money_in or log_spend for it, which would count it twice. When they say what their bank app or card app shows today, use bank_figure or card_figure with that figure. When the person says they spent, got or moved money, or asks to change a bill, pay, line, goal or card, use change. The app makes the change at once and shows what changed with Undo; a delete, or a change larger than safe to spend, waits for their OK. Refs (A1, L1, G1, B1, P1, S1) come from FIGURES or list; never invent one. Not a licensed adviser: for investments, loans or taxes, say so in one line.
 
+A spend goes on the account they paid with. If they did not say and they have cards, ask once, naming them: card or bank? The answer is kept for the chat.
+
 SCREEN says which screen the person has open: "this screen" means that one.
 WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line): a loan: Plan, Add a loan. A card's pay day or close day: Plan, tap the card. Change a goal or take money out of it: Plan, tap the goal. Change a spend: Receipts, tap it. Statements: Home, Add statements. Reminders: Reminders at the top. A backup or the cloud copy: Settings.`;
   /* [AI_JOIN_FIXES H4] a change it can't make says where it is on the screens (the same map as SYSTEM) */
@@ -12703,6 +12705,8 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
   function stateText(state, ctx) {
     const book = ctx.book, out = ['FIGURES (worked out by the app for today, exact)', figures(book, ctx.today).text];
     if (ctx.screen && SCREEN_NAMES[ctx.screen]) out.push('', 'SCREEN: the person has ' + SCREEN_NAMES[ctx.screen] + ' open.');
+    const pw = book && state.payWith && (book.accounts || []).find(x => x.id === state.payWith && live(x));
+    if (pw) out.push('', 'They said they pay with ' + pw.name + ': a spend with no account named goes on it, unless they say otherwise.');
     if (!book) {
       const d = state.draft || emptyDraft(), card = draftCard(d, ctx.today);
       out.push('', 'DRAFT (saved on this device, not in the app yet). Today is ' + SN.dayLabel(ctx.today, true) + '. Currency: ' + curOf(d) + '.');
@@ -12822,6 +12826,18 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       if (x == null) return { bad: 'a figure I could not read' };
       return { kind: 'checkIn', ci: { figures: { [id]: x } }, text: `${rec.name} shows ${m(x, rec.cur)} today`, amount: 0, figs: [x] };
     }
+    /* [AI_JOIN_FIXES H6; M30] a spend with no account named while there are cards: the account the person named for
+       this chat, else asked once ("card or bank?"), never the main bank unasked */
+    if (what === 'log_spend' && (a.account == null || a.account === '')) {
+      if (ctx.payWith && acctRec(ctx.payWith) && !acctRec(ctx.payWith).gone) a = Object.assign({}, a, { account: Object.keys(refs).find(k => refs[k] === ctx.payWith) });
+      else {
+        const own = (book.accounts || []).filter(x => live(x) && !x.closed), cards = own.filter(x => x.type === 'card');
+        if (cards.length) {
+          const names = cards.concat(own.filter(x => x.type !== 'card' && x.type !== 'loan')).map(x => x.name);
+          return { bad: 'which account paid for it. Ask once, in one question naming them: "Card or bank? ' + names.slice(0, -1).join(', ') + ' or ' + names[names.length - 1] + '". Then change again with that account; the answer is kept for this chat', payWith: true };
+        }
+      }
+    }
     if (what === 'log_spend' || what === 'refund' || what === 'money_in') {
       const acct = acctOr(a.account), cur = acct && (acctRec(acct) || {}).cur, x = amt(a.amount, cur), d = date(a.date);
       const line = what === 'money_in' ? null : lineOf(a.line);
@@ -12829,7 +12845,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       const args = { date: d, a: x, acct }; if (line && (what === 'log_spend' || a.line)) args.line = line; const n = note(a.note); if (n) args.note = n;
       const kind = { log_spend: 'logSpend', refund: 'refund', money_in: 'moneyIn' }[what];
       const text = what === 'log_spend' ? `Log ${m(x, cur)} on ${lineName(line)} from ${nm(acct)}, ${on(d)}` : what === 'refund' ? `Log ${m(x, cur)} back into ${nm(acct)}, ${on(d)}` : `Log ${m(x, cur)} in to ${nm(acct)}, ${on(d)}`;
-      return { kind, args: [args], text: text + (n ? ' (' + n + ')' : ''), amount: x, ref: line && line !== 'free' ? a.line : null };
+      return { kind, args: [args], text: text + (n ? ' (' + n + ')' : ''), amount: x, ref: line && line !== 'free' ? a.line : null, named: what === 'log_spend' && a.account != null && a.account !== '' ? acct : null };
     }
     if (what === 'move_money') {
       const from = ref(a.from, 'A'), to = ref(a.to, 'A'), x = amt(a.amount), d = date(a.date);
@@ -12979,9 +12995,12 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       const refs = allRefs(book, today), plan = [], dropped = [];
       for (const a of raw) {
         if (plan.length >= MAX_STEPS) { dropped.push('more than ' + MAX_STEPS + ' at a time'); continue; }
-        const s = stepOf(a, { book, today, refs });
-        if (s.bad) dropped.push(s.bad); else plan.push(s);
+        const s = stepOf(a, { book, today, refs, payWith: state.payWith });
+        if (s.bad) { dropped.push(s.bad); if (s.payWith) state.askPay = true; } else plan.push(s);
       }
+      /* [AI_JOIN_FIXES H6] the answer to "card or bank?" is kept for this chat */
+      const named = plan.find(s => s.named);
+      if (state.askPay && named) { state.payWith = named.named; state.askPay = false; }
       if (!plan.length) return 'Nothing changed: ' + (dropped.join('; ') || 'no steps');
       /* [BW] a delete, or a change larger than safe to spend, asks first; [AI_FIRST_PLAN 7] an amount the person did not
          type is a guess and asks first too */

@@ -36,8 +36,8 @@ const seen = sel => p => p.$$eval(sel, e => e.filter(x => x.getClientRects().len
     ck('the answers are kept, with Fill in my Burrow', (await seen('#a3Home [data-chatfill]')(p)) === 1);
     /* 3 */
     await p.$eval('#a3Home [data-chatfill]', e => e.click()); await R.idle(p); await T.w(500);
-    ai.push(R.say('', [R.call('change', { steps: [{ do: 'log_spend', amount: 1200, note: 'lunch' }] })]), R.say('Logged.'));
-    await R.tell(p, 'I spent 1,200 on lunch');
+    ai.push(body => R.say('', [R.call('change', { steps: [{ do: 'log_spend', amount: 1200, note: 'lunch', account: R.ref(body, 'Main bank') }] })]), R.say('Logged.'));
+    await R.tell(p, 'I spent 1,200 on lunch from Main bank');   // he has cards, so he names the account (AI_JOIN_FIXES H6)
     ck('a spend by chat: safe to spend 200,200', (await R.home(p)).safe === 200200);
     const fc = await p.$$eval('[data-card=chat-fill][data-status=done]', e => e.map(x => x.textContent.replace(/\s+/g, ' ')));
     ck('the fill card offers neither Undo nor Start over now', fc.length === 1 && !(await p.$('[data-card=chat-fill][data-status=done] button')) && !/Start over/.test(fc[0]), JSON.stringify(fc));

@@ -131,8 +131,8 @@ const steps = list => [].concat(...list.map(([, r]) => r));
   /* day to day: a spend by chat, Undo, a delete that asks first */
   let S2 = S1;
   await t('"I spent 1,200 on lunch": made at once with the engine\'s before and after; safe 200,200; Undo puts back 201,400 (BW)', async () => {
-    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'log_spend', amount: 1200, note: 'lunch' }] })]), body => { ok(/^Done/.test(FAKE.results(body)[0].text), FAKE.results(body)[0].text); return say('Logged. Safe to spend is now 200,200.'); }]);
-    const r = await K.turn(S2, 'I spent 1,200 on lunch', Object.assign(h.deps(f), { door: deps.door }));
+    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'log_spend', amount: 1200, note: 'lunch', account: 'A1' }] })]), body => { ok(/^Done/.test(FAKE.results(body)[0].text), FAKE.results(body)[0].text); return say('Logged. Safe to spend is now 200,200.'); }]);
+    const r = await K.turn(S2, 'I spent 1,200 on lunch from Main bank', Object.assign(h.deps(f), { door: deps.door }));
     S2 = r.state;
     eq(safe(h), 200200);
     const c = r.shown.find(x => x.who === 'card').card;
@@ -143,9 +143,9 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     eq(safe(h), 201400);
   });
   await t('what is sent never holds a record id or a note; the list tool gives amounts and dates only (BV6)', async () => {
-    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'log_spend', amount: 900, note: 'secret coffee at Blue Door' }] })]), say('Logged.'),
+    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'log_spend', amount: 900, note: 'secret coffee at Blue Door', account: 'A1' }] })]), say('Logged.'),
       say('', [call('list', { what: 'spends', account: 'A1' })]), say('Here they are.')]);
-    let r = await K.turn(S2, 'I spent 900 on a coffee', Object.assign(h.deps(f), { door: deps.door })); S2 = r.state;
+    let r = await K.turn(S2, 'I spent 900 on a coffee from Main bank', Object.assign(h.deps(f), { door: deps.door })); S2 = r.state;
     r = await K.turn(S2, 'what did I spend?', Object.assign(h.deps(f), { door: deps.door })); S2 = r.state;
     const sent = JSON.stringify(f.bodies.slice(2));
     const ids = [].concat(...['accounts', 'schedules', 'events'].map(k => h.book[k].map(x => x.id)));
@@ -164,7 +164,7 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     eq(safe(h), 201400 - 900 + 5200);
   });
   await t('a change larger than safe to spend asks first (BW)', async () => {
-    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'log_spend', amount: 300000 }] })]), say('That is more than safe to spend. Tap OK if it is right.')]);
+    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'log_spend', amount: 300000, account: 'A1' }] })]), say('That is more than safe to spend. Tap OK if it is right.')]);
     const before = safe(h);
     const r = await K.turn(S2, 'I spent 300,000 on a sofa', Object.assign(h.deps(f), { door: deps.door }));
     const c = r.shown.find(x => x.who === 'card').card;
@@ -172,7 +172,7 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const nn = await K.notNow(r.state, r.shown.find(x => x.who === 'card').id); eq(nn.state.turns.find(x => x.card && x.card.ask === 'large').card.status, 'not now');
   });
   await t('an amount the person did not type is a guess and asks first', async () => {
-    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'log_spend', amount: 1500 }] })]), say('Is 1,500 right?')]);
+    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'log_spend', amount: 1500, account: 'A1' }] })]), say('Is 1,500 right?')]);
     const r = await K.turn(S2, 'I had lunch', Object.assign(h.deps(f), { door: deps.door }));
     const c = r.shown.find(x => x.who === 'card').card;
     eq([c.status, c.ask, c.lines], ['ask', 'guess', ['Log ¥1,500 on Free to spend from Main bank, today (my guess)']]);
@@ -348,8 +348,8 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const h8 = page('2026-11-24'); h8.book = (await (async () => { const hh = page('2026-11-24'); await runSetup(hh, FAKE.make(steps(SETUP))); return hh.book; })());
     const d8 = h8.deps(FAKE.make([]));
     const one = async input => (await K.handle(K.fresh(), { id: 'x', name: 'change', input }, d8)).result;
-    ok(/^Nothing changed: a log spend I could not read/.test(await one({ steps: [{ do: 'log_spend', amount: 'twelve hundred' }] })));
-    ok(/^Nothing changed: a log spend I could not read/.test(await one({ steps: [{ do: 'log_spend', amount: 100, date: '2026-12-01' }] })));
+    ok(/^Nothing changed: a log spend I could not read/.test(await one({ steps: [{ do: 'log_spend', amount: 'twelve hundred', account: 'A1' }] })));
+    ok(/^Nothing changed: a log spend I could not read/.test(await one({ steps: [{ do: 'log_spend', amount: 100, date: '2026-12-01', account: 'A1' }] })));
     ok(/^Nothing changed: a end bill for a ref I do not know/.test(await one({ steps: [{ do: 'end_bill', ref: 'B9' }] })));
     ok(/^Nothing changed: a change I can't make \(transfer_all\)/.test(await one({ steps: [{ do: 'transfer_all' }] })));
     const seven = []; for (let i = 0; i < 7; i++) seven.push({ do: 'add_line', name: 'Line ' + i, amount: 100 });
@@ -490,6 +490,32 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     r = await K.turn(state, 'my bank shows 280,000', Object.assign(h.deps(f), { door: d0.door }));
     c = r.shown.find(x => x.who === 'card' && x.card.kind === 'change');
     ok(c && c.card.status === 'done', JSON.stringify(c && c.card)); eq(bank(), 280000, 'a figure near what was expected goes in at once');
+  });
+  await t('[H6] a spend with no account named, when cards exist, asks "card or bank?" once and remembers the answer for the chat', async () => {
+    const h = page('2026-11-24'); const { state, deps: d0 } = await runSetup(h, FAKE.make(steps(SETUP)));
+    const refIn = (body, name) => { const m = new RegExp('(?:^|\\n)([A-Z]\\d+) \\| ' + name + ' \\|').exec(JSON.stringify(body.messages).replace(/\\n/g, '\n')); return m ? m[1] : null; };
+    const D = f => Object.assign(h.deps(f), { door: d0.door });
+    let res = '';
+    let f = FAKE.make([say('', [call('change', { steps: [{ do: 'log_spend', amount: 900, note: 'lunch' }] })]), body => { res = FAKE.results(body)[0].text; return say('Card or bank? Card A, Card B or Main bank'); }]);
+    let r = await K.turn(state, 'I bought lunch, 900', D(f));
+    ok(/^Nothing changed: /.test(res) && /Card A, Card B or Main bank/.test(res) && /once/.test(res), res);
+    eq(r.shown.filter(x => x.who === 'card' && x.card.kind === 'change').length, 0, 'nothing logged');
+    eq(safe(h), 201400);
+    f = FAKE.make([body => say('', [call('change', { steps: [{ do: 'log_spend', amount: 900, note: 'lunch', account: refIn(body, 'Card A') }] })]), say('Logged on Card A.')]);
+    r = await K.turn(r.state, 'Card A', D(f));
+    let c = r.shown.find(x => x.who === 'card' && x.card.kind === 'change');
+    ok(c && c.card.status === 'done' && /from Card A/.test(c.card.lines[0]), JSON.stringify(c && c.card));
+    f = FAKE.make([say('', [call('change', { steps: [{ do: 'log_spend', amount: 400, note: 'coffee' }] })]), say('Logged.')]);
+    r = await K.turn(r.state, 'coffee 400', D(f));
+    c = r.shown.find(x => x.who === 'card' && x.card.kind === 'change');
+    ok(c && c.card.status === 'done' && /Log ¥400 on Free to spend from Card A/.test(c.card.lines[0]), JSON.stringify(c && c.card));
+    ok(/pay with Card A/.test(JSON.stringify(f.bodies[0].messages)), 'the AI is told the answer kept for the chat');
+    /* a book with no cards: a spend with no account goes on the main bank, as before */
+    const h2 = page('2026-11-24'); const { state: s2, deps: d2 } = await runSetup(h2, FAKE.make(steps(SETUP.map(x => x[0].startsWith('Card A') ? [x[0], [say('', [call('draft_set', { section: 'cards', value: [] })]), say(K.GUIDE[10].ask)]] : x))));
+    f = FAKE.make([say('', [call('change', { steps: [{ do: 'log_spend', amount: 900, note: 'lunch' }] })]), say('Logged.')]);
+    r = await K.turn(s2, 'I bought lunch, 900', Object.assign(h2.deps(f), { door: d2.door }));
+    c = r.shown.find(x => x.who === 'card' && x.card.kind === 'change');
+    ok(c && c.card.status === 'done' && /from Main bank/.test(c.card.lines[0]), JSON.stringify(c && c.card));
   });
   console.log(bad ? `chat3_core: ${bad} of ${n} FAILED` : `chat3_core: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);

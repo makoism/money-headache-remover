@@ -44,9 +44,11 @@ const fig = (p, sel) => p.$eval(sel, e => Number((e.dataset.amt !== undefined ? 
   {
     /* M6 (24 Nov 12:20): an amount the person never typed asks first. "I had lunch", and the AI logs 1,200 */
     const d = await open('2026-11-24');
-    await openWithFakeAI(d.p, { steps: MAKO_SETUP.steps.concat([{ calls: [{ name: 'change', input: { steps: [{ do: 'log_spend', amount: 1200, note: 'lunch' }] } }] }, { words: 'Shall I log 1,200 for lunch?' }]) });
+    /* [AI_JOIN_FIXES H6] he has cards, so he names the account; the amount is still the AI's own */
+    const refIn = (body, name) => { const m = new RegExp('(?:^|\\n)([A-Z]\\d+) \\| ' + name + ' \\|').exec(JSON.stringify(body.messages).replace(/\\n/g, '\n')); return m ? m[1] : null; };
+    await openWithFakeAI(d.p, { steps: MAKO_SETUP.steps.concat([body => ({ calls: [{ name: 'change', input: { steps: [{ do: 'log_spend', amount: 1200, note: 'lunch', account: refIn(body, 'Main bank') }] } }] }), { words: 'Shall I log 1,200 for lunch?' }]) });
     for (const line of MAKO_SETUP.lines) await tell(d.p, line);
-    await tell(d.p, 'I had lunch');
+    await tell(d.p, 'I had lunch, paid from Main bank');
     const card = '[data-card=chat-change][data-status=ask]';
     const st = await d.p.$eval(card + ' [data-chat=status]', e => ({ ask: e.dataset.ask, text: e.textContent })).catch(() => null);
     ck('an amount not typed: the card asks first, in its own words, with Do it and Not now, nothing written yet', !!st && st.ask === 'guess' && /You didn't type this amount/.test(st.text) && !!(await d.p.$(card + ' [data-chatok]')) && !!(await d.p.$(card + ' [data-chatnot]')) && (await fig(d.p, '#a3Home [data-fig=safe]')) === 201400, JSON.stringify(st));

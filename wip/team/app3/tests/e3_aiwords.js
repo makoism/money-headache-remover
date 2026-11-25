@@ -34,7 +34,23 @@ const owed = (p, name) => p.evaluate(n => { const { E3 } = BurrowApp3, a = E3.bo
     await p.evaluate(() => [...document.querySelectorAll('[data-card=chat-change][data-status=done] [data-chatundo]')].pop().click()); await R.idle(p); await T.w(400);
     h = await R.home(p);
     ck('H5: Undo: 201,400 and 286,000 again', h.safe === 201400 && h.bank === 286000, JSON.stringify(h));
-    /* H6: next */
+    /* H6 */
+    let res = '';
+    ai.push(R.say('', [R.call('change', { steps: [{ do: 'log_spend', amount: 900, note: 'lunch' }] })]), body => { res = (R.results(body)[0] || {}).text || ''; return R.say('Card or bank? Card A, Card B or Main bank'); });
+    await R.tell(p, 'I bought lunch, 900');
+    ck('H6: no account named while cards exist: nothing is logged, the AI is told to ask card or bank, naming them', /^Nothing changed: /.test(res) && /Card A, Card B or Main bank/.test(res), res);
+    h = await R.home(p);
+    ck('H6: Home unchanged', h.safe === 201400 && h.bank === 286000, JSON.stringify(h));
+    ai.push(body => R.say('', [R.call('change', { steps: [{ do: 'log_spend', amount: 900, note: 'lunch', account: R.ref(body, 'Card A') }] })]), R.say('Logged on Card A.'));
+    await R.tell(p, 'Card A');
+    c = await cardOf(p);
+    ck('H6: "Card A": the lunch goes on Card A', c && c.status === 'done' && /Log ¥900 on Free to spend from Card A/.test(c.text), JSON.stringify(c));
+    ck('H6: Card A owes 54,900', (await owed(p, 'Card A')) === 54900, String(await owed(p, 'Card A')));
+    ai.push(R.say('', [R.call('change', { steps: [{ do: 'log_spend', amount: 400, note: 'coffee' }] })]), R.say('Logged.'));
+    await R.tell(p, 'coffee 400');
+    c = await cardOf(p);
+    ck('H6: the next spend with no account goes on Card A without asking again', c && c.status === 'done' && /Log ¥400 on Free to spend from Card A/.test(c.text), JSON.stringify(c));
+    ck('H6: Card A owes 55,300', (await owed(p, 'Card A')) === 55300, String(await owed(p, 'Card A')));
     ck('no page errors', !errs.length, errs.join(' | '));
   } catch (e) { ck('the test ran to its end', false, e.stack); }
   await b.close();

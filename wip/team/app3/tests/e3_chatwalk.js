@@ -53,7 +53,9 @@ const SETUP = [
   ['no minimum', [say('', [call('draft_set', { section: 'min', value: null })]), after('min', 'That is everything. Shall I fill in your Burrow?')]],
   ['yes fill it in', [say('', [call('fill_book', {})]), after('fill', "Done. Here's Home. Check each tab, tell me anything that's wrong.")]],
 ];
-const SPEND = [say('', [call('change', { steps: [{ do: 'log_spend', amount: 1200, note: 'lunch' }] })]), after('spend', 'Logged. Safe to spend is now 200,200.')];
+const refIn = (body, name) => { const m = new RegExp('(?:^|\\n)([A-Z]\\d+) \\| ' + name + ' \\|').exec(JSON.stringify(body.messages).replace(/\\n/g, '\n')); return m ? m[1] : null; };   // the A ref FIGURES gives a name
+/* [AI_JOIN_FIXES H6] Mako has cards, so he names the account the lunch came from */
+const SPEND = [body => say('', [call('change', { steps: [{ do: 'log_spend', amount: 1200, note: 'lunch', account: refIn(body, 'Main bank') }] })]), after('spend', 'Logged. Safe to spend is now 200,200.')];
 const fake = FAKE.make([].concat(...SETUP.map(x => x[1]), SPEND));
 async function relay(p) {
   await p.evaluateOnNewDocument(() => { window.STMT3_RELAY = 'https://relay.example'; });
@@ -167,7 +169,7 @@ const log = p => p.$eval('#a3ChatLog', e => e.textContent.replace(/\s+/g, ' '));
 
     /* one spend by chat */
     await p.$eval('#a3Chat #a3ChatIn', e => e.focus());
-    await tell(p, 'I spent 1,200 on lunch');
+    await tell(p, 'I spent 1,200 on lunch from Main bank');
     ck('the change was made at once and said Done', /^Done/.test(seen.spend || ''), seen.spend);
     const cc = '[data-card=chat-change][data-status=done]';
     ck('its card: what changed, and safe to spend 201,400 before and 200,200 after', /Log ¥1,200 on Free to spend from Main bank, today \(lunch\)/.test(await p.$eval(cc, e => e.textContent)) && (await p.$$eval(cc + ' [data-amt]', e => e.map(x => Number(x.dataset.amt)))).slice(0, 2).join() === '201400,200200');
