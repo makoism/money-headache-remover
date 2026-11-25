@@ -43,16 +43,6 @@ A section handed whole to a reviewer covers nothing by itself, so a line added l
 
 - src/cloud3_page.js, a toast when two devices changed the same thing: "Your devices changed the same thing. Open
   Settings to choose which to keep." Two sentences with full stops (VOICE: a toast is one line, no full stop).
-- src/settings3_sw.js, a toast when a new version is ready: "A new version of the app is ready. It opens the next time
-  you come back to the app." The same.
-- src/settings3.js, Settings, under the currency: "It stays the same once money is written down." A one line note that
-  ends with a full stop.
-- src/stmt3_ai.js, under the code word box: "Kept on this device only, and sent only to this page's own server." The
-  same.
-- src/settings3.js, Settings, the Backup file note: "Restoring one replaces the money on this device; what is here now
-  is kept first ..." A semicolon (VOICE Part C: never a semicolon).
 
-Not faults: no em dash anywhere, none of the 38 words VOICE.md forbids, no exclamation mark, ellipsis, "e.g." or en
-dash, and no number of 7 digits or more. What is written only for the AI (the assistant's instructions and tool
-descriptions, a statement's prompt) is not read: "Use any AI" shows the instructions to the person, and qc-voice
-reads those.
+Fixed since (MAIN 17, 25 Nov): the new-version toast, the two one line notes that ended in a full stop and the semicolon in
+the Backup file note.

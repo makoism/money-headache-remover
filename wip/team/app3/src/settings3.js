@@ -43,7 +43,7 @@ function setMoney3() {
   const cur = E3.book ? E3.home() : null;
   return `<h2>Money</h2>
       <p class="a3-next">${cur ? `Amounts are shown in <b data-set="cur">${esc3(cur)}</b>.` : 'The currency is chosen in setup.'}</p>
-      ${cur ? '<p class="a3-sub">It stays the same once money is written down.</p>' : ''}`;
+      ${cur ? '<p class="a3-sub">It stays the same once money is written down</p>' : ''}`;
 }
 function openSet3() {
   if (SET3.open) return;
@@ -55,7 +55,7 @@ function openSet3() {
       <p class="a3-next" id="a3Space">Checking what this device keeps.</p>
       <div class="a3-actions"><button type="button" class="a3-btn" id="a3Persist" hidden>Ask the browser to keep it</button></div></div>`;
   const backup = `<div class="a3-card" data-card="backup"><h2>Backup file</h2>
-      <p class="a3-next">A backup file is your own copy of your money, to keep anywhere. Restoring one replaces the money on this device; what is here now is kept first, so Put it back can bring it back.</p>
+      <p class="a3-next">A backup file is your own copy of your money, to keep anywhere. Restoring one replaces the money on this device. What is here now is kept first, so Put it back can bring it back.</p>
       <label class="a3-check"><input type="checkbox" id="a3BkLock"> Lock it with a code</label>
       <div class="a3-field" id="a3BkCodeF" hidden><label for="a3BkCode">Code for this file</label>
         <input class="a3-in a3-text" id="a3BkCode" type="password" autocomplete="new-password" aria-describedby="a3BkCodeH">
