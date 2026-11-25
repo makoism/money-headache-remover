@@ -375,6 +375,9 @@
         return run(label, w => ACTIONS[name](w, ...args.slice(0, n)), opts);
       };
     }
+    /* the words a step would be refused with, or null: nothing is written (a question before a remove is only asked
+       when Yes would do it) */
+    api.refusal = (label, fn) => { try { plan(label, fn, true); return null; } catch (e) { if (e instanceof Bad) return e.message; throw e; } };
     api.dry = (name, ...args) => {
       const n = ARGS[name];
       const p = plan(name, w => ACTIONS[name](w, ...args.slice(0, n)), true);

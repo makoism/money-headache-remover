@@ -9018,6 +9018,9 @@ const E3 = (() => {
         return run(label, w => ACTIONS[name](w, ...args.slice(0, n)), opts);
       };
     }
+    /* the words a step would be refused with, or null: nothing is written (a question before a remove is only asked
+       when Yes would do it) */
+    api.refusal = (label, fn) => { try { plan(label, fn, true); return null; } catch (e) { if (e instanceof Bad) return e.message; throw e; } };
     api.dry = (name, ...args) => {
       const n = ARGS[name];
       const p = plan(name, w => ACTIONS[name](w, ...args.slice(0, n)), true);
@@ -9529,7 +9532,8 @@ function ageWords3(days) {
    bank), in the way Home writes its other sums, so it never reads as two figures for the bank. One way of writing
    cents for the line (money.js formatter); the signs are written, nothing is worked out here. */
 function bankParts3(a, yr) {
-  if (!a.loggedIn && !a.loggedOut) return `${ageWords3(a.ageDays)}, on ${esc3(day3(a.asOf, yr))}`;
+  /* [M36] a figure dated after this device's day (another device a day ahead): its day only, never a negative age */
+  if (!a.loggedIn && !a.loggedOut) return a.ageDays < 0 ? `checked on ${esc3(day3(a.asOf, yr))}` : `${ageWords3(a.ageDays)}, on ${esc3(day3(a.asOf, yr))}`;
   const f = fmt3(a.currency, [a.checked, a.loggedOut, a.loggedIn, a.bank]);
   return esc3(`${f(a.checked)} (checked ${day3(a.asOf, yr)})${a.loggedOut ? ` ${SM.MINUS} ${f(a.loggedOut)} (out, logged since)` : ''}${a.loggedIn ? ` + ${f(a.loggedIn)} (in, logged since)` : ''} = ${f(a.bank)}`);
 }
@@ -10596,6 +10600,7 @@ function plForm3(title, fields, buttons, note) {
     if (got.bad) { err.textContent = got.bad; got.el.focus(); return; }
     const b = buttons[Number(btn.dataset.plbtn)];
     /* [M6, M61] a button that removes asks first (sure3): nothing is written until the yes */
+    if (b.sure && !btn.dataset.yes) { const [l0, f0] = b.step(got.vals), no = ACT3.refusal(l0, f0); if (no) { err.textContent = no; $('#plSure').innerHTML = ''; return; } }
     if (b.sure && !btn.dataset.yes) { sure3($('#plSure'), b.sure[0], b.sure[1], () => { btn.dataset.yes = '1'; btn.click(); }); return; }
     delete btn.dataset.yes;
     const [label, fn, undo] = b.step(got.vals);
@@ -13108,7 +13113,7 @@ function stmt3Bar() {
     for (const a of accts.filter(x => SPEND_FROM[x.type])) {
       const ref = 'A' + (++k); refs[ref] = a.id;
       const fig = r.accounts[a.id];
-      rows.push(`${ref} | ${a.name} | ${a.type} | ` + (fig ? `${m(fig.bank, fig.currency)} today, checked ${fig.ageDays === 0 ? 'today' : fig.ageDays === 1 ? 'yesterday' : fig.ageDays + ' days ago'}` : 'see cards'));
+      rows.push(`${ref} | ${a.name} | ${a.type} | ` + (fig ? `${m(fig.bank, fig.currency)} today, checked ${fig.ageDays === 0 ? 'today' : fig.ageDays === 1 ? 'yesterday' : fig.ageDays < 0 ? 'on a later day' : fig.ageDays + ' days ago'}` : 'see cards'));
     }
     out.push('Accounts you can spend from (ref | name | kind | bank today):\n' + rows.join('\n'));
     for (const id of Object.keys(r.accounts)) if (r.accounts[id].spendFrom && r.accounts[id].whyParts) out.push(`How safe to spend is worked out for ${name(id)}: ${SM.sumLine(r.accounts[id].whyParts, r.accounts[id].headroom, r.accounts[id].currency)}`);   // [S4] as Home writes it

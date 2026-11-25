@@ -194,6 +194,7 @@ function plForm3(title, fields, buttons, note) {
     if (got.bad) { err.textContent = got.bad; got.el.focus(); return; }
     const b = buttons[Number(btn.dataset.plbtn)];
     /* [M6, M61] a button that removes asks first (sure3): nothing is written until the yes */
+    if (b.sure && !btn.dataset.yes) { const [l0, f0] = b.step(got.vals), no = ACT3.refusal(l0, f0); if (no) { err.textContent = no; $('#plSure').innerHTML = ''; return; } }
     if (b.sure && !btn.dataset.yes) { sure3($('#plSure'), b.sure[0], b.sure[1], () => { btn.dataset.yes = '1'; btn.click(); }); return; }
     delete btn.dataset.yes;
     const [label, fn, undo] = b.step(got.vals);

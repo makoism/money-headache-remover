@@ -85,7 +85,9 @@ const bare = b => JSON.stringify([b.events, b.schedules, (b.plan || {}).budgets,
     for (const [k, v] of Object.entries({ name: 'Bike loan', owed: '90000', amount: '5000', payDay: '27' })) await p.$eval('#pl-' + k, (e, v) => { e.focus(); e.value = v; e.dispatchEvent(new Event('input', { bubbles: true })); e.blur(); }, v);
     await p.click('[data-plbtn="0"]'); await T.w(500);
     const loan = ((await saved(p)).accounts.find(x => x.name === 'Bike loan') || {}).id;
-    await door('Close this loan', () => plan(`#a3Plan [data-owed="${loan}"]`), () => btn('Close this loan'), /Close Bike loan\?/, null);
+    /* a loan that still owes: the refusal comes first, with no question (the question is only asked when Yes would do it) */
+    await plan(`#a3Plan [data-owed="${loan}"]`); await btn('Close this loan'); await T.w(300);
+    ck('Close this loan, still owing: refused in words at once, no question', !(await p.$('[data-sure]')) && /still owes money/.test(await p.$eval('#plErr', e => e.textContent)), await p.$eval('#plErr', e => e.textContent));
     ck('no page errors', errs.length === 0, errs.join(' | '));
   } finally { await b.close(); }
   T.done('e3_removes');
