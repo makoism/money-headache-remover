@@ -491,7 +491,61 @@
     return id;
   }
 
-  const api = { addPay, addAccount, changeAccount, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan };
+  /* [E2, M13, M45, M61] closing a bank, cash or e-wallet that is not the main bank (CONTROLS_PLAN section 3, P6, R3, R4).
+     x.to: the account its money goes to (one of your own, open, same currency), or 'spent' when the money is not there
+     any more. One step: each bill, pay, card and loan paid from it or into it moves to x.to (the main bank when its money
+     was spent); when spent, a final check of 0 today (the gap counts as spending, as at Check your bank), else the move of
+     all it holds today (the engine's figure) to x.to, which leaves it at 0; then `closed` today. Refused below zero (move money in first), with a goal or a budget
+     line kept in it, or for the main bank (later, CONTROLS_PLAN slice 13). Its history stays; Reopen undoes the close. */
+  const linksTo = (w, id) => {
+    const out = [];
+    for (const s of A3.listOf(w.book, 'schedules')) if (live(s) && s.acct === id && !(s.ends && s.ends < w.today)) out.push({ list: 'schedules', rec: s, field: 'acct' });
+    for (const a of w.book.accounts || []) if (live(a) && !a.closed && a.payFrom === id) out.push({ list: 'accounts', rec: a, field: 'payFrom' });
+    return out;
+  };
+  const keptIn = (w, id) => (w.book.places || []).filter(g => live(g) && g.keptIn && g.keptIn.acct === id).map(g => g.name)
+    .concat(A3.listOf(w.book, 'budgets').filter(l => live(l) && l.acct === id && !(l.ends && l.ends < w.today)).map(l => l.name));
+  function closeAccount(w, id, x) {
+    const a = find(w, 'accounts', id);
+    if (!OWN_KINDS[a.type]) bad(a.type === 'loan' ? 'Close a loan on its own sheet' : 'Close a card on its own sheet');
+    if (id === mainOf(w)) bad('Your main bank is where pay lands, so it cannot be closed here yet');
+    if (a.closed) bad(a.name + ' is already closed');
+    const k = keptIn(w, id);
+    if (k.length) bad(k.join(' and ') + (k.length > 1 ? ' are' : ' is') + ' kept in ' + a.name + '. Change or remove ' + (k.length > 1 ? 'them' : 'it') + ' first');
+    const spent = x && x.to === 'spent', to = spent ? mainOf(w) : x && x.to;
+    const dest = !spent && (w.book.accounts || []).find(y => live(y) && y.id === to && y.id !== id && !y.closed && OWN_KINDS[y.type] && (y.cur || home(w)) === (a.cur || home(w)));
+    if (!spent && !dest) bad('Pick where its money goes: another account of yours, or "it is not there any more"');
+    const v = LA.lookahead(w.book, w.today).accounts[id], held = v && v.bank != null ? v.bank : 0;
+    if (held < 0) bad(a.name + ' is below zero. Move money into it first, then close it');
+    for (const l of linksTo(w, id)) w.edit(l.list, l.rec.id, { [l.field]: to });
+    if (spent) w.add('events', { k: 'check', acct: id, date: w.today, a: 0 });
+    else if (held > 0) w.add('events', { k: 'transfer', date: w.today, a: held, acct: id, acct2: to, src: { type: 'typed' } });
+    w.edit('accounts', id, { closed: w.today });
+    return id;
+  }
+  function reopenAccount(w, id) {
+    const a = find(w, 'accounts', id);
+    if (!a.closed) bad(a.name + ' is not closed');
+    w.edit('accounts', id, { closed: null });
+    return id;
+  }
+  /* [E2] an account added by mistake: true remove, only while nothing but its own adding step names it (its opening, its
+     check, the move that filled it), no bill, pay, card, loan, goal or line uses it, and it is not the main bank. The
+     account and those records are marked gone; Undo puts them back whole */
+  function removeAccount(w, id) {
+    const a = find(w, 'accounts', id);
+    if (!OWN_KINDS[a.type]) bad('Remove a card or a loan on its own sheet');
+    if (id === mainOf(w)) bad('Your main bank is where pay lands, so it cannot be removed');
+    const uses = linksTo(w, id).map(l => l.rec.name).concat(keptIn(w, id));
+    if (uses.length) bad(uses.join(' and ') + ' use' + (uses.length > 1 ? '' : 's') + ' ' + a.name + '. Change ' + (uses.length > 1 ? 'them' : 'it') + ' first, or close ' + a.name + ' instead');
+    const on = (w.book.events || []).filter(e => live(e) && (e.acct === id || e.acct2 === id));
+    if (on.some(e => e.grp !== a.grp || !(e.k === 'open' || e.k === 'check' || e.k === 'transfer'))) bad(a.name + ' has history. Close it instead: its history stays');
+    for (const e of on) w.remove('events', e.id);
+    w.remove('accounts', id);
+    return id;
+  }
+
+  const api = { addPay, addAccount, changeAccount, closeAccount, reopenAccount, removeAccount, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan };
   if (node) module.exports = api;
   else root.PLAN3W = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

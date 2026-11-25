@@ -672,6 +672,78 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     const r = await h.go('changeAccount', BANK, { name: 'Everyday bank' }); ok(r.ok, 'the main bank renames ' + JSON.stringify(r));
     eq(h.book.accounts.find(a => a.id === BANK).name, 'Everyday bank');
   });
+  /* [E2, M13, M14, M45, M61] closing and removing a bank, cash or e-wallet (CONTROLS_PLAN section 3) */
+  const withCash = async (h, x) => { const r = await h.go('addAccount', Object.assign({ name: 'Cash', type: 'cash', amount: 12000, moved: false }, x || {})); ok(r.ok, JSON.stringify(r)); return h.book.accounts.find(a => a.name === 'Cash' && !a.gone).id; };
+  await t('[E2] closeAccount, money moved: one move of all of it to the account picked, closed today; the bank gains exactly that; Undo after a reload puts it all back', async () => {
+    const h = setup(), cash = await withCash(h), bank0 = view(h.book).accounts[BANK].bank;
+    const r = await h.go('closeAccount', cash, { to: BANK }); ok(r.ok, JSON.stringify(r));
+    const a = h.book.accounts.find(x => x.id === cash), ev = h.book.events.filter(e => !e.gone && e.grp === r.step.id);
+    eq(a.closed, DAY, 'closed today');
+    eq(ev.filter(e => e.k === 'transfer').map(e => [e.acct, e.acct2, e.date, e.a]), [[cash, BANK, DAY, 12000]], 'one move');
+    const v = view(h.book);
+    eq(v.accounts[BANK].bank, bank0 + 12000, 'the main bank gains exactly what it held');
+    ok(!v.accounts[cash] || v.accounts[cash].bank === 0, 'it holds nothing');
+    const h2 = reloadOf(h), u = await h2.A.undo(r.step.id); ok(u.ok, JSON.stringify(u));
+    eq([h2.book.accounts.find(x => x.id === cash).closed || null, view(h2.book).accounts[cash].bank, view(h2.book).accounts[BANK].bank], [null, 12000, bank0]);
+  });
+  await t('[E2] closeAccount, money not there any more: a final check of nothing (the gap counts as spending, as at Check your bank), closed', async () => {
+    const h = setup(), cash = await withCash(h), safe0 = view(h.book).safeToSpend.headline;
+    const r = await h.go('closeAccount', cash, { to: 'spent' }); ok(r.ok, JSON.stringify(r));
+    eq(h.book.events.filter(e => !e.gone && e.grp === r.step.id).map(e => [e.k, e.acct, e.a]), [['check', cash, 0]]);
+    ok(!h.book.events.some(e => !e.gone && e.grp === r.step.id && e.k === 'transfer'), 'no move');
+    eq(h.book.accounts.find(x => x.id === cash).closed, DAY);
+    ok(view(h.book).safeToSpend.headline <= safe0, 'safe to spend never rises');
+  });
+  await t('[E2] closeAccount refuses: the main bank, one already closed, a move to itself, a card or a closed account, below zero, and a goal kept in it; a bill paid from it moves to the account picked', async () => {
+    const h = setup(), cash = await withCash(h);
+    const z = async (id, x, words) => { const r = await h.go('closeAccount', id, x); ok(!r.ok && r.text.includes(words), JSON.stringify([x, r.text])); };
+    await z(BANK, { to: cash }, 'main bank');
+    await z(cash, { to: cash }, 'Pick where its money goes');
+    await z(cash, { to: CARD_A }, 'Pick where its money goes');
+    await z(cash, {}, 'Pick where its money goes');
+    ok((await h.go('addBill', { name: 'Gym', amount: 3000, day: 5, acct: cash })).ok);
+    const gym = h.book.schedules.find(s => s.name === 'Gym').id;
+    const r = await h.go('closeAccount', cash, { to: BANK }); ok(r.ok, JSON.stringify(r));
+    eq(h.book.schedules.find(s => s.id === gym).acct, BANK, 'the bill now comes from the account picked');
+    await z(cash, { to: BANK }, 'already closed');
+    const h3 = setup(), c3 = await withCash(h3);
+    ok((await h3.A.logSpend({ date: DAY, a: 15000, acct: c3, line: 'free' })).ok);
+    const r3 = await h3.go('closeAccount', c3, { to: BANK }); ok(!r3.ok && /below zero/.test(r3.text), r3.text);
+    const h4 = setup(); ok((await h4.go('addAccount', { name: 'Trip bank', type: 'bank', amount: 0, moved: false })).ok);
+    const tb = h4.book.accounts.find(a => a.name === 'Trip bank').id;
+    ok((await h4.go('addGoal', { name: 'Trip', target: 50000, mode: 'ownAccount', acct: tb })).ok, 'a goal kept in it');
+    const r4 = await h4.go('closeAccount', tb, { to: BANK }); ok(!r4.ok && /Trip is kept in Trip bank/.test(r4.text), r4.text);
+  });
+  await t('[E2] reopenAccount: a closed account opens again with its history kept; refused when it is not closed', async () => {
+    const h = setup(), cash = await withCash(h);
+    const r = await h.go('closeAccount', cash, { to: BANK }); ok(r.ok);
+    const n = h.book.events.filter(e => !e.gone).length;
+    const o = await h.go('reopenAccount', cash); ok(o.ok, JSON.stringify(o));
+    eq([h.book.accounts.find(x => x.id === cash).closed || null, h.book.events.filter(e => !e.gone).length], [null, n], 'open, every record kept');
+    const z = await h.go('reopenAccount', cash); ok(!z.ok && /not closed/.test(z.text), z.text);
+  });
+  await t('[E2] removeAccount: one added by mistake goes whole (its opening, its check, and the move that filled it), as if never added; one with history, a bill or the main bank is refused', async () => {
+    const h = setup(), bank0 = view(h.book).accounts[BANK].bank;
+    const cash = await withCash(h);
+    const r = await h.go('removeAccount', cash); ok(r.ok, JSON.stringify(r));
+    ok(h.book.accounts.find(x => x.id === cash).gone && h.book.events.filter(e => e.acct === cash).every(e => e.gone), 'all of it gone');
+    const sv = await h.go('addAccount', { name: 'Savings2', type: 'bank', amount: 30000, moved: true, afterFigure: true });
+    ok(sv.ok, JSON.stringify(sv));
+    const sid = h.book.accounts.find(a => a.name === 'Savings2').id;
+    eq(view(h.book).accounts[BANK].bank, bank0 - 30000, 'the move took it off the main bank');
+    ok((await h.go('removeAccount', sid)).ok);
+    eq(view(h.book).accounts[BANK].bank, bank0, 'removed: the move is gone too, the main bank as before');
+    const c2 = await withCash(h);
+    ok((await h.A.logSpend({ date: DAY, a: 500, acct: c2, line: 'free' })).ok);
+    const z = await h.go('removeAccount', c2); ok(!z.ok && /Close it instead/.test(z.text), z.text);
+    const z2 = await h.go('removeAccount', BANK); ok(!z2.ok && /main bank/.test(z2.text), z2.text);
+    const h3 = setup(), c3 = await withCash(h3);
+    ok((await h3.go('addBill', { name: 'Gym', amount: 3000, day: 5, acct: c3 })).ok);
+    const z3 = await h3.go('removeAccount', c3); ok(!z3.ok && /Gym/.test(z3.text), z3.text);
+    const h4 = setup(), c4 = await withCash(h4), r4 = await h4.go('removeAccount', c4), h5 = reloadOf(h4);
+    ok((await h5.A.undo(r4.step.id)).ok, 'Undo after a reload');
+    eq(view(h5.book).accounts[c4].bank, 12000, 'back whole');
+  });
   console.log(bad ? `plan3_write: ${bad} FAIL of ${n}` : `plan3_write: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })();
