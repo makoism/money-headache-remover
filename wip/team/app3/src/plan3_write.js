@@ -507,7 +507,9 @@
     .concat(A3.listOf(w.book, 'budgets').filter(l => live(l) && l.acct === id && !(l.ends && l.ends < w.today)).map(l => l.name));
   function closeAccount(w, id, x) {
     const a = find(w, 'accounts', id);
-    if (!OWN_KINDS[a.type]) bad(a.type === 'loan' ? 'Close a loan on its own sheet' : 'Close a card on its own sheet');
+    if (a.type === 'loan') return closeLoan(w, id);
+    if (a.type === 'card') return closeCard(w, id);
+    if (!OWN_KINDS[a.type]) bad('That account cannot be closed here');
     if (id === mainOf(w)) bad('Your main bank is where pay lands, so it cannot be closed here yet');
     if (a.closed) bad(a.name + ' is already closed');
     const k = keptIn(w, id);
@@ -523,6 +525,31 @@
     w.edit('accounts', id, { closed: w.today });
     return id;
   }
+  /* [E3, M27, M40, R3] a card closes at zero: a final check of 0 today and `closed` (its payment day stops: the schedules it
+     owns end on the closing day). With something on it, refused: pay it off (payOff) or tick its payment at Check your
+     bank first */
+  function closeCard(w, id) {
+    const a = find(w, 'accounts', id);
+    if (a.closed) bad(a.name + ' is already closed');
+    const c = LA.lookahead(w.book, w.today).cards[id];
+    if (c && c.owedNow > 0) bad(a.name + ' still has ' + SMF.format(c.owedNow, a.cur || home(w)) + ' on it. Pay it off first, or tick its payment at Check your bank when it has gone');
+    w.add('events', { k: 'check', acct: id, date: w.today, a: 0 });
+    w.edit('accounts', id, { closed: w.today });
+    return id;
+  }
+  /* [E3, K7] all that is owed on a card or a loan, paid today from the account it is paid from: one repay, written only
+     when the person says they really paid it (the screen and the assistant ask) */
+  function payOff(w, id) {
+    const a = find(w, 'accounts', id);
+    if (a.type !== 'card' && a.type !== 'loan') bad('Only a card or a loan is paid off');
+    if (a.closed) bad(a.name + ' is closed');
+    const r = LA.lookahead(w.book, w.today), k = a.type === 'card' ? r.cards[id] : r.owed[id], owed = k ? k.owedNow : 0;
+    if (!(owed > 0)) bad('Nothing is owed on ' + a.name);
+    const from = a.payFrom || mainOf(w);
+    if (!(w.book.accounts || []).some(y => live(y) && !y.closed && y.id === from)) bad('The account ' + a.name + ' is paid from is closed. Change that first');
+    w.add('events', { k: 'repay', date: w.today, a: owed, a2: owed, acct: from, acct2: id, src: { type: 'typed' } });
+    return id;
+  }
   function reopenAccount(w, id) {
     const a = find(w, 'accounts', id);
     if (!a.closed) bad(a.name + ' is not closed');
@@ -534,7 +561,7 @@
      account and those records are marked gone; Undo puts them back whole */
   function removeAccount(w, id) {
     const a = find(w, 'accounts', id);
-    if (!OWN_KINDS[a.type]) bad('Remove a card or a loan on its own sheet');
+    if (!OWN_KINDS[a.type] && a.type !== 'card' && a.type !== 'loan') bad('That account cannot be removed here');
     if (id === mainOf(w)) bad('Your main bank is where pay lands, so it cannot be removed');
     const uses = linksTo(w, id).map(l => l.rec.name).concat(keptIn(w, id));
     if (uses.length) bad(uses.join(' and ') + ' use' + (uses.length > 1 ? '' : 's') + ' ' + a.name + '. Change ' + (uses.length > 1 ? 'them' : 'it') + ' first, or close ' + a.name + ' instead');
@@ -545,7 +572,7 @@
     return id;
   }
 
-  const api = { addPay, addAccount, changeAccount, closeAccount, reopenAccount, removeAccount, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan };
+  const api = { addPay, addAccount, changeAccount, closeAccount, reopenAccount, removeAccount, payOff, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan };
   if (node) module.exports = api;
   else root.PLAN3W = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

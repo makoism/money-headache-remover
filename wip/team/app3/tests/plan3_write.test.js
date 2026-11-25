@@ -744,6 +744,55 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     ok((await h5.A.undo(r4.step.id)).ok, 'Undo after a reload');
     eq(view(h5.book).accounts[c4].bank, 12000, 'back whole');
   });
+  /* [E3, M13, M27, M40] cards and loans: pay off, close, remove one added by mistake, a loan's still owed today */
+  await t('[E3] payOff, worked example on Mako\'s shape (25 Nov: Main bank 286,000, Card A owes 54,000 due 10 Dec): one payment of 54,000 from Main bank today; the bank reads 232,000, Card A 0 with nothing due; safe to spend never rises; Undo after a reload puts it back', async () => {
+    const h = setup(), v0 = view(h.book);
+    eq([v0.accounts[BANK].bank, v0.cards[CARD_A].owedNow], [286000, 54000], 'the starting figures');
+    const r = await h.go('payOff', CARD_A); ok(r.ok, JSON.stringify(r));
+    eq(h.book.events.filter(e => !e.gone && e.grp === r.step.id).map(e => [e.k, e.acct, e.acct2, e.date, e.a]), [['repay', BANK, CARD_A, DAY, 54000]]);
+    const v = view(h.book);
+    eq([v.accounts[BANK].bank, v.cards[CARD_A].owedNow], [232000, 0]);
+    ok(!v.cards[CARD_A].next || !v.cards[CARD_A].next.amount, 'nothing due on it');
+    ok(v.safeToSpend.headline <= v0.safeToSpend.headline, 'safe to spend never rises');
+    const z = await h.go('payOff', CARD_A); ok(!z.ok && /Nothing is owed/.test(z.text), z.text);
+    const h2 = reloadOf(h); ok((await h2.A.undo(r.step.id)).ok);
+    eq(view(h2.book).cards[CARD_A].owedNow, 54000);
+  });
+  await t('[E3] closeAccount for a card: refused while something is on it (pay it off or tick its payment first); at zero: a check of 0 and closed; its payment day stops; Reopen', async () => {
+    const h = setup();
+    const z = await h.go('closeAccount', CARD_A, {}); ok(!z.ok && /still has ¥54,000 on it/.test(z.text), z.text);
+    ok((await h.go('payOff', CARD_A)).ok);
+    const r = await h.go('closeAccount', CARD_A, {}); ok(r.ok, JSON.stringify(r));
+    eq(h.book.events.filter(e => !e.gone && e.grp === r.step.id).map(e => [e.k, e.acct, e.a]), [['check', CARD_A, 0]]);
+    eq(h.book.accounts.find(a => a.id === CARD_A).closed, DAY);
+    ok(!view(h.book).cards[CARD_A] || !view(h.book).cards[CARD_A].next || !view(h.book).cards[CARD_A].next.amount, 'no payment due');
+    ok((await h.go('reopenAccount', CARD_A)).ok, 'reopen');
+  });
+  await t('[E3] a loan paid off early and closed, in two steps, each with Undo (its Still owed today is not changed here: the engine reads a loan from its opening; asked of the coordinator)', async () => {
+    const h = setup();
+    ok((await h.go('addLoan', { name: 'Car loan', owed: 300000, amount: 20000, payDay: 27 })).ok);
+    const loan = h.book.accounts.find(a => a.name === 'Car loan').id;
+    const z = await h.go('closeLoan', loan); ok(!z.ok && /still owes/.test(z.text), z.text);
+    const bank0 = view(h.book).accounts[BANK].bank;
+    const p = await h.go('payOff', loan); ok(p.ok, JSON.stringify(p));
+    eq([view(h.book).owed[loan].owedNow, view(h.book).accounts[BANK].bank], [0, bank0 - 300000]);
+    const r = await h.go('closeAccount', loan, {}); ok(r.ok, JSON.stringify(r));
+    eq(h.book.accounts.find(a => a.id === loan).closed, DAY);
+    const h2 = reloadOf(h); ok((await h2.A.undo(r.step.id)).ok); ok((await h2.A.undo(p.step.id)).ok);
+    eq([h2.book.accounts.find(a => a.id === loan).closed || null, view(h2.book).owed[loan].owedNow], [null, 300000]);
+  });
+  await t('[E3] removeAccount for a card or a loan added by mistake: as if never added; one with history (Card A from setup, a spend on it) is refused', async () => {
+    const h = setup();
+    ok((await h.go('addCard', { name: 'Oops card', owed: 5000, payDay: 15 })).ok);
+    const oc = h.book.accounts.find(a => a.name === 'Oops card').id;
+    const r = await h.go('removeAccount', oc); ok(r.ok, JSON.stringify(r));
+    ok(h.book.accounts.find(a => a.id === oc).gone && h.book.events.filter(e => e.acct === oc).every(e => e.gone));
+    ok(!view(h.book).cards[oc], 'not counted');
+    const z = await h.go('removeAccount', CARD_A); ok(!z.ok && /Close it instead/.test(z.text), z.text);
+    ok((await h.go('addLoan', { name: 'Oops loan', owed: 1000, amount: 100, payDay: 3 })).ok);
+    const ol = h.book.accounts.find(a => a.name === 'Oops loan').id;
+    ok((await h.go('removeAccount', ol)).ok, 'a loan added by mistake');
+  });
   console.log(bad ? `plan3_write: ${bad} FAIL of ${n}` : `plan3_write: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })();
