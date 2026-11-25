@@ -106,6 +106,22 @@ async function home(p, label, safe, bank) {
   const t0 = Date.now();
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'a3walk-')), dir2 = fs.mkdtempSync(path.join(os.tmpdir(), 'a3walk2-'));
   let c = await ctx(dir); let p = c.pages()[0] || await c.newPage();
+  /* [CARDS_IN_HEADLINE, M90, R1] Until s6 no play amount is set, so everything owed now on Card A and Card B comes off
+     safe to spend at once. Worked again by hand (yen), owed A / B after each step:
+     24 Nov setup 286,000 - 84,600 (power, rent, internet) - 54,000 - 23,000 = 124,400.
+     3,000 from the bank and 8,000 on Card A (A 62,000): 283,000 - 84,600 - 62,000 - 23,000 = 113,400.
+     25 Nov 5,000 on Card B (B 28,000): 108,400. 28 Nov a 2,000 refund on Card A (A 60,000): 110,400.
+     1 Dec 20,000 to the Trip account: 90,400. 5 Dec 5,000 more to it, 6 Dec 4,000 food: 9 Dec 81,400.
+     10 Dec pay day before the check: 232,000 under both rules (the pays counted today cover the cards, G4).
+     10 Dec after the check (Card A paid 54,000 of 60,000, the side job unticked): 295,400 - 6,000 (A) - 28,000 (B)
+       - 89,400 (December's phone, power, rent, internet) = 172,000; the same after a reload and on 11 Dec before the check.
+     11 Dec after the check (Card B paid 23,000 of 28,000): 332,400 - 6,000 - 5,000 - 89,400 = 232,000.
+     12 Dec 12,000 on Card A (A 18,000): 220,000. The statement's 2,500 of 14 Dec from the bank: 217,500 (reload, 16 Dec).
+     18 Dec 1,500 by chat from the bank: 216,000. 20 Dec 3,000 taken out of the goal: 219,000; 21 Dec the same.
+     24 Dec 9,000 on Card B (B 14,000): 210,000 on 28 and 29 Dec, before and after the check, and 30 Dec.
+     3 Jan 6,000 from the bank: 204,000. 7 Jan rent ticked, bank 236,000: 236,000 - 18,000 - 14,000 = 204,000.
+     8 Jan pay day: 236,000 (the start of today, both rules). 11 Jan with the pay late: 111,600 (both before the next
+     counted pay, both rules). From 15 Jan Free to spend is set and every figure is as before. */
   /* s1: setup on 24 Nov */
   await go(p, '2026-11-24');
   await p.click('#a3SetupGo'); await w(200);
@@ -124,33 +140,33 @@ async function home(p, label, safe, bank) {
     await typeIn(p, r + '[data-f=name]', name); await typeIn(p, r + '[data-f=amount]', amt); await p.selectOption(r + '[data-f=day]', day);
   }
   await finishSetup3(p); await w(700);
-  await home(p, '24 Nov after setup', 201400, 286000);
+  await home(p, '24 Nov after setup', 124400, 286000);
   /* s2: November */
   await spend(p, 3000, 'Main bank', { note: 'groceries' });
   await spend(p, 8000, 'Card A', { note: 'shoes' });
-  await home(p, '24 Nov after 2 spends', 198400, 283000);
-  await go(p, '2026-11-25'); await spend(p, 5000, 'Card B', { note: 'dinner' }); await home(p, '25 Nov', 198400, 283000);
-  await go(p, '2026-11-28'); await spend(p, 2000, 'Card A', { mode: 'refund', note: 'shoes partly back' }); await home(p, '28 Nov after refund', 198400, 283000);
+  await home(p, '24 Nov after 2 spends', 113400, 283000);
+  await go(p, '2026-11-25'); await spend(p, 5000, 'Card B', { note: 'dinner' }); await home(p, '25 Nov', 108400, 283000);
+  await go(p, '2026-11-28'); await spend(p, 2000, 'Card A', { mode: 'refund', note: 'shoes partly back' }); await home(p, '28 Nov after refund', 110400, 283000);
   await go(p, '2026-12-01');
   await tab(p, 'plan'); await p.click('#plAddGoal'); await w(200);
   await p.fill('#pl-name', 'Trip'); await p.fill('#pl-target', '100000'); await p.fill('#pl-due', '2027-06-30'); await p.selectOption('#pl-mode', 'ownAccount');
   await p.click('[data-plbtn="0"]'); await w(400);
   await p.click('[data-goal]'); await w(200); await p.fill('#pl-amount', '20000'); await p.click('[data-plbtn="0"]'); await w(400);
-  await home(p, '1 Dec after the goal and 20,000 set aside', 178400, 263000);
+  await home(p, '1 Dec after the goal and 20,000 set aside', 90400, 263000);
   await go(p, '2026-12-05'); await spend(p, 5000, 'Main bank', { mode: 'moved', to: 'Trip account', note: 'extra for trip' });
   await go(p, '2026-12-06'); await spend(p, 4000, 'Main bank', { note: 'food' });
-  await go(p, '2026-12-09'); await home(p, '9 Dec', 169400, 254000);
+  await go(p, '2026-12-09'); await home(p, '9 Dec', 81400, 254000);
   /* s3: pay day check-ins */
   await go(p, '2026-12-10'); await home(p, '10 Dec before the check', 232000, 254000);
   await checkin(p, { 'Main bank': 295400, 'Trip account': 25000 }, { 'Card A': 54000 }, ['Side job']);
-  await home(p, '10 Dec after the check (side job unticked)', 178000, 295400);
-  await p.reload(); await w(400); await home(p, '10 Dec after a reload', 178000, 295400);
-  await go(p, '2026-12-11'); await home(p, '11 Dec before the check', 178000, 295400);
+  await home(p, '10 Dec after the check (side job unticked)', 172000, 295400);
+  await p.reload(); await w(400); await home(p, '10 Dec after a reload', 172000, 295400);
+  await go(p, '2026-12-11'); await home(p, '11 Dec before the check', 172000, 295400);
   await checkin(p, { 'Main bank': 332400, 'Trip account': 25000 }, { 'Card B': 23000 }, [], { 'Side job': '2026-12-11' });
-  await home(p, '11 Dec after the check', 243000, 332400);
+  await home(p, '11 Dec after the check', 232000, 332400);
   /* s4a: a gift, the bank statement from any AI, a check */
   await go(p, '2026-12-12'); await spend(p, 12000, 'Card A', { note: 'gift' });
-  await go(p, '2026-12-15'); await home(p, '15 Dec before the statement', 243000, 332400);
+  await go(p, '2026-12-15'); await home(p, '15 Dec before the statement', 220000, 332400);
   await tab(p, 'home'); await p.$eval('#a3StmtGo', e => e.click()); await w(250);
   await p.click('#a3StmtAny summary'); await w(100);
   const rows = [
@@ -163,9 +179,9 @@ async function home(p, label, safe, bank) {
   await p.click('#a3StmtCheck'); await w(500);
   ck('the statement can be added', !(await p.$eval('#a3StmtAdd', e => e.disabled)));
   await p.click('#a3StmtAdd'); await w(700);
-  await home(p, '15 Dec after the statement', 240500, 329900);
-  await p.reload(); await w(400); await home(p, '15 Dec after a reload', 240500, 329900);
-  await go(p, '2026-12-16'); await checkin(p, { 'Main bank': 329900, 'Trip account': 25000 }); await home(p, '16 Dec after the check', 240500, 329900);
+  await home(p, '15 Dec after the statement', 217500, 329900);
+  await p.reload(); await w(400); await home(p, '15 Dec after a reload', 217500, 329900);
+  await go(p, '2026-12-16'); await checkin(p, { 'Main bank': 329900, 'Trip account': 25000 }); await home(p, '16 Dec after the check', 217500, 329900);
   /* s4b: a spend told to the assistant (the header Ask opens the panel), plan changes. The made-up relay answers with
      the fake model: the change names Main bank by the ref the request's FIGURES give it */
   {
@@ -188,7 +204,7 @@ async function home(p, label, safe, bank) {
     await w(300);
     ck('18 Dec: the spend by chat shows its card, done', !!(await p.$('[data-card=chat-change][data-status=done]')), await txt(p, '#a3ChatLog'));
     await p.click('#a3ChatClose'); await w(200);
-    await home(p, '18 Dec after a spend through the assistant', 239000, 328400);
+    await home(p, '18 Dec after a spend through the assistant', 216000, 328400);
   }
   await go(p, '2026-12-20');
   await tab(p, 'plan'); await p.click('[data-goal]'); await w(200); await p.fill('#pl-amount', '3000'); await p.click('[data-plbtn="2"]'); await w(400);
@@ -197,18 +213,18 @@ async function home(p, label, safe, bank) {
   await p.fill('#pl-amount', '75000'); await p.fill('#pl-from', '2027-01-01'); await p.click('[data-plbtn="0"]'); await w(400);
   await tab(p, 'plan'); id = await billBtn('Main job'); await p.click(`[data-pay="${id}"]`); await w(200);
   await p.fill('#pl-amount', '185000'); await p.fill('#pl-from', '2027-02-01'); await p.click('[data-plbtn="0"]'); await w(400);
-  await home(p, '20 Dec after the plan changes', 242000, 331400);
-  await go(p, '2026-12-21'); await home(p, '21 Dec', 242000, 331400);
+  await home(p, '20 Dec after the plan changes', 219000, 331400);
+  await go(p, '2026-12-21'); await home(p, '21 Dec', 219000, 331400);
   await go(p, '2026-12-24'); await spend(p, 9000, 'Card B', { note: 'xmas' });
-  await go(p, '2026-12-29'); await home(p, '29 Dec', 242000, 331400);
+  await go(p, '2026-12-29'); await home(p, '29 Dec', 210000, 331400);
   /* s4c: rent left unticked, then ticked late */
-  await go(p, '2026-12-28'); await home(p, '28 Dec before the check', 242000, 331400);
+  await go(p, '2026-12-28'); await home(p, '28 Dec before the check', 210000, 331400);
   await checkin(p, { 'Main bank': 314000, 'Trip account': 22000 }, {}, ['Rent']);
-  await home(p, '28 Dec after the check, rent unticked', 242000, 314000);
-  await go(p, '2026-12-30'); await home(p, '30 Dec', 242000, 314000);
-  await go(p, '2027-01-03'); await spend(p, 6000, 'Main bank', { note: 'new year' }); await home(p, '3 Jan', 236000, 308000);
+  await home(p, '28 Dec after the check, rent unticked', 210000, 314000);
+  await go(p, '2026-12-30'); await home(p, '30 Dec', 210000, 314000);
+  await go(p, '2027-01-03'); await spend(p, 6000, 'Main bank', { note: 'new year' }); await home(p, '3 Jan', 204000, 308000);
   await go(p, '2027-01-07'); await checkin(p, { 'Main bank': 236000, 'Trip account': 22000 }, {}, [], { 'Rent': '2026-12-30' });
-  await home(p, '7 Jan after the check', 236000, 236000);
+  await home(p, '7 Jan after the check', 204000, 236000);
   /* s5: the January pay late, then in */
   await go(p, '2027-01-08'); await home(p, '8 Jan', 236000, 236000);
   await go(p, '2027-01-11'); await home(p, '11 Jan before the check', 111600, 236000);
