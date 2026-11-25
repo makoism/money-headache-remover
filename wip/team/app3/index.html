@@ -10637,6 +10637,7 @@ async function openSetup3() {
   </div>`;
   host.hidden = false; $('#a3Home').hidden = true; scrollTo(0, 0);
   $('#a3').classList.add('a3-setup-open');
+  if (typeof renderChat3 === 'function') renderChat3();   // [AI_JOIN_FIXES I4] the assistant's bar is there on the setup screens
   host.querySelectorAll('[data-money]').forEach(el => bindMoney3(el));
   /* the sheet's own listeners, once: the sheet stays, only its inside is drawn again on each open */
   if (!host.dataset.wired) {
@@ -10711,7 +10712,7 @@ function clearErr3(el) {
 }
 /* Back: setup closes; every saved section stays in the draft on this device */
 function closeSetup3() { if (setup3 && setup3.base) { clearTimeout(setup3.typedT); keepDraft3(setup3.saved, setup3.days); } endSetup3(); renderHome3(); }
-function endSetup3() { if (setup3) clearTimeout(setup3.typedT); $('#a3Setup').hidden = true; $('#a3Setup').innerHTML = ''; setup3 = null; $('#a3Home').hidden = false; $('#a3').classList.remove('a3-setup-open'); }
+function endSetup3() { if (setup3) clearTimeout(setup3.typedT); $('#a3Setup').hidden = true; $('#a3Setup').innerHTML = ''; setup3 = null; $('#a3Home').hidden = false; if (typeof renderChat3 === 'function') renderChat3(); $('#a3').classList.remove('a3-setup-open'); }
 /* [BV1] the boxes as plain values: setup3's form shape in answers3.js (ANSWERS3, the one answers-to-book function the
    chat and "Use any AI" use too). strict: a missing or wrong amount is asked for next to its box, which is focused
    (throws 'asked'); a box not typed and not asked for is null, for the questions the day asks.
@@ -11745,9 +11746,9 @@ function tryBand3() {
   $('#a3Day').addEventListener('change', e => { E3.setToday(e.target.value); if (!$('#a3Check').hidden) closeCheck3(); renderHome3(); });
   $('#a3TryOut').addEventListener('click', leaveTry3);
 }
-/* out of the made-up numbers: nothing of them is written; this device's own book shows when it keeps one, else setup
-   (o.toChat: the assistant instead, AI_JOIN_FIXES G) */
-async function leaveTry3(o) {
+/* out of the made-up numbers: nothing of them is written; this device's own book shows when it keeps one, else the
+   assistant on the first screen (AI_JOIN_FIXES I4: never the setup forms; "Set up on the screens instead" is there) */
+async function leaveTry3() {
   if (SET3.open) closeSet3();
   if (REM3.open) closeRem3();
   if (!$('#a3Stmt').hidden) stmt3Close();
@@ -11759,7 +11760,6 @@ async function leaveTry3(o) {
   if (typeof chat3Kept === 'function') await chat3Kept();   // the chat kept on this device, never the made-up visit's
   renderHome3();
   if (typeof renderChat3 === 'function') renderChat3();
-  if (!E3.book && !(o && o.toChat === true)) openSetup3();
 }
 (async () => {
   try { $('#a3Pix').innerHTML = pix('sprout', 2); } catch (e) { /* art is a nicety */ }
@@ -13353,7 +13353,9 @@ async function chat3Route() {
 }
 
 /* ---- drawing ---- */
-const chat3Full = () => !E3.book;   // before setup the panel is the first screen
+/* before setup the panel is the first screen; while the setup screens are open it is the bar (AI_JOIN_FIXES I4) */
+const chat3SetupOpen = () => !!$('#a3Setup') && !$('#a3Setup').hidden;
+const chat3Full = () => !E3.book && !chat3SetupOpen();
 function chat3Figs(rows) {
   const cur = E3.book ? E3.home() : 'JPY';
   if (!rows || !rows.length) return '';
@@ -13417,7 +13419,12 @@ function chat3Inner() {
 function renderChat3() {
   const aside = $('#a3Chat');
   if (!aside) return;
-  if (chat3Full() || E3.mode === 'try') { aside.hidden = true; aside.innerHTML = ''; aside.removeAttribute('data-open'); document.body.classList.remove('a3-has-chat'); return; }
+  /* [AI_JOIN_FIXES I4] the bar is there in the made-up numbers too (that visit's chat is never kept), and on the setup
+     screens, where the welcome's own box is taken away so there is only ever one chat box */
+  if (chat3Full()) { aside.hidden = true; aside.innerHTML = ''; aside.removeAttribute('data-open'); document.body.classList.remove('a3-has-chat'); return; }
+  /* the setup screens are open over the welcome: its chat parts go (its ways in stay), so the bar is the one chat box */
+  const w = !E3.book && $('#a3Home .a3-welcome');
+  if (w && w.querySelector('#a3ChatIn')) [...w.children].forEach(c => { if (!c.matches('h2, .a3-actions')) c.remove(); });
   aside.hidden = false; document.body.classList.add('a3-has-chat');
   const keep = $('#a3ChatIn') && $('#a3ChatIn').closest('#a3Chat') ? $('#a3ChatIn').value : '';
   aside.innerHTML = `<div class="a3-chat-head"><h2>The assistant</h2><button type="button" class="a3-link" id="a3ChatClose">Close</button></div>
@@ -13430,8 +13437,10 @@ function renderChat3() {
 }
 /* before setup: the whole first screen, with the ways in that were there before */
 function renderWelcome3(host) {
-  host.innerHTML = `<section class="a3-card a3-welcome" data-card="first"><h2>Welcome to the burrow</h2>${chat3Inner()}
+  const open = chat3SetupOpen();   // the setup screens are open over it: the bar is the chat, the welcome keeps its ways in
+  host.innerHTML = `<section class="a3-card a3-welcome" data-card="first"><h2>Welcome to the burrow</h2>${open ? '' : chat3Inner()}
     <div class="a3-actions"><button type="button" class="a3-btn" id="a3SetupGo">Set up on the screens instead</button><button type="button" class="a3-btn" id="a3TryGo">See it with made-up numbers first</button><button type="button" class="a3-btn" id="a3OtherGo">I already use the burrow on another device</button></div></section>`;
+  if (open) { renderChat3(); return; }
   chat3Wire(host);
 }
 function chat3Wire(host) {
@@ -13595,7 +13604,6 @@ async function chat3AnyCheck() {
    welcome is the panel: the cursor goes to its box. A sheet open over the page (Settings, setup) closes first */
 async function chat3Ask() {
   if (typeof SET3 === 'object' && SET3.open) closeSet3();
-  if (E3.mode === 'try') await leaveTry3({ toChat: true });
   if (!E3.book) {
     if ($('#a3Setup') && !$('#a3Setup').hidden) closeSetup3();
     showTab3('home');
