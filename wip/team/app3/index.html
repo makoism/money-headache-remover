@@ -14436,7 +14436,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
   /* one step from the AI into { kind, args, text, amount, ask? } or { bad: words } */
   function stepOf(a, ctx) {
     const { book, today, refs } = ctx, home = G.homeOn(book, today), m = (x, c) => SM.format(x, c || home);
-    const what = a && typeof a === 'object' ? String(a.do || '') : '';
+    let what = a && typeof a === 'object' ? String(a.do || '') : '';
     const ref = (v, letters) => (typeof v === 'string' && letters.includes(v.charAt(0)) && refs[v] ? refs[v] : null);
     const acctRec = id => (book.accounts || []).find(x => x.id === id);
     const mainAcct = (G.fieldValue((book.home || {}).main) || {}).acct;
@@ -14501,12 +14501,14 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     }
     /* [E8, M13, M38] a pay ended (as a bill is; the pay periods pass to another pay), or a pay or bill added by mistake
        removed as if never added (refused with words when something names it); each asks first */
+    /* a plain remove of a pay ref is the pay's remove, and of a goal ref the goal's (below), never "a record I do not know" */
+    if (what === 'remove' && /^P\d/.test(String(a.ref))) what = 'remove_pay';
     if (what === 'end_pay' || what === 'remove_pay' || what === 'remove_bill') {
       const id = ref(a.ref, what === 'remove_bill' ? 'B' : 'P'); if (!id) return { bad: 'a ' + (what === 'remove_bill' ? 'bill' : 'pay') + ' I do not know' };
       if (what === 'end_pay') return { kind: 'endBill', args: [id, {}], text: `End ${schName(id)} from today`, del: true };
       return { kind: 'removeSchedule', args: [id], text: `Remove ${schName(id)}, as if it was never added`, del: true };
     }
-    if (what === 'remove' || what === 'end_bill' || what === 'end_line') {
+    if ((what === 'remove' && !/^G\d/.test(String(a.ref))) || what === 'end_bill' || what === 'end_line') {
       const id = ref(a.ref, what === 'end_line' ? 'L' : what === 'end_bill' ? 'BP' : 'SBL');
       if (!id) return { bad: 'a ' + what.replace('_', ' ') + ' for a ref I do not know' };
       const c = String(a.ref).charAt(0);
