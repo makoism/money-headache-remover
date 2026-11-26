@@ -143,14 +143,14 @@
      tests/e3_fakeai_page.js opens each of Plan's sheets. These are words for a person too: the wording lint reads them. */
   const SCREENS = {
     home: { name: 'Home', does: 'Home shows what is safe to spend until your next pay, what each account holds today, what is due before pay, and your goals' },
-    plan: { name: 'Plan', does: 'Plan shows your pay and bills, Free to spend and your budget lines, goals, your accounts, cards and loans. Tap a row to change it' },
-    receipts: { name: 'Receipts', does: 'Receipts is where you log money that came in, went out or moved between your accounts, and see what you logged. Tap a record to change or remove it' },
-    settings: { name: 'Settings', does: 'Settings holds the backup file, the cloud copy, the code word for the AI and the assistant\'s error log' },
-    check: { name: 'Check your bank', does: 'Check your bank is where you type what your bank and cards show today. The app compares each with what it expected and asks about the gap' },
-    stmt: { name: 'Add statements', does: 'Add statements reads a bank or card statement file and shows what it read before anything is added' },
-    reminders: { name: 'Reminders', does: 'Reminders shows the days your bills are due and when to check your bank, and can add them to your calendar' },
-    setup: { name: 'setup on the screens', does: 'Setup on the screens asks for your bank, pay, cards and bills in sections, and each section saves on its own' },
-    welcome: { name: 'the first screen', does: 'The first screen is where setup starts, by answering in the chat or on the screens' },
+    plan: { name: 'Plan', does: 'Your pay, bills, Free to spend, budget lines, goals, accounts, cards and loans. Tap a row to change it' },
+    receipts: { name: 'Receipts', does: 'Log money in, out or moved between your accounts, and see what you logged. Tap one to change or remove it' },
+    settings: { name: 'Settings', does: 'The backup file, the cloud copy, the code word for the AI and the assistant\'s error log' },
+    check: { name: 'Check your bank', does: 'Type what your bank and cards show today, and the app compares each with what it expected and asks about the gap' },
+    stmt: { name: 'Add statements', does: 'Reads a bank or card statement file and shows what it read before adding it' },
+    reminders: { name: 'Reminders', does: 'The days bills are due and when to check your bank, which it can add to your calendar' },
+    setup: { name: 'setup on the screens', does: 'Asks for your bank, pay, cards and bills in sections, each saved on its own' },
+    welcome: { name: 'the first screen', does: 'Where setup starts, in the chat or on the screens' },
     free: { name: 'Free to spend', does: 'Sets Free to spend, the money you keep for food and everyday things' },
     addLine: { name: 'Add a line', does: 'Adds a budget line, a name and an amount, like Food or Transport' },
     line: { name: 'A budget line\'s own sheet', does: 'Changes the line\'s name or amount, or ends the line' },
@@ -185,7 +185,7 @@ SETUP (when FIGURES says there is no book yet). Ask these in order, one per mess
 ${GUIDE.map(g => g.n + '. ' + g.ask).join('\n')}
 After each answer, save it with draft_set (that section's whole list each time; nothing is in the app until fill_book). A pay needs afterTax true: only save a pay once the person said the amount is after tax. A second income needs same: true or false. Never fill in a minimum or a figure the person did not give. NEEDED lists what fill_book still needs; ask for those. fill_book only when the person says to fill it in.
 
-AFTER SETUP. When a pay, bill or card payment the app expects has come in or gone out ("my pay came in", "rent came out"), use change with landed and its P, B or A ref: never money_in or log_spend for it, which would count it twice. When they say what their bank app or card app shows today, use bank_figure or card_figure with that figure. When the person says they spent, got or moved money, or asks to change a bill, pay, line, goal or card, use change. The app makes the change at once and shows what changed with Undo; a delete, or a change larger than safe to spend, waits for their OK. An amount you send must be one the person typed since your last change; for a repeat ("another lunch") ask how much, never send the old amount again. Refs (A1, L1, G1, B1, P1, S1) come from FIGURES or list; never invent one. Not a licensed adviser: for investments, loans or taxes, say so in one line.
+AFTER SETUP. When a pay, bill or card payment the app expects has come in or gone out ("my pay came in", "rent came out"), use change with landed and its P, B or A ref: never money_in or log_spend for it, which would count it twice. When they say what their bank app or card app shows today, use bank_figure or card_figure with that figure. When the person says they spent, got or moved money, or asks to change a bill, pay, line, goal or card, use change. A spend or refund that was another amount ("that lunch was 1,500"): change_spend with its S ref from list spends and the new amount; 0 removes it. The app makes the change at once and shows what changed with Undo; a delete, or a change larger than safe to spend, waits for their OK. An amount you send must be one the person typed since your last change; for a repeat ("another lunch") ask how much, never send the old amount again. Refs (A1, L1, G1, B1, P1, S1) come from FIGURES or list; never invent one. Not a licensed adviser: for investments, loans or taxes, say so in one line.
 
 Adding a bank: ask both of its questions in one message: is it new money or moved from their bank, and if moved, before or after they looked at that bank today.
 
@@ -194,7 +194,7 @@ A spend goes on the account they paid with. If they did not say and they have ca
 SCREEN says which screen the person has open, and the sheet on top of it when there is one: "this screen" means the sheet if there is one, else the screen. Say what it is for in the words below.
 WHAT EACH SCREEN AND SHEET IS FOR:
 ${Object.keys(SCREENS).map(k => SCREENS[k].name + ': ' + SCREENS[k].does).join('\n')}
-WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line): change a goal or take money out of it: Plan, tap the goal. Change a spend: Receipts, tap it. Statements: Home, Add statements. Reminders: Reminders at the top. A backup or the cloud copy: Settings. Keep at least: Settings, Money (an account's own: Plan, tap it).`;
+WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line): change a goal or take money out of it: Plan, tap the goal. Change a spend's date, account or line: Receipts, tap it. Statements: Home, Add statements. Reminders: Reminders at the top. A backup or the cloud copy: Settings. Keep at least: Settings, Money (an account's own: Plan, tap it).`;
   /* [coordinator follow-up, controls-9] the one wording for a call that failed: said once, plainly, never a code. The
      server's own words when it gave them (a daily limit); no network says the connection is down, never that the assistant is off */
   const failText = e => {
@@ -204,30 +204,30 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     return 'The assistant did not answer. Send it again';
   };
   /* [AI_JOIN_FIXES H4] a change it can't make says where it is on the screens (the same map as SYSTEM) */
-  const WHERE = [[/loan/, 'Plan, tap the loan'], [/card/, 'Plan, tap the card'], [/goal|take_out/, 'Plan, tap the goal'], [/spend|receipt/, 'Receipts, tap it'],
+  const WHERE = [[/loan/, 'Plan, tap the loan'], [/card/, 'Plan, tap the card'], [/goal|take_out/, 'Plan, tap the goal'], [/spend|receipt/, 'Receipts, tap it (the date, account or line)'],
     [/statement/, 'Home, Add statements'], [/remind/, 'Reminders at the top'], [/keep|minimum/, 'Settings, Money'], [/backup|cloud/, 'Settings']];
   const whereOf = what => { const w = WHERE.find(([re]) => re.test(what)); return w ? 'On the screens: ' + w[1] : 'Say where from WHERE ON THE SCREENS'; };
 
   /* ---- the tools (BU2: no figures or draft read tool) ---- */
   const num = { type: 'number', description: 'A plain number in the currency, no symbol.' };
   const str = d => ({ type: 'string', description: d });
-  const DO = ['landed', 'bank_figure', 'card_figure', 'log_spend', 'refund', 'money_in', 'move_money', 'remove', 'add_bill', 'change_bill', 'end_bill', 'add_pay', 'add_line', 'change_line', 'end_line', 'set_free', 'add_goal', 'set_aside', 'add_card', 'add_account', 'change_account', 'close_account', 'reopen_account', 'remove_account', 'pay_off', 'change_card', 'change_loan', 'add_loan', 'set_keep', 'set_country', 'change_goal', 'take_out', 'remove_goal', 'end_pay', 'remove_pay', 'remove_bill'];
+  const DO = ['landed', 'bank_figure', 'card_figure', 'log_spend', 'refund', 'money_in', 'move_money', 'change_spend', 'remove', 'add_bill', 'change_bill', 'end_bill', 'add_pay', 'add_line', 'change_line', 'end_line', 'set_free', 'add_goal', 'set_aside', 'add_card', 'add_account', 'change_account', 'close_account', 'reopen_account', 'remove_account', 'pay_off', 'change_card', 'change_loan', 'add_loan', 'set_keep', 'set_country', 'change_goal', 'take_out', 'remove_goal', 'end_pay', 'remove_pay', 'remove_bill'];
   /* a step that was asked for and left out, in words for the person (the card says which was not done) */
   const DO_WORDS = { landed: 'ticking off a pay or bill', bank_figure: 'a bank figure', card_figure: 'a card figure', log_spend: 'a spend', refund: 'a refund', money_in: 'money that came in',
-    move_money: 'money moved between accounts', remove: 'removing a record', add_bill: 'a new bill', change_bill: 'a change to a bill or pay', end_bill: 'ending a bill', add_pay: 'a new pay',
+    move_money: 'money moved between accounts', change_spend: 'a change to the amount of a spend or refund', remove: 'removing a record', add_bill: 'a new bill', change_bill: 'a change to a bill or pay', end_bill: 'ending a bill', add_pay: 'a new pay',
     add_line: 'a new line', change_line: 'a change to a line', end_line: 'ending a line', set_free: 'a change to Free to spend', add_goal: 'a new goal', set_aside: 'money set aside for a goal',
     add_card: 'a new card', add_account: 'a new account', change_account: 'a change to an account', close_account: 'closing an account', reopen_account: 'reopening an account', remove_account: 'removing an account', pay_off: 'paying off a card or loan', change_card: 'a change to a card', change_loan: 'a change to a loan', add_loan: 'a new loan', set_keep: 'Keep at least for your main bank', set_country: 'where you bank', change_goal: 'a change to a goal', take_out: 'money taken out of a goal', remove_goal: 'removing a goal', end_pay: 'ending a pay', remove_pay: 'removing a pay', remove_bill: 'removing a bill' };
   const CURS = ['JPY', 'PHP', 'USD', 'EUR'];
   const SECTIONS = ['country', 'currency', 'banks', 'pays', 'cards', 'bills', 'asked', 'statements', 'payToday', 'free', 'min'];
   const TOOLS = [
-    { name: 'list', description: 'Records with their refs: accounts, pays, bills, cards, lines, goals, or the recent spends of one account (amount, date and ref only).',
-      input_schema: { type: 'object', properties: { what: { type: 'string', enum: ['accounts', 'pays', 'bills', 'cards', 'lines', 'goals', 'spends'] }, account: str('An account ref like A1, for spends.') }, required: ['what'] } },
+    { name: 'list', description: 'Records with their refs: accounts, pays, bills, cards, lines, goals, or the recent spends of one account (amount, date and ref only; give date or amount to find an older one).',
+      input_schema: { type: 'object', properties: { what: { type: 'string', enum: ['accounts', 'pays', 'bills', 'cards', 'lines', 'goals', 'spends'] }, account: str('An account ref like A1, for spends.'), date: str('Spends on this day only, YYYY-MM-DD.'), amount: num }, required: ['what'] } },
     { name: 'explain', description: 'How a part of the app works, in the app\'s own words.',
       input_schema: { type: 'object', properties: { topic: { type: 'string', enum: ['safeToSpend', 'period', 'status', 'cards', 'free', 'goals', 'check', 'undo', 'setup', 'sent'] } }, required: ['topic'] } },
     { name: 'draft_set', description: 'Save one setup section into the draft, its whole value. Nothing reaches the app until fill_book. Sections: country "JP"|"PH"|"XX"; currency "JPY"|"PHP"|"USD"|"EUR" (a change of currency drops the amounts saved before it: ask each again); banks [{name, amount, type?, confirmed?}] (first is where pay lands; confirmed true when the person gave the figure again today); pays [{name, amount, every: month|days|weeks|none, day?, day2?, n?, start?, shift?: before|after, bank?, afterTax, same?}]; cards [{name, owed, payDay, closeDay: day|"last"|"not sure", shift?, payFrom?, confirmed?}]; bills [{name, amount, day, every?: month|year, month?, from?}]; asked [{name, out: true|false}]; statements [{name, amount|"not sure"}]; payToday {landed: true|false}; free amount|null; min amount|null.',
       input_schema: { type: 'object', properties: { section: { type: 'string', enum: SECTIONS }, value: { description: 'The section\'s whole value.' } }, required: ['section', 'value'] } },
     { name: 'fill_book', description: 'Turn the draft into the person\'s Burrow. Only when they said to fill it in. Refused while NEEDED is not empty.', input_schema: { type: 'object', properties: {} } },
-    { name: 'change', description: 'Make up to ' + MAX_STEPS + ' changes, each a named step: ' + DO.join(', ') + '. landed {ref: the P, B or card A ref, amount? only if it was different, date? the day it landed}; bank_figure and card_figure {account, amount}. Fields: amount, account (A ref), every (add_bill: month|year|months, with month 1..12 for a year, n and start for months), from and to (A refs), line (L ref), goal (G ref), ref (the record: S, B, P, L or G ref), date (YYYY-MM-DD, today or before), note, name, day, day2, every (month|days|weeks1..4|none), start, when (now|next|once), target, due, owed, payDay, closeDay, type (bank|cash|ewallet), moved (true|false), shift (after|before: a card or loan weekend rule), payFrom (the A ref that pays a card or loan), from (the A ref the money came from), afterFigure (true|false: moved after they looked at that bank on the day of its figure). change_account {account: a bank, cash or e-wallet A ref, name?, min?: its own Keep at least, 0 for none}. close_account {account, to: the A ref its money goes to, or "spent" when it is not there any more}: bills and cards paid from it move there too, its history stays. reopen_account {account}. remove_account {account}: only for one added by mistake; anything with history is closed instead. close_account and remove_account also take a card or loan (a card or loan closes at zero). pay_off {account: card or loan}: all it owes, paid today from its paying account, only when they say they paid it. change_card {account, name?, payDay?, closeDay?}. change_loan {account, name?, payDay?, amount: the usual payment}. add_loan {name, owed, amount, payDay}. set_keep {amount: Keep at least for the main bank, 0 for none}. set_country {country: JP|PH|XX (somewhere else)}.',
+    { name: 'change', description: 'Make up to ' + MAX_STEPS + ' changes, each a named step: ' + DO.join(', ') + '. landed {ref: the P, B or card A ref, amount? only if it was different, date? the day it landed}; bank_figure and card_figure {account, amount}; change_spend {ref: the S ref, amount: the new amount}. Fields: amount, account (A ref), every (add_bill: month|year|months, with month 1..12 for a year, n and start for months), from and to (A refs), line (L ref), goal (G ref), ref (the record: S, B, P, L or G ref), date (YYYY-MM-DD, today or before), note, name, day, day2, every (month|days|weeks1..4|none), start, when (now|next|once), target, due, owed, payDay, closeDay, type (bank|cash|ewallet), moved (true|false), shift (after|before: a card or loan weekend rule), payFrom (the A ref that pays a card or loan), from (the A ref the money came from), afterFigure (true|false: moved after they looked at that bank on the day of its figure). change_account {account: a bank, cash or e-wallet A ref, name?, min?: its own Keep at least, 0 for none}. close_account {account, to: the A ref its money goes to, or "spent" when it is not there any more}: bills and cards paid from it move there too, its history stays. reopen_account {account}. remove_account {account}: only for one added by mistake; anything with history is closed instead. close_account and remove_account also take a card or loan (a card or loan closes at zero). pay_off {account: card or loan}: all it owes, paid today from its paying account, only when they say they paid it. change_card {account, name?, payDay?, closeDay?}. change_loan {account, name?, payDay?, amount: the usual payment}. add_loan {name, owed, amount, payDay}. set_keep {amount: Keep at least for the main bank, 0 for none}. set_country {country: JP|PH|XX (somewhere else)}.',
       input_schema: { type: 'object', properties: { steps: { type: 'array', items: { type: 'object', properties: { do: { type: 'string', enum: DO }, amount: num }, required: ['do'] } } }, required: ['steps'] } },
   ];
 
@@ -546,7 +546,10 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     if (what === 'spends') {
       const acct = refs[x.account];
       if (!acct || !String(x.account).startsWith('A')) return 'Which account? An A ref from FIGURES.';
-      const ev = (book.events || []).filter(e => live(e) && e.acct === acct && (e.k === 'spend' || e.k === 'in') && e.src && e.src.type === 'typed' && e.date <= today).slice(-30);
+      /* [AMOUNT_HISTORY_PLAN] an older one is found by its day or its amount; otherwise the last 30 */
+      const cur = ((book.accounts || []).find(a => a.id === acct) || {}).cur, want = x.amount != null ? amountIn(x.amount, cur || home) : null;
+      const ev = (book.events || []).filter(e => live(e) && e.acct === acct && (e.k === 'spend' || e.k === 'in') && e.src && e.src.type === 'typed' && e.date <= today
+        && (!x.date || e.date === x.date) && (want == null || e.a === want)).slice(-30);
       /* [BV6] amounts and dates only: never a note or a shop */
       return ev.length ? 'ref | date | amount | kind | line\n' + ev.map(e => `${back(e.id)} | ${day1(e.date)} | ${m(e.a)} | ${e.k === 'in' ? 'in' : 'spend'} | ${e.line === 'free' ? 'Free to spend' : back(e.line) || ''}`).join('\n') : 'No spends logged on that account yet.';
     }
@@ -623,6 +626,18 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       const kind = { log_spend: 'logSpend', refund: 'refund', money_in: 'moneyIn' }[what];
       const text = what === 'log_spend' ? `Log ${m(x, cur)} on ${lineName(line)} from ${nm(acct)}, ${on(d)}` : what === 'refund' ? `Log ${m(x, cur)} back into ${nm(acct)}, ${on(d)}` : `Log ${m(x, cur)} in to ${nm(acct)}, ${on(d)}`;
       return { kind, args: [args], text: text + (n ? ' (' + n + ')' : ''), amount: x, ref: line && line !== 'free' ? a.line : null, named: what === 'log_spend' && a.account != null && a.account !== '' ? acct : null };
+    }
+    /* [AMOUNT_HISTORY_PLAN, qc-foundation's way in] the amount of a spend or refund changed (its S ref from list spends),
+       through the door's edit as Receipts does it, so the figures are the screen's; only the new amount counts as typed;
+       0 is a removal and asks first like one. How far it moves safe to spend is found in handle (moves) */
+    if (what === 'change_spend') {
+      const id = ref(a.ref, 'S'), e = id && (book.events || []).find(x => x.id === id);
+      if (!e || e.gone || !(e.k === 'spend' || (e.k === 'in' && e.sub === 'refund'))) return { bad: 'a change_spend for a ref that is not a spend or refund' };
+      const cur = (acctRec(e.acct) || {}).cur, x = amt(a.amount, cur, true), kind = e.k === 'in' ? 'refund' : 'spend';
+      if (x == null) return { bad: 'an amount I could not read' };
+      if (x === 0) return { kind: 'remove', args: [id], text: `Remove the ${kind} of ${m(e.a, cur)} on ${day1(e.date)}`, del: true };
+      if (x === e.a) return { bad: 'that ' + kind + ' is already ' + m(x, cur) };
+      return { kind: 'edit', args: [id, { a: x }], text: `Change the ${kind} of ${m(e.a, cur)} on ${day1(e.date)} to ${m(x, cur)}`, amount: Math.max(0, kind === 'spend' ? x - e.a : e.a - x), figs: [x], moves: true };
     }
     if (what === 'move_money') {
       const from = ref(a.from, 'A'), to = ref(a.to, 'A'), x = amt(a.amount), d = date(a.date);
@@ -777,7 +792,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     }
     return { bad: what ? 'a change I can\'t make (' + what.slice(0, 30) + '). ' + whereOf(what) : 'a change I could not read' };
   }
-  const ACT = { logSpend: 1, refund: 1, moneyIn: 1, moveMoney: 1, remove: 1 };
+  const ACT = { logSpend: 1, refund: 1, moneyIn: 1, moveMoney: 1, remove: 1, edit: 1 };
   function runOne(door, s, opts, deps) {
     if (ACT[s.kind]) return door[s.kind](...s.args, opts);
     if (s.kind === 'checkIn') {
@@ -794,7 +809,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
   const journalOf = done => ({ added: [].concat(...done.map(s => s.added || [])), edited: [].concat(...done.map(s => s.edited || [])),
     removed: [].concat(...done.map(s => s.removed || [])), revived: [].concat(...done.map(s => s.revived || [])) });
   function rowsOf(b0, b1, today, steps, j) {
-    return CH.things(b0, b1, today, j).concat(CH.figures(b0, b1, today, { free: steps.some(s => s.kind === 'logSpend' || s.kind === 'setFree' || s.kind === 'refund') }));
+    return CH.things(b0, b1, today, j).concat(CH.figures(b0, b1, today, { free: steps.some(s => s.kind === 'logSpend' || s.kind === 'setFree' || s.kind === 'refund' || s.kind === 'edit') }));
   }
   async function carryOut(state, card, deps) {
     const door = deps.door, before = deps.book(), today = deps.today(), done = [];
@@ -920,6 +935,14 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       /* [BW] a delete, or a change larger than safe to spend, asks first; [AI_FIRST_PLAN 7] an amount the person did not
          type is a guess and asks first too */
       const safe = LA.lookahead(book, today).safeToSpend.headline;
+      /* [AMOUNT_HISTORY_PLAN; M6] a changed amount's size (stepOf) is what more goes out, as a new spend of the difference
+         would be (safe to spend stops at 0, so how far it moves could never be larger than it). When the bank check that
+         held the record takes the change (the engine's splits on the book the change would make), the card says so */
+      for (const s of plan.filter(x => x.moves && deps.door && typeof deps.door.dry === 'function')) {
+        let r1; try { r1 = LA.lookahead(deps.door.dry('edit', ...s.args), today); } catch (e) { continue; }
+        const sp = (r1.splits || []).find(x => x.id === s.args[0]);
+        if (sp) s.text += `. It was ${SM.format(sp.atCheck, G.homeOn(book, today))} at your bank check on ${day1(sp.check)}, so the change counts in that check's pay period`;
+      }
       /* [qc-foundation F2] the size is the step's real figure: a new pay and new money count too */
       const big = plan.some(s => s.amount && s.amount > safe), del = plan.some(s => s.del);
       /* every figure in a step (an amount, a target, what is owed, even 0) must be one the person typed, in their own

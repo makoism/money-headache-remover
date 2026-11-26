@@ -2375,6 +2375,15 @@ details summary { min-height: 44px; }
     const isFee = e => isFeeRecord(e) && !!events.find(t => t.id === e.of && !t.gone && TWO_SIDED[t.k]);
     const settledBy = {};
     for (const e of live()) for (const s of e.settles) settledBy[s] = e;
+    // [coordinator ruled (B)] a record removed after a bank check that held it (it keeps `was`; the check is on one of its
+    // accounts, dated on or after it and written after it and before the removal) keeps what it settled: the check's
+    // figure holds the payment, so the bill is not due again
+    for (const e of events) {
+      if (!e.gone || !(e.was && e.was.length) || !e.settles.length) continue;
+      const accts = [e.account, e.from, e.to, e.acct, e.acct2].filter(x => x != null), gone = keyOf(e.was[e.was.length - 1].told);
+      const held = events.some(c => !c.gone && c.k === 'check' && !c.stmt && accts.includes(c.account) && c.day >= e.day && c.key >= e.key && c.key < gone);
+      if (held) for (const s of e.settles) if (!settledBy[s]) settledBy[s] = e;
+    }
 
     // ----- expected items from schedules [H2, B8] -----
     const schedules = Object.values(sched).filter(s => acct[s.acct]);
@@ -2600,21 +2609,46 @@ details summary { min-height: 44px; }
     const byTime = (x, y) => x.day - y.day || keyCmp(x.key, y.key) || x.idx - y.idx;
     const isClosingRecord = (e, id) => e.id === I.built.close(id) || String(e.id).startsWith(I.built.close(id) + ':');
     const heldBy = [];   // [S3] records told after a check that holds them: { id, account, check }
-    // [CHECKGAP] a record told after the first check that holds it (bank or card) only explains part of that check's
-    // gap, so it counts in the check's period (the day of the check), never in a closed one, and never moves safe to
-    // spend up: id -> the check's day, the earliest when two hold it
-    const lateDay = new Map();
-    const lateTo = (rid, day) => { if (!lateDay.has(rid) || lateDay.get(rid) > day) lateDay.set(rid, day); };
-    const countDay = e => (lateDay.has(e.id) ? Math.max(e.day, lateDay.get(e.id)) : e.day);
+    // [CHECKGAP, AMOUNT_HISTORY] the first check (bank or card) that holds each record: id -> { day, key }. A record's
+    // amount as it stood at that check counts on its own day; any change since (told after the check: all of it; an
+    // amount corrected later, `was`; removed later: minus what it had) counts on the check's day, where it only explains
+    // part of that check's gap, so a closed period never moves and safe to spend never goes up by it
+    const heldAt = new Map();
+    // `place`: the line that check's gap goes on (a bank check-in's fillerPlace, else Free to spend), where a money-in
+    // record's change counts [coordinator ruled qc-numbers amounthist finding 2]
+    const heldAcct = new Map();   // [ruling (B)] id -> { account: { day, key, place } }, the first check of each account that holds it
+    const holdAcct = (rid, acc, day, key, place) => { const m = heldAcct.get(rid) || new Map(); const h = m.get(acc); if (!h || h.day > day || (h.day === day && keyCmp(h.key, key) > 0)) m.set(acc, { day, key, place: place || null }); heldAcct.set(rid, m); };
+    const holdAt = (rid, day, key, place) => { const h = heldAt.get(rid); if (!h || h.day > day || (h.day === day && keyCmp(h.key, key) > 0)) heldAt.set(rid, { day, key, place: place || null }); };
+    const amountAt = (e, key) => {
+      if (keyCmp(e.key, key) > 0) return 0;   // told after the check: none of it was known there
+      for (const w of e.was || []) if (w && w.told && keyCmp(keyOf(w.told), key) > 0) return w.a;   // the amount it had then
+      return e.a;
+    };
+    // the day each part of a record's amount counts on: [{ day, a }]
+    // [coordinator 16 ruling (a)] a removed record is held only by a check written before its removal (the last `was`
+    // entry's told): removed first, a later check never saw it
+    const removedAfter = (e, key) => !e.gone || !(e.was && e.was.length) || keyCmp(keyOf(e.was[e.was.length - 1].told), key) > 0;
+    const countParts = e => {
+      const h = heldAt.get(e.id), now = e.gone ? 0 : e.a;
+      if (!h) return e.gone ? [] : [{ day: e.day, a: e.a }];
+      const a0 = e.gone && !(e.was && e.was.length) ? 0 : amountAt(e, h.key);
+      return [{ day: e.day, a: a0 }, { day: Math.max(e.day, h.day), a: now - a0 }].filter(x => x.a);
+    };
     function bankInfo(id) {
       let base = openingOf(id);
       // [Z1] a check whose large gain was answered "wrong" counts nowhere; the account asks for the figure again
       const checks = live().filter(e => e.k === 'check' && e.account === id && !e.stmt && e.gain !== 'wrong').sort(byTime);
       const wrong = events.filter(e => e.k === 'check' && e.account === id && e.gain === 'wrong').sort(byTime).pop();
       const askAgain = !!wrong && !checks.some(c => byTime(c, wrong) > 0);
-      const moves = live().filter(e => delta(e, id) !== 0);
+      const moves = live().filter(e => delta(e, id) !== 0 || (e.was && e.was.length && (e.account === id || e.from === id || e.to === id)));   // [AMOUNT_HISTORY] a record corrected to 0 is still held by its check
+      const goneMoves = events.filter(e => e.gone && e.was && e.was.length && delta(e, id) !== 0);   // [AMOUNT_HISTORY] removed after a check
       const fillers = [];
       let lastGap = null;
+      // [coordinator ruled (A), CHECKFIX FB] a check's figure corrected later (`was`): each fix counts its change on the
+      // day of the fix in both gaps beside that check, plus in the gap before it and minus in the gap after it, so with a
+      // later check the two cancel and a closed period never moves; on the latest check only the plus part counts
+      const fixesOf = c => (c.was || []).filter(w => w && w.told).map((w, i, ws) => ({ day: dayNum(String(w.told).slice(0, 10)), d: w.a - (i + 1 < ws.length ? ws[i + 1].a : c.a) }));
+      let carry = [];   // the minus parts the check before leaves to the next gap
       // [T2, AS6] the place a filler was put on is the check-in's `fillerPlace` for this account: the check-in the check
       // was written with (`grp`), or the one whose figures name it
       const fillerPlaceOf = c => {
@@ -2637,10 +2671,18 @@ details summary { min-height: 44px; }
         let computed = base.amount;
         moves.forEach((e, k) => { if (isIn[k] !== wasIn[k]) computed += isIn[k] ? delta(e, id) : -delta(e, id); });
         // [S3, AN4] a record told after this check but inside it: named, so the screens can say the figure holds it
-        moves.forEach((e, k) => { if (isIn[k] && !wasIn[k] && e.key > cc.key) { heldBy.push({ id: e.id, account: id, check: dayStr(cc.day) }); lateTo(e.id, cc.day); } });
-        wasIn = isIn;
         const fp = fillerPlaceOf(c);
-        fillers.push(Object.assign(makeFiller(id, c.day > base.day ? base.day + 1 : c.day, c.day, computed - c.a), fp ? { place: fp } : {},
+        moves.forEach((e, k) => { if (isIn[k] && !wasIn[k]) { holdAt(e.id, cc.day, cc.key, fp); holdAcct(e.id, id, cc.day, cc.key, fp); if (e.key > cc.key) heldBy.push({ id: e.id, account: id, check: dayStr(cc.day) }); } });
+        for (const e of goneMoves) if (!heldAt.has(e.id) && e.day <= cc.day && removedAfter(e, cc.key) && inside(e, cc, id)) { holdAt(e.id, cc.day, cc.key, fp); holdAcct(e.id, id, cc.day, cc.key, fp); }
+        wasIn = isIn;
+        const filler = makeFiller(id, c.day > base.day ? base.day + 1 : c.day, c.day, computed - c.a);
+        const fixes = fixesOf(c), extra = fixes.map(x => ({ day: x.day, amount: x.d })).concat(carry.map(x => ({ day: x.day, amount: -x.d })));
+        carry = fixes;
+        if (extra.some(x => x.amount)) {
+          const own = filler.amount - extra.reduce((t, x) => t + x.amount, 0);
+          filler.parts = [{ from: dayStr(c.day), to: dayStr(c.day), days: 1, amount: own }].concat(extra.filter(x => x.amount).map(x => ({ from: dayStr(x.day), to: dayStr(x.day), days: 1, amount: x.amount }))).filter(x => x.amount);
+        }
+        fillers.push(Object.assign(filler, fp ? { place: fp } : {},
           { had: computed, gain: c.a - computed, answer: c.gain || null }));
         base = cc;
         lastGap = { day: c.day, had: computed, gain: c.a - computed, answer: c.gain || null };
@@ -2773,7 +2815,7 @@ details summary { min-height: 44px; }
       // [CARDGAP, CHECKGAP] each gap carries the days it covers (the day after this card's check before it, to this
       // check) for the words, and counts whole on the check's own day, as a bank's (makeFiller); the checks are walked in
       // the bank's order, never as told. A record on the card dated by a check and told after it explains part of that
-      // check's gap and counts with it (lateTo)
+      // check's gap and counts with it (holdAt)
       const cardChecks = live().filter(x => x.k === 'check' && x.account === id && !x.stmt).sort(byTime);
       for (const e of cardChecks) {
         // the check before this one: the latest on an earlier day, else the card's opening day (its opening check is not
@@ -2782,7 +2824,7 @@ details summary { min-height: 44px; }
         const sameDayEarlier = cardChecks.slice(0, cardChecks.indexOf(e)).some(x => x.day === e.day);
         const openD = openEv[id] ? openDay(id) : null;
         const prevDay = sameDayEarlier ? e.day - 1 : before.length ? Math.max(...before) : openD != null && openD < e.day ? openD : null;
-        for (const x of live()) if (x.account === id && x.k !== 'check' && x.day <= e.day && keyCmp(x.key, e.key) > 0) lateTo(x.id, e.day);
+        for (const x of events) if (x.account === id && x.k !== 'check' && x.day <= e.day && (!x.gone || (x.was && x.was.length && removedAfter(x, e.key)))) holdAt(x.id, e.day, e.key);
         let gap = 0, closed = null, first0 = null;
         const stretch = (from, to) => { const f = Math.min(from, to); if (first0 === null || f < first0) first0 = f; };
         const sx = live().find(x => x.k === 'check' && x.account === id && x.stmt && x.grp != null && x.grp === e.grp);
@@ -2974,6 +3016,15 @@ details summary { min-height: 44px; }
       else banks[id] = bankInfo(id);
     }
     res.heldByCheck = heldBy;
+    // [AMOUNT_HISTORY_PLAN 4] each spend, refund or money in (finding 2) whose amount was corrected (or that was removed) after the check that
+    // first held it, split in two: what it was at the check counts on its own day, `after` on the check's day. Receipts
+    // lists the record in its own period at `atCheck` and the change as its own row in the check's period
+    res.splits = events.filter(e => e.was && e.was.length && heldAt.has(e.id) && (e.k === 'spend' || e.k === 'in'))
+      .map(e => { const h = heldAt.get(e.id), a0 = amountAt(e, h.key), last = e.was[e.was.length - 1];
+        const after = (e.gone ? 0 : e.a) - a0;
+        return { id: e.id, check: dayStr(h.day), atCheck: a0, after, more: Math.max(after, 0), less: Math.max(-after, 0), told: String(last.told).slice(0, 10), day: h.day, own: e.day }; })
+      .filter(x => x.after && x.day > x.own).map(({ day, own, ...x }) => x)
+      .sort((x, y) => (x.id < y.id ? -1 : x.id > y.id ? 1 : 0));
     // [W2] a card, loan or pay-later payment in another currency than its paying account is listed apart
     const otherOf = (id, from) => (acct[from] && cur(id) !== cur(from) ? { otherCur: true, currency: cur(id) } : { otherCur: false });
     for (const id in cards) for (const ci of cards[id].cardItems) items.push(Object.assign({ kind: 'card', acct: cards[id].payFrom, card: id, settled: false }, ci, otherOf(id, cards[id].payFrom)));
@@ -3191,7 +3242,10 @@ details summary { min-height: 44px; }
         const fromOpening = !byDay && (lastPay === null || lastPay <= openDay(moved ? sa : acctId));
         const perOf = lineId === 'free' ? fPer : (lineSrcs.find(x => x.id === lineId) || {}).per;
         const start = byDay ? monthShare(amount, perOf, moved ? sa : acctId) : fromOpening ? (atOpening != null ? atOpening : amount) : amount;
-        const inLine = e => lineOfSpend(e) === lineId && e.account && openEv[e.account] && !inside(e, openingOf(e.account), e.account) && (fromOpening || countDay(e) >= lp) && countDay(e) <= upTo;   // [CHECKGAP] told after its check: the check's day
+        const inDays = d => (fromOpening || d >= lp) && d <= upTo;
+        const inLine0 = e => lineOfSpend(e) === lineId && e.account && openEv[e.account] && !inside(e, openingOf(e.account), e.account);
+        const inLine = e => inLine0(e) && countParts(e).some(x => inDays(x.day));   // [CHECKGAP, AMOUNT_HISTORY] by the parts' days
+        const inSum = e => inLine0(e) && cur(e.account) === cur(acctId) ? countParts(e).filter(x => inDays(x.day)).reduce((t, x) => t + x.a, 0) : 0;
         const counts = e => inLine(e) && cur(e.account) === cur(acctId);   // [T5] only spends in the line's own currency
         if (!past) for (const e of live().filter(x => x.k === 'spend' && !isFeeRecord(x) && inLine(x) && cur(x.account) !== cur(acctId)))
           res.warnings.push({ account: e.account, code: 'spend_other_currency', line: lineId, event: e.id,
@@ -3206,8 +3260,32 @@ details summary { min-height: 44px; }
           if (cur(cid) !== cur(acctId)) continue;
           for (const f of cards[cid].fillers) for (const pt of f.parts) if ((fromOpening || dayNum(pt.from) >= lp) && dayNum(pt.from) <= upTo) filled += pt.amount;   // [CARDGAP] by part, as a bank's
         }
-        const spent = live().filter(e => e.k === 'spend' && !isFeeRecord(e) && counts(e)).reduce((t, e) => t + e.a, 0)
-          - live().filter(e => e.k === 'in' && e.sub === 'refund' && counts(e)).reduce((t, e) => t + e.a, 0) + filled;   // [O] a refund given back to its line
+        // [AMOUNT_HISTORY; coordinator ruled qc-numbers amounthist finding 2 and (B)] a money record on no line (money in,
+        // a refund with no line, a logged bill payment, a move between own accounts, a card payment) is in no spent sum,
+        // but each bank check that holds it is: what it moved on that account at the check, corrected or removed since
+        // (`was`), counts the change on the check's day on the line that check's gap goes on, so the gap it opens there
+        // is explained and safe to spend does not move. Told after the check (never in `was`): nothing here, as before
+        const asAt = (e, key) => {   // { a, a2 } as at the check
+          if (keyCmp(e.key, key) > 0) return { a: 0, a2: 0 };
+          for (const w of e.was || []) if (w && w.told && keyCmp(keyOf(w.told), key) > 0) return { a: w.a, a2: w.a2 != null ? w.a2 : null };
+          return { a: e.a, a2: e.a2 != null ? e.a2 : null };
+        };
+        const movedAs = (e, id, x) => delta(Object.assign({}, e, { a: x.a, a2: x.a2 }), id);
+        const lineless = e => {
+          const m = heldAcct.get(e.id);
+          if (!m || !(e.was && e.was.length) || lineOfSpend(e) || isFeeRecord(e)) return 0;
+          let t = 0;
+          for (const [aid, h] of m) {
+            if ((h.place || 'free') !== lineId || keyCmp(e.key, h.key) > 0 || !openEv[aid] || cur(aid) !== cur(acctId) || inside(e, openingOf(aid), aid)) continue;
+            if (!inDays(Math.max(e.day, h.day))) continue;
+            t -= movedAs(e, aid, e.gone ? { a: 0, a2: 0 } : { a: e.a, a2: e.a2 != null ? e.a2 : null }) - movedAs(e, aid, asAt(e, h.key));
+          }
+          return t;
+        };
+        const kept = e => !e.gone || (e.was && e.was.length && heldAt.has(e.id));   // [AMOUNT_HISTORY] removed after its check still counts what it had then
+        const spent = events.filter(e => kept(e) && e.k === 'spend' && !isFeeRecord(e)).reduce((t, e) => t + inSum(e), 0)
+          - events.filter(e => kept(e) && e.k === 'in' && e.sub === 'refund').reduce((t, e) => t + inSum(e), 0) + filled   // [O] a refund given back to its line
+          + events.filter(e => kept(e) && e.was && e.was.length).reduce((t, e) => t + lineless(e), 0);   // [finding 2, (B)] a money record on no line: only a change after its check
         if (lineId !== 'free') { partsOf[lineId] = { start, spent }; return win ? { start, left: start - spent } : start - spent; }
         const inPeriod = (e, id) => openEv[id] && !inside(e, openingOf(id), id) && (fromOpening || e.day >= lp) && e.day <= upTo;
         // [Q2, S5] a fee in one currency comes out of Free to spend unless its fee record names another place
@@ -8967,6 +9045,7 @@ const E3 = (() => {
   const HOME_FIELDS = { main: 1, country: 1 };   // [E5] the home field values a step may set (writer.setField)
   const SPEND_FROM = { bank: 1, cash: 1, ewallet: 1, wallet: 1, card: 1, paylater: 1 };   // where a spend can be paid from
   const OWN = { bank: 1, cash: 1, ewallet: 1, wallet: 1 };                                 // money moved between these
+  const MONEY_KINDS3 = { spend: 1, in: 1, transfer: 1, convert: 1, borrow: 1, hand: 1, repay: 1 };   // [ruling (B)] records that move money
   const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
   const clone = x => JSON.parse(JSON.stringify(x));
   const live = x => x && !x.gone;
@@ -9053,6 +9132,11 @@ const E3 = (() => {
         if (r.gone) throw new Bad('That was removed. Undo the removal first');
         fresh(list, r); mine.add(id);
         const before = {};
+        /* [AMOUNT_HISTORY_PLAN] an event's amount changed: the amount it had and this step's `told` (the device's own clock,
+           as checks are ordered) are kept in its `was`, so the engine counts the change with the bank check that held it.
+           An Undo writes `was` back itself (it is in its fields), so it adds no entry */
+        const amountMoved = list === 'events' && !('was' in fields) && (('a' in fields && fields.a !== r.a) || ('a2' in fields && fields.a2 !== r.a2));
+        if (amountMoved) { before.was = r.was === undefined ? null : clone(r.was); r.was = (r.was || []).concat([Object.assign({ a: r.a }, r.a2 != null ? { a2: r.a2 } : {}, { told: s.told })]); }
         for (const k of Object.keys(fields)) {
           if (k === 'id' || k === 'told' || k === 'at' || k === 'by' || k === 'gone' || k === 'goneBy') throw new Error('act3: ' + k + ' is not edited');
           before[k] = k in r ? clone(r[k]) : undefined;
@@ -9063,12 +9147,19 @@ const E3 = (() => {
         log.edited.push({ list, id, before });
         return r;
       },
-      remove(list, id) {
+      remove(list, id, opts) {   // opts.withCheckIn: removed with its whole check-in (no history)
         const r = listOf(book, list).find(x => x && x.id === id);
         if (!r) throw new Bad('That is not there any more');
         if (r.gone) return r;
         fresh(list, r); mine.add(id);
         const before = { at: r.at, by: r.by };
+        /* [AMOUNT_HISTORY_PLAN] removing an event is a correction to 0 at this step's `told`: the amount it had is kept in
+           `was`, so a removal after a bank check agrees with correcting it down; Undo puts `was` back as it was */
+        /* [coordinator ruled (B), after 16 ruling (a) and the money-in ruling] decided by the step, not the record's shape:
+           a removal made by removing a whole check-in (opts.withCheckIn) keeps no history; every other removal of a money
+           record (a spend, a refund, any money in, a logged bill payment, a move between own accounts, a card payment)
+           keeps `was`, and the engine holds it at a check written before */
+        if (list === 'events' && MONEY_KINDS3[r.k] && !(opts && opts.withCheckIn)) { before.was = r.was === undefined ? null : clone(r.was); r.was = (r.was || []).concat([Object.assign({ a: r.a }, r.a2 != null ? { a2: r.a2 } : {}, { told: s.told })]); }
         r.gone = s.day; r.goneBy = s.id; stamp(r);
         log.removed.push({ list, id, before });
         return r;
@@ -9094,10 +9185,11 @@ const E3 = (() => {
         log.edited.push({ list, id, before: { at: now.at, by: now.by } });
         return r;
       },
-      restore(list, id) {   // put back a removed record [H6]: both marks cleared, `at` moved
+      restore(list, id, removedBefore) {   // put back a removed record [H6]: both marks cleared, `at` moved
         const r = listOf(book, list).find(x => x && x.id === id);
         if (!r || !r.gone) return r;
         const before = { gone: r.gone, goneBy: r.goneBy, at: r.at, by: r.by };
+        if (removedBefore && 'was' in removedBefore) { before.was = r.was === undefined ? null : clone(r.was); if (removedBefore.was === undefined || removedBefore.was === null) delete r.was; else r.was = clone(removedBefore.was); }   // [AMOUNT_HISTORY_PLAN] the Undo of a removal takes back its `was` entry
         delete r.gone; delete r.goneBy; stamp(r);
         log.edited.push({ list, id, before });
         return r;
@@ -9282,10 +9374,11 @@ const E3 = (() => {
         const recOf = x => (x.list === 'home' ? ((w.book.home || {})[x.id] || null) : listOf(w.book, x.list).find(r => r && r.id === x.id));
         const later = x => { const r = recOf(x); return !r || (mem && r.at !== mem.own[x.id]); };
         if (added.concat(removed, edited, revived).some(later)) { const e = new Bad('Something changed it since. Undo that change first'); e.why = 'later'; throw e; }
-        for (const x of added) w.remove(x.list, x.id);
+        const wholeCheckIn = added.some(x => (recOf(x) || {}).k === 'check');   // [ruling (B)] undoing a check-in removes it whole
+        for (const x of added) w.remove(x.list, x.id, { withCheckIn: wholeCheckIn });
         for (const x of revived) w.putBack(x.list, x.id, x.before);
         for (const x of removed) {
-          if (recOf(x).goneBy === stepId) w.restore(x.list, x.id);
+          if (recOf(x).goneBy === stepId) w.restore(x.list, x.id, x.before);
         }
         for (const x of edited) {
           if (x.list === 'home') { w.setField(x.id, x.before.v === undefined ? null : x.before.v); continue; }
@@ -10874,9 +10967,23 @@ function rcGapLi3(g, yr) {
   const what = g.amount > 0 ? 'more went out than you logged' : 'less went out than you logged, so it comes off your spending';
   return `<li data-gap="${esc3(g.acct)}" data-check="${esc3(g.check)}"><span>Found at your bank check on ${esc3(day3(g.check, yr))}<br><span class="when">${esc3(when)}, ${esc3(E3.nameOf(g.acct))}, ${esc3(what)}, on ${esc3(rcForName3(g.on))}</span></span><span class="amt">${money3(g.amount, E3.curOf(g.acct))}</span></li>`;
 }
+/* [AMOUNT_HISTORY_PLAN 4] a spend or refund whose amount was changed (or that was removed) after the bank check that
+   held it: the engine counts what it was at the check in its own period and the change in the check's period
+   (res.splits), so the list shows the same: id -> the split */
+function rcSplits3() {
+  const out = {};
+  try { for (const x of E3.view(E3.today()).splits || []) out[x.id] = x; } catch (e) { /* no figures: nothing to split */ }
+  return out;
+}
+/* the change's own row, in the check's period: not a button (the record is changed in its own row) */
+function rcSplitLi3(e, s, yr) {
+  const back = e.k === 'in' ? s.more : s.less, amt = back ? 'back ' + money3(back, E3.curOf(e.acct)) : money3(e.k === 'in' ? s.less : s.more, E3.curOf(e.acct));
+  const what = e.gone ? 'Removed' : 'Changed';
+  return `<li data-split="${esc3(e.id)}" data-k="${esc3(e.k)}"><span>${what} on ${esc3(day3(s.told, yr))}, ${esc3(rcWhat3(e))}<br><span class="when">${esc3(day3(e.date, yr))}, ${esc3(E3.nameOf(e.acct))}${rcNote3(e) ? ', ' + esc3(rcNote3(e)) : ''}, it was ${esc3(money3(s.atCheck, E3.curOf(e.acct)))} at your bank check on ${esc3(day3(s.check, yr))}, so the change counts here</span></span><span class="amt${back ? ' a3-in-amt' : ''}">${amt}</span></li>`;
+}
 function rcList3() {
   const host = $('#rcList'); if (!host) return;
-  const held = rcHeld3();
+  const held = rcHeld3(), splits = rcSplits3();
   const q = RC3.search.trim().toLowerCase(), yr = E3.today().slice(0, 4);
   const per = q ? null : rcPeriod3();
   const text = e => [rcWhat3(e), E3.nameOf(e.acct), rcNote3(e), money3(e.a, E3.curOf(e.acct)), String(e.a), day3(e.date, 'any')].join(' ').toLowerCase();
@@ -10886,10 +10993,24 @@ function rcList3() {
     : per && per.start && per.end ? `<div class="a3-pernav"><button type="button" class="a3-btn" id="rcOlder"${per.older ? '' : ' disabled'}>Earlier</button><p class="a3-mid a3-per" data-fig="rc-period" data-start="${esc3(per.start)}" data-end="${esc3(per.end)}">${esc3(period3(per))}</p><button type="button" class="a3-btn" id="rcNewer"${per.newer ? '' : ' disabled'}>Later</button></div>${rcSpent3(per)}`
     : `<p class="a3-sub" data-fig="rc-period">Everything</p>`;
   const gaps = q ? [] : rcGaps3(per && per.start && per.end ? per : null);
+  /* [AMOUNT_HISTORY_PLAN 4] with a period shown and the check in another period: the record here at what it was at the
+     check, and the change listed in the check's period; searching, or both in one period, the record as it is now */
+  const inPer = d => !!(per && per.start && per.end && d >= per.start && d <= per.end);
+  const split = e => (!q && splits[e.id] && inPer(e.date) !== inPer(splits[e.id].check) ? splits[e.id] : null);
+  const gone = ((E3.book && E3.book.events) || []).filter(e => e && e.gone && splits[e.id] && split(e));
+  const changes = ((E3.book && E3.book.events) || []).filter(e => e && split(e) && inPer(splits[e.id].check));
   const items = rows.map(e => ({ date: e.date, e })).concat(gaps.map(g => ({ date: g.to, g })))
+    .concat(gone.filter(e => inPer(e.date)).map(e => ({ date: e.date, e })))
+    .concat(changes.map(e => ({ date: splits[e.id].check, c: e })))
     .sort((x, y) => (x.date !== y.date ? (x.date < y.date ? 1 : -1) : 0));
-  const rcLi3 = e => `<li data-rc="${esc3(e.id)}" data-k="${esc3(e.k)}"><button type="button" class="a3-rcrow" aria-label="Change ${esc3(rcWhat3(e))}, ${esc3(money3(e.a, E3.curOf(e.acct)))}"><span>${esc3(rcWhat3(e))}<br><span class="when">${esc3(day3(e.date, yr))}, ${esc3(E3.nameOf(e.acct))}${rcNote3(e) ? ', ' + esc3(rcNote3(e)) : ''}${held[e.id] ? `<br><span data-fig="rc-held">already in your bank figure of ${esc3(day3(held[e.id], yr))}</span>` : ''}</span></span><span class="amt${e.k === 'in' ? ' a3-in-amt' : ''}">${e.k === 'in' ? 'back ' : ''}${money3(e.a, E3.curOf(e.acct))}</span></button></li>`;
-  const li = items.map(x => (x.g ? rcGapLi3(x.g, yr) : rcLi3(x.e))).join('');
+  const rcLi3 = e => {
+    const s = split(e), shown = s ? s.atCheck : e.a, cur = E3.curOf(e.acct);
+    const was = s ? `<br><span data-fig="rc-split">${e.gone ? `removed on ${esc3(day3(s.told, yr))}` : `now ${esc3(money3(e.a, cur))}`}, as it was at your bank check on ${esc3(day3(s.check, yr))}. The change counts in that check's pay period</span>` : '';
+    const inner = `<span>${esc3(rcWhat3(e))}<br><span class="when">${esc3(day3(e.date, yr))}, ${esc3(E3.nameOf(e.acct))}${rcNote3(e) ? ', ' + esc3(rcNote3(e)) : ''}${held[e.id] ? `<br><span data-fig="rc-held">already in your bank figure of ${esc3(day3(held[e.id], yr))}</span>` : ''}${was}</span></span><span class="amt${e.k === 'in' ? ' a3-in-amt' : ''}">${e.k === 'in' ? 'back ' : ''}${money3(shown, cur)}</span>`;
+    return e.gone ? `<li data-split="${esc3(e.id)}" data-k="${esc3(e.k)}">${inner}</li>`
+      : `<li data-rc="${esc3(e.id)}" data-k="${esc3(e.k)}"><button type="button" class="a3-rcrow" aria-label="Change ${esc3(rcWhat3(e))}, ${esc3(money3(e.a, cur))}">${inner}</button></li>`;
+  };
+  const li = items.map(x => (x.g ? rcGapLi3(x.g, yr) : x.c ? rcSplitLi3(x.c, splits[x.c.id], yr) : rcLi3(x.e))).join('');
   const ahead = rcAhead3().filter(e => !q || text(e).includes(q));
   const toldDay = e => String(e.told || e.date).slice(0, 10);
   const aheadLi = e => `<li data-rcahead="${esc3(e.id)}" data-k="${esc3(e.k)}"><button type="button" class="a3-rcrow" aria-label="Open ${esc3(rcWhat3(e))}, ${esc3(money3(e.a, E3.curOf(e.acct)))}"><span>${esc3(rcWhat3(e))}<br><span class="when">${esc3(day3(e.date, 'any'))}, ${esc3(E3.nameOf(e.acct))}${e.date <= E3.today() ? ', logged when a device said it was ' + esc3(day3(toldDay(e), 'any')) : ''}</span></span><span class="amt">${money3(e.a, E3.curOf(e.acct))}</span></button></li>`;
@@ -14142,14 +14263,14 @@ Actions:
      tests/e3_fakeai_page.js opens each of Plan's sheets. These are words for a person too: the wording lint reads them. */
   const SCREENS = {
     home: { name: 'Home', does: 'Home shows what is safe to spend until your next pay, what each account holds today, what is due before pay, and your goals' },
-    plan: { name: 'Plan', does: 'Plan shows your pay and bills, Free to spend and your budget lines, goals, your accounts, cards and loans. Tap a row to change it' },
-    receipts: { name: 'Receipts', does: 'Receipts is where you log money that came in, went out or moved between your accounts, and see what you logged. Tap a record to change or remove it' },
-    settings: { name: 'Settings', does: 'Settings holds the backup file, the cloud copy, the code word for the AI and the assistant\'s error log' },
-    check: { name: 'Check your bank', does: 'Check your bank is where you type what your bank and cards show today. The app compares each with what it expected and asks about the gap' },
-    stmt: { name: 'Add statements', does: 'Add statements reads a bank or card statement file and shows what it read before anything is added' },
-    reminders: { name: 'Reminders', does: 'Reminders shows the days your bills are due and when to check your bank, and can add them to your calendar' },
-    setup: { name: 'setup on the screens', does: 'Setup on the screens asks for your bank, pay, cards and bills in sections, and each section saves on its own' },
-    welcome: { name: 'the first screen', does: 'The first screen is where setup starts, by answering in the chat or on the screens' },
+    plan: { name: 'Plan', does: 'Your pay, bills, Free to spend, budget lines, goals, accounts, cards and loans. Tap a row to change it' },
+    receipts: { name: 'Receipts', does: 'Log money in, out or moved between your accounts, and see what you logged. Tap one to change or remove it' },
+    settings: { name: 'Settings', does: 'The backup file, the cloud copy, the code word for the AI and the assistant\'s error log' },
+    check: { name: 'Check your bank', does: 'Type what your bank and cards show today, and the app compares each with what it expected and asks about the gap' },
+    stmt: { name: 'Add statements', does: 'Reads a bank or card statement file and shows what it read before adding it' },
+    reminders: { name: 'Reminders', does: 'The days bills are due and when to check your bank, which it can add to your calendar' },
+    setup: { name: 'setup on the screens', does: 'Asks for your bank, pay, cards and bills in sections, each saved on its own' },
+    welcome: { name: 'the first screen', does: 'Where setup starts, in the chat or on the screens' },
     free: { name: 'Free to spend', does: 'Sets Free to spend, the money you keep for food and everyday things' },
     addLine: { name: 'Add a line', does: 'Adds a budget line, a name and an amount, like Food or Transport' },
     line: { name: 'A budget line\'s own sheet', does: 'Changes the line\'s name or amount, or ends the line' },
@@ -14184,7 +14305,7 @@ SETUP (when FIGURES says there is no book yet). Ask these in order, one per mess
 ${GUIDE.map(g => g.n + '. ' + g.ask).join('\n')}
 After each answer, save it with draft_set (that section's whole list each time; nothing is in the app until fill_book). A pay needs afterTax true: only save a pay once the person said the amount is after tax. A second income needs same: true or false. Never fill in a minimum or a figure the person did not give. NEEDED lists what fill_book still needs; ask for those. fill_book only when the person says to fill it in.
 
-AFTER SETUP. When a pay, bill or card payment the app expects has come in or gone out ("my pay came in", "rent came out"), use change with landed and its P, B or A ref: never money_in or log_spend for it, which would count it twice. When they say what their bank app or card app shows today, use bank_figure or card_figure with that figure. When the person says they spent, got or moved money, or asks to change a bill, pay, line, goal or card, use change. The app makes the change at once and shows what changed with Undo; a delete, or a change larger than safe to spend, waits for their OK. An amount you send must be one the person typed since your last change; for a repeat ("another lunch") ask how much, never send the old amount again. Refs (A1, L1, G1, B1, P1, S1) come from FIGURES or list; never invent one. Not a licensed adviser: for investments, loans or taxes, say so in one line.
+AFTER SETUP. When a pay, bill or card payment the app expects has come in or gone out ("my pay came in", "rent came out"), use change with landed and its P, B or A ref: never money_in or log_spend for it, which would count it twice. When they say what their bank app or card app shows today, use bank_figure or card_figure with that figure. When the person says they spent, got or moved money, or asks to change a bill, pay, line, goal or card, use change. A spend or refund that was another amount ("that lunch was 1,500"): change_spend with its S ref from list spends and the new amount; 0 removes it. The app makes the change at once and shows what changed with Undo; a delete, or a change larger than safe to spend, waits for their OK. An amount you send must be one the person typed since your last change; for a repeat ("another lunch") ask how much, never send the old amount again. Refs (A1, L1, G1, B1, P1, S1) come from FIGURES or list; never invent one. Not a licensed adviser: for investments, loans or taxes, say so in one line.
 
 Adding a bank: ask both of its questions in one message: is it new money or moved from their bank, and if moved, before or after they looked at that bank today.
 
@@ -14193,7 +14314,7 @@ A spend goes on the account they paid with. If they did not say and they have ca
 SCREEN says which screen the person has open, and the sheet on top of it when there is one: "this screen" means the sheet if there is one, else the screen. Say what it is for in the words below.
 WHAT EACH SCREEN AND SHEET IS FOR:
 ${Object.keys(SCREENS).map(k => SCREENS[k].name + ': ' + SCREENS[k].does).join('\n')}
-WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line): change a goal or take money out of it: Plan, tap the goal. Change a spend: Receipts, tap it. Statements: Home, Add statements. Reminders: Reminders at the top. A backup or the cloud copy: Settings. Keep at least: Settings, Money (an account's own: Plan, tap it).`;
+WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line): change a goal or take money out of it: Plan, tap the goal. Change a spend's date, account or line: Receipts, tap it. Statements: Home, Add statements. Reminders: Reminders at the top. A backup or the cloud copy: Settings. Keep at least: Settings, Money (an account's own: Plan, tap it).`;
   /* [coordinator follow-up, controls-9] the one wording for a call that failed: said once, plainly, never a code. The
      server's own words when it gave them (a daily limit); no network says the connection is down, never that the assistant is off */
   const failText = e => {
@@ -14203,30 +14324,30 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     return 'The assistant did not answer. Send it again';
   };
   /* [AI_JOIN_FIXES H4] a change it can't make says where it is on the screens (the same map as SYSTEM) */
-  const WHERE = [[/loan/, 'Plan, tap the loan'], [/card/, 'Plan, tap the card'], [/goal|take_out/, 'Plan, tap the goal'], [/spend|receipt/, 'Receipts, tap it'],
+  const WHERE = [[/loan/, 'Plan, tap the loan'], [/card/, 'Plan, tap the card'], [/goal|take_out/, 'Plan, tap the goal'], [/spend|receipt/, 'Receipts, tap it (the date, account or line)'],
     [/statement/, 'Home, Add statements'], [/remind/, 'Reminders at the top'], [/keep|minimum/, 'Settings, Money'], [/backup|cloud/, 'Settings']];
   const whereOf = what => { const w = WHERE.find(([re]) => re.test(what)); return w ? 'On the screens: ' + w[1] : 'Say where from WHERE ON THE SCREENS'; };
 
   /* ---- the tools (BU2: no figures or draft read tool) ---- */
   const num = { type: 'number', description: 'A plain number in the currency, no symbol.' };
   const str = d => ({ type: 'string', description: d });
-  const DO = ['landed', 'bank_figure', 'card_figure', 'log_spend', 'refund', 'money_in', 'move_money', 'remove', 'add_bill', 'change_bill', 'end_bill', 'add_pay', 'add_line', 'change_line', 'end_line', 'set_free', 'add_goal', 'set_aside', 'add_card', 'add_account', 'change_account', 'close_account', 'reopen_account', 'remove_account', 'pay_off', 'change_card', 'change_loan', 'add_loan', 'set_keep', 'set_country', 'change_goal', 'take_out', 'remove_goal', 'end_pay', 'remove_pay', 'remove_bill'];
+  const DO = ['landed', 'bank_figure', 'card_figure', 'log_spend', 'refund', 'money_in', 'move_money', 'change_spend', 'remove', 'add_bill', 'change_bill', 'end_bill', 'add_pay', 'add_line', 'change_line', 'end_line', 'set_free', 'add_goal', 'set_aside', 'add_card', 'add_account', 'change_account', 'close_account', 'reopen_account', 'remove_account', 'pay_off', 'change_card', 'change_loan', 'add_loan', 'set_keep', 'set_country', 'change_goal', 'take_out', 'remove_goal', 'end_pay', 'remove_pay', 'remove_bill'];
   /* a step that was asked for and left out, in words for the person (the card says which was not done) */
   const DO_WORDS = { landed: 'ticking off a pay or bill', bank_figure: 'a bank figure', card_figure: 'a card figure', log_spend: 'a spend', refund: 'a refund', money_in: 'money that came in',
-    move_money: 'money moved between accounts', remove: 'removing a record', add_bill: 'a new bill', change_bill: 'a change to a bill or pay', end_bill: 'ending a bill', add_pay: 'a new pay',
+    move_money: 'money moved between accounts', change_spend: 'a change to the amount of a spend or refund', remove: 'removing a record', add_bill: 'a new bill', change_bill: 'a change to a bill or pay', end_bill: 'ending a bill', add_pay: 'a new pay',
     add_line: 'a new line', change_line: 'a change to a line', end_line: 'ending a line', set_free: 'a change to Free to spend', add_goal: 'a new goal', set_aside: 'money set aside for a goal',
     add_card: 'a new card', add_account: 'a new account', change_account: 'a change to an account', close_account: 'closing an account', reopen_account: 'reopening an account', remove_account: 'removing an account', pay_off: 'paying off a card or loan', change_card: 'a change to a card', change_loan: 'a change to a loan', add_loan: 'a new loan', set_keep: 'Keep at least for your main bank', set_country: 'where you bank', change_goal: 'a change to a goal', take_out: 'money taken out of a goal', remove_goal: 'removing a goal', end_pay: 'ending a pay', remove_pay: 'removing a pay', remove_bill: 'removing a bill' };
   const CURS = ['JPY', 'PHP', 'USD', 'EUR'];
   const SECTIONS = ['country', 'currency', 'banks', 'pays', 'cards', 'bills', 'asked', 'statements', 'payToday', 'free', 'min'];
   const TOOLS = [
-    { name: 'list', description: 'Records with their refs: accounts, pays, bills, cards, lines, goals, or the recent spends of one account (amount, date and ref only).',
-      input_schema: { type: 'object', properties: { what: { type: 'string', enum: ['accounts', 'pays', 'bills', 'cards', 'lines', 'goals', 'spends'] }, account: str('An account ref like A1, for spends.') }, required: ['what'] } },
+    { name: 'list', description: 'Records with their refs: accounts, pays, bills, cards, lines, goals, or the recent spends of one account (amount, date and ref only; give date or amount to find an older one).',
+      input_schema: { type: 'object', properties: { what: { type: 'string', enum: ['accounts', 'pays', 'bills', 'cards', 'lines', 'goals', 'spends'] }, account: str('An account ref like A1, for spends.'), date: str('Spends on this day only, YYYY-MM-DD.'), amount: num }, required: ['what'] } },
     { name: 'explain', description: 'How a part of the app works, in the app\'s own words.',
       input_schema: { type: 'object', properties: { topic: { type: 'string', enum: ['safeToSpend', 'period', 'status', 'cards', 'free', 'goals', 'check', 'undo', 'setup', 'sent'] } }, required: ['topic'] } },
     { name: 'draft_set', description: 'Save one setup section into the draft, its whole value. Nothing reaches the app until fill_book. Sections: country "JP"|"PH"|"XX"; currency "JPY"|"PHP"|"USD"|"EUR" (a change of currency drops the amounts saved before it: ask each again); banks [{name, amount, type?, confirmed?}] (first is where pay lands; confirmed true when the person gave the figure again today); pays [{name, amount, every: month|days|weeks|none, day?, day2?, n?, start?, shift?: before|after, bank?, afterTax, same?}]; cards [{name, owed, payDay, closeDay: day|"last"|"not sure", shift?, payFrom?, confirmed?}]; bills [{name, amount, day, every?: month|year, month?, from?}]; asked [{name, out: true|false}]; statements [{name, amount|"not sure"}]; payToday {landed: true|false}; free amount|null; min amount|null.',
       input_schema: { type: 'object', properties: { section: { type: 'string', enum: SECTIONS }, value: { description: 'The section\'s whole value.' } }, required: ['section', 'value'] } },
     { name: 'fill_book', description: 'Turn the draft into the person\'s Burrow. Only when they said to fill it in. Refused while NEEDED is not empty.', input_schema: { type: 'object', properties: {} } },
-    { name: 'change', description: 'Make up to ' + MAX_STEPS + ' changes, each a named step: ' + DO.join(', ') + '. landed {ref: the P, B or card A ref, amount? only if it was different, date? the day it landed}; bank_figure and card_figure {account, amount}. Fields: amount, account (A ref), every (add_bill: month|year|months, with month 1..12 for a year, n and start for months), from and to (A refs), line (L ref), goal (G ref), ref (the record: S, B, P, L or G ref), date (YYYY-MM-DD, today or before), note, name, day, day2, every (month|days|weeks1..4|none), start, when (now|next|once), target, due, owed, payDay, closeDay, type (bank|cash|ewallet), moved (true|false), shift (after|before: a card or loan weekend rule), payFrom (the A ref that pays a card or loan), from (the A ref the money came from), afterFigure (true|false: moved after they looked at that bank on the day of its figure). change_account {account: a bank, cash or e-wallet A ref, name?, min?: its own Keep at least, 0 for none}. close_account {account, to: the A ref its money goes to, or "spent" when it is not there any more}: bills and cards paid from it move there too, its history stays. reopen_account {account}. remove_account {account}: only for one added by mistake; anything with history is closed instead. close_account and remove_account also take a card or loan (a card or loan closes at zero). pay_off {account: card or loan}: all it owes, paid today from its paying account, only when they say they paid it. change_card {account, name?, payDay?, closeDay?}. change_loan {account, name?, payDay?, amount: the usual payment}. add_loan {name, owed, amount, payDay}. set_keep {amount: Keep at least for the main bank, 0 for none}. set_country {country: JP|PH|XX (somewhere else)}.',
+    { name: 'change', description: 'Make up to ' + MAX_STEPS + ' changes, each a named step: ' + DO.join(', ') + '. landed {ref: the P, B or card A ref, amount? only if it was different, date? the day it landed}; bank_figure and card_figure {account, amount}; change_spend {ref: the S ref, amount: the new amount}. Fields: amount, account (A ref), every (add_bill: month|year|months, with month 1..12 for a year, n and start for months), from and to (A refs), line (L ref), goal (G ref), ref (the record: S, B, P, L or G ref), date (YYYY-MM-DD, today or before), note, name, day, day2, every (month|days|weeks1..4|none), start, when (now|next|once), target, due, owed, payDay, closeDay, type (bank|cash|ewallet), moved (true|false), shift (after|before: a card or loan weekend rule), payFrom (the A ref that pays a card or loan), from (the A ref the money came from), afterFigure (true|false: moved after they looked at that bank on the day of its figure). change_account {account: a bank, cash or e-wallet A ref, name?, min?: its own Keep at least, 0 for none}. close_account {account, to: the A ref its money goes to, or "spent" when it is not there any more}: bills and cards paid from it move there too, its history stays. reopen_account {account}. remove_account {account}: only for one added by mistake; anything with history is closed instead. close_account and remove_account also take a card or loan (a card or loan closes at zero). pay_off {account: card or loan}: all it owes, paid today from its paying account, only when they say they paid it. change_card {account, name?, payDay?, closeDay?}. change_loan {account, name?, payDay?, amount: the usual payment}. add_loan {name, owed, amount, payDay}. set_keep {amount: Keep at least for the main bank, 0 for none}. set_country {country: JP|PH|XX (somewhere else)}.',
       input_schema: { type: 'object', properties: { steps: { type: 'array', items: { type: 'object', properties: { do: { type: 'string', enum: DO }, amount: num }, required: ['do'] } } }, required: ['steps'] } },
   ];
 
@@ -14545,7 +14666,10 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     if (what === 'spends') {
       const acct = refs[x.account];
       if (!acct || !String(x.account).startsWith('A')) return 'Which account? An A ref from FIGURES.';
-      const ev = (book.events || []).filter(e => live(e) && e.acct === acct && (e.k === 'spend' || e.k === 'in') && e.src && e.src.type === 'typed' && e.date <= today).slice(-30);
+      /* [AMOUNT_HISTORY_PLAN] an older one is found by its day or its amount; otherwise the last 30 */
+      const cur = ((book.accounts || []).find(a => a.id === acct) || {}).cur, want = x.amount != null ? amountIn(x.amount, cur || home) : null;
+      const ev = (book.events || []).filter(e => live(e) && e.acct === acct && (e.k === 'spend' || e.k === 'in') && e.src && e.src.type === 'typed' && e.date <= today
+        && (!x.date || e.date === x.date) && (want == null || e.a === want)).slice(-30);
       /* [BV6] amounts and dates only: never a note or a shop */
       return ev.length ? 'ref | date | amount | kind | line\n' + ev.map(e => `${back(e.id)} | ${day1(e.date)} | ${m(e.a)} | ${e.k === 'in' ? 'in' : 'spend'} | ${e.line === 'free' ? 'Free to spend' : back(e.line) || ''}`).join('\n') : 'No spends logged on that account yet.';
     }
@@ -14622,6 +14746,18 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       const kind = { log_spend: 'logSpend', refund: 'refund', money_in: 'moneyIn' }[what];
       const text = what === 'log_spend' ? `Log ${m(x, cur)} on ${lineName(line)} from ${nm(acct)}, ${on(d)}` : what === 'refund' ? `Log ${m(x, cur)} back into ${nm(acct)}, ${on(d)}` : `Log ${m(x, cur)} in to ${nm(acct)}, ${on(d)}`;
       return { kind, args: [args], text: text + (n ? ' (' + n + ')' : ''), amount: x, ref: line && line !== 'free' ? a.line : null, named: what === 'log_spend' && a.account != null && a.account !== '' ? acct : null };
+    }
+    /* [AMOUNT_HISTORY_PLAN, qc-foundation's way in] the amount of a spend or refund changed (its S ref from list spends),
+       through the door's edit as Receipts does it, so the figures are the screen's; only the new amount counts as typed;
+       0 is a removal and asks first like one. How far it moves safe to spend is found in handle (moves) */
+    if (what === 'change_spend') {
+      const id = ref(a.ref, 'S'), e = id && (book.events || []).find(x => x.id === id);
+      if (!e || e.gone || !(e.k === 'spend' || (e.k === 'in' && e.sub === 'refund'))) return { bad: 'a change_spend for a ref that is not a spend or refund' };
+      const cur = (acctRec(e.acct) || {}).cur, x = amt(a.amount, cur, true), kind = e.k === 'in' ? 'refund' : 'spend';
+      if (x == null) return { bad: 'an amount I could not read' };
+      if (x === 0) return { kind: 'remove', args: [id], text: `Remove the ${kind} of ${m(e.a, cur)} on ${day1(e.date)}`, del: true };
+      if (x === e.a) return { bad: 'that ' + kind + ' is already ' + m(x, cur) };
+      return { kind: 'edit', args: [id, { a: x }], text: `Change the ${kind} of ${m(e.a, cur)} on ${day1(e.date)} to ${m(x, cur)}`, amount: Math.max(0, kind === 'spend' ? x - e.a : e.a - x), figs: [x], moves: true };
     }
     if (what === 'move_money') {
       const from = ref(a.from, 'A'), to = ref(a.to, 'A'), x = amt(a.amount), d = date(a.date);
@@ -14776,7 +14912,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     }
     return { bad: what ? 'a change I can\'t make (' + what.slice(0, 30) + '). ' + whereOf(what) : 'a change I could not read' };
   }
-  const ACT = { logSpend: 1, refund: 1, moneyIn: 1, moveMoney: 1, remove: 1 };
+  const ACT = { logSpend: 1, refund: 1, moneyIn: 1, moveMoney: 1, remove: 1, edit: 1 };
   function runOne(door, s, opts, deps) {
     if (ACT[s.kind]) return door[s.kind](...s.args, opts);
     if (s.kind === 'checkIn') {
@@ -14793,7 +14929,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
   const journalOf = done => ({ added: [].concat(...done.map(s => s.added || [])), edited: [].concat(...done.map(s => s.edited || [])),
     removed: [].concat(...done.map(s => s.removed || [])), revived: [].concat(...done.map(s => s.revived || [])) });
   function rowsOf(b0, b1, today, steps, j) {
-    return CH.things(b0, b1, today, j).concat(CH.figures(b0, b1, today, { free: steps.some(s => s.kind === 'logSpend' || s.kind === 'setFree' || s.kind === 'refund') }));
+    return CH.things(b0, b1, today, j).concat(CH.figures(b0, b1, today, { free: steps.some(s => s.kind === 'logSpend' || s.kind === 'setFree' || s.kind === 'refund' || s.kind === 'edit') }));
   }
   async function carryOut(state, card, deps) {
     const door = deps.door, before = deps.book(), today = deps.today(), done = [];
@@ -14919,6 +15055,14 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       /* [BW] a delete, or a change larger than safe to spend, asks first; [AI_FIRST_PLAN 7] an amount the person did not
          type is a guess and asks first too */
       const safe = LA.lookahead(book, today).safeToSpend.headline;
+      /* [AMOUNT_HISTORY_PLAN; M6] a changed amount's size (stepOf) is what more goes out, as a new spend of the difference
+         would be (safe to spend stops at 0, so how far it moves could never be larger than it). When the bank check that
+         held the record takes the change (the engine's splits on the book the change would make), the card says so */
+      for (const s of plan.filter(x => x.moves && deps.door && typeof deps.door.dry === 'function')) {
+        let r1; try { r1 = LA.lookahead(deps.door.dry('edit', ...s.args), today); } catch (e) { continue; }
+        const sp = (r1.splits || []).find(x => x.id === s.args[0]);
+        if (sp) s.text += `. It was ${SM.format(sp.atCheck, G.homeOn(book, today))} at your bank check on ${day1(sp.check)}, so the change counts in that check's pay period`;
+      }
       /* [qc-foundation F2] the size is the step's real figure: a new pay and new money count too */
       const big = plan.some(s => s.amount && s.amount > safe), del = plan.some(s => s.del);
       /* every figure in a step (an amount, a target, what is owed, even 0) must be one the person typed, in their own

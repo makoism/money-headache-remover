@@ -893,9 +893,9 @@ const steps = list => [].concat(...list.map(([, r]) => r));
   });
   await t('[H4] it is told which screen is open and what the screens can do that it cannot; a refusal says where', async () => {
     const h = page('2026-11-24'); const { state, deps: d0 } = await runSetup(h, FAKE.make(steps(SETUP)));
-    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'change_spend', ref: 'S1', amount: 5000 }] })]), say('ok'), say('ok')]);
+    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'spend_date', ref: 'S1', date: '2026-11-20' }] })]), say('ok'), say('ok')]);
     const deps = Object.assign(h.deps(f), { door: d0.door, screen: () => 'plan' });
-    const r = await K.turn(state, 'that coffee was 5,000', deps);
+    const r = await K.turn(state, 'that coffee was on the 20th', deps);
     const sent = JSON.stringify(f.bodies[0].messages);
     ok(/SCREEN: the person has Plan open/.test(sent), 'the open screen is sent');
     const res = FAKE.results(f.bodies[1])[0].text;
@@ -1109,6 +1109,106 @@ const steps = list => [].concat(...list.map(([, r]) => r));
       eq(K.fillCheck(st.draft, DAY2, 'none').ok, true, 'the chat\'s fill asks nothing more');
     });
   }
+  /* [AMOUNT_HISTORY_PLAN, qc-foundation's way in; M1, M3, M4, M6] "that lunch was 1,500, not 900": the assistant changes
+     the amount of a spend or refund through the write door's edit, with Undo; only the new amount counts as typed; a
+     change to 0 asks first like a delete; a change that moves safe to spend by more than it holds asks first. Setup as
+     above (safe 201,400 on 24 Nov), a 900 lunch from Main bank (A1). */
+  {
+    const listThen = (stepsOf) => body => { const ref = FAKE.results(body)[0].text.split('\n').find(l => /¥900/.test(l)).split(' | ')[0]; return say('', [call('change', { steps: stepsOf(ref) })]); };
+    const withLunch = async () => {
+      const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
+      const f = FAKE.make([say('', [call('change', { steps: [{ do: 'log_spend', amount: 900, note: 'lunch', account: 'A1' }] })]), say('Logged.')]);
+      const d = hp.deps(f), r = await K.turn(state, 'lunch, 900 from Main bank', d);
+      eq(safe(hp), 200500, 'after the lunch');
+      return { hp, d, state: r.state, id: hp.book.events.find(e => e.k === 'spend' && e.a === 900).id };
+    };
+    await t('[amount history] "that lunch was 1,500 not 900": changed at once, was kept, safe 199,900; Undo puts back 900 and no was', async () => {
+      const { hp, d, state, id } = await withLunch();
+      const f = FAKE.make([say('', [call('list', { what: 'spends', account: 'A1' })]), listThen(ref => [{ do: 'change_spend', ref, amount: 1500 }]), say('Changed.')]);
+      const r = await K.turn(state, 'that lunch was 1,500 not 900', Object.assign(hp.deps(f), { door: d.door }));
+      const tc = r.shown.find(x => x.who === 'card'), c = tc.card;
+      eq([c.status, c.lines], ['done', ['Change the spend of ¥900 on 24 Nov to ¥1,500']]);
+      const e = hp.book.events.find(x => x.id === id);
+      eq([e.a, (e.was || []).map(w => w.a)], [1500, [900]]);
+      eq(safe(hp), 199900);
+      eq(c.rows.find(x => x.key === 'safe'), { key: 'safe', label: 'Safe to spend', before: 200500, after: 199900 });
+      const u = await K.undo(r.state, tc.id, { door: d.door, told: d.told, book: () => hp.book });
+      ok(u.ok, JSON.stringify(u));
+      const e2 = hp.book.events.find(x => x.id === id);
+      eq([e2.a, e2.was === undefined || e2.was === null], [900, true]);
+      eq(safe(hp), 200500);
+    });
+    await t('[amount history] the assistant\'s change gives the same figures as the screen\'s (the door\'s edit)', async () => {
+      const a = await withLunch(), b = await withLunch();
+      const f = FAKE.make([say('', [call('list', { what: 'spends', account: 'A1' })]), listThen(ref => [{ do: 'change_spend', ref, amount: 1500 }]), say('Changed.')]);
+      await K.turn(a.state, 'that lunch was 1,500 not 900', Object.assign(a.hp.deps(f), { door: a.d.door }));
+      const res = await b.d.door.edit(b.id, { a: 1500 }, {}); ok(res.ok, JSON.stringify(res));
+      const fig = h => { const r = L.lookahead(h.book, h.day); return [r.safeToSpend.headline, r.period && r.period.free ? r.period.free.left : null, Object.values(r.accounts).map(x => x.bank)]; };
+      eq(fig(a.hp), fig(b.hp));
+    });
+    await t('[amount history, M6] only the new amount counts as typed: "that lunch cost more" with 1,500 sent is a guess and asks first', async () => {
+      const { hp, d, state } = await withLunch();
+      const f = FAKE.make([say('', [call('list', { what: 'spends', account: 'A1' })]), listThen(ref => [{ do: 'change_spend', ref, amount: 1500 }]), say('Is 1,500 right?')]);
+      const before = JSON.stringify(hp.book);
+      const r = await K.turn(state, 'that lunch cost more than I put', Object.assign(hp.deps(f), { door: d.door }));
+      const c = r.shown.find(x => x.who === 'card').card;
+      eq([c.status, c.ask], ['ask', 'guess']); eq(JSON.stringify(hp.book), before, 'nothing written');
+    });
+    await t('[amount history, M6] a change to 0 asks first like a delete, and OK removes it', async () => {
+      const { hp, d, state, id } = await withLunch();
+      const f = FAKE.make([say('', [call('list', { what: 'spends', account: 'A1' })]), listThen(ref => [{ do: 'change_spend', ref, amount: 0 }]), say('Tap OK.')]);
+      const r = await K.turn(state, 'that lunch was 0, my friend paid', Object.assign(hp.deps(f), { door: d.door }));
+      const tc = r.shown.find(x => x.who === 'card');
+      eq([tc.card.status, tc.card.ask, tc.card.lines], ['ask', 'delete', ['Remove the spend of ¥900 on 24 Nov']]);
+      ok(!hp.book.events.find(x => x.id === id).gone, 'nothing yet');
+      const c = await K.confirm(r.state, tc.id, Object.assign(hp.deps(f), { door: d.door }));
+      ok(c.ok, JSON.stringify(c)); ok(hp.book.events.find(x => x.id === id).gone, 'removed'); eq(safe(hp), 201400);
+    });
+    await t('[amount history, M6] a change that moves safe to spend by more than it holds asks first (900 to 300,000)', async () => {
+      const { hp, d, state } = await withLunch();
+      const f = FAKE.make([say('', [call('list', { what: 'spends', account: 'A1' })]), listThen(ref => [{ do: 'change_spend', ref, amount: 300000 }]), say('Tap OK.')]);
+      const r = await K.turn(state, 'that lunch was 300,000, typo', Object.assign(hp.deps(f), { door: d.door }));
+      const c = r.shown.find(x => x.who === 'card').card;
+      eq([c.status, c.ask], ['ask', 'large']); eq(safe(hp), 200500);
+    });
+    await t('[amount history] change_spend on a ref that is not a spend or refund is refused (money in, a move)', async () => {
+      const { hp, d, state } = await withLunch();
+      const f = FAKE.make([say('', [call('change', { steps: [{ do: 'money_in', amount: 5000, account: 'A1' }] })]), say('Logged.'),
+        say('', [call('change', { steps: [{ do: 'change_spend', ref: 'S2', amount: 6000 }] })]), say('I can\'t.')]);
+      let r = await K.turn(state, 'a gift came in, 5,000 in Main bank', Object.assign(hp.deps(f), { door: d.door }));
+      const before = JSON.stringify(hp.book);
+      r = await K.turn(r.state, 'that gift was 6,000', Object.assign(hp.deps(f), { door: d.door }));
+      eq(r.shown.filter(x => x.who === 'card').length, 0); eq(JSON.stringify(hp.book), before);
+    });
+  }
+  await t('[amount history] list spends finds an older spend by day or amount, past the last 30', async () => {
+    const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
+    hp.day = '2026-11-25';
+    const d = hp.deps(FAKE.make([])), acct = hp.book.home.main.v.acct;
+    ok((await d.door.logSpend({ date: '2026-11-25', a: 777, acct, line: 'free', note: 'old one' }, {})).ok, 'first');
+    hp.day = '2026-11-26';
+    for (let i = 0; i < 31; i++) ok((await d.door.logSpend({ date: '2026-11-26', a: 100 + i, acct, line: 'free' }, {})).ok, 'spend ' + i);
+    const f = FAKE.make([say('', [call('list', { what: 'spends', account: 'A1' }), call('list', { what: 'spends', account: 'A1', amount: 777 }), call('list', { what: 'spends', account: 'A1', date: '2026-11-25' })]), say('Found it.')]);
+    await K.turn(state, 'the 777 one was wrong', Object.assign(hp.deps(f), { door: d.door }));
+    const [all, byAmt, byDay] = FAKE.results(f.bodies[1]).map(x => x.text);
+    ok(!/¥777/.test(all), 'the plain list holds the last 30 only');
+    ok(/^S\d+ \| 25 Nov \| ¥777 \| spend/m.test(byAmt) && byAmt.split('\n').length === 2, byAmt);
+    ok(/¥777/.test(byDay) && byDay.split('\n').length === 2, 'by day finds it too: ' + byDay);
+  });
+  await t('[amount history] the card says when the bank check that held the spend takes the change', async () => {
+    const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
+    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'log_spend', amount: 900, account: 'A1' }] })]), say('Logged.'),
+      say('', [call('change', { steps: [{ do: 'bank_figure', account: 'A1', amount: 285100 }] })]), say('Matches.'),
+      say('', [call('list', { what: 'spends', account: 'A1' })]), body => { const ref = FAKE.results(body)[0].text.split('\n').find(l => /¥900/.test(l)).split(' | ')[0]; return say('', [call('change', { steps: [{ do: 'change_spend', ref, amount: 1500 }] })]); }, say('Changed.')]);
+    const d = hp.deps(f);
+    let r = await K.turn(state, 'lunch, 900 from Main bank', d);
+    hp.day = '2026-11-25';
+    r = await K.turn(r.state, 'Main bank shows 285,100', Object.assign(hp.deps(f), { door: d.door }));
+    hp.day = '2026-11-26';
+    r = await K.turn(r.state, 'that lunch was 1,500 not 900', Object.assign(hp.deps(f), { door: d.door }));
+    const c = r.shown.find(x => x.who === 'card').card;
+    eq([c.status, c.lines], ['done', ['Change the spend of ¥900 on 24 Nov to ¥1,500. It was ¥900 at your bank check on 25 Nov, so the change counts in that check\'s pay period']]);
+  });
   console.log(bad ? `chat3_core: ${bad} of ${n} FAILED` : `chat3_core: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })();

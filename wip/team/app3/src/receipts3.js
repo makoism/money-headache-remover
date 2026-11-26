@@ -359,9 +359,23 @@ function rcGapLi3(g, yr) {
   const what = g.amount > 0 ? 'more went out than you logged' : 'less went out than you logged, so it comes off your spending';
   return `<li data-gap="${esc3(g.acct)}" data-check="${esc3(g.check)}"><span>Found at your bank check on ${esc3(day3(g.check, yr))}<br><span class="when">${esc3(when)}, ${esc3(E3.nameOf(g.acct))}, ${esc3(what)}, on ${esc3(rcForName3(g.on))}</span></span><span class="amt">${money3(g.amount, E3.curOf(g.acct))}</span></li>`;
 }
+/* [AMOUNT_HISTORY_PLAN 4] a spend or refund whose amount was changed (or that was removed) after the bank check that
+   held it: the engine counts what it was at the check in its own period and the change in the check's period
+   (res.splits), so the list shows the same: id -> the split */
+function rcSplits3() {
+  const out = {};
+  try { for (const x of E3.view(E3.today()).splits || []) out[x.id] = x; } catch (e) { /* no figures: nothing to split */ }
+  return out;
+}
+/* the change's own row, in the check's period: not a button (the record is changed in its own row) */
+function rcSplitLi3(e, s, yr) {
+  const back = e.k === 'in' ? s.more : s.less, amt = back ? 'back ' + money3(back, E3.curOf(e.acct)) : money3(e.k === 'in' ? s.less : s.more, E3.curOf(e.acct));
+  const what = e.gone ? 'Removed' : 'Changed';
+  return `<li data-split="${esc3(e.id)}" data-k="${esc3(e.k)}"><span>${what} on ${esc3(day3(s.told, yr))}, ${esc3(rcWhat3(e))}<br><span class="when">${esc3(day3(e.date, yr))}, ${esc3(E3.nameOf(e.acct))}${rcNote3(e) ? ', ' + esc3(rcNote3(e)) : ''}, it was ${esc3(money3(s.atCheck, E3.curOf(e.acct)))} at your bank check on ${esc3(day3(s.check, yr))}, so the change counts here</span></span><span class="amt${back ? ' a3-in-amt' : ''}">${amt}</span></li>`;
+}
 function rcList3() {
   const host = $('#rcList'); if (!host) return;
-  const held = rcHeld3();
+  const held = rcHeld3(), splits = rcSplits3();
   const q = RC3.search.trim().toLowerCase(), yr = E3.today().slice(0, 4);
   const per = q ? null : rcPeriod3();
   const text = e => [rcWhat3(e), E3.nameOf(e.acct), rcNote3(e), money3(e.a, E3.curOf(e.acct)), String(e.a), day3(e.date, 'any')].join(' ').toLowerCase();
@@ -371,10 +385,24 @@ function rcList3() {
     : per && per.start && per.end ? `<div class="a3-pernav"><button type="button" class="a3-btn" id="rcOlder"${per.older ? '' : ' disabled'}>Earlier</button><p class="a3-mid a3-per" data-fig="rc-period" data-start="${esc3(per.start)}" data-end="${esc3(per.end)}">${esc3(period3(per))}</p><button type="button" class="a3-btn" id="rcNewer"${per.newer ? '' : ' disabled'}>Later</button></div>${rcSpent3(per)}`
     : `<p class="a3-sub" data-fig="rc-period">Everything</p>`;
   const gaps = q ? [] : rcGaps3(per && per.start && per.end ? per : null);
+  /* [AMOUNT_HISTORY_PLAN 4] with a period shown and the check in another period: the record here at what it was at the
+     check, and the change listed in the check's period; searching, or both in one period, the record as it is now */
+  const inPer = d => !!(per && per.start && per.end && d >= per.start && d <= per.end);
+  const split = e => (!q && splits[e.id] && inPer(e.date) !== inPer(splits[e.id].check) ? splits[e.id] : null);
+  const gone = ((E3.book && E3.book.events) || []).filter(e => e && e.gone && splits[e.id] && split(e));
+  const changes = ((E3.book && E3.book.events) || []).filter(e => e && split(e) && inPer(splits[e.id].check));
   const items = rows.map(e => ({ date: e.date, e })).concat(gaps.map(g => ({ date: g.to, g })))
+    .concat(gone.filter(e => inPer(e.date)).map(e => ({ date: e.date, e })))
+    .concat(changes.map(e => ({ date: splits[e.id].check, c: e })))
     .sort((x, y) => (x.date !== y.date ? (x.date < y.date ? 1 : -1) : 0));
-  const rcLi3 = e => `<li data-rc="${esc3(e.id)}" data-k="${esc3(e.k)}"><button type="button" class="a3-rcrow" aria-label="Change ${esc3(rcWhat3(e))}, ${esc3(money3(e.a, E3.curOf(e.acct)))}"><span>${esc3(rcWhat3(e))}<br><span class="when">${esc3(day3(e.date, yr))}, ${esc3(E3.nameOf(e.acct))}${rcNote3(e) ? ', ' + esc3(rcNote3(e)) : ''}${held[e.id] ? `<br><span data-fig="rc-held">already in your bank figure of ${esc3(day3(held[e.id], yr))}</span>` : ''}</span></span><span class="amt${e.k === 'in' ? ' a3-in-amt' : ''}">${e.k === 'in' ? 'back ' : ''}${money3(e.a, E3.curOf(e.acct))}</span></button></li>`;
-  const li = items.map(x => (x.g ? rcGapLi3(x.g, yr) : rcLi3(x.e))).join('');
+  const rcLi3 = e => {
+    const s = split(e), shown = s ? s.atCheck : e.a, cur = E3.curOf(e.acct);
+    const was = s ? `<br><span data-fig="rc-split">${e.gone ? `removed on ${esc3(day3(s.told, yr))}` : `now ${esc3(money3(e.a, cur))}`}, as it was at your bank check on ${esc3(day3(s.check, yr))}. The change counts in that check's pay period</span>` : '';
+    const inner = `<span>${esc3(rcWhat3(e))}<br><span class="when">${esc3(day3(e.date, yr))}, ${esc3(E3.nameOf(e.acct))}${rcNote3(e) ? ', ' + esc3(rcNote3(e)) : ''}${held[e.id] ? `<br><span data-fig="rc-held">already in your bank figure of ${esc3(day3(held[e.id], yr))}</span>` : ''}${was}</span></span><span class="amt${e.k === 'in' ? ' a3-in-amt' : ''}">${e.k === 'in' ? 'back ' : ''}${money3(shown, cur)}</span>`;
+    return e.gone ? `<li data-split="${esc3(e.id)}" data-k="${esc3(e.k)}">${inner}</li>`
+      : `<li data-rc="${esc3(e.id)}" data-k="${esc3(e.k)}"><button type="button" class="a3-rcrow" aria-label="Change ${esc3(rcWhat3(e))}, ${esc3(money3(e.a, cur))}">${inner}</button></li>`;
+  };
+  const li = items.map(x => (x.g ? rcGapLi3(x.g, yr) : x.c ? rcSplitLi3(x.c, splits[x.c.id], yr) : rcLi3(x.e))).join('');
   const ahead = rcAhead3().filter(e => !q || text(e).includes(q));
   const toldDay = e => String(e.told || e.date).slice(0, 10);
   const aheadLi = e => `<li data-rcahead="${esc3(e.id)}" data-k="${esc3(e.k)}"><button type="button" class="a3-rcrow" aria-label="Open ${esc3(rcWhat3(e))}, ${esc3(money3(e.a, E3.curOf(e.acct)))}"><span>${esc3(rcWhat3(e))}<br><span class="when">${esc3(day3(e.date, 'any'))}, ${esc3(E3.nameOf(e.acct))}${e.date <= E3.today() ? ', logged when a device said it was ' + esc3(day3(toldDay(e), 'any')) : ''}</span></span><span class="amt">${money3(e.a, E3.curOf(e.acct))}</span></button></li>`;
