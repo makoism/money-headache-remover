@@ -1,6 +1,7 @@
+check3 full at 7b7493fc (MAIN 25, 26 Nov 2026), after B1, C6, C7 and the B1 follow-ups
 
 == build
-1227152 index.html
+1232274 index.html
 syntax ok
 
 == the engine's own tests (failures already on wip-38.31 are listed in engine_known.txt; any other is a failure)
@@ -8,132 +9,135 @@ engine with realistic ids [AJ1] (1077 ids rewritten): 779 passed, 0 failed, 779 
 ALL ASKS PASS
 ENGINE CHECKS ALL PASS (29 runs)
 engine: all pass
-(14 s)
+(18 s)
 
-== 122 tests, 3 at a time (full level); each line is one finished test
-  [ 1/122] PASS  102s  tests/e3_walk.js 
-  [ 2/122] PASS  102s  tests/e3_walk.js TZ=Asia/Tokyo WALK_CLOCK=04:40
-  [ 3/122] PASS  102s  tests/e3_walk.js TZ=Asia/Tokyo WALK_CLOCK=23:30
-  [ 4/122] PASS   31s  tests/e3_life_d.js 
-  [ 5/122] PASS   31s  tests/e3_life_b.js 
-  [ 6/122] PASS   39s  tests/e3_life_a.js 
-  [ 7/122] PASS    8s  tests/e3_paychange.js 
-  [ 8/122] PASS   11s  tests/e3_life_a2.js 
-  [ 9/122] PASS    3s  ../screens/test/run_all.sh 
-  [10/122] PASS   28s  tests/e3_life_c.js 
-  [11/122] PASS   10s  tests/e3_stmt.js 
-  [12/122] PASS   13s  tests/e3_setup6.js 
-  [13/122] PASS   47s  tests/e3_reload.js 
-  [14/122] PASS   20s  tests/e3_receipts.js 
-  [15/122] PASS   25s  tests/e3_listfix.js 
-  [16/122] PASS   23s  tests/e3_plan.js 
-  [17/122] PASS    0s  tests/checkin_book.test.js 
-  [18/122] PASS    2s  tests/e3_act_unit.js 
-  [19/122] PASS    0s  tests/cloud3.test.js 
-  [20/122] PASS    0s  ../../../tests/vault_server/vault_server.test.mjs 
-  [21/122] PASS    0s  ../../../tests/vault_server/fake_parity.test.mjs 
-  [22/122] PASS    0s  ../../../tests/vault_server/relay_cap.test.mjs 
-  [23/122] PASS    1s  tests/e3_stmt_read.js 
-  [24/122] PASS    0s  tests/e3_stmt_plan.js 
-  [25/122] PASS    0s  tests/plan3_write.test.js 
-  [26/122] PASS    1s  tests/controls3.test.js 
-  [27/122] PASS    0s  tests/act3_sync.test.js 
-  [28/122] PASS    0s  tests/backup3.test.js 
-  [29/122] PASS    0s  tests/answers3.test.js 
-  [30/122] PASS    2s  tests/chat3_core.test.js 
-  [31/122] PASS    0s  tests/chatfig.test.js 
-  [32/122] PASS    0s  tests/latelist.test.js 
-  [33/122] PASS    1s  tests/restore3.test.js 
-  [34/122] PASS    0s  tests/ask3_core.test.js 
-  [35/122] PASS    0s  tests/remind3.test.js 
-  [36/122] PASS    0s  tests/no_maths.js 
-  [37/122] PASS    0s  tests/m_lines.test.js 
-  [38/122] PASS    1s  tests/wording_lint.test.js 
-  [39/122] PASS    1s  tests/e3_try.js 
-  [40/122] PASS    8s  tests/e3_home.js 
-  [41/122] PASS    2s  tests/e3_payday.js 
-  [42/122] PASS   29s  tests/e3_amounts.js 
-  [43/122] PASS    7s  tests/e3_ns.js 
-  [44/122] PASS    7s  tests/e3_checkin.js 
-  [45/122] PASS   10s  tests/e3_homeplan.js 
-  [46/122] PASS    7s  tests/e3_paycame.js 
-  [47/122] PASS   98s  tests/e3_setupfix.js 
-  [48/122] PASS    3s  tests/e3_checkblank.js 
-  [49/122] PASS   17s  tests/e3_setup2tabs.js 
-  [50/122] PASS    8s  tests/e3_checkgap.js 
-  [51/122] PASS    3s  tests/e3_setuplater.js 
-  [52/122] PASS    4s  tests/e3_cardline.js 
-  [53/122] PASS    4s  tests/e3_bankparts.js 
-  [54/122] PASS   15s  tests/e3_warnwords.js 
-  [55/122] PASS    7s  tests/e3_cardfig.js 
-  [56/122] PASS    5s  tests/e3_stmt_once.js 
-  [57/122] PASS   21s  tests/e3_tabsetup.js 
-  [58/122] PASS    5s  tests/e3_period.js 
-  [59/122] PASS    7s  tests/e3_nsfix.js 
-  [60/122] PASS    4s  tests/e3_doors.js 
-  [61/122] PASS    4s  tests/e3_moved1.js 
-  [62/122] PASS   17s  tests/e3_cardgap.js 
-  [63/122] PASS   19s  tests/e3_cardpay.js 
-  [64/122] PASS    5s  tests/e3_moneyin.js 
-  [65/122] PASS    6s  tests/e3_moved2.js 
-  [66/122] PASS    5s  tests/e3_lineshare.js 
-  [67/122] PASS    7s  tests/e3_bigspend.js 
-  [68/122] PASS   10s  tests/e3_panels.js 
-  [69/122] PASS    7s  tests/e3_accounts.js 
-  [70/122] PASS    8s  tests/e3_billyear.js 
-  [71/122] PASS    3s  tests/e3_rhythms.js 
-  [72/122] PASS    7s  tests/e3_remkeep.js 
-  [73/122] PASS    4s  tests/e3_names.js 
-  [74/122] PASS   14s  tests/e3_payfrom.js 
-  [75/122] PASS    4s  tests/e3_file.js 
-  [76/122] PASS    8s  tests/e3_first.js 
-  [77/122] PASS   16s  tests/e3_setup.js 
-  [78/122] PASS   19s  tests/e3_overdrawn.js 
-  [79/122] PASS   34s  tests/e3_back.js 
-  [80/122] PASS   19s  tests/e3_band.js 
-  [81/122] PASS   25s  tests/e3_undobar.js 
-  [82/122] PASS    9s  tests/e3_paytoday.js 
-  [83/122] PASS   19s  tests/e3_chatwalk.js 
-  [84/122] PASS   27s  tests/e3_twodrafts.js 
-  [85/122] PASS    4s  tests/e3_fillundo.js 
-  [86/122] PASS    6s  tests/e3_ailog.js 
-  [87/122] PASS    4s  tests/e3_aiwords.js 
-  [88/122] PASS    5s  tests/e3_fillcard.js 
-  [89/122] PASS   35s  tests/e3_chat.js 
-  [90/122] PASS    4s  tests/e3_cloudfirst.js 
-  [91/122] PASS   58s  tests/e3_fakeai_page.js 
-  [92/122] PASS    7s  tests/e3_onepay.js 
-  [93/122] PASS   11s  tests/e3_aijoin.js 
-  [94/122] PASS    5s  tests/e3_weeks3.js 
-  [95/122] PASS    5s  tests/e3_walk4.js 
-  [96/122] PASS    8s  tests/e3_walk2.js 
-  [97/122] PASS   18s  tests/e3_income2.js 
-  [98/122] PASS    2s  tests/offline.js 
-  [99/122] PASS    2s  tests/e3_install.js 
-  [100/122] PASS    4s  tests/e3_publish.js 
-  [101/122] PASS    9s  tests/e3_tabs.js 
-  [102/122] PASS   24s  tests/e3_walk_cardgap.js 
-  [103/122] PASS   25s  tests/e3_walk_cardgap.js TZ=Asia/Tokyo
-  [104/122] PASS   10s  tests/e3_stalesheet.js 
-  [105/122] PASS    6s  tests/e3_remind.js 
-  [106/122] PASS   17s  tests/e3_backup.js 
-  [107/122] PASS   11s  tests/e3_cloud.js 
-  [108/122] PASS   31s  tests/e3_invite.js 
-  [109/122] PASS   33s  tests/e3_cloudbase.js 
-  [110/122] PASS   37s  tests/e3_cloudhold.js 
-  [111/122] PASS   12s  tests/e3_removes.js 
-  [112/122] PASS   13s  tests/e3_cloudwhich.js 
-  [113/122] PASS   95s  tests/e3_cloudtake.js 
-  [114/122] PASS   27s  tests/e3_cloudwhich2.js 
-  [115/122] PASS   18s  tests/e3_restore.js 
-  [116/122] PASS   41s  tests/e3_cloudstatus.js 
-  [117/122] PASS    8s  tests/e3_sw.js 
-  [118/122] PASS  149s  tests/e3_cloudsend.js 
-  [119/122] PASS   73s  tests/e3_layout.js 
-  [120/122] PASS   99s  tests/e3_always.js 
-  [121/122] PASS  188s  tests/e3_boxwalk.js 
-  [122/122] PASS   20s  tests/guard3.js 
-(the tests took 844 s)
+== 125 tests, 3 at a time (full level); each line is one finished test
+  [ 1/125] PASS  107s  tests/e3_walk.js TZ=Asia/Tokyo WALK_CLOCK=04:40
+  [ 2/125] PASS  107s  tests/e3_walk.js TZ=Asia/Tokyo WALK_CLOCK=23:30
+  [ 3/125] PASS  107s  tests/e3_walk.js 
+  [ 4/125] PASS   32s  tests/e3_life_d.js 
+  [ 5/125] PASS   33s  tests/e3_life_b.js 
+  [ 6/125] PASS   40s  tests/e3_life_a.js 
+  [ 7/125] PASS    8s  tests/e3_paychange.js 
+  [ 8/125] PASS   11s  tests/e3_life_a2.js 
+  [ 9/125] PASS    4s  ../screens/test/run_all.sh 
+  [10/125] PASS   29s  tests/e3_life_c.js 
+  [11/125] PASS   10s  tests/e3_stmt.js 
+  [12/125] PASS   13s  tests/e3_setup6.js 
+  [13/125] PASS   50s  tests/e3_reload.js 
+  [14/125] PASS   22s  tests/e3_receipts.js 
+  [15/125] PASS   27s  tests/e3_listfix.js 
+  [16/125] PASS   24s  tests/e3_plan.js 
+  [17/125] PASS    0s  tests/checkin_book.test.js 
+  [18/125] PASS    2s  tests/e3_act_unit.js 
+  [19/125] PASS    0s  tests/cloud3.test.js 
+  [20/125] PASS    0s  ../../../tests/vault_server/vault_server.test.mjs 
+  [21/125] PASS    0s  ../../../tests/vault_server/fake_parity.test.mjs 
+  [22/125] PASS    1s  ../../../tests/vault_server/relay_cap.test.mjs 
+  [23/125] PASS    0s  tests/e3_stmt_read.js 
+  [24/125] PASS    0s  tests/e3_stmt_plan.js 
+  [25/125] PASS    1s  tests/plan3_write.test.js 
+  [26/125] PASS    0s  tests/controls3.test.js 
+  [27/125] PASS    0s  tests/act3_sync.test.js 
+  [28/125] PASS    1s  tests/backup3.test.js 
+  [29/125] PASS    0s  tests/answers3.test.js 
+  [30/125] PASS    2s  tests/chat3_core.test.js 
+  [31/125] PASS    0s  tests/chatfig.test.js 
+  [32/125] PASS    0s  tests/latelist.test.js 
+  [33/125] PASS    1s  tests/restore3.test.js 
+  [34/125] PASS    0s  tests/ask3_core.test.js 
+  [35/125] PASS    0s  tests/remind3.test.js 
+  [36/125] PASS    0s  tests/no_maths.js 
+  [37/125] PASS    0s  tests/m_lines.test.js 
+  [38/125] PASS    1s  tests/wording_lint.test.js 
+  [39/125] PASS    1s  tests/e3_try.js 
+  [40/125] PASS   10s  tests/e3_home.js 
+  [41/125] PASS    2s  tests/e3_payday.js 
+  [42/125] PASS   30s  tests/e3_amounts.js 
+  [43/125] PASS    7s  tests/e3_ns.js 
+  [44/125] PASS    7s  tests/e3_checkin.js 
+  [45/125] PASS   11s  tests/e3_homeplan.js 
+  [46/125] PASS    7s  tests/e3_paycame.js 
+  [47/125] PASS  101s  tests/e3_setupfix.js 
+  [48/125] PASS    4s  tests/e3_checkblank.js 
+  [49/125] PASS   18s  tests/e3_setup2tabs.js 
+  [50/125] PASS    3s  tests/e3_setuplater.js 
+  [51/125] PASS    9s  tests/e3_checkgap.js 
+  [52/125] PASS    4s  tests/e3_cardline.js 
+  [53/125] PASS    5s  tests/e3_bankparts.js 
+  [54/125] PASS   18s  tests/e3_warnwords.js 
+  [55/125] PASS    8s  tests/e3_cardfig.js 
+  [56/125] PASS   23s  tests/e3_tabsetup.js 
+  [57/125] PASS    6s  tests/e3_period.js 
+  [58/125] PASS    7s  tests/e3_stmt_once.js 
+  [59/125] PASS    8s  tests/e3_nsfix.js 
+  [60/125] PASS    4s  tests/e3_doors.js 
+  [61/125] PASS    5s  tests/e3_moved1.js 
+  [62/125] PASS   18s  tests/e3_cardgap.js 
+  [63/125] PASS   20s  tests/e3_cardpay.js 
+  [64/125] PASS    6s  tests/e3_moneyin.js 
+  [65/125] PASS    7s  tests/e3_moved2.js 
+  [66/125] PASS    4s  tests/e3_addask.js 
+  [67/125] PASS    7s  tests/e3_notchecked.js 
+  [68/125] PASS    8s  tests/e3_bigspend.js 
+  [69/125] PASS    5s  tests/e3_lineshare.js 
+  [70/125] PASS   11s  tests/e3_panels.js 
+  [71/125] PASS   21s  tests/e3_payin.js 
+  [72/125] PASS    8s  tests/e3_accounts.js 
+  [73/125] PASS    8s  tests/e3_billyear.js 
+  [74/125] PASS    3s  tests/e3_rhythms.js 
+  [75/125] PASS    8s  tests/e3_remkeep.js 
+  [76/125] PASS   14s  tests/e3_payfrom.js 
+  [77/125] PASS    5s  tests/e3_names.js 
+  [78/125] PASS    5s  tests/e3_file.js 
+  [79/125] PASS    9s  tests/e3_first.js 
+  [80/125] PASS   17s  tests/e3_setup.js 
+  [81/125] PASS   20s  tests/e3_overdrawn.js 
+  [82/125] PASS   35s  tests/e3_back.js 
+  [83/125] PASS   26s  tests/e3_undobar.js 
+  [84/125] PASS   20s  tests/e3_band.js 
+  [85/125] PASS    9s  tests/e3_paytoday.js 
+  [86/125] PASS   20s  tests/e3_chatwalk.js 
+  [87/125] PASS   28s  tests/e3_twodrafts.js 
+  [88/125] PASS    5s  tests/e3_fillundo.js 
+  [89/125] PASS    6s  tests/e3_ailog.js 
+  [90/125] PASS    4s  tests/e3_aiwords.js 
+  [91/125] PASS    5s  tests/e3_fillcard.js 
+  [92/125] PASS   36s  tests/e3_chat.js 
+  [93/125] PASS   60s  tests/e3_fakeai_page.js 
+  [94/125] PASS    5s  tests/e3_cloudfirst.js 
+  [95/125] PASS    8s  tests/e3_onepay.js 
+  [96/125] PASS   12s  tests/e3_aijoin.js 
+  [97/125] PASS    5s  tests/e3_weeks3.js 
+  [98/125] PASS    8s  tests/e3_walk2.js 
+  [99/125] PASS    5s  tests/e3_walk4.js 
+  [100/125] PASS   18s  tests/e3_income2.js 
+  [101/125] PASS    2s  tests/offline.js 
+  [102/125] PASS    2s  tests/e3_install.js 
+  [103/125] PASS    5s  tests/e3_publish.js 
+  [104/125] PASS    8s  tests/e3_tabs.js 
+  [105/125] PASS   25s  tests/e3_walk_cardgap.js 
+  [106/125] PASS   25s  tests/e3_walk_cardgap.js TZ=Asia/Tokyo
+  [107/125] PASS   11s  tests/e3_stalesheet.js 
+  [108/125] PASS    6s  tests/e3_remind.js 
+  [109/125] PASS   16s  tests/e3_backup.js 
+  [110/125] PASS   10s  tests/e3_cloud.js 
+  [111/125] PASS   31s  tests/e3_invite.js 
+  [112/125] PASS   33s  tests/e3_cloudbase.js 
+  [113/125] PASS   37s  tests/e3_cloudhold.js 
+  [114/125] PASS   13s  tests/e3_removes.js 
+  [115/125] PASS   13s  tests/e3_cloudwhich.js 
+  [116/125] PASS   96s  tests/e3_cloudtake.js 
+  [117/125] PASS   27s  tests/e3_cloudwhich2.js 
+  [118/125] PASS   19s  tests/e3_restore.js 
+  [119/125] PASS   41s  tests/e3_cloudstatus.js 
+  [120/125] PASS    8s  tests/e3_sw.js 
+  [121/125] PASS  149s  tests/e3_cloudsend.js 
+  [122/125] PASS   73s  tests/e3_layout.js 
+  [123/125] PASS  100s  tests/e3_always.js 
+  [124/125] PASS  190s  tests/e3_boxwalk.js 
+  [125/125] PASS   20s  tests/guard3.js 
+(the tests took 884 s)
 
 == the try book through the engine check-in writer
 CHECKIN BOOK PASS 13
@@ -148,26 +152,26 @@ cloud3: ALL PASS (61)
 (tests/cloud3.test.js: 0 s)
 
 == the vault server itself in node (the five changes, the old app's calls, today's database)
-(node:20077) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(node:843) ExperimentalWarning: SQLite is an experimental feature and might change at any time
 (Use `node --trace-warnings ...` to show where the warning was created)
 vault_server: ALL PASS (70)
 (../../../tests/vault_server/vault_server.test.mjs: 0 s)
 
 == the fake vault answers as the server does
-(node:20112) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(node:878) ExperimentalWarning: SQLite is an experimental feature and might change at any time
 (Use `node --trace-warnings ...` to show where the warning was created)
 fake_parity: ALL PASS (44)
 (../../../tests/vault_server/fake_parity.test.mjs: 0 s)
 
 == the AI relay's daily call cap per household, in node (M68): the count follows the code word, not the device or the connection
-(node:20147) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(node:913) ExperimentalWarning: SQLite is an experimental feature and might change at any time
 (Use `node --trace-warnings ...` to show where the warning was created)
 relay_cap: ALL PASS (12)
-(../../../tests/vault_server/relay_cap.test.mjs: 0 s)
+(../../../tests/vault_server/relay_cap.test.mjs: 1 s)
 
 == statements, the reading half (pure)
 e3_stmt_read: ALL PASS (28)
-(tests/e3_stmt_read.js: 1 s)
+(tests/e3_stmt_read.js: 0 s)
 
 == statements, the writing half (pure): lines, matching, records
 e3_stmt_plan: ALL PASS (68)
@@ -175,12 +179,12 @@ e3_stmt_plan: ALL PASS (68)
 
 == the Plan tab's steps (pure)
 plan3_write: ALL PASS (42)
-(tests/plan3_write.test.js: 0 s)
+(tests/plan3_write.test.js: 1 s)
 
 == the controls table: every list, account type, step and assistant step has a door, missing doors named with their slice (M13, M3)
 doors: 52, built: 31, still todo: 21 (account.end E2; account.remove E2; main bank.end later: CONTROLS_PLAN slice 13 (a new main bank, every link moved); card.end E3; card.remove E3; loan.change E3; loan.end E3; pay-later.add stage 2; person.add stage 2; keep at least.change E5; country.change E5; currency.change E9; pay.end E7; pay.remove E7; bill.remove later: CONTROLS_PLAN slice 8; budget line.remove later: CONTROLS_PLAN slice 8; goal.remove E6; bank check.change E8; bank check.remove E8; statement import.remove later: CONTROLS_PLAN slice 11; undo after a reload.change E4); built on the screens but not yet by asking: 9 (card.change E3 change_card; loan.add E3 add_loan; loan.change E3 change_loan; loan.end E3 close_loan; bill.change later: change_once; goal.change E6 change_goal; goal.change E6 take_out; spend, refund, money in, move.change later: change_spend (K16); statement import.add later: reading files in the chat); by asking but not on the screens after setup: 1 (pay.add E7 Plan > Add a pay)
 controls3: ALL PASS
-(tests/controls3.test.js: 1 s)
+(tests/controls3.test.js: 0 s)
 
 == the cloud copy's answers through the one write door (act3 answerSync): each kind, Undo after a reload, marked gone never deleted (WHICH_DOOR_PLAN, M61, M14, M20)
 act3_sync: ALL PASS (17)
@@ -188,7 +192,7 @@ act3_sync: ALL PASS (17)
 
 == the backup file's core
 backup3: ALL PASS (15)
-(tests/backup3.test.js: 0 s)
+(tests/backup3.test.js: 1 s)
 
 == answers3, the one answers-to-book function (BV1): same answers, same book
 answers3: ALL PASS (14)
@@ -222,7 +226,7 @@ remind3: ALL PASS (14)
 NOTE allow line not used: e3.js :: s += abc[Math.floor(Math.random() * abc.length)]
 NOTE allow line not used: ask3.js :: abc[b % abc.length]
 NOTE allow line not used: e3.js :: Date.now() + (sec === '01' ? 1 : 0)
-screen maths: 0 open, 25 allowed with a reason, 22 files read
+screen maths: 0 open, 26 allowed with a reason, 22 files read
 NO MATHS PASS
 (tests/no_maths.js: 0 s)
 
@@ -232,7 +236,7 @@ NO MATHS PASS
      briefs by id: qc-novice; scope: 2026-11-25_ai_first/scope.txt, 2026-11-26_controls1/scope.txt; (its section H is also given whole to: qc-novice)
      scope: 2026-11-25_ai_first/scope.txt, 2026-11-26_controls1/scope.txt; (its section H is also given whole to: qc-novice)
 
-M LINES: 99 in MAKO_SAYS.md (M1 to M99); 181 test files, 11 briefs and 6 scope files read
+M LINES: 99 in MAKO_SAYS.md (M1 to M99); 184 test files, 11 briefs and 6 scope files read
 NAMED BY A TEST (49): M1 M3 M4 M5 M6 M7 M11 M12 M13 M14 M15 M16 M17 M19 M20 M21 M22 M23 M26 M27 M28 M30 M31 M32 M33 M36 M37 M38 M40 M41 M44 M45 M47 M48 M49 M51 M52 M53 M54 M55 M60 M61 M62 M63 M66 M67 M68 M69 M77
 HELD ONLY BY A REVIEWER'S WHOLE SECTION, not named by id (1): M59
 NO COVER YET, written so in M_COVERAGE.md (1): M59
@@ -243,9 +247,9 @@ m_lines: ALL PASS (99) and 1 KNOWN FAIL (the lines in this test's KNOWN table, e
 
 == a wording lint over the words a person sees (QC_ROLES scripts f): no em dash, VOICE.md's full stop rules, none of the words or marks VOICE.md forbids, no real figures (M54, M55, M62); its KNOWN lines are in tests/QCSCRIPTS_FOUND.md
 
-WORDS READ: 22 toasts, 72 notes, 117 buttons, 127 labels and headings; ending in a full stop against VOICE: 0
-LONG NUMBERS: 0 wanted in 73 files; 7 constants listed. NOT CHECKED: the team's notes (wip/team/*.md) hold 61 long numbers (commit ids, time stamps and big made-up examples)
-FORBIDDEN WORDS: delve, tapestry, testament, pivotal, crucial, underscore, showcase, foster, landscape, intricate, meticulous, robust, seamless, leverage, navigate, journey, elevate, unlock, empower, ensure, enhance, comprehensive, vibrant, please, kindly, feel free, however, therefore, moreover, additionally, furthermore, in conclusion, powerful, smart, oops, let's, we're excited, i hope this helps; found 0 in 1595 pieces of words
+WORDS READ: 22 toasts, 72 notes, 119 buttons, 127 labels and headings; ending in a full stop against VOICE: 0
+LONG NUMBERS: 0 wanted in 73 files; 7 constants listed. NOT CHECKED: the team's notes (wip/team/*.md) hold 62 long numbers (commit ids, time stamps and big made-up examples)
+FORBIDDEN WORDS: delve, tapestry, testament, pivotal, crucial, underscore, showcase, foster, landscape, intricate, meticulous, robust, seamless, leverage, navigate, journey, elevate, unlock, empower, ensure, enhance, comprehensive, vibrant, please, kindly, feel free, however, therefore, moreover, additionally, furthermore, in conclusion, powerful, smart, oops, let's, we're excited, i hope this helps; found 0 in 1607 pieces of words
 wording_lint: ALL PASS (12)
 (tests/wording_lint.test.js: 1 s)
 
@@ -262,7 +266,7 @@ ok   warnings are worded here from the engine's data, never its text: "below zer
 ok   no Free to spend and no budget line: Home asks for everyday spending in place of "Fine for now" (north star F1)
 ok   goals over what the bank can spare: their own state and words, never short or below zero [BM2]
 ok   a shortfall with no real money short (goals or plan lines) is never the "short" state [BM2]
-(../screens/test/run_all.sh: 3 s)
+(../screens/test/run_all.sh: 4 s)
 
 == the try book
 e3_try: ALL PASS (12)
@@ -270,7 +274,7 @@ e3_try: ALL PASS (12)
 
 == Home, the new top
 e3_home: ALL PASS (105)
-(tests/e3_home.js: 8 s)
+(tests/e3_home.js: 10 s)
 
 == pay day in two steps: the pay and what it covers, to the end of the day (slice 6, G4)
 e3_payday: ALL PASS (4)
@@ -282,7 +286,7 @@ e3_ns: ALL PASS (14)
 
 == Home's ways into the plan: goals with what is set aside, Add a card (north star F2, F3)
 e3_homeplan: ALL PASS (13)
-(tests/e3_homeplan.js: 10 s)
+(tests/e3_homeplan.js: 11 s)
 
 == Check your bank
 e3_checkin: ALL PASS (24)
@@ -290,7 +294,7 @@ e3_checkin: ALL PASS (24)
 
 == Setup in two tabs: each Save keeps the other tab's saved sections (qc-data-safety 26 Nov blocker 1)
 e3_setup2tabs: ALL PASS (6)
-(tests/e3_setup2tabs.js: 17 s)
+(tests/e3_setup2tabs.js: 18 s)
 
 == A pay ticked after its due day asks when it came in (monthrule2 1b, way c)
 e3_paycame: ALL PASS (19)
@@ -298,11 +302,11 @@ e3_paycame: ALL PASS (19)
 
 == Check your bank names the gap before and after saving (BK2, BK4)
 e3_checkgap: ALL PASS (20)
-(tests/e3_checkgap.js: 8 s)
+(tests/e3_checkgap.js: 9 s)
 
 == Check your bank with a box left blank: the rest saves, nothing written for it; nothing typed or ticked says so (qc-controls run 1 blocker 3)
 e3_checkblank: ALL PASS (10)
-(tests/e3_checkblank.js: 3 s)
+(tests/e3_checkblank.js: 4 s)
 
 == setup's last step says loans, goals and budget lines are added on Plan, with the buttons (qc-controls run 1 blocker 2)
 e3_setuplater: ALL PASS (6)
@@ -310,11 +314,11 @@ e3_setuplater: ALL PASS (6)
 
 == setup left open in a second tab never writes over a book another tab made; the tab takes it in and says so (qc-data-safety run 4 blocker 1)
 e3_tabsetup: ALL PASS (17)
-(tests/e3_tabsetup.js: 21 s)
+(tests/e3_tabsetup.js: 23 s)
 
 == Home words the engine's warnings itself: below zero with no minimum, no raw ISO day or month
 e3_warnwords: ALL PASS (42)
-(tests/e3_warnwords.js: 15 s)
+(tests/e3_warnwords.js: 18 s)
 
 == a card with an overdue payment never says nothing to pay yet
 e3_cardline: ALL PASS (16)
@@ -322,16 +326,16 @@ e3_cardline: ALL PASS (16)
 
 == bank today in its parts once something is logged after the check
 e3_bankparts: ALL PASS (9)
-(tests/e3_bankparts.js: 4 s)
+(tests/e3_bankparts.js: 5 s)
 
 == a card's figure typed at a check-in (US dollars away until 16 Dec; Mako's 10 Dec)
 e3_cardfig: ALL PASS (23)
-(tests/e3_cardfig.js: 7 s)
+(tests/e3_cardfig.js: 8 s)
 
 == a figure typed at Check your bank is the same after a reload: four time zones, morning, mid morning and night (QC numbers blocker 1)
-(47 s)
+(50 s)
 e3_reload: ALL PASS (96)
-(tests/e3_reload.js: 47 s)
+(tests/e3_reload.js: 50 s)
 
 == Add statements (the AI route, any AI, review, Add, duplicates once, the relay)
 e3_stmt: ALL PASS (34)
@@ -339,31 +343,31 @@ e3_stmt: ALL PASS (34)
 
 == each record once after a statement (BI2): Receipts
 e3_stmt_once: ALL PASS (15)
-(tests/e3_stmt_once.js: 5 s)
+(tests/e3_stmt_once.js: 7 s)
 
 == the period by its dates
 e3_period: ALL PASS (26)
-(tests/e3_period.js: 5 s)
+(tests/e3_period.js: 6 s)
 
 == Receipts
 e3_receipts: ALL PASS (80)
-(tests/e3_receipts.js: 20 s)
+(tests/e3_receipts.js: 22 s)
 
 == the LISTFIX fixes on the page (app3/LISTFIX.md): gaps in Receipts and the rest
 e3_listfix: ALL PASS (32)
-(tests/e3_listfix.js: 25 s)
+(tests/e3_listfix.js: 27 s)
 
 == a card's gap across pay day (CARDGAP): Mako's shape from setup, cards typed 6 and 13 Dec, two rows in Receipts, the rows add up to each period's spent, Plan and Home agree, a reload
 e3_cardgap: ALL PASS (41)
-(tests/e3_cardgap.js: 17 s)
+(tests/e3_cardgap.js: 18 s)
 
 == qc-north-star B1 to B3: the "?" on Home's Free to spend card, no stale Undo bar after a restore, the chat box whole at 320
 e3_nsfix: ALL PASS (7)
-(tests/e3_nsfix.js: 7 s)
+(tests/e3_nsfix.js: 8 s)
 
 == Check your bank asks whether a card's unticked payment went out when the card shows far less than the app had; Yes ticks it (M11, M27)
 e3_cardpay: ALL PASS (25)
-(tests/e3_cardpay.js: 19 s)
+(tests/e3_cardpay.js: 20 s)
 
 == Receipts' two doors at 320 (M22): Money went out and Money came in, Refund and Moved under them, one of each door saved
 e3_doors: ALL PASS (13)
@@ -371,27 +375,39 @@ e3_doors: ALL PASS (13)
 
 == Moved with one account of your own says a second account is needed, no empty To list and no Save (K18)
 e3_moved1: ALL PASS (14)
-(tests/e3_moved1.js: 4 s)
+(tests/e3_moved1.js: 5 s)
 
 == Moved: To follows From, money can be moved into the main bank (qc-numbers monthrule2 blocker 2)
 e3_moved2: ALL PASS (14)
-(tests/e3_moved2.js: 6 s)
+(tests/e3_moved2.js: 7 s)
 
 == Receipts: Money in, a client payment or a gift (slice 6)
 e3_moneyin: ALL PASS (12)
-(tests/e3_moneyin.js: 5 s)
+(tests/e3_moneyin.js: 6 s)
+
+== Receipts: Money came in asks if it is an expected pay and ticks it (qc-novice B1)
+e3_payin: ALL PASS (24)
+(tests/e3_payin.js: 21 s)
+
+== Add an account asks "Did you move this money from <bank> after <day>?" Yes or No (qc-novice C6)
+e3_addask: ALL PASS (6)
+(tests/e3_addask.js: 4 s)
+
+== An account added as money moved in reads "not checked yet" on Home, Check your bank and to the assistant (qc-novice C7)
+e3_notchecked: ALL PASS (6)
+(tests/e3_notchecked.js: 7 s)
 
 == every amount box: a tap, click or Tab, or a form's own focus, selects, so typing replaces (screens/inputs.js)
 e3_amounts: ALL PASS (102)
-(tests/e3_amounts.js: 29 s)
+(tests/e3_amounts.js: 30 s)
 
 == a spend larger than what its account holds asks first, new or changed (north star F5)
 e3_bigspend: ALL PASS (9)
-(tests/e3_bigspend.js: 7 s)
+(tests/e3_bigspend.js: 8 s)
 
 == only the tapped tab's panel shows (every tab after every other, the sheets)
 e3_panels: ALL PASS (27)
-(tests/e3_panels.js: 10 s)
+(tests/e3_panels.js: 11 s)
 
 == a line added mid-period: one amount that counts now, the full one in a sentence, how far over
 e3_lineshare: ALL PASS (10)
@@ -399,11 +415,11 @@ e3_lineshare: ALL PASS (10)
 
 == the Plan tab
 e3_plan: ALL PASS (57)
-(tests/e3_plan.js: 23 s)
+(tests/e3_plan.js: 24 s)
 
 == Plan > Accounts after setup (M13, M23): every bank, cash and e-wallet listed, Add an account (new money as it is, moved money as a move), rename, its own Keep at least, Undo, after a reload
 e3_accounts: ALL PASS (20)
-(tests/e3_accounts.js: 7 s)
+(tests/e3_accounts.js: 8 s)
 
 == a yearly bill after setup (M13): Add a bill asks how often, once a year asks the month and day; its sheet changes them from a date; Undo; after a reload
 e3_billyear: ALL PASS (19)
@@ -415,7 +431,7 @@ e3_payfrom: ALL PASS (22)
 
 == Reminders keep each choice on this phone (M13, M61): after Close and a reload as left, and the sheet says so; a calendar already filled changes only with a new file
 e3_remkeep: ALL PASS (8)
-(tests/e3_remkeep.js: 7 s)
+(tests/e3_remkeep.js: 8 s)
 
 == Plan names every rhythm: two days, weeks with the weekday, every few months, set months, once a year, once, the last working day, no fixed day (slice 6)
 e3_rhythms: ALL PASS (16)
@@ -423,39 +439,39 @@ e3_rhythms: ALL PASS (16)
 
 == one figure, one name on Home, Receipts and Plan (labels from screens/names.js)
 e3_names: ALL PASS (20)
-(tests/e3_names.js: 4 s)
+(tests/e3_names.js: 5 s)
 
 == the ways out of the first screen and the made-up numbers
 e3_first: ALL PASS (26)
-(tests/e3_first.js: 8 s)
+(tests/e3_first.js: 9 s)
 
 == as a plain file:the first screen, the try book and its day box
 e3_file: ALL PASS (14)
-(tests/e3_file.js: 4 s)
+(tests/e3_file.js: 5 s)
 
 == setup3
 e3_setup: ALL PASS (46)
-(tests/e3_setup.js: 16 s)
+(tests/e3_setup.js: 17 s)
 
 == setup fixes from Mako's first run: pay after tax, rows removed, empty amounts, each section saved with Undo, today's pay landed, a reload half way
 e3_setupfix: ALL PASS (126)
-(tests/e3_setupfix.js: 98 s)
+(tests/e3_setupfix.js: 101 s)
 
 == a bank below zero typed at setup and at Check your bank, the amber line on Home, a reload (M47)
 e3_overdrawn: ALL PASS (40)
-(tests/e3_overdrawn.js: 19 s)
+(tests/e3_overdrawn.js: 20 s)
 
 == the phone's back button on every sheet, form and setup: it closes the top one, the app stays, typing is kept (K34, K35)
 e3_back: ALL PASS (59)
-(tests/e3_back.js: 34 s)
+(tests/e3_back.js: 35 s)
 
 == the Undo bar never sits over a sheet or form opened after it, and is back when that closes in time (K37)
 e3_undobar: ALL PASS (33)
-(tests/e3_undobar.js: 25 s)
+(tests/e3_undobar.js: 26 s)
 
 == the message band and its Undo are on screen where the person is, at 390, 320, 1300 and with the keyboard up, never over the button just pressed (qc-layout blocker 2, M14)
 e3_band: ALL PASS (50)
-(tests/e3_band.js: 19 s)
+(tests/e3_band.js: 20 s)
 
 == setup on a day the pay lands asks whether it is already in the bank figure (BV2.13; setup3 through answers3)
 e3_paytoday: ALL PASS (6)
@@ -463,23 +479,23 @@ e3_paytoday: ALL PASS (6)
 
 == reviewers' way to the assistant: openWithFakeAI on a plain copy (fake_ai_page.js)
 e3_fakeai_page: ALL PASS (15)
-(tests/e3_fakeai_page.js: 58 s)
+(tests/e3_fakeai_page.js: 60 s)
 
 == the setup chat walked through the real page with the fake model: Mako's shape to safe to spend 201,400 and Main bank 286,000 on 24 Nov, Undo the fill, a reload, one spend by chat and its Undo (AI first, slice 1 gate)
 e3_chatwalk: ALL PASS (43)
-(tests/e3_chatwalk.js: 19 s)
+(tests/e3_chatwalk.js: 20 s)
 
 == one set of setup answers before the book: a section saved on the setup screens goes into the chat's draft, its Undo too, the newest answer wins both ways, yen and dollars (qc-assistant run 4)
 e3_twodrafts: ALL PASS (29)
-(tests/e3_twodrafts.js: 27 s)
+(tests/e3_twodrafts.js: 28 s)
 
 == the assistant panel: the welcome as the first screen, the ways when the AI is off, the relay, cards with Undo and asking first, the bar and the column
 e3_chat: ALL PASS (80)
-(tests/e3_chat.js: 35 s)
+(tests/e3_chat.js: 36 s)
 
 == the setup chat's fill and its Undo: two tabs, the cloud copy held back while it can be undone (BV2.9)
 e3_fillundo: ALL PASS (22)
-(tests/e3_fillundo.js: 4 s)
+(tests/e3_fillundo.js: 5 s)
 
 == the assistant's error log (AI_JOIN_FIXES J): failed exchanges on this device only, no words or figures, Copy and Clear with Undo in Settings, kept after a reload, never in the book
 e3_ailog: ALL PASS (14)
@@ -495,15 +511,15 @@ e3_fillcard: ALL PASS (15)
 
 == the cloud copy turned on right after a setup by chat sends the first copy, and a second device with the code has the book (AI_JOIN_FIXES B; M61, M67)
 e3_cloudfirst: ALL PASS (8)
-(tests/e3_cloudfirst.js: 4 s)
+(tests/e3_cloudfirst.js: 5 s)
 
 == the assistant joined to the base, the real core on the real page (AI_JOIN_FIXES A): a bill changed by chat, a reload, Undo on the kept card; a job change by chat on 5 Jan and the period on 20 Mar
 e3_aijoin: ALL PASS (16)
-(tests/e3_aijoin.js: 11 s)
+(tests/e3_aijoin.js: 12 s)
 
 == two incomes on the 10th entered as one pay (M28): setup 20 Nov, 9 Dec, Check your bank on 10 Dec, hand-worked next pay, period and safe to spend
 e3_onepay: ALL PASS (24)
-(tests/e3_onepay.js: 7 s)
+(tests/e3_onepay.js: 8 s)
 
 == setup for the other lives: the country chosen, more accounts, pay rhythms, a second income on its own day, cards and bills from their account, once a year (slice 6)
 e3_setup6: ALL PASS (35)
@@ -527,11 +543,11 @@ e3_walk4: ALL PASS (8)
 
 == life C, no fixed pay (Kai, yen, Japan): setup 1 Dec to 2 Mar, hand-worked figures at every step (slice 6)
 e3_life_c: ALL PASS (33)
-(tests/e3_life_c.js: 28 s)
+(tests/e3_life_c.js: 29 s)
 
 == life A, every 2 weeks (Sam, dollars, weekends only): setup 7 Dec to 8 Mar, the pay changed to monthly, hand-worked figures at every step (slice 6)
 e3_life_a: ALL PASS (42)
-(tests/e3_life_a.js: 39 s)
+(tests/e3_life_a.js: 40 s)
 
 == life A given the next pay day: the period holding setup exists, Plan and Receipts show it, Free to spend 11 of 14 days (slice 6, qc-foundation blocker)
 e3_life_a2: ALL PASS (13)
@@ -543,27 +559,27 @@ e3_paychange: ALL PASS (18)
 
 == life D, two days a month changed to no fixed pay mid-period (Noa, dollars, weekends only): setup 1 Dec to 4 Jan, hand-worked figures and a reload at every check-in (slice 6b)
 e3_life_d: ALL PASS (33)
-(tests/e3_life_d.js: 31 s)
+(tests/e3_life_d.js: 32 s)
 
 == life B, the 15th and the last day, two banks and an e-wallet (Lia, pesos, the Philippines): setup 1 Dec to 1 Mar, the bank after the cards per bank, hand-worked figures at every step (slice 6)
 e3_life_b: ALL PASS (35)
-(tests/e3_life_b.js: 31 s)
+(tests/e3_life_b.js: 33 s)
 
 == the real-page walk, walk 4 run A: setup 24 Nov to 15 Feb, hand-worked figures at every step
 e3_walk: ALL PASS (80)
-(tests/e3_walk.js: 102 s)
+(tests/e3_walk.js: 107 s)
 
 == the walk again in Tokyo at 04:40 (every figure the same after a reload at each check-in)
 e3_walk: ALL PASS (80) Asia/Tokyo at 04:40
-(tests/e3_walk.js: 102 s)
+(tests/e3_walk.js: 107 s)
 
 == the walk again in Tokyo at 23:30 (every figure the same after a reload at each check-in)
 e3_walk: ALL PASS (80) Asia/Tokyo at 23:30
-(tests/e3_walk.js: 102 s)
+(tests/e3_walk.js: 107 s)
 
 == the real-page walk, the card gap step (CARDGAP): Mako's month across the pay on the 10th with the cards checked each week, safe to spend and the bank hand-worked at every step
 e3_walk_cardgap: ALL PASS (30)
-(tests/e3_walk_cardgap.js: 24 s)
+(tests/e3_walk_cardgap.js: 25 s)
 
 == the card gap walk again in Tokyo
 e3_walk_cardgap: ALL PASS (30)
@@ -583,19 +599,19 @@ e3_install: ALL PASS (32)
 
 == the private publish (a made-up path, a copy of public/ served by the worker's rules)
 e3_publish: ALL PASS (30)
-(tests/e3_publish.js: 4 s)
+(tests/e3_publish.js: 5 s)
 
 == two tabs on one device
 e3_tabs: ALL PASS (16)
-(tests/e3_tabs.js: 9 s)
+(tests/e3_tabs.js: 8 s)
 
 == a sheet left open while the same thing changes in another tab: its save is refused, nothing is written, it is shown again as it is (STALE_SHEET_PLAN, M61)
 e3_stalesheet: ALL PASS (15)
-(tests/e3_stalesheet.js: 10 s)
+(tests/e3_stalesheet.js: 11 s)
 
 == Settings and the backup file
 e3_backup: ALL PASS (45)
-(tests/e3_backup.js: 17 s)
+(tests/e3_backup.js: 16 s)
 
 == the code word for the AI: the box, a word that does not match, Settings, never in the book
 e3_invite: ALL PASS (39)
@@ -607,7 +623,7 @@ e3_remind: ALL PASS (22)
 
 == the cloud copy, two devices through the page (local fake vault)
 e3_cloud: ALL PASS (35)
-(tests/e3_cloud.js: 11 s)
+(tests/e3_cloud.js: 10 s)
 
 == the cloud copy's base is saved only with its book: a refused save, a refused write then no signal (CS3, M61, M20)
 e3_cloudbase: ALL PASS (16)
@@ -615,7 +631,7 @@ e3_cloudbase: ALL PASS (16)
 
 == the cloud copy taken by itself: a timed check of the revision, coming back into view, two tabs, the timer stopped and said once, a killed page (CS2, B1, B3)
 e3_cloudtake: ALL PASS (28)
-(tests/e3_cloudtake.js: 95 s)
+(tests/e3_cloudtake.js: 96 s)
 
 == the cloud copy sent by itself: at once, a burst 5 seconds after, never two in 10 seconds, leaving with a big copy, the day's guard (CS1)
 e3_cloudsend: ALL PASS (20)
@@ -627,7 +643,7 @@ e3_cloudhold: ALL PASS (21)
 
 == every remove on the screens asks first: counted in src, and the four that change money walked (M6, M61)
 e3_removes: ALL PASS (26)
-(tests/e3_removes.js: 12 s)
+(tests/e3_removes.js: 13 s)
 
 == "which to keep": each row says its amount and which device, and the pick ends on both devices (M20)
 e3_cloudwhich: ALL PASS (26)
@@ -648,7 +664,7 @@ e3_cloudstatus: ALL PASS (19)
 
 == a backup restored with the cloud copy on reaches the other device, and so does Put it back; Put it back and Drop it ask first (local fake vault)
 e3_restore: ALL PASS (49)
-(tests/e3_restore.js: 18 s)
+(tests/e3_restore.js: 19 s)
 
 == the service worker (precache, offline, 3 s timeout, a new build)
 e3_sw: ALL PASS (9)
@@ -672,13 +688,13 @@ e3_layout: ALL PASS (99)
   NOT WALKED stmt3_ai.js #a3WordIn: the code word box, shown only when the page's server asks for one (tests/e3_invite.js)
 SHEETS: 5 in the page shell (a3Stmt, a3Set, a3Setup, a3Rem, a3Check), 38 places walked
 e3_boxwalk: ALL PASS (305)
-(tests/e3_boxwalk.js: 188 s)
+(tests/e3_boxwalk.js: 190 s)
 
 == on every screen and sheet (QC_ROLES scripts c): Ask one tap away, no page errors, and no network calls with the cloud copy off and the assistant not used; its KNOWN faults are in tests/QCSCRIPTS_FOUND.md
 
 PLACES: 36 walked (Ask one tap away, page errors, network calls); the assistant's own "is the AI on" calls: 0; other calls: 0
 e3_always: ALL PASS (83)
-(tests/e3_always.js: 99 s)
+(tests/e3_always.js: 100 s)
 
 == walk/ holds only its README and the kept walks v1 to v4 (the gate is tests/e3_walk.js)
 walk: tidy
@@ -757,5 +773,5 @@ walk: tidy
 [x] Setup, short (setup3): bank today, pay with a second income, cards with a close day or not sure, bills, the minimum; through build_book and the store  (tests/e3_setup.js: PASS)
 [x] The layout holds at 320, 390, 412 and 1300 wide (M52, M33): a long unbroken word or a very big figure wraps inside its card, a drop-down wraps its words instead of cutting them, a date box shows its whole date, the help mark and every other thing to tap is at least 44 by 44, and no screen scrolls sideways; counted on every main screen and sheet with a stress book and on a new device  (tests/e3_layout.js: PASS)
 
-(full level, 3 at a time, 863 s in all)
+(full level, 3 at a time, 911 s in all)
 ALL GOOD
