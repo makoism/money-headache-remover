@@ -68,6 +68,7 @@ const saved = p => p.evaluate(async () => { const s = await BurrowStore.open(); 
     await p.select('#pl-acct', SAVINGS); await btn('Save'); await T.w(500);
     bk = await saved(p);
     ck('Rent is paid from Savings', bk.schedules.find(s => s.id === rent).acct === SAVINGS, JSON.stringify(bk.schedules.find(s => s.id === rent).acct));
+    ck('[LANE J] Plan\'s Rent row says it is paid from Savings, as a card row does', /Rent.*from Savings/.test(await row(`#a3Plan [data-bill="${rent}"]`) || ''), await row(`#a3Plan [data-bill="${rent}"]`));
     ck('Undo puts the main bank back', await undo()); await T.w(500);
     ck('after Undo: from the main bank', (await saved(p)).schedules.find(s => s.id === rent).acct === bank);
     /* after a reload */

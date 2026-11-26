@@ -10757,7 +10757,7 @@ function drawPlan3() {
     const words = a.perPay == null ? `Set money aside ahead: ${f(a.amount)} by ${day3(a.due, yr)}` : `Set aside about ${f(a.perPay)} each pay to have ${f(a.amount)} ready by ${day3(a.due, yr)} (${a.pays === 1 ? '1 pay' : a.pays + ' pays'} before it)`;
     return `<div class="a3-helprow" data-fig="ahead" data-sched="${esc3(s.id)}"><span class="when">${esc3(words)}</span><button type="button" class="a3-btn" data-ahead="${esc3(s.id)}">Make a goal for it</button></div>`;
   };
-  const bills = scheds.filter(s => s.kind === 'bill').map(s => plRow3(`data-bill="${esc3(s.id)}"`, `${esc3(s.name)}<br><span class="when">${ruleWords(view[s.id])}, ${nextWords(view[s.id], s.cur)}${view[s.id].ends && view[s.id].next ? ', last on ' + esc3(day3(view[s.id].ends, yr)) : ''}</span>`, plFig3((view[s.id].outstanding || []).length ? 'schedules.*.outstanding.0.amount' : 'schedules.*.next.amount', rowAmount(view[s.id]), s.cur), aheadOf(s)));
+  const bills = scheds.filter(s => s.kind === 'bill').map(s => plRow3(`data-bill="${esc3(s.id)}"`, `${esc3(s.name)}<br><span class="when">${ruleWords(view[s.id])}, ${nextWords(view[s.id], s.cur)}${view[s.id].ends && view[s.id].next ? ', last on ' + esc3(day3(view[s.id].ends, yr)) : ''}${s.acct ? `, from ${esc3(E3.nameOf(s.acct))}` : ''}</span>`, plFig3((view[s.id].outstanding || []).length ? 'schedules.*.outstanding.0.amount' : 'schedules.*.next.amount', rowAmount(view[s.id]), s.cur), aheadOf(s)));
   out.push(`<section class="a3-card" data-card="plan-bills"><h2>Pay and bills</h2>
     ${pays.length ? `<ul class="a3-rows a3-rclist">${pays.join('')}</ul>` : ''}
     ${bills.length ? `<ul class="a3-rows a3-rclist">${bills.join('')}</ul>` : '<p class="a3-sub">No bills yet</p>'}
