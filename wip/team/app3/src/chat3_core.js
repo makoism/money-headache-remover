@@ -714,7 +714,8 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       if (!rec || (rec.type !== 'card' && rec.type !== 'loan')) return { bad: 'pay_off is for a card or a loan' };
       const r0 = LA.lookahead(book, today), k = rec.type === 'card' ? r0.cards[id] : r0.owed[id], owed = k ? k.owedNow : 0;
       if (!(owed > 0)) return { bad: 'nothing is owed on ' + rec.name };
-      return { kind: 'payOff', args: [id], text: `Pay off ${rec.name}: ${m(owed, rec.cur)} from ${nm(rec.payFrom || mainAcct)}, today`, amount: owed, figs: [owed] };
+      /* [qc-controls confirm 6] the amount is the app's own figure, never the AI's guess: it asks whether they paid it all */
+      return { kind: 'payOff', args: [id], text: `Pay off ${rec.name}: ${m(owed, rec.cur)} from ${nm(rec.payFrom || mainAcct)}, today`, amount: owed, figs: [], paid: true };
     }
     if (what === 'change_card' || what === 'change_loan') {
       const id = ref(a.account || a.ref, 'A'), rec = id && acctRec(id), card = what === 'change_card';
@@ -973,7 +974,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
          type is a guess and asks first too */
       const safe = LA.lookahead(book, today).safeToSpend.headline;
       /* [qc-foundation F2] the size is the step's real figure: a new pay and new money count too */
-      const big = plan.some(s => s.amount && s.amount > safe), del = plan.some(s => s.del);
+      const big = plan.some(s => s.amount && s.amount > safe), del = plan.some(s => s.del), paid = plan.some(s => s.paid);
       /* every figure in a step (an amount, a target, what is owed, even 0) must be one the person typed, in their own
          messages since the last written change, and not used up by a change already written [M6] */
       const plain = plainOf(book, today), typedN = typedLeft(state);
@@ -983,7 +984,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
          zero never goes in silently */
       const far = farFigures(plan, book, today, deps, safe);
       const card = { kind: 'change', status: 'ask', ver: verNow, lines: plan.map(s => s.text + (far.has(s) ? '. ' + far.get(s) : '') + (guess.includes(s) ? ' (my guess)' : '')), rows: [], plan, dropped, left };
-      if (del || big || far.size || guess.length) {
+      if (del || big || far.size || guess.length || paid) {
         /* [qc-controls confirm 3] a step the door would refuse is refused now, never after a question and a "Do it" */
         const no = firstRefusal(plan, book, today, deps);
         if (no) {
@@ -991,8 +992,8 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
           addTurn(state, { who: 'card', text: card.lines.join('. '), at: deps.told(), card }, shown);
           return 'Not changed: ' + card.why + (dropped.length ? ' Left out: ' + dropped.join('; ') : '');
         }
-        card.ask = del ? 'delete' : big ? 'large' : far.size ? 'gap' : 'guess';
-        card.why = del ? 'this removes something' : big ? 'this is more than safe to spend' : far.size ? 'the figure is far from what the app expected' : 'I guessed an amount';
+        card.ask = del ? 'delete' : big ? 'large' : far.size ? 'gap' : guess.length ? 'guess' : 'paid';
+        card.why = del ? 'this removes something' : big ? 'this is more than safe to spend' : far.size ? 'the figure is far from what the app expected' : guess.length ? 'I guessed an amount' : 'it is written as paid today: only if they really paid it all';
         did(frame);
         addTurn(state, { who: 'card', text: card.lines.join('. '), at: deps.told(), card }, shown);
         return resultOf(card) + (dropped.length ? ' Left out: ' + dropped.join('; ') : '');

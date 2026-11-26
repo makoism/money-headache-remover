@@ -328,6 +328,14 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const c4 = r4.shown.find(x => x.who === 'card');
     ok(c4.card.status === 'done' && c4.card.lines[0] === 'Reopen Wallet. ' + words && /^It comes back at ¥0\. Type what is in it now at Check your bank$/.test(words), c4.card.lines.join(' | ') + ' | ' + words);
   });
+  await t('[qc-controls confirm 6] by asking, pay off asks "did you pay it all" and never marks the app\'s own figure as the AI\'s guess', async () => {
+    const { hp, d, st } = await wallet(R => [() => say('', [call('change', { steps: [{ do: 'pay_off', account: R.cb }] })]), say('Tap Do it if you paid it.')]);
+    const r8 = await K.turn(st, 'I paid off card B', d);
+    const c8 = r8.shown.find(x => x.who === 'card');
+    ok(c8.card.status === 'ask' && c8.card.ask === 'paid' && !/my guess/.test(c8.card.lines.join(' ')) && /Pay off Card B: ¥23,000/.test(c8.card.lines[0]), JSON.stringify(c8.card));
+    const k8 = await K.confirm(r8.state, c8.id, d); ok(k8.ok, JSON.stringify(k8));
+    eq(L.lookahead(hp.book, '2026-11-24').cards[hp.book.accounts.find(a => a.name === 'Card B').id].owedNow, 0);
+  });
   await t('[E3, M3, M13, M27] cards and loans by asking: add_loan, change_card, change_loan, pay_off (asks first: the amount was never typed), close_account on a card at zero, remove_account on a loan added by mistake', async () => {
     const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
     const L = require(E + 'lookahead.js');
