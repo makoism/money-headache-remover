@@ -1,0 +1,5 @@
+Written by the coordinator, 26 Nov 2026 09:25 JST. A confirming run for qc-foundation (see QC_COMMON.md, "A confirming run").
+Earlier report: foundation.md in this folder (FAIL, ba60df02: F1 a plan amount set mid month counted its share from that day but the spends from the 1st, so Kai read "22,904 over" seconds after setting 60,000 on 18 Dec; F2 the engine answer had no month figures for lines with no fixed pay, so the assistant read "None." and could not change a line).
+Ruled (coordinator 16, 26 Nov 08:50 JST, CA10): spends count from the same day as the share, the day the amount was added; earlier spends stay in the bank figure and Receipts, shown as before the plan.
+Changed since: c2c2d543 (F2: res.month, and the assistant says "each month" for a person with no fixed pay); 660ee131 (CA10, with Kai's test); a19cc32e (an ended line no longer holds its name).
+Check: F1 as Kai and with a Food line added mid month, including a spend on the day the amount is added and Undo of the amount; F2 through the assistant (read and change a line for a person with no fixed pay); that a person paid on a fixed day is unchanged byte for byte. Then stop. Stop at 60k tokens.
