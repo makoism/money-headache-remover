@@ -72,6 +72,7 @@ const FORMS = {
 const NOT_WALKED = {
   'checkin3.js #a3l${i}': 'the day a late pay landed: shown only for a pay that was not seen on its day (tests/e3_walk.js)',
   'checkin3.js #a3cm${i}': 'the day a pay ticked after its due day came in: shown only after Another day is tapped (tests/e3_paycame.js)',
+  'checkin3.js #a3ak${i}': 'the day the bank app shows for an item a figure did not list: shown only after a figure that listed nothing, then Pick the day (tests/e3_listed.js)',
   'checkin3.js data-gapspend': 'a tick, shown once the bank figure typed is lower than expected (tests/e3_checkgap.js)',
   'checkin3.js data-gapline': 'a list, shown once the bank figure typed is lower than expected (tests/e3_checkgap.js)',
   'settings3.js #a3BkFile': 'the hidden file chooser behind Restore from a file (tests/e3_backup.js)',
