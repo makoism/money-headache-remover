@@ -119,6 +119,28 @@ const DAYS = ['2026-11-23', '2026-12-09', '2026-12-10', '2026-12-11', '2026-12-1
     ck('N26: no page errors', o.errs.length === 0, o.errs.join(' | '));
     await o.b.close();
   }
+  /* [coordinator 18, item 3; M51] Kai, no fixed pay (made-up yen, as tests/ask3_core.test.js): Main bank 2,000,000, Free
+     to spend 60,000 a month set on 18 Dec, so 27,096 of it this month caps safe to spend. Home's reason line and the sum
+     under it say "this month", never "this period" */
+  {
+    const I = require('../../engine/ids.js'), BB = require('../../engine/build_book.js'), KDAY = '2026-12-18', newId = I.idMaker('k4i9pz');
+    const out = BB.buildBook({ day: '2026-11-01', told: '2026-11-01T09:00:00.000+09:00', currency: 'JPY', country: 'JP',
+      banks: [{ key: 'bank1', name: 'Main bank', amount: 2000000, main: true, min: null }],
+      pays: [{ key: 'pay1', name: 'Work', bank: 'bank1', amount: null, every: 'none' }], cards: [], bills: [], free: null }, { newId });
+    const kb = out.book || out, at = KDAY + 'T20:00:00.000+09:00';
+    kb.plan.shares = (kb.plan.shares || []).filter(x => x.free == null).concat([{ id: newId(), from: KDAY, cur: 'JPY', per: { free: 'month' }, free: 60000, goals: {}, told: at, at, by: 'k4i9pz' }]);
+    const prof = require('fs').mkdtempSync(require('os').tmpdir() + '/a3kai-');
+    const o = await T.open({ profile: prof });
+    await o.p.goto(T.URL0 + '?today=' + KDAY); await T.w(300);
+    await o.p.evaluate(async bk0 => { const s = await BurrowStore.open(); await s.save(bk0, { full: true }); s.db && s.db.close(); }, kb);
+    await o.p.reload(); await T.w(500);
+    const say = await o.p.$eval('#a3Home [data-fig=capsay]', e => e.textContent.replace(/\u2060/g, '')).catch(() => null);
+    ck('no fixed pay: Home\'s reason line says "this month"', say === 'Your accounts can spare ¥1,937,858, but only ¥27,096 of your Free to spend is left this month, so ¥27,096 is safe to spend', say);
+    const home = await o.p.$eval('#a3Home', e => e.textContent);
+    ck('no fixed pay: Home never says "this period"', !/this period/.test(home), (home.match(/.{0,60}this period.{0,20}/) || [''])[0]);
+    ck('no fixed pay: no page errors', o.errs.length === 0, o.errs.join(' | '));
+    await o.b.close();
+  }
   const old = await T.readOld(p);
   /* [M36; qc-data-safety run 2] a bank figure dated after this device's day (another device a day ahead): never a
      negative age. It says the day it was checked and nothing untrue */

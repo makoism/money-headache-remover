@@ -200,6 +200,13 @@ const ctxOf = h => ({ book: h.book, today: DAY });
     ok(!/Free to spend: not set yet/.test(s), s.match(/Free to spend[^\n]*/g).join(' / '));
     ok(s.includes('Free to spend this month: ¥27,096 (part of ¥60,000 a month, for the days left), ¥27,096 left.'), (s.match(/Free to spend this[^\n]*/) || [])[0]);
   });
+  /* [coordinator 18, item 3; M51] with no fixed pay the words say "this month", never "this period" */
+  await t('[no fixed pay] Kai on 18 Dec: the cap sum says "left this month", never "this period"', async () => {
+    const b = kai(), r = L.lookahead(b, KDAY), s = K.summary(b, KDAY).text;
+    eq(r.safeToSpend.whyParts[1].label, 'more than Free to spend left this month');
+    ok(s.includes('held back: Free to spend has only ¥27,096 left this month'), (s.match(/Why safe[^\n]*/) || [])[0]);
+    ok(!/this period/.test(s), (s.match(/[^\n]*this period[^\n]*/) || [])[0]);
+  });
   await t('[no fixed pay] Kai on 18 Dec: the change card for a 2,000 spend shows Free to spend left 27,096 then 25,096', async () => {
     const b = kai(), c = K.check({ answer: 'x', actions: [{ do: 'log_spend', amount: 2000 }] }, K.summary(b, KDAY).refs, { book: b, today: KDAY });
     const p = await K.preview(b, c.steps, { today: KDAY, told: () => KDAY + 'T21:00+09:00', newId: I.idMaker('ask3kv', Math.random) });
