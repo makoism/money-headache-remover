@@ -10,6 +10,9 @@ Keep-going task: trig_01ETjeofWVuqzY2qbB7xDS4H (hourly, bound to LANE M). Switch
 - Slice 10: plan revised eb0bb168; confirm2 file cd619e4a by coordinator; confirming qc-foundation RUNNING (writes nothing: save its reply as qc-foundation_confirm2.md on controls-9). Then build after PASS: merge lane/amounthist first.
 - controls-9 follow-ups: DONE a1f895ad statements to Home Add statements + Keep at least on map. TO DO: change cards show own before/after + why line; failed call once plainly, no network says connection down; setup Q4 one thing at a time + second bank figure.
 - Slices 7/8 (controls-8): reviewers after 2-5 fixes merged up.
+- Queued (coordinator 17): qc-numbers B1 on candidate (ai-join 2256e94e, qc_reports/2026-11-25_ai_first/qc-numbers.md): dollars "$300" next to "$300.00": every screen through the one formatter + a check3 script failing on an amount written two ways. Maybe B4 ("1,0000" should ask) if MAIN 22 does not.
+- Coordinator 17 ruling: amounthist's rule covers money in too (removed/corrected money-in row held by an earlier check keeps its amount in that period): fold into CHECKFIX_PLAN if it touches slice 10 (after confirm 2 reply). Loan scope.txt: ask with commit + M lines left when quick is green. LANE L amounthist tip ab42da59 (will change for qc-numbers fixes).
+- controls-9: failure words change (shared failText in chat3_core, stmt3_ai codes offline/said) uncommitted in c9, quick RUNNING.
 
 # Below: LANE J's page at handoff
 
