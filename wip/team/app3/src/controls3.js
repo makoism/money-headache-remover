@@ -10,7 +10,7 @@
   'use strict';
   const DOOR_KINDS = ['add', 'change', 'end', 'remove'];
   /* PLAN3W exports that are not steps (they list what a pay change would ask about) */
-  const HELPERS = ['linesEachPay', 'linesEachMonth'];
+  const HELPERS = ['linesEachPay', 'linesEachMonth', 'removeCheckWords', 'latestCheckOf'];
   /* writes that go through act3 without a PLAN3W step: the check-in writer, a statement import, setup's fill */
   const OTHER_ACTIONS = ['checkIn', 'statementsAdded', 'fill', 'undo'];
   const ROWS = [
@@ -71,8 +71,8 @@
       remove: { action: 'remove', screen: 'Receipts > the record > Remove', ai: 'remove' } },
     { kind: 'bank check', list: 'checkins',
       add: { action: ['checkIn', 'addRecords'], screen: 'Check your bank', ai: ['landed', 'bank_figure', 'card_figure'] },
-      change: { action: 'changeCheck', todo: 'E8' },
-      remove: { action: 'removeCheckin', todo: 'E8' } },
+      change: { action: 'changeCheck', todo: 'later: CHECKFIX slice 10, the Checks sheet next' },
+      remove: { action: 'removeCheck', todo: 'later: CHECKFIX slice 10, the Checks sheet next' } },
     { kind: 'statement import',
       add: { action: 'statementsAdded', screen: 'Home > Add statements', ai_todo: 'later: reading files in the chat' },
       remove: { action: 'removeImport', todo: 'later: CONTROLS_PLAN slice 11' } },

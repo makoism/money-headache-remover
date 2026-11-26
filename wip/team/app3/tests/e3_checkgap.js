@@ -5,8 +5,9 @@
    1. Under the bank box: "Expected now ¥387,400" with "last checked ¥286,000 on 20 Nov" beside it.
    2. Typed 386,550: card A's close day is not sure, so first "Was Card A's payment ¥54,000?" (BK4); answered yes,
       "¥850 more left your bank than you logged. It counts as spending", with an option to log it as a spend on a line. Saved without it: the Undo bar says the same, and the engine's gap is 850.
-   3. Typed 386,550 again with "log it as a spend" on Free to spend: one step through act3 (the check and the spend),
-      dated 10 Dec and marked inside the figure (dayInside), the engine's gap is 0, Receipts lists the 850 spend on 10 Dec, Undo takes both back.
+   3. Typed 386,550 again with "log it as a spend" on Free to spend: [CHECKFIX F2] no fixed spend is written; the check-in
+      keeps the place picked (fillerPlace; Free to spend is where a gap goes when nothing is picked), so the engine's gap
+      of 850 counts there and follows any later change of either check. Undo takes the check-in back.
    4. Typed 388,250: "¥850 more came into your bank than you logged", never spending (a gain goes to the gain question).
    5. A card: card B was 23,000 at setup and is not paid until 11 Dec, so the app expects 23,000. Typed 23,850: "¥850
       more on Card B than you logged. It counts as spending"; typed 22,150: "¥850 less on Card B than the app had. It
@@ -70,10 +71,10 @@ async function typeIn(p, sel, v) { await p.tap(sel); await p.keyboard.type(v); a
   const out3 = await view().then(({ c, r }) => ({ bank: r.accounts[bank].bank, gap: r.accounts[bank].fillers.slice(-1)[0].amount, spends: c.events.filter(e => e.k === 'spend' && !e.gone && e.date === DAY && !(e.settles || []).length).map(e => [e.a, e.date, e.line, e.dayInside]) }));
   { const c = await kept(), ids = c.events.filter(e => String(e.id).startsWith('set:')).map(e => e.id);
     ck('a check-in after an undone one: each set: record once, live again, no clash', ids.length === new Set(ids).size && c.events.filter(e => String(e.id).startsWith('set:') && e.date >= '2026-11-21').every(e => !e.gone), JSON.stringify(ids.length)); }
-  ck('the engine: no gap left, the bank is 386,550, one 850 spend on Free to spend on 10 Dec, inside the figure (dayInside, BK4)', out3.gap === 0 && out3.bank === 386550 && JSON.stringify(out3.spends) === JSON.stringify([[850, DAY, 'free', true]]), JSON.stringify(out3));
+  ck('[F2] the engine: the gap of 850 stays the gap (it counts on Free to spend), the bank is 386,550, no fixed spend written', out3.gap === 850 && out3.bank === 386550 && JSON.stringify(out3.spends) === '[]', JSON.stringify(out3));
   await p.click('#a3Msg .burrow-msg button'); await T.w(400);
   const back = await kept().then(c => ({ spends: c.events.filter(e => e.k === 'spend' && !e.gone && e.date === DAY && !(e.settles || []).length).length, checks: c.events.filter(e => e.k === 'check' && !e.gone && e.date === DAY).length }));
-  ck('Undo takes the check and the spend back together', back.spends === 0 && back.checks === 0, JSON.stringify(back));
+  ck('Undo takes the check-in back', back.spends === 0 && back.checks === 0, JSON.stringify(back));
   /* 4 */
   await openSheet(p);
   await typeIn(p, `[data-bankfig="${bank}"]`, '388,250');

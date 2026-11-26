@@ -660,7 +660,129 @@
     return id;
   }
 
-  const api = { addPay, addAccount, changeAccount, closeAccount, reopenAccount, removeAccount, payOff, setKeep, setCountry, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, removeSchedule, addGoal, changeGoal, setAside, takeOut, removeGoal, addLoan, addCard, changeOwed, closeLoan };
+  /* ---- [CHECKFIX_PLAN, slice 10; M13, M14, M36, M37, M45, M61] a bank or card check changed or removed later ----
+     changeCheck(w, checkId, { amount?, place? }): any past check of a live, open account. The figure goes through the
+     door's edit, so the check keeps `was` with this step's told and the engine counts the change on the day of the fix in
+     the gaps beside it (FB); its check-in's typedA follows; a held large gain's answer is cleared. An opening check
+     changes with its `open` (F1). `place` is where that check's gap goes: a line or goal id, or null for Free to spend; a
+     check-in written after F2 keeps it in its fillerPlace, an older one's fixed gap spend has its line changed. A check
+     the engine brought back (B1) is put back first, in the same step. Statement checks and closed accounts are refused.
+     removeCheck(w, acct): only the account's latest check, written at Check your bank. Marks gone with this one step
+     (FA): the check, an old fixed gap spend logged with it for that account, and the ticks it takes back (payments from
+     that account; a card payment stays while that card's own figure in the check-in stays). The check-in record is never
+     edited, and is marked gone only when nothing in it is live. No history (`was`): it never happened. */
+  const isStmtCheck = c => !!c.stmt || /^(stmt|imp):/.test(String(c.grp || '')) || /^imp:/.test(String(c.id || ''));
+  const revivedIds = w => { const r = G.revive(w.book).book, ids = new Set(); for (const e of r.events || []) if (e && !e.gone) ids.add(e.id); for (const k of r.checkins || []) if (k && !k.gone) ids.add(k.id); return ids; };
+  const checkinOf = (w, c) => A3.listOf(w.book, 'checkins').find(k => k && k.id === c.grp && (k.figures || []).some(f => f && f.check === c.id));
+  const openOf = (w, c) => (w.book.events || []).find(e => live(e) && e.k === 'open' && e.acct === c.acct && e.date === c.date && e.grp != null && e.grp === c.grp);
+  /* an old fixed gap spend: the spend Check your bank logged with the check-in for that account (BZ B) */
+  const gapSpendOf = (w, ci, acct) => (w.book.events || []).find(e => live(e) && e.k === 'spend' && e.grp === ci.id && e.acct === acct && e.dayInside);
+  const SMF_ = (w, a, acct) => SMF.format(a, ((w.book.accounts || []).find(y => y.id === acct) || {}).cur || home(w));
+  function checkOk(w, id, what) {
+    const c = (w.book.events || []).find(e => e && e.id === id && e.k === 'check');
+    if (!c) bad('That check is not there any more');
+    const a = (w.book.accounts || []).find(y => live(y) && y.id === c.acct);
+    if (!a) bad('That account is not there any more');
+    if (a.closed) bad('Reopen ' + a.name + ' first');
+    if (isStmtCheck(c)) bad(what === 'remove' ? 'This came from your statement. Remove the statement instead' : 'This figure came from your statement of ' + SN3.dayLabel(c.stmtDate || c.date, false) + '. Change it there');
+    if (c.gone) {
+      /* [B1] a check another device's later check brought back is live only in the engine's copy: put back first */
+      if (!revivedIds(w).has(c.id)) bad('That was removed. Undo the removal first');
+      const g = c.goneBy;
+      for (const n of ['events', 'checkins']) for (const r of A3.listOf(w.book, n).slice()) if (r && r.gone && r.goneBy === g) w.restore(n, r.id);
+    }
+    return { c, a };
+  }
+  function changeCheck(w, id, x) {
+    const { c, a } = checkOk(w, id, 'change'), own = !!OWN_KINDS[a.type];
+    let changed = false;
+    if (x.amount !== undefined && x.amount !== null && x.amount !== '') {
+      /* [M47] a bank can be below zero, a card or loan figure is zero or more */
+      if (!Number.isInteger(x.amount) || (!own && x.amount < 0)) bad(own ? 'Type the figure your bank showed' : 'Type what was on it, zero or more');
+      if (x.amount !== c.a || c.gain) {
+        const o = openOf(w, c), ci = checkinOf(w, c);
+        if (o && !ci) {
+          /* [F1] an opening: open.a and the check's a together; one opened at 0 and filled by a move is changed at the move */
+          if (o.a === 0 && (w.book.events || []).some(e => live(e) && e.k === 'transfer' && e.acct2 === c.acct && e.grp === c.grp)) {
+            const mv = (w.book.events || []).find(e => live(e) && e.k === 'transfer' && e.acct2 === c.acct && e.grp === c.grp);
+            bad('It came from ' + nameOf(w, mv.acct) + ': change that move instead');
+          }
+          if (x.amount !== c.a) w.edit('events', o.id, { a: x.amount });
+        }
+        w.edit('events', c.id, Object.assign(x.amount !== c.a ? { a: x.amount } : {}, c.gain ? { gain: null } : {}));
+        if (ci) w.edit('checkins', ci.id, { figures: ci.figures.map(f => (f && f.check === c.id ? Object.assign({}, f, { typedA: x.amount }) : f)) });
+        changed = true;
+      }
+    }
+    /* "Was that figure right?" Yes: a held large gain is answered right (SCHEMA 7.3) */
+    if (x.right === true) { if (c.gain === 'right') bad('Nothing changed'); w.edit('events', c.id, { gain: 'right' }); changed = true; }
+    if (x.place !== undefined) {
+      const ci = checkinOf(w, c);
+      if (!ci) bad('The gap at this check has no place of its own. It goes on Free to spend');
+      if (!own) bad('A card\'s gap goes on Free to spend');
+      const to = x.place === 'free' || x.place === '' ? null : x.place;
+      if (to != null && !A3.listOf(w.book, 'budgets').some(l => live(l) && l.id === to) && !(w.book.places || []).some(g => live(g) && g.id === to)) bad('That line is not in your plan any more. Pick another');
+      const sp = gapSpendOf(w, ci, c.acct);
+      if (sp) {
+        /* an older check-in logged the gap as a spend: its line changes, unless it was changed by hand since */
+        if (sp.at && ci.at && sp.at > ci.at) bad('The spend found at this check was changed on Receipts. Change it there');
+        const was = sp.place || sp.line || 'free', now = to || 'free';
+        if (was !== now) { w.edit('events', sp.id, to && (w.book.places || []).some(g => g.id === to) ? { place: to, line: null } : { line: now, place: null }); w.edit('checkins', ci.id, {}); changed = true; }
+      } else {
+        const was = (ci.fillerPlace || {})[c.acct] || null;
+        if (was !== to) {
+          const fp = Object.assign({}, ci.fillerPlace || {}); if (to) fp[c.acct] = to; else delete fp[c.acct];
+          w.edit('checkins', ci.id, { fillerPlace: Object.keys(fp).length ? fp : null });
+          changed = true;
+        }
+      }
+    }
+    if (!changed) bad('Nothing changed');
+    return c.id;
+  }
+  /* the account's latest check (by date, then told), statement checks counted, as the engine reads the book */
+  const latestOf = (w, acct) => CK.latestCheck(G.revive(w.book).book, acct);
+  /* what removeCheck would take: { c, ci, gap, ticks, kept: [card names whose payment stays] } (also for its question) */
+  function removalOf(w, acct) {
+    const a = (w.book.accounts || []).find(y => live(y) && y.id === acct);
+    if (!a) bad('That account is not there any more');
+    const c = latestOf(w, acct);
+    if (!c) bad(a.name + ' has no check to remove');
+    if (a.closed) bad('Reopen ' + a.name + ' first');
+    if (isStmtCheck(c)) bad('This came from your statement. Remove the statement instead');
+    const ci = checkinOf(w, c);
+    if (!ci || (ci.gone && !revivedIds(w).has(ci.id))) bad('This is where ' + a.name + ' started in the app. Change its figure instead');
+    const evs = (w.book.events || []).filter(e => live(e) && e.grp === ci.id);
+    const figured = new Set(evs.filter(e => e.k === 'check').map(e => e.acct));
+    const kept = [], ticks = [];
+    for (const e of evs) {
+      if (!(ci.settled || []).includes(e.id)) continue;
+      const from = e.k === 'repay' ? e.acct : e.k === 'in' || e.k === 'spend' ? e.acct : null;
+      if (from !== acct) continue;
+      if (e.k === 'repay' && e.acct2 && figured.has(e.acct2)) { kept.push(nameOf(w, e.acct2)); continue; }   // [F3]
+      ticks.push(e);
+    }
+    return { a, c, ci, gap: gapSpendOf(w, ci, acct), ticks, kept };
+  }
+  function removeCheck(w, acct) {
+    let r = removalOf(w, acct);
+    if (r.c.gone) { checkOk(w, r.c.id, 'remove'); r = removalOf(w, acct); }   // [B1] brought back by the engine: put back first, then removed
+    const opts = { withCheckIn: true };   // [FD2] removed with its check-in: no history
+    w.remove('events', r.c.id, opts);
+    if (r.gap) w.remove('events', r.gap.id, opts);
+    for (const e of r.ticks) w.remove('events', e.id, opts);
+    if (!(w.book.events || []).some(e => live(e) && e.grp === r.ci.id)) w.remove('checkins', r.ci.id);
+    return r.c.id;
+  }
+  /* the question before a remove (M6), in the plan's words */
+  function removeCheckWords(w, acct) {
+    const r = removalOf(w, acct), n = r.ticks.length;
+    const ticked = n === 0 ? '' : n === 1 ? ', and the payment ticked with it goes back to not ticked' : `, and the ${n} payments ticked with it go back to not ticked`;
+    const stays = r.kept.map(k => `. ${k}'s payment stays ticked: its figure was typed with it`).join('');
+    return `Remove the check of ${r.a.name} on ${SN3.dayLabel(r.c.date, r.c.date.slice(0, 4) !== w.today.slice(0, 4))}? Its figure ${SMF_(w, r.c.a, acct)} goes${ticked}${stays}. You can Undo it`;
+  }
+
+  const api = { addPay, addAccount, changeAccount, closeAccount, reopenAccount, removeAccount, payOff, setKeep, setCountry, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, removeSchedule, addGoal, changeGoal, setAside, takeOut, removeGoal, addLoan, addCard, changeOwed, closeLoan, changeCheck, removeCheck, removeCheckWords, latestCheckOf: (w, acct) => latestOf(w, acct) };
   if (node) module.exports = api;
   else root.PLAN3W = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

@@ -202,17 +202,18 @@ async function saveCheck3() {
     return;
   }
   const out = checkOut3(d), day = check3.day;
-  /* a gap the person logs as a spend now: one spend on the line picked, for the engine's gap, dated the check's day and
-     marked inside its figure (dayInside, BK4), written with the check-in (the same moment and group), so the gap is gone
-     and the spend is never counted twice */
-  const before = checkView3(out), logged = {};
+  /* [CHECKFIX F2, coordinator 16] a gap the person logs as a spend now: the check-in keeps the line or goal picked for
+     that account (fillerPlace), never a fixed amount, so the engine's gap goes there and follows any later change of
+     either check, on any device. Free to spend is where a gap goes when nothing is picked */
+  const before = checkView3(out), logged = {}, places = {};
   for (const id of Object.keys(d.figures)) {
     const box = sheet.querySelector(`[data-gapspend="${id}"]`), g = box && box.checked ? gapWords3(before, id, day) : null;
     if (!g || !g.loss) continue;
-    const f = sheet.querySelector(`[data-gapline="${id}"]`).value, e = { id: E3.newId(), k: 'spend', date: day, a: g.loss, acct: id, note: 'Found at a bank check', src: { type: 'typed' }, dayInside: true, told: out.checkins[0].told, grp: out.checkins[0].id };
-    if (f.startsWith('place:')) e.place = f.slice(6); else e.line = f.slice(5);
-    out.events.push(e); logged[id] = rcForName3(e);
+    const f = sheet.querySelector(`[data-gapline="${id}"]`).value, e = f.startsWith('place:') ? { place: f.slice(6) } : { line: f.slice(5) };
+    if (f !== 'line:free') places[id] = e.place || e.line;
+    logged[id] = rcForName3(e);
   }
+  if (Object.keys(places).length) out.checkins[0].fillerPlace = places;
   /* [LISTFIX B1] saved with the card question still open, the gap is counted as spending all the same: the words say so */
   const words = Object.keys(d.figures).map(id => { const g = gapWords3(before, id, day); return !g ? '' : logged[id] ? `${g.text.split('. ')[0]}, now logged as a spend on ${logged[id]}` : g.loss && g.ask.length ? `${g.text}. It counts as spending` : g.text; }).filter(Boolean);
   /* act3 is the only door: the check-in is one step, with its Undo bar */

@@ -142,6 +142,8 @@
         if (c0 !== c1) out.push({ key: 'home:country', label: 'Where you bank', before: COUNTRY[c0] || 'not set', after: COUNTRY[c1] || 'not set' });
         continue;
       }
+      /* [CHECKFIX] a bank or card check: its figure before and after (or removed); where a check's gap goes */
+      if ((list === 'events' || list === 'checkins') && !seen.has(list + ':' + id)) { seen.add(list + ':' + id); out.push(...checkRows(list, id, b0, b1)); continue; }
       if (!PATHS[list] || list === 'events' || seen.has(list + ':' + id)) continue;
       seen.add(list + ':' + id);
       out.push(...thingRows(list, id, b0, b1, today, L0, L1));
@@ -149,6 +151,27 @@
     return out;
   }
   const COUNTRY = { JP: 'Japan', PH: 'the Philippines', XX: 'somewhere else' };
+  /* [CHECKFIX] a check's figure (an edit, or removed), and where a check-in's gap goes (its fillerPlace, or an older
+     check-in's gap spend's line), by name */
+  const placeName = (b, v) => { if (!v || v === 'free') return 'Free to spend'; const l = listOf(b, 'budgets').find(x => x && x.id === v), g = listOf(b, 'places').find(x => x && x.id === v); return (l || g || {}).name || 'a line no longer in your plan'; };
+  const ciRec = (b, id) => ((b && b.checkins) || []).find(k => k && k.id === id);
+  function checkRows(list, id, b0, b1) {
+    if (list === 'checkins') {
+      const k0 = ciRec(b0, id), k1 = ciRec(b1, id), k = k1 || k0;
+      if (!k0 || !k1 || k1.gone) return [];
+      const f0 = k0.fillerPlace || {}, f1 = k1.fillerPlace || {};
+      return [...new Set(Object.keys(f0).concat(Object.keys(f1)))].filter(a => (f0[a] || null) !== (f1[a] || null))
+        .map(a => ({ key: 'gap:' + id + ':' + a, label: `${acctName(b1, a)}, the gap of ${day1(k.date)} goes to`, before: placeName(b0, f0[a]), after: placeName(b1, f1[a]) }));
+    }
+    const e0 = recOf(b0, 'events', id), e1 = recOf(b1, 'events', id), e = e1 || e0;
+    if (!e) return [];
+    if (e.k === 'spend' && e.dayInside && e0 && e1 && live(e1) && ciRec(b1, e.grp) && (e0.line || e0.place || 'free') !== (e1.line || e1.place || 'free'))
+      return [{ key: 'gap:' + e.grp + ':' + e.acct, label: `${acctName(b1, e.acct)}, the gap of ${day1(e.date)} goes to`, before: placeName(b0, e0.place || e0.line), after: placeName(b1, e1.place || e1.line) }];
+    if (e.k !== 'check' || !e0) return [];
+    const label = `${acctName(b1, e.acct)}, figure of ${day1(e.date)}`;
+    if (!live(e1)) return live(e0) ? [{ key: 'check:' + id, label, before: e0.a, after: null, money: true, state: 'removed' }] : [];
+    return e0.a !== e1.a ? [{ key: 'check:' + id, label, before: e0.a, after: e1.a, money: true }] : [];
+  }
 
   /* the engine's figures that moved (minor units). o.free: Free to spend left too */
   function figures(b0, b1, today, o) {
