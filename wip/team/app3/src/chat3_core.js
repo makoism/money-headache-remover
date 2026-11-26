@@ -182,7 +182,7 @@ SETUP (when FIGURES says there is no book yet). Ask these in order, one per mess
 ${GUIDE.map(g => g.n + '. ' + g.ask).join('\n')}
 After each answer, save it with draft_set (that section's whole list each time; nothing is in the app until fill_book). A pay needs afterTax true: only save a pay once the person said the amount is after tax. A second income needs same: true or false. Never fill in a minimum or a figure the person did not give. NEEDED lists what fill_book still needs; ask for those. fill_book only when the person says to fill it in.
 
-AFTER SETUP. When a pay, bill or card payment the app expects has come in or gone out ("my pay came in", "rent came out"), use change with landed and its P, B or A ref: never money_in or log_spend for it, which would count it twice. When they say what their bank app or card app shows today, use bank_figure or card_figure with that figure. When the person says they spent, got or moved money, or asks to change a bill, pay, line, goal or card, use change. The app makes the change at once and shows what changed with Undo; a delete, or a change larger than safe to spend, waits for their OK. An amount you send must be one the person typed since your last change; for a repeat ("another lunch") ask how much, never send the old amount again. Refs (A1, L1, G1, B1, P1, S1) come from FIGURES or list; never invent one. Not a licensed adviser: for investments, loans or taxes, say so in one line.
+AFTER SETUP. When a pay, bill or card payment the app expects has come in or gone out ("my pay came in", "rent came out"), use change with landed and its P, B or A ref: never money_in or log_spend for it, which would count it twice. When they say what their bank app or card app shows today, use bank_figure or card_figure with that figure at once (landed, notYet: what they said); then ask what the result says. When the person says they spent, got or moved money, or asks to change a bill, pay, line, goal or card, use change. The app makes the change at once and shows what changed with Undo; a delete, or a change larger than safe to spend, waits for their OK. An amount you send must be one the person typed since your last change; for a repeat ("another lunch") ask how much, never send the old amount again. Refs (A1, L1, G1, B1, P1, S1) come from FIGURES or list; never invent one. Not a licensed adviser: for investments, loans or taxes, say so in one line.
 
 Adding a bank: ask both of its questions in one message: is it new money or moved from their bank, and if moved, before or after they looked at that bank today.
 
@@ -200,9 +200,9 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
   /* ---- the tools (BU2: no figures or draft read tool) ---- */
   const num = { type: 'number', description: 'A plain number in the currency, no symbol.' };
   const str = d => ({ type: 'string', description: d });
-  const DO = ['landed', 'bank_figure', 'card_figure', 'log_spend', 'refund', 'money_in', 'move_money', 'remove', 'add_bill', 'change_bill', 'end_bill', 'add_pay', 'add_line', 'change_line', 'end_line', 'set_free', 'add_goal', 'set_aside', 'add_card', 'add_account', 'change_account'];
+  const DO = ['landed', 'not_yet', 'bank_figure', 'card_figure', 'log_spend', 'refund', 'money_in', 'move_money', 'remove', 'add_bill', 'change_bill', 'end_bill', 'add_pay', 'add_line', 'change_line', 'end_line', 'set_free', 'add_goal', 'set_aside', 'add_card', 'add_account', 'change_account'];
   /* a step that was asked for and left out, in words for the person (the card says which was not done) */
-  const DO_WORDS = { landed: 'ticking off a pay or bill', bank_figure: 'a bank figure', card_figure: 'a card figure', log_spend: 'a spend', refund: 'a refund', money_in: 'money that came in',
+  const DO_WORDS = { landed: 'ticking off a pay or bill', not_yet: 'a pay or bill that has not gone through yet', bank_figure: 'a bank figure', card_figure: 'a card figure', log_spend: 'a spend', refund: 'a refund', money_in: 'money that came in',
     move_money: 'money moved between accounts', remove: 'removing a record', add_bill: 'a new bill', change_bill: 'a change to a bill or pay', end_bill: 'ending a bill', add_pay: 'a new pay',
     add_line: 'a new line', change_line: 'a change to a line', end_line: 'ending a line', set_free: 'a change to Free to spend', add_goal: 'a new goal', set_aside: 'money set aside for a goal',
     add_card: 'a new card', add_account: 'a new account', change_account: 'a change to an account' };
@@ -216,7 +216,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     { name: 'draft_set', description: 'Save one setup section into the draft, its whole value. Nothing reaches the app until fill_book. Sections: country "JP"|"PH"|"XX"; currency "JPY"|"PHP"|"USD"|"EUR" (a change of currency drops the amounts saved before it: ask each again); banks [{name, amount, type?, confirmed?}] (first is where pay lands; confirmed true when the person gave the figure again today); pays [{name, amount, every: month|days|weeks|none, day?, day2?, n?, start?, shift?: before|after, bank?, afterTax, same?}]; cards [{name, owed, payDay, closeDay: day|"last"|"not sure", shift?, payFrom?, confirmed?}]; bills [{name, amount, day, every?: month|year, month?, from?}]; asked [{name, out: true|false}]; statements [{name, amount|"not sure"}]; payToday {landed: true|false}; free amount|null; min amount|null.',
       input_schema: { type: 'object', properties: { section: { type: 'string', enum: SECTIONS }, value: { description: 'The section\'s whole value.' } }, required: ['section', 'value'] } },
     { name: 'fill_book', description: 'Turn the draft into the person\'s Burrow. Only when they said to fill it in. Refused while NEEDED is not empty.', input_schema: { type: 'object', properties: {} } },
-    { name: 'change', description: 'Make up to ' + MAX_STEPS + ' changes, each a named step: ' + DO.join(', ') + '. landed {ref: the P, B or card A ref, amount? only if it was different, date? the day it landed}; bank_figure and card_figure {account, amount}. Fields: amount, account (A ref), every (add_bill: month|year|months, with month 1..12 for a year, n and start for months), from and to (A refs), line (L ref), goal (G ref), ref (the record: S, B, P, L or G ref; remove takes an S, B or L ref only: a pay or a goal cannot be removed in this app yet, so say that and that it can be changed on Plan), date (YYYY-MM-DD, today or before), note, name, day, day2, every (month|days|weeks1..4|none), start, when (now|next|once), target, due, owed, payDay, closeDay, type (bank|cash|ewallet), moved (true|false), shift (after|before: a card weekend rule), from (the A ref the money came from), afterFigure (true|false: moved after they looked at that bank on the day of its figure). change_account {account: a bank, cash or e-wallet A ref, name?, min?: its own Keep at least, 0 for none}.',
+    { name: 'change', description: 'Make up to ' + MAX_STEPS + ' changes, each a named step: ' + DO.join(', ') + '. landed {ref: the P, B or card A ref, amount? only if it was different, date? the day it landed (the day their bank app shows), afterFigure? (true|false: after or already inside the last figure they gave)}; not_yet {ref}: it has not gone through yet; bank_figure and card_figure {account, amount, landed?: [ref or {ref, amount?, date?}] already gone out or come in, notYet?: [ref] not yet}. Fields: amount, account (A ref), every (add_bill: month|year|months, with month 1..12 for a year, n and start for months), from and to (A refs), line (L ref), goal (G ref), ref (the record: S, B, P, L or G ref; remove takes an S, B or L ref only: a pay or a goal cannot be removed in this app yet, so say that and that it can be changed on Plan), date (YYYY-MM-DD, today or before), note, name, day, day2, every (month|days|weeks1..4|none), start, when (now|next|once), target, due, owed, payDay, closeDay, type (bank|cash|ewallet), moved (true|false), shift (after|before: a card weekend rule), from (the A ref the money came from), afterFigure (true|false: moved after they looked at that bank on the day of its figure). change_account {account: a bank, cash or e-wallet A ref, name?, min?: its own Keep at least, 0 for none}.',
       input_schema: { type: 'object', properties: { steps: { type: 'array', items: { type: 'object', properties: { do: { type: 'string', enum: DO }, amount: num }, required: ['do'] } } }, required: ['steps'] } },
   ];
 
@@ -552,6 +552,62 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
 
   /* ---- change: named steps through act3 (BW) ---- */
   const DELETES = { remove: 1, end_bill: 1, end_line: 1 };
+  /* [LISTED] the accounts an expected item moves: a pay or bill its own; a card payment its card and the bank it is paid from */
+  function acctsOf(book, item) {
+    const o = IDS.occurrence(item), sid = o && o.schedule;
+    const sch = (book.schedules || []).find(x => x && !x.gone && x.id === sid), card = (book.accounts || []).find(x => x && !x.gone && x.id === sid);
+    return sch ? [sch.acct] : card ? [card.payFrom, card.id].filter(Boolean) : [];
+  }
+  const expectedFor = (book, today, id) => (LA.lookahead(book, today).checkIn.toConfirm || []).filter(o => o.lands <= today && acctsOf(book, o.item).includes(id));
+  /* an item in words: "Rent", or "Card A's payment" */
+  function occWords(book, item) {
+    const sid = IDS.occurrence(item).schedule, sch = (book.schedules || []).find(x => x.id === sid), card = (book.accounts || []).find(x => x.id === sid);
+    return sch ? sch.name : card ? card.name + "'s payment" : 'it';
+  }
+  /* the check-in of the newest figure of the item's accounts on that day that did not list it */
+  function figureCheckin(book, item, day) {
+    const accts = acctsOf(book, item), cis = (book.checkins || []).filter(k => k && !k.gone);
+    const ev = (book.events || []).filter(e => e && !e.gone && e.k === 'check' && e.date === day && accts.includes(e.acct)).sort((x, y) => String(x.told).localeCompare(String(y.told)));
+    for (const e of ev.reverse()) { const ci = cis.find(k => k.id === e.grp); if (ci && Array.isArray(ci.listed) && !ci.listed.includes(item)) return ci.id; }
+    return null;
+  }
+  /* [LISTED N1, N2, N4, N5] after a figure written with items not answered: the question to ask in the same reply, in
+     the person's words (a card's payment in the card's words; where to look; up to three in one question, more as a
+     list to untick), with both readings from the engine: if they have gone, if not */
+  function figureAsk(step, b1, today, deps) {
+    const open = step.open || [];
+    if (!open.length) return '';
+    const home = G.homeOn(b1, today), m = x => SM.format(x, home), acct = (b1.accounts || []).find(x => x.id === step.account) || {};
+    const readOf = b => { const r = LA.lookahead(b, today), f = r.period && r.period.free; return f ? f.left : r.safeToSpend.headline; };
+    let gone = null;
+    try {
+      const out = CK.checkIn(b1, { day: today, told: deps.told().replace(/\.\d+/, '.999'), newId: deps.newId, unticked: [], ticked: open.map(o => o.item),
+        expected: Object.fromEntries(open.map(o => [o.item, o.amount])), lands: Object.fromEntries(open.map(o => [o.item, o.lands])), afterFigure: Object.fromEntries(open.map(o => [o.item, false])) });
+      gone = readOf(CK.apply(b1, out));
+    } catch (e) { gone = null; }
+    const now = readOf(b1), say = v => (v < 0 ? `you're ${m(-v)} over` : `about ${m(v)} is left to spend`);
+    const one = o => {
+      const sid = IDS.occurrence(o.item).schedule, isCard = (b1.accounts || []).some(x => x.id === sid && x.type === 'card');
+      const sch = (b1.schedules || []).find(x => x.id === sid), inc = sch && sch.kind === 'income';
+      if (isCard && acct.type === 'card') return `Has ${occWords(b1, o.item).replace(/'s payment$/, '')}'s ${m(o.amount)} bill been paid off yet?`;
+      return `Has ${occWords(b1, o.item)} (${m(o.amount)}, due ${day1(o.lands)}) ${inc ? 'come into' : 'gone out of'} ${acct.name} yet?`;
+    };
+    const names = open.map(o => occWords(b1, o.item)), both = names.length > 1;
+    const q = open.length <= 3 ? open.map(one).join(' ') : `These were due: ${open.map(o => `${occWords(b1, o.item)} ${m(o.amount)} (${day1(o.lands)})`).join(', ')}. I'll count them all as gone through: tell me any that haven't`;
+    const where = `In your ${acct.type === 'card' ? 'card' : 'bank'} app, look at the list around ${day1(open[0].lands)}`;
+    const readings = gone == null || gone === now ? '' : ` If ${both ? 'they have' : names[0] + ' has'} gone, ${say(gone)}, and if not, ${say(now)}.`;
+    return ` ASK NOW, in this same reply, in plain words: "${q} ${where}. Yes / Not yet / I don't know".${readings} Say that until they answer ${both ? 'these stay' : names[0] + ' stays'} on the list. Answers: Yes is change landed with afterFigure false (or its date). Not yet is change not_yet. I don't know changes nothing. Then offer for what is left of the gap: log it as a spend now, or leave it.`;
+  }
+  /* [LISTED N4, coordinator 18] a tick that raises safe to spend says why, never silently */
+  function riseNote(b0, b1, today, plan) {
+    const r0 = LA.lookahead(b0, today), r1 = LA.lookahead(b1, today), up = r1.safeToSpend.headline - r0.safeToSpend.headline;
+    if (up <= 0) return null;
+    const ev = [].concat(...plan.map(s => s.settles || [])).map(it => (b1.events || []).find(e => e.id === 'set:' + it)).filter(Boolean);
+    if (!ev.length) return null;
+    const home = G.homeOn(b1, today), first = ev[0];
+    const what = ev.map(e => occWords(b1, IDS.occurrence(e.id.slice(4)) ? e.id.slice(4) : '')).join(' and ');
+    return `${what} ${ev.length > 1 ? 'were' : 'was'} already in your bank figure (out on ${day1(first.date)}), so ${SM.format(up, home)} is back in ${SN.label('safeToSpend').toLowerCase()}`;
+  }
   /* one step from the AI into { kind, args, text, amount, ask? } or { bad: words } */
   function stepOf(a, ctx) {
     const { book, today, refs } = ctx, home = G.homeOn(book, today), m = (x, c) => SM.format(x, c || home);
@@ -583,14 +639,51 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       const ci = { ticked: [o.item], expected: { [o.item]: o.amount }, lands: { [o.item]: o.lands } };
       if (x !== o.amount) ci.amounts = { [o.item]: x };
       if (d) ci.landed = { [o.item]: d };
-      return { kind: 'checkIn', ci, text: `${schName(id) || nm(id)} of ${day1(o.lands)} landed: ${m(x)} ${inc ? 'in' : 'from'} ${nm(o.account)}`, amount: 0, figs: a.amount != null ? [x] : [] };
+      /* [LISTED 2c, N3] after a figure that did not list it, the day is asked from the bank app; I don't know is after */
+      const fig = CK.askAfter(book, { day: today, lands: { [o.item]: d || o.lands } }, o.item);
+      if (fig && !d) {
+        if (typeof a.afterFigure !== 'boolean') return { bad: `ask: "What day does your bank app show next to ${schName(id) || nm(id)}? If you don't know, I'll put it after your figure of ${day1(fig)}, and your next bank figure sets it right." Then change again with landed and its date, or afterFigure true for I don't know` };
+        ci.afterFigure = { [o.item]: a.afterFigure };
+      }
+      return { kind: 'checkIn', ci, settles: [o.item], text: `${schName(id) || nm(id)} of ${day1(o.lands)} landed: ${m(x)} ${inc ? 'in' : 'from'} ${nm(o.account)}`, amount: 0, figs: a.amount != null ? [x] : [] };
     }
     if (what === 'bank_figure' || what === 'card_figure') {
       const id = ref(a.account, 'A'), rec = id && acctRec(id), card = what === 'card_figure';
       if (!rec || (rec.type === 'card') !== card) return { bad: 'a ' + (card ? 'card' : 'bank') + ' figure for an account I do not know' };
       const x = amt(a.amount, rec.cur, true);
       if (x == null) return { bad: 'a figure I could not read' };
-      return { kind: 'checkIn', ci: { figures: { [id]: x } }, text: `${rec.name} shows ${m(x, rec.cur)} today`, amount: 0, figs: [x] };
+      /* [LISTED 1, 5, 7, N1, N6] the expected items of this account due by today (a card: its own payment; a bank: its
+         pays, bills and the card payments from it). The figure is written at once; what they said has gone is ticked
+         in the same check-in, at its landing day or the day they said; listed is what they answered about */
+      const exp = expectedFor(book, today, id);
+      const ci = { figures: { [id]: x }, listed: [], ticked: [], amounts: {}, landed: {}, afterFigure: {}, expected: {}, lands: {} };
+      for (const o of exp) { ci.expected[o.item] = o.amount; ci.lands[o.item] = o.lands; }
+      const findOcc = v => { const r = typeof v === 'object' && v ? v.ref : v, sid = ref(r, 'PBA'); return sid ? exp.find(o => IDS.occurrence(o.item).schedule === sid) : null; };
+      const ticks = [];
+      for (const v of Array.isArray(a.landed) ? a.landed : []) {
+        const o = findOcc(v);
+        if (!o) return { bad: 'a landed item that is not expected on ' + rec.name + ' now: change again without it' };
+        ci.ticked.push(o.item); ci.listed.push(o.item);
+        if (v && typeof v === 'object' && v.amount != null) { const y = amt(v.amount, (acctRec(o.account) || {}).cur); if (!y) return { bad: 'a landed amount I could not read' }; if (y !== o.amount) ci.amounts[o.item] = y; }
+        if (v && typeof v === 'object' && v.date != null) { const dd = date(v.date); if (!dd) return { bad: 'a landed day I could not read' }; ci.landed[o.item] = dd; }
+        else ci.afterFigure[o.item] = true;   // inside this figure; after any older figure that did not list it
+        ticks.push(o);
+      }
+      for (const v of Array.isArray(a.notYet) ? a.notYet : []) { const o = findOcc(v); if (o && !ci.listed.includes(o.item)) ci.listed.push(o.item); }
+      const open = exp.filter(o => !ci.listed.includes(o.item));
+      const tickWords = ticks.map(o => `${occWords(book, o.item)} ${m(ci.amounts[o.item] || o.amount)} ${(acctRec(IDS.occurrence(o.item).schedule) || {}).type === 'card' ? 'paid' : 'went'} on ${day1(ci.landed[o.item] || o.lands)}`);
+      return { kind: 'checkIn', ci, open, account: id, settles: ci.ticked, text: `${rec.name} shows ${m(x, rec.cur)} today` + (tickWords.length ? ', ' + tickWords.join(', ') : ''), amount: 0,
+        figs: [x].concat(Object.values(ci.amounts)) };
+    }
+    /* [LISTED N2] "not yet" about an item the last figure did not list: a check-in that answers that figure, listing it */
+    if (what === 'not_yet') {
+      const id = ref(a.ref, 'PBA');
+      const o = id && (LA.lookahead(book, today).checkIn.toConfirm || []).filter(x => IDS.occurrence(x.item).schedule === id && x.lands <= today).slice(-1)[0];
+      if (!o) return { bad: 'nothing from that ref is expected now' };
+      const fig = CK.askAfter(book, { day: today, lands: { [o.item]: o.lands } }, o.item);
+      const cid = fig && figureCheckin(book, o.item, fig);
+      if (!cid) return { bad: `${occWords(book, o.item)} is still expected as it is: nothing to change` };
+      return { kind: 'checkIn', ci: { listed: [o.item], answers: cid }, text: `${occWords(book, o.item)} has not gone through yet: it stays expected`, amount: 0, figs: [] };
     }
     /* [AI_JOIN_FIXES H6; M30] a spend with no account named while there are cards: the account the person named for
        this chat, else asked once ("card or bank?"), never the main bank unasked */
@@ -754,7 +847,8 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       }
       done.push(res.step);
     }
-    card.status = 'done'; card.steps = done.map(s => s.id); card.rows = rowsOf(before, deps.book(), today, card.plan); card.note = noteOf(before, deps.book(), today);
+    card.status = 'done'; card.steps = done.map(s => s.id); card.rows = rowsOf(before, deps.book(), today, card.plan); card.note = riseNote(before, deps.book(), today, card.plan) || noteOf(before, deps.book(), today);
+    card.asks = card.plan.map(s => figureAsk(s, deps.book(), today, deps)).join('');
     return { ok: true };
   }
   const resultOf = card => card.status === 'done' ? 'Done, with Undo on the card. ' + card.rows.map(r => `${r.label}: ${r.before == null ? '-' : r.before} to ${r.after == null ? '-' : r.after} (minor units)`).join('; ')
@@ -768,18 +862,26 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     const r0 = LA.lookahead(book, today);
     for (const s of plan) {
       if (s.kind !== 'checkIn' || !s.ci.figures) continue;
-      let r1;
-      try {
-        const out = CK.checkIn(book, Object.assign({ day: today, told: deps.told(), newId: deps.newId, unticked: [] }, s.ci));
-        r1 = LA.lookahead(deps.door.dry('addRecords', 'Check your bank', out), today);
-      } catch (e) { continue; }
-      for (const id of Object.keys(s.ci.figures)) {
-        const a = r1.accounts[id], f = a && (a.fillers || []).slice(-1)[0], was = r0.accounts[id];
-        if (!f || f.to !== today || !was) continue;
-        const cur = ((book.accounts || []).find(x => x.id === id) || {}).cur;
-        if (f.gain > 0 && f.gain > safe) far.set(s, `The app expected ${m(was.bank, cur)}: ${m(f.gain, cur)} more than it had`);
-        else if (f.amount > 0 && f.amount > safe) far.set(s, `The app expected ${m(was.bank, cur)}: ${m(f.amount, cur)} less than it had`);
-      }
+      /* [LISTED N1] a figure with items still to ask about is far only when it is far both as written and with those
+         items read as gone: a gap they explain is asked about by the question that follows, never by "is this figure
+         right?" first */
+      const open = s.open || [];
+      const words = ci => {
+        let r1;
+        try { r1 = LA.lookahead(deps.door.dry('addRecords', 'Check your bank', CK.checkIn(book, Object.assign({ day: today, told: deps.told(), newId: deps.newId, unticked: [] }, ci))), today); }
+        catch (e) { return null; }
+        for (const id of Object.keys(s.ci.figures)) {
+          const a = r1.accounts[id], f = a && (a.fillers || []).slice(-1)[0], was = r0.accounts[id];
+          if (!f || f.to !== today || !was) continue;
+          const cur = ((book.accounts || []).find(x => x.id === id) || {}).cur;
+          if (f.gain > 0 && f.gain > safe) return `The app expected ${m(was.bank, cur)}: ${m(f.gain, cur)} more than it had`;
+          if (f.amount > 0 && f.amount > safe) return `The app expected ${m(was.bank, cur)}: ${m(f.amount, cur)} less than it had`;
+        }
+        return null;
+      };
+      const w = words(s.ci);
+      if (w && (!open.length || words(Object.assign({}, s.ci, { ticked: s.ci.ticked.concat(open.map(o => o.item)),
+        afterFigure: Object.assign({}, s.ci.afterFigure, Object.fromEntries(open.map(o => [o.item, false]))) })))) far.set(s, w);
     }
     return far;
   }
@@ -908,13 +1010,16 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
         card.why = del ? 'this removes something' : big ? 'this is more than safe to spend' : far.size ? 'the figure is far from what the app expected' : 'I guessed an amount';
         did(frame);
         addTurn(state, { who: 'card', text: card.lines.join('. '), at: deps.told(), card }, shown);
-        return resultOf(card) + (dropped.length ? ' Left out: ' + dropped.join('; ') : '');
+        /* [LISTED N1] a figure waiting for the OK still asks about what was expected, read on the book it would make */
+        let asks = '';
+        for (const s of plan) if ((s.open || []).length) { try { asks += figureAsk(s, deps.door.dry('addRecords', 'Check your bank', CK.checkIn(book, Object.assign({ day: today, told: deps.told(), newId: deps.newId, unticked: [] }, s.ci))), today, deps); } catch (e) { /* asked after the OK */ } }
+        return resultOf(card) + asks + (dropped.length ? ' Left out: ' + dropped.join('; ') : '');
       }
       const res = await carryOut(state, card, deps);
       if (res.ok) { wrote(state, card, book, today); did(frame); } else if (frame) frame.refused++;   // its card says why
       if (frame && typeof deps.door.ver === 'function') frame.ver = deps.door.ver();   // the turn's own steps
       addTurn(state, { who: 'card', text: card.lines.join('. '), at: deps.told(), card }, shown);
-      return (res.ok ? resultOf(card) : 'Not changed: ' + res.text) + (dropped.length ? ' Left out: ' + dropped.join('; ') : '');
+      return (res.ok ? resultOf(card) + (card.note ? ' Say: ' + card.note + '.' : '') + (card.asks || '') : 'Not changed: ' + res.text) + (dropped.length ? ' Left out: ' + dropped.join('; ') : '');
     }
     return 'There is no tool called ' + String(call.name).slice(0, 30);
   }

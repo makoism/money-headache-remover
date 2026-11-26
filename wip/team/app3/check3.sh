@@ -43,6 +43,7 @@ node|tests/act3_sync.test.js|act3_sync: ALL PASS||300|the cloud copy's answers t
 node|tests/backup3.test.js|backup3: ALL PASS||300|the backup file's core
 node|tests/answers3.test.js|answers3: ALL PASS||300|answers3, the one answers-to-book function (BV1): same answers, same book
 node|tests/chat3_core.test.js|chat3_core: ALL PASS||300|the assistant's core with the fake model: Mako's setup chat to 201,400, before tax, a side job, a stale draft, a skipped question, changes with Undo (BU, BV, BW)
+node|tests/chat3_listed.test.js|chat3_listed: ALL PASS||300|the assistant's bank and card figure with what was expected: written at once, the question with both readings, Yes, Not yet, the day asked, Undo (LISTED 5 to 8, N1 to N6)
 node|tests/restore3.test.js|restore3: ALL PASS||300|a restore while the cloud copy is on: restamped so it sticks, nothing added after the backup returns, two devices on the fake vault, Put it back reaches both
 node|tests/ask3_core.test.js|ask3_core: ALL PASS||300|Ask, the pure half (the summary sent, the reply checked, steps through act3, Undo)
 node|tests/remind3.test.js|remind3: ALL PASS||300|reminders, the pure half (days from the engine's calendar, the calendar file, Google and Outlook links)

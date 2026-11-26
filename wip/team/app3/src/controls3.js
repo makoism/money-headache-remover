@@ -66,7 +66,7 @@
       change: { action: 'edit', screen: 'Receipts > the record', ai_todo: 'later: change_spend (K16)' },
       remove: { action: 'remove', screen: 'Receipts > the record > Remove', ai: 'remove' } },
     { kind: 'bank check', list: 'checkins',
-      add: { action: ['checkIn', 'addRecords'], screen: 'Check your bank', ai: ['landed', 'bank_figure', 'card_figure'] },
+      add: { action: ['checkIn', 'addRecords'], screen: 'Check your bank', ai: ['landed', 'not_yet', 'bank_figure', 'card_figure'] },
       change: { action: 'changeCheck', todo: 'E8' },
       remove: { action: 'removeCheckin', todo: 'E8' } },
     { kind: 'statement import',
