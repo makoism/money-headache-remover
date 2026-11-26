@@ -9837,6 +9837,21 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     w.add('events', { k: 'repay', date: w.today, a: owed, a2: owed, acct: from, acct2: id, src: { type: 'typed' } });
     return id;
   }
+  /* [qc-controls confirm 5] what a reopen brings back, in words for the screens' sheet and the assistant's card: the
+     engine's figure on the book the reopen would make (a close leaves it at 0), and where to set it. null when refused */
+  function reopenWords(book, today, id) {
+    const a = (book.accounts || []).find(y => live(y) && y.id === id);
+    if (!a) return null;
+    let b1;
+    try {
+      b1 = A3.make({ book: () => book, put: () => true, told: () => today + 'T12:00:00.000Z', newId: ID.idMaker('dry', () => 0), today: () => today })
+        .dryRun('reopenAccount', w => reopenAccount(w, id));
+    } catch (e) { if (e instanceof A3.Bad) return null; throw e; }
+    const r = LA.lookahead(b1, today), m = v => SMF.format(v || 0, a.cur || G.homeOn(book, today));
+    if (a.type === 'card') return `It comes back with ${m(((r.cards || {})[id] || {}).owedNow)} on it. Type what is on it now at Check your bank`;
+    if (a.type === 'loan') return `It comes back owing ${m(((r.owed || {})[id] || {}).owedNow)}`;
+    return `It comes back at ${m((r.accounts[id] || {}).bank)}. Type what is in it now at Check your bank`;
+  }
   function reopenAccount(w, id) {
     const a = find(w, 'accounts', id);
     if (!a.closed) bad(a.name + ' is not closed');
@@ -9859,7 +9874,7 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     return id;
   }
 
-  const api = { addPay, addAccount, changeAccount, closeAccount, closeWords, reopenAccount, removeAccount, payOff, setKeep, setCountry, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan };
+  const api = { addPay, addAccount, changeAccount, closeAccount, closeWords, reopenWords, reopenAccount, removeAccount, payOff, setKeep, setCountry, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan };
   if (node) module.exports = api;
   else root.PLAN3W = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
@@ -11234,7 +11249,7 @@ function plAcctClosedForm3(id) {
   PL3.sheet = 'closedAccount';
   const a = E3.book.accounts.find(x => x.id === id);
   plForm3(a.name, [], [{ label: 'Reopen', solid: true, step: () => ['reopenAccount', w => PLAN3W.reopenAccount(w, id), a.name + ' open again'] }],
-    `Closed ${esc3(day3(a.closed, E3.today().slice(0, 4)))}. Its history stays. Reopen it if it was closed by mistake or you use it again`);
+    `Closed ${esc3(day3(a.closed, E3.today().slice(0, 4)))}. Its history stays. Reopen it if you use it again. ${esc3(PLAN3W.reopenWords(E3.book, E3.today(), id) || '')}`);
 }
 /* [E1, M13, M23] a bank, cash or e-wallet after setup: what it holds today, and whether that money was taken from the
    main bank since its last figure (then it moves from there, never counted twice) [qc-foundation F3] */
@@ -14586,7 +14601,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     if (what === 'close_account' || what === 'reopen_account' || what === 'remove_account') {
       const id = ref(a.account || a.ref, 'A'), rec = id && acctRec(id);
       if (!rec) return { bad: what.replace('_', ' ') + ' for an account I do not know' };
-      if (what === 'reopen_account') return { kind: 'reopenAccount', args: [id], text: `Reopen ${rec.name}` };
+      if (what === 'reopen_account') { const rw = PW().reopenWords(book, today, id); return { kind: 'reopenAccount', args: [id], text: `Reopen ${rec.name}${rw ? '. ' + rw : ''}` }; }
       if (what === 'remove_account') return { kind: 'removeAccount', args: [id], text: `Remove ${rec.name}, as if it was never added`, del: true };
       if (rec.type === 'card' || rec.type === 'loan') return { kind: 'closeAccount', args: [id, {}], text: `Close ${rec.name}. Its history stays`, del: true };
       const spent = a.to === 'spent', to = spent ? 'spent' : ref(a.to, 'A');

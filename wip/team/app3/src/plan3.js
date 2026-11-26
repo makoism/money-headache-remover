@@ -452,7 +452,7 @@ function plAcctClosedForm3(id) {
   PL3.sheet = 'closedAccount';
   const a = E3.book.accounts.find(x => x.id === id);
   plForm3(a.name, [], [{ label: 'Reopen', solid: true, step: () => ['reopenAccount', w => PLAN3W.reopenAccount(w, id), a.name + ' open again'] }],
-    `Closed ${esc3(day3(a.closed, E3.today().slice(0, 4)))}. Its history stays. Reopen it if it was closed by mistake or you use it again`);
+    `Closed ${esc3(day3(a.closed, E3.today().slice(0, 4)))}. Its history stays. Reopen it if you use it again. ${esc3(PLAN3W.reopenWords(E3.book, E3.today(), id) || '')}`);
 }
 /* [E1, M13, M23] a bank, cash or e-wallet after setup: what it holds today, and whether that money was taken from the
    main bank since its last figure (then it moves from there, never counted twice) [qc-foundation F3] */

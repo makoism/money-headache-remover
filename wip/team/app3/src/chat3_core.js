@@ -740,7 +740,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     if (what === 'close_account' || what === 'reopen_account' || what === 'remove_account') {
       const id = ref(a.account || a.ref, 'A'), rec = id && acctRec(id);
       if (!rec) return { bad: what.replace('_', ' ') + ' for an account I do not know' };
-      if (what === 'reopen_account') return { kind: 'reopenAccount', args: [id], text: `Reopen ${rec.name}` };
+      if (what === 'reopen_account') { const rw = PW().reopenWords(book, today, id); return { kind: 'reopenAccount', args: [id], text: `Reopen ${rec.name}${rw ? '. ' + rw : ''}` }; }
       if (what === 'remove_account') return { kind: 'removeAccount', args: [id], text: `Remove ${rec.name}, as if it was never added`, del: true };
       if (rec.type === 'card' || rec.type === 'loan') return { kind: 'closeAccount', args: [id, {}], text: `Close ${rec.name}. Its history stays`, del: true };
       const spent = a.to === 'spent', to = spent ? 'spent' : ref(a.to, 'A');

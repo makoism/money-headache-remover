@@ -107,6 +107,9 @@ const closedRows = p => p.$$eval('[data-card="plan-accounts"] [data-acctclosed]'
     bk = await saved(p);
     ck('spent: closed, the main bank unchanged', bk.accounts.find(a => a.id === WALLET).closed === DAY && await fig(bank) === bank0);
     await p.click(`#a3Plan [data-acctclosed="${WALLET}"]`); await T.w(300);
+    /* [qc-controls confirm 5] plain and true: no promise it was closed by mistake; it comes back at 0, and where to fix that */
+    const rs = await p.$eval('[data-card="plan-form"]', e => e.textContent.replace(/\s+/g, ' '));
+    ck('the closed sheet says it comes back at ¥0 and to type what is in it at Check your bank, no "by mistake"', /It comes back at ¥0\. Type what is in it now at Check your bank/.test(rs) && !/by mistake/.test(rs), rs);
     await btn('Reopen'); await T.w(600);
     ck('Reopen opens it again', !(await saved(p)).accounts.find(a => a.id === WALLET).closed && (await rows(p)).some(x => x.id === WALLET));
     /* remove: refused with history; allowed for one added by mistake */

@@ -632,6 +632,21 @@
     w.add('events', { k: 'repay', date: w.today, a: owed, a2: owed, acct: from, acct2: id, src: { type: 'typed' } });
     return id;
   }
+  /* [qc-controls confirm 5] what a reopen brings back, in words for the screens' sheet and the assistant's card: the
+     engine's figure on the book the reopen would make (a close leaves it at 0), and where to set it. null when refused */
+  function reopenWords(book, today, id) {
+    const a = (book.accounts || []).find(y => live(y) && y.id === id);
+    if (!a) return null;
+    let b1;
+    try {
+      b1 = A3.make({ book: () => book, put: () => true, told: () => today + 'T12:00:00.000Z', newId: ID.idMaker('dry', () => 0), today: () => today })
+        .dryRun('reopenAccount', w => reopenAccount(w, id));
+    } catch (e) { if (e instanceof A3.Bad) return null; throw e; }
+    const r = LA.lookahead(b1, today), m = v => SMF.format(v || 0, a.cur || G.homeOn(book, today));
+    if (a.type === 'card') return `It comes back with ${m(((r.cards || {})[id] || {}).owedNow)} on it. Type what is on it now at Check your bank`;
+    if (a.type === 'loan') return `It comes back owing ${m(((r.owed || {})[id] || {}).owedNow)}`;
+    return `It comes back at ${m((r.accounts[id] || {}).bank)}. Type what is in it now at Check your bank`;
+  }
   function reopenAccount(w, id) {
     const a = find(w, 'accounts', id);
     if (!a.closed) bad(a.name + ' is not closed');
@@ -654,7 +669,7 @@
     return id;
   }
 
-  const api = { addPay, addAccount, changeAccount, closeAccount, closeWords, reopenAccount, removeAccount, payOff, setKeep, setCountry, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan };
+  const api = { addPay, addAccount, changeAccount, closeAccount, closeWords, reopenWords, reopenAccount, removeAccount, payOff, setKeep, setCountry, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan };
   if (node) module.exports = api;
   else root.PLAN3W = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

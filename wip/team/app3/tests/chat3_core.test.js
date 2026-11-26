@@ -317,6 +317,17 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     ok(!r7.shown.some(x => x.who === 'card' && x.card.status === 'ask'), 'no question first: ' + shown(r7));
     ok(r7.shown.some(x => x.who === 'card' && x.card.status === 'refused' && /Car loan still owes ¥100,000\. Use Pay it off now/.test(x.card.why)), shown(r7));
   });
+  await t('[qc-controls confirm 5] by asking, reopening a closed account says plainly it comes back at 0 and where to type what is in it (PLAN3W.reopenWords, the screens\' words)', async () => {
+    const P = require('../src/plan3_write.js');
+    const { hp, d, st, wid } = await wallet(R => [() => say('', [call('change', { steps: [{ do: 'close_account', account: R.w, to: 'spent' }] })]), say('Tap Do it.'),
+      () => say('', [call('change', { steps: [{ do: 'reopen_account', account: R.w }] })]), say('Open again.')]);
+    const r3 = await K.turn(st, 'my wallet is gone, I spent it all', d);
+    const k3 = await K.confirm(r3.state, r3.shown.find(x => x.who === 'card').id, d); ok(k3.ok, JSON.stringify(k3));
+    const words = P.reopenWords(hp.book, '2026-11-24', wid);
+    const r4 = await K.turn(k3.state, 'oh, reopen the wallet', d);
+    const c4 = r4.shown.find(x => x.who === 'card');
+    ok(c4.card.status === 'done' && c4.card.lines[0] === 'Reopen Wallet. ' + words && /^It comes back at ¥0\. Type what is in it now at Check your bank$/.test(words), c4.card.lines.join(' | ') + ' | ' + words);
+  });
   await t('[E3, M3, M13, M27] cards and loans by asking: add_loan, change_card, change_loan, pay_off (asks first: the amount was never typed), close_account on a card at zero, remove_account on a loan added by mistake', async () => {
     const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
     const L = require(E + 'lookahead.js');
