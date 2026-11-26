@@ -1,53 +1,23 @@
-VERDICT: PASS
-No figure or receipt was lost or changed unless I chose it. Every money remove asked first. Nothing private left the device. Still open, none of them data loss: Home's behind line, a missing Start again, and one call made with everything off (jobs 5, 8, 11).
+VERDICT: FAIL (confirming run 3 against run2_qc-data-safety.md, run 2 PASS; one new blocker: setup open in two tabs, a section that said "Saved" is silently lost)
+(Saved by MAIN 21 from the reviewer's reply: the reviewer did not write the file so as not to overwrite run 2's.)
 
-CHECK: (full level, 3 at a time, 784 s in all) / ALL GOOD. The check ends ALL GOOD.
+CHECK: (full level, 3 at a time, 788 s in all) / ALL GOOD
 
-OWNER'S WORDS
-- M61 MET. Across 16 kinds of change, two tabs, two phones, refused and lost sends, restores and assistant wipes, no figure was lost. KNOWN (IN SCOPE FILE): typing in a sheet is lost when you leave it.
-- M62 COULD NOT TELL. I did not look through the repo.
-- M63 MET from the page's side. No key appears in any request.
-- M64 COULD NOT TELL. It cannot be seen from the build.
-- M65 MET for data. The old app's saved data (public/index.html, same device) was not touched by app3.
-- M66 MET on the made-up server. A stale write is refused and says so, dated versions are kept and offered, and a delete is marked and the other phone is told. KNOWN (IN SCOPE FILE): the write limit.
-- M67 MET. Spends made on two phones apart both joined up.
-- M68 COULD NOT TELL. It lives on the server.
-- M69 MET.
-- Outside my section: M19 MET, M20 MET. M14 (screens) KNOWN (IN SCOPE FILE): "Undo can bring it back until you reload".
+OWNER'S WORDS: M61 NOT MET (blocker 1). M69 NOT MET (same). M66, M67 MET again on the made-up server. M62 to M65, M68 carried over from run 2, not walked again.
 
-COUNT: 8 jobs DONE (1, 2, 3, 4, 6, 7, 9, 10) and 3 STUCK in part (5, 8, 11). 16 kinds of change checked across a reload at once and after 10 s, all 16 the same. Moved could not be tried: it needs a second account. 14 removes and replaces checked. 12 asked first. "Use the other one" is one tap and shows Undo. "Clear" on the error log holds no money.
+COUNT: 5 confirm checks: 1 STUCK (nothing lost when two saves happen at once), 4 DONE (setup Save/Undo/See my money; Delete the cloud copy; Keep it; run-2 items spot-checked: reload, two tabs, new phone, refused send, backup and restore, End a bill). Kinds of change across reload: 6. Removes: 3, all ask first.
 
-BLOCKERS: none.
+BLOCKERS
+1. Setup in two tabs: Save in one tab silently wipes what the other tab saved (repeated 4 times). 390 wide, new device: tap "Set up on the screens instead" in tab 1 and tab 2. Tab 1: bank 286,000, Save ("Saved", "Your bank: saved"). Tab 2: pay 240,000, Save ("Your pay: saved"). Reload either tab: the bank box is empty. Both Saves at the same moment: the bank stays, pay and Free to spend are gone. Nothing says anything was replaced. Should keep both sections, or refuse the stale save in plain words. Script /tmp/qc/qc-data-safety/r2.js (node r2.js same|seq|one).
+
+What held: setup Save then Undo gives 240,000 back on the screens and in the chat's answers, at once, after a reload and after 10 s; saves on the screens show in the chat card; See my money without Save lists what is "Not saved yet", with Save fills the book and survives a reload; three quick spends then an instant reload all kept and sent; two tabs logging a spend at once both kept; new phone by code: Home, Receipts, Plan match; server refusing: Home and Settings say so, also after a reload, Send now worked; Delete the cloud copy asks first ("Delete the cloud copy for good? The earlier saved versions on the server go too ..."); Keep it and Keep it on made no server call; Delete it for good sent one DELETE, the money on the device stayed after a reload; Restore asked first with counts and matched; Put it back brought newer money back after a reload; End this bill asks first.
 
 CONFUSING
-1. Job 5. Home never says since when and has no way to retry. Steps: cloud copy on, the server refuses (500, 429) or is gone, log a spend. Home, 390 wide, says only "A change is waiting to go to the cloud copy" and later "The cloud copy did not take your last change - it tries again by itself". It has no time and nothing to tap. Settings does say "Changes made since 18:04 are on this device only for now" and offers "Send now". Both screens say it again after a reload. All 4 spends reached the other phone once the server was back. Replace with: "Not in the cloud since 18:04. It tries again by itself" and a Send now button on Home.
-2. Job 5. The Settings words lag behind. For about 15 s after a refusal it still says "On. A change made here is waiting to be sent". After a 403, then a 429, it still showed "busy". After the network was cut it still said "does not accept this code any more" until a reload.
-3. Job 8. Start again is not on any screen. A person cannot wipe the device and set up fresh.
-4. Job 11. With the cloud copy off and the assistant never used, the page still calls GET /api/health at its own address. Nothing private is sent, but the job asks for no calls at all.
-5. Job 6. After two restores, Settings lists two kept copies with the same words: "Before a backup was restored, 25 Nov 18:08" and "... 18:08. Kept until you drop it". You cannot tell which is the first numbers. Putting back the older one did bring the first numbers back, also after a reload. Add what each copy holds, for example "3 spends, bank ¥286,000".
-6. Job 2. In two tabs, a stale save closes the sheet and throws away what was typed: "Nothing was saved, because this changed somewhere else while it was open". It should stay open with the typed amount and show the new value.
-7. Phone B's day is earlier than the day phone A checked the bank. Home on B reads "checked -1 days ago, on 25 Nov". Steps: phone A on 25 Nov, cloud copy on; phone B joins with ?today=2026-11-24.
-8. Job 7. The new phone screen, "Type the cloud code from your other device, or restore a backup file", never says where to find the code ("Settings, Cloud copy, Show code"). It also never says what happens when both are gone. That is said once, at turn on: "It is the only way to open the cloud copy ... Nobody else can get it back for you."
-9. The restore preview says "2 things here now are not in it (money in or out: 1, other: 1)". It does not count a bill that was changed after the backup (Rent 72,000 to 80,000). The restore does set it back.
+1. After setup is finished on the screens, the chat still shows "Your answers so far" with Free to spend and Keep at least empty and "Still needed: How much for food ...". Carrying on in the chat, every draft step and the fill are refused ("Setup is done ..." / "Not filled in: There is already a book on this device"); nothing damaged, but the made-up AI said "Done. Here's Home" and the cards and bills typed in the chat were never added. Fix: clear or close the setup card when setup ends.
+2. A spend shows "A change is waiting to go to the cloud copy" for about 8 s before it is sent; scope.txt says a spend is sent at once. Not lost, but not at once.
 
-POLISH
-- Close this loan asks "Close LoanR? It leaves your plan". After Yes it says "LoanR still owes money. Tick its last payment at Check your bank first". It should check first, then ask.
-- The assistant was told "delete everything" and also tried to remove the pay. The card leaves that step out and says nothing about it.
-- Old unanswered "Do it" cards stay tappable after a reload. One I tapped late was refused in plain words ("Not changed ... changed somewhere else"). That is safe.
-- d.errs: "console: Failed to load resource: ... 404" each time the cloud copy is turned on (the first read finds nothing).
-- Earlier versions shows only "Sent 24 Nov, 16:00" for each one, with no hint of what is in it.
+POLISH: Save under Your pay also keeps the typed Free to spend and Keep at least across a reload while both read "Not saved yet". d.errs: a 404 on the first cloud read, 500s during the refusal test (the reviewer's own).
 
-FOR MAKO'S EYE: Delete the cloud copy is one tap on the Turn off sheet. That sheet explains it well, and the money on the device stays.
+FOR MAKO'S EYE: none.
 
-What passed: closing the browser mid-setup kept everything, chat and screens alike, and unsaved parts said "Not saved yet". Moving to a new phone by code matched every figure, also after a reload. "Which to keep" kept the other version, and "Use the other one" worked after a reload on both phones. Restore asked first with counts, matched the backup line for line, and Put it back worked after a reload. A backup from a phone whose clock ran 4 months fast restored exactly, and later edits held. Newer, damaged, wrong-format and non-backup files were each refused in plain words with nothing changed. Assistant removes, a spend over safe to spend, a bank set to 0 and a pasted statement carrying instructions each waited for "Do it". Undo after a reload brought every figure back. Requests with everything on went only to the page's address and the assistant's (made-up) relay. No code, invite word or key was in any address. The cloud body was encrypted.
-
-Tested with the made-up AI (fake_ai_page.js) and the made-up server (fake_vault.js), not the real ones.
-
-NOT CHECKED
-- A cloud copy saved by a newer page: I could not make an encrypted one without the code's internals. Only files were tried.
-- Typing lost when leaving a sheet: KNOWN, not walked again.
-- The daily write limit, and the AI cap on the server.
-- iPhone browser.
-- Moved between accounts: it needs a second account, which cannot be added after setup (scope).
-- Remove of a goal or card: not built (scope).
-- Phones more than one day apart while both are syncing.
+NOT CHECKED: the rest of run 2 carried over (assistant wipes, old and newer copies, addresses called, two devices changed apart, a backup from a wrong clock, restoring twice); the chat in one tab with the screens in another; a cloud save at the same moment as a setup draft save; the five number fixes beyond Home. Made-up AI and made-up server.
