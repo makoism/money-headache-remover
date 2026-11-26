@@ -243,4 +243,44 @@ t('[ruling (A)] both parts of a fix stay on the corrected check\'s line (C1 on T
   const { after } = kenji(true, '2026-12-14', 'c1', true);
   eq([after.old, after.now], [0, 62400]);
 });
+// [coordinator ruled, qc-numbers confirm blocker 2] a check gap counts the same way in both directions: a large jump up
+// held to be asked about (never counted) does not let the drop back down count as spending; the drop counts only past
+// it. Made-up yen: set up 1 Dec, bank 100,000, pay 250,000 on the 10th, Free to spend 30,000 (1 to 9 Dec: 30,000 x 9
+// / 30 = 9,000). 3 Dec 1,000 spent. 5 Dec the bank is typed 950,000 (the app expects 99,000): a gain of 851,000, held.
+// 6 Dec 2,000 spent. 7 Dec the bank is checked at 94,000: the drop is 950,000 - 2,000 - 94,000 = 854,000; 851,000 of it
+// only undoes the jump, so 3,000 is spending: spent 1,000 + 2,000 + 3,000 = 6,000 (= 100,000 - 94,000), safe to spend
+// 9,000 - 6,000 = 3,000. 12 Dec, pay ticked, 344,000: the closed period keeps 6,000, safe to spend 30,000.
+// Checked again the same day instead (5 Dec 950,000, then 96,000): 1,000 + 3,000 = 4,000 spent, 5,000.
+// Today the drop counts whole: 857,000 spent (855,000 the same day).
+function typo(sameDay) {
+  const newId = IDS.idMaker('t9p0zr');
+  const out = BB.buildBook({ day: '2026-12-01', told: '2026-12-01T10:00:00.000' + TZ, currency: 'JPY', country: 'JP', banks: [{ key: 'bank1', name: 'Main bank', amount: 100000, main: true, min: null }],
+    pays: [{ key: 'pay1', name: 'Pay', bank: 'bank1', amount: 250000, every: 'month', day: 10, shift: 'none', startsPeriod: true }], cards: [], bills: [], free: 30000 }, { newId });
+  let book = out.book || out;
+  const bank = book.accounts.find(a => a.type !== 'card').id;
+  const spend = (id, a, date) => book.events.push({ id, k: 'spend', acct: bank, a, date, line: 'free', note: 'shop', src: { type: 'typed' }, told: date + 'T13:00:00.000' + TZ, at: date + 'T13:00:00.000' + TZ });
+  let n = 0;
+  const check = (day, fig) => {
+    n++;
+    const r = LA.lookahead(book, day), expected = {}, lands = {};
+    for (const x of r.checkIn.toConfirm) { expected[x.item] = x.amount; lands[x.item] = x.lands; }
+    book = CI.apply(book, CI.checkIn(book, { day, told: day + 'T1' + n + ':00:00.000' + TZ, newId, figures: { [bank]: fig }, ticked: r.checkIn.toConfirm.map(x => x.item), unticked: [], amounts: {}, expected, lands, landed: {} }));
+  };
+  const v = d => { const p = P.periods(book, d); return [p.past.length ? p.past[p.past.length - 1].free.spent : null, p.current.free.spent, LA.lookahead(book, d).safeToSpend.headline]; };
+  spend('s3', 1000, '2026-12-03');
+  check('2026-12-05', 950000);
+  const o = { on5: v('2026-12-05') };
+  if (sameDay) { check('2026-12-05', 96000); o.next = v('2026-12-05'); } else { spend('s6', 2000, '2026-12-06'); check('2026-12-07', 94000); o.next = v('2026-12-07'); }
+  check('2026-12-12', sameDay ? 346000 : 344000);
+  o.on12 = v('2026-12-12');
+  return o;
+}
+t('[ruled] a bank typed 950,000 then checked at 94,000 two days later: 6,000 spent, 3,000 safe to spend; the closed period keeps 6,000', () => {
+  const o = typo(false);
+  eq([o.on5, o.next, o.on12], [[null, 1000, 8000], [null, 6000, 3000], [6000, 0, 30000]]);
+});
+t('[ruled] the same day (950,000, then 96,000): 4,000 spent, 5,000 safe to spend; the closed period keeps 4,000', () => {
+  const o = typo(true);
+  eq([o.next, o.on12], [[null, 4000, 5000], [4000, 0, 30000]]);
+});
 done('amount_history.test.js');
