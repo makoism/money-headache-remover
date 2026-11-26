@@ -495,7 +495,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     }
     if (what === 'pays' || what === 'bills') return figures(book, today).text.split('Pays and bills (ref | name | amount | when):\n')[1]?.split('\n').filter(l => l.startsWith(what === 'pays' ? 'P' : 'B')).join('\n') || 'None.';
     /* [F2] with no fixed pay the engine's month section, shaped like the period's (never "None." for a person with lines) */
-    if (what === 'lines') { const pm = r.period || r.month, per = r.period ? 'each pay' : 'each month'; return ((pm && pm.lines) || []).filter(l => LA.lineTakes(r, l.id, today)).map(l => `${back(l.id)} | ${l.closes ? `${l.name} (ended)` : l.name} | ${m(l.amount)} ${per} | ${ST.endedLeft(l, x => m(x)) || `${m(l.left)} left`}`).join('\n') || 'None.'; }
+    if (what === 'lines') { const pm = r.period || r.month, per = r.period ? 'each pay' : 'each month'; return ((pm && pm.lines) || []).filter(l => LA.lineTakes(r, l.id, today)).map(l => `${back(l.id)} | ${l.closes || l.closesWithPay ? `${l.name} (ended)` : l.name} | ${m(l.amount)} ${per} | ${ST.endedLeft(l, x => m(x)) || `${m(l.left)} left`}`).join('\n') || 'None.'; }
     if (what === 'goals') return (book.places || []).filter(g => live(g) && g.kind === 'goal').map(g => `${back(g.id)} | ${g.name} | ${m((r.places[g.id] || {}).kept || 0)} set aside of ${m(g.target)}`).join('\n') || 'None.';
     return 'Pick accounts, pays, bills, cards, lines, goals or spends.';
   }

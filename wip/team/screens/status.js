@@ -296,6 +296,8 @@
   /* [coordinator 18; M7, M51] endedLeft(line, fmt): an ended line that still takes spends says what it holds and until
      when, from the engine's line (period or month: .left, .closes): "¥26,666 left until 10 Dec, then it ends"; '' for a
      line still open. fmt(minor) writes an amount. One place: Plan, Receipts and the assistant read the same words. */
-  function endedLeft(l, fmt) { return l && l.closes ? `${fmt(l.left)} left until ${names.dayLabel(l.closes, false)}, then it ends` : ''; }
+  /* [coordinator 18, a late pay] while the pay that ends its period is late and not ticked (.closesWithPay) it never names
+     a passed day as the future: "¥26,666 left until your pay comes in, then it ends" */
+  function endedLeft(l, fmt) { return !l ? '' : l.closes ? `${fmt(l.left)} left until ${names.dayLabel(l.closes, false)}, then it ends` : l.closesWithPay ? `${fmt(l.left)} left until your pay comes in, then it ends` : ''; }
   return { statusOf, capParts, endedLeft, warningText, laterText, laterLowText, moveText, WORDS, STALE_DAYS, OLD_DAYS };
 });

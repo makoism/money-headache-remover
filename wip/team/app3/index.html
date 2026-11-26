@@ -3271,15 +3271,18 @@ details summary { min-height: 44px; }
       // [qc-foundation second confirm on monthrule, coordinator 18; M7, M31, M51] the one rule for "does this line take
       // a spend dated on a day" (lineTakes below): `closes` is the first day it takes none, null while it is open. A
       // line that ended stays open to the end of the pay period it ended in, as its amount here does ("Ends after this
-      // pay period"): it closes on the pay that starts the next period (while that pay is late, the day after the end)
+      // pay period"): it closes on the pay that starts the next period, once that pay is ticked
       const closesOf = id => {
         const ends = endsOf(id);
         if (!ends) return null;
         const e = dayNum(ends);
-        if (n.start === null || e > n.start) return next ? dayStr(Math.max(next.land, e + 1)) : null;
+        // [coordinator 18, a late pay; M46] its period really ends when the pay is in: while that pay is due or late and
+        // not ticked (`waiting`) it stays open and holds its money, as safe to spend does (closesWithPay below)
+        if (n.start === null || e > n.start) return next && !waiting ? dayStr(Math.max(next.land, e + 1)) : null;
         const after = allStartDays.filter(d => d >= e);   // [qc-foundation third confirm] ended on a period's first day: it holds 0 there, so it closes that day
         return dayStr(after.length ? Math.min(...after) : Math.max(n.start, e + 1));
       };
+      const withPay = id => { const ends = endsOf(id); return !!ends && waiting && (n.start === null || dayNum(ends) > n.start); };
       res.period = {
         start: n.start === null ? null : dayStr(n.start),
         end: next ? dayStr(waiting ? today : next.land - 1) : n.end === null ? null : dayStr(Math.max(today, n.end - 1)),
@@ -3287,7 +3290,7 @@ details summary { min-height: 44px; }
         nextPay: next ? { occ: next.id, due: dayStr(next.due), state } : null,
         // [QC F5, B2] amount: the line's full amount a period; counts: the part that counts in this period (less when it
         // started mid-period); spent; left = counts - spent; over: how far past it, taken from safe to spend
-        lines: (planLeft.lines || []).map(l => ({ id: l.src.id, name: l.name, acct: l.acct, per: l.per, amount: l.amount, left: l.left, counts: l.counts, spent: l.spent, over: Math.max(0, -l.left), closes: closesOf(l.src.id) })),
+        lines: (planLeft.lines || []).map(l => ({ id: l.src.id, name: l.name, acct: l.acct, per: l.per, amount: l.amount, left: l.left, counts: l.counts, spent: l.spent, over: Math.max(0, -l.left), closes: closesOf(l.src.id), ...(withPay(l.src.id) ? { closesWithPay: true } : {}) })),
         free: planLeft.free ? { acct: planLeft.free.acct, per: planLeft.free.per, amount: planLeft.free.amount, left: planLeft.free.left, counts: planLeft.free.counts } : null };
     } else res.period = null;   // [B4] no fixed pay: no periods
     // [F2, qc-foundation on the month rule build, 26 Nov] no fixed pay: this calendar month's lines and Free to spend,
@@ -5074,7 +5077,9 @@ details summary { min-height: 44px; }
   /* [coordinator 18; M7, M51] endedLeft(line, fmt): an ended line that still takes spends says what it holds and until
      when, from the engine's line (period or month: .left, .closes): "¥26,666 left until 10 Dec, then it ends"; '' for a
      line still open. fmt(minor) writes an amount. One place: Plan, Receipts and the assistant read the same words. */
-  function endedLeft(l, fmt) { return l && l.closes ? `${fmt(l.left)} left until ${names.dayLabel(l.closes, false)}, then it ends` : ''; }
+  /* [coordinator 18, a late pay] while the pay that ends its period is late and not ticked (.closesWithPay) it never names
+     a passed day as the future: "¥26,666 left until your pay comes in, then it ends" */
+  function endedLeft(l, fmt) { return !l ? '' : l.closes ? `${fmt(l.left)} left until ${names.dayLabel(l.closes, false)}, then it ends` : l.closesWithPay ? `${fmt(l.left)} left until your pay comes in, then it ends` : ''; }
   return { statusOf, capParts, endedLeft, warningText, laterText, laterLowText, moveText, WORDS, STALE_DAYS, OLD_DAYS };
 });
 /* One input behaviour for every box (DECISIONS_ROUND2 C, sweep2_repeats A11: "$1,212", "TripLisbon"). The first tap or
@@ -10113,8 +10118,9 @@ function rcFors3(keep) {
   for (const l of ((b.plan || {}).budgets || []).filter(rcLive3)) {
     const takes = !l.ends || !r || BurrowEngine.lookahead.lineTakes(r, l.id, day);   // no answer: the door still checks
     /* [coordinator 18, item 2] the short form says until when: "Food (ended, until 10 Dec)" (the day from the engine) */
-    const closes = takes && l.ends && r ? (BurrowEngine.lookahead.lineOf(r, l.id) || {}).closes : null;
-    if (takes || l.id === keep) out.push({ v: 'line:' + l.id, name: !l.ends ? l.name : closes ? `${l.name} (ended, until ${day3(closes)})` : `${l.name} (ended)` });
+    const el = takes && l.ends && r ? BurrowEngine.lookahead.lineOf(r, l.id) || {} : {}, closes = el.closes;
+    /* [coordinator 18, a late pay] while the pay that ends its period is late: "Food (ended, until your pay)" */
+    if (takes || l.id === keep) out.push({ v: 'line:' + l.id, name: !l.ends ? l.name : closes ? `${l.name} (ended, until ${day3(closes)})` : el.closesWithPay ? `${l.name} (ended, until your pay)` : `${l.name} (ended)` });
   }
   for (const g of (b.places || []).filter(rcLive3)) out.push({ v: 'place:' + g.id, name: g.name });
   return out;
@@ -13241,7 +13247,7 @@ function stmt3Bar() {
     const lines = ((pm && pm.lines) || []).filter(l => LA.lineTakes(r, l.id, today));
     if (lines.length) {
       // [QC F5, B2] the amount that counts this period, the full amount a period beside it only when they differ
-      out.push(`Budget lines this ${perW} (ref | name | amount | left):\n` + lines.map((l, i) => { const ref = 'L' + (i + 1); refs[ref] = l.id; return `${ref} | ${l.closes ? `${l.name} (ended)` : l.name} | ${m(l.counts)}${l.counts !== l.amount ? ` (part of ${m(l.amount)} a ${p ? 'period' : 'month'}, for the days left)` : ''} | ${ST.endedLeft(l, x => m(x)) || `${m(l.left)} left`}`; }).join('\n'));
+      out.push(`Budget lines this ${perW} (ref | name | amount | left):\n` + lines.map((l, i) => { const ref = 'L' + (i + 1); refs[ref] = l.id; return `${ref} | ${l.closes || l.closesWithPay ? `${l.name} (ended)` : l.name} | ${m(l.counts)}${l.counts !== l.amount ? ` (part of ${m(l.amount)} a ${p ? 'period' : 'month'}, for the days left)` : ''} | ${ST.endedLeft(l, x => m(x)) || `${m(l.left)} left`}`; }).join('\n'));
     } else out.push('Budget lines: none yet.');
     /* [qc-foundation confirm, 26 Nov; M1, M3, M7] no fixed pay: Free to spend is the month's, as the headline reads it */
     const fr = pm && pm.free;
@@ -13885,7 +13891,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     }
     if (what === 'pays' || what === 'bills') return figures(book, today).text.split('Pays and bills (ref | name | amount | when):\n')[1]?.split('\n').filter(l => l.startsWith(what === 'pays' ? 'P' : 'B')).join('\n') || 'None.';
     /* [F2] with no fixed pay the engine's month section, shaped like the period's (never "None." for a person with lines) */
-    if (what === 'lines') { const pm = r.period || r.month, per = r.period ? 'each pay' : 'each month'; return ((pm && pm.lines) || []).filter(l => LA.lineTakes(r, l.id, today)).map(l => `${back(l.id)} | ${l.closes ? `${l.name} (ended)` : l.name} | ${m(l.amount)} ${per} | ${ST.endedLeft(l, x => m(x)) || `${m(l.left)} left`}`).join('\n') || 'None.'; }
+    if (what === 'lines') { const pm = r.period || r.month, per = r.period ? 'each pay' : 'each month'; return ((pm && pm.lines) || []).filter(l => LA.lineTakes(r, l.id, today)).map(l => `${back(l.id)} | ${l.closes || l.closesWithPay ? `${l.name} (ended)` : l.name} | ${m(l.amount)} ${per} | ${ST.endedLeft(l, x => m(x)) || `${m(l.left)} left`}`).join('\n') || 'None.'; }
     if (what === 'goals') return (book.places || []).filter(g => live(g) && g.kind === 'goal').map(g => `${back(g.id)} | ${g.name} | ${m((r.places[g.id] || {}).kept || 0)} set aside of ${m(g.target)}`).join('\n') || 'None.';
     return 'Pick accounts, pays, bills, cards, lines, goals or spends.';
   }
