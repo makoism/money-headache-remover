@@ -8586,7 +8586,8 @@ const E3 = (() => {
     if (!r || r.empty || !r.copy || mode !== 'none') return false;
     book = r.copy; mode = 'kept'; readOnly = !!r.readOnly;
     hold = !!(r.device && r.device.fillHold);   // [qc-foundation 3] a chat fill still held in the other tab stays held here
-    try { root3.dispatchEvent(new CustomEvent('burrow3:started', { detail: { held: hold } })); } catch (e) { /* a screen's own fault */ }
+    const how = (r.device && r.device.madeBy) || null;   // 'backup': a restore made it, not setup
+    try { root3.dispatchEvent(new CustomEvent('burrow3:started', { detail: { held: hold, how } })); } catch (e) { /* a screen's own fault */ }
     return true;
   }
   function shown() { try { root3.dispatchEvent(new CustomEvent('burrow3:other')); } catch (e) { /* a screen's own fault */ } }
@@ -8617,6 +8618,7 @@ const E3 = (() => {
     if (mode !== 'none') { startWhy = 'there'; return false; }
     if (store) { const a = await adopt(); if (a === 'error') { startWhy = 'error'; return false; } if (a) { startWhy = 'there'; return false; } }
     const before = { book, mode };
+    if (store) await recEdit('madeBy', () => null);   // a book made by setup: an older restore's mark never names it
     book = newBook; mode = 'kept';
     const ok = await save({ full: true });
     if (!ok) { book = before.book; mode = before.mode; }
@@ -8629,13 +8631,16 @@ const E3 = (() => {
   /* backup lane: a whole new book from a restore or the cloud copy; the first one makes this device keep a book.
      Written whole (the store's replace: records the new book does not have are taken away). The caller keeps the old
      book first (rec('copy', ...), D2). A try book is never replaced. */
-  async function replace(next) {
+  /* [qc-data-safety run 5 CONFUSING 3] how: what made this book ('backup' for a backup file restored). On a device with no
+     book yet it is kept in the device record before the save, so another tab still on setup says what happened */
+  async function replace(next, how) {
     if (mode === 'try') return false;
-    const before = book, m = mode;
+    const before = book, m = mode, mark = m === 'none' && !!how;
+    if (mark) await rec('madeBy', how);
     book = next; mode = 'kept';
     let r = await saveR({ replace: true });
     if (!r.ok && r.why === 'behind' && store) { await store.catchUp(); book = next; r = await saveR({ replace: true }); }   // the whole book replaces the other tab's too
-    if (!r.ok) { book = before; mode = m; }
+    if (!r.ok) { book = before; mode = m; if (mark) await rec('madeBy', null); }
     else { try { root3.dispatchEvent(new CustomEvent('burrow3:book')); } catch (e) { /* a listener's own fault */ } }   // a whole new book: typing kept from before is dropped (back3)
     return r.ok;
   }
@@ -11157,8 +11162,13 @@ addEventListener('burrow3:started', e => {
   draftWrite3(null).catch(() => {});
   renderHome3();
   if (typeof renderChat3 === 'function') renderChat3();
-  const held = e && e.detail && e.detail.held;
-  msg3('Your money was set up in another tab, so this tab shows it now' + (held ? '. It can still be undone in that tab' : '') + (typed ? '. What you typed here was not saved' : ''));
+  const held = e && e.detail && e.detail.held, restored = !!(e && e.detail && e.detail.how === 'backup');
+  /* [qc-data-safety run 5 CONFUSING 2, 3] a notice: it stays until tapped away (a tab in the background is found later);
+     a restore is said as a restore */
+  const text = restored
+    ? 'A backup was restored in another tab, so this tab shows it now' + (typed ? '. What you had entered here in setup was replaced' : '')
+    : 'Your money was set up in another tab, so this tab shows it now' + (held ? '. It can still be undone in that tab' : '') + (typed ? '. What you typed here was not saved' : '');
+  MSG3.post({ kind: 'notice', key: 'tab', text });
 });
 const SETUP3_LATER = 'Loans, goals and budget lines like Gifts are not part of setup. Add them on Plan after this: Add a loan, Add a goal, Add a line';
 let setup3 = null;
@@ -12723,10 +12733,10 @@ async function keepCopy3(why, pin) {
   return (await E3.rec('copy', Object.assign({ copy: JSON.parse(JSON.stringify(E3.book)), why }, pin ? { pin: true } : {}))) || null;
 }
 /* replace this device's book; the old one is kept first when there is one. Gives true when saved. */
-async function replaceBook3(next, why, pin) {
+async function replaceBook3(next, why, pin, how) {
   const had = !!E3.book;
   if (had && !(await keepCopy3(why, pin))) return false;
-  const ok = await E3.replace(next);
+  const ok = await E3.replace(next, how);
   if (ok && !had && typeof BurrowPersist === 'object') BurrowPersist.afterSetup().catch(() => {});   // the first book on this device [D7]
   if (ok) renderHome3();
   return ok;
@@ -12741,7 +12751,7 @@ async function restoreBook3(copy, why, opts) {
   const st = typeof cloudState3 === 'function' ? await cloudState3() : null;
   const next = BACKUP3.restamp(copy, E3.book, { by: String(E3.newId()).split('-')[0], day: E3.today(), also: st && st.on && st.base ? [st.base] : [] });
   const pin = !(opts && opts.back) && !((await E3.rec('copies')) || []).some(c => c.pin);
-  return replaceBook3(next, why, pin);
+  return replaceBook3(next, why, pin, opts && opts.how);
 }
 /* setup calls this once it has saved the first book [D7] */
 function afterSetup3() { return typeof BurrowPersist === 'object' ? BurrowPersist.afterSetup() : Promise.resolve(null); }
@@ -12901,7 +12911,7 @@ async function readBackup3(file, code) {
   ask.innerHTML = `<p class="a3-warn" data-set="restoreask">${E3.book ? 'This replaces the money on this device with the backup. What is here now is kept, and Put it back brings it back.' : 'This puts the money from the backup on this device.'} The backup holds ${n} record${n === 1 ? '' : 's'}.${aheadSay}${others}${after}</p>
     <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3BkGo">Restore it</button><button type="button" class="a3-btn" id="a3BkNo">Cancel</button></div>`;
   $('#a3BkGo').addEventListener('click', async () => {
-    const ok = await restoreBook3(SET3.restore, 'Before a backup was restored');
+    const ok = await restoreBook3(SET3.restore, 'Before a backup was restored', { how: 'backup' });
     SET3.restore = null; ask.innerHTML = '';
     setMsg3(ok ? 'Restored from the backup file.' : 'This could not be saved on this device. Nothing changed.', !ok);
     paintKept3();
