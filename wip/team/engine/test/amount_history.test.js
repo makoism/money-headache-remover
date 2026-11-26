@@ -283,4 +283,68 @@ t('[ruled] the same day (950,000, then 96,000): 4,000 spent, 5,000 safe to spend
   const o = typo(true);
   eq([o.next, o.on12], [[null, 4000, 5000], [4000, 0, 30000]]);
 });
+// [coordinator 18 ruled, qc-foundation confirm2 finding 1] an unexplained jump up is held only until the next check of
+// that account. Back near what the app expected without the jump: a typo, both cancel (the tests above). Otherwise the
+// jump is real money in, on no line, dated where it appeared, and every drop after it counts as spending as usual.
+// Made-up yen, bd.js's dates: set up 1 Dec, bank 100,000, pay 250,000 on the 10th, Free to spend 30,000 (1 to 9 Dec:
+// 30,000 x 9 / 30 = 9,000). 5 Dec the bank shows 200,000 (a real 100,000 gift, not logged, not answered): held, safe to
+// spend 9,000. 8 Dec 150,000: the app had 200,000, so the drop is 50,000; without the jump it expected 100,000 and the
+// bank is 50,000 above that, far from it (50,000 > 9,000 and 50,000 x 5 > 100,000): not a typo, the gift is real money
+// in and the 50,000 drop is spending: 50,000 spent, safe 9,000 - 50,000, never below 0: 0. 14 Dec, pay ticked, 370,000:
+// the app had 150,000 + 250,000 = 400,000, so 30,000 spent in the new period, safe 30,000 - 30,000 = 0; the closed
+// period keeps 50,000. Today: 0 spent on 8 Dec (safe 9,000) and 0 on 14 Dec (safe 30,000), 30,000 hidden.
+function gift() {
+  const newId = IDS.idMaker('t9p0zr');
+  const out = BB.buildBook({ day: '2026-12-01', told: '2026-12-01T10:00:00.000' + TZ, currency: 'JPY', country: 'JP', banks: [{ key: 'bank1', name: 'Main bank', amount: 100000, main: true, min: null }],
+    pays: [{ key: 'pay1', name: 'Pay', bank: 'bank1', amount: 250000, every: 'month', day: 10, shift: 'none', startsPeriod: true }], cards: [], bills: [], free: 30000 }, { newId });
+  const o = { book: out.book || out, n: 0 };
+  o.bank = o.book.accounts.find(a => a.type !== 'card').id;
+  o.check = (day, fig) => {
+    o.n++;
+    const r = LA.lookahead(o.book, day), expected = {}, lands = {};
+    for (const x of r.checkIn.toConfirm) { expected[x.item] = x.amount; lands[x.item] = x.lands; }
+    o.book = CI.apply(o.book, CI.checkIn(o.book, { day, told: day + 'T1' + o.n + ':00:00.000' + TZ, newId, figures: { [o.bank]: fig }, ticked: r.checkIn.toConfirm.map(x => x.item), unticked: [], amounts: {}, expected, lands, landed: {} }));
+  };
+  o.v = d => { const p = P.periods(o.book, d); return [p.past.length ? p.past[p.past.length - 1].free.spent : null, p.current.free.spent, LA.lookahead(o.book, d).safeToSpend.headline]; };
+  return o;
+}
+t('[ruled] a real 100,000 gift left unanswered: the 8 Dec check makes it money in; 50,000 spent by 8 Dec, 30,000 after pay', () => {
+  const o = gift();
+  o.check('2026-12-05', 200000); const on5 = o.v('2026-12-05');
+  o.check('2026-12-08', 150000); const on8 = o.v('2026-12-08');
+  o.check('2026-12-14', 370000); const on14 = o.v('2026-12-14');
+  eq([on5, on8, on14], [[null, 0, 9000], [null, 50000, 0], [50000, 30000, 0]]);
+  // the bank holds the gift: 370,000 today, nothing guessed away
+  eq(LA.lookahead(o.book, '2026-12-14').accounts[o.bank].bank, 370000);
+});
+// [qc-foundation confirm2 WATCH] what a held jump holds is the gap judged at the check, never the part a record changed
+// since already explains. Made-up yen: as above, with Savings 200,000. 3 Dec a 50,000 move Savings to Main is logged.
+// 5 Dec Main is checked at 250,000: the app had 150,000, a 100,000 jump, held. 6 Dec the move is removed (it was told
+// before the check): the gap is now 150,000, but 50,000 of it is the removed move, explained, so spending stays 0 (today
+// 50,000: the move's change counts and the held jump's explained part does not). 7 Dec Main 97,000: the app had 250,000,
+// a 153,000 drop; without the 100,000 jump it expected 150,000, and 97,000 is below that, so a typo: 100,000 of the drop
+// cancels the jump, 53,000 is spending: 53,000 spent, safe 0 (9,000 - 53,000). Undoing all 150,000 would leave 3,000
+// and lose the removed move's own 50,000 (the closed period would then show 53,000 only by luck).
+t('[WATCH] a held jump holds only the gap judged at the check: a removed move-in it held stays explained', () => {
+  const newId = IDS.idMaker('w7tc0a');
+  const out = BB.buildBook({ day: '2026-12-01', told: '2026-12-01T10:00:00.000' + TZ, currency: 'JPY', country: 'JP', banks: [{ key: 'bank1', name: 'Main bank', amount: 100000, main: true, min: null }, { key: 'bank2', name: 'Savings', amount: 200000, main: false, min: null }],
+    pays: [{ key: 'pay1', name: 'Pay', bank: 'bank1', amount: 250000, every: 'month', day: 10, shift: 'none', startsPeriod: true }], cards: [], bills: [], free: 30000 }, { newId });
+  let book = out.book || out, n = 0;
+  const M = book.accounts.find(a => a.name === 'Main bank').id, S = book.accounts.find(a => a.name === 'Savings').id;
+  const check = (day, fig) => {
+    n++;
+    const r = LA.lookahead(book, day), expected = {}, lands = {};
+    for (const x of r.checkIn.toConfirm) { expected[x.item] = x.amount; lands[x.item] = x.lands; }
+    book = CI.apply(book, CI.checkIn(book, { day, told: day + 'T1' + n + ':00:00.000' + TZ, newId, figures: { [M]: fig }, ticked: r.checkIn.toConfirm.map(x => x.item), unticked: [], amounts: {}, expected, lands, landed: {} }));
+  };
+  const v = d => [P.periods(book, d).current.free.spent, LA.lookahead(book, d).safeToSpend.headline];
+  book.events.push({ id: 'mv3', k: 'transfer', acct: S, acct2: M, a: 50000, date: '2026-12-03', note: 'move', src: { type: 'typed' }, told: '2026-12-03T13:00:00.000' + TZ, at: '2026-12-03T13:00:00.000' + TZ });
+  check('2026-12-05', 250000);
+  const on5 = v('2026-12-05');
+  const e = book.events.find(x => x.id === 'mv3'), T = '2026-12-06T09:00:00.000' + TZ;
+  e.was = [{ a: 50000, told: T }]; e.gone = '2026-12-06'; e.goneBy = 'sx'; e.at = T;
+  const on6 = v('2026-12-06');
+  check('2026-12-07', 97000);
+  eq([on5, on6, v('2026-12-07')], [[0, 9000], [0, 9000], [53000, 0]]);
+});
 done('amount_history.test.js');
