@@ -60,6 +60,7 @@ page|tests/e3_checkin.js|e3_checkin: ALL PASS||300|Check your bank
 page|tests/e3_paycame.js|e3_paycame: ALL PASS||300|A pay ticked after its due day asks when it came in (monthrule2 1b, way c)
 page|tests/e3_checkgap.js|e3_checkgap: ALL PASS||300|Check your bank names the gap before and after saving (BK2, BK4)
 page|tests/e3_checkfix.js|e3_checkfix: ALL PASS||400|change or remove a bank check later on the screens (CHECKFIX slice 10; M13, M14, M6, M47): Home's Checks, an older check changed with Undo and after a reload, the empty box, where the gap went, the newest removed after asking, a minus asked first, Check your bank keeps the gap's line (F2)
+page|tests/e3_movedrows.js|e3_movedrows: ALL PASS||300|Receipts lists everything that moved money since the bank's check, ticked bills and pay included, from the records Home counts as moved: count and total equal, money in reads in, each removable with Undo (coordinator 18 ruling A)
 page|tests/e3_warnwords.js|e3_warnwords: ALL PASS||300|Home words the engine's warnings itself: below zero with no minimum, no raw ISO day or month
 page|tests/e3_cardline.js|e3_cardline: ALL PASS||300|a card with an overdue payment never says nothing to pay yet
 page|tests/e3_bankparts.js|e3_bankparts: ALL PASS||300|bank today in its parts once something is logged after the check
@@ -174,9 +175,9 @@ page_tests_for() {   # page_tests_for <changed path, relative to app3/>
     tests/chat_real.js)       echo e3_ailog e3_aiwords e3_fillcard e3_cloudfirst e3_aijoin ;;   # a helper (the real core and panel with the fake model behind a made-up relay), not a test
     tests/*.js)               [ -f "$1" ] && basename "$1" .js ;;   # a test file removed on purpose has no test to run
     src/home3.js)             echo e3_cloudstatus e3_home e3_ns e3_homeplan e3_warnwords e3_cardline e3_bankparts e3_names e3_payday ;;
-    src/checks3.js)           echo e3_checkfix e3_home e3_back e3_boxwalk ;;
+    src/checks3.js)           echo e3_movedrows e3_checkfix e3_home e3_back e3_boxwalk ;;
     src/checkin3.js)          echo e3_checkfix e3_checkin e3_checkgap e3_cardfig e3_reload e3_bankparts e3_payday e3_overdrawn e3_cardpay e3_paycame ;;
-    src/receipts3.js)         echo e3_removes e3_receipts e3_listfix e3_moneyin e3_bigspend e3_stmt_once e3_period e3_names e3_doors e3_moved1 e3_cardgap e3_moved2 e3_amountsplit e3_removedbefore ;;
+    src/receipts3.js)         echo e3_movedrows e3_removes e3_receipts e3_listfix e3_moneyin e3_bigspend e3_stmt_once e3_period e3_names e3_doors e3_moved1 e3_cardgap e3_moved2 e3_amountsplit e3_removedbefore ;;
     src/plan3.js|src/plan3_write.js) echo e3_accounts e3_goalremove e3_payadd e3_acctclose e3_cardclose e3_removes e3_aijoin e3_plan e3_rhythms e3_lineshare e3_homeplan e3_paychange e3_names e3_billyear e3_payfrom ;;
     src/setup3.js|src/answers3.js) echo e3_twodrafts e3_fillcard e3_setup e3_setupfix e3_setup6 e3_income2 e3_weeks3 e3_first e3_onepay e3_overdrawn e3_paytoday e3_chatwalk e3_chat ;;
     src/change3.js)           echo e3_undobar e3_chat e3_fakeai_page e3_plan ;;   # what a step changed: the change card and the Undo bar

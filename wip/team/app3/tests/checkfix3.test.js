@@ -286,7 +286,7 @@ const checkOf = (b, id) => b.events.find(e => e.id === id);
     const all = W.ticksOf(h.book), a = W.ticksOf(h.book, { acct: CARD_A }), rent = W.ticksOf(h.book, { sched: 'k7m2qa-f3n8p1x6wd-6' });
     eq([a.length, a[0].acct2, rent.length], [1, CARD_A, 1]);
     ok(all.length >= 6 && all.every(e => /^set:/.test(e.id)), JSON.stringify(all.map(e => e.id)));
-    eq(W.untickWords({ book: h.book, today: h.day }, a[0].id), 'Untick Card A\'s payment of ¥54,000, 10 Dec? It goes back to not ticked, so it is expected again. You can Undo it');
+    eq(W.untickWords({ book: h.book, today: h.day }, a[0].id), 'Untick Card A payment of ¥54,000, 10 Dec? It goes back to not ticked, so it is expected again. You can Undo it');
     const r = await h.go('untick', a[0].id);
     ok(r.ok, JSON.stringify(r));
     const e = checkOf(h.book, a[0].id);

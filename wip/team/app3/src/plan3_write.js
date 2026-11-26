@@ -796,7 +796,7 @@
   }
   function tickName(book, e) {
     const x = e.settles[0] || {}, s = (book.schedules || []).find(z => z && z.id === x.s), a = (book.accounts || []).find(z => z && z.id === x.s);
-    return s ? s.name : a ? a.name + '\'s payment' : 'A payment';
+    return s ? s.name : a ? a.name + ' payment' : 'A payment';   // as lane/controls-6 names it ("Car loan payment")
   }
   function untick(w, id) {
     const e = (w.book.events || []).find(x => x && x.id === id);

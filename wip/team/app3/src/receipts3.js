@@ -411,7 +411,7 @@ function rcList3() {
   const rcLi3 = e => {
     const s = split(e), shown = s ? s.atCheck : e.a, cur = E3.curOf(e.acct);
     const was = s ? `<br><span data-fig="rc-split">${e.gone ? `removed on ${esc3(day3(s.told, yr))}` : `now ${esc3(money3(e.a, cur))}`}, as it was at your bank check on ${esc3(day3(s.check, yr))}. The change counts in that check's pay period</span>` : '';
-    const inner = `<span>${esc3(rcWhat3(e))}<br><span class="when">${esc3(day3(e.date, yr))}, ${esc3(E3.nameOf(e.acct))}${rcNote3(e) ? ', ' + esc3(rcNote3(e)) : ''}${held[e.id] ? `<br><span data-fig="rc-held">already in your bank figure of ${esc3(day3(held[e.id], yr))}</span>` : ''}${was}</span></span><span class="amt${e.k === 'in' ? ' a3-in-amt' : ''}">${e.k === 'in' ? 'back ' : ''}${money3(shown, cur)}</span>`;
+    const inner = `<span>${esc3(rcWhat3(e))}<br><span class="when">${esc3(day3(e.date, yr))}, ${esc3(E3.nameOf(e.acct))}${rcNote3(e) ? ', ' + esc3(rcNote3(e)) : ''}${held[e.id] ? `<br><span data-fig="rc-held">already in your bank figure of ${esc3(day3(held[e.id], yr))}</span>` : ''}${was}</span></span><span class="amt${e.k === 'in' ? ' a3-in-amt' : ''}">${e.k === 'in' ? (e.sub === 'refund' ? 'back ' : 'in ') : ''}${money3(shown, cur)}</span>`;
     return e.gone ? `<li data-split="${esc3(e.id)}" data-k="${esc3(e.k)}">${inner}</li>`
       : `<li data-rc="${esc3(e.id)}" data-k="${esc3(e.k)}"><button type="button" class="a3-rcrow" aria-label="Change ${esc3(rcWhat3(e))}, ${esc3(money3(e.a, cur))}">${inner}</button></li>`;
   };

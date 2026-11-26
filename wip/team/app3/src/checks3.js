@@ -140,8 +140,9 @@ if (typeof ACT3 === 'object' && ACT3) ACT3.onChange(() => { if (checks3 && !$('#
    first (sure3), then one act3 step (PLAN3W.untick): the payment goes back to not ticked, with its Undo bar ---- */
 function tickLi3(e, yr) {
   const acct = e.k === 'repay' ? e.acct2 : e.acct, amt = e.k === 'repay' && e.a2 != null ? e.a2 : e.a;
-  const what = e.k === 'in' ? 'came in' : e.k === 'repay' ? `paid from ${E3.nameOf(e.acct)}` : 'paid';
-  return `<li data-tick="${esc3(e.id)}"><span>Ticked: ${esc3(PLAN3W.tickName(E3.book, e))}<br><span class="when">${esc3(day3(e.date, yr))}, ${esc3(what)}</span><br><button type="button" class="a3-link" data-untick="${esc3(e.id)}">Remove this tick</button></span><span class="amt${e.k === 'in' ? ' a3-in-amt' : ''}">${money3(amt, E3.curOf(acct))}</span></li>`;
+  /* the words lane/controls-6 gives a ticked card or loan payment: its name, its day, its bank, "ticked at Check your
+     bank", its amount; money in reads "in" */
+  return `<li data-tick="${esc3(e.id)}" data-ticked="${esc3(e.id)}"><span>${esc3(PLAN3W.tickName(E3.book, e))}<br><span class="when">${esc3(day3(e.date, yr))}, ${esc3(E3.nameOf(e.acct))}, ticked at Check your bank</span><br><button type="button" class="a3-link" data-untick="${esc3(e.id)}">Remove this tick</button></span><span class="amt${e.k === 'in' ? ' a3-in-amt' : ''}">${e.k === 'in' ? 'in ' : ''}${money3(amt, E3.curOf(acct))}</span></li>`;
 }
 function tickWire3(host, sureHost, after) {
   host.querySelectorAll('[data-untick]').forEach(b => b.addEventListener('click', () => {

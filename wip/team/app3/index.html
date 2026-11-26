@@ -10405,7 +10405,7 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
   }
   function tickName(book, e) {
     const x = e.settles[0] || {}, s = (book.schedules || []).find(z => z && z.id === x.s), a = (book.accounts || []).find(z => z && z.id === x.s);
-    return s ? s.name : a ? a.name + '\'s payment' : 'A payment';
+    return s ? s.name : a ? a.name + ' payment' : 'A payment';   // as lane/controls-6 names it ("Car loan payment")
   }
   function untick(w, id) {
     const e = (w.book.events || []).find(x => x && x.id === id);
@@ -11099,8 +11099,9 @@ if (typeof ACT3 === 'object' && ACT3) ACT3.onChange(() => { if (checks3 && !$('#
    first (sure3), then one act3 step (PLAN3W.untick): the payment goes back to not ticked, with its Undo bar ---- */
 function tickLi3(e, yr) {
   const acct = e.k === 'repay' ? e.acct2 : e.acct, amt = e.k === 'repay' && e.a2 != null ? e.a2 : e.a;
-  const what = e.k === 'in' ? 'came in' : e.k === 'repay' ? `paid from ${E3.nameOf(e.acct)}` : 'paid';
-  return `<li data-tick="${esc3(e.id)}"><span>Ticked: ${esc3(PLAN3W.tickName(E3.book, e))}<br><span class="when">${esc3(day3(e.date, yr))}, ${esc3(what)}</span><br><button type="button" class="a3-link" data-untick="${esc3(e.id)}">Remove this tick</button></span><span class="amt${e.k === 'in' ? ' a3-in-amt' : ''}">${money3(amt, E3.curOf(acct))}</span></li>`;
+  /* the words lane/controls-6 gives a ticked card or loan payment: its name, its day, its bank, "ticked at Check your
+     bank", its amount; money in reads "in" */
+  return `<li data-tick="${esc3(e.id)}" data-ticked="${esc3(e.id)}"><span>${esc3(PLAN3W.tickName(E3.book, e))}<br><span class="when">${esc3(day3(e.date, yr))}, ${esc3(E3.nameOf(e.acct))}, ticked at Check your bank</span><br><button type="button" class="a3-link" data-untick="${esc3(e.id)}">Remove this tick</button></span><span class="amt${e.k === 'in' ? ' a3-in-amt' : ''}">${e.k === 'in' ? 'in ' : ''}${money3(amt, E3.curOf(acct))}</span></li>`;
 }
 function tickWire3(host, sureHost, after) {
   host.querySelectorAll('[data-untick]').forEach(b => b.addEventListener('click', () => {
@@ -11535,7 +11536,7 @@ function rcList3() {
   const rcLi3 = e => {
     const s = split(e), shown = s ? s.atCheck : e.a, cur = E3.curOf(e.acct);
     const was = s ? `<br><span data-fig="rc-split">${e.gone ? `removed on ${esc3(day3(s.told, yr))}` : `now ${esc3(money3(e.a, cur))}`}, as it was at your bank check on ${esc3(day3(s.check, yr))}. The change counts in that check's pay period</span>` : '';
-    const inner = `<span>${esc3(rcWhat3(e))}<br><span class="when">${esc3(day3(e.date, yr))}, ${esc3(E3.nameOf(e.acct))}${rcNote3(e) ? ', ' + esc3(rcNote3(e)) : ''}${held[e.id] ? `<br><span data-fig="rc-held">already in your bank figure of ${esc3(day3(held[e.id], yr))}</span>` : ''}${was}</span></span><span class="amt${e.k === 'in' ? ' a3-in-amt' : ''}">${e.k === 'in' ? 'back ' : ''}${money3(shown, cur)}</span>`;
+    const inner = `<span>${esc3(rcWhat3(e))}<br><span class="when">${esc3(day3(e.date, yr))}, ${esc3(E3.nameOf(e.acct))}${rcNote3(e) ? ', ' + esc3(rcNote3(e)) : ''}${held[e.id] ? `<br><span data-fig="rc-held">already in your bank figure of ${esc3(day3(held[e.id], yr))}</span>` : ''}${was}</span></span><span class="amt${e.k === 'in' ? ' a3-in-amt' : ''}">${e.k === 'in' ? (e.sub === 'refund' ? 'back ' : 'in ') : ''}${money3(shown, cur)}</span>`;
     return e.gone ? `<li data-split="${esc3(e.id)}" data-k="${esc3(e.k)}">${inner}</li>`
       : `<li data-rc="${esc3(e.id)}" data-k="${esc3(e.k)}"><button type="button" class="a3-rcrow" aria-label="Change ${esc3(rcWhat3(e))}, ${esc3(money3(e.a, cur))}">${inner}</button></li>`;
   };
