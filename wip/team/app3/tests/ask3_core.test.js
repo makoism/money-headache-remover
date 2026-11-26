@@ -175,6 +175,39 @@ const ctxOf = h => ({ book: h.book, today: DAY });
     ok(s.includes('Short by ¥20,000, below zero from 28 Dec.'), s);
     ok(!/before the pay|before then/.test(s), s);
   });
+  /* [qc-foundation confirm on monthrule, 26 Nov; M1, M3, M7] no fixed pay: Free to spend is read from the month
+     (res.month), so the assistant and the change card say what the headline says. Kai, made-up yen: freelance, no
+     fixed pay, Main bank 2,000,000, set up 1 Nov; 50,000 of spends from 1 to 17 Dec with no Free to spend; on 18 Dec he
+     sets Free to spend at 60,000 a month. By hand: 18 to 31 Dec is 14 of 31 days, 60,000 x 14 / 31 = 27,096.7, rounded
+     down 27,096; nothing spent from 18 Dec, so 27,096 left, and the headline is 27,096. A spend of 2,000 on 18 Dec
+     comes off it: 27,096 - 2,000 = 25,096 left, and the headline 25,096. */
+  const KDAY = '2026-12-18';
+  function kai() {
+    const BB = require(E + 'build_book.js'), newId = I.idMaker('k4i9pz');
+    const out = BB.buildBook({ day: '2026-11-01', told: '2026-11-01T09:00:00.000+09:00', currency: 'JPY', country: 'JP',
+      banks: [{ key: 'bank1', name: 'Main bank', amount: 2000000, main: true, min: null }],
+      pays: [{ key: 'pay1', name: 'Work', bank: 'bank1', amount: null, every: 'none' }], cards: [], bills: [], free: null }, { newId });
+    const b = out.book || out, bank = b.accounts.find(a => a.type === 'bank').id;
+    const st = (r, told) => Object.assign(r, { told, at: told, by: 'k4i9pz' });
+    for (const [d, a] of [['2026-12-01', 10000], ['2026-12-05', 15000], ['2026-12-10', 12000], ['2026-12-17', 13000]])
+      b.events.push(st({ id: newId(), k: 'spend', date: d, a, acct: bank, src: { type: 'typed' } }, d + 'T19:00:00.000+09:00'));
+    b.plan.shares = (b.plan.shares || []).filter(x => x.free == null).concat([st({ id: newId(), from: KDAY, cur: 'JPY', per: { free: 'month' }, free: 60000, goals: {} }, KDAY + 'T20:00:00.000+09:00')]);
+    return b;
+  }
+  await t('[no fixed pay] Kai on 18 Dec: the summary says Free to spend this month 27,096 of 60,000, 27,096 left, as the headline', async () => {
+    const b = kai(), s = K.summary(b, KDAY).text;
+    eq(L.lookahead(b, KDAY).safeToSpend.headline, 27096, 'the headline');
+    ok(!/Free to spend: not set yet/.test(s), s.match(/Free to spend[^\n]*/g).join(' / '));
+    ok(s.includes('Free to spend this month: ¥27,096 (part of ¥60,000 a month, for the days left), ¥27,096 left.'), (s.match(/Free to spend this[^\n]*/) || [])[0]);
+  });
+  await t('[no fixed pay] Kai on 18 Dec: the change card for a 2,000 spend shows Free to spend left 27,096 then 25,096', async () => {
+    const b = kai(), c = K.check({ answer: 'x', actions: [{ do: 'log_spend', amount: 2000 }] }, K.summary(b, KDAY).refs, { book: b, today: KDAY });
+    const p = await K.preview(b, c.steps, { today: KDAY, told: () => KDAY + 'T21:00+09:00', newId: I.idMaker('ask3kv', Math.random) });
+    ok(p.ok, p.text);
+    const row = k => p.rows.find(x => x.key === k) || {};
+    eq([row('safe').before, row('safe').after], [27096, 25096]);
+    eq([row('free').label, row('free').before, row('free').after], ['Free to spend left', 27096, 25096]);
+  });
   console.log(bad ? `ask3_core: ${bad} FAIL of ${n}` : `ask3_core: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })();

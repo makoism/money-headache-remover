@@ -737,6 +737,28 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const card = r.shown.find(x => x.who === 'card');
     ok(card && card.card.lines.some(l => /Food: ¥25,000 each month/.test(l)) && card.card.lines.some(l => /Free to spend: ¥35,000 each month/.test(l)), JSON.stringify(card && card.card.lines));
   });
+  /* [qc-foundation confirm on monthrule, 26 Nov; M1, M3, M7] no fixed pay: the done card's before and after rows read
+     Free to spend from the month. Kai, made-up yen (as engine/test/month_added.test.js): no fixed pay, Main bank
+     2,000,000, 50,000 spent 1 to 17 Dec, Free to spend 60,000 a month set on 18 Dec. By hand: 60,000 x 14 / 31 =
+     27,096 (rounded down) left and the headline 27,096; a 2,000 spend on 18 Dec: 25,096 and 25,096. */
+  await t('[no fixed pay] Kai on 18 Dec, "I spent 2,000": the card shows Free to spend left 27,096 then 25,096, as the headline', async () => {
+    const BB = require(E + 'build_book.js'), h = page('2026-12-18'), newId = I.idMaker('k4i9pz');
+    const out = BB.buildBook({ day: '2026-11-01', told: '2026-11-01T09:00:00.000+09:00', currency: 'JPY', country: 'JP',
+      banks: [{ key: 'bank1', name: 'Main bank', amount: 2000000, main: true, min: null }],
+      pays: [{ key: 'pay1', name: 'Work', bank: 'bank1', amount: null, every: 'none' }], cards: [], bills: [], free: null }, { newId });
+    const b = out.book || out, bank = b.accounts.find(a => a.type === 'bank').id, stp = (r, told) => Object.assign(r, { told, at: told, by: 'k4i9pz' });
+    for (const [d, a] of [['2026-12-01', 10000], ['2026-12-05', 15000], ['2026-12-10', 12000], ['2026-12-17', 13000]])
+      b.events.push(stp({ id: newId(), k: 'spend', date: d, a, acct: bank, src: { type: 'typed' } }, d + 'T19:00:00.000+09:00'));
+    b.plan.shares = (b.plan.shares || []).filter(x => x.free == null).concat([stp({ id: newId(), from: '2026-12-18', cur: 'JPY', per: { free: 'month' }, free: 60000, goals: {} }, '2026-12-18T20:00:00.000+09:00')]);
+    h.book = b;
+    let sent = '';
+    const f = FAKE.make([body => { sent = JSON.stringify(body); return say('', [call('change', { steps: [{ do: 'log_spend', amount: 2000, account: 'A1' }] })]); }, say('Logged.')]);
+    const r = await K.turn(K.fresh(), 'I spent 2,000', h.deps(f));
+    ok(!/Free to spend: not set yet/.test(sent), 'the assistant is told Free to spend is not set');
+    ok(sent.includes('Free to spend this month: ¥27,096 (part of ¥60,000 a month, for the days left), ¥27,096 left.'), 'what is sent: ' + (sent.match(/Free to spend this[^\\]*/) || [])[0]);
+    const c = r.shown.find(x => x.who === 'card').card;
+    eq(c.rows.map(x => [x.label, x.before, x.after]).filter(x => /Safe|Free/.test(x[0])), [['Safe to spend', 27096, 25096], ['Free to spend left', 27096, 25096]]);
+  });
   console.log(bad ? `chat3_core: ${bad} of ${n} FAILED` : `chat3_core: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })();
