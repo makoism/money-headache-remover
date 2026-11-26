@@ -2,7 +2,9 @@
    Check-in reminders on chosen days (the day after pay lands and the middle of each pay period, both by default) and
    bill reminders a chosen number of days before each bill leaves the bank, put in the phone's own calendar: a calendar
    file (.ics, every dated reminder for the next year, made on this device and opened by the calendar app), or a Google
-   or Outlook link. Nothing is sent anywhere by this page and nothing is saved: the choices start fresh each time. The
+   or Outlook link. Nothing is sent anywhere by this page. [E1b, M13, M61] The choices are kept on this device (E3.rec
+   'remind', the device record), each one as it is made, and come back after a reload; a calendar already filled changes
+   only with a new calendar file, and the sheet says so. The
    events carry words only, never an amount. The days are REMIND3's (src/remind3.js), from the engine's calendars.
    This file chooses, writes and places; it never adds, takes away or rounds. */
 const REM3 = { open: false, was: null, afterPay: true, mid: true, before: 2, time: '09:00', off: {} };
@@ -16,10 +18,21 @@ function rem3Data() {
   const bills = all.filter(b => !REM3.off[b.id]);
   return { day, checkins, all, bills, events: REMIND3.events({ checkins, bills, time: REM3.time }) };
 }
-function openRem3() {
+const REM3_KEEP = ['afterPay', 'mid', 'before', 'time', 'off'];
+const REM3_KEPT = 'Your choices are kept on this phone. A calendar you already filled changes only when you save the calendar file again';
+/* each choice saved as it is made; the line under the calendar button says whether it was */
+async function rem3Keep() {
+  const ok = await E3.rec('remind', Object.fromEntries(REM3_KEEP.map(k => [k, REM3[k]])));
+  const el = $('[data-rem="kept"]');
+  if (el) el.textContent = ok ? 'Saved on this phone. A calendar you already filled changes only when you save the calendar file again' : 'These choices could not be kept on this phone. They count for the calendar file you save now';
+}
+async function openRem3() {
   if (REM3.open) return;
   if (!E3.book) { msg3('Set up first'); return; }
   REM3.open = true;
+  const k = await E3.rec('remind');
+  if (k && typeof k === 'object') for (const key of REM3_KEEP) if (k[key] !== undefined && k[key] !== null) REM3[key] = k[key];
+  if (!REM3.open) return;   // closed while it was read
   const sheet = $('#a3Rem');
   sheet.innerHTML = `<div class="a3-sheet-in">
     <h1 id="a3RemT">Reminders</h1>
@@ -38,17 +51,18 @@ function openRem3() {
       <p class="a3-next" data-rem="what">Nothing is sent anywhere. The calendar file is made on this phone and your calendar app opens it. The reminders say what is due, never an amount.</p>
       <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3RemIcs">Save the calendar file</button></div>
       <p class="a3-sub" id="a3RemCount"></p>
+      <p class="a3-sub" data-rem="kept">${esc3(REM3_KEPT)}</p>
       <p class="a3-sub">Google Calendar repeats each one. Outlook adds the next one only. The calendar file has every one for the next year, moved for weekends and holidays.</p>
       <ul class="a3-rows" id="a3RemLinks"></ul></div>
     <div class="a3-actions"><button type="button" class="a3-btn" id="a3RemClose">Close</button></div>
   </div>`;
   REM3.was = [...document.querySelectorAll('[data-panel], .a3-tabs, #a3Check, #a3StmtBar, #a3Stmt, #a3Set, #a3Setup')].map(el => [el, el.hidden]);
   REM3.was.forEach(([el]) => { el.hidden = true; }); sheet.hidden = false;
-  $('#a3RemAfter').addEventListener('change', e => { REM3.afterPay = e.target.checked; rem3Paint(); });
-  $('#a3RemMid').addEventListener('change', e => { REM3.mid = e.target.checked; rem3Paint(); });
-  $('#a3RemBefore').addEventListener('change', e => { REM3.before = Number(e.target.value); rem3Paint(); });
-  $('#a3RemTime').addEventListener('change', e => { if (!e.target.value) e.target.value = REM3.time; /* a cleared time goes back to the time in use, shown in the box */ REM3.time = e.target.value; rem3Paint(); });
-  $('#a3RemBills').addEventListener('change', e => { const c = e.target.closest('[data-rembill]'); if (!c) return; REM3.off[c.dataset.rembill] = !c.checked; rem3Paint(); });
+  $('#a3RemAfter').addEventListener('change', e => { REM3.afterPay = e.target.checked; rem3Paint(); rem3Keep(); });
+  $('#a3RemMid').addEventListener('change', e => { REM3.mid = e.target.checked; rem3Paint(); rem3Keep(); });
+  $('#a3RemBefore').addEventListener('change', e => { REM3.before = Number(e.target.value); rem3Paint(); rem3Keep(); });
+  $('#a3RemTime').addEventListener('change', e => { if (!e.target.value) e.target.value = REM3.time; /* a cleared time goes back to the time in use, shown in the box */ REM3.time = e.target.value; rem3Paint(); rem3Keep(); });
+  $('#a3RemBills').addEventListener('change', e => { const c = e.target.closest('[data-rembill]'); if (!c) return; REM3.off = Object.assign({}, REM3.off, { [c.dataset.rembill]: !c.checked }); rem3Paint(); rem3Keep(); });
   $('#a3RemIcs').addEventListener('click', rem3Save);
   $('#a3RemClose').addEventListener('click', closeRem3);
   rem3Paint(); scrollTo(0, 0); $('#a3RemAfter').focus();

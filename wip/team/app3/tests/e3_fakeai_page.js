@@ -83,7 +83,7 @@ const fig = (p, sel) => p.$eval(sel, e => Number((e.dataset.amt !== undefined ? 
     const shut = async () => { if (await d.p.$('#a3Chat[data-open] #a3ChatClose')) await d.p.$eval('#a3ChatClose', e => e.click()); await d.p.waitForTimeout(150); };
     const got = [];
     await shut(); await d.p.$eval('.a3-tabs [data-tab=plan]', e => e.click()); await d.p.waitForTimeout(300);
-    for (const [sel, key] of [['#plAddCard', 'addCard'], ['#plAddLoan', 'addLoan'], ['#plAddBill', 'addBill'], ['#plAddGoal', 'addGoal'], ['#plAddLine', 'addLine'], ['#plSetFree', 'free'], ['[data-bill]', 'bill'], ['[data-pay]', 'pay'], ['[data-owed]', 'card']]) {
+    for (const [sel, key] of [['#plAddCard', 'addCard'], ['#plAddLoan', 'addLoan'], ['#plAddBill', 'addBill'], ['#plAddGoal', 'addGoal'], ['#plAddLine', 'addLine'], ['#plSetFree', 'free'], ['[data-bill]', 'bill'], ['[data-pay]', 'pay'], ['[data-owed]', 'card'], ['#plAddAcct', 'addAccount'], ['[data-acct]', 'account']]) {
       await shut(); await d.p.$eval('.a3-tabs [data-tab=home]', e => e.click()); await d.p.$eval('.a3-tabs [data-tab=plan]', e => e.click()); await d.p.waitForTimeout(250);
       await d.p.$eval('#a3Plan ' + sel, e => e.click()); await d.p.waitForTimeout(250);
       const title = await d.p.$eval('#a3Plan [data-card=plan-form] h2', e => e.textContent);
@@ -92,7 +92,7 @@ const fig = (p, sel) => p.$eval(sel, e => Number((e.dataset.amt !== undefined ? 
       got.push([key, line.includes('"' + title + '"') && line.includes(rows[key].does)]);
       if (!got[got.length - 1][1]) console.log('  ' + key + ': ' + line);
     }
-    ck('on each of Plan\'s sheets the assistant is told the sheet\'s own name and what it is for (9 sheets)', got.length === 9 && got.every(x => x[1]), JSON.stringify(got.filter(x => !x[1])));
+    ck('on each of Plan\'s sheets the assistant is told the sheet\'s own name and what it is for (11 sheets)', got.length === 11 && got.every(x => x[1]), JSON.stringify(got.filter(x => !x[1])));
     await shut(); await d.p.$eval('.a3-tabs [data-tab=home]', e => e.click()); await d.p.waitForTimeout(250);
     await tell(d.p, 'what does this screen do?');
     ck('on Home, with no sheet open, it is told Home and what Home is for', screenLine() === 'SCREEN: the person has Home open. ' + rows.home.does, screenLine());

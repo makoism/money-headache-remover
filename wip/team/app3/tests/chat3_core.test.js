@@ -209,6 +209,54 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const c = r2.shown.find(x => x.who === 'card').card;
     eq([c.status, c.ask], ['ask', 'guess']); eq(JSON.stringify(hp.book), before, 'nothing written');
   });
+  await t('[E1, M3, M13] "rename my bank to Everyday" and "keep at least 5,000 in Savings": change_account, each with a card and Undo; a card or a loan is not changed this way', async () => {
+    const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
+    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'add_account', name: 'Savings', type: 'bank', amount: 40000, moved: false }] })]), say('Added.'),
+      say('', [call('change', { steps: [{ do: 'change_account', account: 'A1', name: 'Everyday' }] })]), say('Renamed.'),
+      say('', [call('list', { what: 'accounts' })]), body => { const r = FAKE.results(body)[0].text.split('\n').find(l => /Savings/.test(l)).split(' | ')[0]; return say('', [call('change', { steps: [{ do: 'change_account', account: r, min: 5000 }] })]); }, say('Done.'),
+      say('', [call('change', { steps: [{ do: 'change_account', account: 'A2', name: 'Shop card' }] })]), say('Hmm.')]);
+    const d = hp.deps(f);
+    const r1 = await K.turn(state, 'Add a bank called Savings with 40,000 in it, new money', d);
+    const main = hp.book.home.main.v.acct, was = hp.book.accounts.find(a => a.id === main).name;
+    const r2 = await K.turn(r1.state, 'rename my bank to Everyday', d);
+    const c2 = r2.shown.find(x => x.who === 'card');
+    eq([c2.card.status, hp.book.accounts.find(a => a.id === main).name], ['done', 'Everyday'], JSON.stringify(c2.card));
+    ok(/Everyday/.test(c2.card.lines.join(' ')), c2.card.lines.join(' | '));
+    const r3 = await K.turn(r2.state, 'keep at least 5,000 in Savings', d);
+    const sv = hp.book.accounts.find(a => a.name === 'Savings');
+    eq([r3.shown.find(x => x.who === 'card').card.status, sv.minBank && sv.minBank.a], ['done', 5000]);
+    const u = await K.undo(r3.state, r2.shown.find(x => x.who === 'card').id, d);
+    ok(!u.ok || hp.book.accounts.find(a => a.id === main).name === was, 'Undo of an older card is refused or puts it back');
+    const u3 = await K.undo(r3.state, r3.shown.find(x => x.who === 'card').id, d); ok(u3.ok, JSON.stringify(u3));
+    ok(!hp.book.accounts.find(a => a.name === 'Savings').minBank, 'Undo takes Keep at least off');
+    const before = JSON.stringify(hp.book.accounts);
+    const r4 = await K.turn(u3.state || r3.state, 'call card A Shop card', d);
+    const c4 = r4.shown.find(x => x.who === 'card');
+    ok(!c4 || c4.card.status !== 'done', 'a card is not renamed by change_account'); eq(JSON.stringify(hp.book.accounts), before, 'nothing written');
+  });
+  await t('[E1b, M3, M13, M23] "add a card paid from Savings" and "pay rent from Savings": add_card and change_bill take the paying account (and a card its weekend rule), each with a card and Undo', async () => {
+    const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
+    const sv = () => hp.book.accounts.find(a => a.name === 'Savings' && !a.gone);
+    const refOf = (body, re) => FAKE.results(body)[0].text.split('\n').find(l => re.test(l)).split(' | ')[0];
+    let rentRef = null;
+    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'add_account', name: 'Savings', type: 'bank', amount: 40000, moved: false }] })]), say('Added.'),
+      say('', [call('list', { what: 'accounts' })]), body => say('', [call('change', { steps: [{ do: 'add_card', name: 'Shop card', owed: 0, payDay: 15, closeDay: 'not sure', account: refOf(body, /Savings/), shift: 'before' }] })]), say('Added.'),
+      say('', [call('list', { what: 'bills' })]), body => { rentRef = refOf(body, /Rent/); return say('', [call('list', { what: 'accounts' })]); },
+      body => say('', [call('change', { steps: [{ do: 'change_bill', ref: rentRef, account: refOf(body, /Savings/) }] })]), say('Changed.')]);
+    const d = hp.deps(f);
+    const r1 = await K.turn(state, 'Add a bank called Savings with 40,000 in it, new money', d);
+    const r2 = await K.turn(r1.state, 'add a card called Shop card, 0 on it now, paid on the 15th from Savings, the working day before', d);
+    const c2 = r2.shown.find(x => x.who === 'card'), sc = hp.book.accounts.find(a => a.name === 'Shop card');
+    eq([c2.card.status, !!sc && sc.payFrom === sv().id, sc && sc.shift], ['done', true, 'before'], JSON.stringify(c2.card) + JSON.stringify(sc));
+    ok(/Savings/.test(c2.card.lines.join(' ')), 'the card says Savings: ' + c2.card.lines.join(' | '));
+    const rent = hp.book.schedules.find(x => x.name === 'Rent'), main = hp.book.home.main.v.acct;
+    const r3 = await K.turn(r2.state, 'pay rent from Savings from now on', d);
+    const c3 = r3.shown.find(x => x.who === 'card');
+    eq([c3 && c3.card.status, hp.book.schedules.find(x => x.id === rent.id).acct === sv().id], ['done', true], JSON.stringify(c3 && c3.card));
+    ok(/Savings/.test(c3.card.lines.join(' ')), 'the card says Savings: ' + c3.card.lines.join(' | '));
+    const u = await K.undo(r3.state, c3.id, d); ok(u.ok, JSON.stringify(u));
+    eq(hp.book.schedules.find(x => x.id === rent.id).acct, main, 'Undo puts the main bank back');
+  });
   await t('[M6] an answer to a follow-up question ("from when?") still counts the amount typed just before', async () => {
     const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
     const f = FAKE.make([say('From when: this one, or the next one?'),
@@ -511,7 +559,7 @@ const steps = list => [].concat(...list.map(([, r]) => r));
      sheet, told to the assistant, and the open sheet's own name with each message */
   await t('[M17] one table says what every screen and sheet is for; the open screen and sheet go with each message', async () => {
     const want = ['home', 'plan', 'receipts', 'settings', 'check', 'stmt', 'reminders', 'setup', 'welcome',
-      'free', 'addLine', 'line', 'addBill', 'bill', 'pay', 'addGoal', 'goal', 'addCard', 'card', 'addLoan', 'loan', 'record'];
+      'free', 'addLine', 'line', 'addBill', 'bill', 'pay', 'addGoal', 'goal', 'addCard', 'card', 'addLoan', 'loan', 'addAccount', 'account', 'record'];
     eq(Object.keys(K.SCREENS).sort(), want.slice().sort(), 'the rows');
     for (const k of want) {
       const row = K.SCREENS[k];
