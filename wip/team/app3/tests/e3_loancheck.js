@@ -225,5 +225,27 @@ const saved = p => p.evaluate(async () => { const s = await BurrowStore.open(); 
     ck('Check your bank: Yes saves it as typed', await owed() === 5617000, await owed());
     ck('no page errors (far figures)', !o3.errs.length, o3.errs.join(' | '));
   } finally { await o3.b.close(); fs.rmSync(prof3, { recursive: true, force: true }); }
+
+  /* [qc-numbers loancheck_build CONFUSING 5, LESSONS 1] two screens never disagree on one payment: on 28 Nov Home says
+     "¥286,000 (checked 20 Nov) − ¥30,000 (out, logged since)" for the 27 Nov loan payment ticked; Receipts lists that
+     payment in its stretch, from the same record (not a spend: it changes at Check your bank, so it is not tapped open) */
+  const prof4 = fs.mkdtempSync(require('os').tmpdir() + '/a3loanck4-');
+  const o4 = await T.open({ profile: prof4 }), p4 = o4.p;
+  try {
+    const bk0 = kenjiBook();
+    await p4.goto(T.URL0 + '?today=2026-11-28'); await T.w(600);
+    await p4.evaluate(async bk => { const s = await BurrowStore.open(); await s.load(); const r = await s.save(bk, { full: true }); s.close(); return r.ok; }, bk0);
+    await p4.reload(); await T.w(600);
+    const home = await p4.$eval('#a3Home', e => e.textContent.replace(/\s+/g, ' '));
+    ck('Home: the 27 Nov loan payment is money out logged since the bank\'s check', /¥30,000 \(out, logged since\)/.test(home), home.slice(0, 400));
+    await p4.tap('[data-tab="receipts"]'); await T.w(400);
+    const tk = await p4.$$eval('#rcList [data-ticked]', l => l.map(x => x.innerText.replace(/\s+/g, ' ').trim()));
+    ck('Receipts: the same payment is a row in this stretch, named, with its day, its bank and its amount', tk.length === 1 && /^Car loan payment 27 Nov, Main bank, ticked at Check your bank ¥30,000$/.test(tk[0]), JSON.stringify(tk));
+    ck('Receipts: never "Nothing logged in this stretch" next to it', !/Nothing logged in this stretch/.test(await p4.$eval('#rcList', e => e.textContent)));
+    ck('Receipts: the row is not a button (it changes at Check your bank)', !(await p4.$('#rcList [data-ticked] button')));
+    await p4.type('#rcSearch', 'car loan'); await T.w(300);
+    ck('Receipts: search finds it too', (await p4.$$('#rcList [data-ticked]')).length === 1);
+    ck('no page errors (Receipts)', !o4.errs.length, o4.errs.join(' | '));
+  } finally { await o4.b.close(); fs.rmSync(prof4, { recursive: true, force: true }); }
   T.done('e3_loancheck');
 })();
