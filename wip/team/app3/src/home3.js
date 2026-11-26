@@ -16,7 +16,9 @@ function ageWords3(days) {
    cents for the line (money.js formatter); the signs are written, nothing is worked out here. */
 function bankParts3(a, yr) {
   /* [M36] a figure dated after this device's day (another device a day ahead): its day only, never a negative age */
-  if (!a.loggedIn && !a.loggedOut) return a.ageDays < 0 ? `checked on ${esc3(day3(a.asOf, yr))}` : `${ageWords3(a.ageDays)}, on ${esc3(day3(a.asOf, yr))}`;
+  /* [coordinator, slice 10] one or the other, never both ("checked today, on 8 Dec" read as two days): today or yesterday
+     in words, else the check's own day */
+  if (!a.loggedIn && !a.loggedOut) return a.ageDays === 0 || a.ageDays === 1 ? ageWords3(a.ageDays) : `checked ${esc3(day3(a.asOf, yr))}`;
   const f = fmt3(a.currency, [a.checked, a.loggedOut, a.loggedIn, a.bank]);
   return esc3(`${f(a.checked)} (checked ${day3(a.asOf, yr)})${a.loggedOut ? ` ${SM.MINUS} ${f(a.loggedOut)} (out, logged since)` : ''}${a.loggedIn ? ` + ${f(a.loggedIn)} (in, logged since)` : ''} = ${f(a.bank)}`);
 }
@@ -87,8 +89,7 @@ function safeUntil3(r, yr, home) {
   const n = nextPay3(r);
   if (!n) return ' for now';
   const d = esc3(day3(n.day, yr));
-  if (n.state === 'notSeen') return `, not counting the ${d} pay (not seen yet)`;
-  if (n.state === 'late') return `, not counting the ${d} pay yet (late)`;
+  if (n.state === 'notSeen' || n.state === 'late') return `, not counting the ${d} pay (it ${BurrowScreens.names.pastDue('in')})`;   // one state, one word
   /* [S1] on its day the pay is counted (G4), so safe to spend runs to the pay after it: the engine's safeToSpend.until */
   /* [BV2.13, M37] today's pay counted but not seen in the bank yet (on the check-in list, not ticked): said in plain
      words with the engine's own amount for it */
@@ -123,8 +124,7 @@ function nextPayWords3(r, yr) {
   if (!n && !r.period) return `<p class="a3-sub">No fixed pay. Log money as it comes in, on Receipts</p>`;
   if (!n) return `<p class="a3-sub">No pay day set</p>`;
   const d = esc3(day3(n.day, yr));
-  if (n.state === 'notSeen') return `<p class="a3-warn" data-fig="nextpay" data-state="notSeen">Pay due ${d} has not been seen yet. Check your bank when it lands</p>`;
-  if (n.state === 'late') return `<p class="a3-warn" data-fig="nextpay" data-state="late">Pay due ${d} is late. Check your bank when it lands</p>`;
+  if (n.state === 'notSeen' || n.state === 'late') return `<p class="a3-warn" data-fig="nextpay" data-state="${n.state}">Pay due ${d} ${BurrowScreens.names.pastDue('in')}. Check your bank when it lands</p>`;   // one state, one word
   /* on pay day the engine counts today's pay, so it gives no day count to the one after: the day alone, never "in null days" */
   return `<p class="a3-sub" data-fig="nextpay" data-state="coming">${esc3(label3('nextPay'))} ${d}${n.days == null ? '' : `, ${dueWords3(n.days)}`}</p>`;
 }

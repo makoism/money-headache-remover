@@ -44,7 +44,7 @@ async function walk(p, bk) {
       expected: Object.fromEntries(li.map(o => [o.item, o.amount])), lands: Object.fromEntries(li.map(o => [o.item, o.lands])) });
     const r = T.L.lookahead(W.apply(bk, out), DAY), f = await T.figs(p), one = k => f.filter(x => x.fig === k);
     ck('Home shows the typed bank figure', one('bank').length === 1 && one('bank')[0].amt === 339000, JSON.stringify(one('bank')));
-    ck('checked today', one('age')[0] && one('age')[0].text === 'checked today, on 10 Dec', one('age')[0] && one('age')[0].text);
+    ck('checked today', one('age')[0] && one('age')[0].text === 'checked today', one('age')[0] && one('age')[0].text);
     ck('safe to spend is the engine\'s after the check-in', one('safe')[0].amt === r.safeToSpend.headline, one('safe')[0].amt + ' vs ' + r.safeToSpend.headline);
     ck('the sum behind it is the engine\'s, without a minimum of 0', one('why')[0].text === require('../../screens/money.js').sumLine(r.accounts[bank].whyParts, r.accounts[bank].headroom, r.accounts[bank].currency), one('why')[0].text);
     const cardB = bk.accounts.find(a => a.name === 'Card B').id, cardA = bk.accounts.find(a => a.name === 'Card A').id;

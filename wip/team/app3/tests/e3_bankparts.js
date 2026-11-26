@@ -2,7 +2,7 @@
 /* Home's bank today in its parts (QC F4): once something is logged after the last check, the figure is no longer the
    check, so the line under it says both parts, from the engine (accounts.*.checked, loggedOut, loggedIn), never
    "checked today" beside a figure that moved. Made-up US dollars: set up 1 Dec with Checking $2,000.00.
-   2 Dec, nothing logged: "checked yesterday, on 1 Dec".
+   2 Dec, nothing logged: "checked yesterday" (one way only, coordinator slice 10).
    [C13, M51] The parts are written as the sum that ends with the big figure, so it never reads as two bank figures:
    2 Dec, a spend of $15.50 logged: $1,984.50, "$2,000.00 (checked 1 Dec) − $15.50 (out, logged since) = $1,984.50".
    2 Dec, also $40.00 in: $2,024.50, "$2,000.00 (checked 1 Dec) − $15.50 (out, logged since) + $40.00 (in, logged since) = $2,024.50". */
@@ -31,7 +31,7 @@ async function home(bk) {
   return { bank: f.find(x => x.fig === 'bank'), age: f.find(x => x.fig === 'age'), errs };
 }
 (async () => {
-  for (const [more, amt, line] of [[0, 200000, 'checked yesterday, on 1 Dec'], [1, 198450, '$2,000.00 (checked 1 Dec) \u2212 $15.50 (out, logged since) = $1,984.50'],
+  for (const [more, amt, line] of [[0, 200000, 'checked yesterday'], [1, 198450, '$2,000.00 (checked 1 Dec) \u2212 $15.50 (out, logged since) = $1,984.50'],
     [2, 202450, '$2,000.00 (checked 1 Dec) \u2212 $15.50 (out, logged since) + $40.00 (in, logged since) = $2,024.50']]) {
     const bk = usBook(more), r = T.L.lookahead(bk, DAY);
     const { bank, age, errs } = await home(bk);

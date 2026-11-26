@@ -15,7 +15,7 @@ function plRow3(attrs, left, right, after) {
 }
 /* an overdue card or loan payment (the engine's `overdue`: past its day and not ticked [F4, H8, BF2]) */
 function overdueWords3(o, cur, yr, path) {
-  return `${fig3(path, o.amount, cur)} due ${esc3(day3(o.payment_date, yr))} ${o.state === 'late' ? 'is late' : 'has not been seen'}. Tick it at Check your bank when it has gone`;
+  return `${fig3(path, o.amount, cur)} due ${esc3(day3(o.payment_date, yr))} ${BurrowScreens.names.pastDue('out')}. Tick it at Check your bank when it has gone`;
 }
 const PL_OWN3 = { bank: 1, cash: 1, ewallet: 1, wallet: 1 };
 const PL_KIND3 = { bank: 'Bank', cash: 'Cash', ewallet: 'E-wallet', wallet: 'Wallet' };

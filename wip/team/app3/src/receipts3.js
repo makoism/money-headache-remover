@@ -345,7 +345,7 @@ function rcGaps3(per) {
   const onWhat = place => (!place || place === 'free' ? { line: 'free' } : ((E3.book.plan || {}).budgets || []).some(l => l.id === place) ? { line: place } : { place });
   for (const id of Object.keys(r.accounts || {})) for (const f of r.accounts[id].fillers || []) {
     if (f.held || f.apart) continue;   // [LISTFIX2] held for its question, or never spending (the engine's marks)
-    for (const pt of f.parts || []) if (pt.amount && inPer(pt.from)) out.push({ acct: id, check: f.to, from: f.from, to: f.to, amount: pt.amount, on: onWhat(pt.place || f.place) });
+    for (const pt of f.parts || []) if (pt.amount && inPer(pt.from)) out.push({ acct: id, check: f.to, from: f.from, to: f.to, amount: pt.amount, on: onWhat(pt.place || f.place), fixOf: pt.fixOf || null, fixDay: pt.fixOf ? pt.from : null });
   }
   /* [CARDGAP] a card's gap by its parts too (the engine cuts it by days at each period start, as a bank's) */
   for (const id of Object.keys(r.cards || {})) for (const f of r.cards[id].fillers || []) {
@@ -355,6 +355,13 @@ function rcGaps3(per) {
   return out;
 }
 function rcGapLi3(g, yr) {
+  /* [coordinator, slice 10] a bank figure changed later: the change is its own part, on the day it was changed (FB), and
+     its row says so, never as a gap found over those days */
+  if (g.fixOf) {
+    const what = g.fixOf !== g.check ? `your bank check of ${day3(g.check, yr)} came after it, so its gap moves the other way and the two cancel`
+      : g.amount > 0 ? 'it showed less than you first typed, so more went out' : 'it showed more than you first typed, so less went out';
+    return `<li data-gap="${esc3(g.acct)}" data-check="${esc3(g.check)}" data-fix="${esc3(g.fixOf)}"><span>Your bank figure of ${esc3(day3(g.fixOf, yr))} changed on ${esc3(day3(g.fixDay, yr))}<br><span class="when">${esc3(E3.nameOf(g.acct))}, ${esc3(what)}, on ${esc3(rcForName3(g.on))}</span></span><span class="amt">${money3(g.amount, E3.curOf(g.acct))}</span></li>`;
+  }
   const when = g.from === g.to ? day3(g.to, yr) : `${day3(g.from, yr)} to ${day3(g.to, yr)}`;
   const what = g.amount > 0 ? 'more went out than you logged' : 'less went out than you logged, so it comes off your spending';
   return `<li data-gap="${esc3(g.acct)}" data-check="${esc3(g.check)}"><span>Found at your bank check on ${esc3(day3(g.check, yr))}<br><span class="when">${esc3(when)}, ${esc3(E3.nameOf(g.acct))}, ${esc3(what)}, on ${esc3(rcForName3(g.on))}</span></span><span class="amt">${money3(g.amount, E3.curOf(g.acct))}</span></li>`;

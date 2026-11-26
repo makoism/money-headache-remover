@@ -49,3 +49,21 @@ is for Mako; all are for the coordinator.
 - A tick changed later or unticked: a controls3 row marked todo (its own slice).
 - The loan check (built on lane/controls-6, not on this branch) writes prev through CK.checkIn, so it gets prev when the
   two branches meet; nothing else to do.
+
+## 7. A tick taken back later keeps no history (against ruling (B))
+- The moment: 12 Dec both card payments ticked at Check your bank; 15 Dec the person says Card A's tick was wrong.
+- Ruling (B) says every removal of a money record keeps `was`, and the engine then keeps a removed bill or card payment
+  "settled" while the check that held it stands (the figure holds the payment). Taken that way, Remove this tick would
+  change nothing the person can see: the payment would stay ticked.
+- Built: Remove this tick (Receipts, the card's, loan's, bill's or pay's Plan sheet, and the assistant's remove with a T
+  ref) marks the tick gone as if it never happened (no `was`), the way removeCheck takes a tick, so the payment is
+  expected again and the check's gap now says what the bank really did. Undo puts it back.
+- Recommendation: keep it so (a wrong tick is a mistake, not money that moved), and name it in ruling (B)'s text.
+
+## 8. Words changed on Home (coordinator's item 2)
+- The bank's age is one thing: "checked today", "checked yesterday", else the check's own day ("checked 8 Dec"); the
+  older "checked 3 days ago, on 8 Dec" is gone with "checked today, on 8 Dec".
+- A pay or a payment past its day and not ticked is one state in words (screens/names.js pastDue): "has not come in yet"
+  for a pay, "has not gone out yet" for a payment, on Home and Plan, whatever the engine calls it (late or not seen).
+- A bank figure changed later gets its own Receipts row ("Your bank figure of 28 Nov changed on 12 Dec") for each of its
+  two parts (FB), never a gap row over days. The engine marks such a part (`fixOf` on the filler part).

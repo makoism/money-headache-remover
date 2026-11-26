@@ -2733,11 +2733,11 @@ details summary { min-height: 44px; }
           explained += movedAs(e, id, e.gone ? { a: 0, a2: 0 } : { a: e.a, a2: e.a2 != null ? e.a2 : null }) - movedAs(e, id, asAt(e, cc.key));
         }
         const filler = makeFiller(id, c.day > base.day ? base.day + 1 : c.day, c.day, computed - c.a);
-        const fixes = fixesOf(c), extra = fixes.map(x => ({ day: x.day, amount: x.d })).concat(carry.filter(x => keyCmp(x.key, cc.key) > 0).map(x => ({ day: x.day, amount: -x.d, place: x.place })));
-        carry = fixes.map(x => Object.assign({}, x, { place: fp || 'free' }));
+        const fixes = fixesOf(c), extra = fixes.map(x => ({ day: x.day, amount: x.d, of: c.day })).concat(carry.filter(x => keyCmp(x.key, cc.key) > 0).map(x => ({ day: x.day, amount: -x.d, place: x.place, of: x.of })));
+        carry = fixes.map(x => Object.assign({}, x, { place: fp || 'free', of: c.day }));
         if (extra.some(x => x.amount)) {
           const own = filler.amount - extra.reduce((t, x) => t + x.amount, 0);
-          filler.parts = [{ from: dayStr(c.day), to: dayStr(c.day), days: 1, amount: own }].concat(extra.filter(x => x.amount).map(x => Object.assign({ from: dayStr(x.day), to: dayStr(x.day), days: 1, amount: x.amount }, x.place && x.place !== (fp || 'free') ? { place: x.place } : {}))).filter(x => x.amount);
+          filler.parts = [{ from: dayStr(c.day), to: dayStr(c.day), days: 1, amount: own }].concat(extra.filter(x => x.amount).map(x => Object.assign({ from: dayStr(x.day), to: dayStr(x.day), days: 1, amount: x.amount, fixOf: dayStr(x.of) }, x.place && x.place !== (fp || 'free') ? { place: x.place } : {}))).filter(x => x.amount);
         }
         fillers.push(Object.assign(filler, fp ? { place: fp } : {},
           { had: computed, gain: c.a - computed, answer: c.gain || null }, explained ? { explained } : {}));
@@ -4919,7 +4919,11 @@ details summary { min-height: 44px; }
     return words.length ? words.join(', ') + ' and ' + tail : tail;
   }
 
-  return { NAMES, label, byFigure, labelKey, check, forMako, notInEngine, dayLabel, dayList, monthLabel, periodLabel };
+  /* [coordinator, slice 10; M51 one meaning per word] a pay or a payment past its day and not ticked is one state for the
+     person, whatever the engine calls it ('late' inside the bank's posting days, 'notSeen' after them): one way to say it,
+     for money in and money out, on Home and Plan alike */
+  function pastDue(dir) { return dir === 'in' ? 'has not come in yet' : 'has not gone out yet'; }
+  return { NAMES, label, byFigure, pastDue, labelKey, check, forMako, notInEngine, dayLabel, dayList, monthLabel, periodLabel };
 });
 /* The one status every screen reads (DECISIONS_ROUND2 C, sweep2_repeats A1 and B2, LESSONS lesson 2). It is worked out
    from the engine's result only (SCHEMA_V3 section 12: safe to spend, warnings, next pay, not seen yet, the check-in
@@ -10440,7 +10444,9 @@ function ageWords3(days) {
    cents for the line (money.js formatter); the signs are written, nothing is worked out here. */
 function bankParts3(a, yr) {
   /* [M36] a figure dated after this device's day (another device a day ahead): its day only, never a negative age */
-  if (!a.loggedIn && !a.loggedOut) return a.ageDays < 0 ? `checked on ${esc3(day3(a.asOf, yr))}` : `${ageWords3(a.ageDays)}, on ${esc3(day3(a.asOf, yr))}`;
+  /* [coordinator, slice 10] one or the other, never both ("checked today, on 8 Dec" read as two days): today or yesterday
+     in words, else the check's own day */
+  if (!a.loggedIn && !a.loggedOut) return a.ageDays === 0 || a.ageDays === 1 ? ageWords3(a.ageDays) : `checked ${esc3(day3(a.asOf, yr))}`;
   const f = fmt3(a.currency, [a.checked, a.loggedOut, a.loggedIn, a.bank]);
   return esc3(`${f(a.checked)} (checked ${day3(a.asOf, yr)})${a.loggedOut ? ` ${SM.MINUS} ${f(a.loggedOut)} (out, logged since)` : ''}${a.loggedIn ? ` + ${f(a.loggedIn)} (in, logged since)` : ''} = ${f(a.bank)}`);
 }
@@ -10511,8 +10517,7 @@ function safeUntil3(r, yr, home) {
   const n = nextPay3(r);
   if (!n) return ' for now';
   const d = esc3(day3(n.day, yr));
-  if (n.state === 'notSeen') return `, not counting the ${d} pay (not seen yet)`;
-  if (n.state === 'late') return `, not counting the ${d} pay yet (late)`;
+  if (n.state === 'notSeen' || n.state === 'late') return `, not counting the ${d} pay (it ${BurrowScreens.names.pastDue('in')})`;   // one state, one word
   /* [S1] on its day the pay is counted (G4), so safe to spend runs to the pay after it: the engine's safeToSpend.until */
   /* [BV2.13, M37] today's pay counted but not seen in the bank yet (on the check-in list, not ticked): said in plain
      words with the engine's own amount for it */
@@ -10547,8 +10552,7 @@ function nextPayWords3(r, yr) {
   if (!n && !r.period) return `<p class="a3-sub">No fixed pay. Log money as it comes in, on Receipts</p>`;
   if (!n) return `<p class="a3-sub">No pay day set</p>`;
   const d = esc3(day3(n.day, yr));
-  if (n.state === 'notSeen') return `<p class="a3-warn" data-fig="nextpay" data-state="notSeen">Pay due ${d} has not been seen yet. Check your bank when it lands</p>`;
-  if (n.state === 'late') return `<p class="a3-warn" data-fig="nextpay" data-state="late">Pay due ${d} is late. Check your bank when it lands</p>`;
+  if (n.state === 'notSeen' || n.state === 'late') return `<p class="a3-warn" data-fig="nextpay" data-state="${n.state}">Pay due ${d} ${BurrowScreens.names.pastDue('in')}. Check your bank when it lands</p>`;   // one state, one word
   /* on pay day the engine counts today's pay, so it gives no day count to the one after: the day alone, never "in null days" */
   return `<p class="a3-sub" data-fig="nextpay" data-state="coming">${esc3(label3('nextPay'))} ${d}${n.days == null ? '' : `, ${dueWords3(n.days)}`}</p>`;
 }
@@ -11465,7 +11469,7 @@ function rcGaps3(per) {
   const onWhat = place => (!place || place === 'free' ? { line: 'free' } : ((E3.book.plan || {}).budgets || []).some(l => l.id === place) ? { line: place } : { place });
   for (const id of Object.keys(r.accounts || {})) for (const f of r.accounts[id].fillers || []) {
     if (f.held || f.apart) continue;   // [LISTFIX2] held for its question, or never spending (the engine's marks)
-    for (const pt of f.parts || []) if (pt.amount && inPer(pt.from)) out.push({ acct: id, check: f.to, from: f.from, to: f.to, amount: pt.amount, on: onWhat(pt.place || f.place) });
+    for (const pt of f.parts || []) if (pt.amount && inPer(pt.from)) out.push({ acct: id, check: f.to, from: f.from, to: f.to, amount: pt.amount, on: onWhat(pt.place || f.place), fixOf: pt.fixOf || null, fixDay: pt.fixOf ? pt.from : null });
   }
   /* [CARDGAP] a card's gap by its parts too (the engine cuts it by days at each period start, as a bank's) */
   for (const id of Object.keys(r.cards || {})) for (const f of r.cards[id].fillers || []) {
@@ -11475,6 +11479,13 @@ function rcGaps3(per) {
   return out;
 }
 function rcGapLi3(g, yr) {
+  /* [coordinator, slice 10] a bank figure changed later: the change is its own part, on the day it was changed (FB), and
+     its row says so, never as a gap found over those days */
+  if (g.fixOf) {
+    const what = g.fixOf !== g.check ? `your bank check of ${day3(g.check, yr)} came after it, so its gap moves the other way and the two cancel`
+      : g.amount > 0 ? 'it showed less than you first typed, so more went out' : 'it showed more than you first typed, so less went out';
+    return `<li data-gap="${esc3(g.acct)}" data-check="${esc3(g.check)}" data-fix="${esc3(g.fixOf)}"><span>Your bank figure of ${esc3(day3(g.fixOf, yr))} changed on ${esc3(day3(g.fixDay, yr))}<br><span class="when">${esc3(E3.nameOf(g.acct))}, ${esc3(what)}, on ${esc3(rcForName3(g.on))}</span></span><span class="amt">${money3(g.amount, E3.curOf(g.acct))}</span></li>`;
+  }
   const when = g.from === g.to ? day3(g.to, yr) : `${day3(g.from, yr)} to ${day3(g.to, yr)}`;
   const what = g.amount > 0 ? 'more went out than you logged' : 'less went out than you logged, so it comes off your spending';
   return `<li data-gap="${esc3(g.acct)}" data-check="${esc3(g.check)}"><span>Found at your bank check on ${esc3(day3(g.check, yr))}<br><span class="when">${esc3(when)}, ${esc3(E3.nameOf(g.acct))}, ${esc3(what)}, on ${esc3(rcForName3(g.on))}</span></span><span class="amt">${money3(g.amount, E3.curOf(g.acct))}</span></li>`;
@@ -11577,7 +11588,7 @@ function plRow3(attrs, left, right, after) {
 }
 /* an overdue card or loan payment (the engine's `overdue`: past its day and not ticked [F4, H8, BF2]) */
 function overdueWords3(o, cur, yr, path) {
-  return `${fig3(path, o.amount, cur)} due ${esc3(day3(o.payment_date, yr))} ${o.state === 'late' ? 'is late' : 'has not been seen'}. Tick it at Check your bank when it has gone`;
+  return `${fig3(path, o.amount, cur)} due ${esc3(day3(o.payment_date, yr))} ${BurrowScreens.names.pastDue('out')}. Tick it at Check your bank when it has gone`;
 }
 const PL_OWN3 = { bank: 1, cash: 1, ewallet: 1, wallet: 1 };
 const PL_KIND3 = { bank: 'Bank', cash: 'Cash', ewallet: 'E-wallet', wallet: 'Wallet' };

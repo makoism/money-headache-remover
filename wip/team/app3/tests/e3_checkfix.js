@@ -78,6 +78,14 @@ const saved = p => p.evaluate(async () => { const s = await BurrowStore.open(); 
     if (!(await p.$('#a3Checks [data-checkopen]'))) { await p.click(`#a3Home [data-checks="${BANK}"]`); await T.w(300); }
     await open(1); await setFig('195000'); await p.click('#a3ChecksSave'); await T.w(700);
     await p.reload(); await T.w(700);
+    /* [coordinator, slice 10] words on the same screens: Home names the check's age one way only; Receipts explains the
+       change of an older figure where it counts (its own part on the day it was changed, and the next check's part
+       the other way), never as a gap found over days */
+    ck('Home: "checked yesterday" (the 11 Dec check on 12 Dec), never "checked today, on ..."', await p.$eval(`#a3Home [data-card=bank][data-acct="${BANK}"] [data-fig=age]`, e => e.textContent.trim()) === 'checked yesterday', await p.$eval(`#a3Home [data-card=bank][data-acct="${BANK}"] [data-fig=age]`, e => e.textContent.trim()));
+    await p.tap('[data-tab="receipts"]'); await T.w(400);
+    const fixRows = await p.$$eval('#rcList [data-fix]', ls => ls.map(l => l.textContent.replace(/\s+/g, ' ').trim()));
+    ck('Receipts: the 28 Nov figure changed today, its two parts named as a change that cancels, not as a gap over days', fixRows.length === 2 && fixRows.every(t => /^Your bank figure of 28 Nov changed on 12 Dec/.test(t)) && fixRows.some(t => /showed less than you first typed/.test(t)) && fixRows.some(t => /the two cancel/.test(t)), JSON.stringify(fixRows));
+    await p.tap('[data-tab="home"]'); await T.w(300);
     await p.click('#a3SetGo'); await T.w(400);
     const recent = await p.$$eval('#a3SetChanges [data-changes] li', ls => ls.map(l => l.textContent.replace(/\s+/g, ' ').trim()));
     ck('after a reload, Recent changes names the change', /28 Nov: ¥200,000 to ¥195,000/.test(recent[0] || ''), JSON.stringify(recent));
@@ -112,6 +120,10 @@ const saved = p => p.evaluate(async () => { const s = await BurrowStore.open(); 
     bk = await saved(p);
     ck('Yes: the tick is gone (no was), its row too, and Card B\'s payment is expected again', bk.events.find(e => e.id === cardB.id).gone && bk.events.find(e => e.id === cardB.id).was === undefined && !(await p.$(`#rcList [data-untick="${cardB.id}"]`))
       && await p.evaluate(() => { const r = BurrowApp3.E3.view(BurrowApp3.E3.today()); return (r.cards['k7m2qa-f3n8p1x6wd-3'].overdue || []).length > 0 || r.checkIn.toConfirm.some(x => /f3n8p1x6wd-3@/.test(x.item)); }));
+    await p.tap('[data-tab="home"]'); await T.w(300);
+    const od = await p.$$eval('#a3Home [data-fig=overdue]', ls => ls.map(l => l.textContent.replace(/\s+/g, ' ').trim()));
+    ck('[one state, one word] Card B\'s payment past its day and not ticked: "has not gone out yet" (screens/names.js pastDue), never "is late" or "not been seen"', od.length >= 1 && od.every(t => /has not gone out yet/.test(t) && !/is late|not been seen/.test(t)), JSON.stringify(od));
+    await p.tap('[data-tab="receipts"]'); await T.w(300);
     ck('Undo puts the tick back', await undo()); await T.w(700);
     ck('after Undo: ticked again', !(await saved(p)).events.find(e => e.id === cardB.id).gone);
     await p.tap('[data-tab="plan"]'); await T.w(400);

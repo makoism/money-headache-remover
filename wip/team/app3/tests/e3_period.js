@@ -16,7 +16,7 @@ const SN = require('../../screens/names.js');
     ck(day + ' the next pay is ' + state, r.period.nextPay.state === state && got.state === state, JSON.stringify(got) + ' engine ' + r.period.nextPay.state);
     /* one next pay on Home, from res.period.nextPay: never a later pay's date while this one is late or not seen */
     const head = await p.$eval('[data-card=safe] h2', e => e.textContent), all = await p.$eval('#a3Home', e => e.textContent);
-    const want = { coming: 'Safe to spend until next pay on 10 Dec', late: 'Safe to spend, not counting the 10 Dec pay yet (late)', notSeen: 'Safe to spend, not counting the 10 Dec pay (not seen yet)' }[state];
+    const want = { coming: 'Safe to spend until next pay on 10 Dec', late: 'Safe to spend, not counting the 10 Dec pay (it has not come in yet)', notSeen: 'Safe to spend, not counting the 10 Dec pay (it has not come in yet)' }[state];
     ck(day + ' the safe to spend heading names that pay', head === want, head);
     ck(day + ' no later pay date is named as the next pay', !/(next pay on|Next pay) \d+ Jan/.test(all), all.match(/.{0,30}Jan.{0,10}/g));
     const said = (all.match(/10 Dec pay|Pay due 10 Dec|Next pay 10 Dec|next pay on 10 Dec/g) || []).length;

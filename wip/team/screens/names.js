@@ -182,5 +182,9 @@
     return words.length ? words.join(', ') + ' and ' + tail : tail;
   }
 
-  return { NAMES, label, byFigure, labelKey, check, forMako, notInEngine, dayLabel, dayList, monthLabel, periodLabel };
+  /* [coordinator, slice 10; M51 one meaning per word] a pay or a payment past its day and not ticked is one state for the
+     person, whatever the engine calls it ('late' inside the bank's posting days, 'notSeen' after them): one way to say it,
+     for money in and money out, on Home and Plan alike */
+  function pastDue(dir) { return dir === 'in' ? 'has not come in yet' : 'has not gone out yet'; }
+  return { NAMES, label, byFigure, pastDue, labelKey, check, forMako, notInEngine, dayLabel, dayList, monthLabel, periodLabel };
 });

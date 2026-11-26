@@ -538,11 +538,11 @@
           explained += movedAs(e, id, e.gone ? { a: 0, a2: 0 } : { a: e.a, a2: e.a2 != null ? e.a2 : null }) - movedAs(e, id, asAt(e, cc.key));
         }
         const filler = makeFiller(id, c.day > base.day ? base.day + 1 : c.day, c.day, computed - c.a);
-        const fixes = fixesOf(c), extra = fixes.map(x => ({ day: x.day, amount: x.d })).concat(carry.filter(x => keyCmp(x.key, cc.key) > 0).map(x => ({ day: x.day, amount: -x.d, place: x.place })));
-        carry = fixes.map(x => Object.assign({}, x, { place: fp || 'free' }));
+        const fixes = fixesOf(c), extra = fixes.map(x => ({ day: x.day, amount: x.d, of: c.day })).concat(carry.filter(x => keyCmp(x.key, cc.key) > 0).map(x => ({ day: x.day, amount: -x.d, place: x.place, of: x.of })));
+        carry = fixes.map(x => Object.assign({}, x, { place: fp || 'free', of: c.day }));
         if (extra.some(x => x.amount)) {
           const own = filler.amount - extra.reduce((t, x) => t + x.amount, 0);
-          filler.parts = [{ from: dayStr(c.day), to: dayStr(c.day), days: 1, amount: own }].concat(extra.filter(x => x.amount).map(x => Object.assign({ from: dayStr(x.day), to: dayStr(x.day), days: 1, amount: x.amount }, x.place && x.place !== (fp || 'free') ? { place: x.place } : {}))).filter(x => x.amount);
+          filler.parts = [{ from: dayStr(c.day), to: dayStr(c.day), days: 1, amount: own }].concat(extra.filter(x => x.amount).map(x => Object.assign({ from: dayStr(x.day), to: dayStr(x.day), days: 1, amount: x.amount, fixOf: dayStr(x.of) }, x.place && x.place !== (fp || 'free') ? { place: x.place } : {}))).filter(x => x.amount);
         }
         fillers.push(Object.assign(filler, fp ? { place: fp } : {},
           { had: computed, gain: c.a - computed, answer: c.gain || null }, explained ? { explained } : {}));
