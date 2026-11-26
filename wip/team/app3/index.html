@@ -9818,6 +9818,15 @@ function bankParts3(a, yr, id) {
   const f = fmt3(a.currency, [a.checked, a.loggedOut, a.loggedIn, a.bank]);
   return esc3(`${f(a.checked)} (checked ${day3(a.asOf, yr)})${a.loggedOut ? ` ${SM.MINUS} ${f(a.loggedOut)} (out, logged since)` : ''}${a.loggedIn ? ` + ${f(a.loggedIn)} (in, logged since)` : ''} = ${f(a.bank)}`);
 }
+/* [qc-novice C2; CHECKGAP] a gap found at a bank check counts whole in the pay period the check is in: said on that
+   account's card while that period runs (the engine's filler, its one part dated the check's day); never a gain, an
+   investment's rise or fall, or another currency */
+function gapCame3(r, a, id, yr) {
+  const p = r.period || {};
+  if (!p.start) return '';
+  const f = (a.fillers || []).filter(x => !x.apart && !x.held && x.amount > 0 && x.parts && x.parts.length && x.parts[0].from >= p.start && (!p.end || x.parts[0].from <= p.end)).pop();
+  return f ? `<p class="a3-sub" data-fig="gapcame">${esc3(`${money3(f.amount, a.currency)} you didn't log, found at your bank check of ${day3(f.parts[0].from, yr)}, counts as spending this pay period`)}</p>` : '';
+}
 function dueWords3(n) {
   if (n === 0) return 'today';
   if (n === 1) return 'tomorrow';
@@ -9970,7 +9979,7 @@ function drawHome3() {
     /* [qc-numbers run 1 C1, M51] cash or an e-wallet is never called a bank: "Wallet today" */
     out.push(`<section class="a3-card" data-card="bank" data-acct="${esc3(id)}"><h2>${isBank ? `${esc3(label3('bankToday'))}: ${esc3(E3.nameOf(id))}` : `${esc3(E3.nameOf(id))} today`}</h2>
       <p class="a3-big" data-fig="bank">${fig3('accounts.*.bank', a.bank, a.currency)}</p>
-      <p class="a3-sub" data-fig="age">${bankParts3(a, yr, id)}</p></section>`);
+      <p class="a3-sub" data-fig="age">${bankParts3(a, yr, id)}</p>${gapCame3(r, a, id, yr)}</section>`);
   }
   /* safe to spend until next pay, with the sum behind it */
   const until = safeUntil3(r, yr, home);
