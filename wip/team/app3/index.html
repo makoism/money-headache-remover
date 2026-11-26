@@ -4708,6 +4708,17 @@ details summary { min-height: 44px; }
     return { y: m[1], m: m[2], d: m[3].replace(/^0/, ''), s: m[0] };
   }
   function dayLabel(s, withYear) { const p = parseDay(s); return [p.d, MONTHS[p.m]].concat(withYear ? [p.y] : []).join(' '); }
+  /* [qc-controls 2to5 F2] the day a pay or bill lands, in one set of words for every screen and the assistant: its
+     landing day, and when a weekend or holiday moved it off its due day, why: "25 Dec (26 Dec is a Saturday, so the
+     working day before)". Without the reason a row reading "day 26 each month, next 25 Dec" looks like the change did
+     not take effect. The engine's occurrence gives both days (land, due); nothing is worked out here but the weekday. */
+  const WEEKDAY = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  function landLabel(land, due, withYear) {
+    const at = dayLabel(land, withYear);
+    if (!due || due === land) return at;
+    const wd = new Date(parseDay(due).s + 'T00:00:00Z').getUTCDay();
+    return `${at} (${dayLabel(due, withYear)} is ${wd === 0 || wd === 6 ? 'a ' + WEEKDAY[wd] : 'a holiday'}, so the working day ${land < due ? 'before' : 'after'})`;
+  }
   /* a month as VOICE says: "Feb 2027" (from a real day in it) */
   function monthLabel(s) { const p = parseDay(s); return MONTHS[p.m] + ' ' + p.y; }
   /* "10 Nov to 9 Dec"; across the new year both days carry their year (for Mako: whether the year shows otherwise) */
@@ -4728,7 +4739,7 @@ details summary { min-height: 44px; }
     return words.length ? words.join(', ') + ' and ' + tail : tail;
   }
 
-  return { NAMES, label, byFigure, labelKey, check, forMako, notInEngine, dayLabel, dayList, monthLabel, periodLabel };
+  return { NAMES, label, byFigure, labelKey, check, forMako, notInEngine, dayLabel, landLabel, dayList, monthLabel, periodLabel };
 });
 /* The one status every screen reads (DECISIONS_ROUND2 C, sweep2_repeats A1 and B2, LESSONS lesson 2). It is worked out
    from the engine's result only (SCHEMA_V3 section 12: safe to spend, warnings, next pay, not seen yet, the check-in
@@ -8436,6 +8447,9 @@ function typed3(text, cur) { const r = SM.parse(text, cur); return r.ok ? r.mino
 function typedBank3(text, cur) { const r = SM.parse(text, cur, { allowMinus: true }); return r.ok ? r.minor : null; }
 /* '2026-12-10' as '10 Dec', with the year when it is not the shown day's year */
 const day3 = (s, thisYear) => (s ? SN.dayLabel(s, !!thisYear && s.slice(0, 4) !== thisYear) : '');
+/* [qc-controls 2to5 F2] a pay or bill's landing day, and why when a weekend or holiday moved it (screens/names.js
+   landLabel): `o` is the engine's occurrence { land, due } */
+const land3 = (o, thisYear) => (o && o.land ? SN.landLabel(o.land, o.due, !!thisYear && o.land.slice(0, 4) !== thisYear) : '');
 const label3 = (key, ctx) => SN.label(key, ctx);
 /* [slice 6] a schedule's rhythm in words, one function for every screen: "day 10 each month", "day 15 and the last day
    each month", "every 2 weeks, on Fridays", "every 3 months, on day 15", "each year in May and Nov, on day 31", "each
@@ -10714,8 +10728,8 @@ function drawPlan3() {
   /* [BJ5] what has landed and is not ticked off comes first, then the next one */
   const owing = { late: 'late', notSeen: 'not seen yet', unticked: 'not ticked off yet' };
   /* [walk 4] each outstanding one with its own amount, and then the next with its own when they differ in time */
-  const owingWords = (v, cur) => (v.outstanding || []).map(o => `due ${esc3(day3(o.land, yr))}, ${owing[o.state]}, ${money3(o.amount, cur || home)}, `).join('');
-  const nextWords = (v, cur) => `${owingWords(v, cur)}${v.next ? `next ${esc3(day3(v.next.land, yr))}${(v.outstanding || []).length ? ', ' + money3(v.next.amount, cur || home) : ''}` : v.ends ? `ended ${esc3(day3(v.ends, yr))}` : 'nothing coming'}`;
+  const owingWords = (v, cur) => (v.outstanding || []).map(o => `due ${esc3(land3(o, yr))}, ${owing[o.state]}, ${money3(o.amount, cur || home)}, `).join('');
+  const nextWords = (v, cur) => `${owingWords(v, cur)}${v.next ? `next ${esc3(land3(v.next, yr))}${(v.outstanding || []).length ? ', ' + money3(v.next.amount, cur || home) : ''}` : v.ends ? `ended ${esc3(day3(v.ends, yr))}` : 'nothing coming'}`;
   /* the row's figure: the first outstanding one's own amount (scheduleView outstanding[].amount), else the next one's */
   const rowAmount = v => ((v.outstanding || []).length ? v.outstanding[0].amount : v.next ? v.next.amount : v.amount);
   const ruleWords = v => rhythmWords3(v.rule, yr);
@@ -13920,9 +13934,10 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     for (const x of sch) {
       const ref = x.kind === 'income' ? 'P' + (++p) : 'B' + (++b); refs[ref] = x.id;
       /* one figure, one source: the amount and the rhythm in force today are the engine's own answer (its schedule view,
-         the one Plan shows), never worked out again here from the saved lists (a change dated later is not today's) */
+         the one Plan shows), never worked out again here from the saved lists (a change dated later is not today's);
+         [qc-controls 2to5 F2] its next day in Plan's words, with why when a weekend or holiday moved it */
       const v = view[x.id] || {};
-      lines.push(`${ref} | ${x.name} | ${v.amount != null ? SM.format(v.amount, x.cur || home) : 'no fixed amount'} | ${ruleWords(v.rule)}${x.ends ? ' | ends ' + day1(x.ends) : ''}`);
+      lines.push(`${ref} | ${x.name} | ${v.amount != null ? SM.format(v.amount, x.cur || home) : 'no fixed amount'} | ${ruleWords(v.rule)}${v.next ? ', next ' + SN.landLabel(v.next.land, v.next.due, v.next.land.slice(0, 4) !== today.slice(0, 4)) : ''}${x.ends ? ' | ends ' + day1(x.ends) : ''}`);
     }
     if (lines.length) out.push('Pays and bills (ref | name | amount | when):\n' + lines.join('\n'));
     /* [E2] closed accounts keep a ref after every open one, so "reopen it" can name one */
