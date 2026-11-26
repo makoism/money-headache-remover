@@ -503,6 +503,25 @@ const ev = (b, id) => b.events.find(e => e.id === id);
     const moved = await A.edit(id, { date: '2026-12-11' });
     eq([moved.ok, moved.text], [false, 'Food ended on 22 Nov 2026 and takes spends dated up to 9 Dec 2026. Pick another line']);
   });
+  /* [qc-foundation third confirm on monthrule; M7, M31, M51] Mako ends Food on his pay day, the first day of a pay
+     period, in either order with ticking the pay: it holds 0 in that period, so it closes at once and the door refuses
+     a spend on it dated 10 Dec in plain words (one dated 9 Dec, in the period it held money, is still kept) */
+  await t('[ended line, fixed pay] Food ended on pay day 10 Dec (both orders): a spend dated 10 Dec is refused, 9 Dec kept', async () => {
+    const PW = require('../src/plan3_write.js');
+    for (const endFirst of [false, true]) {
+      let book = actBook();
+      const A = A3.make({ book: () => book, put: async b => { book = b; return true; }, told: () => '2026-12-10T12:00+09:00', newId: I.idMaker('t3actp', () => 0.6),
+        today: () => '2026-12-10', queue: { post: () => {} }, check: b => L.lookahead(b, '2026-12-10') });
+      const tick = () => A.run('tick', w => { for (const [s, a] of [['k7m2qa-f3n8p1x6wd-4', 180000], ['k7m2qa-f3n8p1x6wd-5', 60000]]) w.add('events', { k: 'in', sub: 'pay', acct: bank, date: '2026-12-10', a, settles: [s + '@2026-12-10'] }); });
+      const end = () => A.run('endLine', w => PW.endLine(w, FOOD));
+      for (const step of endFirst ? [end, tick] : [tick, end]) { const r = await step(); ok(r.ok, JSON.stringify(r)); }
+      const v = L.lookahead(book, '2026-12-10'), f = v.period.lines.find(l => l.id === FOOD);
+      eq([v.period.start, f.counts, f.closes], ['2026-12-10', 0, '2026-12-10'], 'end first ' + endFirst);
+      const before = JSON.stringify(book), r10 = await A.logSpend({ date: '2026-12-10', a: 1000, acct: bank, line: FOOD });
+      eq([r10.ok, r10.text, JSON.stringify(book) === before], [false, 'Food ended on 10 Dec 2026. Pick another line', true]);
+      ok((await A.logSpend({ date: '2026-12-09', a: 700, acct: bank, line: FOOD })).ok, 'dated 9 Dec, in the period it held money');
+    }
+  });
   /* [qc-foundation confirm on monthrule, 26 Nov; M7, M51] Kai, no fixed pay: a line closes on its end day */
   await t('[ended line, no fixed pay] Kai\'s Food ended 22 Dec: a spend dated 22 Dec is kept, 23 Dec is refused', async () => {
     const BB = require(E + 'build_book.js'), newId = I.idMaker('k4i9pz');

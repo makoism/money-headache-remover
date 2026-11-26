@@ -48,4 +48,27 @@ t('a line the engine does not list, or no answer at all, is not refused here (th
   const r = LA.lookahead(endedFoodBook(), '2026-11-25');
   eq([LA.lineTakes(r, 'nope', '2026-11-25'), LA.lineTakes(r, 'free', '2026-12-30')], [true, true]);
 });
+/* [qc-foundation third confirm on monthrule; M7, M31, M51] Mako ends Food on his pay day, 10 Dec, the first day of a
+   pay period: the engine holds 0 for it in that period, so it closes at once (both orders: tick then end, end then tick) */
+const { actBook } = require(path.join(__dirname, '../../app3/tests/e3_act_book.js'));
+function payDec10(b, at) {
+  const bank = b.home.main.v.acct;
+  for (const [n, s, a] of [[9970, 'k7m2qa-f3n8p1x6wd-4', 180000], [9971, 'k7m2qa-f3n8p1x6wd-5', 60000]])
+    b.events.push({ id: 'k7m2qa-f3n8p1x6wd-' + n, k: 'in', sub: 'pay', acct: bank, date: '2026-12-10', a, told: at, at, by: 'k7m2qa', settles: [s + '@2026-12-10'] });
+}
+function endFoodDec10(b, at) {
+  const f = b.plan.budgets.find(l => l.id === FOOD);
+  f.steps = f.steps.concat([{ from: '2026-12-10', amount: 0 }]); f.ends = '2026-12-10'; f.at = at;
+}
+for (const [what, payAt, endAt] of [['ticks his pay, then ends Food', '2026-12-10T09:00:00.000+09:00', '2026-12-10T12:00:00.000+09:00'],
+  ['ends Food, then ticks his pay', '2026-12-10T12:00:00.000+09:00', '2026-12-10T09:00:00.000+09:00']]) {
+  t('Mako on 10 Dec ' + what + ': Food closes on 10 Dec, holds 0 and takes nothing from that day', () => {
+    const b = actBook(); payDec10(b, payAt); endFoodDec10(b, endAt);
+    for (const day of ['2026-12-10', '2026-12-20']) {
+      const r = LA.lookahead(b, day), f = lineOf(r, FOOD);
+      eq([r.period.start, f.counts, f.closes, LA.lineLastDay(r, FOOD)], ['2026-12-10', 0, '2026-12-10', '2026-12-09'], day);
+      eq(['2026-12-09', '2026-12-10', day].map(d => LA.lineTakes(r, FOOD, d)), [true, false, false], day);
+    }
+  });
+}
 done('line_closes');
