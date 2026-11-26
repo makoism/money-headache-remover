@@ -42,5 +42,28 @@ const SN = require('../../screens/names.js');
   ck('after both pays are ticked on 10 Dec, the period starts that day', after.start === '2026-12-10' && after.end === '2027-01-07' && after.text === '10 Dec 2026 to 7 Jan 2027', JSON.stringify(after));
   ck('and the next pay is coming', after.state === 'coming', after.next);
   ck('no page errors', errs.length === 0, errs.join(' | '));
-  await b.close(); T.done('e3_period');
+  await b.close();
+  /* [qc-numbers run 1 B5, coordinator 17's ruling (a)] pay-day morning, the pay not ticked, Free to spend left caps safe
+     to spend: the figure is what is left of the old period's Free to spend, so the heading names the old period (until
+     today's pay is in), never the pay after today's. Set up 1 Dec: bank 300,000, pay 250,000 on the 10th, Free to spend
+     60,000; 5,000 spent on 3 Dec */
+  {
+    const B = require('../../engine/build_book.js'), I = require('../../engine/ids.js'), nid = I.idMaker('b5per', () => 0.4);
+    const bk5 = B.buildBook({ day: '2026-12-01', told: '2026-12-01T09:00+09:00', country: 'JP', currency: 'JPY',
+      banks: [{ key: 'b', name: 'Main bank', amount: 300000 }],
+      pays: [{ key: 'pay', name: 'Pay', bank: 'b', amount: 250000, day: 10, shift: 'none', startsPeriod: true }], bills: [], free: 60000 }, { newId: I.idMaker('b5book', () => 0.6) }).book;
+    bk5.events.push({ id: nid(), k: 'spend', acct: bk5.accounts[0].id, date: '2026-12-03', a: 5000, line: 'free', told: '2026-12-03T12:00+09:00' });
+    const r5 = T.L.lookahead(bk5, '2026-12-10');
+    ck('B5: on pay day before the tick, the engine caps safe to spend by the old period\'s Free to spend left', r5.safeToSpend.cappedByFreeToSpend && r5.safeToSpend.headline === r5.period.free.left && r5.daysToNextPay.days === 0, JSON.stringify([r5.safeToSpend, r5.period.free]));
+    const prof = require('fs').mkdtempSync(require('os').tmpdir() + '/a3b5-');
+    const o = await T.open({ profile: prof });
+    await o.p.goto(T.URL0 + '?today=2026-12-10'); await T.w(300);
+    await o.p.evaluate(async bk => { const s = await BurrowStore.open(); await s.save(bk, { full: true }); if (s.db) s.db.close(); }, bk5);
+    await o.p.reload(); await T.w(400);
+    const h5 = await o.p.$eval('[data-card=safe] h2', e => e.textContent);
+    ck('B5: the heading names the old period: until today\'s pay is in', h5 === 'Safe to spend until today\'s pay is in', h5);
+    ck('no page errors (B5)', o.errs.length === 0, o.errs.join(' | '));
+    await o.b.close();
+  }
+  T.done('e3_period');
 })().catch(e => { console.log('FAIL crashed ' + e.stack); process.exit(1); });
