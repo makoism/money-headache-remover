@@ -82,8 +82,8 @@
       source: 'DECISIONS_ROUND2 F11 (other currencies beside Total, never converted)',
     },
     dueBeforeNextPay: {
-      label: 'Due before next pay', when: { noFixedPay: 'Due in the next 30 days' }, figures: ['dueBeforeNextPay.total'], state: 'decided',
-      source: 'DECISIONS_ROUND2 F7, F13, F21',
+      label: 'Due before next pay', when: { noFixedPay: 'Due in the next 30 days', payToday: 'Due before the pay after today\'s' }, figures: ['dueBeforeNextPay.total'], state: 'decided',
+      source: 'DECISIONS_ROUND2 F7, F13, F21; payToday: qc-numbers confirming run 2 (B5), on a pay day the list runs to the pay after it (G4)',
     },
     notSeenYet: {
       label: 'Not seen yet', figures: ['notSeenYet.items'], state: 'decided', source: 'DECISIONS_ROUND2 F3, F4',

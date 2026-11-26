@@ -221,7 +221,9 @@ function drawHome3() {
   const due = r.dueBeforeNextPay;
   const byAcct = Object.keys(due.byAccount).map(acct => `<p class="a3-acct">From ${esc3(E3.nameOf(acct))}</p><ul class="a3-rows">${rowsHtml3(due.items.filter(o => o.account === acct), E3.curOf(acct), yr, 'dueBeforeNextPay.items')}</ul>`).join('');
   /* [F13] with no fixed pay, "due" is the next 30 days */
-  const dueName = label3('dueBeforeNextPay', { noFixedPay: !r.period });
+  /* [qc-numbers confirming run 2, B5] on a pay day the engine's list runs to the pay after today's (G4): its heading says so */
+  const np0 = r.daysToNextPay || {};
+  const dueName = label3('dueBeforeNextPay', { noFixedPay: !r.period, payToday: !!r.period && np0.days === 0 && !!r.safeToSpend.until && r.safeToSpend.until !== np0.next_pay });
   /* the late card and loan payments (the engine's overdue lists): listed once, in the overdue card [C10] */
   const odSeen = new Set([].concat(...[r.cards, r.owed || {}].map(m => [].concat(...Object.keys(m).map(id => (m[id].overdue || []).map(o => o.item))))));
   /* [C11] bills past their day and not ticked: the sum takes them off today (", late"), so they are listed here too, under
