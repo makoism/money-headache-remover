@@ -220,7 +220,9 @@ async function saveCheck3() {
   /* [LISTFIX B1] saved with the card question still open, the gap is counted as spending all the same: the words say so */
   const words = Object.keys(d.figures).map(id => { const g = gapWords3(before, id, day); return !g ? '' : logged[id] ? `${g.text.split('. ')[0]}, now logged as a spend on ${logged[id]}` : g.loss && g.ask.length ? `${g.text}. It counts as spending` : g.text; }).filter(Boolean);
   /* act3 is the only door: the check-in is one step, with its Undo bar */
-  const said = [E3.mode === 'try' ? 'Bank checked. Made-up numbers, so nothing is saved' : 'Bank checked'].concat(words).join('. ');
+  /* [qc-numbers ai_first POLISH, coordinator 18] only ticks, every figure box blank: the words say so, never "Bank checked" */
+  const head = Object.keys(d.figures).length ? 'Bank checked' : 'Saved what you ticked. The bank was not checked';
+  const said = [E3.mode === 'try' ? head + '. Made-up numbers, so nothing is saved' : head].concat(words).join('. ');
   /* the gap found is worked out from the whole book: if anything changed somewhere else since the sheet opened, nothing is
      saved and the sheet is drawn again from the book as it is now [M6, M61] */
   const r = await ACT3.addRecords('Check your bank', out, { undo: said, ver: check3.ver });
