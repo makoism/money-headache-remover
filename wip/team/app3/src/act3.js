@@ -35,6 +35,7 @@
     people: ['people'], budgets: ['plan', 'budgets'], shares: ['plan', 'shares'] };
   const SPEND_FROM = { bank: 1, cash: 1, ewallet: 1, wallet: 1, card: 1, paylater: 1 };   // where a spend can be paid from
   const OWN = { bank: 1, cash: 1, ewallet: 1, wallet: 1 };                                 // money moved between these
+  const MONEY_KINDS3 = { spend: 1, in: 1, transfer: 1, convert: 1, borrow: 1, hand: 1, repay: 1 };   // [ruling (B)] records that move money
   const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
   const clone = x => JSON.parse(JSON.stringify(x));
   const live = x => x && !x.gone;
@@ -136,7 +137,7 @@
         log.edited.push({ list, id, before });
         return r;
       },
-      remove(list, id) {
+      remove(list, id, opts) {   // opts.withCheckIn: removed with its whole check-in (no history)
         const r = listOf(book, list).find(x => x && x.id === id);
         if (!r) throw new Bad('That is not there any more');
         if (r.gone) return r;
@@ -144,11 +145,11 @@
         const before = { at: r.at, by: r.by };
         /* [AMOUNT_HISTORY_PLAN] removing an event is a correction to 0 at this step's `told`: the amount it had is kept in
            `was`, so a removal after a bank check agrees with correcting it down; Undo puts `was` back as it was */
-        /* [coordinator 16 ruling (a)] only a spend, refund or money in of the person's own (money in: coordinator ruled
-           qc-numbers amounthist finding 2): a check-in's records (its check, ticks and the gap spend logged with it,
-           marked dayInside) are removed with no history */
-        const ownMoney = r.k === 'spend' || r.k === 'in';
-        if (list === 'events' && ownMoney && !r.dayInside && !(r.settles && r.settles.length)) { before.was = r.was === undefined ? null : clone(r.was); r.was = (r.was || []).concat([Object.assign({ a: r.a }, r.a2 != null ? { a2: r.a2 } : {}, { told: s.told })]); }
+        /* [coordinator ruled (B), after 16 ruling (a) and the money-in ruling] decided by the step, not the record's shape:
+           a removal made by removing a whole check-in (opts.withCheckIn) keeps no history; every other removal of a money
+           record (a spend, a refund, any money in, a logged bill payment, a move between own accounts, a card payment)
+           keeps `was`, and the engine holds it at a check written before */
+        if (list === 'events' && MONEY_KINDS3[r.k] && !(opts && opts.withCheckIn)) { before.was = r.was === undefined ? null : clone(r.was); r.was = (r.was || []).concat([Object.assign({ a: r.a }, r.a2 != null ? { a2: r.a2 } : {}, { told: s.told })]); }
         r.gone = s.day; r.goneBy = s.id; stamp(r);
         log.removed.push({ list, id, before });
         return r;
@@ -346,7 +347,8 @@
         const recOf = x => listOf(w.book, x.list).find(r => r && r.id === x.id);
         const later = x => { const r = recOf(x); return !r || (mem && r.at !== mem.own[x.id]); };
         if (added.concat(removed, edited, revived).some(later)) { const e = new Bad('Something changed it since. Undo that change first'); e.why = 'later'; throw e; }
-        for (const x of added) w.remove(x.list, x.id);
+        const wholeCheckIn = added.some(x => (recOf(x) || {}).k === 'check');   // [ruling (B)] undoing a check-in removes it whole
+        for (const x of added) w.remove(x.list, x.id, { withCheckIn: wholeCheckIn });
         for (const x of revived) w.putBack(x.list, x.id, x.before);
         for (const x of removed) {
           if (recOf(x).goneBy === stepId) w.restore(x.list, x.id, x.before);
