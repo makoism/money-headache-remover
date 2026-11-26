@@ -1,0 +1,27 @@
+Written by LANE P, 26 Nov 2026 about 16:20 JST, for lane/controls-11 (slice 10 of the controls work, stacked on slices 1 to 9 and lane/amounthist). Checked by coordinator 18 (at the merge). Reviewers: qc-controls, qc-data-safety, qc-numbers (Kenji's numbers from CHECKFIX_PLAN "The person and the moment").
+
+This round judges what slice 10 adds: a bank check changed or removed later.
+- Change a check's figure: on the Checks sheet (Receipts > a bank check), on Home's bank line and by asking (the assistant's change_check). The change counts on the day of the fix in both gaps beside the check (FB: plus in the gap before, minus in the gap after). Closed periods never move, and safe to spend does not jump.
+- Remove one account's check-in (removeCheck), with Undo after a reload. A removed check that a later check on another device needs comes back, with "A bank check of <account> you removed came back, because another device added a later one".
+- Check your bank logs the gap as a place (the check-in's fillerPlace), not as a fixed spend. Old books' fixed gap spends keep working and are never re-worked by a figure change (coordinator 18).
+- A figure far from what the app expected asks once ("Was that figure right?", "Yes" / "No, fix it"): more than double, less than half, or off by more than the usual pay. This applies to bank, cash and e-wallet figures only. A card keeps its own payment question.
+- A tick taken back later: Receipts lists every ticked bill, pay and payment, with Remove and Undo; also on the card, loan, bill and pay Plan sheets, and by asking. Removing a tick writes no `was` (a tick is a yes/no answer, coordinator 18 ruling, an exception to ruling (B)). The payment goes back to expected, and Undo puts the tick back, after a reload too.
+- Words on Home: "checked today" / "checked yesterday" / "checked 8 Dec". A pay or payment past its day and not ticked says "has not come in yet" or "has not gone out yet". A figure changed later gets its own Receipts row for each of its two parts.
+- From lane/amounthist (engine, LANE O, merged at 35cd5262): one rule for a corrected amount; a held jump lasts only to the next check; own moves and card payments per account.
+
+Slices 1 to 9 are judged in their own rounds: judge them only where slice 10 changed them.
+
+Left for later on purpose (mark NOT BUILT (IN SCOPE FILE)):
+- M13 (couples): the check question naming whose check it is when two people share a book. One person per book today; stage 2.
+- M46 (goal after a change): a change that turns a past period overspent after its leftover went to a goal shows only the change card's warnings. No extra line, no test on that exact case.
+- M13 (loan check): a loan's Still owed changed by a check is built on lane/controls-6, not here. It meets this branch at the merge.
+- M13 (main bank): closing or replacing the main bank is slice 13 (plan in review).
+- M13 (currency): currency after setup is a later slice.
+- Device names: the app cannot say "phone" or "computer" (stage 2). "another device" is the agreed wording.
+
+KNOWN, being fixed elsewhere (mark KNOWN, report anything that makes it worse):
+- LANE O, lane/amounthist: parts 2 and 3 of coordinator 18's held-gain ruling, and the Receipts row for a removed own move, come next on that branch.
+- From earlier rounds (see 2026-11-26_controls7to8/scope.txt): the second bank's whole future shortfall taken off safe to spend now (engine, own slice). Where a pay lands cannot be changed after setup. No loan, goal or budget line can be added during setup.
+
+As always, a blocker is: a door in this round that a person cannot finish, cannot get out of, or cannot undo; or a figure or sentence that is untrue.
+Everything in the AI-first candidate's scope (lane/ai-join, qc_reports/2026-11-25_ai_first/scope.txt) still holds here.
