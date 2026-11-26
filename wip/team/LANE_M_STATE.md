@@ -3,15 +3,29 @@
 LANE M: session_01BFpKEWyTdLJxPoDySdQrVW (took over from LANE J session_01BFpKEXkcELFPCxnuiX8jFx, 26 Nov about 09:40 JST... see Now). Coordinator: "Burrow coordinator 17 (talk to this one)" session_01BFpKEZ9Gn1VKFM5HMC5Wn1 (from 26 Nov 10:23 JST; 16 was session_01BFpKEXBhaZ6NZ92Lntxb2A). MAIN 22 (session_01BFpKEVPdcTtDvMBQEUFsEx) is the only session that merges. LANE L (session_01BFpKEXEN4ow4uyeRCZ9aSM) owns lane/amounthist (engine lane; slice 10 merges it first; both touch act3.js).
 Keep-going task: trig_01ETjeofWVuqzY2qbB7xDS4H (hourly, bound to LANE M). Switch off at handoff or pause.
 
-## Now (LANE M, 26 Nov about 11:55 JST, history ~155k)
-- Worktrees: estate, c6 (controls-6), c5f (controls-5fix), c9 (controls-9), c10 (controls-10 from ai-join, for B1). Tools /home/claude/work/tools. union.py in scratchpad (lost on restart: it unions page_tests_for echo lines).
-- Loan doors BUILT on controls-6 (00d0b07c, 8c7f8109, 20152456, 8b7878f8, 68010ff9; full ALL GOOD; built page 9d4ef4e9). Asked coordinator for scope.txt (round 2026-11-26_loancheck_build); then qc-foundation + qc-numbers (build .claude/worktrees/c6/wip/team/app3/index.html). Save a check3.txt in the round folder first (run full).
-- Slices 2-5: confirm files on controls-5fix 5341de2b (controls-5 fast-forwarded). qc-controls confirm FAIL (838a98e9, qc-controls_confirm.md): old blocker 2 gone; NEW blocker: close question names one amount while another moves, loss unsaid; confusing 2-6. Helper fixing on c5f (then full check, check3.txt). Then: qc-foundation confirm (covers the same close door) + ask coordinator for qc-controls confirm 2 file (report qc-controls_confirm.md, commits since). ( brief: MAKO_SAYS first, build path .claude/worktrees/c5f/wip/team/app3/index.html, round folder qc_reports/2026-11-26_controls2to5) when slots free. Save qc-foundation's reply as qc-foundation_confirm1.md.
-- Slice 10: confirm 2 FAIL (d0296f1b); plan revised 41c7c351 (FA etc). FB + money-in RULED (LANE L builds both on amounthist). Plan 4581eb66 sent for confirm 3 (coordinator writes confirm3 file; qc-foundation confirm 3 RUNNING; save its reply as qc-foundation_confirm3.md on controls-9).
-- controls-9 follow-ups DONE: a1f895ad, 4db76124 (failText), 84e315c1 (Q4). Change cards DONE c09d6ee8 (src/change3.js shared rows, why line, amber below-zero) + 99c2c4b9 (Undo bar uses it). Not built: "bank check already counts it" why (no engine flag); log-only steps add nothing to the Undo bar; loans/lines rows have no unit test. controls-9 tip has confirm3 file 5c1437c: run qc-foundation confirm 3 on CHECKFIX_PLAN.md (round 2026-11-26_checkfix_plan, file confirm3_qc-foundation.txt).
-- B1 RULED YES: cent currencies always with cents everywhere (screens/money.js default) + check3 walk failing on any dollar amount without cents, assistant lines too. Branch lane/controls-10 (c10, from ai-join 2256e94e, not pushed). Helper when a slot frees.
-- controls-8: controls-5 merged (pay-ref remove fix), full check ALL GOOD, check3.txt ea74bef8, built page 35a634a5: run qc-controls + qc-foundation (build .claude/worktrees/c8/wip/team/app3/index.html, round 2026-11-26_controls7to8) when slots free. NOTE: controls-5's new fixes must be merged up into controls-8 again before its ready report.
-- After: slices 7/8 reviewers (merge controls-5 up into controls-8 first, full check), slice 13 main bank switch (plan, qc-foundation), B4 maybe.
+## Now (LANE M handoff page, 26 Nov about 11:30 JST, history ~205k). Read this section only, plus the rules section of LANE J below if needed.
+Setup on a fresh machine: `mkdir -p /home/claude/work/tools && cd /home/claude/work/tools && npm init -y && npm install puppeteer-core acorn acorn-walk`; `git fetch --unshallow origin lane/ai-join wip-38.31`; worktrees per branch under .claude/worktrees/. Merge tip: page_tests_for lines in check3.sh conflict on every merge: union the test names; build outputs index.html/sw3.js: take either side then ./build3.sh and commit.
+
+### Branches, tips, what each owes
+| Branch | Tip | State | Owes |
+|---|---|---|---|
+| lane/controls-1 | bb44ce00 | in the candidate (MAIN 23 merges) | do not move |
+| lane/controls-5fix (=controls-5 at 5341de2b) | 838a98e9+ | slices 2-5 + fixes + ai-join; full ALL GOOD at 50045d72. qc-controls confirm FAIL (qc-controls_confirm.md): new blocker close-account question amount vs moved; helper fixing (coordinator wording: "3,000 moves to Main bank. The other 5,000 counts as spent today, like a bank check", Yes / No, go back) + confusing 2-6, then full check into check3.txt | then: fast-forward controls-5; ask coordinator for qc-controls confirm 2 file (report qc-controls_confirm.md + commits since); run it AND qc-foundation confirm (confirm_qc-foundation.txt exists; report qc-foundation.md; save reply as qc-foundation_confirm1.md). Build .claude/worktrees/c5f/wip/team/app3/index.html, round qc_reports/2026-11-26_controls2to5 |
+| lane/controls-6 | 9945f2bd | LOAN CHECK built (00d0b07c 8c7f8109 20152456 8b7878f8 68010ff9), page 9d4ef4e9, scope ceb520ce, check3.txt 9945f2bd | run qc-foundation + qc-numbers: build .claude/worktrees/c6/wip/team/app3/index.html, round wip/team/qc_reports/2026-11-26_loancheck_build (in c6). qc-foundation has no Write: save its reply as qc-foundation.md. Then fix, confirm, report ready |
+| lane/controls-8 | 35a634a5 | slices 7-8, controls-5 merged (pay-ref remove = remove_pay, asks first), full ALL GOOD ea74bef8, scope 97bf1263 | merge controls-5 again after its close fix; then qc-controls + qc-foundation (build c8 app3/index.html, round 2026-11-26_controls7to8) |
+| lane/controls-9 | 99c2c4b9+ | slice 1 follow-ups; CHECKFIX_PLAN (slice 10) 4581eb66; confirm3 file 5c1437c; coordinator follow-ups DONE: a1f895ad statements/Keep at least, 4db76124 failText, 84e315c1 setup Q4, c09d6ee8+99c2c4b9 change cards own before/after (src/change3.js) | qc-foundation confirm 3 on the plan RUNNING (save reply as qc-foundation_confirm3.md). After PASS: build slice 10 on top of lane/amounthist (merge it first; LANE L builds FB corrected-check rule in bankInfo and the money-in `was` rule there). Also owes: full check + reviewers for the follow-ups (qc-assistant at least) |
+| lane/controls-10 | (local only, from ai-join 2256e94e) | B1 RULED: cent currencies always written with cents everywhere (screens/money.js format default), yen unchanged, + a check3 walk failing on any dollar amount without cents (assistant lines too) | helper to build, test first; report to coordinator for MAIN 23 |
+| lane/e-state | this page | | keep current |
+
+### Rulings carried (coordinator 16/17, 26 Nov)
+- FD1 prev on every check; FD2 amounthist is the one rule; FB corrected check counts on the fix day in both gaps (LANE L builds); money in: every removal of a money record writes `was`, only removeCheck's own say "removed with its check-in, no history"; FA removes never edit the check-in record.
+- Slice 13 (after slice 10): main bank closed/replaced/another made main: plan, qc-foundation, build.
+- B4 ("1,0000" should ask) only if the coordinator says.
+- Second income day: 5c9d9c78 cherry-picked by MAIN 23 into the candidate.
+- Handoff: only the coordinator starts sessions: at ~230k ask it for LANE N (with source_url).
+
+### Helpers/reviewers live at handoff
+- close-account fix helper on c5f; qc-foundation confirm 3 on the slice 10 plan. Their results come back to LANE M: if LANE M has closed, LANE N reads the branches (commits pushed) and reruns what is missing.
 
 # Below: LANE J's page at handoff
 
