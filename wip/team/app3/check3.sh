@@ -131,6 +131,7 @@ page|tests/e3_cloudhold.js|e3_cloudhold: ALL PASS||300|the cloud copy held back 
 page|tests/e3_removes.js|e3_removes: ALL PASS||300|every remove on the screens asks first: counted in src, and the four that change money walked (M6, M61)
 page|tests/e3_cloudwhich.js|e3_cloudwhich: ALL PASS||300|"which to keep": each row says its amount and which device, and the pick ends on both devices (M20)
 page|tests/e3_cloudwhich2.js|e3_cloudwhich2: ALL PASS||600|"which to keep": a stale answer from a second tab is refused, a newer change is never overwritten, and Undo right after Keep for a plan item, a setting and a whole copy (M20, M61, M14)
+page|tests/e3_goalover.js|e3_goalover: ALL PASS||200|a goal that gave out more than it holds: Settings offers only what can be done, and counting a spend from it as everyday money, with Undo (ENDPERIOD ruling 5)
 page|tests/e3_cloudstatus.js|e3_cloudstatus: ALL PASS||300|the cloud copy's one status on Settings and Home: never in step while a change waits or after a refusal, a reload too (M36, M61, M67)
 page|tests/e3_restore.js|e3_restore: ALL PASS||300|a backup restored with the cloud copy on reaches the other device, and so does Put it back; Put it back and Drop it ask first (local fake vault)
 page|tests/e3_sw.js|e3_sw: ALL PASS||300|the service worker (precache, offline, 3 s timeout, a new build)
@@ -169,7 +170,7 @@ page_tests_for() {   # page_tests_for <changed path, relative to app3/>
     src/ask3*.js)             echo e3_chat e3_invite e3_chatwalk ;;   # ask3_core.js: the summary the assistant is sent
     src/backup3.js|src/settings3.js) echo e3_backup e3_tabs e3_ailog e3_invite e3_restore e3_cloudhold ;;
     src/sw3.js|src/settings3_sw.js|sw3.js) echo e3_sw offline e3_install ;;
-    src/cloud3*.js)           echo e3_cloudfirst e3_cloud e3_cloudbase e3_cloudtake e3_cloudsend e3_cloudhold e3_cloudwhich e3_cloudwhich2 e3_cloudstatus e3_restore ;;
+    src/cloud3*.js)           echo e3_cloudfirst e3_cloud e3_cloudbase e3_cloudtake e3_cloudsend e3_cloudhold e3_cloudwhich e3_cloudwhich2 e3_cloudstatus e3_restore e3_goalover ;;
     src/remind3*.js)          echo e3_remind ;;
     publish3.sh)              echo e3_publish e3_install ;;
     manifest3.webmanifest|make_icons3.js|icon3-*.png) echo e3_install ;;

@@ -459,6 +459,27 @@ const PICKS3 = {
   minimum: [['own', 'Keep the account\'s own minimum'], ['main', 'Keep the main bank minimum']],
   shares: [['undo', 'Undo the newer putting aside'], ['undoOlder', 'Undo the older one']],
 };
+/* [ENDPERIOD ruling 5] a goal (or the money waiting for a place) that gave out more than it holds: only the choices that
+   do something (the engine's undo, undoOlder and spends lists), always at least one; counting the spends as everyday money
+   says first when Free to spend cannot take them either (the engine's figure on the book the answer would make) */
+function sharesQ3(q, i) {
+  const g = ((E3.book.places || []).find(x => x.id === q.place) || {}).name || (q.place === 'waiting' ? 'the money waiting for a place' : 'a goal');
+  const n = (q.spends || []).length, picks = [];
+  if ((q.undo || []).length) picks.push(['undo', (q.undoOlder || []).length && JSON.stringify(q.undoOlder) !== JSON.stringify(q.undo) ? 'Undo the newer putting aside' : 'Undo the putting aside']);
+  if ((q.undoOlder || []).length && JSON.stringify(q.undoOlder) !== JSON.stringify(q.undo)) picks.push(['undoOlder', 'Undo the older one']);
+  if (n) picks.push(['spends', n === 1 ? 'Count the spend as everyday money instead' : `Count these ${n} spends as everyday money instead`]);
+  let warn = '';
+  if (n) {
+    try {
+      const S = BurrowEngine.sync, b = S.answerCheck({ copy: E3.book, question: q, pick: 'spends', now: E3.today() + 'T00:00:00.000Z', by: 'x' });
+      const f = BurrowEngine.lookahead.lookahead(b, E3.today()).period;
+      const left = f && f.free ? f.free.left : null;
+      if (left != null && left < 0) warn = `<p class="a3-warn" data-sharewarn>Free to spend cannot take it either: it would be ${esc3(money3(left, E3.home()))} left this pay period</p>`;
+    } catch (e) { /* no figure: no line */ }
+  }
+  return `<div class="a3-q" data-cloudq="shares"><p class="a3-next">More was taken out of ${esc3(g)} than it holds: ${esc3(money3(q.over, E3.home()))} over.</p>${warn}
+      <div class="a3-actions">${picks.map(([p, t]) => `<button type="button" class="a3-btn" data-q="${i}" data-pick="${esc3(p)}">${esc3(t)}</button>`).join('')}</div></div>`;
+}
 function nameOf3(k) {
   if (k.of === 'copy') return 'All your money';
   const v = k.versions.slice(-1)[0] || {};
@@ -539,6 +560,7 @@ function paintQuestions3() {
       const opts = `${k.versions.map((v, j) => `<li><span>${esc3(versionLine3(k, v))}</span><button type="button" class="a3-btn" data-q="${i}" data-pick="${j}">Keep this one</button></li>`).join('')}${k.both ? `<li><span>Both changes together</span><button type="button" class="a3-btn" data-q="${i}" data-pick="both">Keep both</button></li>` : ''}`;
       return `<div class="a3-q" data-cloudq="which"><p class="a3-next"><b>${esc3(nameOf3(k))}</b> was changed on two devices. Which one should stay? The other is kept, so it can come back.</p><ul class="a3-rows">${opts}</ul></div>`;
     }
+    if (q.q === 'shares') return sharesQ3(q, i);
     const picks = q.q === 'main' ? (q.options || []).map(o => [o, `Keep the view from device ${o}`]) : PICKS3[q.q] || [];
     return `<div class="a3-q" data-cloudq="${esc3(q.q)}"><p class="a3-next">${esc3(QWORDS3[q.q] || 'Something needs a choice after joining your devices.')}</p>
       <div class="a3-actions">${picks.map(([p, t]) => `<button type="button" class="a3-btn" data-q="${i}" data-pick="${esc3(p)}">${esc3(t)}</button>`).join('')}</div></div>`;
