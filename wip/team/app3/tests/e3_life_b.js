@@ -29,7 +29,11 @@
           750,000. Safe 3,810,000. After the cards: Bank A 3,000,000 on 21 Dec, Bank B 210,000 on 28 Dec.
    29 Dec check-in: card A, card B and salary ticked; Bank A 4,500,000, Bank B 210,000, GCash 750,000. Horizon 12 Feb.
           Bank A 4,500,000 - rent 800,000 (4 Jan) = 3,700,000 (lowest). Bank B 210,000 - 150,000 (11 Jan) - 150,000
-          (10 Feb) = -90,000: Bank B goes below zero on 10 Feb. Safe 3,700,000 + 750,000 - 90,000 = 4,360,000.
+          (10 Feb) = -90,000: Bank B goes below zero on 10 Feb. [SHORTGAP, coordinator 16 and 18, 26 Nov; reworked by
+          hand] Bank A, the account with the most room (3,700,000 against GCash's 750,000), helps: a move of 90,000 by
+          9 Feb, after the 15 Jan and 29 Jan pays, so Bank A's lowest stays 3,700,000. Safe 3,700,000 + 750,000 =
+          4,450,000 (before: 4,360,000, the whole gap at once). Home says "Move ₱900 from Bank A to Bank B by 9 Feb",
+          in one line, with no warning beside it.
    5 Jan  money moved: ₱3,000 from Bank A to Bank B. Bank A 4,200,000, Bank B 510,000. Rent of 4 Jan is not ticked and
           comes off today: Bank A 3,400,000 (lowest). Bank B 510,000 - 150,000 - 150,000 = 210,000. GCash 750,000 at the
           start of the day (the side gig lands today). Safe 3,400,000 + 210,000 + 750,000 = 4,360,000.
@@ -41,7 +45,8 @@
           6,610,000.
    1 Mar  check-in: side gig (5 Feb), internet (10 Feb), salary (15 and 26 Feb), rent (1 Mar) ticked; Bank A 7,600,000,
           Bank B 210,000, GCash 1,550,000. Horizon 15 Apr: Bank B 210,000 - 150,000 (10 Mar) - 150,000 (12 Apr) =
-          -90,000. Safe 7,600,000 + 1,550,000 - 90,000 = 9,060,000. */
+          -90,000: [SHORTGAP] a move of 90,000 from Bank A by 11 Apr, after the March pays. Safe 7,600,000 + 1,550,000 =
+          9,150,000 (before: 9,060,000). */
 'use strict';
 const { finishSetup: finishSetup3 } = require('./setup_sections.js');   // setup is saved one section at a time (item 14)
 const L = require('./lives3.js').make('e3_life_b');
@@ -99,9 +104,10 @@ const banks = (a, b, g) => Object.assign({}, A, { 'Bank A': a, 'Bank B': b, GCas
   ck('15 Dec: after the cards, Bank A 3,000,000 on 21 Dec and Bank B 210,000 on 28 Dec', ac.join(' | ') === 'After your cards are paid on 21 Dec: Bank A = 3000000 | After your cards are paid on 28 Dec: Bank B = 210000', ac.join(' | '));
   /* 29 Dec */
   await go(p, '2026-12-29'); await checkin(p, { 'Bank A': '45000', 'Bank B': '2100', GCash: '7500' });
-  await home(p, '29 Dec after the check (Bank B goes below zero on 10 Feb)', 4360000, banks(4500000, 210000, 750000));
+  await home(p, '29 Dec after the check (Bank B goes below zero on 10 Feb, helped by Bank A)', 4450000, banks(4500000, 210000, 750000));
   const warn = await p.$$eval('#a3Home [data-warn]', es => es.map(e => e.textContent)).catch(() => []);
-  ck('29 Dec: Home warns that Bank B goes below zero on 10 Feb', warn.some(x => /Bank B/.test(x) && /10 Feb/.test(x)), warn.join(' | '));
+  const help = await p.$eval('#a3Home [data-fig=move-help]', e => e.textContent.trim()).catch(() => '');
+  ck('29 Dec: Home says to move ₱900 from Bank A to Bank B by 9 Feb, with no warning beside it [SHORTGAP]', help === 'Move ₱900 from Bank A to Bank B by 9 Feb' && !warn.some(x => /Bank B/.test(x)), help + ' / ' + warn.join(' | '));
   /* 5 Jan: money moved to Bank B */
   await go(p, '2027-01-05'); await log(p, 3000, 'Bank A', { mode: 'moved', to: 'Bank B', note: 'top up' });
   await home(p, '5 Jan after moving 3,000 to Bank B', 4360000, banks(4200000, 510000, 750000));
@@ -118,7 +124,7 @@ const banks = (a, b, g) => Object.assign({}, A, { 'Bank A': a, 'Bank B': b, GCas
   await go(p, '2027-03-01');
   list = await checkin(p, { 'Bank A': '76000', 'Bank B': '2100', GCash: '15500' });
   ck('1 Mar: the check-in lists the side gig, the internet, two salaries and the rent', list.length === 5, list.join(' | '));
-  await home(p, '1 Mar after the check (Bank B below zero on 12 Apr)', 9060000, banks(7600000, 210000, 1550000));
+  await home(p, '1 Mar after the check (Bank B below zero on 12 Apr, helped by Bank A)', 9150000, banks(7600000, 210000, 1550000));
   await c.close();
   const secs = Math.round((Date.now() - t0) / 1000);
   ck(`the walk took ${secs} s (limit 240)`, secs < 240);
