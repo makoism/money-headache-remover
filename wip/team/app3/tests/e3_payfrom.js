@@ -81,11 +81,13 @@ const saved = p => p.evaluate(async () => { const s = await BurrowStore.open(); 
     await p.select('#pl-payFrom', bank); await btn('Save'); await T.w(500);
     const e1 = await err();
     ck('a card with a payment not ticked off: it says to tick it at Check your bank first', /Check your bank/.test(e1) && /10 Dec/.test(e1), e1);
+    ck('[LANE J] the refusal says what stays as it is, so it never reads as done', /^Card A stays paid from Savings for now\. Its 10 Dec payment is not ticked off yet: tick it at Check your bank, then try again/.test(e1), e1);
     await p.click('#plBack'); await T.w(200);
     await p.evaluate(id => document.querySelector(`#a3Plan [data-bill="${id}"]`).click(), rent); await T.w(300);
     await p.select('#pl-acct', SAVINGS); await btn('Save'); await T.w(500);
     const e2 = await err();
     ck('a bill with one not ticked off: the same', /Check your bank/.test(e2) && /27 Nov/.test(e2), e2);
+    ck('[LANE J] the bill refusal names the account it stays on', /^Rent stays paid from \S.* for now\. Its 27 Nov payment is not ticked off yet/.test(e2) && !/stays paid from Savings/.test(e2), e2);
     ck('nothing was written', JSON.stringify(await saved(p)) === before);
     ck('no page errors', !errs.length, errs.join(' | '));
   } finally { await b.close(); fs.rmSync(prof, { recursive: true, force: true }); }

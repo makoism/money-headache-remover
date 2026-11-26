@@ -9131,7 +9131,7 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
   const payerOk = (w, acct, card) => { const y = (w.book.accounts || []).find(z => live(z) && z.id === acct); if (!y || y.closed || !(OWN_KINDS[y.type] || (card && y.type === 'card'))) bad('Pick the account it is paid from'); return acct; };
   /* [E1b] a new paying account (or weekend rule) counts from the next payment on. One gone by and not ticked off would
      move with it, though it may already have left the old account: it is ticked off first */
-  const notTicked = day => { if (day) bad(`The payment of ${SN3.dayLabel(day, false)} is not ticked off yet. Tick it at Check your bank first: a change of account counts from the next one`); };
+  const notTicked = (day, name, from) => { if (day) bad(`${name} stays paid from ${from} for now. Its ${SN3.dayLabel(day, false)} payment is not ticked off yet: tick it at Check your bank, then try again`); };
   const sameName = (list, name, id) => { if (list.some(x => live(x) && x.id !== id && String(x.name).toLowerCase() === name.toLowerCase())) bad('There is already one called ' + name); };
 
   /* ---- budget lines and Free to spend ---- */
@@ -9263,7 +9263,7 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     const toNone = !!rhythm && rhythm.every === 'none', fromNone = !!rhythm && wasNone;
     if (x.name != null && x.name !== s.name) { ch.name = nameOk(x.name); sameName(A3.listOf(w.book, 'schedules').filter(y => y.kind === s.kind), ch.name, id); }
     /* [E1b, M13] a bill's paying account, from its next one */
-    if (s.kind === 'bill' && x.acct != null && x.acct !== '' && x.acct !== s.acct) { ch.acct = payerOk(w, x.acct, true); notTicked(((v.outstanding || [])[0] || {}).land); }
+    if (s.kind === 'bill' && x.acct != null && x.acct !== '' && x.acct !== s.acct) { ch.acct = payerOk(w, x.acct, true); notTicked(((v.outstanding || [])[0] || {}).land, s.name, nameOf(w, s.acct || mainOf(w))); }
     let from = x.from || v.changeFrom;
     if (s.kind === 'income' && x.amount === 0) bad(PAY_NEEDS_AMOUNT);   // [BL1] a pay always has an amount
     if (fromNone && x.amount == null && v.amount == null) bad(PAY_NEEDS_AMOUNT);
@@ -9540,7 +9540,7 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     /* [E1b, M13, M23] the account that pays it and its weekend rule, from the next payment on */
     if (x.payFrom != null && x.payFrom !== '' && x.payFrom !== (a.payFrom || mainOf(w))) ch.payFrom = payerOk(w, x.payFrom);
     if (x.shift != null && x.shift !== '' && x.shift !== (a.shift || 'after')) { if (!SHIFTS[x.shift]) bad('Pick what happens on a weekend or holiday'); ch.shift = x.shift; }
-    if (ch.payFrom || ch.shift) { const r = LA.lookahead(w.book, w.today), k = (a.type === 'card' ? r.cards : r.owed)[id] || {}; notTicked(((k.overdue || [])[0] || {}).payment_date); }
+    if (ch.payFrom || ch.shift) { const r = LA.lookahead(w.book, w.today), k = (a.type === 'card' ? r.cards : r.owed)[id] || {}; notTicked(((k.overdue || [])[0] || {}).payment_date, a.name, nameOf(w, a.payFrom || mainOf(w))); }
     if (!Object.keys(ch).length) bad('Nothing changed');
     w.edit('accounts', id, ch);
     return id;
