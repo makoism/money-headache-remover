@@ -9,7 +9,8 @@ Keep-going task: (LANE N, see Now). LANE M stays until its two running jobs land
 - HELPER 1 RUNNING on c10: B1 cents always for cent currencies (money3.js + every bypass, tests/e3_cents.js, full check into qc_reports/2026-11-26_cents/check3.txt). Then: report ready to MAIN 23 + coordinator.
 - HELPER 2 RUNNING on c11: lane/controls-11 = controls-9 + merge lane/amounthist + slice 10 build per CHECKFIX_PLAN (all sections, B1-B3), full check into qc_reports/2026-11-26_checkfix_build/check3.txt, QUESTIONS.md if any. Then: qc-controls + qc-data-safety + qc-numbers (Kenji numbers) on the build.
 - Waiting on LANE M: controls-5fix (close-account fix) and the loancheck qc-foundation; then controls-5 fast-forward, controls-8 merge + reviewers.
-- Queue after: controls-9 follow-ups' qc-assistant (now also covered by the controls-11 build), slice 13 plan (main bank closed/replaced).
+- Slice 13 plan WRITTEN: lane/controls-13 (from controls-8) 66e61ceb wip/team/app3/MAINBANK_PLAN.md, worktree c13. NEXT when a helper slot frees: qc-foundation on it (round qc_reports/2026-11-26_mainbank_plan, save its reply as qc-foundation.md), then qc-novice on the plan.
+- Queue after: controls-9 follow-ups' qc-assistant (also covered by the controls-11 build reviewers).
 
 # Below: LANE M's page at handoff
 
