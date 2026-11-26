@@ -782,7 +782,38 @@
     return `Remove the check of ${r.a.name} on ${SN3.dayLabel(r.c.date, r.c.date.slice(0, 4) !== w.today.slice(0, 4))}? Its figure ${SMF_(w, r.c.a, acct)} goes${ticked}${stays}. You can Undo it`;
   }
 
-  const api = { addPay, addAccount, changeAccount, closeAccount, reopenAccount, removeAccount, payOff, setKeep, setCountry, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, removeSchedule, addGoal, changeGoal, setAside, takeOut, removeGoal, addLoan, addCard, changeOwed, closeLoan, changeCheck, removeCheck, removeCheckWords, latestCheckOf: (w, acct) => latestOf(w, acct) };
+  /* ---- [coordinator, slice 10] a payment ticked at Check your bank (or by the assistant), taken back later ----
+     ticksOf(book, { acct?, sched? }): the live ticks (records `set:<occurrence>` with settles), newest first; with acct,
+     the payments of that card or loan; with sched, those of that bill or pay. The one source Receipts and Plan list.
+     untick(w, id): the tick is marked gone as if it never happened (no `was`, as removeCheck takes a tick), so the payment
+     is expected again and its check's gap says what the bank really did; its check-in record goes only when nothing in it
+     is live. Undo puts it back; ticking it again later takes the gone record's place. */
+  const isTick = e => live(e) && /^set:/.test(String(e.id)) && (e.settles || []).length > 0;
+  function ticksOf(book, o) {
+    o = o || {};
+    return (book.events || []).filter(e => isTick(e) && (!o.acct || (e.k === 'repay' && e.acct2 === o.acct)) && (!o.sched || e.settles.some(x => x && x.s === o.sched)))
+      .sort((x, y) => (x.date !== y.date ? (x.date < y.date ? 1 : -1) : x.id < y.id ? 1 : -1));
+  }
+  function tickName(book, e) {
+    const x = e.settles[0] || {}, s = (book.schedules || []).find(z => z && z.id === x.s), a = (book.accounts || []).find(z => z && z.id === x.s);
+    return s ? s.name : a ? a.name + '\'s payment' : 'A payment';
+  }
+  function untick(w, id) {
+    const e = (w.book.events || []).find(x => x && x.id === id);
+    if (!isTick(e)) bad('That is not ticked any more');
+    w.remove('events', id, { withCheckIn: true });
+    const ci = A3.listOf(w.book, 'checkins').find(k => k && !k.gone && k.id === e.grp);
+    if (ci && !(w.book.events || []).some(x => live(x) && x.grp === ci.id)) w.remove('checkins', ci.id);
+    return id;
+  }
+  function untickWords(w, id) {
+    const e = (w.book.events || []).find(x => x && x.id === id);
+    if (!isTick(e)) bad('That is not ticked any more');
+    const acct = e.k === 'repay' ? e.acct2 : e.acct;
+    return `Untick ${tickName(w.book, e)} of ${SMF_(w, e.k === 'repay' && e.a2 != null ? e.a2 : e.a, acct)}, ${SN3.dayLabel(e.date, e.date.slice(0, 4) !== w.today.slice(0, 4))}? It goes back to not ticked, so it is expected again. You can Undo it`;
+  }
+
+  const api = { addPay, addAccount, changeAccount, closeAccount, reopenAccount, removeAccount, payOff, setKeep, setCountry, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, removeSchedule, addGoal, changeGoal, setAside, takeOut, removeGoal, addLoan, addCard, changeOwed, closeLoan, changeCheck, removeCheck, removeCheckWords, latestCheckOf: (w, acct) => latestOf(w, acct), untick, untickWords, ticksOf, tickName };
   if (node) module.exports = api;
   else root.PLAN3W = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

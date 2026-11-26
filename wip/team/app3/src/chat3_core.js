@@ -222,14 +222,14 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
   const CURS = ['JPY', 'PHP', 'USD', 'EUR'];
   const SECTIONS = ['country', 'currency', 'banks', 'pays', 'cards', 'bills', 'asked', 'statements', 'payToday', 'free', 'min'];
   const TOOLS = [
-    { name: 'list', description: 'Records with their refs: accounts, pays, bills, cards, lines, goals, or the recent spends of one account (amount, date and ref only; give date or amount to find an older one), or the checks of one account (its bank and card figures, newest first).',
+    { name: 'list', description: 'Records with their refs: accounts, pays, bills, cards, lines, goals, or the recent spends of one account (amount, date and ref only; give date or amount to find an older one), or the checks of one account (its bank and card figures, newest first), or ticks (pay, bills and card payments ticked off, T refs: remove takes one back to not ticked).',
       input_schema: { type: 'object', properties: { what: { type: 'string', enum: ['accounts', 'pays', 'bills', 'cards', 'lines', 'goals', 'spends'] }, account: str('An account ref like A1, for spends.'), date: str('Spends on this day only, YYYY-MM-DD.'), amount: num }, required: ['what'] } },
     { name: 'explain', description: 'How a part of the app works, in the app\'s own words.',
       input_schema: { type: 'object', properties: { topic: { type: 'string', enum: ['safeToSpend', 'period', 'status', 'cards', 'free', 'goals', 'check', 'undo', 'setup', 'sent'] } }, required: ['topic'] } },
     { name: 'draft_set', description: 'Save one setup section into the draft, its whole value. Nothing reaches the app until fill_book. Sections: country "JP"|"PH"|"XX"; currency "JPY"|"PHP"|"USD"|"EUR" (a change of currency drops the amounts saved before it: ask each again); banks [{name, amount, type?, confirmed?}] (first is where pay lands; confirmed true when the person gave the figure again today); pays [{name, amount, every: month|days|weeks|none, day?, day2?, n?, start?, shift?: before|after, bank?, afterTax, same?}]; cards [{name, owed, payDay, closeDay: day|"last"|"not sure", shift?, payFrom?, confirmed?}]; bills [{name, amount, day, every?: month|year, month?, from?}]; asked [{name, out: true|false}]; statements [{name, amount|"not sure"}]; payToday {landed: true|false}; free amount|null; min amount|null.',
       input_schema: { type: 'object', properties: { section: { type: 'string', enum: SECTIONS }, value: { description: 'The section\'s whole value.' } }, required: ['section', 'value'] } },
     { name: 'fill_book', description: 'Turn the draft into the person\'s Burrow. Only when they said to fill it in. Refused while NEEDED is not empty.', input_schema: { type: 'object', properties: {} } },
-    { name: 'change', description: 'Make up to ' + MAX_STEPS + ' changes, each a named step: ' + DO.join(', ') + '. landed {ref: the P, B or card A ref, amount? only if it was different, date? the day it landed}; bank_figure and card_figure {account, amount}; change_spend {ref: the S ref, amount: the new amount}; change_check {account, date?: the day of the check from list checks (the latest when left out), amount?: the figure it really showed, place?: where its gap goes, an L or G ref, or null for Free to spend}; remove_check {account}: only the latest check, asks first. Fields: amount, account (A ref), every (add_bill: month|year|months, with month 1..12 for a year, n and start for months), from and to (A refs), line (L ref), goal (G ref), ref (the record: S, B, P, L or G ref), date (YYYY-MM-DD, today or before), note, name, day, day2, every (month|days|weeks1..4|none), start, when (now|next|once), target, due, owed, payDay, closeDay, type (bank|cash|ewallet), moved (true|false), shift (after|before: a card or loan weekend rule), payFrom (the A ref that pays a card or loan), from (the A ref the money came from), afterFigure (true|false: moved after they looked at that bank on the day of its figure). change_account {account: a bank, cash or e-wallet A ref, name?, min?: its own Keep at least, 0 for none}. close_account {account, to: the A ref its money goes to, or "spent" when it is not there any more}: bills and cards paid from it move there too, its history stays. reopen_account {account}. remove_account {account}: only for one added by mistake; anything with history is closed instead. close_account and remove_account also take a card or loan (a card or loan closes at zero). pay_off {account: card or loan}: all it owes, paid today from its paying account, only when they say they paid it. change_card {account, name?, payDay?, closeDay?}. change_loan {account, name?, payDay?, amount: the usual payment}. add_loan {name, owed, amount, payDay}. set_keep {amount: Keep at least for the main bank, 0 for none}. set_country {country: JP|PH|XX (somewhere else)}.',
+    { name: 'change', description: 'Make up to ' + MAX_STEPS + ' changes, each a named step: ' + DO.join(', ') + '. landed {ref: the P, B or card A ref, amount? only if it was different, date? the day it landed}; bank_figure and card_figure {account, amount}; change_spend {ref: the S ref, amount: the new amount}; change_check {account, date?: the day of the check from list checks (the latest when left out), amount?: the figure it really showed, place?: where its gap goes, an L or G ref, or null for Free to spend}; remove_check {account}: only the latest check, asks first. Fields: amount, account (A ref), every (add_bill: month|year|months, with month 1..12 for a year, n and start for months), from and to (A refs), line (L ref), goal (G ref), ref (the record: S, T, B, P, L or G ref), date (YYYY-MM-DD, today or before), note, name, day, day2, every (month|days|weeks1..4|none), start, when (now|next|once), target, due, owed, payDay, closeDay, type (bank|cash|ewallet), moved (true|false), shift (after|before: a card or loan weekend rule), payFrom (the A ref that pays a card or loan), from (the A ref the money came from), afterFigure (true|false: moved after they looked at that bank on the day of its figure). change_account {account: a bank, cash or e-wallet A ref, name?, min?: its own Keep at least, 0 for none}. close_account {account, to: the A ref its money goes to, or "spent" when it is not there any more}: bills and cards paid from it move there too, its history stays. reopen_account {account}. remove_account {account}: only for one added by mistake; anything with history is closed instead. close_account and remove_account also take a card or loan (a card or loan closes at zero). pay_off {account: card or loan}: all it owes, paid today from its paying account, only when they say they paid it. change_card {account, name?, payDay?, closeDay?}. change_loan {account, name?, payDay?, amount: the usual payment}. add_loan {name, owed, amount, payDay}. set_keep {amount: Keep at least for the main bank, 0 for none}. set_country {country: JP|PH|XX (somewhere else)}.',
       input_schema: { type: 'object', properties: { steps: { type: 'array', items: { type: 'object', properties: { do: { type: 'string', enum: DO }, amount: num }, required: ['do'] } } }, required: ['steps'] } },
   ];
 
@@ -266,6 +266,9 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       .sort((x, y) => (String(x.told) < String(y.told) ? -1 : String(x.told) > String(y.told) ? 1 : x.id < y.id ? -1 : 1));
     const refs = {};
     ev.forEach((e, i) => { refs['S' + (i + 1)] = e.id; });
+    /* [coordinator, slice 10] a payment ticked (pay, bill, card payment): T refs from list ticks, for remove */
+    const PWm = PW();
+    if (PWm && PWm.ticksOf) PWm.ticksOf(book).slice().reverse().forEach((e, i) => { refs['T' + (i + 1)] = e.id; });
     return refs;
   }
   function allRefs(book, today) { return Object.assign(figures(book, today).refs, book ? spendRefs(book) : {}); }
@@ -556,6 +559,10 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       return ev.length ? 'ref | date | amount | kind | line\n' + ev.map(e => `${back(e.id)} | ${day1(e.date)} | ${m(e.a)} | ${e.k === 'in' ? 'in' : 'spend'} | ${e.line === 'free' ? 'Free to spend' : back(e.line) || ''}`).join('\n') : 'No spends logged on that account yet.';
     }
     /* [CHECKFIX] the checks of one account, newest first, as the engine reads the book (a check brought back included) */
+    if (what === 'ticks') {
+      const ts = PW().ticksOf(book).slice(0, 20);
+      return ts.length ? 'ref | date | what | amount\n' + ts.map(e => `${back(e.id)} | ${day1(e.date)} | ${PW().tickName(book, e)} | ${m(e.k === 'repay' && e.a2 != null ? e.a2 : e.a)}`).join('\n') : 'Nothing ticked yet.';
+    }
     if (what === 'checks') {
       const acct = refs[x.account];
       if (!acct || !String(x.account).startsWith('A')) return 'Which account? An A ref from FIGURES.';
@@ -572,7 +579,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     if (what === 'pays' || what === 'bills') return figures(book, today).text.split('Pays and bills (ref | name | amount | when):\n')[1]?.split('\n').filter(l => l.startsWith(what === 'pays' ? 'P' : 'B')).join('\n') || 'None.';
     if (what === 'lines') return ((r.period && r.period.lines) || []).map(l => `${back(l.id)} | ${l.name} | ${m(l.amount)} each pay | ${m(l.left)} left`).join('\n') || 'None.';
     if (what === 'goals') return (book.places || []).filter(g => live(g) && g.kind === 'goal').map(g => `${back(g.id)} | ${g.name} | ${m((r.places[g.id] || {}).kept || 0)} set aside of ${m(g.target)}`).join('\n') || 'None.';
-    return 'Pick accounts, pays, bills, cards, lines, goals, spends or checks.';
+    return 'Pick accounts, pays, bills, cards, lines, goals, spends, checks or ticks.';
   }
 
   /* ---- change: named steps through act3 (BW) ---- */
@@ -693,9 +700,10 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       return { kind: 'removeSchedule', args: [id], text: `Remove ${schName(id)}, as if it was never added`, del: true };
     }
     if (what === 'remove' || what === 'end_bill' || what === 'end_line') {
-      const id = ref(a.ref, what === 'end_line' ? 'L' : what === 'end_bill' ? 'BP' : 'SBL');
+      const id = ref(a.ref, what === 'end_line' ? 'L' : what === 'end_bill' ? 'BP' : 'SBLT');
       if (!id) return { bad: 'a ' + what.replace('_', ' ') + ' for a ref I do not know' };
       const c = String(a.ref).charAt(0);
+      if (c === 'T') { let words; try { words = PW().untickWords({ book, today }, id); } catch (e) { return { bad: e.message }; } return { kind: 'untick', args: [id], text: words.replace(/\. You can Undo it$/, ''), del: true, amount: 0 }; }
       if (c === 'S') { const e = (book.events || []).find(x => x.id === id); return { kind: 'remove', args: [id], text: `Remove the ${e.k === 'in' ? 'money in' : 'spend'} of ${m(e.a)} on ${day1(e.date)}`, del: true }; }
       if (c === 'L') return { kind: 'endLine', args: [id], text: `End ${lineName(id)} from today`, del: true };
       return { kind: 'endBill', args: [id, {}], text: `End ${schName(id)} from today`, del: true };

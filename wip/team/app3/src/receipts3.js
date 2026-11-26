@@ -394,7 +394,10 @@ function rcList3() {
   /* [qc-numbers confirm, CONFUSING] money in on no line, changed or removed after the check that held it, both in this
      period: its change counts on spending (beside the gap it opened), so it has its own row and the rows add to spent */
   const sameIn = q ? [] : ((E3.book && E3.book.events) || []).filter(e => e && e.k === 'in' && !e.line && splits[e.id] && inPer(e.date) && inPer(splits[e.id].check));
-  const items = rows.map(e => ({ date: e.date, e })).concat(gaps.map(g => ({ date: g.to, g })))
+  /* [coordinator, slice 10] the payments ticked in this stretch (pay, bills, card payments: PLAN3W.ticksOf, the one source
+     the Plan sheets list too), each with Remove this tick */
+  const ticks = PLAN3W.ticksOf(E3.book).filter(e => rcKnown3(e) && (q ? [PLAN3W.tickName(E3.book, e), money3(e.a, E3.curOf(e.acct)), String(e.a), day3(e.date, 'any')].join(' ').toLowerCase().includes(q) : inPer(e.date) || !(per && per.start && per.end)));
+  const items = rows.map(e => ({ date: e.date, e })).concat(gaps.map(g => ({ date: g.to, g }))).concat(ticks.map(e => ({ date: e.date, t: e })))
     .concat(gone.filter(e => inPer(e.date)).map(e => ({ date: e.date, e })))
     .concat(changes.concat(sameIn).map(e => ({ date: splits[e.id].check, c: e })))
     .sort((x, y) => (x.date !== y.date ? (x.date < y.date ? 1 : -1) : 0));
@@ -405,7 +408,7 @@ function rcList3() {
     return e.gone ? `<li data-split="${esc3(e.id)}" data-k="${esc3(e.k)}">${inner}</li>`
       : `<li data-rc="${esc3(e.id)}" data-k="${esc3(e.k)}"><button type="button" class="a3-rcrow" aria-label="Change ${esc3(rcWhat3(e))}, ${esc3(money3(e.a, cur))}">${inner}</button></li>`;
   };
-  const li = items.map(x => (x.g ? rcGapLi3(x.g, yr) : x.c ? rcSplitLi3(x.c, splits[x.c.id], yr) : rcLi3(x.e))).join('');
+  const li = items.map(x => (x.t ? tickLi3(x.t, yr) : x.g ? rcGapLi3(x.g, yr) : x.c ? rcSplitLi3(x.c, splits[x.c.id], yr) : rcLi3(x.e))).join('');
   const ahead = rcAhead3().filter(e => !q || text(e).includes(q));
   const toldDay = e => String(e.told || e.date).slice(0, 10);
   const aheadLi = e => `<li data-rcahead="${esc3(e.id)}" data-k="${esc3(e.k)}"><button type="button" class="a3-rcrow" aria-label="Open ${esc3(rcWhat3(e))}, ${esc3(money3(e.a, E3.curOf(e.acct)))}"><span>${esc3(rcWhat3(e))}<br><span class="when">${esc3(day3(e.date, 'any'))}, ${esc3(E3.nameOf(e.acct))}${e.date <= E3.today() ? ', logged when a device said it was ' + esc3(day3(toldDay(e), 'any')) : ''}</span></span><span class="amt">${money3(e.a, E3.curOf(e.acct))}</span></button></li>`;
@@ -419,6 +422,8 @@ function rcList3() {
   if ($('#rcNewer')) $('#rcNewer').addEventListener('click', () => { RC3.at = per.newer === 'now' ? null : per.newer; rcList3(); });
   for (const r of host.querySelectorAll('[data-rc] button')) r.addEventListener('click', () => rcOpen3(r.parentNode.dataset.rc));
   for (const r of host.querySelectorAll('[data-rcahead] button')) r.addEventListener('click', () => rcOpen3(r.parentNode.dataset.rcahead));
+  if (!$('#rcTickSure')) host.insertAdjacentHTML('afterbegin', '<div id="rcTickSure"></div>');
+  tickWire3(host, $('#rcTickSure'), () => renderRc3());
 }
 
 /* [NS-FIX 3] Home's "Log a spend": Receipts' own log form, in spend mode, with the amount box ready (no second form) */

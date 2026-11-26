@@ -95,6 +95,32 @@ const saved = p => p.evaluate(async () => { const s = await BurrowStore.open(); 
     ck('the check-in keeps Food for the bank (fillerPlace)', JSON.stringify(ci11.fillerPlace) === JSON.stringify({ [BANK]: FOOD }));
     ck('Food has spent the 3,000 gap', await p.evaluate(() => (BurrowApp3.E3.view(BurrowApp3.E3.today()).period.lines.find(l => l.name === 'Food') || {}).spent) === 3000);
     ck('the sheet now says Food', /The gap went to: Food/.test(await p.$eval('[data-gapwent]', e => e.textContent)));
+    /* [coordinator, slice 10] a tick taken back later: on Receipts in its stretch, and on the card's sheet on Plan */
+    await p.click('#a3ChecksBack'); await T.w(200); await p.click('#a3ChecksX'); await T.w(300);
+    await p.tap('[data-tab="receipts"]'); await T.w(400);
+    const tickRows = await p.$$eval('#rcList [data-tick]', ls => ls.map(l => l.textContent.replace(/\s+/g, ' ').trim()));
+    ck('Receipts lists the payments ticked on 10 and 11 Dec, each with Remove this tick', tickRows.some(t => /^Ticked: Card A's payment/.test(t)) && tickRows.some(t => /^Ticked: Card B's payment/.test(t)) && tickRows.every(t => /Remove this tick/.test(t)), JSON.stringify(tickRows));
+    const cardB = (await saved(p)).events.find(e => e.k === 'repay' && e.acct2 === 'k7m2qa-f3n8p1x6wd-3' && !e.gone);
+    before = JSON.stringify(await saved(p));
+    await p.$eval(`#rcList [data-untick="${cardB.id}"]`, e => e.click()); await T.w(300);
+    const tq = await p.$eval('#rcTickSure [data-sure]', e => e.textContent.replace(/\s+/g, ' ')).catch(() => '');
+    ck('Remove this tick asks first', /^Untick Card B's payment of ¥23,000, 11 Dec\? It goes back to not ticked, so it is expected again\. You can Undo it/.test(tq), tq);
+    await p.$eval('#rcTickSure [data-sureno]', e => e.click()); await T.w(200);
+    ck('No writes nothing', JSON.stringify(await saved(p)) === before);
+    await p.$eval(`#rcList [data-untick="${cardB.id}"]`, e => e.click()); await T.w(300);
+    await p.$eval('#rcTickSure [data-sureyes]', e => e.click()); await T.w(700);
+    bk = await saved(p);
+    ck('Yes: the tick is gone (no was), its row too, and Card B\'s payment is expected again', bk.events.find(e => e.id === cardB.id).gone && bk.events.find(e => e.id === cardB.id).was === undefined && !(await p.$(`#rcList [data-untick="${cardB.id}"]`))
+      && await p.evaluate(() => { const r = BurrowApp3.E3.view(BurrowApp3.E3.today()); return (r.cards['k7m2qa-f3n8p1x6wd-3'].overdue || []).length > 0 || r.checkIn.toConfirm.some(x => /f3n8p1x6wd-3@/.test(x.item)); }));
+    ck('Undo puts the tick back', await undo()); await T.w(700);
+    ck('after Undo: ticked again', !(await saved(p)).events.find(e => e.id === cardB.id).gone);
+    await p.tap('[data-tab="plan"]'); await T.w(400);
+    await p.evaluate(() => { const b = [...document.querySelectorAll('#a3Plan button[data-owed]')].find(x => /Card A/.test(x.textContent)); if (b) b.click(); }); await T.w(400);
+    const sheetTicks = await p.$$eval('#a3Plan [data-ticks] [data-tick]', ls => ls.map(l => l.textContent.replace(/\s+/g, ' ').trim())).catch(() => []);
+    ck('Card A\'s own sheet on Plan lists its payment ticked, with Remove this tick', sheetTicks.length === 1 && /^Ticked: Card A's payment/.test(sheetTicks[0]) && /Remove this tick/.test(sheetTicks[0]), JSON.stringify(sheetTicks));
+    await p.click('#plBack'); await T.w(200);
+    await p.tap('[data-tab="home"]'); await T.w(300);
+    await p.click(`#a3Home [data-checks="${BANK}"]`); await T.w(300); await open(0);
     /* remove the newest */
     before = JSON.stringify(await saved(p));
     await p.click('#a3ChecksRemove'); await T.w(300);

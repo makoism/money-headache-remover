@@ -338,6 +338,7 @@ function plBillForm3(id) {
       : [{ label: 'Remove this bill', sure: [`Remove ${s.name}? Use this only if it was added by mistake: it goes as if it was never added`, 'Yes, remove it'], step: () => ['removeSchedule', w => PLAN3W.removeSchedule(w, id), s.name + ' removed'] }]),
   pay ? 'A change starts from the day in "Changes from". Pay periods before it stay as they were. End this pay: nothing comes in after the day in "Changes from"' : `"Change the next one only" changes the amount of the one on ${esc3(day3(v0.next ? v0.next.land : v0.changeFrom, 'any'))}. End this bill: nothing is due after the day in "Changes from"`);
   if (every.length) plPropose3(perPay, r0, everyNow);
+  tickSheet3({ sched: id });   // [coordinator, slice 10] its payments ticked, each with Remove this tick
 }
 /* [slice 6, qc-foundation 2] when how often the pay lands changes, each line counted each pay is proposed as the same
    money a year under the new rhythm (the engine's periods.perPayAcross, rounded half up), and says so:
@@ -430,6 +431,7 @@ function plOwedForm3(id) {
       : { label: 'Close this loan', sure: [`Close ${a.name}? It leaves your plan`, 'Yes, close it'], step: () => ['closeLoan', w => PLAN3W.closeLoan(w, id), a.name + ' closed'] },
       card ? { label: 'Remove this card', sure: [`Remove ${a.name}? Use this only if it was added by mistake: it goes as if it was never added`, 'Yes, remove it'], step: () => ['removeAccount', w => PLAN3W.removeAccount(w, id), a.name + ' removed'] } : { label: 'Remove this loan', sure: [`Remove ${a.name}? Use this only if it was added by mistake: it goes as if it was never added`, 'Yes, remove it'], step: () => ['removeAccount', w => PLAN3W.removeAccount(w, id), a.name + ' removed'] }]),
     `${owed > 0 ? `${esc3(a.name)}: ${money3(owed, cur)} ${esc3(label3('owed')).toLowerCase()}. ` : ''}${card ? 'A card closes once nothing is on it' : 'A loan closes once it is paid off'}`);
+  tickSheet3({ acct: id });   // [coordinator, slice 10] its payments ticked, each with Remove this tick
 }
 /* [E1, M13] an account's own sheet: its name, and its own Keep at least (the main bank's is in Settings) */
 function plAcctForm3(id) {

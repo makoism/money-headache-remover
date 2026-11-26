@@ -20,6 +20,7 @@ const TABLE = {
   'Close this account': 'sure on its own sheet; the button on the account\'s sheet only opens that sheet (tests/e3_acctclose.js)',
   'Remove this account': 'sure (tests/e3_acctclose.js)',
   'Remove this check': 'sure (tests/e3_checkfix.js)',
+  'Remove this tick': 'sure (tests/e3_checkfix.js)',
   'Close this card': 'sure (tests/e3_cardclose.js)',
   'Remove this card': 'sure (tests/e3_cardclose.js)',
   'Remove this loan': 'sure (tests/e3_cardclose.js)',

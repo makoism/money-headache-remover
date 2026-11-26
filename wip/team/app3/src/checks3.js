@@ -135,3 +135,31 @@ async function saveCheckFig3(c, own) {
 }
 /* an Undo from the bar, or a change from elsewhere, while the sheet is open: drawn again from the book as it is now */
 if (typeof ACT3 === 'object' && ACT3) ACT3.onChange(() => { if (checks3 && !$('#a3Checks').hidden) drawChecks3(); });
+/* ---- [coordinator, slice 10] a payment ticked at Check your bank, taken back later: one row piece for Receipts (in its
+   stretch) and for the card's, loan's, bill's or pay's own sheet on Plan, from one source (PLAN3W.ticksOf). Remove asks
+   first (sure3), then one act3 step (PLAN3W.untick): the payment goes back to not ticked, with its Undo bar ---- */
+function tickLi3(e, yr) {
+  const acct = e.k === 'repay' ? e.acct2 : e.acct, amt = e.k === 'repay' && e.a2 != null ? e.a2 : e.a;
+  const what = e.k === 'in' ? 'came in' : e.k === 'repay' ? `paid from ${E3.nameOf(e.acct)}` : 'paid';
+  return `<li data-tick="${esc3(e.id)}"><span>Ticked: ${esc3(PLAN3W.tickName(E3.book, e))}<br><span class="when">${esc3(day3(e.date, yr))}, ${esc3(what)}</span><br><button type="button" class="a3-link" data-untick="${esc3(e.id)}">Remove this tick</button></span><span class="amt${e.k === 'in' ? ' a3-in-amt' : ''}">${money3(amt, E3.curOf(acct))}</span></li>`;
+}
+function tickWire3(host, sureHost, after) {
+  host.querySelectorAll('[data-untick]').forEach(b => b.addEventListener('click', () => {
+    const id = b.dataset.untick, e = (E3.book.events || []).find(x => x.id === id);
+    let words; try { words = PLAN3W.untickWords({ book: E3.book, today: E3.today() }, id); } catch (err) { sureHost.textContent = err.message; return; }
+    sure3(sureHost, words, 'Yes, untick it', async () => {
+      const r = await ACT3.run('Untick a payment', w => PLAN3W.untick(w, id), { undo: `${PLAN3W.tickName(E3.book, e)} unticked` });
+      if (!r.ok) { sureHost.textContent = r.text; return; }
+      if (after) after();
+    });
+  }));
+}
+/* the ticked payments of one card, loan, bill or pay, on its own Plan sheet */
+function tickSheet3(o) {
+  const card = $('#a3Plan [data-card="plan-form"]'), list = PLAN3W.ticksOf(E3.book, o).filter(e => e.date <= E3.today()).slice(0, 12);
+  if (!card || !list.length) return;
+  const yr = E3.today().slice(0, 4);
+  card.insertAdjacentHTML('beforeend', `<div class="a3-field" data-ticks><h3>Payments ticked</h3><ul class="a3-rows">${list.map(e => tickLi3(e, yr)).join('')}</ul><div data-ticksure></div></div>`);
+  const box = card.querySelector('[data-ticks]');
+  tickWire3(box, box.querySelector('[data-ticksure]'), () => { const b = $('#plBack'); if (b) b.click(); });
+}

@@ -505,6 +505,24 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     eq(v.safeToSpend.headline, v0.safeToSpend.headline, 'safe to spend the same: Rent was already set aside');
     ok(!v.dueBeforeNextPay.items.some(o => o.amount === 72000), 'Rent no longer due');
   });
+  await t('[coordinator, slice 10] "rent did not come out after all": list ticks gives a T ref; remove asks first, then Rent is due again; Undo', async () => {
+    const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
+    hp.day = '2026-11-27';
+    const v0 = L.lookahead(hp.book, hp.day);
+    const f = FAKE.make([say('', [call('list', { what: 'bills' })]), body => { const b = FAKE.results(body)[0].text.split('\n').find(l => /Rent/.test(l)).split(' | ')[0]; return say('', [call('change', { steps: [{ do: 'landed', ref: b }] })]); }, say('Ticked.')]);
+    const d = hp.deps(f), r = await K.turn(state, 'rent came out', d);
+    hp.day = '2026-11-28';
+    const f2 = FAKE.make([say('', [call('list', { what: 'ticks' })]), body => { const t = FAKE.results(body)[0].text.split('\n').find(l => /Rent/.test(l)).split(' | ')[0]; return say('', [call('change', { steps: [{ do: 'remove', ref: t }] })]); }, say('Tap OK.')]);
+    const r2 = await K.turn(r.state, 'rent did not come out after all, that tick was wrong', Object.assign(hp.deps(f2), { door: d.door }));
+    const tc = r2.shown.find(x => x.who === 'card');
+    eq([tc.card.status, tc.card.ask], ['ask', 'delete']);
+    ok(/^Untick Rent of ¥72,000, 27 Nov\? It goes back to not ticked, so it is expected again$/.test(tc.card.lines[0]), tc.card.lines[0]);
+    const c = await K.confirm(r2.state, tc.id, Object.assign(hp.deps(f2), { door: d.door }));
+    ok(c.ok, JSON.stringify(c));
+    const v = L.lookahead(hp.book, hp.day);
+    ok(v.checkIn.toConfirm.some(o => o.amount === 72000) || v.dueBeforeNextPay.items.some(o => o.amount === 72000), 'Rent is expected again');
+    eq(v.accounts[hp.book.home.main.v.acct].bank, v0.accounts[hp.book.home.main.v.acct].bank, 'the bank as before the tick');
+  });
   await t('"my bank shows 250,000" and "Card A shows 60,000": a check of each through the check-in writer, typed figures only', async () => {
     const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
     hp.day = '2026-11-25';

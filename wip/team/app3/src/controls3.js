@@ -10,7 +10,7 @@
   'use strict';
   const DOOR_KINDS = ['add', 'change', 'end', 'remove'];
   /* PLAN3W exports that are not steps (they list what a pay change would ask about) */
-  const HELPERS = ['linesEachPay', 'linesEachMonth', 'removeCheckWords', 'latestCheckOf'];
+  const HELPERS = ['linesEachPay', 'linesEachMonth', 'removeCheckWords', 'latestCheckOf', 'untickWords', 'ticksOf', 'tickName'];
   /* writes that go through act3 without a PLAN3W step: the check-in writer, a statement import, setup's fill */
   const OTHER_ACTIONS = ['checkIn', 'statementsAdded', 'fill', 'undo'];
   const ROWS = [
@@ -74,7 +74,8 @@
       change: [{ what: 'its figure', action: 'changeCheck', screen: 'Home > tap an account\'s figure > Checks > the check', ai: 'change_check' },
         { what: 'where its gap went', action: 'changeCheck', screen: 'Home > tap an account\'s figure > Checks > the check > The gap went to', ai: 'change_check' },
         { what: 'was that figure right (a large gain held)', action: 'changeCheck', screen: 'Home > the warning > Answer > Yes, or No, fix it', ai_todo: 'later: the assistant answers it by asking' },
-        { what: 'a tick at a check-in changed later (its amount or day) or unticked', todo: 'later: its own slice after CHECKFIX (Receipts leaves out records with settles today)' }],
+        { what: 'a tick at a check-in taken back later', action: 'untick', screen: 'Receipts > the payment > Remove this tick; Plan > the card, loan, bill or pay > Payments ticked', ai: 'remove' },
+        { what: 'a tick at a check-in changed later (its amount or day)', todo: 'later: its own slice after CHECKFIX (untick it, then tick it again at Check your bank)' }],
       remove: { what: 'the newest only', action: 'removeCheck', screen: 'Home > tap an account\'s figure > Checks > the newest > Remove this check', ai: 'remove_check' } },
     { kind: 'statement import',
       add: { action: 'statementsAdded', screen: 'Home > Add statements', ai_todo: 'later: reading files in the chat' },
