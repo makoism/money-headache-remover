@@ -24,7 +24,13 @@ function typed3(text, cur) { const r = SM.parse(text, cur); return r.ok ? r.mino
    a pay or a bill), as whole minor units or null */
 /* [qc-numbers run 1 B4] a comma not in a thousands place ("1,0000"): the question to show in place of the box's own
    words, "Did you mean ¥1,000 or ¥10,000?", or null for any other text */
-function typedSlip3(text, cur) { const r = SM.parse(text, cur, { allowMinus: true }); return !r.ok && r.reason === 'commas' ? `Did you mean ${r.means.map(n => money3(n, cur)).join(' or ')}?` : null; }
+/* [qc-numbers run 1 POLISH] too many decimals says so at Save too, in the box's own words (screens/inputs.js) */
+function typedSlip3(text, cur) {
+  const r = SM.parse(text, cur, { allowMinus: true });
+  if (r.ok) return null;
+  if (r.reason === 'commas') return `Did you mean ${r.means.map(n => money3(n, cur)).join(' or ')}?`;
+  return r.reason === 'decimals' ? BurrowScreens.inputs.commit(text, { code: cur, allowMinus: true }).message : null;
+}
 function typedBank3(text, cur) { const r = SM.parse(text, cur, { allowMinus: true }); return r.ok ? r.minor : null; }
 /* '2026-12-10' as '10 Dec', with the year when it is not the shown day's year */
 const day3 = (s, thisYear) => (s ? SN.dayLabel(s, !!thisYear && s.slice(0, 4) !== thisYear) : '');
