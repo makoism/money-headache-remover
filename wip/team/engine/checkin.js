@@ -19,6 +19,7 @@
   'use strict';
   const node = typeof module === 'object' && module.exports;
   const I = node ? require('./ids.js') : root.BurrowEngine.ids;
+  const Dt = () => (node ? require('./dates.js') : root.BurrowEngine.dates);   // read when used: the load order stays free
   const whole = (v, what) => { if (!Number.isInteger(v)) throw new Error(what + ' is not a whole amount in minor units: ' + v); return v; };
 
   function checkIn(book, a) {
@@ -33,20 +34,32 @@
       const typed = a.amounts && Object.prototype.hasOwnProperty.call(a.amounts, occ);
       const amt = whole(typed ? a.amounts[occ] : (a.expected || {})[occ], 'the amount of ' + occ);
       const s = scheds[o.schedule], card = accts[o.schedule];
-      // [BI1] the day it landed: never on or before the account's previous check (it was not in that figure); by
-      // default its landing day, or the day after that check when the landing day is not after it
+      // [BI1] the day it landed: never on or before the previous check of its account(s) whose check-in listed it (it was
+      // not in that figure); by default its landing day, or the day after that check when the landing day is not after
+      // it. [LISTED 2c, N3] When the day would fall on or before a newer check that did NOT list it, the person is asked:
+      // `afterFigure` true (or "I don't know") dates it the day after that check, false its landing day, inside it; a
+      // typed day on or before that check's day is inside it. With no typed day and no answer the tick is refused.
       const from = landedFrom(book, a, occ), typedDay = (a.landed || {})[occ];
-      let date;
+      const ask = askAfter(book, Object.assign({}, a, { lands: { [occ]: typedDay || (a.lands || {})[occ] } }), occ);
+      let date, inside = false;
       if (typedDay) {
         if (typedDay > a.day) throw new Error(occ + ' cannot have landed after the check-in day: ' + typedDay);
         if (from && typedDay < from && !(from > a.day && typedDay === a.day)) throw new Error(occ + ' cannot have landed on or before the previous check: ' + typedDay);
         date = typedDay;
+        if (ask && typedDay === ask) inside = true;
       } else {
         date = (a.lands || {})[occ] || a.day;
         if (from && date < from) date = from;
         if (date > a.day) date = a.day;
+        if (ask) {
+          const af = (a.afterFigure || {})[occ];
+          if (af === true) { date = Dt().dayStr(Dt().dayNum(ask) + 1); if (date > a.day) date = a.day; }
+          else if (af === false) { if (date === ask) inside = true; }
+          else throw new Error(occ + ': ask whether it went before or after the figure of ' + ask + ' (afterFigure), or the day it landed');
+        }
       }
       const rec = { id: I.built.set(occ), date, told: at, at, grp: cid, settles: [{ s: o.schedule, due: o.due }] };
+      if (inside) rec.dayInside = true;   // [LISTED N3] on the figure's own day and inside it, though told after it
       if (s && s.kind === 'income') Object.assign(rec, { k: 'in', sub: 'pay', acct: s.acct, a: amt, stream: s.id });
       else if (s) Object.assign(rec, { k: 'spend', acct: s.acct, a: amt });
       else if (card) Object.assign(rec, { k: 'repay', acct: card.payFrom || null, acct2: card.id, a: amt, a2: amt });
@@ -64,30 +77,58 @@
     const rec = { id: cid, date: a.day, told: at, at, figures, settled };
     if ((a.unticked || []).length) rec.unticked = a.unticked.slice();
     if (Object.keys(places).length) rec.fillerPlace = places;
+    if (Array.isArray(a.listed)) rec.listed = a.listed.slice();   // [LISTED 1] what was in front of the person
+    if (a.answers) rec.answers = a.answers;   // [LISTED N2] a later answer ("not yet") about that check-in's figure
     if (a.from) rec.from = a.from;
     if (a.split === 'days' || a.split === 'before') rec.split = a.split;
     if (a.by) { rec.by = a.by; for (const e of events) e.by = a.by; }
     return { checkins: [rec], events };
   }
-  // [BI1] The first day an item ticked at this check-in can have landed: the day after its account's previous check
-  // (the last check of that account dated before the check-in day, or that day and told before it), or null when the
-  // account has none. A card payment goes by its paying account.
-  function landedFrom(book, a, occ) {
+  // [BI1, LISTED 2, 2b, 2d] The checks that can bound item occ: those of its account, or for a card payment those of the
+  // paying bank AND the card itself, dated on or before the check-in day (on that day only when told before it). Each is
+  // { day, listed }: listed is true when the check has no check-in record (setup, Plan, a move, an import), when its
+  // check-in has no `listed` (written before 26 Nov: it counts as having listed everything), when that check-in listed
+  // occ, or when a later check-in answering it (`answers`, "not yet") listed occ.
+  function checksFor(book, a, occ) {
     const o = I.occurrence(occ);
-    if (!o) return null;
+    if (!o) return [];
     const s = (book.schedules || []).find(x => x && !x.gone && x.id === o.schedule);
     const card = (book.accounts || []).find(x => x && !x.gone && x.id === o.schedule);
-    const acct = s ? s.acct : card ? card.payFrom : null;
-    if (!acct) return null;
-    let prev = null;
+    const accts = s ? [s.acct] : card ? [card.payFrom, card.id].filter(Boolean) : [];
+    if (!accts.length) return [];
+    const cis = (book.checkins || []).filter(k => k && !k.gone);
+    const listedIn = e => {
+      const ci = cis.find(k => k.id === e.grp) || cis.find(k => (k.figures || []).some(f => f && f.check === e.id));
+      if (!ci || !Array.isArray(ci.listed) || ci.listed.includes(occ)) return true;
+      return cis.some(k => k.answers === ci.id && Array.isArray(k.listed) && k.listed.includes(occ) && (!k.date || k.date <= a.day));
+    };
+    const out = [];
     for (const e of book.events || []) {
-      if (!e || e.gone || e.k !== 'check' || e.stmt || e.acct !== acct || !e.date || e.date > a.day) continue;
+      if (!e || e.gone || e.k !== 'check' || e.stmt || !accts.includes(e.acct) || !e.date || e.date > a.day) continue;
       if (e.date === a.day && a.told && e.told && e.told >= a.told) continue;
-      if (prev === null || e.date > prev) prev = e.date;
+      out.push({ day: e.date, listed: listedIn(e) });
     }
-    if (prev === null) return null;
-    const D = node ? require('./dates.js') : root.BurrowEngine.dates;
-    return D.dayStr(D.dayNum(prev) + 1);
+    return out;
+  }
+  // [BI1] The first day an item ticked at this check-in can have landed: the day after the newest check that bounds it
+  // (checksFor, listed), or null when there is none.
+  function landedFrom(book, a, occ) {
+    let prev = null;
+    for (const c of checksFor(book, a, occ)) if (c.listed && (prev === null || c.day > prev)) prev = c.day;
+    return prev === null ? null : Dt().dayStr(Dt().dayNum(prev) + 1);
+  }
+  // [LISTED 2c, N3] The day of the newest check that did NOT list the item, when the item's default day (its landing
+  // day `a.lands[occ]`, or the check-in day, never before landedFrom) falls on or before it: the screen and the
+  // assistant then ask the day from the bank app, or before or after. Else null.
+  function askAfter(book, a, occ) {
+    const cs = checksFor(book, a, occ);
+    let prev = null, un = null;
+    for (const c of cs) { if (c.listed) { if (prev === null || c.day > prev) prev = c.day; } else if (un === null || c.day > un) un = c.day; }
+    if (un === null || (prev !== null && un <= prev)) return null;
+    let d = (a.lands || {})[occ] || a.day;
+    if (prev !== null && d <= prev) d = Dt().dayStr(Dt().dayNum(prev) + 1);
+    if (d > a.day) d = a.day;
+    return d <= un ? un : null;
   }
   function apply(book, out) {
     const b = JSON.parse(JSON.stringify(book));
@@ -95,7 +136,7 @@
     b.checkins = (b.checkins || []).concat(out.checkins);
     return b;
   }
-  const api = { checkIn, apply, landedFrom };
+  const api = { checkIn, apply, landedFrom, askAfter };
   if (node) module.exports = api;
   else (root.BurrowEngine = root.BurrowEngine || {}).checkin = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
