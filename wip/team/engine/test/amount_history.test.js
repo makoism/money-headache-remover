@@ -347,4 +347,24 @@ t('[WATCH] a held jump holds only the gap judged at the check: a removed move-in
   check('2026-12-07', 97000);
   eq([on5, on6, v('2026-12-07')], [[0, 9000], [0, 9000], [53000, 0]]);
 });
+// [coordinator 18 ruled, part 2] while a jump up is held (not answered, no later check yet), safe to spend leaves it
+// out, and the sum under it says so in one part. Made-up yen: set up 1 Dec, Main bank 5,000, pay 250,000 on the 10th,
+// Free to spend 30,000 (1 to 9 Dec: 9,000). The bank can spare 5,000 before pay, so safe to spend is 5,000 (the bank
+// is the limit, not Free to spend). 5 Dec the bank shows 105,000 (a 100,000 jump: 100,000 > 9,000): held. Safe to
+// spend stays 5,000, what the accounts can spare stays 5,000, no money without a job (0), and Main bank's sum reads
+// 105,000 today - 100,000 held = 5,000. Today: 9,000, 105,000 and 96,000 (the held money counts). 8 Dec 104,000: far
+// from the 5,000 expected without it, so it is real money in and the 1,000 drop is spent: 8,000 (Free left 8,000).
+t('[ruled] while a jump is held, safe to spend and what the accounts can spare leave it out, and the sum names it', () => {
+  const o = gift();
+  const newId = IDS.idMaker('k4m2wd');
+  const out = BB.buildBook({ day: '2026-12-01', told: '2026-12-01T10:00:00.000' + TZ, currency: 'JPY', country: 'JP', banks: [{ key: 'bank1', name: 'Main bank', amount: 5000, main: true, min: null }],
+    pays: [{ key: 'pay1', name: 'Pay', bank: 'bank1', amount: 250000, every: 'month', day: 10, shift: 'none', startsPeriod: true }], cards: [], bills: [], free: 30000 }, { newId });
+  o.book = out.book || out; o.bank = o.book.accounts.find(a => a.type !== 'card').id;
+  const v = d => { const r = LA.lookahead(o.book, d), a = r.accounts[o.bank]; return [r.safeToSpend.headline, r.canSpare.amount, r.noJob.amount, a.bank, a.headroom, a.whyParts.map(p => p.amount)]; };
+  const before = v('2026-12-05');
+  o.check('2026-12-05', 105000); const on5 = v('2026-12-05');
+  const w = LA.lookahead(o.book, '2026-12-05').warnings.find(x => x.code === 'gain_to_ask');
+  o.check('2026-12-08', 104000); const on8 = v('2026-12-08');
+  eq([before, on5, w && w.held, on8], [[5000, 5000, 0, 5000, 5000, [5000, 0]], [5000, 5000, 0, 105000, 5000, [105000, -100000, 0]], 100000, [8000, 104000, 96000, 104000, 104000, [104000, 0]]]);
+});
 done('amount_history.test.js');
