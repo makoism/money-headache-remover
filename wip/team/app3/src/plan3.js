@@ -409,9 +409,10 @@ function plAcctAddForm3() {
   const fields = [{ key: 'name', label: 'Name', kind: 'text', hint: 'Like Savings, Cash or PayPay' },
     { key: 'type', label: 'What it is', kind: 'pick', value: 'bank', options: [{ v: 'bank', name: 'A bank account' }, { v: 'cash', name: 'Cash' }, { v: 'ewallet', name: 'An e-wallet' }] },
     { key: 'amount', label: 'What it holds today', kind: 'amount', hint: 'Type 0 if it is empty' },
-    { key: 'source', label: 'Where that money came from', kind: 'pick', value: 'new', options: [{ v: 'new', name: `Not taken from ${fromName} since its figure of ${since}` }, { v: 'moved', name: `Moved from ${fromName} after its figure of ${since}` }],
-      hint: `New money, or money moved before that figure, is added as it is. Money moved after it comes out of ${fromName}, so it is not counted twice` }];
-  if (last < day) fields.push({ key: 'date', label: 'If it was moved, the day', kind: 'date', value: day });
+    /* [qc-novice C6] asked plainly, Yes or No */
+    { key: 'source', label: `Did you move this money from ${fromName} after ${since === 'today' ? 'you looked at it today' : since}?`, kind: 'pick', value: 'new', options: [{ v: 'new', name: 'No' }, { v: 'moved', name: 'Yes' }],
+      hint: `Yes takes it out of ${fromName}, so it is not counted twice. No adds it as new money` }];
+  if (last < day) fields.push({ key: 'date', label: 'If yes, the day you moved it', kind: 'date', value: day });
   fields.push({ key: 'min', label: 'Keep at least', kind: 'amount', optional: true, hint: 'Leave it empty for none' });
   plForm3('Add an account', fields, [{ label: 'Add', solid: true, step: v => ['addAccount', w => PLAN3W.addAccount(w, Object.assign({ name: v.name, type: v.type, amount: v.amount, min: v.min, moved: v.source === 'moved' },
     v.source === 'moved' ? { date: v.date || day, afterFigure: true } : {})), 'Account added'] }],

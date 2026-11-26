@@ -82,6 +82,7 @@ page|tests/e3_moved1.js|e3_moved1: ALL PASS||300|Moved with one account of your 
 page|tests/e3_moved2.js|e3_moved2: ALL PASS||300|Moved: To follows From, money can be moved into the main bank (qc-numbers monthrule2 blocker 2)
 page|tests/e3_moneyin.js|e3_moneyin: ALL PASS||300|Receipts: Money in, a client payment or a gift (slice 6)
 page|tests/e3_payin.js|e3_payin: ALL PASS||300|Receipts: Money came in asks if it is an expected pay and ticks it (qc-novice B1)
+page|tests/e3_addask.js|e3_addask: ALL PASS||300|Add an account asks "Did you move this money from <bank> after <day>?" Yes or No (qc-novice C6)
 page|tests/e3_amounts.js|e3_amounts: ALL PASS||300|every amount box: a tap, click or Tab, or a form's own focus, selects, so typing replaces (screens/inputs.js)
 page|tests/e3_bigspend.js|e3_bigspend: ALL PASS||300|a spend larger than what its account holds asks first, new or changed (north star F5)
 page|tests/e3_panels.js|e3_panels: ALL PASS||300|only the tapped tab's panel shows (every tab after every other, the sheets)
@@ -174,7 +175,7 @@ page_tests_for() {   # page_tests_for <changed path, relative to app3/>
     src/home3.js)             echo e3_cloudstatus e3_home e3_ns e3_homeplan e3_warnwords e3_cardline e3_bankparts e3_names e3_payday ;;
     src/checkin3.js)          echo e3_checkin e3_checkgap e3_checkblank e3_cardfig e3_reload e3_bankparts e3_payday e3_overdrawn e3_cardpay e3_paycame ;;
     src/receipts3.js)         echo e3_removes e3_receipts e3_listfix e3_moneyin e3_payin e3_bigspend e3_stmt_once e3_period e3_names e3_doors e3_moved1 e3_moved2 e3_cardgap ;;
-    src/plan3.js|src/plan3_write.js) echo e3_accounts e3_billyear e3_payfrom e3_removes e3_aijoin e3_plan e3_rhythms e3_lineshare e3_homeplan e3_paychange e3_names ;;
+    src/plan3.js|src/plan3_write.js) echo e3_accounts e3_addask e3_billyear e3_payfrom e3_removes e3_aijoin e3_plan e3_rhythms e3_lineshare e3_homeplan e3_paychange e3_names ;;
     src/setup3.js|src/answers3.js) echo e3_twodrafts e3_fillcard e3_setup e3_setupfix e3_setup6 e3_income2 e3_weeks3 e3_first e3_onepay e3_overdrawn e3_paytoday e3_chatwalk e3_chat e3_setup2tabs e3_setuplater e3_tabsetup ;;
     src/chat3*.js)            echo e3_nsfix e3_twodrafts e3_ailog e3_aiwords e3_fillcard e3_cloudfirst e3_aijoin e3_chat e3_chatwalk e3_fakeai_page e3_fillundo e3_invite e3_back e3_cloudhold ;;
     src/start3.js)            echo e3_first e3_file e3_try e3_chat e3_cloudtake ;;
