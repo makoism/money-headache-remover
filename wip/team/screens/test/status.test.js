@@ -280,4 +280,31 @@ test('a shortfall with no real money short (goals or plan lines) is never the "s
   assert.strictEqual(s.text.next, 'Lower a plan line, or move money in');
 });
 
+/* [SHORTGAP] an account another one helps: one line with the engine's moves, never its warning beside it; never "cover" */
+const helpRes = (cover, extra) => Object.assign({
+  accounts: { m1: { bank: 201400, currency: 'JPY', headroom: 179400, spendFrom: true, ageDays: 0 }, b2: { bank: 32000, currency: 'JPY', headroom: -101400, spendFrom: true, ageDays: 0, cover } },
+  warnings: [{ account: 'b2', code: 'below_minimum', day: '2026-12-10', amount: 22000, short: 22000, minimum: null, covered: { from: 'm1', moves: cover.moves } }],
+  safeToSpend: { headline: 179400, shortfall: 0, short: null, oldestInput: '2026-12-01', until: '2026-12-10' }, daysToNextPay: { days: 9, next_pay: '2026-12-10' }, laterOn: [] }, extra || {});
+const HCTX = { currency: 'JPY', origin: 'typed', names: { m1: 'Main bank', b2: 'Beta Bank' } };
+test('[SHORTGAP] the move line names both amounts and days, in plain words', () => {
+  const r = helpRes({ from: 'm1', moves: [{ day: '2026-12-09', amount: 22000 }, { day: '2026-12-27', amount: 79400 }] });
+  const ctx = Object.assign({ accounts: r.accounts }, HCTX);
+  const t = status.moveText(r.warnings[0], ctx);
+  assert.strictEqual(t, 'Move ¥22,000 from Main bank to Beta Bank by 9 Dec, and ¥79,400 more by 27 Dec');
+  assert.ok(!/cover/i.test(t));
+  assert.strictEqual(status.helpRestText('b2', ctx), '');
+});
+test('[SHORTGAP] a helped account is no warning in the status: fine for now', () => {
+  const r = helpRes({ from: 'm1', moves: [{ day: '2026-12-09', amount: 22000 }] });
+  const s = status.statusOf(r, HCTX);
+  assert.strictEqual(s.state, 'ok');
+  assert.ok(!s.also.includes('below_minimum'));
+});
+test('[SHORTGAP] a wallet reads take out cash; a partial help adds one short line', () => {
+  const r = helpRes({ from: 'm1', moves: [{ day: '2026-12-09', amount: 10000 }], rest: { day: '2026-12-10', amount: 12000 } });
+  const ctx = Object.assign({ accounts: r.accounts, types: { b2: 'cash' } }, HCTX);
+  assert.strictEqual(status.moveText(r.warnings[0], ctx), 'Take out ¥10,000 cash from Main bank for Beta Bank by 9 Dec');
+  assert.strictEqual(status.helpRestText('b2', ctx), 'Beta Bank is still ¥12,000 short on 10 Dec');
+});
+
 run('status.js');

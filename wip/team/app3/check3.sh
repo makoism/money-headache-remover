@@ -107,6 +107,7 @@ page|tests/e3_ailog.js|e3_ailog: ALL PASS||300|the assistant's error log (AI_JOI
 page|tests/e3_aiwords.js|e3_aiwords: ALL PASS||300|what the assistant is told, on the real page with the real core (AI_JOIN_FIXES H5, H6): a bank figure far from what was expected asks first with the gap in words; a spend with no account asks card or bank once, then remembers
 page|tests/e3_fillcard.js|e3_fillcard: ALL PASS||300|the draft card and the fill card with the real core (AI_JOIN_FIXES C, D): no Fill on a part answer; the fill's Undo on a phone leaves one welcome and one chat box; no Start over, the card says how to change things
 page|tests/e3_cloudfirst.js|e3_cloudfirst: ALL PASS||300|the cloud copy turned on right after a setup by chat sends the first copy, and a second device with the code has the book (AI_JOIN_FIXES B; M61, M67)
+page|tests/e3_shortgap.js|e3_shortgap: ALL PASS||300|a second bank that will be short (SHORTGAP): Home's one move line with both amounts and days, safe to spend 179,400 before and after Rent and Power move to Beta, Later until tomorrow, Done with Undo (M7, M23, M36, M45, M91)
 page|tests/e3_aijoin.js|e3_aijoin: ALL PASS||300|the assistant joined to the base, the real core on the real page (AI_JOIN_FIXES A): a bill changed by chat, a reload, Undo on the kept card; a job change by chat on 5 Jan and the period on 20 Mar
 page|tests/e3_onepay.js|e3_onepay: ALL PASS||300|two incomes on the 10th entered as one pay (M28): setup 20 Nov, 9 Dec, Check your bank on 10 Dec, hand-worked next pay, period and safe to spend
 page|tests/e3_setup6.js|e3_setup6: ALL PASS||300|setup for the other lives: the country chosen, more accounts, pay rhythms, a second income on its own day, cards and bills from their account, once a year (slice 6)
@@ -158,7 +159,7 @@ page_tests_for() {   # page_tests_for <changed path, relative to app3/>
   case "$1" in
     tests/lib3.js|src/e3.js|src/money3.js|src/act3.js|src/shell.html|src/app3.css|build3.sh|../screens/*|../store/*|fixtures/*)
                               echo e3_try e3_home e3_checkin e3_receipts e3_plan e3_panels e3_amounts e3_names e3_band e3_undobar ;;
-    ../engine/*)              echo e3_try e3_home e3_checkin e3_receipts e3_plan e3_panels e3_amounts e3_names e3_cardgap ;;
+    ../engine/*)              echo e3_try e3_home e3_checkin e3_receipts e3_plan e3_panels e3_amounts e3_names e3_cardgap e3_shortgap ;;
     tests/lives3.js)          echo e3_life_a e3_life_a2 e3_life_b e3_life_c e3_life_d ;;
     tests/e3_act_book.js)     echo e3_home e3_checkin ;;
     tests/fake_vault.js)      echo e3_cloudfirst e3_cloud e3_cloudbase e3_cloudtake e3_cloudsend e3_cloudhold e3_cloudwhich e3_cloudwhich2 e3_cloudstatus e3_listfix e3_restore ;;
@@ -167,7 +168,7 @@ page_tests_for() {   # page_tests_for <changed path, relative to app3/>
     tests/fake_ai.js|tests/fake_ai_page.js) echo e3_fakeai_page e3_chatwalk e3_chat chat3_core.test ;;   # helpers (the fake model, and it behind a made-up relay), not tests
     tests/chat_real.js)       echo e3_ailog e3_aiwords e3_fillcard e3_cloudfirst e3_aijoin ;;   # a helper (the real core and panel with the fake model behind a made-up relay), not a test
     tests/*.js)               [ -f "$1" ] && basename "$1" .js ;;   # a test file removed on purpose has no test to run
-    src/home3.js)             echo e3_cloudstatus e3_home e3_ns e3_homeplan e3_warnwords e3_cardline e3_bankparts e3_names e3_payday ;;
+    src/home3.js)             echo e3_cloudstatus e3_home e3_ns e3_homeplan e3_warnwords e3_cardline e3_bankparts e3_names e3_payday e3_shortgap ;;
     src/checkin3.js)          echo e3_checkin e3_checkgap e3_checkblank e3_cardfig e3_reload e3_bankparts e3_payday e3_overdrawn e3_cardpay e3_paycame ;;
     src/receipts3.js)         echo e3_removes e3_receipts e3_listfix e3_moneyin e3_bigspend e3_stmt_once e3_period e3_names e3_doors e3_moved1 e3_moved2 e3_cardgap ;;
     src/plan3.js|src/plan3_write.js) echo e3_accounts e3_billyear e3_payfrom e3_removes e3_aijoin e3_plan e3_rhythms e3_lineshare e3_homeplan e3_paychange e3_names ;;
@@ -176,7 +177,7 @@ page_tests_for() {   # page_tests_for <changed path, relative to app3/>
     src/start3.js)            echo e3_first e3_file e3_try e3_chat e3_cloudtake ;;
     src/back3.js)             echo e3_back e3_undobar e3_checkin e3_plan e3_receipts e3_setupfix e3_stmt e3_remind e3_backup e3_tabs e3_stalesheet e3_cloudhold ;;
     src/stmt3*.js)            echo e3_stmt e3_stmt_once e3_walk4 e3_invite e3_chat ;;
-    src/ask3*.js)             echo e3_chat e3_invite e3_chatwalk ;;   # ask3_core.js: the summary the assistant is sent
+    src/ask3*.js)             echo e3_chat e3_invite e3_chatwalk e3_shortgap ;;   # ask3_core.js: the summary the assistant is sent
     src/backup3.js|src/settings3.js) echo e3_backup e3_tabs e3_ailog e3_invite e3_restore e3_cloudhold ;;
     src/sw3.js|src/settings3_sw.js|sw3.js) echo e3_sw offline e3_install ;;
     src/cloud3*.js)           echo e3_cloudfirst e3_cloud e3_cloudbase e3_cloudtake e3_cloudsend e3_cloudhold e3_cloudwhich e3_cloudwhich2 e3_cloudstatus e3_restore ;;

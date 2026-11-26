@@ -82,6 +82,11 @@
     'next.move_money_in_now': W('Move money in or spend less'),
     'next.plan_over': W('Lower a plan line, or move money in'),
     'next.move_from': W('Move {amount} from {from} to {account} by {day}. {from} can spare it'),
+    /* [SHORTGAP] the engine's moves for an account another one helps (accounts[].cover): one line, never "cover" */
+    'next.help_first': W('Move {amount} from {from} to {account} by {day}'),
+    'next.help_cash': W('Take out {amount} cash from {from} for {account} by {day}'),
+    'next.help_more': W('{amount} more by {day}'),
+    'next.help_rest': W('{account} is still {amount} short on {day}'),
     'next.answer': W('Answer the question'),
     'next.take_out_or_move_in': W('Take some out of a goal, or move money in'),
     'next.check_in_when_it_lands': W('Check in when it lands'),
@@ -148,7 +153,9 @@
     /* [C8] the pay safe to spend runs to (safeToSpend.until): on pay day that is the pay after today's, never today */
     const until = stp.until || pay.next_pay || null;
     const warnings = r.warnings || [];
-    const below = warnings.filter(w => w.code === 'below_minimum').sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0));
+    /* [SHORTGAP rule 7] an account another one helps in full says one thing: its move line (Home), never a warning */
+    const helped = w => !!(w.covered && accounts[w.account] && accounts[w.account].cover && !accounts[w.account].cover.rest);
+    const below = warnings.filter(w => w.code === 'below_minimum' && !helped(w)).sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0));
     if (!Object.keys(accounts).length) out.push({ state: 'empty', reason: { code: 'no_figures' }, next: { code: 'check_in' } });
     /* [BM2] short only when the real money is: the engine's short (or a below-zero warning) comes from the real-money
        walk; a shortfall from goals or plan lines alone is the goals' own warning, or nothing safe to spend */
@@ -160,7 +167,7 @@
     }
     for (const w of below) out.push({ state: 'warning', reason: { code: 'below_minimum', account: w.account, amount: w.amount != null ? w.amount : w.short, currency: (accounts[w.account] || {}).currency || ctx.currency, day: w.day, minimum: minimumOf(w, accounts) }, next: { code: 'move_money_in', day: w.day }, note: 'below_minimum' });
     for (const w of warnings) {
-      if (w.code === 'below_minimum' || NOTE_ONLY.includes(w.code)) continue;
+      if (w.code === 'below_minimum' || NOTE_ONLY.includes(w.code) || helped(w)) continue;
       /* [BM2] goals holding more than the bank can spare: the money is short against the goals, never the bank */
       if (w.code === 'set_aside_over') { out.push({ state: 'set_aside', reason: { code: 'set_aside_over', who: whoOf(w), account: w.account, amount: w.amount, currency: (accounts[w.account] || {}).currency || ctx.currency, day: w.day }, next: { code: 'take_out_or_move_in' }, note: 'set_aside_over' }); continue; }
       const known = WARNING_STATE[w.code];
@@ -243,6 +250,7 @@
     ctx = ctx || {};
     if (!w || w.code !== 'below_minimum') return '';
     const accounts = ctx.accounts || {}, own = accounts[w.account] || {};
+    if (w.covered && own.cover) return helpText(w.account, ctx);
     const amount = w.later && w.later.amount > (w.amount != null ? w.amount : w.short) ? w.later.amount : w.amount != null ? w.amount : w.short;
     let best = null;
     for (const id of Object.keys(accounts)) {
@@ -252,6 +260,26 @@
     }
     if (!best) return '';
     return fill('next.move_from', { amount, from: best, account: w.account, day: w.day, currency: own.currency || ctx.currency }, ctx);
+  }
+  /* [SHORTGAP] the moves the engine names for an account another one helps (accounts[id].cover), as one line:
+     "Move 22,000 from Main bank to Beta Bank by 9 Dec, and 79,400 more by 27 Dec"; cash or an e-wallet kept as cash
+     (ctx.types[id] 'cash' or 'wallet') reads "Take out ... cash". '' when nothing is to move. */
+  function helpText(id, ctx) {
+    ctx = ctx || {};
+    const a = (ctx.accounts || {})[id] || {}, c = a.cover;
+    if (!c || !(c.moves || []).length) return '';
+    const currency = a.currency || ctx.currency, cash = ['cash', 'wallet'].includes((ctx.types || {})[id]);
+    const parts = c.moves.map((m, i) => (i === 0 ? fill(cash ? 'next.help_cash' : 'next.help_first', { amount: m.amount, from: c.from, account: id, day: m.day, currency }, ctx)
+      : fill('next.help_more', { amount: m.amount, day: m.day, currency }, ctx)));
+    const last = parts.pop();
+    return parts.length ? parts.join(', ') + ', and ' + last : last;
+  }
+  /* [SHORTGAP] what the helper cannot spare, in one short line: "Beta Bank is still 12,000 short on 10 Dec"; '' when none */
+  function helpRestText(id, ctx) {
+    ctx = ctx || {};
+    const a = (ctx.accounts || {})[id] || {}, c = a.cover;
+    if (!c || !c.rest) return '';
+    return fill('next.help_rest', { account: id, amount: c.rest.amount, day: c.rest.day, currency: a.currency || ctx.currency }, ctx);
   }
   /* one "later on" entry in words: the month it goes below zero, as "Mar 2027" */
   /* capParts(result, fmt): the parts of the sum under safe to spend when Free to spend caps it, each with the words a
@@ -292,5 +320,5 @@
     return deepFreeze(s);
   }
 
-  return { statusOf, capParts, warningText, laterText, laterLowText, moveText, WORDS, STALE_DAYS, OLD_DAYS };
+  return { statusOf, capParts, warningText, laterText, laterLowText, moveText, helpText, helpRestText, WORDS, STALE_DAYS, OLD_DAYS };
 });

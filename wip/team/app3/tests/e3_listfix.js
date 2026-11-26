@@ -86,8 +86,10 @@ const rows = p => p.$$eval('#rcList li', es => es.map(e => ({ gap: e.dataset.gap
 
   /* C1: the made-up book with a second bank, Bank B, ¥10,000 at setup on 20 Nov, and a Gym bill of 15,000 on the 15th
      from it, with no pay into it. On 12 Dec: 10,000 - 15,000 = -5,000 on 15 Dec, and -20,000 after 15 Jan. Main bank
-     can spare 35,000 (as A2 before Food). Home warns that Bank B goes below zero and says where the money can come from:
-     "Move ¥20,000 from Main bank to Bank B by 15 Dec. Main bank can spare it" (the lowest it goes, by the first day under). */
+     can spare 35,000 (as A2 before Food). [SHORTGAP, coordinator 16 and 18, 26 Nov; reworked by hand] Bank B is helped
+     by Main bank, each gap by the day before its bill: 5,000 by 14 Dec and 15,000 more by 14 Jan (after the 8 Jan pay).
+     Home says it in one line and no longer warns beside it: "Move ¥5,000 from Main bank to Bank B by 14 Dec, and
+     ¥15,000 more by 14 Jan" (before: a warning and "Move ¥20,000 ... by 15 Dec. Main bank can spare it"). */
   const bkB = T.book(), B = 'k7m2qa-f3n8p1x6wd-81';
   bkB.accounts.push({ id: B, name: 'Bank B', type: 'bank', cur: 'JPY', owner: null, minBank: null });
   bkB.events.push({ id: 'k7m2qa-f3n8p1x6wd-82', k: 'open', acct: B, date: '2026-11-20', a: 10000, told: '2026-11-20T24:00', grp: 'setup' }, { id: 'k7m2qa-f3n8p1x6wd-83', k: 'check', acct: B, date: '2026-11-20', a: 10000, told: '2026-11-20T24:00', grp: 'setup' });
@@ -95,21 +97,22 @@ const rows = p => p.$$eval('#rcList li', es => es.map(e => ({ gap: e.dataset.gap
   await fresh(bkB);
   await go('2026-12-12');
   const warnC = await p.$$eval('#a3Home [data-warn]', es => es.map(e => e.textContent));
-  ck('C1: Home warns that Bank B goes ¥5,000 below zero on 15 Dec', warnC.some(x => x === 'Bank B goes ¥5,000 below zero on 15 Dec'), warnC.join(' | '));
-  const mv = await txt(p, '#a3Home [data-fig="move-from"]');
-  ck('C1: and says where from: Move ¥20,000 from Main bank to Bank B by 15 Dec. Main bank can spare it', mv === 'Move ¥20,000 from Main bank to Bank B by 15 Dec. Main bank can spare it', mv);
+  ck('C1: no warning beside the move line [SHORTGAP]', !warnC.some(x => /Bank B/.test(x)), warnC.join(' | '));
+  const mv = await txt(p, '#a3Home [data-fig="move-help"]');
+  ck('C1: and says how much, from where and by when: Move ¥5,000 from Main bank to Bank B by 14 Dec, and ¥15,000 more by 14 Jan', mv === 'Move ¥5,000 from Main bank to Bank B by 14 Dec, and ¥15,000 more by 14 Jan', mv);
   await T.shot(p, 'listfix_c1');
 
   /* C1, second case (qc-foundation): the same two banks, and a Trip goal of 30,000 kept in Main bank. Main bank can
-     spare only 35,000 - 30,000 = 5,000 (what it can spare counts the money set aside), so it is never advised to move
-     20,000 from it: no move line, the warning stays. */
+     spare only 35,000 - 30,000 = 5,000 before pay (what it can spare counts the money set aside), so it is never
+     advised to move 20,000 from it then. [SHORTGAP, reworked by hand] It helps with exactly 5,000 by 14 Dec (its lowest,
+     28 Dec, is then 0, the trip money untouched) and 15,000 more by 14 Jan, after the 8 Jan pay. */
   { const bkG = JSON.parse(JSON.stringify(bkB)), main = bkG.home.main.v.acct, st = { at: '2026-11-21T20:00+09:00', by: 'k7m2qa', told: '2026-11-21T20:00+09:00' };
     bkG.places.push(Object.assign({ id: 'k7m2qa-f3n8p1x6wd-91', name: 'Trip', kind: 'goal', target: 400000, cur: 'JPY', keptIn: { acct: main, mode: 'inBank' } }, st));
     bkG.events.push(Object.assign({ id: 'k7m2qa-f3n8p1x6wd-92', k: 'move', date: '2026-11-21', a: 30000, acct: main, place2: 'k7m2qa-f3n8p1x6wd-91', src: { type: 'typed' } }, st));
     await fresh(bkG); await go('2026-12-12');
-    const mvG = await txt(p, '#a3Home [data-fig="move-from"]');
+    const mvG = await txt(p, '#a3Home [data-fig="move-help"]');
     const warnG = await p.$$eval('#a3Home [data-warn]', es => es.map(e => e.textContent));
-    ck('C1b: with 30,000 set aside in Main bank, no advice to move 20,000 from it', !mvG && warnG.some(x => /Bank B goes ¥5,000 below zero on 15 Dec/.test(x)), mvG + ' / ' + warnG.join(' | ')); }
+    ck('C1b: with 30,000 set aside in Main bank, only 5,000 before pay: Move ¥5,000 by 14 Dec, and ¥15,000 more by 14 Jan', mvG === 'Move ¥5,000 from Main bank to Bank B by 14 Dec, and ¥15,000 more by 14 Jan' && !warnG.some(x => /Bank B/.test(x)), mvG + ' / ' + warnG.join(' | ')); }
 
   /* A1, second case (qc-foundation): gaps the engine does not count as spending are not listed as spending. An
      investment, 500,000 at setup, checked at 540,000 on 28 Nov (a rise is never spending, T watch), and a dollar

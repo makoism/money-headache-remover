@@ -3347,7 +3347,9 @@ details summary { min-height: 44px; }
     // ----- the walk, one account at a time [B3, B9, F1, F2, F3, F9, F14, H5, H7, H8, Q2, Q4, S4, T3, T4, V2] -----
     // [BM2] `real`: the real-money walk, the bank's own money only (pays, bills, card payments, moves): no goals, no plan
     // lines. Below zero and under the minimum are judged on it; the full walk (goals and plan lines off) is what can be spared.
-    function walk(id, end, minimum, real) {
+    // [SHORTGAP rule 6] `noCovers`: leave out the moves this account makes to help a short one (bank after cards: each
+    // bank's own figure, so the helped bank's gap and the move are never both taken)
+    function walk(id, end, minimum, real, noCovers) {
       const start = banks[id].bank;
       const why = [{ label: acct[id].name + ' today', amount: start }];
       let bal = start;
@@ -3388,7 +3390,10 @@ details summary { min-height: 44px; }
         }
       }
       if (!real) for (const p of plannedFor(id)) if (p.land <= end) steps.push({ day: p.land, order: 2, amount: -p.amount, label: p.label });
+      // [SHORTGAP rule 4] the moves this account makes to a short one, each on its own day, after a pay that day, as a bill
+      if (!noCovers) for (const c of (real ? coversReal : coversFull)[id] || []) if (c.day <= end) steps.push({ day: c.day, order: 1, amount: -c.amount, label: 'Move to ' + acct[c.to].name + ' by ' + short(c.day), cover: c.to });
       steps.sort((a, b) => a.day - b.day || a.order - b.order);
+      const open = bal;
       let low = bal, lowDay = today, lowAt = 0, firstBelowZero = null, belowBal = null;
       // [B1, QC numbers] the first day the bank ends under its minimum (or zero) and how far under then, and the first
       // pay that brings money in after that day: the shortfall is named by that day, never by a lower point later
@@ -3411,7 +3416,36 @@ details summary { min-height: 44px; }
       // [slice 6, G4] the lowest point is the start of today, yet today brings money in and takes some out: those steps
       // are not in the sum, so they are given apart, in the walk's order (the pay first), for the screen to show
       const todayParts = lowAt === 0 && steps.some(x => x.day === today && x.pay) ? steps.filter(x => x.day === today && x.order !== 2).map(x => ({ label: x.label, amount: x.amount })) : null;   // real money only: never plan lines
-      return { lowest: low, lowestDay: lowDay, headroom: low - minimum, why, firstBelowZero, belowBal, firstUnder, payAfter, payAfterLow: payAfterLow == null ? null : payAfterLow, start, steps, todayParts };
+      return { lowest: low, lowestDay: lowDay, headroom: low - minimum, why, firstBelowZero, belowBal, firstUnder, payAfter, payAfterLow: payAfterLow == null ? null : payAfterLow, start, open, steps, todayParts };
+    }
+
+    // ----- [SHORTGAP; coordinator 16 and 18, 26 Nov; foundation_review/SHORTGAP_PLAN.md rules 1 to 9] -----
+    // An account in the home currency whose walk goes under its minimum is helped by a move from the other account it
+    // can be spent from with the most room (then the lower id): for each day its end-of-day balance reaches a new low
+    // under the minimum, a move of the new part, due the calendar day before (today at the earliest). The helping
+    // account walks those moves as its own steps, so each gap comes off safe to spend in the period its day falls in,
+    // never all at once. What the helper cannot spare (its lowest end of day from that day on) stays a shortfall.
+    // Full walk moves from the short account's full walk, real walk moves from its real walk (BM2).
+    const coversFull = {}, coversReal = {}, coverOf = {};
+    // the new lows under the minimum of one walk, as moves: [{ day, amount, under }] (`under`: the day it goes under)
+    function gapMoves(wr, minimum) {
+      const out = [], add = (day, amount, under) => { const last = out[out.length - 1]; if (last && last.day === day) last.amount += amount; else out.push({ day, amount, under }); };
+      let bal = wr.open, worst = 0;
+      if (minimum - bal > 0) { worst = minimum - bal; add(today, worst, today); }
+      for (let i = 0; i < wr.steps.length; i++) {
+        bal += wr.steps[i].amount;
+        if (wr.steps[i + 1] && wr.steps[i + 1].day === wr.steps[i].day) continue;
+        if (minimum - bal > worst) { add(Math.max(today, wr.steps[i].day - 1), minimum - bal - worst, wr.steps[i].day); worst = minimum - bal; }
+      }
+      return out;
+    }
+    // what a walk can spare from `day` on: its lowest end of day from that day, less its minimum
+    function spareFrom(wr, day, minimum) {
+      let bal = wr.open, i = 0;
+      for (; i < wr.steps.length && wr.steps[i].day <= day; i++) bal += wr.steps[i].amount;
+      let low = bal;
+      for (; i < wr.steps.length; i++) { bal += wr.steps[i].amount; if (wr.steps[i + 1] && wr.steps[i + 1].day === wr.steps[i].day) continue; low = Math.min(low, bal); }
+      return low - minimum;
     }
 
     const backsGoal = id => places.some(g => g.keptIn && g.keptIn.acct === id && g.keptIn.mode === 'ownAccount' && removedOn(g) === null);
@@ -3420,6 +3454,36 @@ details summary { min-height: 44px; }
     const touches = (e, id) => e.account === id || e.from === id || e.to === id;
     const reopened = id => closedOn(id) !== null && live().some(e => e.day > closedOn(id) && touches(e, id)
       && (e.k === 'check' ? e.a !== 0 : delta(e, id) !== 0));
+    {
+      const closedNow = id => closedOn(id) !== null && !reopened(id);
+      const minOf = id => (closedNow(id) ? 0 : minimumOf(id));
+      const spendOf = id => (closedNow(id) ? false : acct[id].spendFrom != null ? acct[id].spendFrom : !!SPEND_TYPES[acct[id].type] && acct[id].cur === home && !backsGoal(id));
+      const base = {};
+      for (const id in banks) if (cur(id) === home) base[id] = walk(id, horizon, minOf(id));
+      const ids = Object.keys(base).sort();
+      const shortIds = ids.filter(id => base[id].headroom < 0);
+      const payers = ids.filter(id => spendOf(id) && base[id].headroom > 0).sort((x, z) => base[z].headroom - base[x].headroom || (x < z ? -1 : 1));
+      for (const id of shortIds) {
+        const from = payers.find(p => p !== id);
+        if (!from) continue;
+        // take each move in day order, what the helper can still spare on its day
+        const take = (moves, map, real) => {
+          let rest = null;
+          const taken = [];
+          for (const m of moves) {
+            const can = Math.max(0, Math.min(m.amount, spareFrom(walk(from, horizon, minOf(from), real), m.day, minOf(from))));
+            if (can > 0) { (map[from] = map[from] || []).push({ day: m.day, amount: can, to: id }); taken.push({ day: dayStr(m.day), amount: can }); }
+            if (can < m.amount) rest = { day: rest ? rest.day : m.under, amount: (rest ? rest.amount : 0) + m.amount - can };
+          }
+          return { taken, rest };
+        };
+        const full = take(gapMoves(base[id], minOf(id)), coversFull, false);
+        const real = take(gapMoves(walk(id, horizon, minOf(id), true), minOf(id)), coversReal, true);
+        if (!full.taken.length && !real.taken.length) continue;
+        coverOf[id] = { from, moves: full.taken, rest: full.rest, realRest: real.rest ? real.rest.amount : 0,
+          covered: full.taken.reduce((t, m) => t + m.amount, 0) };
+      }
+    }
     const realWalks = {};
     for (const id in banks) {
       const isClosed = closedOn(id) !== null && !reopened(id);
@@ -3437,6 +3501,9 @@ details summary { min-height: 44px; }
         // [LISTFIX2 A1] a gap that is never spending is marked `apart` (an investment's rise or fall [T watch], another
         // currency [T5]), as the lines count it, so a screen listing gaps as spending leaves it out
         fillers: banks[id].fillers.map(f => (heldGain(id, f) ? Object.assign({}, f, { held: true }) : acct[id].type === 'investment' || cur(id) !== home ? Object.assign({}, f, { apart: true }) : f)) };   // [X4] a held gain is named, so a screen listing gaps leaves it out (LISTFIX A1)   // [S4] the parts, for screens/money.js sumLine
+      // [SHORTGAP rule 8] who helps it, the moves by their days, and what is still short (partial)
+      const cov = coverOf[id], covered = cov ? { from: cov.from, moves: cov.moves } : null;
+      if (cov) r.cover = Object.assign({ from: cov.from, moves: cov.moves }, cov.rest ? { rest: { day: dayStr(cov.rest.day), amount: cov.rest.amount } } : {});
       if (w.todayParts) { r.todayParts = w.todayParts; r.todayEnd = w.todayParts.reduce((t, x) => t + x.amount, w.start); }
       // [BM2] the real-money walk: its lowest point, and its sum for the screens (the "Short by" headline is its total)
       r.real = { lowest: rw.lowest, lowestDay: dayStr(rw.lowestDay), headroom: rw.headroom, whyParts: rw.why.map(p => ({ label: p.label, amount: p.amount })) };
@@ -3451,7 +3518,7 @@ details summary { min-height: 44px; }
       if (rw.headroom < 0) {
         const f = rw.firstUnder, lower = -rw.headroom > f.amount && rw.lowestDay !== f.day ? { day: dayStr(rw.lowestDay), amount: -rw.headroom } : undefined;
         res.warnings.push(Object.assign({ account: id, code: 'below_minimum', day: dayStr(f.day), amount: f.amount, short: f.amount, minimum: minimum || null },
-          lower ? { later: lower } : {}, { payAfter: rw.payAfter === null ? null : dayStr(rw.payAfter), payAfterLow: rw.payAfterLow === null ? null : dayStr(rw.payAfterLow),
+          lower ? { later: lower } : {}, covered ? { covered } : {}, { payAfter: rw.payAfter === null ? null : dayStr(rw.payAfter), payAfterLow: rw.payAfterLow === null ? null : dayStr(rw.payAfterLow),
             text: minimum ? `${a.name} goes ${fmt(f.amount, a.cur)} below its minimum of ${fmt(minimum, a.cur)} on ${short(f.day)}` : `${a.name} goes ${fmt(f.amount, a.cur)} below zero on ${short(f.day)}` }));
       }
       // [BM2] goals holding more than the bank can spare (after bills, card payments and plan lines): their own warning,
@@ -3463,11 +3530,11 @@ details summary { min-height: 44px; }
         const placesOver = kept.map(g => ({ place: g.id, name: g.name })).filter((g, i, all) => all.findIndex(x => x.place === g.place) === i);
         const who = placesOver.length === 1 ? placesOver[0].name + "'s money" : 'The money set aside for ' + placesOver.map(g => g.name).join(' and ');
         res.warnings.push(Object.assign({ account: id, code: 'set_aside_over', day: dayStr(f.day), amount: first, places: placesOver },
-          most > first && w.lowestDay !== f.day ? { later: { day: dayStr(w.lowestDay), amount: most } } : {},
+          most > first && w.lowestDay !== f.day ? { later: { day: dayStr(w.lowestDay), amount: most } } : {}, covered ? { covered } : {},
           { text: `${who} is ${fmt(first, a.cur)} more than ${a.name} can spare on ${short(f.day)}` }));
       }
       const later = walk(id, today + LATER_ON_DAYS, 0, true);   // [B11; BM2: the real-money walk]
-      if (later.firstBelowZero !== null && later.firstBelowZero > horizon) res.laterOn.push({ account: id, day: dayStr(later.firstBelowZero), balance: later.belowBal, amount: -later.belowBal, minimum: null,
+      if (later.firstBelowZero !== null && later.firstBelowZero > horizon) res.laterOn.push({ account: id, day: dayStr(later.firstBelowZero), balance: later.belowBal, amount: -later.belowBal, minimum: null, ...(covered ? { covered } : {}),
         text: `Later on: ${a.name} goes below zero in ${MONTHS[+dayStr(later.firstBelowZero).slice(5, 7) - 1]} ${dayStr(later.firstBelowZero).slice(0, 4)}` });
     }
     for (const id in banks) {
@@ -3491,7 +3558,8 @@ details summary { min-height: 44px; }
     // ----- safe to spend: one headline [F9, B9, G2, A1] -----
     const homeSpend = Object.keys(res.accounts).filter(id => res.accounts[id].spendFrom && res.accounts[id].currency === home);
     const up = homeSpend.reduce((t, id) => t + Math.max(0, res.accounts[id].headroom), 0);
-    const shortfalls = Object.keys(res.accounts).filter(id => res.accounts[id].currency === home).reduce((t, id) => t + Math.max(0, -res.accounts[id].headroom), 0);
+    // [SHORTGAP rule 5] an account helped by another adds only what is left uncovered: its moves are the helper's steps
+    const shortfalls = Object.keys(res.accounts).filter(id => res.accounts[id].currency === home).reduce((t, id) => t + Math.max(0, -res.accounts[id].headroom - (coverOf[id] ? coverOf[id].covered : 0)), 0);
     const cap = planLeft.free && planLeft.free.left != null ? planLeft.free.left : null;
     const raw = up - shortfalls;
     const oldest = Object.keys(res.accounts).reduce((d, id) => Math.min(d, dayNum(res.accounts[id].asOf)), today);
@@ -3499,9 +3567,10 @@ details summary { min-height: 44px; }
     // [BL3, replaces B1 for the headline] what the screens say when short: the amount is the sum's own total (how far
     // the account's walk ends under its minimum, or zero), before the first pay that brings money in after its lowest
     // point (null when none does); the first day it goes under is named beside it (`day`), with how far under then (`first`)
-    const firstWarn = res.warnings.filter(w => w.code === 'below_minimum' && res.accounts[w.account].currency === home).sort((x, z) => (x.day < z.day ? -1 : x.day > z.day ? 1 : 0))[0];
+    // [SHORTGAP rule 7] one verdict: a helped account is short only by what its helper cannot spare
+    const firstWarn = res.warnings.filter(w => w.code === 'below_minimum' && res.accounts[w.account].currency === home && !(coverOf[w.account] && !coverOf[w.account].realRest)).sort((x, z) => (x.day < z.day ? -1 : x.day > z.day ? 1 : 0))[0];
     // [BM2] from the real-money walk: its own total (accounts[].real.headroom, whose sum is accounts[].real.whyParts)
-    res.safeToSpend.short = firstWarn ? { account: firstWarn.account, day: firstWarn.day, amount: -res.accounts[firstWarn.account].real.headroom, minimum: firstWarn.minimum,
+    res.safeToSpend.short = firstWarn ? { account: firstWarn.account, day: firstWarn.day, amount: coverOf[firstWarn.account] ? coverOf[firstWarn.account].realRest : -res.accounts[firstWarn.account].real.headroom, minimum: firstWarn.minimum,
       beforePay: firstWarn.payAfterLow, first: firstWarn.amount } : null;
     // [BJ5] when Free to spend caps the headline, the sum under it ends with the cap, so the two figures never disagree
     // [S6, QC numbers] Free to spend left below zero: the sum takes off all that the accounts can spare and says how far
@@ -3592,7 +3661,7 @@ details summary { min-height: 44px; }
       const mine = Object.keys(cards).filter(c => cards[c].payFrom === id && cur(c) === cur(id));
       const firstLands = mine.map(c => cards[c].walkItems.filter(x => x.amount).map(x => Math.max(x.land, today))).filter(l => l.length).map(l => Math.min(...l));
       if (!firstLands.length) continue;
-      const w = walk(id, Math.max(horizon, ...firstLands), 0), real = w.steps.filter(x => x.order !== 2);
+      const w = walk(id, Math.max(horizon, ...firstLands), 0, false, true), real = w.steps.filter(x => x.order !== 2);
       const cardSteps = real.filter(x => x.card && x.amount < 0);
       if (!cardSteps.length) continue;
       const firstOf = {}; for (const x of cardSteps) if (firstOf[x.card] == null || x.day < firstOf[x.card]) firstOf[x.card] = x.day;
@@ -4828,6 +4897,11 @@ details summary { min-height: 44px; }
     'next.move_money_in_now': W('Move money in or spend less'),
     'next.plan_over': W('Lower a plan line, or move money in'),
     'next.move_from': W('Move {amount} from {from} to {account} by {day}. {from} can spare it'),
+    /* [SHORTGAP] the engine's moves for an account another one helps (accounts[].cover): one line, never "cover" */
+    'next.help_first': W('Move {amount} from {from} to {account} by {day}'),
+    'next.help_cash': W('Take out {amount} cash from {from} for {account} by {day}'),
+    'next.help_more': W('{amount} more by {day}'),
+    'next.help_rest': W('{account} is still {amount} short on {day}'),
     'next.answer': W('Answer the question'),
     'next.take_out_or_move_in': W('Take some out of a goal, or move money in'),
     'next.check_in_when_it_lands': W('Check in when it lands'),
@@ -4894,7 +4968,9 @@ details summary { min-height: 44px; }
     /* [C8] the pay safe to spend runs to (safeToSpend.until): on pay day that is the pay after today's, never today */
     const until = stp.until || pay.next_pay || null;
     const warnings = r.warnings || [];
-    const below = warnings.filter(w => w.code === 'below_minimum').sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0));
+    /* [SHORTGAP rule 7] an account another one helps in full says one thing: its move line (Home), never a warning */
+    const helped = w => !!(w.covered && accounts[w.account] && accounts[w.account].cover && !accounts[w.account].cover.rest);
+    const below = warnings.filter(w => w.code === 'below_minimum' && !helped(w)).sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0));
     if (!Object.keys(accounts).length) out.push({ state: 'empty', reason: { code: 'no_figures' }, next: { code: 'check_in' } });
     /* [BM2] short only when the real money is: the engine's short (or a below-zero warning) comes from the real-money
        walk; a shortfall from goals or plan lines alone is the goals' own warning, or nothing safe to spend */
@@ -4906,7 +4982,7 @@ details summary { min-height: 44px; }
     }
     for (const w of below) out.push({ state: 'warning', reason: { code: 'below_minimum', account: w.account, amount: w.amount != null ? w.amount : w.short, currency: (accounts[w.account] || {}).currency || ctx.currency, day: w.day, minimum: minimumOf(w, accounts) }, next: { code: 'move_money_in', day: w.day }, note: 'below_minimum' });
     for (const w of warnings) {
-      if (w.code === 'below_minimum' || NOTE_ONLY.includes(w.code)) continue;
+      if (w.code === 'below_minimum' || NOTE_ONLY.includes(w.code) || helped(w)) continue;
       /* [BM2] goals holding more than the bank can spare: the money is short against the goals, never the bank */
       if (w.code === 'set_aside_over') { out.push({ state: 'set_aside', reason: { code: 'set_aside_over', who: whoOf(w), account: w.account, amount: w.amount, currency: (accounts[w.account] || {}).currency || ctx.currency, day: w.day }, next: { code: 'take_out_or_move_in' }, note: 'set_aside_over' }); continue; }
       const known = WARNING_STATE[w.code];
@@ -4989,6 +5065,7 @@ details summary { min-height: 44px; }
     ctx = ctx || {};
     if (!w || w.code !== 'below_minimum') return '';
     const accounts = ctx.accounts || {}, own = accounts[w.account] || {};
+    if (w.covered && own.cover) return helpText(w.account, ctx);
     const amount = w.later && w.later.amount > (w.amount != null ? w.amount : w.short) ? w.later.amount : w.amount != null ? w.amount : w.short;
     let best = null;
     for (const id of Object.keys(accounts)) {
@@ -4998,6 +5075,26 @@ details summary { min-height: 44px; }
     }
     if (!best) return '';
     return fill('next.move_from', { amount, from: best, account: w.account, day: w.day, currency: own.currency || ctx.currency }, ctx);
+  }
+  /* [SHORTGAP] the moves the engine names for an account another one helps (accounts[id].cover), as one line:
+     "Move 22,000 from Main bank to Beta Bank by 9 Dec, and 79,400 more by 27 Dec"; cash or an e-wallet kept as cash
+     (ctx.types[id] 'cash' or 'wallet') reads "Take out ... cash". '' when nothing is to move. */
+  function helpText(id, ctx) {
+    ctx = ctx || {};
+    const a = (ctx.accounts || {})[id] || {}, c = a.cover;
+    if (!c || !(c.moves || []).length) return '';
+    const currency = a.currency || ctx.currency, cash = ['cash', 'wallet'].includes((ctx.types || {})[id]);
+    const parts = c.moves.map((m, i) => (i === 0 ? fill(cash ? 'next.help_cash' : 'next.help_first', { amount: m.amount, from: c.from, account: id, day: m.day, currency }, ctx)
+      : fill('next.help_more', { amount: m.amount, day: m.day, currency }, ctx)));
+    const last = parts.pop();
+    return parts.length ? parts.join(', ') + ', and ' + last : last;
+  }
+  /* [SHORTGAP] what the helper cannot spare, in one short line: "Beta Bank is still 12,000 short on 10 Dec"; '' when none */
+  function helpRestText(id, ctx) {
+    ctx = ctx || {};
+    const a = (ctx.accounts || {})[id] || {}, c = a.cover;
+    if (!c || !c.rest) return '';
+    return fill('next.help_rest', { account: id, amount: c.rest.amount, day: c.rest.day, currency: a.currency || ctx.currency }, ctx);
   }
   /* one "later on" entry in words: the month it goes below zero, as "Mar 2027" */
   /* capParts(result, fmt): the parts of the sum under safe to spend when Free to spend caps it, each with the words a
@@ -5038,7 +5135,7 @@ details summary { min-height: 44px; }
     return deepFreeze(s);
   }
 
-  return { statusOf, capParts, warningText, laterText, laterLowText, moveText, WORDS, STALE_DAYS, OLD_DAYS };
+  return { statusOf, capParts, warningText, laterText, laterLowText, moveText, helpText, helpRestText, WORDS, STALE_DAYS, OLD_DAYS };
 });
 /* One input behaviour for every box (DECISIONS_ROUND2 C, sweep2_repeats A11: "$1,212", "TripLisbon"). The first tap or
    click into a box selects what is in it, so what is typed next replaces the old value instead of adding to it. A
@@ -9945,10 +10042,12 @@ function drawHome3() {
   })();
   /* [C3] when short, the short line's own sum is the one sum for that account: the same sum is never printed twice */
   const shortId = r.safeToSpend.short && r.accounts[r.safeToSpend.short.account] && r.accounts[r.safeToSpend.short.account].real ? r.safeToSpend.short.account : null;
-  const sums = `${ids.filter(id => r.accounts[id].spendFrom && id !== shortId).map(id => `<p class="a3-sum" data-fig="why">${esc3(whyWords3(r.accounts[id]))}</p>${todayWords3(r.accounts[id], id)}`).join('')}${capLine}`;
+  /* [SHORTGAP rule 7] an account another one helps says one thing on Home, its move line: never its own sum or warnings */
+  const helpedIds = ids.filter(id => r.accounts[id].cover);
+  const sums = `${ids.filter(id => r.accounts[id].spendFrom && id !== shortId && !helpedIds.includes(id)).map(id => `<p class="a3-sum" data-fig="why">${esc3(whyWords3(r.accounts[id]))}</p>${todayWords3(r.accounts[id], id)}`).join('')}${capLine}`;
   /* [BL3] short: the sum's own total, before the pay after its lowest point (only when one brings money), and the first
      day the bank goes under beside it */
-  const sh = r.safeToSpend.short;
+  const sh = r.safeToSpend.short && !helpedIds.includes(r.safeToSpend.short.account) ? r.safeToSpend.short : null;
   /* [BM2] the short is the real money's (no goals, no plan lines): its own sum sits under it and ends with the same figure */
   const shA = sh && r.accounts[sh.account] && r.accounts[sh.account].real;
   /* [C3, M47] short is a plain amber line (a3-warn), never red */
@@ -9956,10 +10055,20 @@ function drawHome3() {
     + (shA ? `<p class="a3-sum" data-fig="shortwhy">${esc3(sum3(shA.whyParts, shA.headroom, r.accounts[sh.account].currency))}</p>` : '') : '';
   /* the engine's warnings are data (account, amount, day, minimum or none): worded by screens/status.js, never its text;
      a lower point after the first day under is its own "Later on" line with its own day [B1] */
-  const wctx = { currency: home, names, accounts: r.accounts };
-  const warns = (r.warnings || []).map(w => `<p class="a3-warn" data-warn="${esc3(w.code)}">${esc3(BurrowScreens.status.warningText(w, wctx))}</p>`
+  const types = Object.fromEntries(((E3.book && E3.book.accounts) || []).map(a => [a.id, a.type]));
+  const wctx = { currency: home, names, accounts: r.accounts, types };
+  /* [SHORTGAP] the move line for each account another one helps, with Done (records the first move as money moved
+     between your own accounts, today, with Undo) and Later (hidden on this device until tomorrow); a partial help adds
+     one short line for the rest */
+  const helps = helpedIds.filter(id => !helpLater3(id)).map(id => {
+    const t = BurrowScreens.status.helpText(id, wctx), rest = BurrowScreens.status.helpRestText(id, wctx);
+    const lineHtml = t ? `<div class="a3-help" data-help="${esc3(id)}"><p class="a3-next" data-fig="move-help">${esc3(t)}</p><div class="a3-actions"><button type="button" class="a3-btn" data-helpdone="${esc3(id)}">Done, I moved it</button><button type="button" class="a3-btn" data-helplater="${esc3(id)}">Later</button></div></div>` : '';
+    const restHtml = rest ? `<p class="a3-warn" data-fig="move-rest">${esc3(rest)}</p>` : '';
+    return `${lineHtml}${restHtml}`;
+  }).join('');
+  const warns = [helps].concat((r.warnings || []).filter(w => !(w.covered && helpedIds.includes(w.account))).map(w => `<p class="a3-warn" data-warn="${esc3(w.code)}">${esc3(BurrowScreens.status.warningText(w, wctx))}</p>`
     + (w.later ? `<p class="a3-warn" data-warn="later_low">${esc3(BurrowScreens.status.laterLowText(w, wctx))}</p>` : '')
-    + (BurrowScreens.status.moveText(w, wctx) ? `<p class="a3-next" data-fig="move-from">${esc3(BurrowScreens.status.moveText(w, wctx))}</p>` : '')).join('');
+    + (BurrowScreens.status.moveText(w, wctx) ? `<p class="a3-next" data-fig="move-from">${esc3(BurrowScreens.status.moveText(w, wctx))}</p>` : ''))).join('');
   out.push(`<section class="a3-card" data-card="safe">${helpHead3(`<h2>${esc3(label3('safeToSpend'))}${until}</h2>`, 'safeToSpend')}
     <p class="a3-big" data-fig="safe">${fig3('safeToSpend.headline', r.safeToSpend.headline, home)}</p>${capSay}${short}${sums}${lastsWords3(r)}${warns}</section>`);
   /* the period by its dates, and the next pay */
@@ -10021,7 +10130,7 @@ function drawHome3() {
   /* not seen yet, and later on */
   const late = r.notSeenYet.items.filter(o => !odSeen.has(o.item));
   if (late.length) out.push(`<section class="a3-card" data-card="notseen"><h2>${esc3(label3('notSeenYet'))}</h2><p class="a3-sub">These were due and are not ticked off. Check your bank to tick them</p><ul class="a3-rows">${rowsHtml3(late, home, yr, 'notSeenYet.items')}</ul></section>`);
-  for (const l of r.laterOn) out.push(`<p class="a3-warn" data-warn="later">${esc3(BurrowScreens.status.laterText(l, wctx))}</p>`);
+  for (const l of r.laterOn.filter(x => !x.covered)) out.push(`<p class="a3-warn" data-warn="later">${esc3(BurrowScreens.status.laterText(l, wctx))}</p>`);
   out.push(`<div class="a3-actions"><button type="button" class="a3-btn solid" id="a3CheckGo">Check your bank</button><button type="button" class="a3-btn" id="a3LogGo">Log a spend</button></div>`);
   host.setAttribute('data-origin', origin);
   host.innerHTML = out.join('');
@@ -10030,12 +10139,27 @@ function drawHome3() {
   const P = BurrowScreens.provenance;
   host.querySelectorAll('[data-figure]').forEach(el => P.stamp(el, P.mark(Number(el.dataset.amt), origin === 'sample' ? 'sample' : el.dataset.figure === 'accounts.*.bank' ? 'typed' : 'worked')));
   /* [north star F1] no Free to spend yet: the prompt opens Plan's own Set Free to spend form */
+  host.querySelectorAll('[data-helpdone]').forEach(el => el.addEventListener('click', () => helpDone3(el.dataset.helpdone)));
+  host.querySelectorAll('[data-helplater]').forEach(el => el.addEventListener('click', () => { helpLaterSet3(el.dataset.helplater); renderHome3(); }));
   host.querySelectorAll('[data-homegoal]').forEach(el => el.addEventListener('click', () => planOpen3('goal', el.dataset.homegoal)));
   host.querySelectorAll('[data-cloudchoose]').forEach(el => el.addEventListener('click', () => { if (typeof openSet3 === 'function') openSet3(); }));
   $('#a3AddCardGo').addEventListener('click', () => planOpen3('card'));
   if ($('#a3FreeGo')) $('#a3FreeGo').addEventListener('click', () => planOpen3('free'));
   $('#a3CheckGo').addEventListener('click', openCheck3);
   $('#a3LogGo').addEventListener('click', rcLogFromHome3);
+}
+
+/* [SHORTGAP] Later on a move line: hidden on this device until the next day (a per-device convenience; the move is
+   still the engine's and comes back tomorrow) */
+function helpLater3(id) { try { return localStorage.getItem('a3.helpLater.' + id) === E3.today(); } catch (e) { return false; } }
+function helpLaterSet3(id) { try { localStorage.setItem('a3.helpLater.' + id, E3.today()); } catch (e) { /* shown again on the next draw */ } }
+/* [SHORTGAP, M45] Done: the first move the engine names, recorded through the write door as money moved between your
+   own accounts today (the same record as Receipts' Moved), with Undo; the engine's help then shrinks by it */
+async function helpDone3(id) {
+  const r = BurrowEngine.lookahead.lookahead(E3.book, E3.today()), c = r.accounts[id] && r.accounts[id].cover;
+  if (!c || !c.moves.length || !ACT3) return;
+  const m = c.moves[0];
+  await ACT3.moveMoney({ date: E3.today(), a: m.amount, from: c.from, to: id }, { undo: `Moved ${money3(m.amount, r.accounts[id].currency)} from ${E3.nameOf(c.from)} to ${E3.nameOf(id)}` });
 }
 /* ---------- Check your bank (WIRING_PLAN 1.1 item 3, step 9) ----------
    Lists every expected item since the last check (res.checkIn.toConfirm), ticked, with its amount editable; asks what
@@ -13536,9 +13660,16 @@ function stmt3Bar() {
     const owed = Object.keys(r.owed || {});
     if (owed.length) out.push('Loans (name | owed): ' + owed.map(id => `${name(id)} | ${m(r.owed[id].owedNow != null ? r.owed[id].owedNow : 0)}`).join('; ') + '.');
     /* [S4] the notes in the same words as Home (screens/status.js), each amount with its currency */
-    const wctx = { currency: home, names: Object.fromEntries(accts.map(a => [a.id, a.name])), accounts: r.accounts };
-    for (const w of r.warnings || []) out.push('Note: ' + ST.warningText(w, wctx));
-    for (const l of r.laterOn || []) out.push('Note: ' + ST.laterText(l, wctx));
+    const wctx = { currency: home, names: Object.fromEntries(accts.map(a => [a.id, a.name])), accounts: r.accounts, types: Object.fromEntries(accts.map(a => [a.id, a.type])) };
+    /* [SHORTGAP] each account another one helps: the moves the engine names (from, amount, day), the same line as Home,
+       in place of its own warnings; the move itself is a move_money step */
+    for (const id of Object.keys(r.accounts).filter(x => r.accounts[x].cover)) {
+      const t = ST.helpText(id, wctx), rest = ST.helpRestText(id, wctx);
+      if (t) out.push(`To do: ${t}. Safe to spend already counts it`);
+      if (rest) out.push('Note: ' + rest);
+    }
+    for (const w of r.warnings || []) if (!(w.covered && r.accounts[w.account] && r.accounts[w.account].cover)) out.push('Note: ' + ST.warningText(w, wctx));
+    for (const l of r.laterOn || []) if (!l.covered) out.push('Note: ' + ST.laterText(l, wctx));
     return { text: out.join('\n'), refs };
   }
 

@@ -194,10 +194,12 @@ function drawHome3() {
   })();
   /* [C3] when short, the short line's own sum is the one sum for that account: the same sum is never printed twice */
   const shortId = r.safeToSpend.short && r.accounts[r.safeToSpend.short.account] && r.accounts[r.safeToSpend.short.account].real ? r.safeToSpend.short.account : null;
-  const sums = `${ids.filter(id => r.accounts[id].spendFrom && id !== shortId).map(id => `<p class="a3-sum" data-fig="why">${esc3(whyWords3(r.accounts[id]))}</p>${todayWords3(r.accounts[id], id)}`).join('')}${capLine}`;
+  /* [SHORTGAP rule 7] an account another one helps says one thing on Home, its move line: never its own sum or warnings */
+  const helpedIds = ids.filter(id => r.accounts[id].cover);
+  const sums = `${ids.filter(id => r.accounts[id].spendFrom && id !== shortId && !helpedIds.includes(id)).map(id => `<p class="a3-sum" data-fig="why">${esc3(whyWords3(r.accounts[id]))}</p>${todayWords3(r.accounts[id], id)}`).join('')}${capLine}`;
   /* [BL3] short: the sum's own total, before the pay after its lowest point (only when one brings money), and the first
      day the bank goes under beside it */
-  const sh = r.safeToSpend.short;
+  const sh = r.safeToSpend.short && !helpedIds.includes(r.safeToSpend.short.account) ? r.safeToSpend.short : null;
   /* [BM2] the short is the real money's (no goals, no plan lines): its own sum sits under it and ends with the same figure */
   const shA = sh && r.accounts[sh.account] && r.accounts[sh.account].real;
   /* [C3, M47] short is a plain amber line (a3-warn), never red */
@@ -205,10 +207,20 @@ function drawHome3() {
     + (shA ? `<p class="a3-sum" data-fig="shortwhy">${esc3(sum3(shA.whyParts, shA.headroom, r.accounts[sh.account].currency))}</p>` : '') : '';
   /* the engine's warnings are data (account, amount, day, minimum or none): worded by screens/status.js, never its text;
      a lower point after the first day under is its own "Later on" line with its own day [B1] */
-  const wctx = { currency: home, names, accounts: r.accounts };
-  const warns = (r.warnings || []).map(w => `<p class="a3-warn" data-warn="${esc3(w.code)}">${esc3(BurrowScreens.status.warningText(w, wctx))}</p>`
+  const types = Object.fromEntries(((E3.book && E3.book.accounts) || []).map(a => [a.id, a.type]));
+  const wctx = { currency: home, names, accounts: r.accounts, types };
+  /* [SHORTGAP] the move line for each account another one helps, with Done (records the first move as money moved
+     between your own accounts, today, with Undo) and Later (hidden on this device until tomorrow); a partial help adds
+     one short line for the rest */
+  const helps = helpedIds.filter(id => !helpLater3(id)).map(id => {
+    const t = BurrowScreens.status.helpText(id, wctx), rest = BurrowScreens.status.helpRestText(id, wctx);
+    const lineHtml = t ? `<div class="a3-help" data-help="${esc3(id)}"><p class="a3-next" data-fig="move-help">${esc3(t)}</p><div class="a3-actions"><button type="button" class="a3-btn" data-helpdone="${esc3(id)}">Done, I moved it</button><button type="button" class="a3-btn" data-helplater="${esc3(id)}">Later</button></div></div>` : '';
+    const restHtml = rest ? `<p class="a3-warn" data-fig="move-rest">${esc3(rest)}</p>` : '';
+    return `${lineHtml}${restHtml}`;
+  }).join('');
+  const warns = [helps].concat((r.warnings || []).filter(w => !(w.covered && helpedIds.includes(w.account))).map(w => `<p class="a3-warn" data-warn="${esc3(w.code)}">${esc3(BurrowScreens.status.warningText(w, wctx))}</p>`
     + (w.later ? `<p class="a3-warn" data-warn="later_low">${esc3(BurrowScreens.status.laterLowText(w, wctx))}</p>` : '')
-    + (BurrowScreens.status.moveText(w, wctx) ? `<p class="a3-next" data-fig="move-from">${esc3(BurrowScreens.status.moveText(w, wctx))}</p>` : '')).join('');
+    + (BurrowScreens.status.moveText(w, wctx) ? `<p class="a3-next" data-fig="move-from">${esc3(BurrowScreens.status.moveText(w, wctx))}</p>` : ''))).join('');
   out.push(`<section class="a3-card" data-card="safe">${helpHead3(`<h2>${esc3(label3('safeToSpend'))}${until}</h2>`, 'safeToSpend')}
     <p class="a3-big" data-fig="safe">${fig3('safeToSpend.headline', r.safeToSpend.headline, home)}</p>${capSay}${short}${sums}${lastsWords3(r)}${warns}</section>`);
   /* the period by its dates, and the next pay */
@@ -270,7 +282,7 @@ function drawHome3() {
   /* not seen yet, and later on */
   const late = r.notSeenYet.items.filter(o => !odSeen.has(o.item));
   if (late.length) out.push(`<section class="a3-card" data-card="notseen"><h2>${esc3(label3('notSeenYet'))}</h2><p class="a3-sub">These were due and are not ticked off. Check your bank to tick them</p><ul class="a3-rows">${rowsHtml3(late, home, yr, 'notSeenYet.items')}</ul></section>`);
-  for (const l of r.laterOn) out.push(`<p class="a3-warn" data-warn="later">${esc3(BurrowScreens.status.laterText(l, wctx))}</p>`);
+  for (const l of r.laterOn.filter(x => !x.covered)) out.push(`<p class="a3-warn" data-warn="later">${esc3(BurrowScreens.status.laterText(l, wctx))}</p>`);
   out.push(`<div class="a3-actions"><button type="button" class="a3-btn solid" id="a3CheckGo">Check your bank</button><button type="button" class="a3-btn" id="a3LogGo">Log a spend</button></div>`);
   host.setAttribute('data-origin', origin);
   host.innerHTML = out.join('');
@@ -279,10 +291,25 @@ function drawHome3() {
   const P = BurrowScreens.provenance;
   host.querySelectorAll('[data-figure]').forEach(el => P.stamp(el, P.mark(Number(el.dataset.amt), origin === 'sample' ? 'sample' : el.dataset.figure === 'accounts.*.bank' ? 'typed' : 'worked')));
   /* [north star F1] no Free to spend yet: the prompt opens Plan's own Set Free to spend form */
+  host.querySelectorAll('[data-helpdone]').forEach(el => el.addEventListener('click', () => helpDone3(el.dataset.helpdone)));
+  host.querySelectorAll('[data-helplater]').forEach(el => el.addEventListener('click', () => { helpLaterSet3(el.dataset.helplater); renderHome3(); }));
   host.querySelectorAll('[data-homegoal]').forEach(el => el.addEventListener('click', () => planOpen3('goal', el.dataset.homegoal)));
   host.querySelectorAll('[data-cloudchoose]').forEach(el => el.addEventListener('click', () => { if (typeof openSet3 === 'function') openSet3(); }));
   $('#a3AddCardGo').addEventListener('click', () => planOpen3('card'));
   if ($('#a3FreeGo')) $('#a3FreeGo').addEventListener('click', () => planOpen3('free'));
   $('#a3CheckGo').addEventListener('click', openCheck3);
   $('#a3LogGo').addEventListener('click', rcLogFromHome3);
+}
+
+/* [SHORTGAP] Later on a move line: hidden on this device until the next day (a per-device convenience; the move is
+   still the engine's and comes back tomorrow) */
+function helpLater3(id) { try { return localStorage.getItem('a3.helpLater.' + id) === E3.today(); } catch (e) { return false; } }
+function helpLaterSet3(id) { try { localStorage.setItem('a3.helpLater.' + id, E3.today()); } catch (e) { /* shown again on the next draw */ } }
+/* [SHORTGAP, M45] Done: the first move the engine names, recorded through the write door as money moved between your
+   own accounts today (the same record as Receipts' Moved), with Undo; the engine's help then shrinks by it */
+async function helpDone3(id) {
+  const r = BurrowEngine.lookahead.lookahead(E3.book, E3.today()), c = r.accounts[id] && r.accounts[id].cover;
+  if (!c || !c.moves.length || !ACT3) return;
+  const m = c.moves[0];
+  await ACT3.moveMoney({ date: E3.today(), a: m.amount, from: c.from, to: id }, { undo: `Moved ${money3(m.amount, r.accounts[id].currency)} from ${E3.nameOf(c.from)} to ${E3.nameOf(id)}` });
 }
