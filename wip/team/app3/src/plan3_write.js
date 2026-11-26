@@ -275,6 +275,20 @@
     return s.id;
   }
 
+  /* [E8, M13, M38] a pay or a bill added by mistake: true remove (as if never added), only while nothing names it: no
+     record settles or streams one of its occurrences, no one-off amount or once key, and it does not start the pay
+     periods (BZ2: ending it hands that on). Anything else is ended instead, so its history stays. Undo puts it back. */
+  function removeSchedule(w, id) {
+    const s = find(w, 'schedules', id), what = s.kind === 'income' ? 'pay' : 'bill';
+    const instead = why => bad(`${s.name} ${why}. End it instead: its history stays`);
+    if (Array.isArray(s.startsPeriod) ? s.startsPeriod.some(e => live(e)) : s.startsPeriod === true) instead('starts your pay periods');
+    if (Object.keys(s.amounts || {}).some(k => live(s.amounts[k]))) instead('has a one-off amount');
+    const named = (w.book.events || []).some(e => live(e) && (e.stream === id || [].concat(e.settles || []).some(o => (typeof o === 'string' ? o.slice(0, o.lastIndexOf('@')) : o && o.s) === id)));
+    if (named) instead(`has a ${what} ticked off or noted`);
+    w.remove('schedules', id);
+    return id;
+  }
+
   /* one occurrence changed: an `amounts` key on its due date (before any move), with its own at and by [B8, AE1];
      only an occurrence still to come that no record names yet [X8] */
   function changeOnce(w, id, x) {
@@ -641,7 +655,7 @@
     return id;
   }
 
-  const api = { addPay, addAccount, changeAccount, closeAccount, reopenAccount, removeAccount, payOff, setKeep, setCountry, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, removeGoal, addLoan, addCard, changeOwed, closeLoan };
+  const api = { addPay, addAccount, changeAccount, closeAccount, reopenAccount, removeAccount, payOff, setKeep, setCountry, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, removeSchedule, addGoal, changeGoal, setAside, takeOut, removeGoal, addLoan, addCard, changeOwed, closeLoan };
   if (node) module.exports = api;
   else root.PLAN3W = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

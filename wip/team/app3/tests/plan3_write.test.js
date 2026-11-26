@@ -174,6 +174,23 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     eq([v2.accounts[own].bank, v2.accounts[BANK].bank, v2.safeToSpend.headline - v1.safeToSpend.headline], [0, v1.accounts[BANK].bank + 30000, 30000]);
     ok(!h.book.accounts.find(a => a.id === own).gone, 'its account stays');
   });
+  await t('[E8, M13, M38] remove a pay or a bill added by mistake: only while nothing names it (no tick, no one-off amount) and it does not start the pay periods; anything else is ended instead, with words; Undo puts it back', async () => {
+    const h = setup();
+    let r = await h.go('addPay', { name: 'Gift money', amount: 10000, every: 'month', day: 3 }); ok(r.ok, JSON.stringify(r));
+    const gift = h.book.schedules.slice(-1)[0].id;
+    r = await h.go('addBill', { name: 'Gym', amount: 8000, day: 5 }); ok(r.ok, JSON.stringify(r));
+    const gym = h.book.schedules.slice(-1)[0].id;
+    const v0 = view(h.book);
+    r = await h.go('removeSchedule', gift); ok(r.ok, JSON.stringify(r));
+    ok(h.book.schedules.find(s => s.id === gift).gone, 'the pay added by mistake is removed');
+    r = await h.go('removeSchedule', gym); ok(r.ok, JSON.stringify(r));
+    ok(h.book.schedules.find(s => s.id === gym).gone, 'the bill added by mistake is removed');
+    r = await h.go('changeOnce', RENT, { due: '2026-11-27', amount: 75000 }); ok(r.ok, JSON.stringify(r));
+    r = await h.go('removeSchedule', RENT); ok(!r.ok && /End it instead/.test(r.text), 'a bill something names (a one-off amount) is ended instead: ' + r.text);
+    const MAINJ = h.book.schedules.find(s => s.name === 'Main job').id;
+    r = await h.go('removeSchedule', MAINJ); ok(!r.ok && /End it instead/.test(r.text), 'the pay that starts the periods is ended instead: ' + r.text);
+    r = await h.go('addBill', { name: 'Gym', amount: 8000, day: 5 }); ok(r.ok, 'the name is free again: ' + JSON.stringify(r));
+  });
   await t('setting aside never takes more than the bank can spare through the next pay: the real walk\'s lowest point less what is set aside [BM2, replaces BL2]', async () => {
     const h = setup();
     let r = await h.go('addGoal', { name: 'Trip', target: 10000000 }); ok(r.ok, JSON.stringify(r));

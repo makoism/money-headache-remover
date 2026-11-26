@@ -9371,6 +9371,20 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     return s.id;
   }
 
+  /* [E8, M13, M38] a pay or a bill added by mistake: true remove (as if never added), only while nothing names it: no
+     record settles or streams one of its occurrences, no one-off amount or once key, and it does not start the pay
+     periods (BZ2: ending it hands that on). Anything else is ended instead, so its history stays. Undo puts it back. */
+  function removeSchedule(w, id) {
+    const s = find(w, 'schedules', id), what = s.kind === 'income' ? 'pay' : 'bill';
+    const instead = why => bad(`${s.name} ${why}. End it instead: its history stays`);
+    if (Array.isArray(s.startsPeriod) ? s.startsPeriod.some(e => live(e)) : s.startsPeriod === true) instead('starts your pay periods');
+    if (Object.keys(s.amounts || {}).some(k => live(s.amounts[k]))) instead('has a one-off amount');
+    const named = (w.book.events || []).some(e => live(e) && (e.stream === id || [].concat(e.settles || []).some(o => (typeof o === 'string' ? o.slice(0, o.lastIndexOf('@')) : o && o.s) === id)));
+    if (named) instead(`has a ${what} ticked off or noted`);
+    w.remove('schedules', id);
+    return id;
+  }
+
   /* one occurrence changed: an `amounts` key on its due date (before any move), with its own at and by [B8, AE1];
      only an occurrence still to come that no record names yet [X8] */
   function changeOnce(w, id, x) {
@@ -9737,7 +9751,7 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     return id;
   }
 
-  const api = { addPay, addAccount, changeAccount, closeAccount, reopenAccount, removeAccount, payOff, setKeep, setCountry, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, removeGoal, addLoan, addCard, changeOwed, closeLoan };
+  const api = { addPay, addAccount, changeAccount, closeAccount, reopenAccount, removeAccount, payOff, setKeep, setCountry, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, removeSchedule, addGoal, changeGoal, setAside, takeOut, removeGoal, addLoan, addCard, changeOwed, closeLoan };
   if (node) module.exports = api;
   else root.PLAN3W = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
@@ -10754,7 +10768,7 @@ function drawPlan3() {
   out.push(`<section class="a3-card" data-card="plan-bills"><h2>Pay and bills</h2>
     ${pays.length ? `<ul class="a3-rows a3-rclist">${pays.join('')}</ul>` : ''}
     ${bills.length ? `<ul class="a3-rows a3-rclist">${bills.join('')}</ul>` : '<p class="a3-sub">No bills yet</p>'}
-    <div class="a3-actions"><button type="button" class="a3-btn" id="plAddBill">Add a bill</button></div></section>`);
+    <div class="a3-actions"><button type="button" class="a3-btn" id="plAddPay">Add a pay</button><button type="button" class="a3-btn" id="plAddBill">Add a bill</button></div></section>`);
   /* goals */
   const goals = (book.places || []).filter(g => plLive3(g) && g.kind === 'goal' && r.places[g.id]).map(g => {
     const kept = r.places[g.id].kept, where = g.keptIn && g.keptIn.mode === 'ownAccount' ? 'in ' + esc3(E3.nameOf(g.keptIn.acct)) : 'kept in your bank';
@@ -10813,6 +10827,7 @@ function drawPlan3() {
   on('#plAddLine', () => plLineForm3(null));
   on('#plSetFree', () => plLineForm3('free'));
   on('#plAddBill', () => plBillForm3(null));
+  on('#plAddPay', () => plPayAddForm3());
   on('#plAddGoal', () => plGoalForm3(null));
   on('#plAddCard', () => plCardForm3());
   on('#plAddLoan', () => plLoanForm3());
@@ -10984,9 +10999,13 @@ function plBillForm3(id) {
     pay ? [] : [{ key: 'acct', label: 'Paid from', kind: 'pick', options: accts, value: s.acct, hint: 'A change counts from the next one' }], lines),
   [{ label: 'Save', solid: true, step: v => ['changeBill', w => PLAN3W.changeBill(w, id, { name: v.name, amount: v.amount, day: v.day, from: v.from, ...(yearly ? { month: Number(v.month) } : {}), ...(pay ? {} : { acct: v.acct }),
     ...(every.length ? { every: v.every, day2: v.day2 === 'last' ? 'last' : Number(v.day2), start: v.start, lines: Object.fromEntries(perPay.map(l => [l.key, v['ln-' + l.key] == null ? l.amount : v['ln-' + l.key]])) } : {}) }), pay ? 'Pay changed' : 'Bill changed'] }]
-    .concat(pay || !v0.next ? [] : [{ label: 'Change the next one only', step: v => ['changeOnce', w => PLAN3W.changeOnce(w, id, { due: v0.next.due, amount: v.amount }), s.name + ' on ' + day3(v0.next.land, 'any') + ' changed'] },
-      { label: 'End this bill', sure: [`End ${s.name}? Nothing is due after the day in "Changes from"`, 'Yes, end it'], step: v => ['endBill', w => PLAN3W.endBill(w, id, { last: v.from }), s.name + ' ends'] }]),
-  pay ? 'A change starts from the day in "Changes from". Pay periods before it stay as they were' : `"Change the next one only" changes the amount of the one on ${esc3(day3(v0.next ? v0.next.land : v0.changeFrom, 'any'))}. End this bill: nothing is due after the day in "Changes from"`);
+    .concat(pay || !v0.next ? [] : [{ label: 'Change the next one only', step: v => ['changeOnce', w => PLAN3W.changeOnce(w, id, { due: v0.next.due, amount: v.amount }), s.name + ' on ' + day3(v0.next.land, 'any') + ' changed'] }])
+    /* [E8, M13, M38] a pay ends like a bill (the pay periods pass to another pay, BZ2); one added by mistake is removed */
+    .concat(pay && !s.ends ? [{ label: 'End this pay', sure: [`End ${s.name}? Nothing comes in after the day in "Changes from"`, 'Yes, end it'], step: v => ['endBill', w => PLAN3W.endBill(w, id, { last: v.from }), s.name + ' ends'] }] : [])
+    .concat(!pay && v0.next ? [{ label: 'End this bill', sure: [`End ${s.name}? Nothing is due after the day in "Changes from"`, 'Yes, end it'], step: v => ['endBill', w => PLAN3W.endBill(w, id, { last: v.from }), s.name + ' ends'] }] : [])
+    .concat(pay ? [{ label: 'Remove this pay', sure: [`Remove ${s.name}? Use this only if it was added by mistake: it goes as if it was never added`, 'Yes, remove it'], step: () => ['removeSchedule', w => PLAN3W.removeSchedule(w, id), s.name + ' removed'] }]
+      : [{ label: 'Remove this bill', sure: [`Remove ${s.name}? Use this only if it was added by mistake: it goes as if it was never added`, 'Yes, remove it'], step: () => ['removeSchedule', w => PLAN3W.removeSchedule(w, id), s.name + ' removed'] }]),
+  pay ? 'A change starts from the day in "Changes from". Pay periods before it stay as they were. End this pay: nothing comes in after the day in "Changes from"' : `"Change the next one only" changes the amount of the one on ${esc3(day3(v0.next ? v0.next.land : v0.changeFrom, 'any'))}. End this bill: nothing is due after the day in "Changes from"`);
   if (every.length) plPropose3(perPay, r0, everyNow);
 }
 /* [slice 6, qc-foundation 2] when how often the pay lands changes, each line counted each pay is proposed as the same
@@ -11017,6 +11036,26 @@ function plPropose3(perPay, r0, now) {
   };
   $('#pl-every').addEventListener('change', show);
   show();
+}
+/* [E8, M13, M38] a pay after setup (a second income, or a new job): the same questions setup asks, through PLAN3W.addPay.
+   When no pay with a fixed day starts the pay periods yet, each line and Free to spend (amounts a month) is asked as an
+   amount each pay, as when a pay's rhythm changes (plPropose3 fills in the same money a year) */
+function plPayAddForm3() {
+  PL3.sheet = 'addPay';
+  const book = E3.book, day = E3.today(), main = ((book.home || {}).main || {}).v, mainId = main && main.acct;
+  const accts = plAccounts3(PL_OWN3).sort((x, y) => (x.id === mainId ? -1 : y.id === mainId ? 1 : 0)).map(a => ({ v: a.id, name: a.name }));
+  const holder = BurrowEngine.schedules.periodHolder((book.schedules || []).filter(plLive3), day);
+  const hv = holder ? BurrowEngine.periods.scheduleView(book, day)[holder.id] : null;
+  const monthly = !holder || !hv || (hv.rule && hv.rule.every === 'none') ? PLAN3W.linesEachMonth({ book, today: day }) : [];
+  const lines = monthly.map(l => ({ key: 'ln-' + l.key, label: `${l.name} each pay from then`, kind: 'amount', value: l.amount, optional: true, hint: ' ' }));
+  plForm3('Add a pay', [{ key: 'name', label: 'Name', kind: 'text', hint: 'Like Side job' }, { key: 'amount', label: 'What lands in the bank', kind: 'amount', optional: true, hint: 'After tax. Leave it empty if it has no fixed amount' },
+    { key: 'every', label: 'How often it lands', kind: 'pick', value: 'month', options: PL_EVERY3 }, { key: 'day', label: 'Day of the month it lands', kind: 'day' },
+    { key: 'day2', label: 'And on day', kind: 'pick', value: 'last', options: PL_DAY2_3 }, { key: 'start', label: 'The day of one pay, when it lands every few weeks', kind: 'date', value: '' },
+    { key: 'acct', label: 'It lands in', kind: 'pick', options: accts, value: mainId }].concat(lines),
+  [{ label: 'Add', solid: true, step: v => ['addPay', w => PLAN3W.addPay(w, { name: v.name, amount: v.amount, every: v.every, day: v.day, day2: v.day2 === 'last' ? 'last' : Number(v.day2), start: v.start, acct: v.acct,
+    lines: Object.fromEntries(monthly.map(l => [l.key, v['ln-' + l.key] == null ? l.amount : v['ln-' + l.key]])) }), 'Pay added'] }],
+  'It counts from today on. A pay that lands on a weekend or holiday comes the working day before');
+  plPropose3(monthly, { every: 'none' }, 'none');
 }
 /* a goal; id null adds one */
 function plGoalForm3(id, fill) {
@@ -13909,12 +13948,12 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
   /* ---- the tools (BU2: no figures or draft read tool) ---- */
   const num = { type: 'number', description: 'A plain number in the currency, no symbol.' };
   const str = d => ({ type: 'string', description: d });
-  const DO = ['landed', 'bank_figure', 'card_figure', 'log_spend', 'refund', 'money_in', 'move_money', 'remove', 'add_bill', 'change_bill', 'end_bill', 'add_pay', 'add_line', 'change_line', 'end_line', 'set_free', 'add_goal', 'set_aside', 'add_card', 'add_account', 'change_account', 'close_account', 'reopen_account', 'remove_account', 'pay_off', 'change_card', 'change_loan', 'add_loan', 'set_keep', 'set_country', 'change_goal', 'take_out', 'remove_goal'];
+  const DO = ['landed', 'bank_figure', 'card_figure', 'log_spend', 'refund', 'money_in', 'move_money', 'remove', 'add_bill', 'change_bill', 'end_bill', 'add_pay', 'add_line', 'change_line', 'end_line', 'set_free', 'add_goal', 'set_aside', 'add_card', 'add_account', 'change_account', 'close_account', 'reopen_account', 'remove_account', 'pay_off', 'change_card', 'change_loan', 'add_loan', 'set_keep', 'set_country', 'change_goal', 'take_out', 'remove_goal', 'end_pay', 'remove_pay', 'remove_bill'];
   /* a step that was asked for and left out, in words for the person (the card says which was not done) */
   const DO_WORDS = { landed: 'ticking off a pay or bill', bank_figure: 'a bank figure', card_figure: 'a card figure', log_spend: 'a spend', refund: 'a refund', money_in: 'money that came in',
     move_money: 'money moved between accounts', remove: 'removing a record', add_bill: 'a new bill', change_bill: 'a change to a bill or pay', end_bill: 'ending a bill', add_pay: 'a new pay',
     add_line: 'a new line', change_line: 'a change to a line', end_line: 'ending a line', set_free: 'a change to Free to spend', add_goal: 'a new goal', set_aside: 'money set aside for a goal',
-    add_card: 'a new card', add_account: 'a new account', change_account: 'a change to an account', close_account: 'closing an account', reopen_account: 'reopening an account', remove_account: 'removing an account', pay_off: 'paying off a card or loan', change_card: 'a change to a card', change_loan: 'a change to a loan', add_loan: 'a new loan', set_keep: 'Keep at least for your main bank', set_country: 'where you bank', change_goal: 'a change to a goal', take_out: 'money taken out of a goal', remove_goal: 'removing a goal' };
+    add_card: 'a new card', add_account: 'a new account', change_account: 'a change to an account', close_account: 'closing an account', reopen_account: 'reopening an account', remove_account: 'removing an account', pay_off: 'paying off a card or loan', change_card: 'a change to a card', change_loan: 'a change to a loan', add_loan: 'a new loan', set_keep: 'Keep at least for your main bank', set_country: 'where you bank', change_goal: 'a change to a goal', take_out: 'money taken out of a goal', remove_goal: 'removing a goal', end_pay: 'ending a pay', remove_pay: 'removing a pay', remove_bill: 'removing a bill' };
   const CURS = ['JPY', 'PHP', 'USD', 'EUR'];
   const SECTIONS = ['country', 'currency', 'banks', 'pays', 'cards', 'bills', 'asked', 'statements', 'payToday', 'free', 'min'];
   const TOOLS = [
@@ -14333,6 +14372,13 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       const from = ref(a.from, 'A'), to = ref(a.to, 'A'), x = amt(a.amount), d = date(a.date);
       if (!from || !to || !x || !d) return { bad: 'a move I could not read' };
       return { kind: 'moveMoney', args: [{ date: d, a: x, from, to }], text: `Move ${m(x)} from ${nm(from)} to ${nm(to)}, ${on(d)}`, amount: x };
+    }
+    /* [E8, M13, M38] a pay ended (as a bill is; the pay periods pass to another pay), or a pay or bill added by mistake
+       removed as if never added (refused with words when something names it); each asks first */
+    if (what === 'end_pay' || what === 'remove_pay' || what === 'remove_bill') {
+      const id = ref(a.ref, what === 'remove_bill' ? 'B' : 'P'); if (!id) return { bad: 'a ' + (what === 'remove_bill' ? 'bill' : 'pay') + ' I do not know' };
+      if (what === 'end_pay') return { kind: 'endBill', args: [id, {}], text: `End ${schName(id)} from today`, del: true };
+      return { kind: 'removeSchedule', args: [id], text: `Remove ${schName(id)}, as if it was never added`, del: true };
     }
     if (what === 'remove' || what === 'end_bill' || what === 'end_line') {
       const id = ref(a.ref, what === 'end_line' ? 'L' : what === 'end_bill' ? 'BP' : 'SBL');

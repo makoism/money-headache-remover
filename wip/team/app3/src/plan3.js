@@ -99,7 +99,7 @@ function drawPlan3() {
   out.push(`<section class="a3-card" data-card="plan-bills"><h2>Pay and bills</h2>
     ${pays.length ? `<ul class="a3-rows a3-rclist">${pays.join('')}</ul>` : ''}
     ${bills.length ? `<ul class="a3-rows a3-rclist">${bills.join('')}</ul>` : '<p class="a3-sub">No bills yet</p>'}
-    <div class="a3-actions"><button type="button" class="a3-btn" id="plAddBill">Add a bill</button></div></section>`);
+    <div class="a3-actions"><button type="button" class="a3-btn" id="plAddPay">Add a pay</button><button type="button" class="a3-btn" id="plAddBill">Add a bill</button></div></section>`);
   /* goals */
   const goals = (book.places || []).filter(g => plLive3(g) && g.kind === 'goal' && r.places[g.id]).map(g => {
     const kept = r.places[g.id].kept, where = g.keptIn && g.keptIn.mode === 'ownAccount' ? 'in ' + esc3(E3.nameOf(g.keptIn.acct)) : 'kept in your bank';
@@ -158,6 +158,7 @@ function drawPlan3() {
   on('#plAddLine', () => plLineForm3(null));
   on('#plSetFree', () => plLineForm3('free'));
   on('#plAddBill', () => plBillForm3(null));
+  on('#plAddPay', () => plPayAddForm3());
   on('#plAddGoal', () => plGoalForm3(null));
   on('#plAddCard', () => plCardForm3());
   on('#plAddLoan', () => plLoanForm3());
@@ -329,9 +330,13 @@ function plBillForm3(id) {
     pay ? [] : [{ key: 'acct', label: 'Paid from', kind: 'pick', options: accts, value: s.acct, hint: 'A change counts from the next one' }], lines),
   [{ label: 'Save', solid: true, step: v => ['changeBill', w => PLAN3W.changeBill(w, id, { name: v.name, amount: v.amount, day: v.day, from: v.from, ...(yearly ? { month: Number(v.month) } : {}), ...(pay ? {} : { acct: v.acct }),
     ...(every.length ? { every: v.every, day2: v.day2 === 'last' ? 'last' : Number(v.day2), start: v.start, lines: Object.fromEntries(perPay.map(l => [l.key, v['ln-' + l.key] == null ? l.amount : v['ln-' + l.key]])) } : {}) }), pay ? 'Pay changed' : 'Bill changed'] }]
-    .concat(pay || !v0.next ? [] : [{ label: 'Change the next one only', step: v => ['changeOnce', w => PLAN3W.changeOnce(w, id, { due: v0.next.due, amount: v.amount }), s.name + ' on ' + day3(v0.next.land, 'any') + ' changed'] },
-      { label: 'End this bill', sure: [`End ${s.name}? Nothing is due after the day in "Changes from"`, 'Yes, end it'], step: v => ['endBill', w => PLAN3W.endBill(w, id, { last: v.from }), s.name + ' ends'] }]),
-  pay ? 'A change starts from the day in "Changes from". Pay periods before it stay as they were' : `"Change the next one only" changes the amount of the one on ${esc3(day3(v0.next ? v0.next.land : v0.changeFrom, 'any'))}. End this bill: nothing is due after the day in "Changes from"`);
+    .concat(pay || !v0.next ? [] : [{ label: 'Change the next one only', step: v => ['changeOnce', w => PLAN3W.changeOnce(w, id, { due: v0.next.due, amount: v.amount }), s.name + ' on ' + day3(v0.next.land, 'any') + ' changed'] }])
+    /* [E8, M13, M38] a pay ends like a bill (the pay periods pass to another pay, BZ2); one added by mistake is removed */
+    .concat(pay && !s.ends ? [{ label: 'End this pay', sure: [`End ${s.name}? Nothing comes in after the day in "Changes from"`, 'Yes, end it'], step: v => ['endBill', w => PLAN3W.endBill(w, id, { last: v.from }), s.name + ' ends'] }] : [])
+    .concat(!pay && v0.next ? [{ label: 'End this bill', sure: [`End ${s.name}? Nothing is due after the day in "Changes from"`, 'Yes, end it'], step: v => ['endBill', w => PLAN3W.endBill(w, id, { last: v.from }), s.name + ' ends'] }] : [])
+    .concat(pay ? [{ label: 'Remove this pay', sure: [`Remove ${s.name}? Use this only if it was added by mistake: it goes as if it was never added`, 'Yes, remove it'], step: () => ['removeSchedule', w => PLAN3W.removeSchedule(w, id), s.name + ' removed'] }]
+      : [{ label: 'Remove this bill', sure: [`Remove ${s.name}? Use this only if it was added by mistake: it goes as if it was never added`, 'Yes, remove it'], step: () => ['removeSchedule', w => PLAN3W.removeSchedule(w, id), s.name + ' removed'] }]),
+  pay ? 'A change starts from the day in "Changes from". Pay periods before it stay as they were. End this pay: nothing comes in after the day in "Changes from"' : `"Change the next one only" changes the amount of the one on ${esc3(day3(v0.next ? v0.next.land : v0.changeFrom, 'any'))}. End this bill: nothing is due after the day in "Changes from"`);
   if (every.length) plPropose3(perPay, r0, everyNow);
 }
 /* [slice 6, qc-foundation 2] when how often the pay lands changes, each line counted each pay is proposed as the same
@@ -362,6 +367,26 @@ function plPropose3(perPay, r0, now) {
   };
   $('#pl-every').addEventListener('change', show);
   show();
+}
+/* [E8, M13, M38] a pay after setup (a second income, or a new job): the same questions setup asks, through PLAN3W.addPay.
+   When no pay with a fixed day starts the pay periods yet, each line and Free to spend (amounts a month) is asked as an
+   amount each pay, as when a pay's rhythm changes (plPropose3 fills in the same money a year) */
+function plPayAddForm3() {
+  PL3.sheet = 'addPay';
+  const book = E3.book, day = E3.today(), main = ((book.home || {}).main || {}).v, mainId = main && main.acct;
+  const accts = plAccounts3(PL_OWN3).sort((x, y) => (x.id === mainId ? -1 : y.id === mainId ? 1 : 0)).map(a => ({ v: a.id, name: a.name }));
+  const holder = BurrowEngine.schedules.periodHolder((book.schedules || []).filter(plLive3), day);
+  const hv = holder ? BurrowEngine.periods.scheduleView(book, day)[holder.id] : null;
+  const monthly = !holder || !hv || (hv.rule && hv.rule.every === 'none') ? PLAN3W.linesEachMonth({ book, today: day }) : [];
+  const lines = monthly.map(l => ({ key: 'ln-' + l.key, label: `${l.name} each pay from then`, kind: 'amount', value: l.amount, optional: true, hint: ' ' }));
+  plForm3('Add a pay', [{ key: 'name', label: 'Name', kind: 'text', hint: 'Like Side job' }, { key: 'amount', label: 'What lands in the bank', kind: 'amount', optional: true, hint: 'After tax. Leave it empty if it has no fixed amount' },
+    { key: 'every', label: 'How often it lands', kind: 'pick', value: 'month', options: PL_EVERY3 }, { key: 'day', label: 'Day of the month it lands', kind: 'day' },
+    { key: 'day2', label: 'And on day', kind: 'pick', value: 'last', options: PL_DAY2_3 }, { key: 'start', label: 'The day of one pay, when it lands every few weeks', kind: 'date', value: '' },
+    { key: 'acct', label: 'It lands in', kind: 'pick', options: accts, value: mainId }].concat(lines),
+  [{ label: 'Add', solid: true, step: v => ['addPay', w => PLAN3W.addPay(w, { name: v.name, amount: v.amount, every: v.every, day: v.day, day2: v.day2 === 'last' ? 'last' : Number(v.day2), start: v.start, acct: v.acct,
+    lines: Object.fromEntries(monthly.map(l => [l.key, v['ln-' + l.key] == null ? l.amount : v['ln-' + l.key]])) }), 'Pay added'] }],
+  'It counts from today on. A pay that lands on a weekend or holiday comes the working day before');
+  plPropose3(monthly, { every: 'none' }, 'none');
 }
 /* a goal; id null adds one */
 function plGoalForm3(id, fill) {
