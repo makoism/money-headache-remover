@@ -9,6 +9,8 @@ LANE P: session_01BFpKEW1VPRCsZX1GAQj5Dn (took over from LANE N session_01BFpKEY
 - controls-5: HELPER RUNNING on c5 (N1-N3, then full check). Then report ready to MAIN 24 + coordinator; merge into controls-8.
 - controls-13: plan F2-F5 folded in 23daf5eb; waits for LANE O's commit, then qc-foundation confirm on the plan, then qc-novice.
 - controls-11: rulings written into CHECKFIX_PLAN ce7c2b06; merged amounthist 35cd5262 (8c9c8ef8), engine tests pass; scope.txt drafted 2dc48f30; FULL CHECK RUNNING (scratchpad c11_full.txt). Then reviewers qc-controls, qc-data-safety, qc-numbers (Kenji).
+- QUEUED (LANE N/M, 26 Nov 16:10 JST): change card for a bill moved to another account gets its own short-by row, in shared src/change3.js (controls-9 c09d6ee8), on top of LANE O's lane/shortgap a2d058c7 (res.accounts[id].cover = { from, moves }; status.js moveText reads cover). Test first, after shortgap merges or on a branch with it.
+- controls-11: full ALL GOOD 7e57bd5a; reviewers wait for a free slot.
 - dsafe-1: item (1) DONE 1cb5cc79 test + 8196cd01 fix, quick ALL GOOD. dsafe-2: HELPER RUNNING on item (2) restore during setup. Then merge ds2 into ds1, full check, qc-data-safety.
 
 # Below: LANE N's page at handoff
