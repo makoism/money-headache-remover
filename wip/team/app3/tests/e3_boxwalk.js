@@ -59,8 +59,9 @@ const FORMS = {
   'Receipts: Search': { atOnce: true, only: /^Search/, wrongText: ['zzzz'], noValid: 'a search saves nothing' },
   'Plan: Free to spend': PL(), 'Plan: Add a line': PL(), 'Plan: a line': PL(), 'Plan: the pay': PL(), 'Plan: a bill': PL(), 'Plan: Add a bill': PL(),
   'Plan: Add a goal': PL(), 'Plan: a goal': PL({ save: '[data-plbtn="1"]' }), 'Plan: a goal, Set aside': PL({ only: /Set aside now/, fill: { 'Set aside now': '1000' }, noValid: 'how much can be set aside depends on what the bank can spare that day (tests/e3_plan.js)' }),
-  'Plan: a card': PL({ mayBeEmpty: [/^Day the statement closes/] }), 'Plan: Add a card': PL(), 'Plan: Add a loan': PL(), 'Plan: a loan': PL(),
-  'Check your bank': { save: '#a3CheckSave', mayBeEmpty: [/^What is on .* now\?/], minusOk: [/^What does .* show today\?/] },   // a bank below zero (M47, tests/e3_overdrawn.js)   // a card's figure is asked, never needed: left empty it is not checked
+  'Plan: a card': PL({ mayBeEmpty: [/^Day the statement closes/] }), 'Plan: Add a card': PL(), 'Plan: Add a loan': PL(), 'Plan: a loan': PL({ only: /^(?!Still owed today|The day the lender)/ }),
+  'Plan: a loan, Still owed today': { save: '#plLcSave', only: /^(Still owed today|The day the lender)/, noValid: 'the figure the sheet opens with is the app\'s own, so Save says Nothing changed; a new figure saved, Not now and Forget it (tests/e3_loancheck.js)' },
+  'Check your bank': { save: '#a3CheckSave', mayBeEmpty: [/^What is on .* now\?/, /^Still owed on .* today/], minusOk: [/^What does .* show today\?/] },   // a bank below zero (M47, tests/e3_overdrawn.js)   // a card's figure is asked, never needed: left empty it is not checked
   'Settings': { save: '#a3SetWordKeep', only: /ode word/, fill: { 'ode word': 'walkword' } },
   'Settings: a backup file locked with a code': { save: '#a3BkSave', only: /Code for this file/, wrongText: ['', 'abc'], noValid: 'a right code saves a file to the device (tests/e3_backup.js)' },
   'Settings: I have a code': { save: '#a3CloudUse', only: /cloud code/, wrongText: ['', 'abc'], noValid: 'a right code calls the cloud (tests/e3_cloud.js)' },
@@ -137,6 +138,7 @@ const leave = p => p.evaluate(() => { const a = document.activeElement; if (a &&
   const places = Q.PLACES.concat([
     { name: 'Receipts: Search', state: 'book', sheet: null, root: '#a3Rc', out: 'tab', open: async p => { await Q.tabTo(p, 'receipts'); } },
     { name: 'Plan: a goal, Set aside', state: 'book', sheet: null, root: '#a3Plan', out: '#plBack', open: async p => { await Q.tabTo(p, 'plan'); await tap(p, '[data-goal]'); } },
+    { name: 'Plan: a loan, Still owed today', state: 'book', sheet: null, root: '#a3Plan', out: '#plBack', open: async p => { await Q.tabTo(p, 'plan'); await tap(p, 'button[data-owed]:has-text("Car loan")'); await p.waitForSelector('#plLcAmt', { timeout: 3000 }); } },
   ]);
   const PART = process.argv[2];   // node tests/e3_boxwalk.js Plan : only the places with that in their name, and no counts (never a pass)
   const ctx = {}, counts = {}, met = [], walkedIn = {};

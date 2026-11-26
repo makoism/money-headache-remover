@@ -400,6 +400,69 @@ function plOwedForm3(id) {
       : { label: 'Close this loan', sure: [`Close ${a.name}? It leaves your plan`, 'Yes, close it'], step: () => ['closeLoan', w => PLAN3W.closeLoan(w, id), a.name + ' closed'] },
       card ? { label: 'Remove this card', sure: [`Remove ${a.name}? Use this only if it was added by mistake: it goes as if it was never added`, 'Yes, remove it'], step: () => ['removeAccount', w => PLAN3W.removeAccount(w, id), a.name + ' removed'] } : { label: 'Remove this loan', sure: [`Remove ${a.name}? Use this only if it was added by mistake: it goes as if it was never added`, 'Yes, remove it'], step: () => ['removeAccount', w => PLAN3W.removeAccount(w, id), a.name + ' removed'] }]),
     `${owed > 0 ? `${esc3(a.name)}: ${money3(owed, cur)} ${esc3(label3('owed')).toLowerCase()}. ` : ''}${card ? 'A card closes once nothing is on it' : 'A loan closes once it is paid off'}`);
+  if (!card && !a.closed) plLoanCheck3(a);
+}
+/* ---- [LOAN_CHECK_PLAN, M13, M7, M91] "Still owed today" on a loan's sheet: what the lender shows, and the day of it.
+   Each payment of the loan gone by and not ticked is asked first (Yes, it left / No, not yet). Save writes it through
+   the one door (PLAN3W.checkLoan), with Undo. Not now keeps the figure and its day on this device only (the sheet's
+   own draft in the device record, like setup's, never the book), shown the next time with "Not saved yet" and
+   Forget it. The questions' parts are shared with Check your bank (loanQs3). ---- */
+function loanQsHtml3(qs, key) {
+  return qs.map(q => `<div class="a3-field" data-lcq="${esc3(q.occ)}"><p class="a3-sub">${esc3(q.text)}</p>
+    <div class="a3-segs"><button type="button" class="a3-seg a3-seg-s" data-lcans="yes" aria-pressed="false">Yes, it left</button><button type="button" class="a3-seg a3-seg-s" data-lcans="no" aria-pressed="false">No, not yet</button></div></div>`).join('');
+}
+function loanQsBind3(host) {
+  host.querySelectorAll('[data-lcq] [data-lcans]').forEach(b => b.addEventListener('click', () => {
+    b.closest('[data-lcq]').querySelectorAll('[data-lcans]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  }));
+}
+function loanQsRead3(host) {
+  const out = {};
+  host.querySelectorAll('[data-lcq]').forEach(q => { const on = q.querySelector('[data-lcans][aria-pressed="true"]'); if (on) out[q.dataset.lcq] = on.dataset.lcans; });
+  return out;
+}
+const loanDraftOf3 = async id => ((await E3.rec('loanDraft')) || {})[id] || null;
+async function loanDraftPut3(id, v) {
+  const all = Object.assign({}, (await E3.rec('loanDraft')) || {});
+  if (v) all[id] = v; else delete all[id];
+  return E3.rec('loanDraft', Object.keys(all).length ? all : null);
+}
+async function plLoanCheck3(a) {
+  const form = PL3.form, draft = await loanDraftOf3(a.id);
+  if (PL3.form !== form || !$('#a3Plan [data-card="plan-form"]')) return;   // the sheet closed meanwhile
+  const today = E3.today(), cur = a.cur || E3.home(), k = E3.view(today).owed[a.id];
+  const amt = draft ? draft.amount : k ? k.owedNow : null, day = draft ? draft.day : today;
+  $('#a3Plan').insertAdjacentHTML('afterbegin', `<section class="a3-card" data-card="plan-loancheck"><h2>Still owed today</h2>
+    <p class="a3-sub">What the lender shows for ${esc3(a.name)}. From that day on the app counts from it</p>
+    <p class="a3-sub" id="plLcDraft"${draft ? '' : ' hidden'}><strong>Not saved yet</strong></p>
+    <div class="a3-field"><label for="plLcAmt">Still owed today</label><input class="a3-in" data-amount id="plLcAmt" type="text" inputmode="decimal" autocomplete="off" value="${amt == null ? '' : SM.toInput(amt, cur)}" placeholder="${esc3(SM.symbol(cur).trim())}"></div>
+    <div class="a3-field"><label for="plLcDay">The day the lender showed it</label><input class="a3-in a3-date" type="date" id="plLcDay" value="${esc3(day)}" max="${esc3(today)}"></div>
+    <div id="plLcQs"></div><p class="a3-err" id="plLcErr" role="alert"></p>
+    <div class="a3-actions"><button type="button" class="a3-btn solid" id="plLcSave">Save</button><button type="button" class="a3-btn" id="plLcLater">Not now</button><button type="button" class="a3-btn" id="plLcForget"${draft ? '' : ' hidden'}>Forget it</button></div></section>`);
+  BurrowScreens.inputs.bind($('#plLcAmt'), { kind: 'amount', code: cur, optional: true });
+  const qsHost = $('#plLcQs'), err = $('#plLcErr');
+  const ask = () => { qsHost.innerHTML = loanQsHtml3(PLAN3W.loanQuestions(E3.book, E3.today(), a.id, $('#plLcDay').value)); loanQsBind3(qsHost); };
+  ask(); $('#plLcDay').addEventListener('change', ask);
+  const read = () => { const t = $('#plLcAmt').value.trim(); return { amount: t ? typed3(t, cur) : null, typed: t, day: $('#plLcDay').value || today }; };
+  $('#plLcSave').addEventListener('click', async () => {
+    const v = read();
+    if (v.typed && v.amount === null) { err.textContent = 'Type what is still owed as an amount'; $('#plLcAmt').focus(); return; }
+    if (v.amount === null) { err.textContent = 'Nothing changed. Type what the lender shows, or press Not now'; $('#plLcAmt').focus(); return; }
+    const res = await ACT3.run('checkLoan', w => PLAN3W.checkLoan(w, a.id, { amount: v.amount, date: v.day, answers: loanQsRead3(qsHost) }), { undo: `${a.name}: still owed ${money3(v.amount, cur)} saved` });
+    if (!res.ok) { err.textContent = res.text; return; }   // a draft stays as it was
+    await loanDraftPut3(a.id, null);
+    plClose3();
+  });
+  $('#plLcLater').addEventListener('click', async () => {
+    const v = read();
+    if (v.amount === null) { plClose3(); return; }
+    await loanDraftPut3(a.id, { amount: v.amount, day: v.day });
+    const q = PLAN3W.loanQuestions(E3.book, E3.today(), a.id, v.day)[0];
+    MSG3.post({ kind: 'notice', key: 'a3', text: q ? `Nothing saved yet. ${money3(v.amount, cur)} is kept here on this device: when you know whether the ${day3(q.day, today.slice(0, 4))} payment had left your bank, open ${a.name} again and answer Yes or No`
+      : `Nothing saved yet. ${money3(v.amount, cur)} is kept here on this device: open ${a.name} again to save it` });
+    plClose3();
+  });
+  $('#plLcForget').addEventListener('click', async () => { await loanDraftPut3(a.id, null); plOwedForm3(a.id); });
 }
 /* [E1, M13] an account's own sheet: its name, and its own Keep at least (the main bank's is in Settings) */
 function plAcctForm3(id) {
