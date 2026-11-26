@@ -1,37 +1,38 @@
-VERDICT: FAIL (qc-foundation, build lane/ai-join 8be688e, code 51b29011; saved by MAIN 24 from the reviewer's reply, which said its role has the caller save it)
+VERDICT: PASS (qc-foundation, confirming run on F1, build lane/ai-join at 6a748918; fix 63e0e7fe with failing test 781af7b3. Earlier report: run1_qc-foundation.md)
 
-CHECK: check3.txt ends "(full level, 3 at a time, 857 s in all)" / "ALL GOOD".
+CHECK: check3.txt in this folder ends "(full level, 3 at a time, 857 s in all)" / "ALL GOOD"; commit 6a748918 says that run is at the F1 and B1 to B3 fixes. tests/chatfig.test.js run again here: ALL PASS (10). Since 63e0e7fe the only source changes are screens (home3.js help name, money3.js drops the Undo bar on a whole new book, app3.css): no engine or write door change.
+
+F1, CLOSED (option (b) as ruled)
+What changed: bank_figure and card_figure (chat3_core.js:589-604) now take what the engine expects on that account by today (lookahead checkIn.toConfirm, account === the figure's account, lands <= today), write them in the same check as ticked with their expected amounts and landing days (the same shape the Check your bank screen writes, checkin3.js:93-118), leave out anything the person said has not gone through (not: refs), name each on the change card and ask first (chat3_core.js:917-920, ask 'ticks'). A card payment counts on its paying bank (lookahead.js:822, checkin.js landedFrom), so Mako's card payments on the 10th and 11th are listed with a figure for Main. farFigures (chat3_core.js:776) works the gap out with the ticks in, so the "far from expected" words are right.
+
+Walked by a node harness on the real turn, confirm and undo of chat3_core with a fake AI (scratchpad h.js, w1.js, w2.js):
+1. Worked example: 286,000 set up 24 Nov, rent 72,000 out 27 Nov, 10,000 spent. "My bank shows 204,000" on 30 Nov: card names Rent 27 Nov 72,000, asks first; after OK Main 204,000, nothing left expected, Free to spend left 22,000 (by hand: 60,000 x 16/30 = 32,000 from setup to the day before pay, less 10,000). Next day Main still 204,000. Right.
+2. Not gone yet, then later: figure 276,000 with not: [B1] on 30 Nov: Main 276,000, Rent still expected, left 22,000. "Rent came out" on 2 Dec: Main 204,000, left 22,000, nothing expected. Right (the rent lands after a figure that did not hold it).
+3. Undo of the figure card: Main back to 286,000, Rent expected again, left back to 32,000. Right.
+4. Mako's shape with a card (Visa 50,000 owed, paid on the 10th, close day not sure): on 11 Dec the bank figure lists Pay 10 Dec 240,000, Rent 27 Nov 72,000, Visa 10 Dec 50,000; after OK Main equals the figure, the new period starts 10 Dec, the 5,000 gap comes off Free to spend. A card figure of 12,000 then shows the card at 12,000 and takes 12,000 off Free to spend; it lists nothing (no expected item sits on a card), as before.
+5. Every two weeks in pesos, set up on pay day 20 Nov, back on 19 Dec: lists both pays (4 and 18 Dec) and Rent (5 Dec moved to Mon 7 Dec); after OK the period starts 18 Dec and the 200,000 gap comes off; Undo puts all of it back.
+6. No fixed pay: lists the bill only, Main equals the figure.
+7. Nothing expected on the account: the figure goes in with no list (chatfig test 3).
+
+OWNER'S WORDS (only lines this fix touches; all else as in run1)
+M3 MET (the figure write is now true). M4, M6 MET as built (a figure that ticks asks first, names each, one Undo). M7, M12, M36, M37, M44, M45 MET for this path (F1 was the only reason they were NOT MET in run1). M38 MET (the ticked pay starts the period at its landing day, also for two pays at once). M40 MET (card payment on the paying bank). M14 MET (Undo of the whole check). M13 silent. A to D and F otherwise unchanged from run1.
+
+GRID
+Unchanged from run1 apart from one cell now covered on the assistant's side: a bank or card figure from the assistant now ticks the expected items (no new kind). Run1 count stands: 136 cells, 93 covered, 6 not applicable, 37 empty; only cards plan F1 needs the base (KNOWN). Bank or card figure change and remove stay empty on S and A (controls slice 10, scope).
 
 FOUNDATIONAL
-F1. A bank or card figure given to the assistant makes every expected item before it "not landed" for good.
-Who: Mako, or anyone who sets up and then mostly talks to the assistant (M1, M4).
-The moment: 30 Nov. Rent of 72,000 really left the bank on 27 Nov, and about 10,000 was spent. They tell the assistant "my bank shows 204,000".
-What the build does: bank_figure writes a check-in with figures only and nothing ticked (chat3_core.js:588-594), while the Check your bank screen ticks every expected item by default (checkin3.js:93-100). The assistant never mentions rent; its ask card says only "82,000 less than it had". The engine reads the whole 82,000 gap as everyday spending and keeps rent expected: Free to spend left -50,000, safe to spend 0. Next day "rent came out on the 27th": checkin.js:75-90 (landedFrom, BI1) puts any tick on or after the day after the last check on that account, so rent is written on 1 Dec, after the figure. Home shows Main 132,000 while the bank shows 204,000, and Free to spend reads 50,000 overspent when 50,000 is really left. Asking with the date 27 Nov is refused. The same for a weekly earner back after three weeks (three wages can only land after the figure; the bank will read 2,400 too high). Undo of the figure card, then the tick, then the figure again recovers it; nobody would know to.
-Why it is in the base: checkin.js:83-87 assumes every saved check was made with the list of expected items shown. The saved check-in records settled and unticked (imports only); it cannot say "no list was shown". AI first makes figure-without-list the normal case, and a statement or screenshot reader will do the same later.
-What the base needs: (a) the check-in records the items it listed (listed: [occ]) and landedFrom applies only to items a check-in listed; (b) the assistant's bank_figure and card_figure carry the expected items for that account like the screen (ask about each first, or put them on the card ticked) and write them in the same checkIn (ci.ticked). A test chaining a figure by chat with the tick on the next day. Cost: about half a day now, plus one line in SCHEMA_V3 7.2.
-Known and not counted again: cards plan F1 (no dated "no play amount", lane/cashplan).
+None new.
 
-OWNER'S WORDS
-A: M1, M5, M17 MET. M2 MET for typed answers; uploads NOT BUILT (scope). M3 partly MET (21 named actions; F1 makes one write a wrong figure). M4 MET for spends and ticks; receipts by photo NOT BUILT (scope). M6 MET as built (not settled 1). M7, M12 NOT MET (F1). M9 NOT BUILT (scope). M10 silent. M11 MET.
-B: M13 partly MET (gaps in scope). M23 partly MET (cash and e-wallet by the assistant only; pay-later stage 2). M14, M15, M16, M19, M20, M22 MET. M18, M24 NOT BUILT (scope). M21 not tested (scope). M25 silent.
-C: M26 to M32, M34, M35 MET (card payment on 10 Dec is 57,400: everything owed with close day not sure, spend and refund included). M30, M40 MET apart from M90 (KNOWN). M33 silent.
-D: M36, M37, M44, M45 NOT MET (F1). M38 MET (15th and last day with the holiday shift; weekly; every two weeks; a second earner whose pay starts no period; no fixed pay KNOWN). M39, M41, M42, M43, M48, M50 MET. M46 NOT BUILT (scope). M47, M49 silent. M51 KNOWN.
-F: M61 to M65, M67, M69 MET. M66, M68 need the server confirmations below.
-
-COUNT: lives walked through chained days by a node harness on chat3_core's real turn and handle with fake AI tool calls (real fill, door, checkin.js, lookahead; realistic ids): Mako's shape; twice a month in the Philippines with cash and an e-wallet, three weeks away; weekly pay set up mid-week, three weeks away; every two weeks set up on pay day; freelance; a couple into one joint bank. No browser.
-GRID (17 kinds by add, change, remove or end, Undo; screens and assistant: 136 cells): 93 covered, 6 not applicable, 37 empty. Empty (S screens, A assistant): change a spend, refund, money in or a move: A (4); tick change and remove S and A (4); bank or card figure change and remove S and A (4); pay add on S after setup, end on S and A (3); Free to spend stop S and A (2, cards plan F1); goal change and remove on A, remove on S (3); take money out of a goal A (1); card change and close on A, close on S (3); bank, cash or e-wallet add, rename and close on S, close on A (4); loan close on S, and add, change, close, Undo on A (5); Keep at least change and remove on S (2); country or currency change S and A (2). Only cards plan F1 needs the base.
-
-FOR THE BUILDER (no base change)
-1. landed without a date ticks the latest occurrence (chat3_core.js:577): back after three weeks, "I got paid" ticks only the newest wage and merges three periods. Tick each landed occurrence oldest first and say how many.
-2. bank_figure has no date: "it showed 204,000 yesterday" is stamped today (M37).
-3. On Sat 5 Dec "rent came out" is refused as "nothing expected now" because rent lands Mon 7 Dec: a real early debit cannot be recorded.
-4. A card payment made early or in part has no door on either side.
+FOR THE BUILDER (no base change, small)
+1. not: takes a schedule ref, so it unticks every occurrence of that pay or bill. A weekly or two-weekly earner back after a while whose newest pay has not landed yet can only untick all of them; the older ones then land after the figure (the run1 kind of error, smaller and only when they say so). Let not take one occurrence (ref plus date), or untick only the newest.
+2. The figure card adds "(my guess)" whenever the figure was not typed in this chat turn; with ticks it also asks first, so nothing goes in silently. Not a fault, a note for the wording run.
 
 WATCH
-Couples: owner null on every account and pay; people unused. Mixed builds: CASH_PLAN adds pct, each, holds, home.way; bump the format or make older builds keep unknown fields before cashplan ships. Reading files (M99): a batch should be one door step; F1 applies to any figure a file reader writes. Server settings to show Mako: the API key (on since 24 Nov); the D1 binding for the relay cap (/api/health "vault": true); the live write limit (device 1,200, assumes 1,500); the Anthropic monthly spend limit (never confirmed); no session has run the real AI.
+- The saved check-in still does not record which items it listed (option a, a later slice with its own plan). Any new writer of a figure (statement or screenshot reader, M2 M9 M99, the cloud copy merging a check from the other phone) must list and tick the way the screen and now the assistant do, or F1 comes back on that path. Put a test like chatfig in each such slice.
+- Ticked by default relies on the person reading the card: a person whose bank figure still includes rent who taps OK gets a 72,000 gain asked about by the engine (gain_to_ask), not a silent error.
+- Server settings to show Mako, unchanged from run1: the API key, the relay database binding (/api/health "vault": true), the live write limit (device 1,200 assumes 1,500), the Anthropic monthly spend limit; nobody has run the real AI.
 
-CHECKED AND SOUND: the dated startsPeriod and the saved Undo journal are merged; the fill refuses until every required answer is in; the Philippine holiday shift; figures for twice a month, weekly, every two weeks on pay day, freelance and the couple right to the minor unit; moves by chat only between own accounts; an ATM withdrawal leaves safe to spend unchanged; a wallet check gap comes off Free to spend (M95); a refund onto a card lowers what is owed; a card figure gap comes off Free to spend; stale refs refused.
+CHECKED AND SOUND
+The fix uses the engine's own list and the same check-in fields as the screen; landedFrom (checkin.js:75-90) unchanged; card payments go by the paying account; Undo of the check reverses figure and ticks together; nothing expected keeps the old behaviour; the "not" path leaves items expected and a later tick lands after the figure, which is right.
 
-NOT CHECKED: the page in a browser. Scripts: MAIN 24's scratchpad fw/ (h.js, l1.js to l5.js).
-
-Worked example confirmed by MAIN 24 (l4.js, 26 Nov): Main 286,000, rent 72,000 out 27 Nov, 10,000 spent; "my bank shows 204,000" on 30 Nov: Main 204,000, free left -50,000, rent still expected; "rent came out" on 1 Dec: Main 132,000 (should stay 204,000), free left -50,000 (should be 50,000).
+NOT CHECKED: the page in a browser; the real AI choosing not: from free words.
