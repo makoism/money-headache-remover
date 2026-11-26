@@ -34,7 +34,7 @@ async function opened(p) { await p.goto(T.URL0 + '?today=' + DAY); await T.w(700
       await p2.$eval('#a3SetupSave', e => e.click()).catch(() => {}); await T.w(900);
     }
     const said = await p2.evaluate(() => document.body.innerText);
-    ck('tab 2 says setup was finished in another tab', /Setup was finished in another tab/.test(said), said.slice(0, 300));
+    ck('tab 2 says the money was set up in another tab, and that what was typed there was not saved', /Your money was set up in another tab, so this tab shows it now\. What you typed here was not saved/.test(said), said.slice(0, 300));
     ck('tab 2 shows the finished book: Main bank 286,000', JSON.stringify(await bankOnHome(p2)) === '[286000]', JSON.stringify(await bankOnHome(p2)));
     for (const [n, p] of [['tab 1', p1], ['tab 2', p2]]) {
       await p.reload(); await T.w(900);
@@ -43,5 +43,30 @@ async function opened(p) { await p.goto(T.URL0 + '?today=' + DAY); await T.w(700
     ck('no page errors', !errs.length, errs.join(' | '));
   } catch (e) { ck('the check ran to its end', false, e.stack); }
   finally { await b.close(); }
+  /* second case: tab 2 is on the first screen, the setup chat (coordinator 17): it takes in the finished book as soon as
+     tab 1 saves it, says so, and a reload of tab 2 shows the same */
+  {
+    const { b, p: p1, errs } = await T.open({ profile: fs.mkdtempSync(os.tmpdir() + '/a3tabsetup-') });
+    try {
+      await opened(p1);
+      const p2 = await b.newPage(); await p2.setViewport({ width: 390, height: 844 });
+      await p2.goto(T.URL0 + '?today=' + DAY); await T.w(700);
+      ck('chat: tab 2 is on the setup chat', !!(await p2.$('#a3Home #a3ChatIn')));
+      await typeIn(p1, '#s3BankName', 'Main bank'); await typeIn(p1, '#s3Bank', '286000'); await save(p1, 'bank'); await T.w(500);
+      await typeIn(p1, '#s3PayAmt', '240000'); await save(p1, 'pay'); await T.w(500);
+      for (const sec of ['free', 'min']) { if (await p1.$(`[data-save=${sec}]`)) { await save(p1, sec); await T.w(300); } }
+      await p1.$eval('#a3SetupSave', e => e.click()); await T.w(1500);
+      const said = await p2.evaluate(() => document.body.innerText);
+      ck('chat: tab 2 says the money was set up in another tab (nothing was typed there, so nothing about typing)', /Your money was set up in another tab, so this tab shows it now/.test(said) && !/What you typed here/.test(said), said.slice(0, 300));
+      /* [qc-foundation 1] a start asked after the book was taken in never writes over it, whatever the screens do */
+      const st = await p2.evaluate(async () => { const E3 = BurrowApp3.E3, b = JSON.parse(JSON.stringify(E3.book)); b.events = []; const ok = await E3.start(b); return { ok, why: E3.startWhy, evs: E3.book.events.length }; });
+      ck('chat: a start after the take-in is refused as there, and the book is kept', st.ok === false && st.why === 'there' && st.evs > 0, JSON.stringify(st));
+      ck('chat: tab 2 shows the finished book without a reload', JSON.stringify(await bankOnHome(p2)) === '[286000]', JSON.stringify(await bankOnHome(p2)));
+      await p2.reload(); await T.w(900);
+      ck('chat: tab 2 after a reload: Main bank 286,000', JSON.stringify(await bankOnHome(p2)) === '[286000]', JSON.stringify(await bankOnHome(p2)));
+      ck('chat: no page errors', !errs.length, errs.join(' | '));
+    } catch (e) { ck('chat: the check ran to its end', false, e.stack); }
+    finally { await b.close(); }
+  }
   T.done('e3_tabsetup');
 })().catch(e => { console.log('FAIL crashed ' + e.stack); process.exit(1); });

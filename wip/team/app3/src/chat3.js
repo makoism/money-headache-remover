@@ -77,7 +77,7 @@ function chat3Deps() {
   return {
     send: chat3Send, today: () => E3.today(), told: () => E3.told(), newId: () => E3.newId(),
     book: () => E3.book, mode: () => E3.mode, door: E3.book ? ACT3 : null,
-    start: b => E3.fill(b), discard: () => E3.discard(),
+    start: b => E3.fill(b), discard: () => E3.discard(), why: () => E3.startWhy,
     anon: CHAT3.anon || '', invite: chat3Invite(), screen: chat3Screen, sheet: chat3Sheet,
   };
 }

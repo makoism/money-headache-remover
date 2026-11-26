@@ -8524,7 +8524,7 @@ const E3 = (() => {
       const r = await store.load();
       readOnly = !!r.readOnly;
       if (!r.empty && r.copy) { book = r.copy; mode = 'kept'; }
-      store.onOther(ch => { if (joinIn(ch)) shown(); });   // another tab saved: take it in and draw it
+      store.onOther(ch => { if (joinIn(ch)) shown(); else if (!book && mode === 'none') adopt(); });   // another tab saved: take it in and draw it
       hold = !!(mode === 'kept' && r.device && r.device.fillHold);
     } catch (e) { store = null; }
   }
@@ -8539,6 +8539,18 @@ const E3 = (() => {
     const byId = (mine, theirs) => { const m = new Map((mine || []).map(r => [r.id, r])); for (const r of theirs || []) m.set(r.id, r); return [...m.values()]; };
     const rest = ch.book || BurrowStore.bookOf(book);
     book = Object.assign({}, rest, { events: byId(book.events, ch.events), keptVersions: byId(book.keptVersions, ch.keptVersions), rev: ch.rev, at: book.at });
+    return true;
+  }
+  /* [TABSETUP_PLAN 1, qc-data-safety run 4 blocker 1; M61] this page has no book and another tab made one (setup
+     finished there): read it from the store and take it in; nothing is written. The screens are told with
+     'burrow3:started' (setup and the chat close onto Home and say so). Gives true when a book was taken in */
+  async function adopt() {
+    if (!store || mode !== 'none') return false;
+    let r; try { r = await store.load(); } catch (e) { return 'error'; }
+    if (!r || r.empty || !r.copy || mode !== 'none') return false;
+    book = r.copy; mode = 'kept'; readOnly = !!r.readOnly;
+    hold = !!(r.device && r.device.fillHold);   // [qc-foundation 3] a chat fill still held in the other tab stays held here
+    try { root3.dispatchEvent(new CustomEvent('burrow3:started', { detail: { held: hold } })); } catch (e) { /* a screen's own fault */ }
     return true;
   }
   function shown() { try { root3.dispatchEvent(new CustomEvent('burrow3:other')); } catch (e) { /* a screen's own fault */ } }
@@ -8556,7 +8568,18 @@ const E3 = (() => {
   /* refused as behind: take in what the other tab saved (this page's book becomes the latest) */
   async function catchUp() { const ch = await store.catchUp(); joinIn(ch); return book; }
   /* setup3's new book: kept from now on */
+  /* [TABSETUP_PLAN 2] never over a book another tab made: under one lock across tabs the store is read first; a book
+     there is taken in (adopt), nothing is written, and E3.startWhy says 'there' */
+  let startWhy = null;
   async function start(newBook) {
+    const run = () => startNow(newBook);
+    return root3.navigator && root3.navigator.locks ? root3.navigator.locks.request('burrow3-start', run) : run();
+  }
+  async function startNow(newBook) {
+    startWhy = null;
+    /* [qc-foundation 1] a book already here (taken in from another tab) is never written over, whatever the screens do */
+    if (mode !== 'none') { startWhy = 'there'; return false; }
+    if (store) { const a = await adopt(); if (a === 'error') { startWhy = 'error'; return false; } if (a) { startWhy = 'there'; return false; } }
     const before = { book, mode };
     book = newBook; mode = 'kept';
     const ok = await save({ full: true });
@@ -8668,7 +8691,7 @@ const E3 = (() => {
      release(): something else was written, so the fill can no longer be undone: the mark goes and the cloud copy may send. */
   let hold = false;
   async function fill(newBook) {
-    if (mode !== 'none') return false;
+    if (mode !== 'none') { startWhy = 'there'; return false; }   // [qc-foundation 2]
     if (!(await start(newBook))) return false;
     hold = true;
     await rec('fillHold', true);
@@ -8692,7 +8715,7 @@ const E3 = (() => {
   /* is a the day before b (two YYYY-MM-DD days) */
   const dayBefore = (a, b) => BurrowEngine.dates.dayNum(b) - BurrowEngine.dates.dayNum(a) === 1;
   return { today, setToday, useTry, leaveTry, start, fill, discard, release, held: () => hold, told, dayBefore, newId, load, view, nameOf, occName, lastCheckOf, curOf, home, put, replace, rec, recEdit, onSaved: f => savedFns.push(f),
-    get book() { return book; }, get mode() { return mode; } };
+    get book() { return book; }, get mode() { return mode; }, get startWhy() { return startWhy; } };
 })();
 /* ---------- act3: the one door for every write in app3 (SCHEMA_V3 section 0; DECISIONS_ROUND2 H6, D2, BD4) ----------
    Every change a person makes goes through here as one named step: one save, one redraw, one Undo. Nothing here works
@@ -11076,6 +11099,19 @@ if (ACT3) ACT3.onChange(() => { if (!PL3.form) renderPlan3(); });
    answers into a book through engine/build_book.js and keeps it through the store (the draft section below says
    how). Nothing is worked out here. The words are drafts for Mako's copy pass. */
 /* [qc-controls run 1 blocker 2, coordinator 16's ruling B] setup has no step for these: its last step says where they go */
+/* [TABSETUP_PLAN 3, coordinator 17] setup finished in another tab while this one was still on setup (the screens or the
+   chat): this tab closes onto Home with the book from there, and says so; nothing typed here is written */
+/* [qc-foundation 4, 5] the line says what was typed here only when something was (setup open, or the chat's setup
+   answers); a fill still held in the other tab is said; the setup draft as stored is cleared, so it never comes back */
+addEventListener('burrow3:started', e => {
+  const st = typeof CHAT3 !== 'undefined' && CHAT3.state, typed = !!setup3 || !!(st && st.draft);
+  if (setup3) endSetup3();
+  draftWrite3(null).catch(() => {});
+  renderHome3();
+  if (typeof renderChat3 === 'function') renderChat3();
+  const held = e && e.detail && e.detail.held;
+  msg3('Your money was set up in another tab, so this tab shows it now' + (held ? '. It can still be undone in that tab' : '') + (typed ? '. What you typed here was not saved' : ''));
+});
 const SETUP3_LATER = 'Loans, goals and budget lines like Gifts are not part of setup. Add them on Plan after this: Add a loan, Add a goal, Add a line';
 let setup3 = null;
 function dayOptions3(sel, extra) {
@@ -11654,6 +11690,7 @@ async function saveSetup3() {
   let built;
   try { built = ANSWERS3.build(ans, { day: E3.today(), told: E3.told(), newId: E3.newId, currency: $('#s3Cur').value }); } catch (e) { err.textContent = e.message; return; }
   const ok = await E3.start(built.book);
+  if (!ok && E3.startWhy === 'there') return;   // another tab finished setup: its book is shown and said (burrow3:started)
   if (!ok) { err.textContent = 'This could not be saved on this device. Nothing changed'; return; }
   endSetup3();   // first: no typed-keeping write is asked after this
   await draftWrite3(null);
@@ -14377,6 +14414,8 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
   }
   /* [CONFUSING 1, coordinator 16's ruling b] what a turn did: a refused step tells the person in a note; a turn where
      steps were refused and nothing was written or asked marks the AI's words as not done (never changed or hidden) */
+  /* [TABSETUP_PLAN 4] the fill found a book another tab made: the same words as the setup screens */
+  const OTHER_TAB = 'Your money was set up in another tab, so this tab shows it now. What you typed here was not saved';
   const DONE_WORDS = 'The app did not do this: nothing was added';
   function refused(frame, state, shown, deps, text) {
     if (frame) frame.refused++;
@@ -14597,7 +14636,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     const told = deps.told();
     let built;
     try { built = ANS.build(state.draft, { day: today, told, newId: deps.newId }); } catch (e) { return { state, shown, ok: false, text: e.message }; }
-    if (!(await deps.start(built.book))) return { state, shown, ok: false, text: 'This could not be saved on this device. Nothing changed' };
+    if (!(await deps.start(built.book))) return { state, shown, ok: false, text: deps.why && deps.why() === 'there' ? OTHER_TAB : 'This could not be saved on this device. Nothing changed' };
     const v = LA.lookahead(built.book, today), main = built.ids.bank1;
     state.fill = { at: told, told, day: today };
     state.wrote = true;   // [M6] what was typed for setup is not typed for a later change
@@ -14750,7 +14789,7 @@ function chat3Deps() {
   return {
     send: chat3Send, today: () => E3.today(), told: () => E3.told(), newId: () => E3.newId(),
     book: () => E3.book, mode: () => E3.mode, door: E3.book ? ACT3 : null,
-    start: b => E3.fill(b), discard: () => E3.discard(),
+    start: b => E3.fill(b), discard: () => E3.discard(), why: () => E3.startWhy,
     anon: CHAT3.anon || '', invite: chat3Invite(), screen: chat3Screen, sheet: chat3Sheet,
   };
 }

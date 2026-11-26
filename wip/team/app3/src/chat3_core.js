@@ -808,6 +808,8 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
   }
   /* [CONFUSING 1, coordinator 16's ruling b] what a turn did: a refused step tells the person in a note; a turn where
      steps were refused and nothing was written or asked marks the AI's words as not done (never changed or hidden) */
+  /* [TABSETUP_PLAN 4] the fill found a book another tab made: the same words as the setup screens */
+  const OTHER_TAB = 'Your money was set up in another tab, so this tab shows it now. What you typed here was not saved';
   const DONE_WORDS = 'The app did not do this: nothing was added';
   function refused(frame, state, shown, deps, text) {
     if (frame) frame.refused++;
@@ -1028,7 +1030,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     const told = deps.told();
     let built;
     try { built = ANS.build(state.draft, { day: today, told, newId: deps.newId }); } catch (e) { return { state, shown, ok: false, text: e.message }; }
-    if (!(await deps.start(built.book))) return { state, shown, ok: false, text: 'This could not be saved on this device. Nothing changed' };
+    if (!(await deps.start(built.book))) return { state, shown, ok: false, text: deps.why && deps.why() === 'there' ? OTHER_TAB : 'This could not be saved on this device. Nothing changed' };
     const v = LA.lookahead(built.book, today), main = built.ids.bank1;
     state.fill = { at: told, told, day: today };
     state.wrote = true;   // [M6] what was typed for setup is not typed for a later change
