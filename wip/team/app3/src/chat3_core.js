@@ -633,7 +633,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       for (const o of g.yes) said.push(`${PW().payName(book, o)} left your bank`);
       for (const o of g.no) said.push(`${PW().payName(book, o)} not gone yet`);
       /* [CONFUSING 4] far from what the app shows still owed: the change card asks first (s.far, as for a far bank figure) */
-      const far = PW().loanFar(book, id, x, d);
+      const far = PW().loanFar(book, id, x, d, { ticked: g.yes, expected: g.expected, lands: g.lands });   // [coordinator 18] after the Yes ticks
       return Object.assign({ kind: 'checkLoan', args: [id, { amount: x, date: d, answers }], text: [`${rec.name} still owed ${m(x, rec.cur)} ${on(d)}`].concat(said).join(', '), amount: 0, figs: [x] }, far ? { far } : {});
     }
     if (what === 'bank_figure' || what === 'card_figure') {

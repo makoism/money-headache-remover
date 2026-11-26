@@ -452,8 +452,8 @@ async function plLoanCheck3(a) {
     /* [CONFUSING 4] far from what the app shows still owed that day: asked once (PLAN3W.loanFar), after the sheet's own
        refusals so a question is never asked about a figure that would not be taken */
     const answers = loanQsRead3(qsHost), key = JSON.stringify([v.amount, v.day]);
-    try { PLAN3W.loanCheckArgs(E3.book, E3.today(), a.id, { amount: v.amount, date: v.day, answers }); } catch (e) { err.textContent = e.message; return; }
-    const far = PLAN3W.loanFar(E3.book, a.id, v.amount, v.day);
+    let g; try { g = PLAN3W.loanCheckArgs(E3.book, E3.today(), a.id, { amount: v.amount, date: v.day, answers }); } catch (e) { err.textContent = e.message; return; }
+    const far = PLAN3W.loanFar(E3.book, a.id, v.amount, v.day, { ticked: g.yes, expected: g.expected, lands: g.lands });   // [coordinator 18] after the Yes ticks
     if (far && farOk !== key) { err.textContent = ''; farSure3($('#plLcFar'), far, () => { farOk = key; $('#plLcSave').click(); }, () => $('#plLcAmt').focus()); return; }
     const res = await ACT3.run('checkLoan', w => PLAN3W.checkLoan(w, a.id, { amount: v.amount, date: v.day, answers }), { undo: `${a.name}: still owed ${money3(v.amount, cur)} saved` });
     if (!res.ok) { err.textContent = res.text; return; }   // a draft stays as it was

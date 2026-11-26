@@ -511,6 +511,22 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     eq(W.loanFar(h.book, h.loan, 840000, DAY), null);
     eq(W.loanFar(h.book, h.loan, 845000, '2026-12-01'), null, 'by the day typed: 870,000 owed on 1 Dec');
   });
+  /* [coordinator 18, qc-numbers loancheck_build confirm1 "WRONG FIGURE"] what the app expects a loan to owe counts the ticks
+     made above it in the same sheet (or the Yes answers on Plan's sheet and the assistant): one shared piece, loanExpected,
+     read by the far question (loanFar) and Check your bank's "The app has ..." line. 3 Feb, 27 Jan unticked: 840,000;
+     with its 30,000 ticked: 810,000 by hand, so 100 typed is 809,900 less, not 839,900 */
+  await tk('loanExpected and loanFar count the ticks made with the check: 100 with the 27 Jan tick is 809,900 less than 810,000', async () => {
+    const h = await kenji(); DAY = '2027-02-03';
+    const occ = h.occ('2027-01-27'), m = x => SMF.format(x, 'JPY');
+    const ticks = { ticked: [occ], expected: { [occ]: 30000 }, lands: { [occ]: '2027-01-27' } };
+    eq(W.loanExpected(h.book, h.loan, DAY), { owed: 840000, before: 840000, ticked: false });
+    eq(W.loanExpected(h.book, h.loan, DAY, ticks), { owed: 810000, before: 840000, ticked: true });
+    eq(W.loanExpected(h.book, h.loan, DAY, { ticked: [], expected: {} }), { owed: 840000, before: 840000, ticked: false }, 'unticked: the same');
+    eq(W.loanFar(h.book, h.loan, 100, DAY), `That is ${m(839900)} less than expected. Is ${m(100)} right?`);
+    eq(W.loanFar(h.book, h.loan, 100, DAY, ticks), `That is ${m(809900)} less than expected. Is ${m(100)} right?`);
+    eq(W.loanFar(h.book, h.loan, 812400, DAY, ticks), null);
+    ok(!h.book.events.some(e => e.id === 'set:' + occ), 'the book is not changed');
+  });
   /* [qc-numbers loancheck_build CONFUSING 1, LESSONS 2] one payment, one date: 27 Dec 2026 is a Sunday, so a loan paid on
      the 27th with the weekend rule "after" pays on Monday 28 Dec. Every place that names that payment says 28 Dec, through
      one shared piece (payDay / payName); its id stays <loan>@2026-12-27 */

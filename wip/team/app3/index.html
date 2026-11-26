@@ -9609,9 +9609,22 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
   /* [qc-numbers loancheck_build CONFUSING 4] a loan figure far from what the app shows still owed on that day asks once
      before it is saved: the bank check's one rule (engine/checkin.js farFigure, with the usual pay) in its words
      (screens/status.js farText). Plan's loan sheet, Check your bank and the assistant all ask by this; null when near */
-  function loanFar(book, id, amount, day) {
+  /* [coordinator 18, qc-numbers loancheck_build confirm1] what the app expects the loan to owe on `day`, counting the ticks
+     made with the check (ci: { ticked, expected, lands, landed, amounts }, as the check-in writer takes them; only this
+     loan's payments count): the engine on the book that check-in would make with no figure. One piece for the far
+     question (loanFar) and Check your bank's "The app has ..." line. { owed, before (no ticks), ticked (they changed it) } */
+  function loanExpected(book, id, day, ci) {
+    const o = owedOn(book, day, id), before = o ? o.owedNow : null;
+    const t = ((ci && ci.ticked) || []).filter(x => String(x).startsWith(id + '@'));
+    if (!o || !t.length) return { owed: before, before, ticked: false };
+    const out = CK.checkIn(book, { day, told: day + 'T12:00:00.000+00:00', newId: IDS.idMaker('zexpct', () => 0.5), figures: {}, ticked: t, unticked: [],
+      expected: ci.expected || {}, amounts: ci.amounts || {}, lands: ci.lands || {}, landed: ci.landed || {} });
+    const after = (owedOn(CK.apply(book, out), day, id) || {}).owedNow;
+    return { owed: after, before, ticked: after !== before };
+  }
+  function loanFar(book, id, amount, day, ci) {
     const o = owedOn(book, day, id), a = (book.accounts || []).find(y => live(y) && y.id === id) || {};
-    const f = o ? CK.farFigure(o.owedNow, amount, CK.usualPay(book, day)) : null;
+    const f = o ? CK.farFigure(loanExpected(book, id, day, ci).owed, amount, CK.usualPay(book, day)) : null;
     const ST = node ? require('../../screens/status.js') : root.BurrowScreens.status;
     return f ? ST.farText(f, amount, v => SMF.format(v, a.cur || G.homeOn(book, day))) : null;
   }
@@ -9863,7 +9876,7 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     return id;
   }
 
-  const api = { addPay, addAccount, changeAccount, closeAccount, reopenAccount, removeAccount, payOff, setKeep, setCountry, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan, checkLoan, loanQuestions, loanCheckArgs, payDay, payName, loanFar };
+  const api = { addPay, addAccount, changeAccount, closeAccount, reopenAccount, removeAccount, payOff, setKeep, setCountry, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan, checkLoan, loanQuestions, loanCheckArgs, payDay, payName, loanFar, loanExpected };
   if (node) module.exports = api;
   else root.PLAN3W = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
@@ -10209,7 +10222,7 @@ function openCheck3() {
   const loans = (E3.book.accounts || []).filter(a => a && !a.gone && a.type === 'loan' && !a.closed && r.owed[a.id]);
   const loanFigs = loans.map(a => `<div class="a3-field"><label for="a3o-${esc3(a.id)}">Still owed on ${esc3(a.name)} today</label>
       <input class="a3-in" data-amount type="text" inputmode="decimal" autocomplete="off" id="a3o-${esc3(a.id)}" data-loanfig="${esc3(a.id)}" placeholder="${esc3(SM.symbol(E3.curOf(a.id)).trim())}">
-      <p class="a3-sub">Leave it blank if you have not looked. The app has ${money3(r.owed[a.id].owedNow, E3.curOf(a.id))}</p>
+      <p class="a3-sub">Leave it blank if you have not looked. <span data-loanexp="${esc3(a.id)}">The app has ${money3(r.owed[a.id].owedNow, E3.curOf(a.id))}</span></p>
       <div data-loanqs="${esc3(a.id)}">${loanQsHtml3(PLAN3W.loanQuestions(E3.book, day, a.id, day).filter(q => !onList.has(q.occ)))}</div></div>`).join('');
   const sheet = $('#a3Check');
   sheet.innerHTML = `<div class="a3-sheet-in">
@@ -10225,6 +10238,7 @@ function openCheck3() {
   sheet.querySelectorAll('[data-cardfig]').forEach(el => BurrowScreens.inputs.bind(el, { kind: 'amount', code: E3.curOf(el.dataset.cardfig), optional: true }));
   sheet.querySelectorAll('[data-loanfig]').forEach(el => BurrowScreens.inputs.bind(el, { kind: 'amount', code: E3.curOf(el.dataset.loanfig), optional: true }));
   loanQsBind3(sheet);
+  sheet.querySelectorAll('[data-lcans]').forEach(el => el.addEventListener('click', checkPreview3));   // a Yes under a loan is a tick too
   sheet.querySelectorAll('input, select').forEach(el => { el.addEventListener('input', checkPreview3); el.addEventListener('change', checkPreview3); });
   sheet.querySelectorAll('[data-gapyes]').forEach(el => el.addEventListener('click', () => { check3.sure[el.dataset.gapyes] = true; checkPreview3(); }));
   /* [card payment question] Yes ticks that card's payment on the list above; what is typed stays */
@@ -10297,12 +10311,20 @@ function readCheck3(strict) {
     let g;
     try { g = PLAN3W.loanCheckArgs(E3.book, check3.day, id, { amount: v, answers }, { sameIsNothing: false }); } catch (e) { return bad(e.message, el); }
     figures[id] = v;
-    const fw = PLAN3W.loanFar(E3.book, id, v, check3.day);   // [CONFUSING 4] asked once before saving
-    if (fw) loanFar.push({ id, v, text: fw });
     for (const occ of g.yes) if (!ticked.includes(occ)) { ticked.push(occ); expected[occ] = g.expected[occ]; lands[occ] = g.lands[occ]; }
+    /* [CONFUSING 4] asked once before saving; [coordinator 18] against what the app expects after the ticks above */
+    const fw = PLAN3W.loanFar(E3.book, id, v, check3.day, { ticked, expected, lands, landed, amounts });
+    if (fw) loanFar.push({ id, v, text: fw });
     if (g.no.length) notYet[id] = g.no;
   }
   return { figures, ticked, amounts, expected, lands, landed, notYet, loanFar };
+}
+/* [coordinator 18] the ticks a loan's figure is read with: the list's, and a Yes answered under the loan */
+function loanCi3(d, id) {
+  const host = $('#a3Check').querySelector(`[data-loanqs="${CSS.escape(id)}"]`), ans = host ? loanQsRead3(host) : {};
+  const ticked = d.ticked.slice(), expected = Object.assign({}, d.expected), lands = Object.assign({}, d.lands);
+  for (const q of PLAN3W.loanQuestions(E3.book, check3.day, id, check3.day)) if (ans[q.occ] === 'yes' && !ticked.includes(q.occ)) { ticked.push(q.occ); expected[q.occ] = q.amount; lands[q.occ] = q.day; }
+  return { ticked, expected, lands, landed: d.landed, amounts: d.amounts };
 }
 const checkOut3 = d => BurrowEngine.checkin.checkIn(E3.book, { day: check3.day, told: E3.told(), newId: E3.newId, figures: d.figures, ticked: d.ticked, unticked: [], amounts: d.amounts, expected: d.expected, lands: d.lands, landed: d.landed, notYet: d.notYet && Object.keys(d.notYet).length ? d.notYet : undefined });
 const checkView3 = out => BurrowEngine.lookahead.lookahead(BurrowEngine.checkin.apply(E3.book, out), check3.day);
@@ -10364,6 +10386,11 @@ function checkPreview3() {
     if (a) el.textContent = `Expected now ${money3(a.bank, a.currency)}, last checked ${money3(a.checked, a.currency)} on ${day3(a.asOf, yr)}`;
     /* [BM4, BL5] a card in credit is written the way Home writes it, "in credit ¥3,000", never with a minus */
     else if (r0.cards[id]) { const c = E3.lastCheckOf(id, check3.day), k = r0.cards[id]; el.textContent = `Expected now ${k.credit ? label3('inCredit').toLowerCase() + ' ' + money3(k.credit, E3.curOf(id)) : money3(k.owedNow, E3.curOf(id))}${c ? `, last checked ${money3(c.a, E3.curOf(id))} on ${day3(c.date, yr)}` : ''}`; }
+  }
+  /* [coordinator 18] the loan's "The app has ...": the same piece as its far question (PLAN3W.loanExpected), after the ticks */
+  for (const el of sheet.querySelectorAll('[data-loanexp]')) {
+    const id = el.dataset.loanexp, e = PLAN3W.loanExpected(E3.book, id, check3.day, loanCi3(d, id));
+    if (e.owed != null) el.textContent = `The app has ${money3(e.owed, E3.curOf(id))}${e.ticked ? ' after the ticks above' : ''}`;
   }
   check3.payAsk = payAsks3(d, r1);
   for (const el of sheet.querySelectorAll('[data-payask]')) {
@@ -11304,8 +11331,8 @@ async function plLoanCheck3(a) {
     /* [CONFUSING 4] far from what the app shows still owed that day: asked once (PLAN3W.loanFar), after the sheet's own
        refusals so a question is never asked about a figure that would not be taken */
     const answers = loanQsRead3(qsHost), key = JSON.stringify([v.amount, v.day]);
-    try { PLAN3W.loanCheckArgs(E3.book, E3.today(), a.id, { amount: v.amount, date: v.day, answers }); } catch (e) { err.textContent = e.message; return; }
-    const far = PLAN3W.loanFar(E3.book, a.id, v.amount, v.day);
+    let g; try { g = PLAN3W.loanCheckArgs(E3.book, E3.today(), a.id, { amount: v.amount, date: v.day, answers }); } catch (e) { err.textContent = e.message; return; }
+    const far = PLAN3W.loanFar(E3.book, a.id, v.amount, v.day, { ticked: g.yes, expected: g.expected, lands: g.lands });   // [coordinator 18] after the Yes ticks
     if (far && farOk !== key) { err.textContent = ''; farSure3($('#plLcFar'), far, () => { farOk = key; $('#plLcSave').click(); }, () => $('#plLcAmt').focus()); return; }
     const res = await ACT3.run('checkLoan', w => PLAN3W.checkLoan(w, a.id, { amount: v.amount, date: v.day, answers }), { undo: `${a.name}: still owed ${money3(v.amount, cur)} saved` });
     if (!res.ok) { err.textContent = res.text; return; }   // a draft stays as it was
@@ -14602,7 +14629,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       for (const o of g.yes) said.push(`${PW().payName(book, o)} left your bank`);
       for (const o of g.no) said.push(`${PW().payName(book, o)} not gone yet`);
       /* [CONFUSING 4] far from what the app shows still owed: the change card asks first (s.far, as for a far bank figure) */
-      const far = PW().loanFar(book, id, x, d);
+      const far = PW().loanFar(book, id, x, d, { ticked: g.yes, expected: g.expected, lands: g.lands });   // [coordinator 18] after the Yes ticks
       return Object.assign({ kind: 'checkLoan', args: [id, { amount: x, date: d, answers }], text: [`${rec.name} still owed ${m(x, rec.cur)} ${on(d)}`].concat(said).join(', '), amount: 0, figs: [x] }, far ? { far } : {});
     }
     if (what === 'bank_figure' || what === 'card_figure') {

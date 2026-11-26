@@ -446,9 +446,22 @@
   /* [qc-numbers loancheck_build CONFUSING 4] a loan figure far from what the app shows still owed on that day asks once
      before it is saved: the bank check's one rule (engine/checkin.js farFigure, with the usual pay) in its words
      (screens/status.js farText). Plan's loan sheet, Check your bank and the assistant all ask by this; null when near */
-  function loanFar(book, id, amount, day) {
+  /* [coordinator 18, qc-numbers loancheck_build confirm1] what the app expects the loan to owe on `day`, counting the ticks
+     made with the check (ci: { ticked, expected, lands, landed, amounts }, as the check-in writer takes them; only this
+     loan's payments count): the engine on the book that check-in would make with no figure. One piece for the far
+     question (loanFar) and Check your bank's "The app has ..." line. { owed, before (no ticks), ticked (they changed it) } */
+  function loanExpected(book, id, day, ci) {
+    const o = owedOn(book, day, id), before = o ? o.owedNow : null;
+    const t = ((ci && ci.ticked) || []).filter(x => String(x).startsWith(id + '@'));
+    if (!o || !t.length) return { owed: before, before, ticked: false };
+    const out = CK.checkIn(book, { day, told: day + 'T12:00:00.000+00:00', newId: IDS.idMaker('zexpct', () => 0.5), figures: {}, ticked: t, unticked: [],
+      expected: ci.expected || {}, amounts: ci.amounts || {}, lands: ci.lands || {}, landed: ci.landed || {} });
+    const after = (owedOn(CK.apply(book, out), day, id) || {}).owedNow;
+    return { owed: after, before, ticked: after !== before };
+  }
+  function loanFar(book, id, amount, day, ci) {
     const o = owedOn(book, day, id), a = (book.accounts || []).find(y => live(y) && y.id === id) || {};
-    const f = o ? CK.farFigure(o.owedNow, amount, CK.usualPay(book, day)) : null;
+    const f = o ? CK.farFigure(loanExpected(book, id, day, ci).owed, amount, CK.usualPay(book, day)) : null;
     const ST = node ? require('../../screens/status.js') : root.BurrowScreens.status;
     return f ? ST.farText(f, amount, v => SMF.format(v, a.cur || G.homeOn(book, day))) : null;
   }
@@ -700,7 +713,7 @@
     return id;
   }
 
-  const api = { addPay, addAccount, changeAccount, closeAccount, reopenAccount, removeAccount, payOff, setKeep, setCountry, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan, checkLoan, loanQuestions, loanCheckArgs, payDay, payName, loanFar };
+  const api = { addPay, addAccount, changeAccount, closeAccount, reopenAccount, removeAccount, payOff, setKeep, setCountry, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan, checkLoan, loanQuestions, loanCheckArgs, payDay, payName, loanFar, loanExpected };
   if (node) module.exports = api;
   else root.PLAN3W = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

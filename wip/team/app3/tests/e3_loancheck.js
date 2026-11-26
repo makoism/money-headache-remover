@@ -143,6 +143,20 @@ const saved = p => p.evaluate(async () => { const s = await BurrowStore.open(); 
     const label = await p2.$eval(`label[for="a3o-${LOAN}"]`, e => e.textContent).catch(() => '');
     ck('Check your bank: Car loan has a Still owed today box, blank, like a card\'s', label === 'Still owed on Car loan today' && (await p2.$eval(`[data-loanfig="${LOAN}"]`, e => e.value)) === '', label);
     ck('the 27 Jan payment is on the list above, so it is not asked again under the loan', !!(await p2.$(`.a3-tick[data-item="${occ}"]`)) && !(await p2.$(`[data-loanqs="${LOAN}"] [data-lcq]`)));
+    /* [coordinator 18] the loan's expected figure counts the ticks above it: the line and the far question, one piece */
+    const lexp = () => p2.$eval(`[data-loanexp="${LOAN}"]`, e => e.textContent.trim()).catch(() => '');
+    ck('the loan line counts the 27 Jan tick above: "The app has ¥810,000 after the ticks above" (840,000 - 30,000)', await lexp() === 'The app has ¥810,000 after the ticks above', await lexp());
+    const box27 = () => p2.$eval(`.a3-tick[data-item="${occ}"] input[type=checkbox]`, e => { e.click(); });
+    await box27(); await T.w(200);
+    ck('unticked: "The app has ¥840,000"', await lexp() === 'The app has ¥840,000', await lexp());
+    await box27(); await T.w(200);
+    await banks(); await loanBox('100');
+    const b100 = JSON.stringify(await saved(p2));
+    await save();
+    const f100 = await p2.$eval('#a3CheckFar [data-far] p', e => e.textContent).catch(() => '');
+    ck('100 typed with the 27 Jan tick: "That is ¥809,900 less than expected" (810,000 - 100), nothing saved', f100 === 'That is ¥809,900 less than expected. Is ¥100 right?' && JSON.stringify(await saved(p2)) === b100, f100);
+    await p2.click('#a3CheckFar [data-farfix]'); await T.w(200);
+    await p2.click('#a3CheckX'); await T.w(400); await open();
     /* blank: nothing written for the loan */
     await banks(); await p2.$eval(`.a3-tick[data-item="${occ}"] input[type=checkbox]`, e => { e.click(); }); await save();
     let bk = await saved(p2);
@@ -188,7 +202,7 @@ const saved = p => p.evaluate(async () => { const s = await BurrowStore.open(); 
     const text = sel => p3.$eval(sel, e => (e.hidden ? '' : e.textContent.replace(/\s+/g, ' ').trim())).catch(() => '');
     const val = sel => p3.$eval(sel, e => e.value).catch(() => null);
     const fill = async (sel, v) => { await p3.$eval(sel, e => { e.value = ''; }); await p3.type(sel, v); };
-    const far = 'That is ¥7,560,000 more than expected. Is ¥8,400,000 right?';
+    const far = 'That is ¥7,590,000 more than expected. Is ¥8,400,000 right?';   // Yes for 27 Jan: 840,000 - 30,000 = 810,000 [coordinator 18]
     /* Plan's loan sheet */
     await p3.tap('[data-tab="plan"]'); await T.w(300);
     await p3.evaluate(id => document.querySelector(`#a3Plan [data-owed="${id}"]`).click(), LOAN); await T.w(500);
@@ -196,7 +210,7 @@ const saved = p => p.evaluate(async () => { const s = await BurrowStore.open(); 
     await fill('#plLcAmt', '8400000');
     const b0 = JSON.stringify(await saved(p3));
     await p3.click('#plLcSave'); await T.w(500);
-    ck('Plan: 8,400,000 over 840,000 asks first, in the bank check\'s words, with Yes and Fix it', await text('#plLcFar [data-far] p') === far && !!(await p3.$('#plLcFar [data-faryes]')) && !!(await p3.$('#plLcFar [data-farfix]')), await text('#plLcFar'));
+    ck('Plan: 8,400,000 over 810,000 (840,000 after the Yes tick) asks first, in the bank check\'s words, with Yes and Fix it', await text('#plLcFar [data-far] p') === far && !!(await p3.$('#plLcFar [data-faryes]')) && !!(await p3.$('#plLcFar [data-farfix]')), await text('#plLcFar'));
     ck('Plan: nothing saved while it asks', JSON.stringify(await saved(p3)) === b0);
     await p3.click('#plLcFar [data-farfix]'); await T.w(300);
     ck('Plan: Fix it keeps the typed figure in the box, the question goes, nothing saved', (await val('#plLcAmt') || '').replace(/\D/g, '') === '8400000' && !(await text('#plLcFar')) && JSON.stringify(await saved(p3)) === b0);
