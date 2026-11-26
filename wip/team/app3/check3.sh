@@ -38,6 +38,7 @@ node|../../../tests/vault_server/relay_cap.test.mjs|relay_cap: ALL PASS||300|the
 node|tests/e3_stmt_read.js|e3_stmt_read: ALL PASS||300|statements, the reading half (pure)
 node|tests/e3_stmt_plan.js|e3_stmt_plan: ALL PASS||300|statements, the writing half (pure): lines, matching, records
 node|tests/plan3_write.test.js|plan3_write: ALL PASS||300|the Plan tab's steps (pure)
+node|tests/act3_sync.test.js|act3_sync: ALL PASS||300|the cloud copy's answers through the one write door (act3 answerSync): each kind, Undo after a reload, marked gone never deleted (WHICH_DOOR_PLAN, M61, M14, M20)
 node|tests/backup3.test.js|backup3: ALL PASS||300|the backup file's core
 node|tests/answers3.test.js|answers3: ALL PASS||300|answers3, the one answers-to-book function (BV1): same answers, same book
 node|tests/chat3_core.test.js|chat3_core: ALL PASS||300|the assistant's core with the fake model: Mako's setup chat to 201,400, before tax, a side job, a stale draft, a skipped question, changes with Undo (BU, BV, BW)
