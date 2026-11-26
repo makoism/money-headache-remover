@@ -167,7 +167,7 @@ function drawHome3() {
     const a = r.accounts[id];
     out.push(`<section class="a3-card" data-card="bank" data-acct="${esc3(id)}"><h2>${esc3(label3('bankToday'))}: ${esc3(E3.nameOf(id))}</h2>
       <p class="a3-big" data-fig="bank">${fig3('accounts.*.bank', a.bank, a.currency)}</p>
-      <p class="a3-sub" data-fig="age">${bankParts3(a, yr)}</p></section>`);
+      <p class="a3-sub" data-fig="age">${bankParts3(a, yr)}</p><button type="button" class="a3-link" data-checks="${esc3(id)}" aria-label="Checks of ${esc3(E3.nameOf(id))}">Checks</button></section>`);
   }
   /* safe to spend until next pay, with the sum behind it */
   const until = safeUntil3(r, yr, home);
@@ -201,7 +201,7 @@ function drawHome3() {
   /* the engine's warnings are data (account, amount, day, minimum or none): worded by screens/status.js, never its text;
      a lower point after the first day under is its own "Later on" line with its own day [B1] */
   const wctx = { currency: home, names, accounts: r.accounts };
-  const warns = (r.warnings || []).map(w => `<p class="a3-warn" data-warn="${esc3(w.code)}">${esc3(BurrowScreens.status.warningText(w, wctx))}</p>`
+  const warns = (r.warnings || []).map(w => `<p class="a3-warn" data-warn="${esc3(w.code)}">${esc3(BurrowScreens.status.warningText(w, wctx))}${w.code === 'gain_to_ask' ? ` <button type="button" class="a3-link" data-gainacct="${esc3(w.account)}">Answer</button>` : ''}</p>`
     + (w.later ? `<p class="a3-warn" data-warn="later_low">${esc3(BurrowScreens.status.laterLowText(w, wctx))}</p>` : '')
     + (BurrowScreens.status.moveText(w, wctx) ? `<p class="a3-next" data-fig="move-from">${esc3(BurrowScreens.status.moveText(w, wctx))}</p>` : '')).join('');
   out.push(`<section class="a3-card" data-card="safe">${helpHead3(`<h2>${esc3(label3('safeToSpend'))}${until}</h2>`, 'safeToSpend')}
@@ -249,7 +249,7 @@ function drawHome3() {
       const amt = k.credit ? `<span data-fig="credit">${esc3(label3('inCredit').toLowerCase())} ${fig3('cards.*.credit', k.credit, cur)}</span>` : `<span data-fig="owed">${fig3('cards.*.owedNow', k.owedNow, cur)}</span>`;
       /* [NS-FIX 7] the day this card's figure was last typed */
       const ck = E3.lastCheckOf(id, day), seen = ck ? `<br><span class="a3-age" data-fig="cardchecked">checked ${esc3(day3(ck.date, yr))}</span>` : '';
-      return `<li data-cardid="${esc3(id)}"><span>${esc3(E3.nameOf(id))}<br><span class="when">${when}</span>${seen}</span><span class="amt">${amt}</span></li>`;
+      return `<li data-cardid="${esc3(id)}"><span>${esc3(E3.nameOf(id))}<br><span class="when">${when}</span>${seen}<br><button type="button" class="a3-link" data-checks="${esc3(id)}" aria-label="Checks of ${esc3(E3.nameOf(id))}">Checks</button></span><span class="amt">${amt}</span></li>`;
     }).join('');
     /* [north star F3] Add a card opens Plan's own add-card form (planOpen3), never a second form */
     out.push(`<section class="a3-card" data-card="cards"><h2>${esc3(label3('owed'))} on your cards</h2>${cardIds.length ? `<ul class="a3-rows">${rows}${afterCards3(r, yr, day)}</ul>` : '<p class="a3-sub">No cards yet</p>'}<div class="a3-actions"><button type="button" class="a3-btn" id="a3AddCardGo">Add a card</button></div></section>`);
@@ -277,5 +277,9 @@ function drawHome3() {
   $('#a3AddCardGo').addEventListener('click', () => planOpen3('card'));
   if ($('#a3FreeGo')) $('#a3FreeGo').addEventListener('click', () => planOpen3('free'));
   $('#a3CheckGo').addEventListener('click', openCheck3);
+  /* [CHECKFIX] an account's figure, or its Checks link, opens its checks; a held gain's Answer opens its newest */
+  host.querySelectorAll('[data-checks]').forEach(el => el.addEventListener('click', () => openChecks3(el.dataset.checks)));
+  host.querySelectorAll('[data-card=bank] [data-fig=bank]').forEach(el => { el.setAttribute('role', 'button'); el.tabIndex = 0; el.addEventListener('click', () => openChecks3(el.closest('[data-acct]').dataset.acct)); });
+  host.querySelectorAll('[data-gainacct]').forEach(el => el.addEventListener('click', () => { const c = checks3List(el.dataset.gainacct)[0]; openChecks3(el.dataset.gainacct, c && c.id); }));
   $('#a3LogGo').addEventListener('click', rcLogFromHome3);
 }

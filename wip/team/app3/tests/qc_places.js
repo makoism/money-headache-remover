@@ -120,6 +120,7 @@ const PLACES = [
   plForm('a card', 'button[data-owed]:has-text("Card")'), plForm('Add a card', '#plAddCard'),
   plForm('Add a loan', '#plAddLoan'), plForm('a loan', 'button[data-owed]:has-text("Car loan")'),
   sheet('Check your bank', 'book', 'a3Check', '#a3CheckGo', '#a3CheckX'),
+  sheet('Checks of an account', 'book', 'a3Checks', '#a3Home [data-checks]', '#a3ChecksX'),
   sheet('Settings', 'book', 'a3Set', '#a3SetGo', '#a3SetClose'),
   sheet('Settings: a backup file locked with a code', 'book', 'a3Set', '#a3SetGo', '#a3SetClose', async p => { await p.check('#a3BkLock'); await w(120); }),
   sheet('Settings: I have a code', 'book', 'a3Set', '#a3SetGo', '#a3SetClose', async p => { await p.waitForSelector('#a3CloudHave', { timeout: 3000 }); await tap(p, '#a3CloudHave'); }),

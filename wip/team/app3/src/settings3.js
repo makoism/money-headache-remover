@@ -105,7 +105,7 @@ function openSet3() {
       ${money}${tryBook ? tryNote : `${changes}${device}${backup}${cloud}`}${word}${tryBook ? '' : ailog}
       <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3SetClose">Done</button></div></div>`;
   /* over whatever shows (the panels and the tab bar), put back as they were on Done */
-  SET3.was = [...document.querySelectorAll('[data-panel], .a3-tabs, #a3Check, #a3StmtBar, #a3Stmt')].map(el => [el, el.hidden]);
+  SET3.was = [...document.querySelectorAll('[data-panel], .a3-tabs, #a3Check, #a3Checks, #a3StmtBar, #a3Stmt')].map(el => [el, el.hidden]);
   SET3.was.forEach(([el]) => { el.hidden = true; }); sheet.hidden = false;
   $('#a3SetClose').addEventListener('click', closeSet3);
   paintWord3();

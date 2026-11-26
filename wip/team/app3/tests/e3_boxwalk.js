@@ -74,6 +74,8 @@ const NOT_WALKED = {
   'checkin3.js #a3cm${i}': 'the day a pay ticked after its due day came in: shown only after Another day is tapped (tests/e3_paycame.js)',
   'checkin3.js data-gapspend': 'a tick, shown once the bank figure typed is lower than expected (tests/e3_checkgap.js)',
   'checkin3.js data-gapline': 'a list, shown once the bank figure typed is lower than expected (tests/e3_checkgap.js)',
+  'checks3.js #a3CheckFig': 'a check\'s figure, on the Checks sheet once one check is opened (tests/e3_checkfix.js)',
+  'checks3.js #a3GapSel': 'where a check\'s gap goes, shown after Change on an opened check (tests/e3_checkfix.js)',
   'settings3.js #a3BkFile': 'the hidden file chooser behind Restore from a file (tests/e3_backup.js)',
   'settings3.js #a3BkOpen': 'the code for a locked backup file: needs a locked file chosen first (tests/e3_backup.js)',
   'stmt3.js data-readacct': 'a list in the review of a statement that was read (tests/e3_stmt.js)',

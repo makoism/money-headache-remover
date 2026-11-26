@@ -142,7 +142,7 @@
      (stateText). A new screen or sheet needs its row here: tests/chat3_core.test.js counts the rows and
      tests/e3_fakeai_page.js opens each of Plan's sheets. These are words for a person too: the wording lint reads them. */
   const SCREENS = {
-    home: { name: 'Home', does: 'Home shows what is safe to spend until your next pay, what each account holds today, what is due before pay, and your goals' },
+    home: { name: 'Home', does: 'Safe to spend until your next pay, what each account holds today, what is due before pay, and your goals' },
     plan: { name: 'Plan', does: 'Your pay, bills, Free to spend, budget lines, goals, accounts, cards and loans. Tap a row to change it' },
     receipts: { name: 'Receipts', does: 'Log money in, out or moved between your accounts, and see what you logged. Tap one to change or remove it' },
     settings: { name: 'Settings', does: 'The backup file, the cloud copy, the code word for the AI and the assistant\'s error log' },
@@ -155,11 +155,11 @@
     addLine: { name: 'Add a line', does: 'Adds a budget line, a name and an amount, like Food or Transport' },
     line: { name: 'A budget line\'s own sheet', does: 'Changes the line\'s name or amount, or ends the line' },
     addBill: { name: 'Add a bill', does: 'Adds a bill: its name, amount, the day it is due and what it is paid from' },
-    bill: { name: 'A bill\'s own sheet', does: 'Changes the bill\'s name, amount or day from a date you choose, changes the next one only, or ends the bill' },
-    pay: { name: 'A pay\'s own sheet', does: 'Changes the pay\'s name, amount, day or how often it lands, from a date you choose' },
+    bill: { name: 'A bill\'s own sheet', does: 'Changes its name, amount or day from a date, the next one only, or ends it' },
+    pay: { name: 'A pay\'s own sheet', does: 'Changes its name, amount, day or how often it lands, from a date' },
     addGoal: { name: 'Add a goal', does: 'Adds a goal: its name, the goal amount, a target date and where the money is kept' },
     goal: { name: 'A goal\'s own sheet', does: 'Sets money aside for the goal, takes money out of it, or changes its name, amount or date' },
-    addCard: { name: 'Add a card', does: 'Adds a card: its name, what is on it now, the day it is paid from your bank and the day its statement closes' },
+    addCard: { name: 'Add a card', does: 'Adds a card: its name, what is on it now, its payment day and its statement close day' },
     card: { name: 'A card\'s own sheet', does: 'Changes the card\'s name and days, pays it off, closes or removes it' },
     addLoan: { name: 'Add a loan', does: 'Adds a loan: its name, what is still owed, the usual payment and the day it is paid' },
     loan: { name: 'A loan\'s own sheet', does: 'Changes the loan\'s name, day or payment, pays it off, closes or removes it' },
@@ -168,6 +168,7 @@
     closeAccount: { name: 'Close an account', does: 'Closes a bank, cash or e-wallet: its money moves to another account or counts as spent' },
     closedAccount: { name: 'A closed account\'s own sheet', does: 'Reopens a closed account, with its history kept' },
     record: { name: 'A record\'s own sheet', does: 'Changes or removes one thing you logged on Receipts' },
+    checks: { name: 'Checks', does: 'The figures typed for one account, newest first: change one, where its gap went, or remove the newest' },
   };
   const SYSTEM = `You are the assistant inside The Burrow, a money app the person has open right now. You set it up with them by talking, and after that you answer questions and make changes for them.
 
@@ -194,7 +195,7 @@ A spend goes on the account they paid with. If they did not say and they have ca
 SCREEN says which screen the person has open, and the sheet on top of it when there is one: "this screen" means the sheet if there is one, else the screen. Say what it is for in the words below.
 WHAT EACH SCREEN AND SHEET IS FOR:
 ${Object.keys(SCREENS).map(k => SCREENS[k].name + ': ' + SCREENS[k].does).join('\n')}
-WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line): change a goal or take money out of it: Plan, tap the goal. Change a spend's date, account or line: Receipts, tap it. Statements: Home, Add statements. Reminders: Reminders at the top. A backup or the cloud copy: Settings. Keep at least: Settings, Money (an account's own: Plan, tap it).`;
+WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line): change a goal or take money out of it: Plan, tap the goal. Change a spend's date, account or line: Receipts, tap it. Statements: Home, Add statements. A bank check: Home, tap its figure. Reminders: Reminders at the top. A backup or the cloud copy: Settings. Keep at least: Settings, Money (an account's own: Plan, tap it).`;
   /* [coordinator follow-up, controls-9] the one wording for a call that failed: said once, plainly, never a code. The
      server's own words when it gave them (a daily limit); no network says the connection is down, never that the assistant is off */
   const failText = e => {
@@ -630,6 +631,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     /* [AMOUNT_HISTORY_PLAN, qc-foundation's way in] the amount of a spend or refund changed (its S ref from list spends),
        through the door's edit as Receipts does it, so the figures are the screen's; only the new amount counts as typed;
        0 is a removal and asks first like one. How far it moves safe to spend is found in handle (moves) */
+    if (what === 'change_check' || what === 'remove_check') return { bad: 'a bank check is changed on the screens for now. ' + 'On the screens: Home, tap its figure' };
     if (what === 'change_spend') {
       const id = ref(a.ref, 'S'), e = id && (book.events || []).find(x => x.id === id);
       if (!e || e.gone || !(e.k === 'spend' || (e.k === 'in' && e.sub === 'refund'))) return { bad: 'a change_spend for a ref that is not a spend or refund' };

@@ -88,6 +88,7 @@ function chat3Screen() {
   if (open('#a3Rem')) return 'reminders';
   if (open('#a3Stmt')) return 'stmt';
   if (open('#a3Check')) return 'check';
+  if (open('#a3Checks')) return 'checks';
   const t = $('.a3-tabs [aria-current=page]');
   return t ? t.dataset.tab : 'home';
 }
@@ -456,4 +457,4 @@ async function startChat3() {
   E3.onSaved(() => { if (heldWas !== E3.held()) { heldWas = E3.held(); if (E3.book) renderChat3(); } });
   if (!E3.book) renderHome3(); else renderChat3();
 }
-root3.BurrowApp3.chat = { CHAT3, CHAT3C, redraw: chat3Redraw, save: chat3Save };   // for the page tests (start3.js)
+root3.BurrowApp3.chat = { CHAT3, CHAT3C, redraw: chat3Redraw, save: chat3Save, screen: chat3Screen };   // for the page tests (start3.js)

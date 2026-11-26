@@ -7,6 +7,7 @@ function showTab3(name) {
   const on = document.querySelector(`[data-panel="${name}"]`);
   if (!on) return;
   if (!$('#a3Check').hidden) closeCheck3();
+  if (!$('#a3Checks').hidden) closeChecks3();
   if (on.hidden || $$('[data-panel]').some(p => p !== on && !p.hidden)) {
     for (const p of $$('[data-panel]')) p.hidden = p !== on;
     if (name === 'receipts') renderRc3();
@@ -22,7 +23,7 @@ function tryBand3() {
     <label class="a3-day">Show the page as on <input type="date" id="a3Day" value="${esc3(E3.today())}"></label>
     <button type="button" class="a3-btn" id="a3TryOut">Set up with my own numbers</button>`;
   /* a cleared day box goes back to the day the page is showing: the box never sits empty over a page that shows a day */
-  $('#a3Day').addEventListener('change', e => { if (!e.target.value) { e.target.value = E3.today(); return; } E3.setToday(e.target.value); if (!$('#a3Check').hidden) closeCheck3(); renderHome3(); });
+  $('#a3Day').addEventListener('change', e => { if (!e.target.value) { e.target.value = E3.today(); return; } E3.setToday(e.target.value); if (!$('#a3Check').hidden) closeCheck3(); if (!$('#a3Checks').hidden) closeChecks3(); renderHome3(); });
   $('#a3TryOut').addEventListener('click', leaveTry3);
 }
 /* out of the made-up numbers: nothing of them is written; this device's own book shows when it keeps one, else the
@@ -48,7 +49,7 @@ async function leaveTry3() {
   renderHome3();
   /* [item 14] a setup left half way: back into it, with what was saved (src/setup3.js, the draft) */
   if (!E3.book && E3.mode === 'none' && await E3.rec('setup')) openSetup3();
-  document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; if (!$('#a3Check').hidden) closeCheck3(); });
+  document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; if (!$('#a3Check').hidden) closeCheck3(); if (!$('#a3Checks').hidden) closeChecks3(); });
   if (typeof startCloud3 === 'function') startCloud3();   // the cloud copy, when on: taken on opening (backup lane)
   if (typeof startChat3 === 'function') startChat3();   // the assistant panel (AI first)
   addEventListener('burrow3:other', redraw3);   // another tab saved (E3 joined it in): the one redraw; a receipt being typed keeps what was typed

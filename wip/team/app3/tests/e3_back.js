@@ -25,6 +25,7 @@ const SHEETS = [
   { id: 'a3Set', name: 'Settings', open: async p => { await p.click('#a3SetGo'); } },
   { id: 'a3Rem', name: 'Reminders', open: async p => { await p.click('#a3RemGo'); } },
   { id: 'a3Stmt', name: 'Add statements', open: async p => { await p.click('#a3StmtGo'); } },
+  { id: 'a3Checks', name: 'Checks', open: async p => { await p.click('#a3Home [data-checks]'); } },
   { id: 'a3Setup', name: 'Setup', setup: true },
 ];
 async function start(day, q) {

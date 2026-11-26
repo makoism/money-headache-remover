@@ -25,6 +25,7 @@ const BACK3 = (() => {
     sheet('stmt', '#a3Stmt', () => { const b = $('#a3StmtBack'); if (b) b.click(); else stmt3Close(); }),
     sheet('setup', '#a3Setup', () => closeSetup3()),
     sheet('check', '#a3Check', () => closeCheck3(), true),
+    sheet('checks', '#a3Checks', () => { if (checks3 && checks3.open) { checks3.open = null; drawChecks3(); } else closeChecks3(); }, true),
     sheet('plan-form', '#a3Plan [data-card=plan-form]', () => plClose3(), true),
     { key: 'rc-edit', root: () => (shownEl('#rcCancel') ? $('#rcForm') : null), close: () => $('#rcCancel').click() },
     /* the assistant panel (chat3.js), open as a sheet on a phone: under every sheet and form above, which open over

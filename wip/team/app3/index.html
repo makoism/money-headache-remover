@@ -1519,6 +1519,7 @@ details summary { min-height: 44px; }
   <section class="a3-sheet" id="a3Setup" role="dialog" aria-modal="true" aria-labelledby="a3SetupT" hidden></section>
   <section class="a3-sheet" id="a3Rem" role="dialog" aria-modal="true" aria-labelledby="a3RemT" hidden></section>
   <section class="a3-sheet" id="a3Check" role="dialog" aria-modal="true" aria-labelledby="a3CheckT" hidden></section>
+  <section class="a3-sheet" id="a3Checks" role="dialog" aria-modal="true" aria-labelledby="a3ChecksT" hidden></section>
 </main>
 <div class="a3-msg" id="a3Msg"></div>
 <aside class="a3-chat" id="a3Chat" aria-label="The assistant" hidden></aside>
@@ -10489,7 +10490,7 @@ function drawHome3() {
     const a = r.accounts[id];
     out.push(`<section class="a3-card" data-card="bank" data-acct="${esc3(id)}"><h2>${esc3(label3('bankToday'))}: ${esc3(E3.nameOf(id))}</h2>
       <p class="a3-big" data-fig="bank">${fig3('accounts.*.bank', a.bank, a.currency)}</p>
-      <p class="a3-sub" data-fig="age">${bankParts3(a, yr)}</p></section>`);
+      <p class="a3-sub" data-fig="age">${bankParts3(a, yr)}</p><button type="button" class="a3-link" data-checks="${esc3(id)}" aria-label="Checks of ${esc3(E3.nameOf(id))}">Checks</button></section>`);
   }
   /* safe to spend until next pay, with the sum behind it */
   const until = safeUntil3(r, yr, home);
@@ -10523,7 +10524,7 @@ function drawHome3() {
   /* the engine's warnings are data (account, amount, day, minimum or none): worded by screens/status.js, never its text;
      a lower point after the first day under is its own "Later on" line with its own day [B1] */
   const wctx = { currency: home, names, accounts: r.accounts };
-  const warns = (r.warnings || []).map(w => `<p class="a3-warn" data-warn="${esc3(w.code)}">${esc3(BurrowScreens.status.warningText(w, wctx))}</p>`
+  const warns = (r.warnings || []).map(w => `<p class="a3-warn" data-warn="${esc3(w.code)}">${esc3(BurrowScreens.status.warningText(w, wctx))}${w.code === 'gain_to_ask' ? ` <button type="button" class="a3-link" data-gainacct="${esc3(w.account)}">Answer</button>` : ''}</p>`
     + (w.later ? `<p class="a3-warn" data-warn="later_low">${esc3(BurrowScreens.status.laterLowText(w, wctx))}</p>` : '')
     + (BurrowScreens.status.moveText(w, wctx) ? `<p class="a3-next" data-fig="move-from">${esc3(BurrowScreens.status.moveText(w, wctx))}</p>` : '')).join('');
   out.push(`<section class="a3-card" data-card="safe">${helpHead3(`<h2>${esc3(label3('safeToSpend'))}${until}</h2>`, 'safeToSpend')}
@@ -10571,7 +10572,7 @@ function drawHome3() {
       const amt = k.credit ? `<span data-fig="credit">${esc3(label3('inCredit').toLowerCase())} ${fig3('cards.*.credit', k.credit, cur)}</span>` : `<span data-fig="owed">${fig3('cards.*.owedNow', k.owedNow, cur)}</span>`;
       /* [NS-FIX 7] the day this card's figure was last typed */
       const ck = E3.lastCheckOf(id, day), seen = ck ? `<br><span class="a3-age" data-fig="cardchecked">checked ${esc3(day3(ck.date, yr))}</span>` : '';
-      return `<li data-cardid="${esc3(id)}"><span>${esc3(E3.nameOf(id))}<br><span class="when">${when}</span>${seen}</span><span class="amt">${amt}</span></li>`;
+      return `<li data-cardid="${esc3(id)}"><span>${esc3(E3.nameOf(id))}<br><span class="when">${when}</span>${seen}<br><button type="button" class="a3-link" data-checks="${esc3(id)}" aria-label="Checks of ${esc3(E3.nameOf(id))}">Checks</button></span><span class="amt">${amt}</span></li>`;
     }).join('');
     /* [north star F3] Add a card opens Plan's own add-card form (planOpen3), never a second form */
     out.push(`<section class="a3-card" data-card="cards"><h2>${esc3(label3('owed'))} on your cards</h2>${cardIds.length ? `<ul class="a3-rows">${rows}${afterCards3(r, yr, day)}</ul>` : '<p class="a3-sub">No cards yet</p>'}<div class="a3-actions"><button type="button" class="a3-btn" id="a3AddCardGo">Add a card</button></div></section>`);
@@ -10599,6 +10600,10 @@ function drawHome3() {
   $('#a3AddCardGo').addEventListener('click', () => planOpen3('card'));
   if ($('#a3FreeGo')) $('#a3FreeGo').addEventListener('click', () => planOpen3('free'));
   $('#a3CheckGo').addEventListener('click', openCheck3);
+  /* [CHECKFIX] an account's figure, or its Checks link, opens its checks; a held gain's Answer opens its newest */
+  host.querySelectorAll('[data-checks]').forEach(el => el.addEventListener('click', () => openChecks3(el.dataset.checks)));
+  host.querySelectorAll('[data-card=bank] [data-fig=bank]').forEach(el => { el.setAttribute('role', 'button'); el.tabIndex = 0; el.addEventListener('click', () => openChecks3(el.closest('[data-acct]').dataset.acct)); });
+  host.querySelectorAll('[data-gainacct]').forEach(el => el.addEventListener('click', () => { const c = checks3List(el.dataset.gainacct)[0]; openChecks3(el.dataset.gainacct, c && c.id); }));
   $('#a3LogGo').addEventListener('click', rcLogFromHome3);
 }
 /* ---------- Check your bank (WIRING_PLAN 1.1 item 3, step 9) ----------
@@ -10828,6 +10833,132 @@ async function saveCheck3() {
   if (!r.ok) { err.textContent = r.text; return; }
   closeCheck3(); renderHome3();
 }
+/* ---------- Checks: change or remove a bank check later (CHECKFIX_PLAN slice 10; M13, M14, M6, M36, M37, M47, M61) ----------
+   Home, tap an account's figure (or its Checks link): the checks of that account, newest first, each with its day, its
+   figure and where it came from. One opens on its own: the figure box (a minus is fine for a bank, M47; an empty box
+   says what to type and Back loses nothing), Save, where its gap went with Change, and on the newest only "Remove this
+   check" (asked first, M6). Every write is one act3 step through PLAN3W.changeCheck or removeCheck, with its Undo bar and
+   its row in Recent changes after a reload (M14). A check another device brought back (the engine's revive) is listed as
+   the engine reads the book. No money is worked out here: every figure is the engine's or the record's own. */
+let checks3 = null;
+const CHECKS3_NONE = 'Type the figure your bank showed';
+function checks3Book() { return BurrowEngine.ledger.revive(E3.book).book; }
+function checks3List(acct) {
+  const b = checks3Book(), told = e => String(e.told || e.date);
+  return (b.events || []).filter(e => e && !e.gone && e.k === 'check' && e.acct === acct)
+    .sort((x, y) => (x.date !== y.date ? (x.date < y.date ? 1 : -1) : told(x) !== told(y) ? (told(x) < told(y) ? 1 : -1) : (x.id < y.id ? 1 : -1)));
+}
+const checks3Stmt = c => !!c.stmt || /^(stmt|imp):/.test(String(c.grp || '')) || /^imp:/.test(String(c.id || ''));
+function checks3From(c) {
+  if (checks3Stmt(c)) return 'from a statement';
+  const b = checks3Book();
+  if ((b.checkins || []).some(k => k && k.id === c.grp)) return 'typed at Check your bank';
+  return (b.events || []).some(e => e && !e.gone && e.k === 'open' && e.acct === c.acct && e.grp === c.grp) ? 'where it started in the app' : 'typed';
+}
+function openChecks3(acct, checkId) {
+  checks3 = { acct, open: checkId || null, ver: ACT3.ver() };
+  $('#a3Home').hidden = true;
+  /* one sheet box for the whole visit (its own Undo bars show on it, back3.js K37); each view is drawn inside it */
+  $('#a3Checks').innerHTML = '<div class="a3-sheet-in" id="a3ChecksIn"></div>';
+  drawChecks3();
+}
+function closeChecks3() {
+  const host = $('#a3Checks'); host.hidden = true; host.innerHTML = '';
+  const acct = checks3 && checks3.acct; checks3 = null;
+  $('#a3Home').hidden = false; renderHome3();
+  const b = acct && document.querySelector(`[data-checks="${CSS.escape(acct)}"]`); if (b) b.focus();
+}
+function drawChecks3() {
+  const host = $('#a3ChecksIn'), acct = checks3.acct, name = E3.nameOf(acct), cur = E3.curOf(acct), yr = E3.today().slice(0, 4);
+  const list = checks3List(acct), latest = list[0];
+  $('#a3Checks').hidden = false; scrollTo(0, 0);
+  checks3.ver = ACT3.ver();   // [STALE_SHEET_PLAN] the book as this view shows it
+  if (!checks3.open) {
+    const rows = list.map(c => `<li><button type="button" class="a3-rcrow" data-checkopen="${esc3(c.id)}"><span>${esc3(day3(c.date, yr))}<br><span class="when">${esc3(checks3From(c))}</span></span><span class="amt">${money3(c.a, cur)}</span></button></li>`).join('');
+    host.innerHTML = `<h1 id="a3ChecksT">Checks of ${esc3(name)}</h1>
+      <section class="a3-card"><p class="a3-sub">Each figure you typed for ${esc3(name)}, newest first. Tap one to change it</p><ul class="a3-rows" data-checklist>${rows || '<li>No checks yet</li>'}</ul></section>
+      <div class="a3-actions"><button type="button" class="a3-btn" id="a3ChecksX">Back</button></div>`;
+    host.querySelectorAll('[data-checkopen]').forEach(el => el.addEventListener('click', () => { checks3.open = el.dataset.checkopen; drawChecks3(); }));
+    $('#a3ChecksX').addEventListener('click', closeChecks3);
+    const f = host.querySelector('[data-checkopen]') || $('#a3ChecksX'); f.focus();
+    return;
+  }
+  const c = list.find(x => x.id === checks3.open);
+  if (!c) { checks3.open = null; drawChecks3(); return; }
+  const own = !!{ bank: 1, cash: 1, ewallet: 1, wallet: 1 }[((E3.book.accounts || []).find(a => a.id === acct) || {}).type];
+  const stmt = checks3Stmt(c), b = checks3Book(), ci = (b.checkins || []).find(k => k && k.id === c.grp);
+  /* where its gap went: the check-in's own place, or an older check-in's gap spend's line */
+  const gap = ci && (b.events || []).find(e => e && !e.gone && e.k === 'spend' && e.grp === ci.id && e.acct === acct && e.dayInside);
+  const placeNow = gap ? (gap.place ? 'place:' + gap.place : 'line:' + (gap.line || 'free')) : ci && ci.fillerPlace && ci.fillerPlace[acct] ? `${(E3.book.places || []).some(g => g.id === ci.fillerPlace[acct]) ? 'place' : 'line'}:${ci.fillerPlace[acct]}` : 'line:free';
+  const placeName = rcForName3(placeNow.startsWith('place:') ? { place: placeNow.slice(6) } : { line: placeNow.slice(5) });
+  const opts = rcFors3().map(o => (o.v === 'line:free' ? Object.assign({}, o, { name: 'Nothing, back to Free to spend' }) : o));
+  const gapHtml = ci && own && !stmt ? `<div class="a3-field" data-gapwent><p class="a3-sub">The gap went to: <b data-gapname>${esc3(placeName)}</b> <button type="button" class="a3-link" id="a3GapChange">Change</button></p>
+      <div data-gappick hidden><label for="a3GapSel">Where the gap at this check goes</label><select class="a3-in a3-sel" id="a3GapSel">${rcOptions3(opts, placeNow)}</select>
+      <div class="a3-actions"><button type="button" class="a3-btn" id="a3GapSave">Save where it goes</button></div></div></div>` : '';
+  /* a large gain held at this check: Yes keeps the figure, No opens the box (Was that figure right?) */
+  const r = E3.view(E3.today()), held = (r.warnings || []).some(w => w.code === 'gain_to_ask' && w.account === acct && w.day === c.date) && c.id === latest.id;
+  const gainHtml = held ? `<div class="a3-field" data-gainask><p class="a3-warn">Was that figure right?</p><div class="a3-actions"><button type="button" class="a3-btn" id="a3GainYes">Yes</button><button type="button" class="a3-btn" id="a3GainNo">No, fix it</button></div></div>` : '';
+  const removable = c.id === latest.id && !stmt && !!ci;
+  const box = stmt ? `<p class="a3-sub" data-stmtnote>This figure came from your statement of ${esc3(day3(c.stmtDate || c.date, yr))}. Change it there</p>`
+    : `<div class="a3-field"><label for="a3CheckFig">What did ${esc3(name)} show${c.date === E3.today() ? ' today' : ' on ' + esc3(day3(c.date, yr))}?</label>
+      <input class="a3-in" data-amount type="text" inputmode="decimal" autocomplete="off" id="a3CheckFig" value="${SM.toInput(c.a, cur)}"></div>`;
+  host.innerHTML = `<h1 id="a3ChecksT">${esc3(name)}, ${esc3(day3(c.date, yr))}</h1>
+    <section class="a3-card"><p class="a3-sub">${esc3(checks3From(c))}</p>${box}${gainHtml}${gapHtml}<p class="a3-err" id="a3ChecksErr"></p><div id="a3ChecksSure"></div></section>
+    <div class="a3-actions">${stmt ? '' : '<button type="button" class="a3-btn solid" id="a3ChecksSave">Save</button>'}<button type="button" class="a3-btn" id="a3ChecksBack">Back</button></div>
+    ${removable ? '<div class="a3-actions"><button type="button" class="a3-btn" id="a3ChecksRemove">Remove this check</button></div>' : ''}`;
+  const fig = $('#a3CheckFig');
+  if (fig) { BurrowScreens.inputs.bind(fig, { kind: 'amount', code: cur, optional: true, allowMinus: own }); fig.focus(); }
+  $('#a3ChecksBack').addEventListener('click', () => { checks3.open = null; drawChecks3(); });
+  if ($('#a3ChecksSave')) $('#a3ChecksSave').addEventListener('click', () => saveCheckFig3(c, own));
+  if ($('#a3ChecksRemove')) $('#a3ChecksRemove').addEventListener('click', () => {
+    let words; try { words = PLAN3W.removeCheckWords({ book: E3.book, today: E3.today() }, acct); } catch (e) { $('#a3ChecksErr').textContent = e.message; return; }
+    sure3($('#a3ChecksSure'), words, 'Yes, remove it', async () => {
+      const r1 = await ACT3.run('Remove a bank check', w => PLAN3W.removeCheck(w, acct), { undo: `Check of ${name} removed`, ver: checks3.ver });
+      checks3Done3(r1);
+    });
+  });
+  if ($('#a3GapChange')) $('#a3GapChange').addEventListener('click', () => { host.querySelector('[data-gappick]').hidden = false; $('#a3GapSel').focus(); });
+  if ($('#a3GapSave')) $('#a3GapSave').addEventListener('click', async () => {
+    const v = $('#a3GapSel').value, place = v === 'line:free' ? null : v.replace(/^(line|place):/, '');
+    const r1 = await ACT3.run('Where a gap went', w => PLAN3W.changeCheck(w, c.id, { place }), { undo: `The gap of ${day3(c.date, yr)} now goes to ${rcForName3(v.startsWith('place:') ? { place } : { line: place || 'free' })}`, ver: checks3.ver });
+    checks3Done3(r1, c.id);
+  });
+  if ($('#a3GainYes')) $('#a3GainYes').addEventListener('click', async () => {
+    const r1 = await ACT3.run('That figure was right', w => PLAN3W.changeCheck(w, c.id, { right: true }), { undo: `${name}'s figure of ${day3(c.date, yr)} kept as right`, ver: checks3.ver });
+    checks3Done3(r1, c.id);
+  });
+  if ($('#a3GainNo')) $('#a3GainNo').addEventListener('click', () => { const f = $('#a3CheckFig'); f.focus(); f.select(); $('#a3ChecksErr').textContent = 'Type the figure it really showed, then Save'; });
+}
+/* after a step: back to the list (the Undo bar names it), or, refused because the book changed elsewhere, drawn again */
+function checks3Done3(r1, keepOpen) {
+  if (!r1.ok) {
+    if (r1.why === 'other') { checks3.ver = ACT3.ver(); drawChecks3(); }
+    $('#a3ChecksErr').textContent = r1.text; return;
+  }
+  checks3.ver = ACT3.ver(); checks3.open = keepOpen && checks3List(checks3.acct).some(x => x.id === keepOpen) ? keepOpen : null;
+  drawChecks3();
+}
+async function saveCheckFig3(c, own) {
+  const el = $('#a3CheckFig'), err = $('#a3ChecksErr'), cur = E3.curOf(c.acct), yr = E3.today().slice(0, 4);
+  if (!el.value.trim()) { err.textContent = CHECKS3_NONE; el.focus(); return; }   // an empty box never traps: Back is right there
+  const v = own ? typedBank3(el.value, cur) : typed3(el.value, cur);
+  if (v === null) { err.textContent = own ? CHECKS3_NONE : 'Type what was on it, zero or more'; el.focus(); return; }
+  const fn = w => PLAN3W.changeCheck(w, c.id, { amount: v });
+  /* [M6] a change that takes more off safe to spend than it holds asks first (the engine's figures before and after) */
+  if (!checks3.sure) {
+    let b1 = null; try { b1 = ACT3.dryRun('Change a bank check', fn); } catch (e) { err.textContent = e.message; return; }
+    const r0 = E3.view(E3.today()), r1 = BurrowEngine.lookahead.lookahead(b1, E3.today()), s0 = r0.safeToSpend.headline, s1 = r1.safeToSpend.headline;
+    if (s0 > 0 && (s1 === 0 || (r1.safeToSpend.short && !r0.safeToSpend.short))) {
+      sure3($('#a3ChecksSure'), `This takes ${label3('safeToSpend').toLowerCase()} from ${money3(s0, E3.home())} to ${money3(s1, E3.home())}${r1.safeToSpend.short ? `, short by ${money3(r1.safeToSpend.short.amount, E3.home())}` : ''}. Save it anyway?`, 'Yes, save it', () => { checks3.sure = true; saveCheckFig3(c, own); });
+      return;
+    }
+  }
+  checks3.sure = false;
+  const r1 = await ACT3.run('Change a bank check', fn, { undo: `${E3.nameOf(c.acct)}, ${day3(c.date, yr)}: ${money3(c.a, cur)} to ${money3(v, cur)}`, ver: checks3.ver });
+  checks3Done3(r1);
+}
+/* an Undo from the bar, or a change from elsewhere, while the sheet is open: drawn again from the book as it is now */
+if (typeof ACT3 === 'object' && ACT3) ACT3.onChange(() => { if (checks3 && !$('#a3Checks').hidden) drawChecks3(); });
 /* ---------- Receipts (the receipts lane; old app: ui4.js and the Log spend card, rebuilt on the new engine) ----------
    Log a spend fast (amount, what it was for, the account or card, the day (today unless changed), a note), a refund,
    or money moved between two of your own accounts. The list goes by period (the engine's res.period, named by its
@@ -13443,7 +13574,7 @@ function openSet3() {
       ${money}${tryBook ? tryNote : `${changes}${device}${backup}${cloud}`}${word}${tryBook ? '' : ailog}
       <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3SetClose">Done</button></div></div>`;
   /* over whatever shows (the panels and the tab bar), put back as they were on Done */
-  SET3.was = [...document.querySelectorAll('[data-panel], .a3-tabs, #a3Check, #a3StmtBar, #a3Stmt')].map(el => [el, el.hidden]);
+  SET3.was = [...document.querySelectorAll('[data-panel], .a3-tabs, #a3Check, #a3Checks, #a3StmtBar, #a3Stmt')].map(el => [el, el.hidden]);
   SET3.was.forEach(([el]) => { el.hidden = true; }); sheet.hidden = false;
   $('#a3SetClose').addEventListener('click', closeSet3);
   paintWord3();
@@ -13704,6 +13835,7 @@ function showTab3(name) {
   const on = document.querySelector(`[data-panel="${name}"]`);
   if (!on) return;
   if (!$('#a3Check').hidden) closeCheck3();
+  if (!$('#a3Checks').hidden) closeChecks3();
   if (on.hidden || $$('[data-panel]').some(p => p !== on && !p.hidden)) {
     for (const p of $$('[data-panel]')) p.hidden = p !== on;
     if (name === 'receipts') renderRc3();
@@ -13719,7 +13851,7 @@ function tryBand3() {
     <label class="a3-day">Show the page as on <input type="date" id="a3Day" value="${esc3(E3.today())}"></label>
     <button type="button" class="a3-btn" id="a3TryOut">Set up with my own numbers</button>`;
   /* a cleared day box goes back to the day the page is showing: the box never sits empty over a page that shows a day */
-  $('#a3Day').addEventListener('change', e => { if (!e.target.value) { e.target.value = E3.today(); return; } E3.setToday(e.target.value); if (!$('#a3Check').hidden) closeCheck3(); renderHome3(); });
+  $('#a3Day').addEventListener('change', e => { if (!e.target.value) { e.target.value = E3.today(); return; } E3.setToday(e.target.value); if (!$('#a3Check').hidden) closeCheck3(); if (!$('#a3Checks').hidden) closeChecks3(); renderHome3(); });
   $('#a3TryOut').addEventListener('click', leaveTry3);
 }
 /* out of the made-up numbers: nothing of them is written; this device's own book shows when it keeps one, else the
@@ -13745,7 +13877,7 @@ async function leaveTry3() {
   renderHome3();
   /* [item 14] a setup left half way: back into it, with what was saved (src/setup3.js, the draft) */
   if (!E3.book && E3.mode === 'none' && await E3.rec('setup')) openSetup3();
-  document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; if (!$('#a3Check').hidden) closeCheck3(); });
+  document.addEventListener('keydown', e => { if (e.key !== 'Escape') return; if (!$('#a3Check').hidden) closeCheck3(); if (!$('#a3Checks').hidden) closeChecks3(); });
   if (typeof startCloud3 === 'function') startCloud3();   // the cloud copy, when on: taken on opening (backup lane)
   if (typeof startChat3 === 'function') startChat3();   // the assistant panel (AI first)
   addEventListener('burrow3:other', redraw3);   // another tab saved (E3 joined it in): the one redraw; a receipt being typed keeps what was typed
@@ -14484,7 +14616,7 @@ Actions:
      (stateText). A new screen or sheet needs its row here: tests/chat3_core.test.js counts the rows and
      tests/e3_fakeai_page.js opens each of Plan's sheets. These are words for a person too: the wording lint reads them. */
   const SCREENS = {
-    home: { name: 'Home', does: 'Home shows what is safe to spend until your next pay, what each account holds today, what is due before pay, and your goals' },
+    home: { name: 'Home', does: 'Safe to spend until your next pay, what each account holds today, what is due before pay, and your goals' },
     plan: { name: 'Plan', does: 'Your pay, bills, Free to spend, budget lines, goals, accounts, cards and loans. Tap a row to change it' },
     receipts: { name: 'Receipts', does: 'Log money in, out or moved between your accounts, and see what you logged. Tap one to change or remove it' },
     settings: { name: 'Settings', does: 'The backup file, the cloud copy, the code word for the AI and the assistant\'s error log' },
@@ -14497,11 +14629,11 @@ Actions:
     addLine: { name: 'Add a line', does: 'Adds a budget line, a name and an amount, like Food or Transport' },
     line: { name: 'A budget line\'s own sheet', does: 'Changes the line\'s name or amount, or ends the line' },
     addBill: { name: 'Add a bill', does: 'Adds a bill: its name, amount, the day it is due and what it is paid from' },
-    bill: { name: 'A bill\'s own sheet', does: 'Changes the bill\'s name, amount or day from a date you choose, changes the next one only, or ends the bill' },
-    pay: { name: 'A pay\'s own sheet', does: 'Changes the pay\'s name, amount, day or how often it lands, from a date you choose' },
+    bill: { name: 'A bill\'s own sheet', does: 'Changes its name, amount or day from a date, the next one only, or ends it' },
+    pay: { name: 'A pay\'s own sheet', does: 'Changes its name, amount, day or how often it lands, from a date' },
     addGoal: { name: 'Add a goal', does: 'Adds a goal: its name, the goal amount, a target date and where the money is kept' },
     goal: { name: 'A goal\'s own sheet', does: 'Sets money aside for the goal, takes money out of it, or changes its name, amount or date' },
-    addCard: { name: 'Add a card', does: 'Adds a card: its name, what is on it now, the day it is paid from your bank and the day its statement closes' },
+    addCard: { name: 'Add a card', does: 'Adds a card: its name, what is on it now, its payment day and its statement close day' },
     card: { name: 'A card\'s own sheet', does: 'Changes the card\'s name and days, pays it off, closes or removes it' },
     addLoan: { name: 'Add a loan', does: 'Adds a loan: its name, what is still owed, the usual payment and the day it is paid' },
     loan: { name: 'A loan\'s own sheet', does: 'Changes the loan\'s name, day or payment, pays it off, closes or removes it' },
@@ -14510,6 +14642,7 @@ Actions:
     closeAccount: { name: 'Close an account', does: 'Closes a bank, cash or e-wallet: its money moves to another account or counts as spent' },
     closedAccount: { name: 'A closed account\'s own sheet', does: 'Reopens a closed account, with its history kept' },
     record: { name: 'A record\'s own sheet', does: 'Changes or removes one thing you logged on Receipts' },
+    checks: { name: 'Checks', does: 'The figures typed for one account, newest first: change one, where its gap went, or remove the newest' },
   };
   const SYSTEM = `You are the assistant inside The Burrow, a money app the person has open right now. You set it up with them by talking, and after that you answer questions and make changes for them.
 
@@ -14536,7 +14669,7 @@ A spend goes on the account they paid with. If they did not say and they have ca
 SCREEN says which screen the person has open, and the sheet on top of it when there is one: "this screen" means the sheet if there is one, else the screen. Say what it is for in the words below.
 WHAT EACH SCREEN AND SHEET IS FOR:
 ${Object.keys(SCREENS).map(k => SCREENS[k].name + ': ' + SCREENS[k].does).join('\n')}
-WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line): change a goal or take money out of it: Plan, tap the goal. Change a spend's date, account or line: Receipts, tap it. Statements: Home, Add statements. Reminders: Reminders at the top. A backup or the cloud copy: Settings. Keep at least: Settings, Money (an account's own: Plan, tap it).`;
+WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line): change a goal or take money out of it: Plan, tap the goal. Change a spend's date, account or line: Receipts, tap it. Statements: Home, Add statements. A bank check: Home, tap its figure. Reminders: Reminders at the top. A backup or the cloud copy: Settings. Keep at least: Settings, Money (an account's own: Plan, tap it).`;
   /* [coordinator follow-up, controls-9] the one wording for a call that failed: said once, plainly, never a code. The
      server's own words when it gave them (a daily limit); no network says the connection is down, never that the assistant is off */
   const failText = e => {
@@ -14972,6 +15105,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     /* [AMOUNT_HISTORY_PLAN, qc-foundation's way in] the amount of a spend or refund changed (its S ref from list spends),
        through the door's edit as Receipts does it, so the figures are the screen's; only the new amount counts as typed;
        0 is a removal and asks first like one. How far it moves safe to spend is found in handle (moves) */
+    if (what === 'change_check' || what === 'remove_check') return { bad: 'a bank check is changed on the screens for now. ' + 'On the screens: Home, tap its figure' };
     if (what === 'change_spend') {
       const id = ref(a.ref, 'S'), e = id && (book.events || []).find(x => x.id === id);
       if (!e || e.gone || !(e.k === 'spend' || (e.k === 'in' && e.sub === 'refund'))) return { bad: 'a change_spend for a ref that is not a spend or refund' };
@@ -15587,6 +15721,7 @@ function chat3Screen() {
   if (open('#a3Rem')) return 'reminders';
   if (open('#a3Stmt')) return 'stmt';
   if (open('#a3Check')) return 'check';
+  if (open('#a3Checks')) return 'checks';
   const t = $('.a3-tabs [aria-current=page]');
   return t ? t.dataset.tab : 'home';
 }
@@ -15955,7 +16090,7 @@ async function startChat3() {
   E3.onSaved(() => { if (heldWas !== E3.held()) { heldWas = E3.held(); if (E3.book) renderChat3(); } });
   if (!E3.book) renderHome3(); else renderChat3();
 }
-root3.BurrowApp3.chat = { CHAT3, CHAT3C, redraw: chat3Redraw, save: chat3Save };   // for the page tests (start3.js)
+root3.BurrowApp3.chat = { CHAT3, CHAT3C, redraw: chat3Redraw, save: chat3Save, screen: chat3Screen };   // for the page tests (start3.js)
 /* ---------- remind3: reminders in the phone's own calendar, the pure half (the old app's model.js helpers, ported) ----------
    Check-in reminders on the day after each pay lands and in the middle of each pay period, and bill reminders a chosen
    number of days before each bill leaves the bank. The days are the engine's own (engine/schedules.js occurrences on the
@@ -16147,7 +16282,7 @@ async function openRem3() {
       <ul class="a3-rows" id="a3RemLinks"></ul></div>
     <div class="a3-actions"><button type="button" class="a3-btn" id="a3RemClose">Close</button></div>
   </div>`;
-  REM3.was = [...document.querySelectorAll('[data-panel], .a3-tabs, #a3Check, #a3StmtBar, #a3Stmt, #a3Set, #a3Setup')].map(el => [el, el.hidden]);
+  REM3.was = [...document.querySelectorAll('[data-panel], .a3-tabs, #a3Check, #a3Checks, #a3StmtBar, #a3Stmt, #a3Set, #a3Setup')].map(el => [el, el.hidden]);
   REM3.was.forEach(([el]) => { el.hidden = true; }); sheet.hidden = false;
   $('#a3RemAfter').addEventListener('change', e => { REM3.afterPay = e.target.checked; rem3Paint(); rem3Keep(); });
   $('#a3RemMid').addEventListener('change', e => { REM3.mid = e.target.checked; rem3Paint(); rem3Keep(); });
@@ -16218,6 +16353,7 @@ const BACK3 = (() => {
     sheet('stmt', '#a3Stmt', () => { const b = $('#a3StmtBack'); if (b) b.click(); else stmt3Close(); }),
     sheet('setup', '#a3Setup', () => closeSetup3()),
     sheet('check', '#a3Check', () => closeCheck3(), true),
+    sheet('checks', '#a3Checks', () => { if (checks3 && checks3.open) { checks3.open = null; drawChecks3(); } else closeChecks3(); }, true),
     sheet('plan-form', '#a3Plan [data-card=plan-form]', () => plClose3(), true),
     { key: 'rc-edit', root: () => (shownEl('#rcCancel') ? $('#rcForm') : null), close: () => $('#rcCancel').click() },
     /* the assistant panel (chat3.js), open as a sheet on a phone: under every sheet and form above, which open over
