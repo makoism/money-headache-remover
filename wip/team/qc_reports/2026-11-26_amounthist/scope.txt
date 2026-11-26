@@ -51,3 +51,10 @@ M99                 A visual overview of where a batch of receipts goes before f
 M98                 A rule for how the team reads Mako's ideas (the user walk, RUNBOOK section 1 step 0): no app behaviour of its own. Not judged on the build.
 M44 M61 (edited amount) KNOWN, from the bank check rule merged at eaa49831 (checkgap): someone who corrects the amount of an old spend after a bank check that came after it sees safe to spend rise by the difference (a 700 lunch corrected to 7,000 raises it by 6,300). Fixed in the next slice (amount history, planned and reviewed). Mark it KNOWN.
 M31 M37 (weekly check) Not a fault, the ruled rule (gap goes whole to the period the check is in): a weekly bank check made after pay day puts everything it finds in the new period, including days before the pay. Told to Mako plainly with this candidate. Do not raise it.
+
+Added by coordinator 18, 26 Nov 11:35 JST, after the first qc-numbers run. Traced by LANE L, the same on lane/ai-join, not caused by this branch. Mark KNOWN:
+- A card payment worked out from a share of a check gap ("3,889 comes out on 27 Jan" with 4,000 owed): the share rule at the card's close day (lookahead.js:670). Queued at LANE L.
+- "Safe to spend goes down with it" shown when it did not go down (receipts3.js:271): being fixed on the candidate (qc-numbers B2, MAIN).
+- Dollars written two ways ("$10" and "$10.00"): cents always for dollars, being built (controls-10, LANE N).
+- No fixed pay: the by-day remainder line repeats and leaves one odd day figure, and "Nothing is due" uses another window than the sum above it (home3.js:228). Queued at LANE L with the no-fixed-pay work.
+- Removing a move after a check of only one account: spent is right, Receipts shows the gap row alone. Queued at LANE L.
