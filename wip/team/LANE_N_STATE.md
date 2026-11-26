@@ -1,6 +1,6 @@
 # LANE N state page (controls slices after the AI-first candidate)
 
-LANE N: session_01BFpKEYrXD1v3TRranaJ9WE (took over from LANE M session_01BFpKEWyTdLJxPoDySdQrVW, 26 Nov about 11:45 JST). Coordinator: "Burrow coordinator 18 (talk to this one)" session_01BFpKEVNiZLwPaZF7W9sbtP. MAIN 23 session_01BFpKEW8KtuZCmSEeaQB36v is the only merger. LANE L session_01BFpKEXEN4ow4uyeRCZ9aSM owns lane/amounthist.
+LANE N: session_01BFpKEYrXD1v3TRranaJ9WE (took over from LANE M session_01BFpKEWyTdLJxPoDySdQrVW, 26 Nov about 11:45 JST). Coordinator: "Burrow coordinator 18 (talk to this one)" session_01BFpKEVNiZLwPaZF7W9sbtP. MAIN 24 session_01BFpKEW9b3sUkGfcHygE46v is the only merger (MAIN 23 closed; it forwarded controls-10 and controls-12 notes). LANE L session_01BFpKEXEN4ow4uyeRCZ9aSM owns lane/amounthist.
 Keep-going task: (LANE N, see Now). LANE M stays until its two running jobs land (close-account helper on controls-5fix, qc-foundation on loancheck): do not touch controls-5fix or the loancheck round until LANE M says.
 
 ## Now (LANE N, 26 Nov about 12:00 JST)
