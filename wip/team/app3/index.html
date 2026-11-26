@@ -3276,8 +3276,8 @@ details summary { min-height: 44px; }
         const ends = endsOf(id);
         if (!ends) return null;
         const e = dayNum(ends);
-        if (n.start === null || e >= n.start) return next ? dayStr(Math.max(next.land, e + 1)) : null;
-        const after = allStartDays.filter(d => d > e);
+        if (n.start === null || e > n.start) return next ? dayStr(Math.max(next.land, e + 1)) : null;
+        const after = allStartDays.filter(d => d >= e);   // [qc-foundation third confirm] ended on a period's first day: it holds 0 there, so it closes that day
         return dayStr(after.length ? Math.min(...after) : Math.max(n.start, e + 1));
       };
       res.period = {
