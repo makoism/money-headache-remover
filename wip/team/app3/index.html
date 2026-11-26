@@ -8561,7 +8561,10 @@ const E3 = (() => {
     book = newBook; mode = 'kept';
     const ok = await save({ full: true });
     if (!ok) { book = before.book; mode = before.mode; }
-    else if (root3.BurrowPersist) root3.BurrowPersist.afterSetup().catch(() => {});
+    else {
+      if (root3.BurrowPersist) root3.BurrowPersist.afterSetup().catch(() => {});
+      if (typeof setup3Filled === 'function') setup3Filled();   // a setup Save's Undo has nothing left to undo
+    }
     return ok;
   }
   /* backup lane: a whole new book from a restore or the cloud copy; the first one makes this device keep a book.
@@ -8590,7 +8593,22 @@ const E3 = (() => {
      through one queue, in the order asked, so two keys written at once are both kept (before, one write was lost and
      still said true). Nothing else in the app writes the device record (store/idb.js putDevice is called only here) */
   let devQ = Promise.resolve();
-  const devTurn = fn => { const r = devQ.then(fn, fn); devQ = r.catch(() => {}); return r; };
+  /* [qc-data-safety 26 Nov, blocker 1] and one tab at a time: two tabs of one phone share the record, so each read-then-write
+     holds the browser's lock across tabs (where there is one) */
+  const locked = fn => () => (root3.navigator && root3.navigator.locks ? root3.navigator.locks.request('burrow3-device', fn) : fn());
+  const devTurn = fn => { const r = devQ.then(locked(fn), locked(fn)); devQ = r.catch(() => {}); return r; };
+  /* recEdit(key, fn): the value as stored now goes through fn, and what fn gives is written (null removes it), in the same
+     turn, so a change made in another tab since this tab read it is kept */
+  async function recEdit(key, fn) {
+    if (mode === 'try' || !store) return false;
+    try {
+      return await devTurn(async () => {
+        const d = (await store.getDevice()) || {}, next = fn(d[key] === undefined ? null : d[key]);
+        const out = Object.assign({}, d); if (next == null) delete out[key]; else out[key] = next;
+        return await store.putDevice(out);
+      });
+    } catch (e) { return false; }
+  }
   async function rec(key, value) {
     if (mode === 'try' || !store) return value === undefined ? null : false;
     try {
@@ -8673,7 +8691,7 @@ const E3 = (() => {
   }
   /* is a the day before b (two YYYY-MM-DD days) */
   const dayBefore = (a, b) => BurrowEngine.dates.dayNum(b) - BurrowEngine.dates.dayNum(a) === 1;
-  return { today, setToday, useTry, leaveTry, start, fill, discard, release, held: () => hold, told, dayBefore, newId, load, view, nameOf, occName, lastCheckOf, curOf, home, put, replace, rec, onSaved: f => savedFns.push(f),
+  return { today, setToday, useTry, leaveTry, start, fill, discard, release, held: () => hold, told, dayBefore, newId, load, view, nameOf, occName, lastCheckOf, curOf, home, put, replace, rec, recEdit, onSaved: f => savedFns.push(f),
     get book() { return book; }, get mode() { return mode; } };
 })();
 /* ---------- act3: the one door for every write in app3 (SCHEMA_V3 section 0; DECISIONS_ROUND2 H6, D2, BD4) ----------
@@ -11332,10 +11350,23 @@ function typedNow3(sections, skip) {
    on its way never lands after a later one (See my money's clear above all: E3.rec reads, then writes the device record) */
 let draftQ3 = Promise.resolve();
 const draftWrite3 = v => (draftQ3 = draftQ3.then(() => E3.rec('setup', v), () => E3.rec('setup', v)));
-const keepDraft3 = (sections, days, skip, kept) => {
+/* [qc-data-safety 26 Nov, blocker 1; M61] two tabs of one phone share the draft: a write changes only what this tab
+   changed (the sections in `touched`, saved or taken back; the boxes typed and not saved) on the draft as stored now,
+   so a section another tab saved is never wiped. E3.recEdit reads and writes in one turn, one tab at a time */
+const draftEdit3 = fn => (draftQ3 = draftQ3.then(() => E3.recEdit('setup', fn), () => E3.recEdit('setup', fn)));
+const keepDraft3 = (sections, days, skip, kept, touched) => {
   const typed = setup3 && setup3.base ? typedNow3(sections, skip) : Object.assign({}, kept);
   if (skip) delete typed[skip];
-  return draftWrite3(Object.keys(sections).length || Object.keys(typed).length ? { v: 1, sections, days, typed } : null);
+  return draftEdit3(cur => {
+    const d = cur && cur.v ? { v: 1, sections: Object.assign({}, cur.sections), days: Object.assign({}, cur.days), typed: Object.assign({}, cur.typed) } : { v: 1, sections: {}, days: {}, typed: {} };
+    for (const sec of touched || []) {
+      if (sections[sec]) { d.sections[sec] = sections[sec]; d.days[sec] = days[sec]; } else { delete d.sections[sec]; delete d.days[sec]; }
+      delete d.typed[sec];
+    }
+    if (skip) delete d.typed[skip];
+    Object.assign(d.typed, typed);
+    return Object.keys(d.sections).length || Object.keys(d.typed).length ? d : null;
+  });
 };
 /* what is typed is kept a moment after the typing stops, and at once on Back */
 /* what a row shows (its questions and their words) is worked out while the person types, not only when the box is left:
@@ -11359,7 +11390,7 @@ async function saveSec3(sec) {
   const before = setup3.saved[sec] || null, beforeDay = setup3.days[sec] || null, now = snap3(sec);
   const sections = Object.assign({}, setup3.saved, { [sec]: now }), days = Object.assign({}, setup3.days, { [sec]: E3.today() });
   setup3.busy = true;
-  const ok = await keepDraft3(sections, days);
+  const ok = await keepDraft3(sections, days, null, null, [sec]);
   setup3.busy = false;
   if (!setup3) return;
   if (ok !== true) { el.querySelector(`[data-saved="${sec}"]`).textContent = 'This could not be saved on this device. Nothing changed'; return; }
@@ -11368,8 +11399,12 @@ async function saveSec3(sec) {
   /* [qc-assistant run 4, fix B] the section goes into the chat's draft too: one set of answers (chat3.js) */
   const cw = typeof chat3FromScreens === 'function' ? chat3FromScreens(sec) : null;
   markAll3();
-  MSG3.post({ kind: 'undo', key: 'act3', text: `${secName3(sec)}: saved`, action: { label: 'Undo', run: () => undoSec3(sec, before, beforeDay, now, cw) } });
+  setup3Undo = MSG3.post({ kind: 'undo', key: 'act3', text: `${secName3(sec)}: saved`, action: { label: 'Undo', run: () => undoSec3(sec, before, beforeDay, now, cw) } });
 }
+/* [coordinator 16, 26 Nov] once the app is filled (by the chat or by See my money) a section's Save has nothing left to undo:
+   its Undo is taken off, never left to say "Undone" while nothing changes. E3.start calls this */
+let setup3Undo = null;
+function setup3Filled() { if (setup3Undo) { MSG3.dismiss(setup3Undo); setup3Undo = null; } }
 /* Undo a section's Save: the section as it was before it (or as it started); refused when it was saved again since */
 async function undoSec3(sec, before, beforeDay, now, cw) {
   const open = !!setup3, kept = open ? null : ((await E3.rec('setup')) || {});
@@ -11382,7 +11417,7 @@ async function undoSec3(sec, before, beforeDay, now, cw) {
      section is put back, or its write, made from the save being undone, would land after this one and win */
   const me = open ? setup3 : null;
   if (me) me.busy = true;
-  const ok = await keepDraft3(sections, days, sec, open ? null : kept.typed);
+  const ok = await keepDraft3(sections, days, sec, open ? null : kept.typed, [sec]);
   if (me) me.busy = false;
   if (ok !== true) { MSG3.post({ kind: 'toast', key: 'act3', text: 'This could not be saved on this device. Nothing changed' }); return; }
   if (me && setup3 === me) { setup3.saved = sections; setup3.days = days; put3(sec, before || setup3.base[sec]); }
