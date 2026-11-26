@@ -229,8 +229,7 @@ function drawHome3() {
   /* [C11] bills past their day and not ticked: the sum takes them off today (", late"), so they are listed here too, under
      their own heading and after "Together" (the engine's total is of what is still to come). Home never says "nothing is
      due" while the sum takes one off. Late card payments are in the overdue card, so the empty line says "nothing else" */
-  const lateOut = [].concat((r.notSeenYet.items || []).filter(o => o.direction === 'out').map(o => [o, 'notSeenYet.items']), (r.mayStillPost || []).filter(o => !isIncome3(o.item)).map(o => [o, 'mayStillPost']))
-    .filter(([o]) => !odSeen.has(o.item)).sort((a, b) => (a[0].lands < b[0].lands ? -1 : a[0].lands > b[0].lands ? 1 : 0));
+  const lateOut = BurrowScreens.status.lateList(r, isIncome3).filter(x => !x.income).map(x => [x.o, x.path]);   // [coordinator 18] the one late list, the AI's too
   const lateHtml = lateOut.length ? `<div data-fig="duelate"><p class="a3-acct">Late, not ticked off yet</p><p class="a3-sub">Safe to spend takes these off today</p><ul class="a3-rows">${lateOut.map(([o, path]) => `<li><span>${esc3(E3.occName(o.item))}<br><span class="when">${esc3(day3(o.lands, yr))}, late</span></span><span class="amt">${fig3(path, o.amount, o.currency || home)}</span></li>`).join('')}</ul></div>` : '';
   const dueNone = lateOut.length ? '' : `<p class="a3-sub">${odSeen.size ? 'Nothing else' : 'Nothing'} is due ${r.period ? 'before next pay' : 'in the next 30 days'}</p>`;
   out.push(`<section class="a3-card" data-card="due"><h2>${esc3(dueName)}</h2>${due.items.length ? byAcct + `<ul class="a3-rows"><li class="total"><span>Together</span><span class="amt" data-fig="duetotal">${fig3('dueBeforeNextPay.total', due.total, home)}</span></li></ul>` : dueNone}${lateHtml}</section>`);

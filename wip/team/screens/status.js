@@ -292,5 +292,19 @@
     return deepFreeze(s);
   }
 
-  return { statusOf, capParts, warningText, laterText, laterLowText, moveText, WORDS, STALE_DAYS, OLD_DAYS };
+  /* [coordinator 18; LESSONS 2] the one late list: what was due and is not ticked off, from the engine's two lists (not
+     seen yet, and may still go through), each item once, oldest first, without a card or loan payment the overdue card
+     shows. Home and the figures sent to the AI both read this. isIncome(item) says which are pay (the engine's
+     mayStillPost carries no direction). Gives [{ o, path, income, may }] */
+  function lateList(r, isIncome) {
+    const od = new Set([].concat(...[r.cards || {}, r.owed || {}].map(mp => [].concat(...Object.keys(mp).map(id => (mp[id].overdue || []).map(o => o.item))))));
+    const seen = new Set(), out = [];
+    for (const [o, path, may] of [].concat((r.notSeenYet && r.notSeenYet.items || []).map(o => [o, 'notSeenYet.items', false]), (r.mayStillPost || []).map(o => [o, 'mayStillPost', true]))) {
+      if (od.has(o.item) || seen.has(o.item)) continue;
+      seen.add(o.item);
+      out.push({ o, path, may, income: o.direction ? o.direction === 'in' : !!(isIncome && isIncome(o.item)) });
+    }
+    return out.sort((a, b) => (a.o.lands < b.o.lands ? -1 : a.o.lands > b.o.lands ? 1 : 0));
+  }
+  return { statusOf, capParts, warningText, laterText, laterLowText, moveText, lateList, WORDS, STALE_DAYS, OLD_DAYS };
 });

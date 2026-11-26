@@ -5040,7 +5040,21 @@ details summary { min-height: 44px; }
     return deepFreeze(s);
   }
 
-  return { statusOf, capParts, warningText, laterText, laterLowText, moveText, WORDS, STALE_DAYS, OLD_DAYS };
+  /* [coordinator 18; LESSONS 2] the one late list: what was due and is not ticked off, from the engine's two lists (not
+     seen yet, and may still go through), each item once, oldest first, without a card or loan payment the overdue card
+     shows. Home and the figures sent to the AI both read this. isIncome(item) says which are pay (the engine's
+     mayStillPost carries no direction). Gives [{ o, path, income, may }] */
+  function lateList(r, isIncome) {
+    const od = new Set([].concat(...[r.cards || {}, r.owed || {}].map(mp => [].concat(...Object.keys(mp).map(id => (mp[id].overdue || []).map(o => o.item))))));
+    const seen = new Set(), out = [];
+    for (const [o, path, may] of [].concat((r.notSeenYet && r.notSeenYet.items || []).map(o => [o, 'notSeenYet.items', false]), (r.mayStillPost || []).map(o => [o, 'mayStillPost', true]))) {
+      if (od.has(o.item) || seen.has(o.item)) continue;
+      seen.add(o.item);
+      out.push({ o, path, may, income: o.direction ? o.direction === 'in' : !!(isIncome && isIncome(o.item)) });
+    }
+    return out.sort((a, b) => (a.o.lands < b.o.lands ? -1 : a.o.lands > b.o.lands ? 1 : 0));
+  }
+  return { statusOf, capParts, warningText, laterText, laterLowText, moveText, lateList, WORDS, STALE_DAYS, OLD_DAYS };
 });
 /* One input behaviour for every box (DECISIONS_ROUND2 C, sweep2_repeats A11: "$1,212", "TripLisbon"). The first tap or
    click into a box selects what is in it, so what is typed next replaces the old value instead of adding to it. A
@@ -9989,8 +10003,7 @@ function drawHome3() {
   /* [C11] bills past their day and not ticked: the sum takes them off today (", late"), so they are listed here too, under
      their own heading and after "Together" (the engine's total is of what is still to come). Home never says "nothing is
      due" while the sum takes one off. Late card payments are in the overdue card, so the empty line says "nothing else" */
-  const lateOut = [].concat((r.notSeenYet.items || []).filter(o => o.direction === 'out').map(o => [o, 'notSeenYet.items']), (r.mayStillPost || []).filter(o => !isIncome3(o.item)).map(o => [o, 'mayStillPost']))
-    .filter(([o]) => !odSeen.has(o.item)).sort((a, b) => (a[0].lands < b[0].lands ? -1 : a[0].lands > b[0].lands ? 1 : 0));
+  const lateOut = BurrowScreens.status.lateList(r, isIncome3).filter(x => !x.income).map(x => [x.o, x.path]);   // [coordinator 18] the one late list, the AI's too
   const lateHtml = lateOut.length ? `<div data-fig="duelate"><p class="a3-acct">Late, not ticked off yet</p><p class="a3-sub">Safe to spend takes these off today</p><ul class="a3-rows">${lateOut.map(([o, path]) => `<li><span>${esc3(E3.occName(o.item))}<br><span class="when">${esc3(day3(o.lands, yr))}, late</span></span><span class="amt">${fig3(path, o.amount, o.currency || home)}</span></li>`).join('')}</ul></div>` : '';
   const dueNone = lateOut.length ? '' : `<p class="a3-sub">${odSeen.size ? 'Nothing else' : 'Nothing'} is due ${r.period ? 'before next pay' : 'in the next 30 days'}</p>`;
   out.push(`<section class="a3-card" data-card="due"><h2>${esc3(dueName)}</h2>${due.items.length ? byAcct + `<ul class="a3-rows"><li class="total"><span>Together</span><span class="amt" data-fig="duetotal">${fig3('dueBeforeNextPay.total', due.total, home)}</span></li></ul>` : dueNone}${lateHtml}</section>`);
@@ -13539,7 +13552,12 @@ function stmt3Bar() {
     } else out.push('Goals: none yet.');
     const due = r.dueBeforeNextPay;
     out.push(due.items.length ? `Due before next pay: ${due.items.map(o => `${occName(o.item)} ${day(o.lands, today)} ${m(o.amount, o.currency)}`).join('; ')}. Together ${m(due.total)}.` : 'Nothing is due before next pay.');
-    if (r.notSeenYet.items.length) out.push(`Due and not ticked off yet: ${r.notSeenYet.items.map(o => `${occName(o.item)} ${day(o.lands, today)} ${m(o.amount, o.currency)}`).join('; ')}.`);
+    /* [coordinator 18; LESSONS 2] the one late list Home shows (screens/status.js lateList): what goes out, then pay not in */
+    const isInc = id => ((book.schedules || []).find(s => s.id === (I.occurrence(id) || {}).schedule) || {}).kind === 'income';
+    const lateAll = ST.lateList(r, isInc), lateOut = lateAll.filter(x => !x.income), payLate = lateAll.filter(x => x.income);
+    const lateWords = xs => xs.map(({ o }) => `${occName(o.item)} ${day(o.lands, today)} ${m(o.amount, o.currency)}`).join('; ');
+    if (lateOut.length) out.push(`Late, not ticked off yet: ${lateWords(lateOut)}.`);
+    if (payLate.length) out.push(`Pay not ticked off yet: ${lateWords(payLate)}.`);
     const cards = Object.keys(r.cards);
     if (cards.length) out.push('Cards (name | owed | next payment):\n' + cards.map(id => { const c = r.cards[id], nx = c.next; return `${name(id)} | ${m(c.owedNow, (accts.find(a => a.id === id) || {}).cur)} owed | ` + (nx && nx.amount ? `next payment ${m(nx.amount)} on ${day(nx.payment_date, today)}` : 'nothing to pay yet') + ((c.overdue || []).length ? ' | a payment is overdue' : ''); }).join('\n'));
     const owed = Object.keys(r.owed || {});

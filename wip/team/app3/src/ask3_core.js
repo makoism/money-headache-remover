@@ -80,7 +80,12 @@
     } else out.push('Goals: none yet.');
     const due = r.dueBeforeNextPay;
     out.push(due.items.length ? `Due before next pay: ${due.items.map(o => `${occName(o.item)} ${day(o.lands, today)} ${m(o.amount, o.currency)}`).join('; ')}. Together ${m(due.total)}.` : 'Nothing is due before next pay.');
-    if (r.notSeenYet.items.length) out.push(`Due and not ticked off yet: ${r.notSeenYet.items.map(o => `${occName(o.item)} ${day(o.lands, today)} ${m(o.amount, o.currency)}`).join('; ')}.`);
+    /* [coordinator 18; LESSONS 2] the one late list Home shows (screens/status.js lateList): what goes out, then pay not in */
+    const isInc = id => ((book.schedules || []).find(s => s.id === (I.occurrence(id) || {}).schedule) || {}).kind === 'income';
+    const lateAll = ST.lateList(r, isInc), lateOut = lateAll.filter(x => !x.income), payLate = lateAll.filter(x => x.income);
+    const lateWords = xs => xs.map(({ o }) => `${occName(o.item)} ${day(o.lands, today)} ${m(o.amount, o.currency)}`).join('; ');
+    if (lateOut.length) out.push(`Late, not ticked off yet: ${lateWords(lateOut)}.`);
+    if (payLate.length) out.push(`Pay not ticked off yet: ${lateWords(payLate)}.`);
     const cards = Object.keys(r.cards);
     if (cards.length) out.push('Cards (name | owed | next payment):\n' + cards.map(id => { const c = r.cards[id], nx = c.next; return `${name(id)} | ${m(c.owedNow, (accts.find(a => a.id === id) || {}).cur)} owed | ` + (nx && nx.amount ? `next payment ${m(nx.amount)} on ${day(nx.payment_date, today)}` : 'nothing to pay yet') + ((c.overdue || []).length ? ' | a payment is overdue' : ''); }).join('\n'));
     const owed = Object.keys(r.owed || {});
