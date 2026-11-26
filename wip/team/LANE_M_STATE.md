@@ -1,11 +1,13 @@
 # LANE M state page (controls slices after the AI-first candidate)
 
-LANE M: session_01BFpKEWyTdLJxPoDySdQrVW (took over from LANE J session_01BFpKEXkcELFPCxnuiX8jFx, 26 Nov about 09:40 JST... see Now). Coordinator: "Burrow coordinator 16 (talk to this one)" session_01BFpKEXBhaZ6NZ92Lntxb2A. MAIN 22 (session_01BFpKEVPdcTtDvMBQEUFsEx) is the only session that merges. LANE L (session_01BFpKEXEN4ow4uyeRCZ9aSM) owns lane/amounthist (engine lane; slice 10 merges it first; both touch act3.js).
+LANE M: session_01BFpKEWyTdLJxPoDySdQrVW (took over from LANE J session_01BFpKEXkcELFPCxnuiX8jFx, 26 Nov about 09:40 JST... see Now). Coordinator: "Burrow coordinator 17 (talk to this one)" session_01BFpKEZ9Gn1VKFM5HMC5Wn1 (from 26 Nov 10:23 JST; 16 was session_01BFpKEXBhaZ6NZ92Lntxb2A). MAIN 22 (session_01BFpKEVPdcTtDvMBQEUFsEx) is the only session that merges. LANE L (session_01BFpKEXEN4ow4uyeRCZ9aSM) owns lane/amounthist (engine lane; slice 10 merges it first; both touch act3.js).
 Keep-going task: trig_01ETjeofWVuqzY2qbB7xDS4H (hourly, bound to LANE M). Switch off at handoff or pause.
 
 ## Now (LANE M, 26 Nov)
-- Push probe OK. Worktrees: .claude/worktrees/estate (lane/e-state), c6 (lane/controls-6).
-- Working on: loan check doors on lane/controls-6 (step 1 schema/guard/sync tests next).
+- Push probe OK. Tools installed in /home/claude/work/tools. Worktrees: .claude/worktrees/estate (lane/e-state), c6 (lane/controls-6), c5f (lane/controls-5fix), c9 (lane/controls-9).
+- Helper 1 (opus) builds loan check doors 1-5 on controls-6 (c6), then full check. Next: qc-foundation + qc-numbers, round 2026-11-26_loancheck_build (ask coordinator for scope.txt).
+- Helper 2 (opus) on controls-5fix: qc-controls blocker 2 (second income day change does not take effect), trace cause, test, fix, say if on ai-join (tell coordinator if yes). Blocker 1 (main bank switch) ruled slice 13, after slice 10. qc-controls report: controls-5fix 838f2c66. Then ask coordinator for confirming runs (qc-foundation + qc-controls).
+- Me: slice 10 CHECKFIX_PLAN.md revision with FD1/FD2 on controls-9, then send commit for confirm file 2.
 - Queue after: slices 2 to 5 qc-controls fixes on controls-5fix then confirming runs; slice 10 plan revise FD1/FD2 (merge amounthist first) and send commit for confirm file 2; slices 7/8 reviewers after 2 to 5 merged up; controls-9 follow-ups (change card before/after, statements to Home Add statements, failed call once plainly, Keep at least in SCREENS list, setup Q4 one thing + second bank).
 
 # Below: LANE J's page at handoff
