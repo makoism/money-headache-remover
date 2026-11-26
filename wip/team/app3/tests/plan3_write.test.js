@@ -786,6 +786,16 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     const z = await h.go('closeAccount', CARD_A, {}); ok(!z.ok && /^Streaming is paid by Card A\. Change it to another card or account first/.test(z.text), z.text);
     ok(!h.book.accounts.find(a => a.id === CARD_A).closed, 'not closed');
   });
+  await t('[LANE P, qc-foundation controls2to5 N1, M13, M46] a bill paid by the card that was removed (a cancelled subscription) does not block closing it; the removed bill stays in the list for Undo', async () => {
+    const h = setup();
+    { const b = await h.go('addBill', { name: 'Streaming', amount: 1500, day: 5, acct: CARD_A }); ok(b.ok, JSON.stringify(b)); }
+    const sid = h.book.schedules.find(s => s.name === 'Streaming').id;
+    const rm = await h.A.remove(sid); ok(rm.ok, JSON.stringify(rm));
+    ok((await h.go('payOff', CARD_A)).ok);
+    const r = await h.go('closeAccount', CARD_A, {}); ok(r.ok, JSON.stringify(r));
+    eq(h.book.accounts.find(a => a.id === CARD_A).closed, DAY);
+    const s = h.book.schedules.find(x => x.id === sid); ok(s && s.gone && s.acct === CARD_A, 'the removed bill is still kept, marked gone, for Undo');
+  });
   await t('[E3] closeAccount for a card: refused while something is on it (pay it off or tick its payment first); at zero: a check of 0 and closed; its payment day stops; Reopen', async () => {
     const h = setup();
     const z = await h.go('closeAccount', CARD_A, {}); ok(!z.ok && /still has ¥54,000 on it/.test(z.text), z.text);
