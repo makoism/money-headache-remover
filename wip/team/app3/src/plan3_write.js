@@ -646,7 +646,14 @@
     const r = LA.lookahead(b1, today), m = v => SMF.format(v || 0, a.cur || G.homeOn(book, today));
     if (a.type === 'card') return `It comes back with ${m(((r.cards || {})[id] || {}).owedNow)} on it. Type what is on it now at Check your bank`;
     if (a.type === 'loan') return `It comes back owing ${m(((r.owed || {})[id] || {}).owedNow)}`;
-    return `It comes back at ${m((r.accounts[id] || {}).bank)}. Type what is in it now at Check your bank`;
+    /* [qc-foundation controls2to5 N3, M45, M95] money its close moved stays where it went: said, with Undo for a close
+       made by mistake, so a figure typed after the reopen is not counted in both places. The close is the latest step in
+       the Undo journal that set `closed` on it; its move is the transfer out of it that step added */
+    const cl = (book.journal || []).filter(j => j && (j.edited || []).some(x => x && x.list === 'accounts' && x.id === id && x.before && 'closed' in x.before && x.before.closed == null))
+      .reduce((p, j) => !p || String(j.moment || '') >= String(p.moment || '') ? j : p, null);
+    const mv = cl && (book.events || []).find(e => live(e) && e.grp === cl.id && e.k === 'transfer' && e.acct === id);
+    const kept = mv ? ` The ${m(mv.a)} moved to ${nameOf({ book }, mv.acct2)} at the close stays there: if it never moved, use Undo on the close instead.` : '';
+    return `It comes back at ${m((r.accounts[id] || {}).bank)}.${kept} Type what is in it now at Check your bank`;
   }
   function reopenAccount(w, id) {
     const a = find(w, 'accounts', id);

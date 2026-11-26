@@ -328,6 +328,17 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const c4 = r4.shown.find(x => x.who === 'card');
     ok(c4.card.status === 'done' && c4.card.lines[0] === 'Reopen Wallet. ' + words && /^It comes back at ¥0\. Type what is in it now at Check your bank$/.test(words), c4.card.lines.join(' | ') + ' | ' + words);
   });
+  await t('[LANE P, qc-foundation controls2to5 N3] by asking, reopening after a close that moved money says the move stays where it went and points to Undo (PLAN3W.reopenWords)', async () => {
+    const P = require('../src/plan3_write.js');
+    const { hp, d, st, wid } = await wallet(R => [() => say('', [call('change', { steps: [{ do: 'close_account', account: R.w, to: 'A1', amount: 5000 }] })]), say('Tap Do it.'),
+      () => say('', [call('change', { steps: [{ do: 'reopen_account', account: R.w }] })]), say('Open again.')]);
+    const r3 = await K.turn(st, 'close my wallet, there is 5,000 in it, it goes to the bank', d);
+    const k3 = await K.confirm(r3.state, r3.shown.find(x => x.who === 'card').id, d); ok(k3.ok, JSON.stringify(k3));
+    const words = P.reopenWords(hp.book, '2026-11-24', wid);
+    const r4 = await K.turn(k3.state, 'oh, reopen the wallet', d);
+    const c4 = r4.shown.find(x => x.who === 'card');
+    ok(c4.card.status === 'done' && c4.card.lines[0] === 'Reopen Wallet. ' + words && /^It comes back at ¥0\. The ¥5,000 moved to Main bank at the close stays there: if it never moved, use Undo on the close instead\. Type what is in it now at Check your bank$/.test(words), c4.card.lines.join(' | ') + ' | ' + words);
+  });
   await t('[qc-controls confirm 6] by asking, pay off asks "did you pay it all" and never marks the app\'s own figure as the AI\'s guess', async () => {
     const { hp, d, st } = await wallet(R => [() => say('', [call('change', { steps: [{ do: 'pay_off', account: R.cb }] })]), say('Tap Do it if you paid it.')]);
     const r8 = await K.turn(st, 'I paid off card B', d);

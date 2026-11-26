@@ -733,6 +733,17 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     eq([h.book.accounts.find(x => x.id === cash).closed || null, h.book.events.filter(e => !e.gone).length], [null, n], 'open, every record kept');
     const z = await h.go('reopenAccount', cash); ok(!z.ok && /not closed/.test(z.text), z.text);
   });
+  await t('[LANE P, qc-foundation controls2to5 N3, M95, M45] Reopen after a close that moved money says the move stays where it went and points to Undo; with no move (spent), the old words', async () => {
+    const h = setup(), cash = await withCash(h);
+    const r = await h.go('closeAccount', cash, { to: BANK, now: 8000 }); ok(r.ok, JSON.stringify(r));
+    eq(W.reopenWords(h.book, DAY, cash), 'It comes back at ¥0. The ¥8,000 moved to Main bank at the close stays there: if it never moved, use Undo on the close instead. Type what is in it now at Check your bank');
+    ok((await h.go('reopenAccount', cash)).ok);
+    ok((await h.go('closeAccount', cash, { to: 'spent' })).ok, 'closed again the same day, nothing moved this time');
+    eq(W.reopenWords(h.book, DAY, cash), 'It comes back at ¥0. Type what is in it now at Check your bank', 'only the latest close counts');
+    const h2 = setup(), c2 = await withCash(h2);
+    ok((await h2.go('closeAccount', c2, { to: 'spent' })).ok);
+    eq(W.reopenWords(h2.book, DAY, c2), 'It comes back at ¥0. Type what is in it now at Check your bank');
+  });
   await t('[E2] removeAccount: one added by mistake goes whole (its opening, its check, and the move that filled it), as if never added; one with history, a bill or the main bank is refused', async () => {
     const h = setup(), bank0 = view(h.book).accounts[BANK].bank;
     const cash = await withCash(h);
