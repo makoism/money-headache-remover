@@ -209,6 +209,7 @@ const saved = p => p.evaluate(async () => { const s = await BurrowStore.open(); 
     await p3.evaluate(id => document.querySelector(`#a3Plan [data-owed="${id}"]`).click(), LOAN); await T.w(500);
     await p3.click('#plLcQs [data-lcans="yes"]'); await fill('#plLcAmt', '812400'); await p3.click('#plLcSave'); await T.w(700);
     ck('Plan: 812,400 (near) saved with no question', await owed() === 812400 && !(await p3.$('#plLcFar [data-far]')), await owed());
+    ck('Plan: the loan\'s row now says "checked 3 Feb"', await p3.$eval(`#a3Plan [data-owed="${LOAN}"] [data-fig="loanchecked"]`, e => e.textContent.trim()).catch(() => '') === 'checked 3 Feb');
     /* Check your bank's loan box */
     await p3.goto(T.URL0 + '?today=2027-02-04'); await T.w(600);
     await p3.click('#a3CheckGo'); await T.w(400);
@@ -238,6 +239,13 @@ const saved = p => p.evaluate(async () => { const s = await BurrowStore.open(); 
     await p4.reload(); await T.w(600);
     const home = await p4.$eval('#a3Home', e => e.textContent.replace(/\s+/g, ' '));
     ck('Home: the 27 Nov loan payment is money out logged since the bank\'s check', /¥30,000 \(out, logged since\)/.test(home), home.slice(0, 400));
+    /* [qc-numbers loancheck_build CONFUSING 3, M36] how fresh each loan is, as cards say it: Home and Plan */
+    const age = (sel) => p4.$eval(sel, e => e.textContent.trim()).catch(() => '');
+    ck('Home: the loan has its own line with what is owed and "checked 25 Nov", as a card has', await age(`#a3Home [data-loanid="${LOAN}"] [data-fig="loanchecked"]`) === 'checked 25 Nov' && /870,000/.test(await age(`#a3Home [data-loanid="${LOAN}"]`)), await age(`#a3Home [data-loanid="${LOAN}"]`));
+    await p4.tap('[data-tab="plan"]'); await T.w(400);
+    ck('Plan: the loan\'s row says "checked 25 Nov" too', await age(`#a3Plan [data-owed="${LOAN}"] [data-fig="loanchecked"]`) === 'checked 25 Nov', await age(`#a3Plan [data-owed="${LOAN}"]`));
+    const cardIds = await p4.$$eval('#a3Plan [data-owed]', l => l.map(x => x.dataset.owed));
+    ck('Plan: each card\'s row says when it was checked, the same piece', cardIds.length === 3 && (await p4.$$eval('#a3Plan [data-owed] [data-fig="cardchecked"]', l => l.map(x => x.textContent.trim()))).join() === 'checked 20 Nov,checked 20 Nov', JSON.stringify(cardIds));
     await p4.tap('[data-tab="receipts"]'); await T.w(400);
     const tk = await p4.$$eval('#rcList [data-ticked]', l => l.map(x => x.innerText.replace(/\s+/g, ' ').trim()));
     ck('Receipts: the same payment is a row in this stretch, named, with its day, its bank and its amount', tk.length === 1 && /^Car loan payment 27 Nov, Main bank, ticked at Check your bank ¥30,000$/.test(tk[0]), JSON.stringify(tk));

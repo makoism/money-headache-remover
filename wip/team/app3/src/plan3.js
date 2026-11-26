@@ -134,7 +134,7 @@ function drawPlan3() {
       : `paid on day ${esc3(a.payDay)} from ${esc3(E3.nameOf(a.payFrom))}`;
     const nx = k.next && k.next.amount ? `<br><span class="when">${esc3(label3('nextPayment'))} ${plFig3(a.type === 'card' ? 'cards.*.next.amount' : 'owed.*.next.amount', k.next.amount, a.cur)} on ${esc3(day3(k.next.payment_date, yr))}</span>` : '';
     const od = (k.overdue || []).map(o => `<br><span class="a3-late" data-fig="overdue" data-state="${esc3(o.state)}">${overdueWords3(o, a.cur, yr, a.type === 'card' ? 'cards.*.overdue.*.amount' : 'owed.*.overdue.*.amount')}</span>`).join('');
-    return plRow3(`data-owed="${esc3(a.id)}"`, `${esc3(a.name)}<br><span class="when">${days}</span>${od}${nx}`, k.credit ? `<span data-fig="credit">${esc3(label3('inCredit')).toLowerCase()} ${plFig3('cards.*.credit', k.credit, a.cur)}</span>`   /* [BL5] never as owed */
+    return plRow3(`data-owed="${esc3(a.id)}"`, `${esc3(a.name)}<br><span class="when">${days}</span>${od}${nx}${checkedHtml3(a.id, day, yr, a.type === 'card' ? 'cardchecked' : 'loanchecked')}`, k.credit ? `<span data-fig="credit">${esc3(label3('inCredit')).toLowerCase()} ${plFig3('cards.*.credit', k.credit, a.cur)}</span>`   /* [BL5] never as owed */
       : `<span data-fig="owed-now">${plFig3(a.type === 'card' ? 'cards.*.owedNow' : 'owed.*.owedNow', k.owedNow, a.cur)}</span><br><span class="when">${esc3(label3('owed')).toLowerCase()}</span>`);
   }).filter(Boolean);
   const closedOwed = ((book.accounts || []).filter(a => plLive3(a) && (a.type === 'card' || a.type === 'loan') && a.closed)).map(a => plRow3(`data-acctclosed="${esc3(a.id)}"`, `${esc3(a.name)}<br><span class="when">Closed ${esc3(day3(a.closed, yr))}. Its history stays</span>`, ''));
