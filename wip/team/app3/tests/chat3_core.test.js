@@ -693,7 +693,7 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const r = await K.turn(state, 'lunch 900 on card A', hp.deps(FAKE.make([lunch, say('Logged.')])));
     const c = r.shown.find(x => x.who === 'card').card;
     eq(c.rows.map(x => [x.label, x.before, x.after]), [['Safe to spend', 201400, 201400], ['Card A, still owed', 54000, 54900]]);
-    eq(c.note, 'Safe to spend stays the same: Card A is paid from your bank on or after your next pay');
+    eq(c.note, 'Safe to spend stays ¥201,400: Card A is paid from your bank on or after your next pay');
     const hq = page('2026-11-24'); const q = await runSetup(hq, FAKE.make(steps(SETUP)));
     const d = hq.deps(FAKE.make([say('', [call('change', { steps: [{ do: 'set_free', amount: 30000 }] })]), say('Set.'), lunch, say('Logged.')]));
     const q1 = await K.turn(q.state, 'set Free to spend to 30,000', d);
@@ -705,6 +705,93 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const r3 = await K.turn(r.state, 'coffee 400 from Main bank', hp.deps(FAKE.make([say('', [call('change', { steps: [{ do: 'log_spend', amount: 400, account: 'A1' }] })]), say('Logged.')])));
     ok(!r3.shown.find(x => x.who === 'card').card.note, 'bank spend');
   });
+  /* [coordinator follow-up, found twice; LESSONS 2] every change shows the changed thing's own before and after, from
+     the one shared piece (src/change3.js) the change card and the screens' Undo bar both read. Mako's made-up shape on
+     Tue 24 Nov 2026 (safe to spend 201,400, next pay 10 Dec): each kind through the write door, as the app makes it */
+  {
+    const C3 = require('../src/change3.js'), PW = require('../src/plan3_write.js');
+    const fresh = async () => { const hp = page('2026-11-24'); await runSetup(hp, FAKE.make(steps(SETUP))); return hp; };
+    const door = hp => hp.deps(FAKE.make([])).door;
+    const idOf = (hp, list, name) => (list === 'accounts' ? hp.book.accounts : hp.book.schedules.concat(hp.book.places || [])).find(x => x.name === name).id;
+    /* one step through the door: the rows of its things, the why line and the amber lines, on the book before and after */
+    const step = async (hp, label, fn) => {
+      const b0 = hp.book, r = await door(hp).run(label, w => fn(w));
+      ok(r.ok, label + ': ' + r.text);
+      return { rows: C3.things(b0, hp.book, hp.day, r.step).map(x => [x.label, x.before, x.after, x.state || '']), why: C3.why(b0, hp.book, hp.day, r.step), amber: C3.amber(b0, hp.book, hp.day), said: C3.said(b0, hp.book, hp.day, r.step), safe: safe(hp) };
+    };
+    await t('[change rows] "make rent 92,000": Rent, amount 72,000 to 92,000; safe to spend moves, so no why line', async () => {
+      const hp = await fresh(), x = await step(hp, 'changeBill', w => PW.changeBill(w, idOf(hp, 'schedules', 'Rent'), { amount: 92000 }));
+      eq(x.rows, [['Rent, amount', 72000, 92000, '']]);
+      eq([x.safe, x.why], [181400, null]);
+      eq(x.said, 'Rent, amount: ¥72,000 to ¥92,000. Safe to spend: ¥201,400 to ¥181,400');
+    });
+    await t('[change rows] Phone 4,800 to 5,000: the next Phone is 20 Dec, after pay on 10 Dec, so safe to spend stays and says why', async () => {
+      const hp = await fresh(), x = await step(hp, 'changeBill', w => PW.changeBill(w, idOf(hp, 'schedules', 'Phone'), { amount: 5000 }));
+      eq(x.rows, [['Phone, amount', 4800, 5000, '']]);
+      eq(x.why, 'Safe to spend stays ¥201,400: Phone is not due again before your next pay on 10 Dec');
+      eq(x.said, 'Phone, amount: ¥4,800 to ¥5,000. Safe to spend stays ¥201,400: Phone is not due again before your next pay on 10 Dec');
+    });
+    await t('[change rows] "move my phone bill to Savings": Phone, paid from Main bank to Savings (Savings gets no pay, so safe to spend takes the 20 Dec Phone)', async () => {
+      const hp = await fresh();
+      await step(hp, 'addAccount', w => PW.addAccount(w, { name: 'Savings', type: 'bank', amount: 40000, moved: false }));
+      eq(safe(hp), 241400, 'Savings adds its 40,000');
+      const x = await step(hp, 'changeBill', w => PW.changeBill(w, idOf(hp, 'schedules', 'Phone'), { acct: idOf(hp, 'accounts', 'Savings') }));
+      eq(x.rows, [['Phone, paid from', 'Main bank', 'Savings', '']]);
+      eq([x.safe, x.why, x.amber], [236600, null, []], 'moved: no why line; Savings stays above zero');
+      eq(x.said, 'Phone, paid from: Main bank to Savings. Safe to spend: ¥241,400 to ¥236,600');
+    });
+    await t('[change rows, M47] Rent moved to a Savings of 1,000: Savings goes below zero on 27 Nov, said once in a plain amber line', async () => {
+      const hp = await fresh();
+      await step(hp, 'addAccount', w => PW.addAccount(w, { name: 'Savings', type: 'bank', amount: 1000, moved: false }));
+      const x = await step(hp, 'changeBill', w => PW.changeBill(w, idOf(hp, 'schedules', 'Rent'), { acct: idOf(hp, 'accounts', 'Savings') }));
+      eq(x.rows, [['Rent, paid from', 'Main bank', 'Savings', '']]);
+      eq(x.amber, ['Savings now goes ¥71,000 below zero on 27 Nov. Move money in before then, or pay that from another account']);
+      ok(x.said.endsWith(x.amber[0]), x.said);
+    });
+    await t('[change rows] a pay\'s day: Pay, when on day 10 each month to on day 25 each month', async () => {
+      const hp = await fresh(), x = await step(hp, 'changeBill', w => PW.changeBill(w, idOf(hp, 'schedules', 'Pay'), { day: 25, every: 'month' }));
+      eq(x.rows, [['Pay, when', 'on day 10 each month', 'on day 25 each month', '']]);
+    });
+    await t('[change rows] "the goal target is 300,000": Trip, goal amount 100,000 to 300,000; nothing set aside, and it says so', async () => {
+      const hp = await fresh();
+      const add = await step(hp, 'addGoal', w => PW.addGoal(w, { name: 'Trip', target: 100000 }));
+      eq(add.rows, [['Trip, goal amount', null, 100000, 'new']]);
+      const x = await step(hp, 'changeGoal', w => PW.changeGoal(w, idOf(hp, 'places', 'Trip'), { target: 300000 }));
+      eq(x.rows, [['Trip, goal amount', 100000, 300000, '']]);
+      eq(x.why, 'Safe to spend stays ¥201,400: a goal\'s amount or date sets no money aside');
+    });
+    await t('[change rows] "rename my bank": Account name Main bank to Sora Bank; a new name moves no money', async () => {
+      const hp = await fresh(), x = await step(hp, 'changeAccount', w => PW.changeAccount(w, idOf(hp, 'accounts', 'Main bank'), { name: 'Sora Bank' }));
+      eq(x.rows, [['Account name', 'Main bank', 'Sora Bank', '']]);
+      eq(x.why, 'Safe to spend stays ¥201,400: a new name moves no money');
+    });
+    await t('[change rows] a card\'s pay day: Card A, paid on day 10 to day 12; still paid on or after the next pay, and it says so', async () => {
+      const hp = await fresh(), x = await step(hp, 'changeOwed', w => PW.changeOwed(w, idOf(hp, 'accounts', 'Card A'), { payDay: 12 }));
+      eq(x.rows, [['Card A, paid on', 'day 10', 'day 12', '']]);
+      eq(x.why, 'Safe to spend stays ¥201,400: Card A is paid from your bank on or after your next pay');
+    });
+    await t('[change rows] an add says new and a remove says removed: Gym added (8,000 on day 1), Internet removed', async () => {
+      const hp = await fresh(), x = await step(hp, 'addBill', w => PW.addBill(w, { name: 'Gym', amount: 8000, day: 1, every: 'month' }));
+      eq(x.rows, [['Gym, amount', null, 8000, 'new'], ['Gym, when', null, 'on day 1 each month', 'new']]);
+      eq(x.said, 'Gym, amount: new, ¥8,000. Gym, when: new, on day 1 each month. Safe to spend: ¥201,400 to ¥193,400');
+      const y = await step(hp, 'removeSchedule', w => PW.removeSchedule(w, idOf(hp, 'schedules', 'Internet')));
+      eq(y.rows, [['Internet, amount', 5200, null, 'removed'], ['Internet, when', 'on day 27 each month', null, 'removed']]);
+      eq(y.said, 'Internet, amount: ¥5,200, removed. Internet, when: on day 27 each month, removed. Safe to spend: ¥193,400 to ¥198,600');
+    });
+    await t('[change rows] no true reason, no why line: a new cash wallet with nothing in it leaves safe to spend where it was and says nothing more', async () => {
+      const hp = await fresh(), x = await step(hp, 'addAccount', w => PW.addAccount(w, { name: 'Wallet', type: 'cash', amount: 0, moved: false }));
+      eq(x.rows, [['Wallet', null, 0, 'new']]);
+      eq([x.safe, x.why], [201400, null]);
+      eq(x.said, 'Wallet: new, ¥0');
+    });
+    await t('[change rows] the assistant\'s change card leads with the thing: "make rent 92,000" shows Rent, amount before the figures', async () => {
+      const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
+      const f = FAKE.make([body => say('', [call('change', { steps: [{ do: 'change_bill', ref: /(B\d+) \| Rent \|/.exec(JSON.stringify(body.messages))[1], amount: 92000 }] })]), say('Changed.')]);
+      const c = (await K.turn(state, 'make rent 92,000', hp.deps(f))).shown.find(x => x.who === 'card').card;
+      eq(c.rows.slice(0, 2).map(x => [x.label, x.before, x.after, !!x.money]), [['Rent, amount', 72000, 92000, true], ['Safe to spend', 201400, 181400, false]]);
+      eq([c.note, c.amber], [null, []]);
+    });
+  }
   /* [qc-assistant, confusing] two steps asked, one left out: the card says which was not done, never without a word */
   await t('two steps asked and one left out: the card says which one was not done', async () => {
     const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));

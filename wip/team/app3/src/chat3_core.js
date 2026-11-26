@@ -110,6 +110,7 @@
   const PW = () => (node ? require('./plan3_write.js') : root.PLAN3W);
   const CK = node ? require('../../engine/checkin.js') : E.checkin;
   const IDS = node ? require('../../engine/ids.js') : E.ids;
+  const CH = node ? require('./change3.js') : root.CHANGE3;   // what a step changed, in rows: the one piece the Undo bar reads too
   const ROUNDS = 6, TURNS = 10, KEEP = 200, MAX_TOKENS = 2000, MAX_STEPS = 6;
   const DAY = /^\d{4}-\d{2}-\d{2}$/;
   const live = x => x && !x.gone;
@@ -256,14 +257,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     if (closed.length) out.push('Closed accounts, reopen_account opens one again (ref | name | closed on):\n' + closed.join('\n'));
     return { text: out.join('\n'), refs };
   }
-  function ruleWords(r) {
-    if (!r) return '';
-    if (r.every === 'month') return 'on day ' + r.days.join(' and ') + ' each month';
-    if (r.every === 'weeks') return 'every ' + (r.n > 1 ? r.n + ' weeks' : 'week') + ' from ' + day1(r.from);
-    if (r.every === 'months') return 'every ' + r.n + ' months';
-    if (r.every === 'year') return 'once a year on ' + r.date;
-    return 'no fixed day';
-  }
+  const ruleWords = r => CH.ruleWords(r);
   /* the spends of the book with refs S1.. in the order they were told (a new one gets the next number) */
   function spendRefs(book) {
     const ev = (book.events || []).filter(e => e && (e.k === 'spend' || e.k === 'in' || e.k === 'transfer') && e.src && e.src.type === 'typed')
@@ -794,34 +788,13 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     }
     return door.run('Assistant: ' + s.text, w => PW()[s.kind](w, ...s.args), opts);
   }
-  /* the engine's figures before and after (minor units) */
-  function rowsOf(b0, b1, today, steps) {
-    const r0 = LA.lookahead(b0, today), r1 = LA.lookahead(b1, today);
-    const rows = [{ key: 'safe', label: SN.label('safeToSpend'), before: r0.safeToSpend.headline, after: r1.safeToSpend.headline }];
-    const f0 = r0.period && r0.period.free, f1 = r1.period && r1.period.free;
-    if ((f0 || f1) && steps.some(s => s.kind === 'logSpend' || s.kind === 'setFree' || s.kind === 'refund')) rows.push({ key: 'free', label: 'Free to spend left', before: f0 ? f0.left : null, after: f1 ? f1.left : null });
-    for (const id of Object.keys(r1.accounts)) {
-      const a0 = r0.accounts[id], a1 = r1.accounts[id];
-      if (a1 && a1.bank != null && (!a0 || a0.bank !== a1.bank)) rows.push({ key: 'bank:' + id, label: ((b1.accounts || []).find(x => x.id === id) || {}).name + ' today', before: a0 ? a0.bank : null, after: a1.bank });
-    }
-    /* [qc-assistant run 2; M30] a card whose figure changed shows it: most spending goes on cards, and safe to spend
-       alone would read the same before and after. The engine's own cards.owedNow, named as Home names it */
-    for (const id of Object.keys(r1.cards || {})) {
-      const c0 = (r0.cards || {})[id], c1 = r1.cards[id];
-      if (c1 && c1.owedNow != null && (!c0 || c0.owedNow !== c1.owedNow)) rows.push({ key: 'card:' + id, label: ((b1.accounts || []).find(x => x.id === id) || {}).name + ', ' + SN.label('owed').toLowerCase(), before: c0 ? c0.owedNow : null, after: c1.owedNow });
-    }
-    return rows;
-  }
-  /* [M30; the coordinator's ruling 26 Nov] a spend on a card that leaves the headline where it was: one true line says
-     why, from the engine's own dates (the card's next payment is on or after the next pay, so it is not due before it).
-     No day is promised: with a close day not sure, the statement it falls in is not known */
-  function noteOf(b0, b1, today) {
-    const r0 = LA.lookahead(b0, today), r1 = LA.lookahead(b1, today), pay = (r1.daysToNextPay || {}).next_pay;
-    if (!pay || r0.safeToSpend.headline !== r1.safeToSpend.headline) return null;
-    const ids = Object.keys(r1.cards || {}).filter(id => { const c0 = (r0.cards || {})[id], c1 = r1.cards[id]; return c0 && c1.owedNow > c0.owedNow && c1.next && c1.next.payment_date && c1.next.payment_date >= pay; });
-    if (!ids.length) return null;
-    const names = ids.map(id => ((b1.accounts || []).find(x => x.id === id) || {}).name);
-    return `${SN.label('safeToSpend')} stays the same: ${names.join(' and ')} ${names.length > 1 ? 'are' : 'is'} paid from your bank on or after your next pay`;
+  /* [coordinator follow-up, found twice; LESSONS 2] what the card shows: the changed things' own before and after first
+     (src/change3.js, the piece the screens' Undo bar reads too), then the engine's figures that moved; the why line when
+     safe to spend stays, and an amber line for a bank that now goes below zero (M47) */
+  const journalOf = done => ({ added: [].concat(...done.map(s => s.added || [])), edited: [].concat(...done.map(s => s.edited || [])),
+    removed: [].concat(...done.map(s => s.removed || [])), revived: [].concat(...done.map(s => s.revived || [])) });
+  function rowsOf(b0, b1, today, steps, j) {
+    return CH.things(b0, b1, today, j).concat(CH.figures(b0, b1, today, { free: steps.some(s => s.kind === 'logSpend' || s.kind === 'setFree' || s.kind === 'refund') }));
   }
   async function carryOut(state, card, deps) {
     const door = deps.door, before = deps.book(), today = deps.today(), done = [];
@@ -840,10 +813,12 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       }
       done.push(res.step);
     }
-    card.status = 'done'; card.steps = done.map(s => s.id); card.rows = rowsOf(before, deps.book(), today, card.plan); card.note = noteOf(before, deps.book(), today);
+    const after = deps.book(), j = journalOf(done);
+    card.status = 'done'; card.steps = done.map(s => s.id); card.rows = rowsOf(before, after, today, card.plan, j); card.note = CH.why(before, after, today, j); card.amber = CH.amber(before, after, today);
     return { ok: true };
   }
-  const resultOf = card => card.status === 'done' ? 'Done, with Undo on the card. ' + card.rows.map(r => `${r.label}: ${r.before == null ? '-' : r.before} to ${r.after == null ? '-' : r.after} (minor units)`).join('; ')
+  const valOf = (v, st) => (v == null ? st || '-' : typeof v === 'number' ? v + ' (minor units)' : v);
+  const resultOf = card => card.status === 'done' ? 'Done, with Undo on the card. ' + card.rows.map(r => `${r.label}: ${valOf(r.before, r.state)} to ${valOf(r.after, r.state)}`).join('; ') + [card.note, ...(card.amber || [])].filter(Boolean).map(x => '. ' + x).join('')
     : card.status === 'ask' ? 'Waiting for the person\'s OK: ' + card.why : 'Not changed: ' + card.why;
 
   /* [AI_JOIN_FIXES H5] each bank figure step whose gap (the engine's filler on the book the check would make) is larger

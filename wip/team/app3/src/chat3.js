@@ -115,7 +115,14 @@ function chat3Figs(rows) {
   const cur = E3.book ? E3.home() : 'JPY';
   if (!rows || !rows.length) return '';
   return `<ul class="a3-rows a3-chat-figs"><li class="a3-ask-head"><span></span><span>Before</span><span>After</span></li>${rows.map(r => `<li><span>${esc3(r.label)}</span>`
-    + `<span class="amt">${r.before == null ? '' : fig3('ask.before', r.before, cur)}</span><span class="amt">${r.after == null ? '' : fig3('ask.after', r.after, cur)}</span></li>`).join('')}</ul>`;
+    + `<span class="amt">${chat3Cell(r, 'before', cur)}</span><span class="amt">${chat3Cell(r, 'after', cur)}</span></li>`).join('')}</ul>`;
+}
+/* one cell of a change row (src/change3.js): an amount through the one formatter, words as they are, "new" or "removed"
+   in the side that has nothing */
+function chat3Cell(r, side, cur) {
+  const v = r[side];
+  if (v == null) return r.state ? `<span data-chat="state">${esc3(r.state)}</span>` : '';
+  return typeof v === 'number' ? fig3('ask.' + side, v, cur) : `<span data-chat="words">${esc3(v)}</span>`;
 }
 function chat3Card(t) {
   const c = t.card || {}, id = esc3(t.id);
@@ -124,7 +131,7 @@ function chat3Card(t) {
       : c.status === 'ask' ? `<p class="a3-sub" data-chat="status" data-ask="${esc3(c.ask || '')}">${esc3(CHAT3_WORDS.ask[c.ask] || CHAT3_WORDS.ask.large)}</p><div class="a3-actions"><button type="button" class="a3-btn solid" data-chatok="${id}">Do it</button><button type="button" class="a3-btn" data-chatnot="${id}">Not now</button></div>`
       : `<p class="a3-sub" data-chat="status">${esc3(c.status === 'undone' ? 'Taken back' : c.status === 'not now' ? 'Not done' : (c.why || 'The app refused it'))}</p>`;
     return `<div class="a3-card a3-chat-card" data-card="chat-change" data-turn="${id}" data-status="${esc3(c.status)}"><h3>${c.status === 'ask' ? 'A change to check' : c.status === 'refused' || c.status === 'not now' ? 'Not changed' : 'Changed'}</h3>
-      <ul class="a3-chat-lines">${(c.lines || []).map(l => `<li>${esc3(l)}</li>`).join('')}</ul>${(c.left || []).length ? `<p class="a3-warn" data-chat="left">Not done: ${esc3(c.left.join(', and '))}. Say that part again on its own</p>` : ''}${chat3Figs(c.rows)}${c.note && c.status === 'done' ? `<p class="a3-sub" data-chat="note">${esc3(c.note)}</p>` : ''}${foot}</div>`;
+      <ul class="a3-chat-lines">${(c.lines || []).map(l => `<li>${esc3(l)}</li>`).join('')}</ul>${(c.left || []).length ? `<p class="a3-warn" data-chat="left">Not done: ${esc3(c.left.join(', and '))}. Say that part again on its own</p>` : ''}${chat3Figs(c.rows)}${c.note && c.status === 'done' ? `<p class="a3-sub" data-chat="note">${esc3(c.note)}</p>` : ''}${c.status === 'done' ? (c.amber || []).map(x => `<p class="a3-warn" data-chat="amber">${esc3(x)}</p>`).join('') : ''}${foot}</div>`;
   }
   if (c.kind === 'draft') {
     return `<div class="a3-card a3-chat-card" data-card="chat-draft" data-turn="${id}"><h3>Your answers so far</h3>

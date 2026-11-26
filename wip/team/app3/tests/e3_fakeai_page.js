@@ -118,7 +118,7 @@ const fig = (p, sel) => p.$eval(sel, e => Number((e.dataset.amt !== undefined ? 
     const card = '[data-card=chat-change][data-status=done]';
     const words = await d.p.$eval(card, e => e.innerText).catch(() => '');
     const note = await d.p.$eval(card + ' [data-chat=note]', e => e.textContent).catch(() => null);
-    ck('a card spend that leaves safe to spend at 201,400: the card shows Card A still owed 54,000 to 54,900 and says why', note === 'Safe to spend stays the same: Card A is paid from your bank on or after your next pay' && /Card A, still owed\s*¥54,000\s*¥54,900/.test(words) && (await fig(d.p, '#a3Home [data-fig=safe]')) === 201400, JSON.stringify([note, words]));
+    ck('a card spend that leaves safe to spend at 201,400: the card shows Card A still owed 54,000 to 54,900 and says why', note === 'Safe to spend stays ¥201,400: Card A is paid from your bank on or after your next pay' && /Card A, still owed\s*¥54,000\s*¥54,900/.test(words) && (await fig(d.p, '#a3Home [data-fig=safe]')) === 201400, JSON.stringify([note, words]));
     all.push(...d.errs); await d.close();
   }
   {

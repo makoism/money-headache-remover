@@ -46,6 +46,7 @@ printf 'const TRY_BOOKS = { mako: '; cat fixtures/mako_madeup_book.json; echo '}
 printf 'const RELAY3 = "%s";\n' "$(tr -d '\n\r\"' < ../RELAY)"   # the site's address, for the cloud copy when opened as a file (backup lane)
 cat src/stmt3_read.js src/stmt3_plan.js
 cat src/answers3.js   # the one answers-to-book function (BV1): before setup3 and the chat
+cat src/change3.js   # what a step changed, in rows: the change card and the Undo bar both read it (before act3 and chat3_core)
 cat src/money3.js src/e3.js src/act3.js src/plan3_write.js src/home3.js src/checkin3.js src/receipts3.js src/plan3.js src/setup3.js src/backup3.js src/cloud3.js src/cloud3_page.js src/settings3.js src/settings3_sw.js src/start3.js
 cat src/stmt3_ai.js src/stmt3.js   # statements lane
 cat src/ask3_core.js   # the summary of today's figures the assistant is sent (chat3_core uses ASK3C.summary); the old Ask sheet (ask3.js) is gone: the header Ask opens the assistant (AI_JOIN_FIXES G)
