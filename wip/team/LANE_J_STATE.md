@@ -5,15 +5,17 @@ Report to: Burrow coordinator 16 (talk to this one), session_01BFpKEXBhaZ6NZ92Ln
 Keep-going task: trig_01AkkfjQvAD9e6Mtosopy688 (hourly, bound to LANE J). Switch it off at handoff or when told to pause. LANE H's trig_01YAKbKsvFSEfinBn9hNEaCf: LANE H was asked to switch it off.
 Never push to wip-38.31, lane/ai-join or main. Until Sun 29 Nov 09:00 JST: up to two helpers or reviewers at once, model opus.
 
-## Now (keep current; 26 Nov about 10:15 JST)
-- Worktrees: main checkout on lane/controls-1; .claude/worktrees/c5 (controls-5, REVIEWERS RUNNING: do not edit), c6 (controls-6, loan plan), c8 (controls-8, holds 7; full check running), c9 (controls-9), estate (lane/e-state).
-- lane/controls-1 bb44ce00: READY, both confirming runs PASS. Held until MAIN 21's candidate is out.
-- Beta Bank trace DONE, sent to the coordinator 10:00 JST as a NUMBERS FAULT (also on ai-join): safe to spend takes a second bank's whole future shortfall off this period (lookahead.js 1345 to 1347, ai-join 1336 to 1339). Example: Beta 32,000 pays Card A 54,000 on 10 Dec, Rent 72,000 and Power 7,400 on 28 Dec moved to Beta: engine 179,400 to 107,400 to 100,000; right 179,400 throughout (only 22,000 is short before the 10 Dec pay). Waiting for the ruling; not fixed by me.
-- RUNNING: qc-controls and qc-foundation on lane/controls-5 (round 2026-11-26_controls2to5). Then qc-data-safety there.
-- RUNNING: check3 full on lane/controls-8 69ca8f20 into the scratchpad (check3_c8.txt); copy to round 2026-11-26_controls7to8 when it ends. Asked the coordinator for scope.txt there; then qc-controls, qc-foundation.
-- Asked the coordinator for confirm_qc-foundation.txt (2nd confirming run) for the loan plan e6ce6324, round 2026-11-26_loancheck_plan.
-- lane/controls-9 (from controls-8 69ca8f20), slice 1 follow-ups, each test first, quick ALL GOOD: ded15efc refusal words ("Card A stays paid from Savings for now. Its 10 Dec payment is not ticked off yet: tick it at Check your bank, then try again"); 1def4ae2 bill rows say "from <account>"; 02d256a3 a typed nothing/zero/none is a typed 0; 3dd4e58d Add a loan asks the weekend rule. PARKED until the shortfall ruling: the change card for a bill moved to another account (its own short-by row and below-zero line; same cause).
-- Then: slice 10 bank check changed or removed later; currency Start again; loan check build after its plan PASSES.
+## Now (keep current; 26 Nov about 11:15 JST)
+- Worktrees: main checkout on lane/controls-1; .claude/worktrees/c5 (controls-5, qc-controls RUNNING: do not edit), c5f (lane/controls-5fix, the qc-foundation fixes), c6 (controls-6 loan plan), c8 (controls-8), c9 (controls-9), estate.
+- lane/controls-1 bb44ce00: READY, held until MAIN 22 (session_01BFpKEVPdcTtDvMBQEUFsEx, replaces MAIN 21) is ready to merge.
+- Beta Bank shortfall: ruled to LANE I; repro on lane/controls-9 2e86e0ba qc_reports/2026-11-26_beta_trace; LANE I told. I owe the change card for a bill moved to another account (short-by row) after LANE I's fix lands.
+- Slices 2 to 5: qc-foundation FAIL (3 write-door findings), fixed on lane/controls-5fix 0e086977, 5ad3f455 (report saved there). qc-controls RUNNING on c5. Then: fold its fixes into controls-5fix, fast-forward lane/controls-5, check3 full, confirming runs (coordinator writes confirm files), qc-data-safety.
+- Loan plan: confirm 2 FAIL (same place twice), simplified at lane/controls-6 487714ad (Not sure dropped). Asked the coordinator for confirm file 3.
+- lane/controls-8 69ca8f20 check3 full ALL GOOD; scope.txt for 2026-11-26_controls7to8 is on origin 97bf1263 (pull). Reviewers after the 2-5 fixes are merged up into 8.
+- CHECKFIX_PLAN.md (slice 10) on lane/controls-9: qc-foundation RUNNING (round 2026-11-26_checkfix_plan, it cannot write: save its reply).
+- lane/controls-9 follow-ups done: ded15efc, 1def4ae2, 02d256a3, 3dd4e58d.
+- Later: currency Start again (plan first: kept copy plus setup draft from the book, qc-foundation and qc-data-safety; touches setup3/e3, MAIN's area).
+- Note: qc-foundation has no Write tool: save its reply as the report.
 
 ## Old Now (LANE H at handoff)
 - Worktrees: main checkout on lane/controls-1 (reviewers use it); .claude/worktrees/c2 (controls-2), c3 (controls-3), c5 (controls-5), c6 (controls-6, loan check), c7 (lane/controls-8, controls-7 below it), estate (lane/e-state). A fresh machine: tools line (RESUME), `git fetch --unshallow`, worktrees again. Merge helper idea: union check3.sh lines; READ THE WHOLE MERGE OUTPUT (a conflict was once committed).
