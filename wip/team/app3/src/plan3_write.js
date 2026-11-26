@@ -24,6 +24,7 @@
   const PAY_NEEDS_AMOUNT = BUILD.PAY_NEEDS_AMOUNT;
   const SC = Object.assign({}, node ? require('../../engine/schedules.js') : root.BurrowEngine.schedules, { dayNum: (node ? require('../../engine/dates.js') : root.BurrowEngine.dates).dayNum, dayStr: (node ? require('../../engine/dates.js') : root.BurrowEngine.dates).dayStr });
   const live = x => x && !x.gone;
+  const IDS = node ? require('../../engine/ids.js') : root.BurrowEngine.ids;
   const DAY = /^\d{4}-\d{2}-\d{2}$/;
   const amountOk = (a, what) => { if (!Number.isInteger(a) || !(a > 0)) bad('Type ' + what + ' above zero'); return a; };
   const nameOk = n => { const s = String(n == null ? '' : n).trim(); if (!s) bad('Type a name'); if (s.length > 60) bad('Keep the name to 60 letters'); return s; };
@@ -365,7 +366,7 @@
     if (a.closed) bad(a.name + ' is already closed');
     /* [LOAN_CHECK_PLAN 2c] a payment a loan check said had not left the bank yet (notYet) is ticked first, even at 0 */
     const held = notYetLeft(w.book, w.today, id)[0];
-    if (held) bad(`Tick the ${SN3.dayLabel(held.payment_date, false)} payment at Check your bank first`);
+    if (held) bad(`Tick ${payName(w.book, held.item)} at Check your bank first`);
     const o = LA.lookahead(w.book, w.today).owed[id];
     if (o && o.owedNow !== 0) bad(a.name + ' still owes money. Tick its last payment at Check your bank first');
     w.add('events', { k: 'check', acct: id, date: w.today, a: 0 });
@@ -387,13 +388,26 @@
     const held = new Set([].concat(...loanChecks(book, id).map(e => e.notYet || [])));
     return dueBy(owedOn(book, today, id), today).filter(x => held.has(x.item));
   }
+  /* [qc-numbers loancheck_build CONFUSING 1, LESSONS 2] one payment, one date: a card's or a loan's payment is named by
+     the day it lands (a due day on a weekend or holiday moves by the account's own rule, as the engine moves it), in
+     every place that names one: the questions, the refusals, the assistant's card. Its id keeps the due day.
+     payDay(book, occ) gives that day (YYYY-MM-DD); payName(book, occ, first) gives "the 28 Dec payment" ("The" first in a sentence) */
+  function payDay(book, occ) {
+    const o = IDS.occurrence(occ);
+    if (!o) return null;
+    const a = (book.accounts || []).find(y => live(y) && y.id === o.schedule);
+    if (!a || !DAY.test(o.due)) return o.due;
+    const cal = SC.calendar(a.country || G.fieldValue((book.home || {}).country) || null);
+    return SC.dayStr(cal.shift(SC.dayNum(o.due), a.shift));
+  }
+  const payName = (book, occ, first) => `${first ? 'The' : 'the'} ${SN3.dayLabel(payDay(book, occ), false)} payment`;
   function loanQuestions(book, today, id, day) {
     const a = (book.accounts || []).find(y => live(y) && y.id === id);
     if (!a || a.type !== 'loan' || !DAY.test(day || '') || day > today) return [];
     /* a payment ticked since (a record that settles it, dated after `day`) is not asked about */
     const ticked = new Set(); for (const e of book.events || []) if (live(e)) for (const st of e.settles || []) if (st && st.s === id) ticked.add(id + '@' + st.due);
     return dueBy(owedOn(book, day, id), day).filter(x => !ticked.has(x.item)).map(x => ({ occ: x.item, day: x.payment_date, amount: x.amount,
-      text: `Has the ${SN3.dayLabel(x.payment_date, false)} payment of ${SMF.format(x.amount, a.cur || G.homeOn(book, today))} left your bank?` }));
+      text: `Has ${payName(book, x.item)} of ${SMF.format(x.amount, a.cur || G.homeOn(book, today))} left your bank?` }));
   }
   /* what a loan check would write, or the refusal with what to do next (the Plan sheet, Check your bank and the assistant
      all go through it): { id, amount, day, yes: [occ], no: [occ], expected, lands }. opts.sameIsNothing false: the same
@@ -415,7 +429,7 @@
     /* [rule 2e] a payment due by then, recorded as leaving after that day: the figure typed cannot say whether it holds it */
     let late = null;
     for (const e of book.events || []) if (live(e) && e.date > day) for (const st of e.settles || []) if (st && st.s === id && st.due <= day && (!late || e.date > late.date)) late = { due: st.due, date: e.date };
-    if (late) bad(`The ${SN3.dayLabel(late.due, false)} payment is recorded as leaving on ${SN3.dayLabel(late.date, false)}. Type what the lender shows today, or date this ${SN3.dayLabel(late.date, false)} or later`);
+    if (late) bad(`${payName(book, id + '@' + late.due, true)} is recorded as leaving on ${SN3.dayLabel(late.date, false)}. Type what the lender shows today, or date this ${SN3.dayLabel(late.date, false)} or later`);
     const o = owedOn(book, day, id);
     if (opts.sameIsNothing !== false && o && o.owedNow === x.amount) bad('Nothing changed');
     const yes = [], no = [], expected = {}, lands = {}, answers = x.answers || {};
@@ -675,7 +689,7 @@
     return id;
   }
 
-  const api = { addPay, addAccount, changeAccount, closeAccount, reopenAccount, removeAccount, payOff, setKeep, setCountry, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan, checkLoan, loanQuestions, loanCheckArgs };
+  const api = { addPay, addAccount, changeAccount, closeAccount, reopenAccount, removeAccount, payOff, setKeep, setCountry, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan, checkLoan, loanQuestions, loanCheckArgs, payDay, payName };
   if (node) module.exports = api;
   else root.PLAN3W = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

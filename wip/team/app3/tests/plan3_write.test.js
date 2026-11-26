@@ -439,9 +439,9 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     ok(h.book.events.filter(e => e.grp === chk.grp).every(e => e.gone), 'the check and the tick are both marked gone, nothing deleted');
     eq(h.book.events.length, JSON.parse(before).length + 2);
   });
-  await tk('No: the check carries notYet; the payment stays to tick; closeLoan is refused until it is ticked, even at 0', async () => {
+  await tk('No: the check carries notYet; the payment stays to tick; closeLoan is refused until it is ticked (a check of 10,000; a check of 0 asks nothing since blocker 2, f8f40da4)', async () => {
     const h = await kenji(); DAY = '2027-02-03';
-    const r = await h.checkLoan({ amount: 0, answers: { [h.occ('2027-01-27')]: 'no' } }); ok(r.ok, JSON.stringify(r));
+    const r = await h.checkLoan({ amount: 10000, answers: { [h.occ('2027-01-27')]: 'no' } }); ok(r.ok, JSON.stringify(r));
     const chk = h.book.events.find(e => e.k === 'check' && e.acct === h.loan && e.date === DAY);
     eq(chk.notYet, [h.occ('2027-01-27')]);
     ok(!h.book.events.some(e => e.id === 'set:' + h.occ('2027-01-27') && !e.gone), 'nothing ticked');
@@ -471,6 +471,25 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     eq(msg, 'Has the 27 Jan payment of ' + SMF.format(30000, 'JPY') + ' left your bank?');
     const g = W.loanCheckArgs(h.book, DAY, h.loan, { amount: 840000, answers: { [h.occ('2027-01-27')]: 'no' } }, { sameIsNothing: false });
     eq([g.amount, g.day, g.yes, g.no], [840000, DAY, [], [h.occ('2027-01-27')]]);
+  });
+  /* [qc-numbers loancheck_build CONFUSING 1, LESSONS 2] one payment, one date: 27 Dec 2026 is a Sunday, so a loan paid on
+     the 27th with the weekend rule "after" pays on Monday 28 Dec. Every place that names that payment says 28 Dec, through
+     one shared piece (payDay / payName); its id stays <loan>@2026-12-27 */
+  await tk('one payment, one date: a moved loan payment is named by the day it lands in the question, the refusal and the shared piece', async () => {
+    DAY = '2026-11-25';
+    const h = setup();
+    ok((await h.go('addLoan', { name: 'Car loan', owed: 900000, amount: 30000, payDay: 27, shift: 'after' })).ok);
+    const loan = h.book.accounts.slice(-1)[0].id, occ = due => loan + '@' + due;
+    eq([W.payDay(h.book, occ('2026-12-27')), W.payName(h.book, occ('2026-12-27'))], ['2026-12-28', 'the 28 Dec payment']);
+    eq([W.payDay(h.book, occ('2027-01-27')), W.payName(h.book, occ('2027-01-27'))], ['2027-01-27', 'the 27 Jan payment'], 'a working day does not move');
+    const ci = async (day, x) => { DAY = day; const out = CKE.checkIn(h.book, Object.assign({ day, told: day + 'T12:00+09:00', newId: I.idMaker('p3wrtd', Math.random), figures: {}, ticked: [], unticked: [], expected: {} }, x)); ok((await h.A.addRecords('Check your bank', out)).ok); };
+    await ci('2026-11-27', { ticked: [occ('2026-11-27')], expected: { [occ('2026-11-27')]: 30000 }, lands: { [occ('2026-11-27')]: '2026-11-27' } });
+    DAY = '2026-12-29';
+    eq(W.loanQuestions(h.book, DAY, loan, DAY).map(q => q.text), ['Has the 28 Dec payment of ' + SMF.format(30000, 'JPY') + ' left your bank?']);
+    /* ticked on 29 Dec, recorded as leaving that day: a check dated 28 Dec is refused, naming the same 28 Dec payment */
+    await ci('2026-12-29', { ticked: [occ('2026-12-27')], expected: { [occ('2026-12-27')]: 30000 }, lands: { [occ('2026-12-27')]: '2026-12-28' }, landed: { [occ('2026-12-27')]: '2026-12-29' } });
+    const r = await h.A.run('checkLoan', w => W.checkLoan(w, loan, { amount: 850000, date: '2026-12-28' }));
+    ok(!r.ok && r.text === 'The 28 Dec payment is recorded as leaving on 29 Dec. Type what the lender shows today, or date this 29 Dec or later', r.text);
   });
   await t('Undo of a plan step marks what it added gone; the period no longer shows it', async () => {
     const h = setup();

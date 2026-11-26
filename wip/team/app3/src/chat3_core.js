@@ -243,7 +243,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     /* [E3] loans get a ref after the accounts you can spend from */
     const lv = LA.lookahead(book, today).owed || {};
     /* [LOAN_CHECK_PLAN] the latest "still owed" check typed after the loan was added (a K ref, so remove can take it back),
-       and each payment gone by and not ticked, named <A ref>@<due day> for card_figure's paid answers */
+       and each payment gone by and not ticked, named <A ref>@<the day it lands> (PLAN3W.payDay) for card_figure's paid answers */
     let k = 0;
     const loans = (book.accounts || []).filter(x => live(x) && !x.closed && x.type === 'loan').map(x => {
       const ref = 'A' + (++a); refs[ref] = x.id;
@@ -614,11 +614,15 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       const d = a.date == null || a.date === '' ? today : date(a.date);
       if (!d) return { bad: 'a day I could not read: today or before, YYYY-MM-DD' };
       const answers = {}, said = [];
+      /* [one payment, one date] FIGURES names a payment by the day it lands (PLAN3W.payDay); its id keeps the due day, so
+         a key is matched by either */
+      const qsAll = PW().loanQuestions(book, today, id, d);
       for (const [k, v] of Object.entries(a.paid && typeof a.paid === 'object' ? a.paid : {})) {
         const [r0, due] = String(k).split('@');
         if (ref(r0, 'A') !== id || !DAY.test(due || '')) continue;
+        const q = qsAll.find(z => z.day === due) || qsAll.find(z => z.occ === id + '@' + due);
         const yes = v === 'yes' || v === true;
-        if (yes || v === 'no' || v === false) answers[id + '@' + due] = yes ? 'yes' : 'no';
+        if (yes || v === 'no' || v === false) answers[q ? q.occ : id + '@' + due] = yes ? 'yes' : 'no';
       }
       let g;
       try { g = PW().loanCheckArgs(book, today, id, { amount: x, date: d, answers }); }
@@ -626,8 +630,8 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
         const q = PW().loanQuestions(book, today, id, d).find(z => z.text === e.message);
         return { bad: q ? `ask the person: ${q.text} Then send card_figure again with paid {"${a.account}@${q.day}": "yes" or "no"}` : e.message };
       }
-      for (const o of g.yes) said.push(`the ${day1(o.split('@')[1])} payment left your bank`);
-      for (const o of g.no) said.push(`the ${day1(o.split('@')[1])} payment not gone yet`);
+      for (const o of g.yes) said.push(`${PW().payName(book, o)} left your bank`);
+      for (const o of g.no) said.push(`${PW().payName(book, o)} not gone yet`);
       return { kind: 'checkLoan', args: [id, { amount: x, date: d, answers }], text: [`${rec.name} still owed ${m(x, rec.cur)} ${on(d)}`].concat(said).join(', '), amount: 0, figs: [x] };
     }
     if (what === 'bank_figure' || what === 'card_figure') {

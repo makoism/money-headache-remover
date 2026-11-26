@@ -513,6 +513,30 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     eq(L.lookahead(hp.book, hp.day).owed[loan].owedNow, 840000);
     ok(/card_figure \(a card or loan\)/.test(K.SYSTEM) && /paid\?/.test(K.TOOLS.find(x => x.name === 'change').description), 'the prompt and the tool say so');
   });
+  /* [qc-numbers loancheck_build CONFUSING 1] one payment, one date: 27 Dec 2026 is a Sunday, the loan pays the working day
+     after, so the assistant names it 28 Dec everywhere (FIGURES, the question, its paid key, the change card), and a paid
+     answer keyed by the landing day reaches that payment */
+  await t('card_figure on a loan whose payment moved off a Sunday: FIGURES, the question and the card all say 28 Dec; a paid answer keyed 28 Dec is taken', async () => {
+    const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
+    const W = require('../src/plan3_write.js'), CKE = require(E + 'checkin.js');
+    hp.day = '2026-11-25';
+    ok((await hp.deps(FAKE.make([])).door.run('addLoan', w => W.addLoan(w, { name: 'Car loan', owed: 900000, amount: 30000, payDay: 27, shift: 'after' }))).ok);
+    const loan = hp.book.accounts.find(a => a.name === 'Car loan').id, occ = loan + '@2026-11-27';
+    hp.day = '2026-11-27';
+    ok((await hp.deps(FAKE.make([])).door.addRecords('Check your bank', CKE.checkIn(hp.book, { day: hp.day, told: hp.day + 'T12:00:00.000+09:00', newId: I.idMaker('chat3t', Math.random), figures: {}, ticked: [occ], expected: { [occ]: 30000 }, lands: { [occ]: hp.day }, unticked: [] }))).ok);
+    hp.day = '2026-12-29';
+    const row = K.figures(hp.book, hp.day).text.split('\n').find(l => / \| Car loan \| /.test(l)) || '';
+    const A = row.split(' | ')[0];
+    ok(row.includes('to answer first: ' + A + '@2026-12-28 (28 Dec, ¥30,000)'), 'FIGURES: ' + row);
+    const one = async input => (await K.handle(K.fresh(), { id: 'x', name: 'change', input }, hp.deps(FAKE.make([])))).result;
+    const r0 = await one({ steps: [{ do: 'card_figure', account: A, amount: 850000 }] });
+    ok(r0.includes('Has the 28 Dec payment of ¥30,000 left your bank? Then send card_figure again with paid {"' + A + '@2026-12-28"'), r0);
+    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'card_figure', account: A, amount: 850000, paid: { [A + '@2026-12-28']: 'yes' } }] })]), say('Done.')]);
+    const r = await K.turn(state, 'the car loan is at 850,000, the December payment went out', hp.deps(f));
+    const c = r.shown.find(x => x.who === 'card').card;
+    eq([c.status, c.lines], ['done', ['Car loan still owed ¥850,000 today, the 28 Dec payment left your bank']]);
+    ok(hp.book.events.some(e => e.id === 'set:' + loan + '@2026-12-27' && !e.gone), 'the 28 Dec answer ticked that payment');
+  });
   await t('a yearly bill by chat: "car insurance 12,000 every March 15th" is added once a year (qc-foundation confirm)', async () => {
     const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
     const f = FAKE.make([say('', [call('change', { steps: [{ do: 'add_bill', name: 'Car insurance', amount: 12000, every: 'year', month: 3, day: 15 }] })]), say('Added.')]);
