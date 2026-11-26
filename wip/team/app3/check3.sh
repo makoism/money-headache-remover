@@ -68,6 +68,7 @@ page|tests/e3_period.js|e3_period: ALL PASS||300|the period by its dates
 page|tests/e3_receipts.js|e3_receipts: ALL PASS||300|Receipts
 page|tests/e3_listfix.js|e3_listfix: ALL PASS||300|the LISTFIX fixes on the page (app3/LISTFIX.md): gaps in Receipts and the rest
 page|tests/e3_amountsplit.js|e3_amountsplit: ALL PASS||200|an amount changed or removed after the bank check that held it: Receipts lists it at what it was at the check in its own period and the change in the check's period, so the list and the spent figure agree (AMOUNT_HISTORY_PLAN 4)
+page|tests/e3_removedbefore.js|e3_removedbefore: ALL PASS||300|a spend removed before a later bank check is not held by it (qc-numbers amounthist blocker 1, coordinator 16 ruling (a)): the reviewer's steps on the screens, safe to spend 30,000 on 28 Dec, the closed period not rewritten, a reload
 page|tests/e3_cardgap.js|e3_cardgap: ALL PASS||300|a card's gap across pay day (CARDGAP): Mako's shape from setup, cards typed 6 and 13 Dec, two rows in Receipts, the rows add up to each period's spent, Plan and Home agree, a reload
 page|tests/e3_cardpay.js|e3_cardpay: ALL PASS||300|Check your bank asks whether a card's unticked payment went out when the card shows far less than the app had; Yes ticks it (M11, M27)
 page|tests/e3_doors.js|e3_doors: ALL PASS||300|Receipts' two doors at 320 (M22): Money went out and Money came in, Refund and Moved under them, one of each door saved
@@ -150,7 +151,7 @@ page_tests_for() {   # page_tests_for <changed path, relative to app3/>
   case "$1" in
     tests/lib3.js|src/e3.js|src/money3.js|src/act3.js|src/shell.html|src/app3.css|build3.sh|../screens/*|../store/*|fixtures/*)
                               echo e3_try e3_home e3_checkin e3_receipts e3_plan e3_panels e3_amounts e3_names e3_band e3_undobar ;;
-    ../engine/*)              echo e3_try e3_home e3_checkin e3_receipts e3_plan e3_panels e3_amounts e3_names e3_cardgap ;;
+    ../engine/*)              echo e3_try e3_home e3_checkin e3_receipts e3_plan e3_panels e3_amounts e3_names e3_cardgap e3_removedbefore ;;
     tests/lives3.js)          echo e3_life_a e3_life_a2 e3_life_b e3_life_c e3_life_d ;;
     tests/e3_act_book.js)     echo e3_home e3_checkin ;;
     tests/fake_vault.js)      echo e3_cloudfirst e3_cloud e3_cloudbase e3_cloudtake e3_cloudsend e3_cloudhold e3_cloudwhich e3_cloudwhich2 e3_cloudstatus e3_listfix e3_restore ;;
@@ -161,7 +162,7 @@ page_tests_for() {   # page_tests_for <changed path, relative to app3/>
     tests/*.js)               [ -f "$1" ] && basename "$1" .js ;;   # a test file removed on purpose has no test to run
     src/home3.js)             echo e3_cloudstatus e3_home e3_ns e3_homeplan e3_warnwords e3_cardline e3_bankparts e3_names e3_payday ;;
     src/checkin3.js)          echo e3_checkin e3_checkgap e3_cardfig e3_reload e3_bankparts e3_payday e3_overdrawn e3_cardpay e3_paycame ;;
-    src/receipts3.js)         echo e3_removes e3_receipts e3_listfix e3_moneyin e3_bigspend e3_stmt_once e3_period e3_names e3_doors e3_moved1 e3_moved2 e3_cardgap e3_amountsplit ;;
+    src/receipts3.js)         echo e3_removes e3_receipts e3_listfix e3_moneyin e3_bigspend e3_stmt_once e3_period e3_names e3_doors e3_moved1 e3_moved2 e3_cardgap e3_amountsplit e3_removedbefore ;;
     src/plan3.js|src/plan3_write.js) echo e3_removes e3_aijoin e3_plan e3_rhythms e3_lineshare e3_homeplan e3_paychange e3_names ;;
     src/setup3.js|src/answers3.js) echo e3_twodrafts e3_fillcard e3_setup e3_setupfix e3_setup6 e3_income2 e3_weeks3 e3_first e3_onepay e3_overdrawn e3_paytoday e3_chatwalk e3_chat ;;
     src/chat3*.js)            echo e3_twodrafts e3_ailog e3_aiwords e3_fillcard e3_cloudfirst e3_aijoin e3_chat e3_chatwalk e3_fakeai_page e3_fillundo e3_invite e3_back e3_cloudhold ;;
