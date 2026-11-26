@@ -46,26 +46,30 @@
   const group = w => w.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
   /* format(minor, code, { cents, sign })
-     cents: true writes every decimal the currency has; false writes whole units and refuses an amount that has cents
-     (they are never dropped); left out, cents show only when the amount has them. sign: false leaves out the currency sign. */
+     [M48, M51, qc-numbers run 1 B1] cents where the currency has them: every amount of a currency with minor units is
+     written with all of them, "$300.00" and "$0.00" on every screen and in every sentence, never "$300" beside
+     "$300.00"; yen and other whole currencies stay whole. cents: false writes whole units and refuses an amount that has
+     cents (they are never dropped). sign: false leaves out the currency sign. Boxes the person types into keep their own
+     rule (toInput, parse): nothing forces ".00" while typing. */
   function format(n, code, opts) {
     opts = opts || {};
     checkMinor(n);
     const d = digits(code);
     const p = parts(n, d);
     let cents = opts.cents;
-    if (cents === undefined) cents = hasCents(n, d);
-    if (cents === false && hasCents(n, d)) throw new Error('money: ' + n + ' ' + code + ' has cents, but the screen asked for whole amounts. Build the formatter from every amount on the screen');
+    if (cents === undefined) cents = d > 0;
+    if (cents === false && hasCents(n, d)) throw new Error('money: ' + n + ' ' + code + ' has cents, but whole amounts were asked for');
     const body = group(p.whole) + (cents && d ? '.' + p.frac : '');
     return (n < 0 ? MINUS : '') + (opts.sign === false ? '' : symbol(code)) + body;
   }
 
-  /* formatter(code, amounts): one way of writing cents for one screen or one sentence. When any amount on it has cents,
-     every amount is written with cents (€20.00 beside €80.01, never €20); otherwise all are whole. */
+  /* formatter(code, amounts): the formatter for one screen or one sentence. Every amount is written with the
+     currency's cents (€20.00 beside €80.01, and €20.00 when nothing on it has cents), so one amount reads the same on
+     every screen. The amounts are still checked to be whole minor units. */
   function formatter(code, amounts) {
-    const d = digits(code);
-    const cents = (amounts || []).some(n => hasCents(checkMinor(n), d));
-    return (n, opts) => format(n, code, Object.assign({}, opts, { cents }));
+    digits(code);
+    (amounts || []).forEach(checkMinor);
+    return (n, opts) => format(n, code, Object.assign({}, opts, { cents: undefined }));
   }
 
   /* what an input box shows: plain digits, a hyphen for minus, decimals only when the amount has them */
@@ -96,18 +100,18 @@
 
   /* sumLine(parts, result, code): the engine's sum as a person reads it (numbers review S4), "¥312,000 (Main bank today)
      − ¥100,000 (Trip) = ¥212,000". parts: [{ label, amount }] in order, signed; a part of zero is left out (no
-     "- 0 (minimum)"). One minus sign (U+2212) everywhere, one way of writing cents for the whole line. It writes the
-     engine's figures only: nothing is added up here. opts.cents true writes every amount with cents (the screen has some). */
+     "- 0 (minimum)"). One minus sign (U+2212) everywhere, cents where the currency has them. It writes the engine's
+     figures only: nothing is added up here. opts is kept for older callers and changes nothing. */
   function sumLine(parts, result, code, opts) {
     const shown = (parts || []).filter(p => p.amount !== 0);
-    /* opts.cents: the screen's own cents rule (BL4), so the sum is written the way every other amount on it is */
-    const f = opts && opts.cents ? (n => format(n, code, { cents: true })) : formatter(code, shown.map(p => p.amount).concat([result]));
+    /* every amount with the currency's cents, as every other amount on the screen is (M48) */
+    const f = formatter(code, shown.map(p => p.amount).concat([result]));
     const label = p => ' (' + String(p.label).replace(/[()]/g, '') + ')';
     const body = shown.map((p, i) => (i === 0 ? f(p.amount) : (p.amount < 0 ? ' \u2212 ' + f(-p.amount) : ' + ' + f(p.amount))) + label(p)).join('');
     return body + ' = ' + f(result);
   }
 
-  /* hasCents(minor, code): whether the amount has a part below one whole unit (for one cents rule per screen, BL4) */
+  /* hasCents(minor, code): whether the amount has a part below one whole unit */
   function hasCentsOf(n, code) { return hasCents(checkMinor(n), digits(code)); }
 
   return { MINUS, digits, symbol, format, formatter, hasCents: hasCentsOf, toInput, parse, sumLine };

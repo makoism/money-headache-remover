@@ -2,22 +2,15 @@
    money.js writes and reads amounts, names.js gives every label and day, status.js the one verdict, inputs.js the one
    box behaviour, provenance.js the typed-or-sample mark, messages.js the one message band. No sums here. */
 const SM = BurrowScreens.money, SN = BurrowScreens.names;
-/* [BL4] one way of writing cents per screen, the sum lines included: a screen draws itself through screen3(draw); every
-   amount written while it draws is noted, and when any has cents the screen draws again with cents on every amount
-   ("$0.00" over "= $0.00", never "$0"). Outside a screen's drawing each amount or sentence keeps its own rule. */
-const CENTS3 = { on: false, seen: false };
-function note3(amounts, cur) { if (!CENTS3.on && amounts.some(n => SM.hasCents(n, cur))) CENTS3.seen = true; }
-const money3 = (minor, cur) => { note3([minor], cur); return SM.format(minor, cur, CENTS3.on ? { cents: true } : {}); };
-/* the one formatter for a sentence: the screen's rule when it has cents, else the sentence's own */
-function fmt3(cur, amounts) { note3(amounts, cur); return CENTS3.on ? (n => SM.format(n, cur, { cents: true })) : SM.formatter(cur, amounts); }
-function sum3(parts, result, cur) { note3(parts.map(x => x.amount).concat([result]), cur); return SM.sumLine(parts, result, cur, CENTS3.on ? { cents: true } : undefined); }
-function screen3(draw) {
-  CENTS3.on = false; CENTS3.seen = false;
-  draw();
-  if (!CENTS3.seen) return;
-  CENTS3.on = true;
-  try { draw(); } finally { CENTS3.on = false; }
-}
+/* [M48, M51, qc-numbers run 1 B1] cents where the currency has them, on every screen and in every sentence: the one
+   formatter (screens/money.js) writes "$300.00" and "$0.00" for a currency with cents and yen whole, so one amount
+   reads the same on Home, Receipts, Plan, the sheets and the assistant. These are its short names for app3. */
+const money3 = (minor, cur) => SM.format(minor, cur);
+/* the formatter for a sentence (the amounts are checked to be whole minor units) */
+const fmt3 = (cur, amounts) => SM.formatter(cur, amounts);
+const sum3 = (parts, result, cur) => SM.sumLine(parts, result, cur);
+/* a screen draws itself through screen3(draw) (kept so every screen has one place to draw from) */
+function screen3(draw) { draw(); }
 /* a typed amount as whole minor units, or null (never rounded; a minus is refused) */
 function typed3(text, cur) { const r = SM.parse(text, cur); return r.ok ? r.minor : null; }
 /* [M47, K29] what a bank shows today can be below zero: the one box where a minus is read (a bank only, never a card,
