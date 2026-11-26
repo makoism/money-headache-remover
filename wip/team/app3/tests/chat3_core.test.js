@@ -430,6 +430,23 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const r3 = await K.turn(u.state || r2.state, 'add a bike loan, 90,000 owed, 10,000 on the 5th from Savings', d);
     eq([r3.shown.find(x => x.who === 'card').card.status, (hp.book.accounts.find(a => a.name === 'Bike loan') || {}).payFrom], ['done', sv]);
   });
+  await t('[coordinator 18 ruling] a card paid from cash by asking: refused with the cash question until the person said yes (cash: true), then done', async () => {
+    const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
+    const refOf = (body, re) => FAKE.results(body)[0].text.split('\n').find(l => re.test(l)).split(' | ')[0];
+    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'add_account', name: 'Wallet', type: 'cash', amount: 8000, moved: false }] })]), say('Added.'),
+      say('', [call('list', { what: 'accounts' })]), body => say('', [call('change', { steps: [{ do: 'change_card', account: 'A2', payFrom: refOf(body, /Wallet/) }] })]), say('Do you pay it in cash?'),
+      say('', [call('list', { what: 'accounts' })]), body => say('', [call('change', { steps: [{ do: 'change_card', account: 'A2', payFrom: refOf(body, /Wallet/), cash: true }] })]), say('Changed.')]);
+    const d = hp.deps(f), card = hp.book.accounts.find(a => a.type === 'card').id, main = hp.book.home.main.v.acct;
+    const r1 = await K.turn(state, 'Add my wallet, 8,000 cash, new money', d);
+    const wl = hp.book.accounts.find(a => a.name === 'Wallet').id;
+    const r2 = await K.turn(r1.state, 'card A is paid from my wallet', d);
+    const c2 = r2.shown.find(x => x.who === 'card');
+    ok(!c2 || c2.card.status !== 'done', 'not done before the yes: ' + JSON.stringify(c2 && c2.card));
+    eq(hp.book.accounts.find(a => a.id === card).payFrom || main, main, 'nothing written before the yes');
+    ok(/Do you pay this in cash, at a shop or an ATM\? It will come off Wallet each time/.test(JSON.stringify(f.bodies ? f.bodies.slice(-1) : r2)), 'the step came back with the cash question');
+    const r3 = await K.turn(r2.state, 'yes, I pay it in cash at the shop', d);
+    eq([r3.shown.find(x => x.who === 'card').card.status, hp.book.accounts.find(a => a.id === card).payFrom], ['done', wl]);
+  });
   await t('[E7, M3, M13, M43, M46] goals by asking: change_goal, take_out, remove_goal (asks where the money goes first; asks before removing; Undo); "remove" of a goal ref does the same', async () => {
     const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
     const L = require(E + 'lookahead.js'), kept = id => (L.lookahead(hp.book, '2026-11-24').places[id] || {}).kept;

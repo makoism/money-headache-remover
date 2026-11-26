@@ -32,7 +32,7 @@ const saved = p => p.evaluate(async () => { const s = await BurrowStore.open(); 
     await plan();
     /* Add a card */
     await p.click('#plAddCard'); await T.w(300);
-    ck('Add a card asks which account pays it, the main bank first, no card or loan in the list', JSON.stringify(await opts('#pl-payFrom')) === JSON.stringify(['Main bank', 'Wallet', 'Savings']), JSON.stringify(await opts('#pl-payFrom')));
+    ck('Add a card asks which account pays it, the main bank first, no card or loan in the list, cash on its own line under it (coordinator 18 ruling)', JSON.stringify(await opts('#pl-payFrom')) === JSON.stringify(['Main bank', 'Savings', 'I pay it in cash']), JSON.stringify(await opts('#pl-payFrom')));
     ck('and the weekend rule', !!(await p.$('#pl-shift')));
     ck('its words no longer say it is always paid from the main bank', !/paid in full from your main bank/.test(await row('[data-card="plan-form"]')));
     await fill('#pl-name', 'Card C'); await fill('#pl-owed', '3000'); await fill('#pl-payDay', '15'); await p.select('#pl-payFrom', SAVINGS); await p.select('#pl-shift', 'before');
@@ -44,6 +44,12 @@ const saved = p => p.evaluate(async () => { const s = await BurrowStore.open(); 
     await p.click(`#a3Plan [data-owed="${cardA}"]`); await T.w(300);
     ck('a card\'s sheet shows its paying account and weekend rule', (await p.$eval('#pl-payFrom', e => e.value)) === bank && (await p.$eval('#pl-shift', e => e.value)) === 'after');
     await p.select('#pl-payFrom', WALLET); await p.select('#pl-shift', 'before'); await btn('Save'); await T.w(500);
+    /* [coordinator 18 ruling, 26 Nov] cash only after the cash question, asked once; nothing written before the yes */
+    const sureQ = await row('#plSure');
+    ck('Save with cash asks first: "Do you pay this in cash, at a shop or an ATM? It will come off Wallet each time"', /Do you pay this in cash, at a shop or an ATM\? It will come off Wallet each time/.test(sureQ || ''), sureQ);
+    bk = await saved(p);
+    ck('nothing written before the yes', acc(bk, cardA).payFrom === bank, JSON.stringify(acc(bk, cardA)));
+    await p.click('#plSure [data-sureyes]'); await T.w(500);
     bk = await saved(p);
     ck('Card A: paid from Wallet, the working day before', acc(bk, cardA).payFrom === WALLET && acc(bk, cardA).shift === 'before', JSON.stringify(acc(bk, cardA)));
     ck('Plan says from Wallet at once', /Card A.*from Wallet/.test(await row(`[data-owed="${cardA}"]`) || ''), await row(`[data-owed="${cardA}"]`));
@@ -54,7 +60,7 @@ const saved = p => p.evaluate(async () => { const s = await BurrowStore.open(); 
     await p.select('#pl-payFrom', SAVINGS); await btn('Save'); await T.w(500);
     /* a loan */
     await p.click('#plAddLoan'); await T.w(300);
-    ck('Add a loan asks which account pays it', JSON.stringify(await opts('#pl-payFrom')) === JSON.stringify(['Main bank', 'Wallet', 'Savings']));
+    ck('Add a loan asks which account pays it', JSON.stringify(await opts('#pl-payFrom')) === JSON.stringify(['Main bank', 'Savings', 'I pay it in cash']));
     await fill('#pl-name', 'Bike loan'); await fill('#pl-owed', '90000'); await fill('#pl-amount', '10000'); await fill('#pl-payDay', '5'); await p.select('#pl-payFrom', SAVINGS);
     await btn('Add'); await T.w(500);
     bk = await saved(p); const bl = bk.accounts.find(a => a.name === 'Bike loan' && !a.gone);

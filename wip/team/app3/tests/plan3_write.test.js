@@ -763,7 +763,7 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     await z(cash, { to: cash }, 'Pick where its money goes');
     await z(cash, { to: CARD_A }, 'Pick where its money goes');
     await z(cash, {}, 'Pick where its money goes');
-    ok((await h.go('addBill', { name: 'Gym', amount: 3000, day: 5, acct: cash })).ok);
+    ok((await h.go('addBill', { name: 'Gym', amount: 3000, day: 5, acct: cash, cash: true })).ok);
     const gym = h.book.schedules.find(s => s.name === 'Gym').id;
     const r = await h.go('closeAccount', cash, { to: BANK, now: 12000 }); ok(r.ok, JSON.stringify(r));
     eq(h.book.schedules.find(s => s.id === gym).acct, BANK, 'the bill now comes from the account picked');
@@ -801,7 +801,7 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     const z = await h.go('removeAccount', c2); ok(!z.ok && /Close it instead/.test(z.text), z.text);
     const z2 = await h.go('removeAccount', BANK); ok(!z2.ok && /main bank/.test(z2.text), z2.text);
     const h3 = setup(), c3 = await withCash(h3);
-    ok((await h3.go('addBill', { name: 'Gym', amount: 3000, day: 5, acct: c3 })).ok);
+    ok((await h3.go('addBill', { name: 'Gym', amount: 3000, day: 5, acct: c3, cash: true })).ok);
     const z3 = await h3.go('removeAccount', c3); ok(!z3.ok && /Gym/.test(z3.text), z3.text);
     const h4 = setup(), c4 = await withCash(h4), r4 = await h4.go('removeAccount', c4), h5 = reloadOf(h4);
     ok((await h5.A.undo(r4.step.id)).ok, 'Undo after a reload');
@@ -893,6 +893,25 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     const z = await h.go('setCountry', { country: 'FR' }); ok(!z.ok && /Pick/.test(z.text), z.text);
     const y = await h.go('setCountry', { country: 'PH' }); ok(!y.ok && /Nothing changed/.test(y.text));
     ok((await h.A.undo(r.step.id)).ok); eq(h.book.home.country.v, 'JP');
+  });
+  /* [coordinator 18 ruling, 26 Nov: Paid from] a bank or an e-wallet pays a card, loan or bill as usual; cash only after
+     "Do you pay this in cash, at a shop or an ATM? It will come off Wallet each time." (cash: true), on every door */
+  await t('Paid from: cash only after the cash question (card, loan, bill, add and change); an e-wallet as usual; an old cash payer keeps working', async () => {
+    const h = setup();
+    ok((await h.go('addAccount', { name: 'Wallet', type: 'cash', amount: 12000, moved: false })).ok);
+    ok((await h.go('addAccount', { name: 'GCash', type: 'ewallet', amount: 5000, moved: false })).ok);
+    const W1 = h.book.accounts.find(a => a.name === 'Wallet').id, G1 = h.book.accounts.find(a => a.name === 'GCash').id;
+    const Q = 'Do you pay this in cash, at a shop or an ATM? It will come off Wallet each time';
+    let r = await h.go('changeOwed', CARD_A, { payFrom: W1 }); ok(!r.ok && r.text.includes(Q), r.text);
+    r = await h.go('changeOwed', CARD_A, { payFrom: G1 }); ok(r.ok, r.text); eq(h.book.accounts.find(a => a.id === CARD_A).payFrom, G1);
+    r = await h.go('changeOwed', CARD_A, { payFrom: W1, cash: true }); ok(r.ok, r.text); eq(h.book.accounts.find(a => a.id === CARD_A).payFrom, W1);
+    r = await h.go('changeOwed', CARD_A, { name: 'Card A2' }); ok(r.ok, 'an old cash payer is never asked again: ' + r.text);
+    r = await h.go('addLoan', { name: 'Car', owed: 100000, amount: 10000, payDay: 27, payFrom: W1 }); ok(!r.ok && r.text.includes(Q), r.text);
+    r = await h.go('addLoan', { name: 'Car', owed: 100000, amount: 10000, payDay: 27, payFrom: W1, cash: true }); ok(r.ok, r.text);
+    r = await h.go('addCard', { name: 'Card C', owed: 0, payDay: 10, cutDay: 25, payFrom: W1 }); ok(!r.ok && r.text.includes(Q), r.text);
+    r = await h.go('addBill', { name: 'Water', amount: 3000, every: 'month', day: 5, acct: W1 }); ok(!r.ok && r.text.includes(Q), r.text);
+    r = await h.go('addBill', { name: 'Water', amount: 3000, every: 'month', day: 5, acct: W1, cash: true }); ok(r.ok, r.text);
+    r = await h.go('changeBill', RENT, { acct: W1 }); ok(!r.ok && r.text.includes(Q), r.text);
   });
   console.log(bad ? `plan3_write: ${bad} FAIL of ${n}` : `plan3_write: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
