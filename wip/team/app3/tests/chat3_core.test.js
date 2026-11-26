@@ -387,6 +387,26 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const u = await K.undo(k5.state, c5.id, d); ok(u.ok, JSON.stringify(u));
     eq([!!hp.book.places.find(x => x.id === g.id).gone, kept(g.id)], [false, 15000], 'Undo puts it back with its money');
   });
+  await t('[E8, M3, M13, M38] "I stopped the side job" and "remove the gym bill, I added it by mistake": end_pay and remove_bill ask first, then do it; Undo; a pay with history is not removed', async () => {
+    const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
+    const refOf = (body, re) => FAKE.results(body)[0].text.split('\n').find(l => re.test(l)).split(' | ')[0];
+    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'add_bill', name: 'Gym', amount: 8000, day: 5 }] })]), say('Added.'),
+      say('', [call('list', { what: 'bills' })]), body => say('', [call('change', { steps: [{ do: 'remove_bill', ref: refOf(body, /Gym/) }] })]), say('Tap OK.'),
+      say('', [call('list', { what: 'pays' })]), body => say('', [call('change', { steps: [{ do: 'end_pay', ref: (FAKE.results(body)[0].text.split('\n').find(l => /^P\d/.test(l)) || '').split(' | ')[0] }] })]), say('Tap OK.')]);
+    const d = hp.deps(f);
+    const r1 = await K.turn(state, 'add a gym bill, 8,000 on the 5th', d);
+    eq(r1.shown.find(x => x.who === 'card').card.status, 'done');
+    const gym = hp.book.schedules.find(s => s.name === 'Gym');
+    const r2 = await K.turn(r1.state, 'remove the gym bill, I added it by mistake', d);
+    const c2 = r2.shown.find(x => x.who === 'card'); eq([c2.card.status, c2.card.ask], ['ask', 'delete'], JSON.stringify(c2.card));
+    const k2 = await K.confirm(r2.state, c2.id, d); ok(k2.ok, JSON.stringify(k2));
+    ok(hp.book.schedules.find(s => s.id === gym.id).gone, 'removed');
+    const u = await K.undo(k2.state, c2.id, d); ok(u.ok, JSON.stringify(u)); ok(!hp.book.schedules.find(s => s.id === gym.id).gone, 'Undo puts it back');
+    const r3 = await K.turn(u.state || k2.state, 'I stopped that job', d);
+    const c3 = r3.shown.find(x => x.who === 'card'); eq([c3.card.status, c3.card.ask], ['ask', 'delete'], JSON.stringify(c3.card));
+    const k3 = await K.confirm(r3.state, c3.id, d); ok(k3.ok, JSON.stringify(k3));
+    ok(hp.book.schedules.some(s => s.kind === 'income' && s.ends === '2026-11-24'), 'the pay ends today');
+  });
   await t('[M6] an answer to a follow-up question ("from when?") still counts the amount typed just before', async () => {
     const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
     const f = FAKE.make([say('From when: this one, or the next one?'),

@@ -202,12 +202,12 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
   /* ---- the tools (BU2: no figures or draft read tool) ---- */
   const num = { type: 'number', description: 'A plain number in the currency, no symbol.' };
   const str = d => ({ type: 'string', description: d });
-  const DO = ['landed', 'bank_figure', 'card_figure', 'log_spend', 'refund', 'money_in', 'move_money', 'remove', 'add_bill', 'change_bill', 'end_bill', 'add_pay', 'add_line', 'change_line', 'end_line', 'set_free', 'add_goal', 'set_aside', 'add_card', 'add_account', 'change_account', 'close_account', 'reopen_account', 'remove_account', 'pay_off', 'change_card', 'change_loan', 'add_loan', 'set_keep', 'set_country', 'change_goal', 'take_out', 'remove_goal'];
+  const DO = ['landed', 'bank_figure', 'card_figure', 'log_spend', 'refund', 'money_in', 'move_money', 'remove', 'add_bill', 'change_bill', 'end_bill', 'add_pay', 'add_line', 'change_line', 'end_line', 'set_free', 'add_goal', 'set_aside', 'add_card', 'add_account', 'change_account', 'close_account', 'reopen_account', 'remove_account', 'pay_off', 'change_card', 'change_loan', 'add_loan', 'set_keep', 'set_country', 'change_goal', 'take_out', 'remove_goal', 'end_pay', 'remove_pay', 'remove_bill'];
   /* a step that was asked for and left out, in words for the person (the card says which was not done) */
   const DO_WORDS = { landed: 'ticking off a pay or bill', bank_figure: 'a bank figure', card_figure: 'a card figure', log_spend: 'a spend', refund: 'a refund', money_in: 'money that came in',
     move_money: 'money moved between accounts', remove: 'removing a record', add_bill: 'a new bill', change_bill: 'a change to a bill or pay', end_bill: 'ending a bill', add_pay: 'a new pay',
     add_line: 'a new line', change_line: 'a change to a line', end_line: 'ending a line', set_free: 'a change to Free to spend', add_goal: 'a new goal', set_aside: 'money set aside for a goal',
-    add_card: 'a new card', add_account: 'a new account', change_account: 'a change to an account', close_account: 'closing an account', reopen_account: 'reopening an account', remove_account: 'removing an account', pay_off: 'paying off a card or loan', change_card: 'a change to a card', change_loan: 'a change to a loan', add_loan: 'a new loan', set_keep: 'Keep at least for your main bank', set_country: 'where you bank', change_goal: 'a change to a goal', take_out: 'money taken out of a goal', remove_goal: 'removing a goal' };
+    add_card: 'a new card', add_account: 'a new account', change_account: 'a change to an account', close_account: 'closing an account', reopen_account: 'reopening an account', remove_account: 'removing an account', pay_off: 'paying off a card or loan', change_card: 'a change to a card', change_loan: 'a change to a loan', add_loan: 'a new loan', set_keep: 'Keep at least for your main bank', set_country: 'where you bank', change_goal: 'a change to a goal', take_out: 'money taken out of a goal', remove_goal: 'removing a goal', end_pay: 'ending a pay', remove_pay: 'removing a pay', remove_bill: 'removing a bill' };
   const CURS = ['JPY', 'PHP', 'USD', 'EUR'];
   const SECTIONS = ['country', 'currency', 'banks', 'pays', 'cards', 'bills', 'asked', 'statements', 'payToday', 'free', 'min'];
   const TOOLS = [
@@ -626,6 +626,13 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       const from = ref(a.from, 'A'), to = ref(a.to, 'A'), x = amt(a.amount), d = date(a.date);
       if (!from || !to || !x || !d) return { bad: 'a move I could not read' };
       return { kind: 'moveMoney', args: [{ date: d, a: x, from, to }], text: `Move ${m(x)} from ${nm(from)} to ${nm(to)}, ${on(d)}`, amount: x };
+    }
+    /* [E8, M13, M38] a pay ended (as a bill is; the pay periods pass to another pay), or a pay or bill added by mistake
+       removed as if never added (refused with words when something names it); each asks first */
+    if (what === 'end_pay' || what === 'remove_pay' || what === 'remove_bill') {
+      const id = ref(a.ref, what === 'remove_bill' ? 'B' : 'P'); if (!id) return { bad: 'a ' + (what === 'remove_bill' ? 'bill' : 'pay') + ' I do not know' };
+      if (what === 'end_pay') return { kind: 'endBill', args: [id, {}], text: `End ${schName(id)} from today`, del: true };
+      return { kind: 'removeSchedule', args: [id], text: `Remove ${schName(id)}, as if it was never added`, del: true };
     }
     if (what === 'remove' || what === 'end_bill' || what === 'end_line') {
       const id = ref(a.ref, what === 'end_line' ? 'L' : what === 'end_bill' ? 'BP' : 'SBL');
