@@ -95,7 +95,10 @@ const E3 = (() => {
     book = newBook; mode = 'kept';
     const ok = await save({ full: true });
     if (!ok) { book = before.book; mode = before.mode; }
-    else if (root3.BurrowPersist) root3.BurrowPersist.afterSetup().catch(() => {});
+    else {
+      if (root3.BurrowPersist) root3.BurrowPersist.afterSetup().catch(() => {});
+      if (typeof setup3Filled === 'function') setup3Filled();   // a setup Save's Undo has nothing left to undo
+    }
     return ok;
   }
   /* backup lane: a whole new book from a restore or the cloud copy; the first one makes this device keep a book.

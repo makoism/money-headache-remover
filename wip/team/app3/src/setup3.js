@@ -513,8 +513,12 @@ async function saveSec3(sec) {
   /* [qc-assistant run 4, fix B] the section goes into the chat's draft too: one set of answers (chat3.js) */
   const cw = typeof chat3FromScreens === 'function' ? chat3FromScreens(sec) : null;
   markAll3();
-  MSG3.post({ kind: 'undo', key: 'act3', text: `${secName3(sec)}: saved`, action: { label: 'Undo', run: () => undoSec3(sec, before, beforeDay, now, cw) } });
+  setup3Undo = MSG3.post({ kind: 'undo', key: 'act3', text: `${secName3(sec)}: saved`, action: { label: 'Undo', run: () => undoSec3(sec, before, beforeDay, now, cw) } });
 }
+/* [coordinator 16, 26 Nov] once the app is filled (by the chat or by See my money) a section's Save has nothing left to undo:
+   its Undo is taken off, never left to say "Undone" while nothing changes. E3.start calls this */
+let setup3Undo = null;
+function setup3Filled() { if (setup3Undo) { MSG3.dismiss(setup3Undo); setup3Undo = null; } }
 /* Undo a section's Save: the section as it was before it (or as it started); refused when it was saved again since */
 async function undoSec3(sec, before, beforeDay, now, cw) {
   const open = !!setup3, kept = open ? null : ((await E3.rec('setup')) || {});
