@@ -25,7 +25,7 @@ const owed = (p, name) => p.evaluate(n => { const { E3 } = BurrowApp3, a = E3.bo
     ai.push(body => R.say('', [R.call('change', { steps: [{ do: 'bank_figure', account: R.ref(body, 'Main bank'), amount: 3000000 }] })]), R.say('That is a lot more than I expected. Is it right?'));
     await R.tell(p, 'my bank shows 3,000,000');
     let c = await cardOf(p);
-    ck('H5: the card asks first, the gap in words', c && c.status === 'ask' && c.ask === 'gap' && /The app expected ¥286,000: ¥2,714,000 more than it had/.test(c.text) && /far from what the app expected/.test(c.text), JSON.stringify(c));
+    ck('H5: the card asks first, the gap in words', c && c.status === 'ask' && c.ask === 'gap' && /That is ¥2,714,000 more than expected\. Is ¥3,000,000 right\?/.test(c.text) && /far from what the app expected/.test(c.text), JSON.stringify(c));
     h = await R.home(p);
     ck('H5: nothing changed before the OK: 201,400 and 286,000', h.safe === 201400 && h.bank === 286000, JSON.stringify(h));
     await p.evaluate(() => [...document.querySelectorAll('[data-chatok]')].pop().click()); await R.idle(p); await T.w(400);

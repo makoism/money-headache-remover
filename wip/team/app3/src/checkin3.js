@@ -42,7 +42,7 @@ function openCheck3() {
   sheet.innerHTML = `<div class="a3-sheet-in">
     <h1 id="a3CheckT">Check your bank</h1>
     <section class="a3-card"><h2>${esc3(label3('checkInList'))} since ${esc3(day3(r.checkIn.since, yr))}</h2>${list.length ? '<p class="a3-sub">Untick anything that has not gone through yet. Change an amount if it was different</p>' + rows : '<p class="a3-sub">Nothing was due since then</p>'}</section>
-    <section class="a3-card"><h2>Your bank today</h2>${figs}${cardFigs ? '<h2>Your cards today</h2>' + cardFigs : ''}<p class="a3-err" id="a3CheckErr"></p></section>
+    <section class="a3-card"><h2>Your bank today</h2>${figs}${cardFigs ? '<h2>Your cards today</h2>' + cardFigs : ''}<p class="a3-err" id="a3CheckErr"></p><div id="a3CheckFar"></div></section>
     <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3CheckSave">Save</button><button type="button" class="a3-btn" id="a3CheckX">Back</button></div>
   </div>`;
   sheet.hidden = false; $('#a3Home').hidden = true; scrollTo(0, 0);
@@ -187,6 +187,21 @@ function checkPreview3() {
     if (opt) opt.hidden = !(g && g.loss) || asking;
   }
 }
+function farAsk3(d) {
+  const r0 = checkView3(checkOut3(Object.assign({}, d, { figures: {} }))), pay = BurrowEngine.checkin.usualPay(E3.book, check3.day);
+  const asks = Object.keys(d.figures).map(id => {
+    const exp = r0.accounts[id] ? r0.accounts[id].bank : null, f = exp == null ? null : BurrowEngine.checkin.farFigure(exp, d.figures[id], pay);
+    return f ? { id, text: BurrowScreens.status.farText(f, d.figures[id], x => money3(x, E3.curOf(id))) } : null;
+  }).filter(Boolean);
+  const key = JSON.stringify(asks.map(a => [a.id, d.figures[a.id]]));
+  if (!asks.length || check3.farOk === key) return false;
+  const host = $('#a3CheckFar');
+  host.innerHTML = `<div class="a3-sure" data-far><p class="a3-warn">${asks.map(a => esc3(a.text)).join(' ')}</p><div class="a3-actions"><button type="button" class="a3-btn solid" data-faryes>Yes</button><button type="button" class="a3-btn" data-farfix>Fix it</button></div></div>`;
+  host.querySelector('[data-faryes]').addEventListener('click', () => { host.innerHTML = ''; check3.farOk = key; saveCheck3(); });
+  host.querySelector('[data-farfix]').addEventListener('click', () => { host.innerHTML = ''; const el = $('#a3Check').querySelector(`[data-bankfig="${CSS.escape(asks[0].id)}"], [data-cardfig="${CSS.escape(asks[0].id)}"]`); if (el) el.focus(); });
+  host.querySelector('[data-farfix]').focus();
+  return true;
+}
 async function saveCheck3() {
   if (!check3) return;
   const sheet = $('#a3Check'), err = $('#a3CheckErr');
@@ -201,6 +216,10 @@ async function saveCheck3() {
     const q = sheet.querySelector('[data-payask]:not([hidden]) button'); if (q) q.focus();
     return;
   }
+  /* [coordinator, slice 10] a figure far from what the app expects now (more than double, less than half, or off by more
+     than the pay: engine/checkin.js farFigure) asks once: Yes saves it as typed, Fix it keeps it in the box, nothing saved.
+     A bank's figure only: a card's far figure has its own question (its payment) */
+  if (farAsk3(d)) return;
   const out = checkOut3(d), day = check3.day;
   /* [CHECKFIX F2, coordinator 16] a gap the person logs as a spend now: the check-in keeps the line or goal picked for
      that account (fillerPlace), never a fixed amount, so the engine's gap goes there and follows any later change of

@@ -12,7 +12,10 @@
    - Remove this check asks first with the plan's words (Card A's payment stays ticked); No writes nothing; Yes marks
      the check, the pay and Card B's payment gone with one goneBy; the list no longer has it;
    - a minus figure on the 28 Nov check (now the newest) asks first because it takes all of safe to spend, then saves;
-   - Check your bank with the gap logged on Food writes fillerPlace, no fixed spend (F2). Made-up yen. */
+   - Check your bank with the gap logged on Food writes fillerPlace, no fixed spend (F2);
+   - [coordinator, slice 10] a figure far from what the app expected (more than double, less than half, or off by more
+     than the pay) asks once on the Checks sheet and at Check your bank: Fix it keeps the typed figure, nothing saved;
+     Yes saves. Made-up yen. */
 'use strict';
 const T = require('./lib3.js'), { ck } = T;
 const fs = require('fs'), path = require('path');
@@ -108,6 +111,12 @@ const saved = p => p.evaluate(async () => { const s = await BurrowStore.open(); 
     ck('the list no longer has it', (await rows()).length === 2 && /^28 Nov/.test((await rows())[0]), JSON.stringify(await rows()));
     /* a minus figure, asked first */
     await open(0); await setFig('-5000'); await p.click('#a3ChecksSave'); await T.w(400);
+    const farQ = await p.$eval('#a3ChecksSure [data-far]', e => e.textContent.replace(/\s+/g, ' ')).catch(() => '');
+    ck('[far] a figure far from what the app expected asks first: "That is ... less than expected. Is -5,000 right?"', /^That is ¥[\d,]+ less than expected\. Is \S*5,000 right\?/.test(farQ), farQ);
+    await p.$eval('#a3ChecksSure [data-farfix]', e => e.click()); await T.w(300);
+    ck('[far] Fix it keeps the typed figure in the box, nothing saved', /5,?000$/.test(await p.$eval('#a3CheckFig', e => e.value)) && chk(await saved(p), '2026-11-28').a === 200000, await p.$eval('#a3CheckFig', e => e.value));
+    await p.$eval('#a3ChecksSave', e => e.click()); await T.w(400);
+    await p.$eval('#a3ChecksSure [data-faryes]', e => e.click()); await T.w(400);
     const ask = await p.$eval('#a3ChecksSure [data-sure]', e => e.textContent.replace(/\s+/g, ' ')).catch(() => '');
     ck('[M6] a change that takes all of safe to spend asks first', /^This takes safe to spend from ¥[\d,]+ to ¥0/.test(ask) && chk(await saved(p), '2026-11-28').a === 200000, ask);
     await p.$eval('#a3ChecksSure [data-sureyes]', e => e.click()); await T.w(800);
@@ -116,11 +125,21 @@ const saved = p => p.evaluate(async () => { const s = await BurrowStore.open(); 
     if (await p.$('#a3ChecksBack')) { await p.click('#a3ChecksBack'); await T.w(200); }
     await p.click('#a3ChecksX'); await T.w(300);
     ck('Back closes the sheet and Home is there', await p.$eval('#a3Checks', e => e.hidden) && !(await p.$eval('#a3Home', e => e.hidden)));
-    /* F2: Check your bank keeps where the gap goes */
+    /* [far] Check your bank: a figure ten times what the app expects asks once; Fix it keeps it, Yes saves */
     await p.click('#a3CheckGo'); await T.w(400);
     const exp = await p.evaluate(b => BurrowApp3.E3.view(BurrowApp3.E3.today()).accounts[b].bank, BANK);
+    before = JSON.stringify(await saved(p));
+    await p.type(`[data-bankfig="${BANK}"]`, String(exp * 10)); await T.w(300);
+    await p.evaluate(b => { const x = document.querySelector(`[data-gapyes="${b}"]`); if (x && !x.closest('[hidden]')) x.click(); }, BANK); await T.w(200);
+    await p.$eval('#a3CheckSave', e => e.click()); await T.w(400);
+    const far1 = await p.$eval('#a3CheckFar [data-far]', e => e.textContent.replace(/\s+/g, ' ')).catch(() => '');
+    ck('[far] Check your bank asks "That is ... more than expected. Is ... right?" with Yes and Fix it', /^That is ¥[\d,]+ more than expected\. Is ¥[\d,]+ right\?\s*Yes\s*Fix it$/.test(far1.trim()), far1);
+    await p.$eval('#a3CheckFar [data-farfix]', e => e.click()); await T.w(300);
+    ck('[far] Fix it: the typed figure stays in the box, nothing saved', (await p.$eval(`[data-bankfig="${BANK}"]`, e => e.value)).replace(/\D/g, '') === String(exp * 10) && JSON.stringify(await saved(p)) === before);
+    await p.$eval(`[data-bankfig="${BANK}"]`, e => { e.value = ''; });
+    /* F2: Check your bank keeps where the gap goes */
     await p.type(`[data-bankfig="${BANK}"]`, String(exp - 2000)); await T.w(300);
-    if (await p.$(`[data-gapyes="${BANK}"]:not([hidden])`)) { await p.click(`[data-gapyes="${BANK}"]`); await T.w(200); }
+    await p.evaluate(b => { const x = document.querySelector(`[data-gapyes="${b}"]`); if (x && !x.closest('[hidden]')) x.click(); }, BANK); await T.w(200);
     await p.click(`[data-gapspend="${BANK}"]`); await p.select(`[data-gapline="${BANK}"]`, 'line:' + FOOD);
     await p.click('#a3CheckSave'); await T.w(700);
     bk = await saved(p);

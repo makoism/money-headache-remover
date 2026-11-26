@@ -9,7 +9,8 @@ let checks3 = null;
 const CHECKS3_NONE = 'Type the figure your bank showed';
 function checks3Book() { return BurrowEngine.ledger.revive(E3.book).book; }
 function checks3List(acct) {
-  const b = checks3Book(), told = e => String(e.told || e.date);
+  const b = checks3Book(), opens = new Set((b.events || []).filter(e => e && !e.gone && e.k === 'open' && e.acct === acct).map(e => `${e.date}|${e.grp}`));
+  const told = e => (opens.has(`${e.date}|${e.grp}`) ? '' : String(e.told || e.date));   // an opening comes first on its day
   return (b.events || []).filter(e => e && !e.gone && e.k === 'check' && e.acct === acct)
     .sort((x, y) => (x.date !== y.date ? (x.date < y.date ? 1 : -1) : told(x) !== told(y) ? (told(x) < told(y) ? 1 : -1) : (x.id < y.id ? 1 : -1)));
 }
@@ -100,7 +101,7 @@ function checks3Done3(r1, keepOpen) {
     if (r1.why === 'other') { checks3.ver = ACT3.ver(); drawChecks3(); }
     $('#a3ChecksErr').textContent = r1.text; return;
   }
-  checks3.ver = ACT3.ver(); checks3.open = keepOpen && checks3List(checks3.acct).some(x => x.id === keepOpen) ? keepOpen : null;
+  checks3.farOk = null; checks3.ver = ACT3.ver(); checks3.open = keepOpen && checks3List(checks3.acct).some(x => x.id === keepOpen) ? keepOpen : null;
   drawChecks3();
 }
 async function saveCheckFig3(c, own) {
@@ -109,6 +110,16 @@ async function saveCheckFig3(c, own) {
   const v = own ? typedBank3(el.value, cur) : typed3(el.value, cur);
   if (v === null) { err.textContent = own ? CHECKS3_NONE : 'Type what was on it, zero or more'; el.focus(); return; }
   const fn = w => PLAN3W.changeCheck(w, c.id, { amount: v });
+  /* [coordinator, slice 10] far from what the app expected at that check (engine/checkin.js farFigure): asked once */
+  const CKE = BurrowEngine.checkin, exp = CKE.expectedAt(E3.view(c.date), c.acct, c.date, c.a), far = !own || exp == null ? null : CKE.farFigure(exp, v, CKE.usualPay(E3.book, c.date));
+  if (far && checks3.farOk !== v) {
+    const host = $('#a3ChecksSure');
+    host.innerHTML = `<div class="a3-sure" data-far><p class="a3-warn">${esc3(BurrowScreens.status.farText(far, v, x => money3(x, cur)))}</p><div class="a3-actions"><button type="button" class="a3-btn solid" data-faryes>Yes</button><button type="button" class="a3-btn" data-farfix>Fix it</button></div></div>`;
+    host.querySelector('[data-faryes]').addEventListener('click', () => { host.innerHTML = ''; checks3.farOk = v; saveCheckFig3(c, own); });
+    host.querySelector('[data-farfix]').addEventListener('click', () => { host.innerHTML = ''; el.focus(); });
+    host.querySelector('[data-farfix]').focus();
+    return;
+  }
   /* [M6] a change that takes more off safe to spend than it holds asks first (the engine's figures before and after) */
   if (!checks3.sure) {
     let b1 = null; try { b1 = ACT3.dryRun('Change a bank check', fn); } catch (e) { err.textContent = e.message; return; }

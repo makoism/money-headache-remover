@@ -918,7 +918,7 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     let r = await K.turn(state, 'my bank shows 3,000,000', Object.assign(h.deps(f), { door: d0.door }));
     let c = r.shown.find(x => x.who === 'card' && x.card.kind === 'change');
     ok(c && c.card.status === 'ask' && c.card.ask === 'gap', JSON.stringify(c && c.card));
-    ok(/Main bank shows ¥3,000,000 today\. The app expected ¥286,000: ¥2,714,000 more than it had/.test(c.card.lines[0]), c.card.lines[0]);
+    ok(/Main bank shows ¥3,000,000 today\. That is ¥2,714,000 more than expected\. Is ¥3,000,000 right\?/.test(c.card.lines[0]), c.card.lines[0]);   // [coordinator, slice 10] the one far rule's words
     eq(bank(), 286000, 'nothing written before the OK');
     const ok2 = await K.confirm(r.state, c.id, Object.assign(h.deps(FAKE.make([])), { door: d0.door }));
     ok(ok2.ok, ok2.text); eq(bank(), 3000000, 'after Do it');
@@ -1228,6 +1228,15 @@ const steps = list => [].concat(...list.map(([, r]) => r));
       const res = FAKE.results(f.bodies[1])[0].text;
       ok(/Only the latest check of Main bank can be removed\. Change its figure instead/.test(res), res);
       eq([r.shown.filter(x => x.who === 'card').length, JSON.stringify(hp.book) === book0], [0, true], 'no card, nothing written');
+    });
+    await t('[coordinator, slice 10] change_check to a figure far from what the app expected asks first, in the screens\' words', async () => {
+      const { hp, d, state, id } = await withFigure();
+      const f = FAKE.make([say('', [call('change', { steps: [{ do: 'change_check', account: 'A1', amount: 2800000 }] })]), say('Is that right?')]);
+      const r = await K.turn(state, 'it was 2,800,000', Object.assign(hp.deps(f), { door: d.door }));
+      const c = r.shown.find(x => x.who === 'card').card;
+      eq([c.status, c.ask], ['ask', 'gap']);
+      ok(/That is ¥2,514,000 more than expected\. Is ¥2,800,000 right\?/.test(c.lines[0]), c.lines[0]);
+      eq(hp.book.events.find(x => x.id === id).a, 280000, 'nothing written before the OK');
     });
     await t('[CHECKFIX] list checks names each figure with its day, the latest marked', async () => {
       const { hp, d, state } = await withFigure();

@@ -103,6 +103,7 @@
   const G = node ? require('../../engine/ledger.js') : E.ledger;
   const PER = node ? require('../../engine/periods.js') : E.periods;
   const SM = node ? require('../../screens/money.js') : root.BurrowScreens.money;
+  const ST = node ? require('../../screens/status.js') : root.BurrowScreens.status;
   const SN = node ? require('../../screens/names.js') : root.BurrowScreens.names;
   const HELP = node ? require('../../screens/help.js') : root.BurrowScreens.help;
   const AQ = node ? require('./ask3_core.js') : root.ASK3C;
@@ -559,7 +560,8 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       const acct = refs[x.account];
       if (!acct || !String(x.account).startsWith('A')) return 'Which account? An A ref from FIGURES.';
       const cur = ((book.accounts || []).find(a => a.id === acct) || {}).cur, rb = G.revive(book).book;
-      const cs = (rb.events || []).filter(e => live(e) && e.k === 'check' && e.acct === acct).sort((p, q) => (p.date !== q.date ? (p.date < q.date ? 1 : -1) : String(p.told) < String(q.told) ? 1 : -1)).slice(0, 12);
+      const opens = new Set((rb.events || []).filter(e => live(e) && e.k === 'open' && e.acct === acct).map(e => e.date + '|' + e.grp)), tk = e => (opens.has(e.date + '|' + e.grp) ? '' : String(e.told));
+      const cs = (rb.events || []).filter(e => live(e) && e.k === 'check' && e.acct === acct).sort((p, q) => (p.date !== q.date ? (p.date < q.date ? 1 : -1) : tk(p) < tk(q) ? 1 : -1)).slice(0, 12);
       return cs.length ? 'date | figure | from\n' + cs.map((e, i) => `${e.date} | ${m(e.a, cur)} | ${e.stmt || /^(stmt|imp):/.test(String(e.grp)) ? 'a statement' : 'typed'}${i === 0 ? ' | the latest' : ''}`).join('\n') : 'No checks of that account yet.';
     }
     if (what === 'accounts' || what === 'cards') {
@@ -892,7 +894,10 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
         const a = r1.accounts[id], f = a && (a.fillers || []).slice(-1)[0], was = r0.accounts[id];
         if (!f || f.to !== today || !was) continue;
         const cur = ((book.accounts || []).find(x => x.id === id) || {}).cur;
-        if (f.gain > 0 && f.gain > safe) far.set(s, `The app expected ${m(was.bank, cur)}: ${m(f.gain, cur)} more than it had`);
+        /* [coordinator, slice 10] the one far rule (engine/checkin.js farFigure), in the screens' words */
+        const ff = CK.farFigure(f.had, s.ci.figures[id], CK.usualPay(book, today));
+        if (ff) far.set(s, ST.farText(ff, s.ci.figures[id], x => m(x, cur)));
+        else if (f.gain > 0 && f.gain > safe) far.set(s, `The app expected ${m(was.bank, cur)}: ${m(f.gain, cur)} more than it had`);
         else if (f.amount > 0 && f.amount > safe) far.set(s, `The app expected ${m(was.bank, cur)}: ${m(f.amount, cur)} less than it had`);
       }
     }
@@ -989,6 +994,13 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
         const r0 = LA.lookahead(book, today);
         s.amount = Math.max(0, safe - r1.safeToSpend.headline);
         if (safe > 0 && (r1.safeToSpend.headline === 0 || (r1.safeToSpend.short && !r0.safeToSpend.short))) s.big = true;
+        /* [coordinator, slice 10] a figure far from what the app expected at that check asks first, in the screens' words */
+        const c = (book.events || []).find(e => e.id === s.args[0]), x = s.args[1].amount;
+        const own = c && { bank: 1, cash: 1, ewallet: 1, wallet: 1 }[((book.accounts || []).find(a => a.id === c.acct) || {}).type];
+        if (c && x != null && own) {   // a bank's figure only: a card's has its own question (its payment)
+          const exp = CK.expectedAt(LA.lookahead(book, c.date), c.acct, c.date, c.a), ff = exp == null ? null : CK.farFigure(exp, x, CK.usualPay(book, c.date));
+          if (ff) s.far = ST.farText(ff, x, v => SM.format(v, ((book.accounts || []).find(a => a.id === c.acct) || {}).cur || G.homeOn(book, today)));
+        }
       }
       /* [qc-foundation F2] the size is the step's real figure: a new pay and new money count too */
       const big = plan.some(s => (s.amount && s.amount > safe) || s.big), del = plan.some(s => s.del);
@@ -1000,6 +1012,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
          check, on the book the step would make, larger than safe to spend) asks first, with the gap in words: an extra
          zero never goes in silently */
       const far = farFigures(plan, book, today, deps, safe);
+      for (const s of plan) if (s.far) far.set(s, s.far);
       const card = { kind: 'change', status: 'ask', ver: verNow, lines: plan.map(s => s.text + (far.has(s) ? '. ' + far.get(s) : '') + (guess.includes(s) ? ' (my guess)' : '')), rows: [], plan, dropped, left };
       if (del || big || far.size || guess.length) {
         card.ask = del ? 'delete' : big ? 'large' : far.size ? 'gap' : 'guess';

@@ -95,21 +95,52 @@
   const toldNum = e => { const n = Date.parse(e.told || ''); return isNaN(n) ? Date.parse(String(e.told || e.date).slice(0, 10)) + (864e5 - 1) || 0 : n; };   // 'T24:00': the end of its day
   function latestCheck(book, acct) {
     let best = null, bk = 0;
+    // an opening's check (written with its `open`, told at the end of its day) comes before any other check that day
+    const opens = new Set((book.events || []).filter(e => e && !e.gone && e.k === 'open' && e.acct === acct).map(e => e.date + '|' + e.grp));
     for (const e of book.events || []) {
       if (!e || e.gone || e.k !== 'check' || e.acct !== acct) continue;
-      const k = toldNum(e);
+      const k = opens.has(e.date + '|' + e.grp) ? -Infinity : toldNum(e);
       if (!best || e.date > best.date || (e.date === best.date && (k > bk || (k === bk && String(e.id) > String(best.id))))) { best = e; bk = k; }
     }
     return best;
   }
   const prevCheck = (book, acct) => { const c = latestCheck(book, acct); return c ? c.id : null; };
+  // [coordinator, slice 10: a check typed 950,000 meaning 99,000] A typed figure far from what the app expected: more than
+  // double it, less than half of it, or off by more than the pay amount. The one rule every screen and the assistant
+  // ask by, before saving. Gives null, or { dir: 'more' | 'less', by } (minor units). `pay` is the usual pay (0 or null:
+  // that test is left out); with nothing expected (0 or less) only the pay test counts.
+  function farFigure(expected, typed, pay) {
+    if (!Number.isInteger(expected) || !Number.isInteger(typed) || typed === expected) return null;
+    const by = Math.abs(typed - expected), dir = typed > expected ? 'more' : 'less';
+    const far = (expected > 0 && (typed > 2 * expected || 2 * typed < expected)) || (pay > 0 && by > pay);
+    return far ? { dir, by } : null;
+  }
+  // what the app expected at a check already saved (the look ahead `r`, the account, the check's day, its figure): a
+  // bank's gap there says what it had; a card's gap is the figure less what it had. null when the check has no gap entry
+  function expectedAt(r, id, day, figure) {
+    const a = r.accounts && r.accounts[id];
+    if (a) { const f = (a.fillers || []).filter(x => x.to === day).pop(); return f && Number.isInteger(f.had) ? f.had : null; }
+    const k = r.cards && r.cards[id];
+    if (k) { const f = (k.fillers || []).filter(x => x.day === day).pop(); return f ? figure - f.amount : null; }
+    return null;
+  }
+  // the usual pay, for farFigure: the largest pay amount in force today (0 when there is none)
+  function usualPay(book, day) {
+    let best = 0;
+    for (const s of book.schedules || []) {
+      if (!s || s.gone || s.kind !== 'income' || (s.ends && s.ends < day)) continue;
+      let a = 0; for (const st of s.steps || []) if (st && !st.gone && (st.from == null || st.from <= day) && Number.isInteger(st.amount)) a = st.amount;
+      if (a > best) best = a;
+    }
+    return best;
+  }
   function apply(book, out) {
     const b = JSON.parse(JSON.stringify(book));
     b.events = (b.events || []).concat(out.events);
     b.checkins = (b.checkins || []).concat(out.checkins);
     return b;
   }
-  const api = { checkIn, apply, landedFrom, latestCheck, prevCheck };
+  const api = { checkIn, apply, landedFrom, latestCheck, prevCheck, farFigure, usualPay, expectedAt };
   if (node) module.exports = api;
   else (root.BurrowEngine = root.BurrowEngine || {}).checkin = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

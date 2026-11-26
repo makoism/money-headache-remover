@@ -102,12 +102,16 @@ async function sameAsEngine(p, day, what) {
     ck('second person: no below zero line while the bank is above zero', (await below(p)) === null);
     await go(p, '2026-11-26');
     await p.click('#a3CheckGo'); await w(300);
-    await p.fill('#a3Check [data-bankfig]', '-5'); await p.click('#a3CheckSave'); await w(500);
+    await p.fill('#a3Check [data-bankfig]', '-5'); await p.click('#a3CheckSave'); await w(400);
+    /* [coordinator, slice 10] -5 where 300,000 was expected is far: asked once, Yes saves it as typed */
+    ck('-5 where 300,000 was expected asks first', /less than expected\. Is .*5 right\?/.test(await txt(p, '#a3CheckFar')), await txt(p, '#a3CheckFar'));
+    await p.click('#a3CheckFar [data-faryes]'); await w(500);
     ck('Check your bank takes "-5" (the reviewer\'s own case)', (await p.$eval('#a3Check', x => x.hidden)) === true, await txt(p, '#a3CheckErr'));
     await L.tab(p, 'home');
     ck('the bank today is -5', (await amt(p, '#a3Home [data-card=bank] [data-fig=bank]')) === -5);
     await p.click('#a3CheckGo'); await w(300);
     await p.fill('#a3Check [data-bankfig]', '−5,000'); await p.click('#a3CheckSave'); await w(500);
+    if (await p.$('#a3CheckFar [data-faryes]')) { await p.click('#a3CheckFar [data-faryes]'); await w(500); }
     ck('Check your bank takes −5,000 typed with the long minus and a comma', (await p.$eval('#a3Check', x => x.hidden)) === true, await txt(p, '#a3CheckErr'));
     const h = await sameAsEngine(p, '2026-11-26', 'second person at -5,000');
     ck('second person: the bank today is -5,000 and safe to spend is 0', h.bank === -5000 && h.safe === 0, `${h.bank} ${h.safe}`);

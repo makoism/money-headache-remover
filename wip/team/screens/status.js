@@ -294,5 +294,8 @@
     return deepFreeze(s);
   }
 
-  return { statusOf, capParts, warningText, laterText, laterLowText, moveText, WORDS, STALE_DAYS, OLD_DAYS };
+  /* [coordinator, slice 10] the one question before a figure far from what the app expected is saved (engine/checkin.js
+     farFigure gives the rule): Check your bank, the Checks sheet and the assistant all ask it in these words */
+  function farText(far, typed, fmt) { return `That is ${fmt(far.by)} ${far.dir} than expected. Is ${fmt(typed)} right?`; }
+  return { statusOf, capParts, warningText, farText, laterText, laterLowText, moveText, WORDS, STALE_DAYS, OLD_DAYS };
 });

@@ -4348,21 +4348,52 @@ details summary { min-height: 44px; }
   const toldNum = e => { const n = Date.parse(e.told || ''); return isNaN(n) ? Date.parse(String(e.told || e.date).slice(0, 10)) + (864e5 - 1) || 0 : n; };   // 'T24:00': the end of its day
   function latestCheck(book, acct) {
     let best = null, bk = 0;
+    // an opening's check (written with its `open`, told at the end of its day) comes before any other check that day
+    const opens = new Set((book.events || []).filter(e => e && !e.gone && e.k === 'open' && e.acct === acct).map(e => e.date + '|' + e.grp));
     for (const e of book.events || []) {
       if (!e || e.gone || e.k !== 'check' || e.acct !== acct) continue;
-      const k = toldNum(e);
+      const k = opens.has(e.date + '|' + e.grp) ? -Infinity : toldNum(e);
       if (!best || e.date > best.date || (e.date === best.date && (k > bk || (k === bk && String(e.id) > String(best.id))))) { best = e; bk = k; }
     }
     return best;
   }
   const prevCheck = (book, acct) => { const c = latestCheck(book, acct); return c ? c.id : null; };
+  // [coordinator, slice 10: a check typed 950,000 meaning 99,000] A typed figure far from what the app expected: more than
+  // double it, less than half of it, or off by more than the pay amount. The one rule every screen and the assistant
+  // ask by, before saving. Gives null, or { dir: 'more' | 'less', by } (minor units). `pay` is the usual pay (0 or null:
+  // that test is left out); with nothing expected (0 or less) only the pay test counts.
+  function farFigure(expected, typed, pay) {
+    if (!Number.isInteger(expected) || !Number.isInteger(typed) || typed === expected) return null;
+    const by = Math.abs(typed - expected), dir = typed > expected ? 'more' : 'less';
+    const far = (expected > 0 && (typed > 2 * expected || 2 * typed < expected)) || (pay > 0 && by > pay);
+    return far ? { dir, by } : null;
+  }
+  // what the app expected at a check already saved (the look ahead `r`, the account, the check's day, its figure): a
+  // bank's gap there says what it had; a card's gap is the figure less what it had. null when the check has no gap entry
+  function expectedAt(r, id, day, figure) {
+    const a = r.accounts && r.accounts[id];
+    if (a) { const f = (a.fillers || []).filter(x => x.to === day).pop(); return f && Number.isInteger(f.had) ? f.had : null; }
+    const k = r.cards && r.cards[id];
+    if (k) { const f = (k.fillers || []).filter(x => x.day === day).pop(); return f ? figure - f.amount : null; }
+    return null;
+  }
+  // the usual pay, for farFigure: the largest pay amount in force today (0 when there is none)
+  function usualPay(book, day) {
+    let best = 0;
+    for (const s of book.schedules || []) {
+      if (!s || s.gone || s.kind !== 'income' || (s.ends && s.ends < day)) continue;
+      let a = 0; for (const st of s.steps || []) if (st && !st.gone && (st.from == null || st.from <= day) && Number.isInteger(st.amount)) a = st.amount;
+      if (a > best) best = a;
+    }
+    return best;
+  }
   function apply(book, out) {
     const b = JSON.parse(JSON.stringify(book));
     b.events = (b.events || []).concat(out.events);
     b.checkins = (b.checkins || []).concat(out.checkins);
     return b;
   }
-  const api = { checkIn, apply, landedFrom, latestCheck, prevCheck };
+  const api = { checkIn, apply, landedFrom, latestCheck, prevCheck, farFigure, usualPay, expectedAt };
   if (node) module.exports = api;
   else (root.BurrowEngine = root.BurrowEngine || {}).checkin = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
@@ -5150,7 +5181,10 @@ details summary { min-height: 44px; }
     return deepFreeze(s);
   }
 
-  return { statusOf, capParts, warningText, laterText, laterLowText, moveText, WORDS, STALE_DAYS, OLD_DAYS };
+  /* [coordinator, slice 10] the one question before a figure far from what the app expected is saved (engine/checkin.js
+     farFigure gives the rule): Check your bank, the Checks sheet and the assistant all ask it in these words */
+  function farText(far, typed, fmt) { return `That is ${fmt(far.by)} ${far.dir} than expected. Is ${fmt(typed)} right?`; }
+  return { statusOf, capParts, warningText, farText, laterText, laterLowText, moveText, WORDS, STALE_DAYS, OLD_DAYS };
 });
 /* One input behaviour for every box (DECISIONS_ROUND2 C, sweep2_repeats A11: "$1,212", "TripLisbon"). The first tap or
    click into a box selects what is in it, so what is typed next replaces the old value instead of adding to it. A
@@ -10650,7 +10684,7 @@ function openCheck3() {
   sheet.innerHTML = `<div class="a3-sheet-in">
     <h1 id="a3CheckT">Check your bank</h1>
     <section class="a3-card"><h2>${esc3(label3('checkInList'))} since ${esc3(day3(r.checkIn.since, yr))}</h2>${list.length ? '<p class="a3-sub">Untick anything that has not gone through yet. Change an amount if it was different</p>' + rows : '<p class="a3-sub">Nothing was due since then</p>'}</section>
-    <section class="a3-card"><h2>Your bank today</h2>${figs}${cardFigs ? '<h2>Your cards today</h2>' + cardFigs : ''}<p class="a3-err" id="a3CheckErr"></p></section>
+    <section class="a3-card"><h2>Your bank today</h2>${figs}${cardFigs ? '<h2>Your cards today</h2>' + cardFigs : ''}<p class="a3-err" id="a3CheckErr"></p><div id="a3CheckFar"></div></section>
     <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3CheckSave">Save</button><button type="button" class="a3-btn" id="a3CheckX">Back</button></div>
   </div>`;
   sheet.hidden = false; $('#a3Home').hidden = true; scrollTo(0, 0);
@@ -10795,6 +10829,21 @@ function checkPreview3() {
     if (opt) opt.hidden = !(g && g.loss) || asking;
   }
 }
+function farAsk3(d) {
+  const r0 = checkView3(checkOut3(Object.assign({}, d, { figures: {} }))), pay = BurrowEngine.checkin.usualPay(E3.book, check3.day);
+  const asks = Object.keys(d.figures).map(id => {
+    const exp = r0.accounts[id] ? r0.accounts[id].bank : null, f = exp == null ? null : BurrowEngine.checkin.farFigure(exp, d.figures[id], pay);
+    return f ? { id, text: BurrowScreens.status.farText(f, d.figures[id], x => money3(x, E3.curOf(id))) } : null;
+  }).filter(Boolean);
+  const key = JSON.stringify(asks.map(a => [a.id, d.figures[a.id]]));
+  if (!asks.length || check3.farOk === key) return false;
+  const host = $('#a3CheckFar');
+  host.innerHTML = `<div class="a3-sure" data-far><p class="a3-warn">${asks.map(a => esc3(a.text)).join(' ')}</p><div class="a3-actions"><button type="button" class="a3-btn solid" data-faryes>Yes</button><button type="button" class="a3-btn" data-farfix>Fix it</button></div></div>`;
+  host.querySelector('[data-faryes]').addEventListener('click', () => { host.innerHTML = ''; check3.farOk = key; saveCheck3(); });
+  host.querySelector('[data-farfix]').addEventListener('click', () => { host.innerHTML = ''; const el = $('#a3Check').querySelector(`[data-bankfig="${CSS.escape(asks[0].id)}"], [data-cardfig="${CSS.escape(asks[0].id)}"]`); if (el) el.focus(); });
+  host.querySelector('[data-farfix]').focus();
+  return true;
+}
 async function saveCheck3() {
   if (!check3) return;
   const sheet = $('#a3Check'), err = $('#a3CheckErr');
@@ -10809,6 +10858,10 @@ async function saveCheck3() {
     const q = sheet.querySelector('[data-payask]:not([hidden]) button'); if (q) q.focus();
     return;
   }
+  /* [coordinator, slice 10] a figure far from what the app expects now (more than double, less than half, or off by more
+     than the pay: engine/checkin.js farFigure) asks once: Yes saves it as typed, Fix it keeps it in the box, nothing saved.
+     A bank's figure only: a card's far figure has its own question (its payment) */
+  if (farAsk3(d)) return;
   const out = checkOut3(d), day = check3.day;
   /* [CHECKFIX F2, coordinator 16] a gap the person logs as a spend now: the check-in keeps the line or goal picked for
      that account (fillerPlace), never a fixed amount, so the engine's gap goes there and follows any later change of
@@ -10844,7 +10897,8 @@ let checks3 = null;
 const CHECKS3_NONE = 'Type the figure your bank showed';
 function checks3Book() { return BurrowEngine.ledger.revive(E3.book).book; }
 function checks3List(acct) {
-  const b = checks3Book(), told = e => String(e.told || e.date);
+  const b = checks3Book(), opens = new Set((b.events || []).filter(e => e && !e.gone && e.k === 'open' && e.acct === acct).map(e => `${e.date}|${e.grp}`));
+  const told = e => (opens.has(`${e.date}|${e.grp}`) ? '' : String(e.told || e.date));   // an opening comes first on its day
   return (b.events || []).filter(e => e && !e.gone && e.k === 'check' && e.acct === acct)
     .sort((x, y) => (x.date !== y.date ? (x.date < y.date ? 1 : -1) : told(x) !== told(y) ? (told(x) < told(y) ? 1 : -1) : (x.id < y.id ? 1 : -1)));
 }
@@ -10935,7 +10989,7 @@ function checks3Done3(r1, keepOpen) {
     if (r1.why === 'other') { checks3.ver = ACT3.ver(); drawChecks3(); }
     $('#a3ChecksErr').textContent = r1.text; return;
   }
-  checks3.ver = ACT3.ver(); checks3.open = keepOpen && checks3List(checks3.acct).some(x => x.id === keepOpen) ? keepOpen : null;
+  checks3.farOk = null; checks3.ver = ACT3.ver(); checks3.open = keepOpen && checks3List(checks3.acct).some(x => x.id === keepOpen) ? keepOpen : null;
   drawChecks3();
 }
 async function saveCheckFig3(c, own) {
@@ -10944,6 +10998,16 @@ async function saveCheckFig3(c, own) {
   const v = own ? typedBank3(el.value, cur) : typed3(el.value, cur);
   if (v === null) { err.textContent = own ? CHECKS3_NONE : 'Type what was on it, zero or more'; el.focus(); return; }
   const fn = w => PLAN3W.changeCheck(w, c.id, { amount: v });
+  /* [coordinator, slice 10] far from what the app expected at that check (engine/checkin.js farFigure): asked once */
+  const CKE = BurrowEngine.checkin, exp = CKE.expectedAt(E3.view(c.date), c.acct, c.date, c.a), far = !own || exp == null ? null : CKE.farFigure(exp, v, CKE.usualPay(E3.book, c.date));
+  if (far && checks3.farOk !== v) {
+    const host = $('#a3ChecksSure');
+    host.innerHTML = `<div class="a3-sure" data-far><p class="a3-warn">${esc3(BurrowScreens.status.farText(far, v, x => money3(x, cur)))}</p><div class="a3-actions"><button type="button" class="a3-btn solid" data-faryes>Yes</button><button type="button" class="a3-btn" data-farfix>Fix it</button></div></div>`;
+    host.querySelector('[data-faryes]').addEventListener('click', () => { host.innerHTML = ''; checks3.farOk = v; saveCheckFig3(c, own); });
+    host.querySelector('[data-farfix]').addEventListener('click', () => { host.innerHTML = ''; el.focus(); });
+    host.querySelector('[data-farfix]').focus();
+    return;
+  }
   /* [M6] a change that takes more off safe to spend than it holds asks first (the engine's figures before and after) */
   if (!checks3.sure) {
     let b1 = null; try { b1 = ACT3.dryRun('Change a bank check', fn); } catch (e) { err.textContent = e.message; return; }
@@ -14577,6 +14641,7 @@ Actions:
   const G = node ? require('../../engine/ledger.js') : E.ledger;
   const PER = node ? require('../../engine/periods.js') : E.periods;
   const SM = node ? require('../../screens/money.js') : root.BurrowScreens.money;
+  const ST = node ? require('../../screens/status.js') : root.BurrowScreens.status;
   const SN = node ? require('../../screens/names.js') : root.BurrowScreens.names;
   const HELP = node ? require('../../screens/help.js') : root.BurrowScreens.help;
   const AQ = node ? require('./ask3_core.js') : root.ASK3C;
@@ -15033,7 +15098,8 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       const acct = refs[x.account];
       if (!acct || !String(x.account).startsWith('A')) return 'Which account? An A ref from FIGURES.';
       const cur = ((book.accounts || []).find(a => a.id === acct) || {}).cur, rb = G.revive(book).book;
-      const cs = (rb.events || []).filter(e => live(e) && e.k === 'check' && e.acct === acct).sort((p, q) => (p.date !== q.date ? (p.date < q.date ? 1 : -1) : String(p.told) < String(q.told) ? 1 : -1)).slice(0, 12);
+      const opens = new Set((rb.events || []).filter(e => live(e) && e.k === 'open' && e.acct === acct).map(e => e.date + '|' + e.grp)), tk = e => (opens.has(e.date + '|' + e.grp) ? '' : String(e.told));
+      const cs = (rb.events || []).filter(e => live(e) && e.k === 'check' && e.acct === acct).sort((p, q) => (p.date !== q.date ? (p.date < q.date ? 1 : -1) : tk(p) < tk(q) ? 1 : -1)).slice(0, 12);
       return cs.length ? 'date | figure | from\n' + cs.map((e, i) => `${e.date} | ${m(e.a, cur)} | ${e.stmt || /^(stmt|imp):/.test(String(e.grp)) ? 'a statement' : 'typed'}${i === 0 ? ' | the latest' : ''}`).join('\n') : 'No checks of that account yet.';
     }
     if (what === 'accounts' || what === 'cards') {
@@ -15366,7 +15432,10 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
         const a = r1.accounts[id], f = a && (a.fillers || []).slice(-1)[0], was = r0.accounts[id];
         if (!f || f.to !== today || !was) continue;
         const cur = ((book.accounts || []).find(x => x.id === id) || {}).cur;
-        if (f.gain > 0 && f.gain > safe) far.set(s, `The app expected ${m(was.bank, cur)}: ${m(f.gain, cur)} more than it had`);
+        /* [coordinator, slice 10] the one far rule (engine/checkin.js farFigure), in the screens' words */
+        const ff = CK.farFigure(f.had, s.ci.figures[id], CK.usualPay(book, today));
+        if (ff) far.set(s, ST.farText(ff, s.ci.figures[id], x => m(x, cur)));
+        else if (f.gain > 0 && f.gain > safe) far.set(s, `The app expected ${m(was.bank, cur)}: ${m(f.gain, cur)} more than it had`);
         else if (f.amount > 0 && f.amount > safe) far.set(s, `The app expected ${m(was.bank, cur)}: ${m(f.amount, cur)} less than it had`);
       }
     }
@@ -15463,6 +15532,13 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
         const r0 = LA.lookahead(book, today);
         s.amount = Math.max(0, safe - r1.safeToSpend.headline);
         if (safe > 0 && (r1.safeToSpend.headline === 0 || (r1.safeToSpend.short && !r0.safeToSpend.short))) s.big = true;
+        /* [coordinator, slice 10] a figure far from what the app expected at that check asks first, in the screens' words */
+        const c = (book.events || []).find(e => e.id === s.args[0]), x = s.args[1].amount;
+        const own = c && { bank: 1, cash: 1, ewallet: 1, wallet: 1 }[((book.accounts || []).find(a => a.id === c.acct) || {}).type];
+        if (c && x != null && own) {   // a bank's figure only: a card's has its own question (its payment)
+          const exp = CK.expectedAt(LA.lookahead(book, c.date), c.acct, c.date, c.a), ff = exp == null ? null : CK.farFigure(exp, x, CK.usualPay(book, c.date));
+          if (ff) s.far = ST.farText(ff, x, v => SM.format(v, ((book.accounts || []).find(a => a.id === c.acct) || {}).cur || G.homeOn(book, today)));
+        }
       }
       /* [qc-foundation F2] the size is the step's real figure: a new pay and new money count too */
       const big = plan.some(s => (s.amount && s.amount > safe) || s.big), del = plan.some(s => s.del);
@@ -15474,6 +15550,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
          check, on the book the step would make, larger than safe to spend) asks first, with the gap in words: an extra
          zero never goes in silently */
       const far = farFigures(plan, book, today, deps, safe);
+      for (const s of plan) if (s.far) far.set(s, s.far);
       const card = { kind: 'change', status: 'ask', ver: verNow, lines: plan.map(s => s.text + (far.has(s) ? '. ' + far.get(s) : '') + (guess.includes(s) ? ' (my guess)' : '')), rows: [], plan, dropped, left };
       if (del || big || far.size || guess.length) {
         card.ask = del ? 'delete' : big ? 'large' : far.size ? 'gap' : 'guess';
