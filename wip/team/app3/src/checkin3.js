@@ -28,7 +28,7 @@ function openCheck3() {
     </div>`).join('');
   const figs = Object.keys(r.accounts).map(id => `<div class="a3-field"><label for="a3f-${esc3(id)}">What does ${esc3(E3.nameOf(id))} show today?</label>
       <input class="a3-in" data-amount type="text" inputmode="decimal" autocomplete="off" id="a3f-${esc3(id)}" data-bankfig="${esc3(id)}" placeholder="${esc3(SM.symbol(r.accounts[id].currency).trim())}">
-      <p class="a3-sub" data-expected="${esc3(id)}"></p><p class="a3-warn" data-gap="${esc3(id)}" aria-live="polite" hidden></p>
+      <p class="a3-sub">Leave it blank if you have not looked. <span data-expected="${esc3(id)}"></span></p><p class="a3-warn" data-gap="${esc3(id)}" aria-live="polite" hidden></p>
       <div class="a3-gapask" data-gapask="${esc3(id)}" hidden><p class="a3-sub" data-gapq="${esc3(id)}"></p><button type="button" class="a3-btn" data-gapyes="${esc3(id)}">Yes, that was it</button></div>
       <div class="a3-gapopt" data-gapopt="${esc3(id)}" hidden><label><input type="checkbox" data-gapspend="${esc3(id)}"> Log it as a spend now, on</label>
         <select class="a3-in a3-sel" data-gapline="${esc3(id)}" aria-label="Which line the spend goes on">${rcOptions3(rcFors3(), 'line:free')}</select></div></div>`).join('');
@@ -77,8 +77,10 @@ function closeCheck3() { $('#a3Check').hidden = true; $('#a3Home').hidden = fals
 function readCheck3(strict) {
   const sheet = $('#a3Check'), figures = {}, bad = (text, el) => ({ bad: text, el });
   for (const el of sheet.querySelectorAll("[data-bankfig]")) {
-    const id = el.dataset.bankfig, v = typedBank3(el.value, E3.curOf(id));
-    if (v === null) { if (strict) return bad(`Type what ${E3.nameOf(id)} shows today, as an amount`, el); continue; }
+    const id = el.dataset.bankfig;
+    if (!el.value.trim()) continue;   // [qc-controls run 1 blocker 3] blank: not looked at today, nothing written for it, as for a card
+    const v = typedBank3(el.value, E3.curOf(id));
+    if (v === null) { if (strict) return bad(`Type what ${E3.nameOf(id)} shows today, as an amount, or leave it blank`, el); continue; }
     figures[id] = v;
   }
   for (const el of sheet.querySelectorAll("[data-cardfig]")) {
@@ -192,6 +194,8 @@ async function saveCheck3() {
   const sheet = $('#a3Check'), err = $('#a3CheckErr');
   const d = readCheck3(true);
   if (d.bad) { err.textContent = d.bad; d.el.focus(); return; }
+  /* every box blank and nothing ticked: nothing to save, said so; Cancel is still there */
+  if (!Object.keys(d.figures).length && !d.ticked.length) { err.textContent = 'Nothing to save yet. Type what a bank or card shows today, or tick what came in'; const f = sheet.querySelector('[data-bankfig]'); if (f) f.focus(); return; }
   /* [card payment question] asked first, once: Save again saves it as typed, so nobody is trapped */
   const asks = Object.keys(check3.payAsk || {}), askKey = asks.join(' ');
   if (asks.length && check3.payAsked !== askKey) {
