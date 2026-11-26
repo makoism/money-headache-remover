@@ -9,7 +9,7 @@ const path = require('path');
 const E = path.join(__dirname, '../../engine/');
 const L = require(E + 'lookahead.js'), I = require(E + 'ids.js'), G = require(E + 'ledger.js'), CI = require(E + 'checkin.js');
 const A3 = require('../src/act3.js');
-const { actBook, WALLET, SAVINGS, LOAN, FOOD } = require('./e3_act_book.js');
+const { actBook, WALLET, SAVINGS, LOAN, FOOD, NEW_FOOD, endedFoodBook } = require('./e3_act_book.js');
 const DAY = '2026-11-25';
 let bad = 0, n = 0;
 const t = async (name, fn) => { n++; try { await fn(); console.log('PASS ' + name); } catch (e) { bad++; console.log('FAIL ' + name + ': ' + String(e && e.stack || e).split('\n').slice(0, 2).join(' ')); } };
@@ -476,6 +476,24 @@ const ev = (b, id) => b.events.find(e => e.id === id);
     eq((await h.A.run('tick', w => w.add('events', rec()))).ok, true);
     const r = await h.A.run('tick', w => w.add('events', rec()));
     eq([r.ok, r.why], [false, 'bad']); ok(/there already/.test(r.text), r.text);
+  });
+  /* [qc-foundation confirm on monthrule, 26 Nov; M7, M51] a spend dated after a line's end is refused in plain words
+     (it would come off nothing while the new Food still showed its full amount left); on or before the end it is kept,
+     and a receipt filed there before it ended can still be changed */
+  await t('[ended line] a spend on Food dated after Food ended (22 Nov) is refused, nothing saved; on 21 or 22 Nov it is kept', async () => {
+    const h = setup({ book: endedFoodBook() }), before = JSON.stringify(h.book);
+    const r = await h.A.logSpend({ date: DAY, a: 1000, acct: bank, line: FOOD });
+    eq([r.ok, r.text, JSON.stringify(h.book) === before], [false, 'Food ended on 22 Nov 2026. Pick another line', true]);
+    const rf = await h.A.refund({ date: '2026-11-23', a: 500, acct: bank, line: FOOD });
+    eq([rf.ok, rf.text], [false, 'Food ended on 22 Nov 2026. Pick another line']);
+    const r1 = await h.A.logSpend({ date: '2026-11-21', a: 1000, acct: bank, line: FOOD });
+    ok(r1.ok, JSON.stringify(r1));
+    ok((await h.A.logSpend({ date: '2026-11-22', a: 700, acct: bank, line: FOOD })).ok, 'on the day it ended');
+    const id = h.book.events.find(e => e.a === 1000 && e.line === FOOD).id;
+    ok((await h.A.edit(id, { a: 1100 })).ok, 'a receipt filed before the end can still be changed');
+    const moved = await h.A.edit(id, { date: '2026-11-24' });
+    eq([moved.ok, moved.text], [false, 'Food ended on 22 Nov 2026. Pick another line']);
+    ok((await h.A.logSpend({ date: DAY, a: 1000, acct: bank, line: NEW_FOOD })).ok, 'the new Food takes it');
   });
   console.log(bad ? `e3_act_unit: ${bad} FAIL of ${n}` : `e3_act_unit: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);

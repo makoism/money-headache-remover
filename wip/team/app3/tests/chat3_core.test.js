@@ -759,6 +759,17 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const c = r.shown.find(x => x.who === 'card').card;
     eq(c.rows.map(x => [x.label, x.before, x.after]).filter(x => /Safe|Free/.test(x[0])), [['Safe to spend', 27096, 25096], ['Free to spend left', 27096, 25096]]);
   });
+  /* [qc-foundation confirm on monthrule, 26 Nov; M4, M51] Food ended on 22 Nov and a new Food was added: list lines
+     gives the assistant one Food, the live one */
+  await t('[ended line] list lines gives one Food, the new one', async () => {
+    const { endedFoodBook } = require('./e3_act_book.js'), h = page('2026-11-25');
+    h.book = endedFoodBook();
+    let listed = '';
+    const f = FAKE.make([say('', [call('list', { what: 'lines' })]), body => { listed = FAKE.results(body)[0].text; return say('One Food.'); }]);
+    await K.turn(K.fresh(), 'what lines do I have?', h.deps(f));
+    eq(listed.split('\n').filter(l => /\| Food \|/.test(l)).length, 1, listed);
+    ok(/Food \| ¥30,000 each/.test(listed), listed);
+  });
   console.log(bad ? `chat3_core: ${bad} of ${n} FAILED` : `chat3_core: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })();

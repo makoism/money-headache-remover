@@ -208,6 +208,15 @@ const ctxOf = h => ({ book: h.book, today: DAY });
     eq([row('safe').before, row('safe').after], [27096, 25096]);
     eq([row('free').label, row('free').before, row('free').after], ['Free to spend left', 27096, 25096]);
   });
+  /* [qc-foundation confirm on monthrule, 26 Nov; M4, M51] Food ended on 22 Nov and a new Food was added: the assistant
+     is given one Food to pick, the live one; the ended one has no ref, so no spend can be filed to it */
+  await t('[ended line] the summary gives one Food with a ref, the new one; the ended Food has none', async () => {
+    const { endedFoodBook, FOOD, NEW_FOOD } = require('./e3_act_book.js'), b = endedFoodBook(), S2 = K.summary(b, DAY);
+    const rows = S2.text.split('\n').filter(l => /^L\d+ \| Food \|/.test(l));
+    eq(rows.length, 1, S2.text.match(/Budget lines[^]*?(?=\nFree)/)[0]);
+    eq(S2.refs[rows[0].split(' | ')[0]], NEW_FOOD);
+    ok(!Object.values(S2.refs).includes(FOOD), 'the ended Food has a ref');
+  });
   console.log(bad ? `ask3_core: ${bad} FAIL of ${n}` : `ask3_core: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })();

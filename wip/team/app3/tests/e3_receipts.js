@@ -9,7 +9,7 @@
 'use strict';
 const T = require('./lib3.js');
 const { ck } = T;
-const { actBook, WALLET, FOOD } = require('./e3_act_book.js');
+const { actBook, WALLET, FOOD, NEW_FOOD, endedFoodBook } = require('./e3_act_book.js');
 const DAY = '2026-11-25';
 const bk0 = actBook(), bank = bk0.home.main.v.acct, cardA = bk0.accounts.find(a => a.name === 'Card A').id;
 /* the book as the page saved it, read back through the store (store/idb.js) */
@@ -268,6 +268,29 @@ async function figsMatch(p, book, what) {
     sv = await saved(p);
     ck('B2: Undo brings it back', !sv.events.find(e => e.id === CLOCK).gone && (await ahead()).length === 4);
     ck('no page errors (B2)', errs.length === 0, errs.join(' | '));
+    await b.close();
+  }
+  /* [qc-foundation confirm on monthrule, 26 Nov; M4, M7, M51] Food ended on 22 Nov and a new Food was added that day:
+     the picker offers one Food, the new one. A receipt of 21 Nov filed to the old Food opens with its own line, marked
+     ended, so it can still be changed */
+  {
+    const prof3 = require('fs').mkdtempSync(require('os').tmpdir() + '/a3rc3-');
+    const { b, p, errs } = await T.open({ profile: prof3 });
+    const bk = endedFoodBook(), OLDR = 'k7m2qa-f3n8p1x6wd-9902';
+    bk.events.push({ id: OLDR, date: '2026-11-21', told: '2026-11-21T19:00+09:00', at: '2026-11-21T19:00:00.000+09:00', by: 'k7m2qa', k: 'spend', acct: bank, a: 2100, line: FOOD, src: { type: 'typed' } });
+    await p.goto(T.URL0 + '?today=' + DAY); await T.w(300);
+    await p.evaluate(async bk => { const s = await BurrowStore.open(); const r = await s.save(bk, { full: true }); if (s.db) s.db.close(); return r; }, bk);
+    await p.reload(); await T.w(400);
+    await p.tap('[data-tab=receipts]'); await T.w(300);
+    const opts = () => p.$$eval('#rcFor option', os => os.map(o => ({ v: o.value, name: o.textContent })));
+    let o = await opts();
+    const foods = o.filter(x => /^Food/.test(x.name));
+    ck('ended line: the picker offers one Food, the new one', foods.length === 1 && foods[0].v === 'line:' + NEW_FOOD, JSON.stringify(o));
+    await p.tap(`[data-rc="${OLDR}"] button`); await T.w(200);
+    o = await opts();
+    const sel = await p.$eval('#rcFor', e => e.value);
+    ck('ended line: a receipt filed to the old Food opens with it, marked ended', sel === 'line:' + FOOD && o.some(x => x.v === 'line:' + FOOD && /ended/.test(x.name)), sel + ' ' + JSON.stringify(o));
+    ck('no page errors (ended line)', errs.length === 0, errs.join(' | '));
     await b.close();
   }
   T.done('e3_receipts');

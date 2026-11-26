@@ -21,4 +21,15 @@ function actBook() {
   b.plan.budgets = [rec({ id: FOOD, name: 'Food', place: 'bills', cur: 'JPY', acct: bank, per: 'month', from: '2026-11-20', steps: [{ from: null, amount: 40000 }] })];
   return b;
 }
-module.exports = { actBook, WALLET, SAVINGS, LOAN, FOOD };
+
+/* [qc-foundation confirm on monthrule, 26 Nov; M4, M7, M51] Food ended on 22 Nov and a new Food was added that day:
+   two lines called Food in the book, only one of them live. Made-up figures (the act book's Food 40,000; the new one
+   30,000). */
+const NEW_FOOD = 'k7m2qa-f3n8p1x6wd-92';
+function endedFoodBook() {
+  const b = actBook(), old = b.plan.budgets.find(l => l.id === FOOD), AT2 = '2026-11-22T20:00:00.000+09:00';
+  old.steps = old.steps.concat([{ from: '2026-11-22', amount: 0 }]); old.ends = '2026-11-22';
+  b.plan.budgets.push({ id: NEW_FOOD, name: 'Food', place: 'bills', cur: 'JPY', acct: old.acct, per: 'month', from: '2026-11-22', steps: [{ from: null, amount: 30000 }], told: AT2, at: AT2, by: 'k7m2qa' });
+  return b;
+}
+module.exports = { actBook, WALLET, SAVINGS, LOAN, FOOD, NEW_FOOD, endedFoodBook };
