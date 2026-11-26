@@ -27,17 +27,19 @@ What else could be true (M98):
 
 ## The rule (engine)
 1. Walk every home currency account as today.
-2. For each account whose full walk goes under its minimum, list the covering moves: on each day its running balance (end of day) reaches a new low under the minimum, a move of the new part (22,000 on 10 Dec; 79,400 on 28 Dec). The days follow the bills, never the horizon end.
+2. For each account whose full walk goes under its minimum, list the covering moves: for each day its running balance (end of day) reaches a new low under the minimum, a move of the new part, due the calendar day before that day (F1 ruling: 22,000 by 9 Dec; 79,400 by 27 Dec; a gap already there today is due today). The days follow the bills, never the horizon end.
 3. The paying bank: among the other accounts with spendFrom in the same currency, the one with the most headroom (the same rule as moveText). If none, no cover (step 5 as today).
 4. Walk the paying bank again with the covering moves as its own steps (order 1, after a pay the same day, as a bill), in both its walks (full and real). Its headroom now takes each gap in the period its day falls in, exactly as if the bill were its own.
 5. `shortfalls` counts only accounts left uncovered. A covered account adds 0.
 6. walk() takes a covers map, so every call (the full walk, the real walk, the warnings, realWalks used by canSetAside) sees the payer's covering moves. Covers are worked from the short account's full walk for the full walk, and from its real walk for the payer's real walk (planned money never shows the main bank below zero, BM2). Partial cover: the payer covers what it can spare and the rest stays a shortfall. Ties: most headroom, then the lower id.
 7. A covered account does not set safeToSpend.short (one verdict on Home: never "Short by" beside a headline that already took the move off); its below_minimum warning carries covered: { from } and the screens show the move line instead.
-8. Output: res.accounts[id].cover = { from, moves: [{ day, amount }] } on the short account; the paying bank's `why` lists "Move to Beta Bank by 10 Dec" lines. The short account's own walks, firstUnder and warnings stay as they are (Beta still says it goes under on 10 Dec).
+8. Output: res.accounts[id].cover = { from, moves: [{ day, amount }] } on the short account; the paying bank's `why` lists "Move to Beta Bank by 9 Dec" lines. The short account's own walks and firstUnder stay as they are (the engine's facts), but its below_minimum and later-on warnings carry covered: { from, moves } and the screens show ONE line for a covered account, the move line, never its warnings beside it (rule 7).
 9. One rule, no order dependence: the result does not depend on the order accounts or records arrive in.
 
 ## Screens
-- Home's move line (screens/status.js moveText) reads res.accounts[id].cover: "Move 22,000 from Main bank to Beta Bank by 10 Dec, and 79,400 more by 28 Dec" (wording to qc-voice; one line). It no longer picks the bank itself.
+- Home's move line (screens/status.js moveText) reads res.accounts[id].cover: "Move 22,000 from Main bank to Beta Bank by 9 Dec, and 79,400 more by 27 Dec" (wording to qc-voice; one line, plain words: never "cover"; a wallet reads "Take out 5,000 cash by 9 Dec"). It no longer picks the bank itself. Partial cover: the move line for what the payer can spare, then one short line for the rest ("Beta Bank is still 12,000 short on 10 Dec").
+- "Done" on the move line (M45, M91): records the move as a move between own accounts on the day tapped (the same record as Receipts' Moved), with Undo; the cover then shrinks by it, so the money is never counted twice. "Later" hides the line until the next day. The assistant says the same and can do the same (move_money).
+- Changing which bank pays the move or the bill is not in this slice (scope; the card's paying bank cannot be changed today, controls lane).
 - The change card's short-by row (LANE J builds it on top of this commit).
 
 ## Review points taken in (qc-foundation on the plan, FAIL, qc_reports/2026-11-26_shortgap_plan/qc-foundation.md)
@@ -46,10 +48,13 @@ What else could be true (M98):
 - F4 (a move made in the bank app and only the main bank checked counts as spending): WATCH, the check-in offering "moved to Beta" is the controls lane's; named in scope.
 - Assistant (M1, M3, M4): the summary sent to it names each cover (from, amount, day), so it can say it; its move_money step already exists.
 
+- qc-novice on the plan (FAIL, qc-novice.md): dates made one (by 9 Dec, by 27 Dec) everywhere; one line on Home for a covered account; "Done" and "Later" on the move line with Undo; partial cover words; a wallet reads "take out cash"; choosing the paying bank named in scope. The headline jump on update day: the move line says why (the pay covers it).
+
 ## Tests (failing first, these numbers)
-- engine/test/shortgap.test.js: the book above on 1 Dec: headline 179,400; Beta cover from main, moves [22,000 on 10 Dec]; after Rent to Beta: 179,400, moves [22,000 on 10 Dec, 72,000 on 28 Dec]; after Power too: 179,400, moves [22,000, 79,400 on 28 Dec]. Plus: no bank can cover (headline as today); a partial cover; two spendFrom banks (the one with most room, tie by id); a gap today; a bill on pay day and the day after pay; a covered account sets no short; record orders (nine orders, the same result).
+- engine/test/shortgap.test.js: the book above on 1 Dec: res.canSpare as worked (179,400 when no card is left on the headline); Beta cover from main, moves [22,000 by 9 Dec]; after Rent to Beta: moves [22,000 by 9 Dec, 72,000 by 27 Dec]; after Power too: [22,000 by 9 Dec, 79,400 by 27 Dec]; the same canSpare in all three. After a recorded move of 22,000 on 5 Dec ("Done"): moves [79,400 by 27 Dec], canSpare unchanged (never counted twice). Plus: no bank can cover (headline as today); a partial cover; two spendFrom banks (the one with most room, tie by id); a gap today; a bill on pay day and the day after pay; a covered account sets no short; record orders (nine orders, the same result).
 - app3/tests/e3_shortgap.js: the repro walk (LANE J's repro.js, Beta 32,000) on the real page: Home shows 179,400 before and after, the move line names both amounts and days.
 
 ## Not in this slice (scope)
 - The person choosing which bank covers (today the one with most room).
-- Moves dated other than by the bill's day.
+- The person choosing which bank covers, or which bank pays the bill (today the one with most room; one optional field on the account later, no data move).
+- Weekend and late-hour timing beyond "the calendar day before" (ruled: keep it simple).
