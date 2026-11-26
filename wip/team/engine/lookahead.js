@@ -974,21 +974,37 @@
       const fp = freePeriodAmount();
       return (fp !== null && gain > fp) || gain * 5 > had;
     };
-    const heldGain = (id, f) => largeGain(id, f) && f.answer !== 'right';
-    // [coordinator ruled, qc-numbers confirm blocker 2] a check gap counts the same way in both directions: a large gain
-    // held to be asked about is never counted, so a later drop on that account counts as spending only past it (a bank
-    // typed 950,000 for 99,000, then checked at 94,000: 3,000 of the 854,000 drop is spending, never 854,000). The part
-    // it undoes comes off the drop's own part, on that check's day and line (`undid`)
+    // [coordinator 18 ruled, qc-foundation confirm2 finding 1] a large jump up is held (counted nowhere, `waiting`) only
+    // until the next check of that account. If that check comes back near what the app expected without the jump (at or
+    // below it, or above it by less than a large gap), it was a typo: the jump and that much of the drop cancel (`typo`,
+    // the drop's `undid`). Otherwise the jump is real money in on no line, dated where it
+    // appeared (`moneyIn`), and every drop after it counts as spending as usual; answered "right", it is placed (X4).
+    // A bank typed 950,000 for 99,000, then checked at 94,000: 851,000 of the 854,000 drop cancels, 3,000 is spending. A real 100,000 gift (100,000 to
+    // 200,000), then 150,000: 50,000 above the 100,000 expected without it, so it is real and the 50,000 drop is spent.
+    // [WATCH] what a jump holds is the gap judged at the check: the part a record changed since explains (`explained`)
+    // stays in the filler and counts, so it still cancels that record's own change
+    const jumpOf = (id, f) => (largeGain(id, f) && f.answer !== 'wrong' ? f.gain + (f.explained || 0) : 0);
+    const isLarge = (gap, had) => { const fp = freePeriodAmount(); return (fp !== null && gap > fp) || gap * 5 > had; };
+    // add d to a filler's spending on one day (its own part there); `gap` false keeps the gap as found (`amount`)
+    const shift = (f, d, day, gap) => {
+      const parts = f.parts.map(pt => Object.assign({}, pt)), own = parts.find(pt => pt.from === day && pt.to === day && !pt.place);
+      if (own) own.amount += d; else parts.push({ from: day, to: day, days: 1, amount: d });
+      return Object.assign({}, f, { amount: f.amount + (gap ? d : 0), parts: parts.filter(pt => pt.amount) });
+    };
     for (const bid in banks) {
-      let held = 0;
-      banks[bid].fillers = banks[bid].fillers.map(f => {
-        if (heldGain(bid, f)) { held += Math.max(0, -f.amount); return f; }
-        if (!held || f.amount <= 0) return f;
-        const r = Math.min(held, f.amount), parts = f.parts.map(pt => Object.assign({}, pt)), own = parts.find(pt => pt.from === f.to && !pt.place);
-        held -= r;
-        if (own) own.amount -= r; else parts.push({ from: f.to, to: f.to, days: 1, amount: -r });
-        return Object.assign({}, f, { amount: f.amount - r, parts: parts.filter(pt => pt.amount), undid: r });
-      });
+      const fs = banks[bid].fillers.slice();
+      for (let i = 0; i < fs.length; i++) {
+        const J = jumpOf(bid, fs[i]);
+        if (J <= 0) continue;
+        const next = fs[i + 1];
+        // [X4] answered "right": placed as found, it gives back to its line (gain_answered.json); the rest by the rule
+        if (fs[i].answer === 'right') { fs[i] = Object.assign({}, fs[i], { answered: J }); continue; }
+        let how = !next ? 'waiting' : null;
+        if (!how) { const r = next.amount - J; how = r >= 0 || !isLarge(-r, next.had - J) ? 'typo' : 'moneyIn'; }
+        fs[i] = Object.assign(shift(fs[i], J, fs[i].to, false), { [how]: J });
+        if (how === 'typo') fs[i + 1] = Object.assign(shift(next, -J, next.to, true), { undid: J });
+      }
+      banks[bid].fillers = fs;
     }
 
     // ----- places: goals and the other kept places [B6, F22, E5, H7, P1, P2, R1, T2, T7, V1, X5] -----
@@ -1024,7 +1040,7 @@
           if (e.place === g.id && mv.to !== g.id) amt -= mv.a;
         }
       }
-      for (const bid in banks) for (const f of banks[bid].fillers) if (!heldGain(bid, f)) for (const pt of f.parts) if ((pt.place || f.place) === g.id) amt -= pt.amount;   // [T2, X4] by part: a fix's minus part keeps its own check's place
+      for (const bid in banks) for (const f of banks[bid].fillers) for (const pt of f.parts) if ((pt.place || f.place) === g.id) amt -= pt.amount;   // [T2, X4] by part: a fix's minus part keeps its own check's place
       return Math.max(0, amt);
     }
     const placings = g => live().filter(e => e.k === 'move' && e.placed === I.built.rm(g.id));
@@ -1136,7 +1152,7 @@
         let filled = 0;   // [T2] the filler is spending, signed; [X4] a held gain places nothing
         for (const bid in banks) {
           if (acct[bid].type === 'investment' || cur(bid) !== cur(acctId)) continue;
-          for (const f of banks[bid].fillers) if (!heldGain(bid, f))
+          for (const f of banks[bid].fillers)
             for (const pt of f.parts) if ((pt.place || f.place || 'free') === lineId && (fromOpening || dayNum(pt.from) >= lp) && dayNum(pt.from) <= upTo) filled += pt.amount;
         }
         if (lineId === 'free') for (const cid in cards) {
@@ -1393,7 +1409,7 @@
         why: whyText(w.why, w.headroom, a.cur), whyParts: w.why.map(p => ({ label: p.label, amount: p.amount })),
         // [LISTFIX2 A1] a gap that is never spending is marked `apart` (an investment's rise or fall [T watch], another
         // currency [T5]), as the lines count it, so a screen listing gaps as spending leaves it out
-        fillers: banks[id].fillers.map(f => (heldGain(id, f) ? Object.assign({}, f, { held: true }) : acct[id].type === 'investment' || cur(id) !== home ? Object.assign({}, f, { apart: true }) : f)) };   // [X4] a held gain is named, so a screen listing gaps leaves it out (LISTFIX A1)   // [S4] the parts, for screens/money.js sumLine
+        fillers: banks[id].fillers.map(f => (acct[id].type === 'investment' || cur(id) !== home ? Object.assign({}, f, { apart: true }) : f)) };   // [X4, ruled 18] a jump's own amount is out of its parts (named `waiting`, `moneyIn` or `typo`), so a screen listing gaps by parts never shows it as spending (LISTFIX A1)   // [S4] the parts, for screens/money.js sumLine
       if (w.todayParts) { r.todayParts = w.todayParts; r.todayEnd = w.todayParts.reduce((t, x) => t + x.amount, w.start); }
       // [BM2] the real-money walk: its lowest point, and its sum for the screens (the "Short by" headline is its total)
       r.real = { lowest: rw.lowest, lowestDay: dayStr(rw.lowestDay), headroom: rw.headroom, whyParts: rw.why.map(p => ({ label: p.label, amount: p.amount })) };
