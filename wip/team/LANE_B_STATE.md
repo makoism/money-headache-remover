@@ -4,6 +4,11 @@ LANE C (session_01BFpKEYZiAu8h8WESqH2Nwo) took this lane over from LANE B (sessi
 
 Read CLAUDE.md, MAKO_SAYS.md, LESSONS.md, RUNBOOK.md sections 4, 4b and 5 first. The lane never merges into wip-38.31 or main: it pushes its own branches and tells MAIN 16 (session_01BFpKEXwwdFrqMuakSKhAF2) and the coordinator (Coordinator 12, session_01BFpKEZhy3Va2Px9ZqnUfCG) by send_message. Never ask Mako anything. Anything meant for Mako is written whole, in plain words with the figures in it, no branch names or hashes (M85).
 
+## LANE Q (session_01BFpKEXrpnketNeBJx2WW1t, Opus, from 26 Nov 2026 about 16:50 JST) KEEPS THIS PAGE NOW. LANE O's queue below holds unless this says otherwise.
+Coordinator 18: session_01BFpKEVNiZLwPaZF7W9sbtP. MAIN 25: session_01BFpKEXcAF1dncKtcMvhCdM (only merger). LANE P: session_01BFpKEW1VPRCsZX1GAQj5Dn. This session cannot make scheduled tasks or sessions; the coordinator made its keep-going task. Hand off near 220k history: write this section, ask the coordinator for a replacement.
+- Told LANE O (16:50): it hands over the shortgap qc-numbers result and the listed helper result, then stops. Until those come: do not touch lane/shortgap or lane/listed.
+- Item 2 (monthrule): full check running alone into qc_reports/2026-11-26_monthrule2/check3.txt (confirm_qc-foundation_4.txt already committed, dda6129).
+
 ## LANE O (session_01BFpKEWJpva6S7WZASSwRQK, Opus, 26 Nov 2026 13:20 to about 16:45 JST) HANDOFF. This part wins; LANE L's section below is history.
 Coordinator 18: session_01BFpKEVNiZLwPaZF7W9sbtP. MAIN 24: session_01BFpKEW9b3sUkGfcHygE46v (only it merges). LANE L is stopped; its branches are now this lane's. Keep-going task (the coordinator's): trig_01XT8trNVNdKC4KDeHRVsPGk "LANE O keep-going": the replacement asks the coordinator to rebind or switch it.
 Fresh machine: tools line (mkdir -p /home/claude/work/tools && cd there && npm init -y && npm install puppeteer-core acorn acorn-walk); `git worktree add -B <branch> /home/user/<dir> origin/<branch>`; `git fetch origin wip-38.31:refs/remotes/origin/wip-38.31` (the clone is shallow: check3 quick has no merge base, NAME the page tests: ./check3.sh quick e3_x e3_y). The engine speed test (1,000 ms) fails when several checks run at once: run a full check only when no other full check runs on the machine.
