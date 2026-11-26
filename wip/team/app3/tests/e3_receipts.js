@@ -95,7 +95,20 @@ async function figsMatch(p, book, what) {
 
   /* remove, with Undo */
   await p.tap(`[data-rc="${spend.id}"] button`); await T.w(200);
-  await p.tap('#rcRemove'); await T.w(400); if (await p.$('[data-sureyes]')) { await p.$eval('[data-sureyes]', e => e.click()); await T.w(400); }
+  await p.tap('#rcRemove'); await T.w(400);
+  /* [LANE L queue D] next to Remove, the figures after removing it (the engine on the book without it), never the
+     edit's "After this" */
+  {
+    const before = await saved(p), wo = JSON.parse(JSON.stringify(before));
+    wo.events.find(e => e.id === spend.id).gone = DAY;
+    const r = T.L.lookahead(wo, DAY);
+    const shown = await p.$eval('[data-sure]', e => e.textContent.replace(/\s+/g, ' ').trim()).catch(() => '');
+    ck('the remove question says the figures after removing it', /After removing it/.test(shown), shown);
+    ck('after removing: Free to spend left is the engine\'s', await fig(p, 'rc-rm-free') === r.period.free.left, (await fig(p, 'rc-rm-free')) + ' vs ' + r.period.free.left);
+    ck('after removing: safe to spend is the engine\'s', await fig(p, 'rc-rm-safe') === r.safeToSpend.headline, (await fig(p, 'rc-rm-safe')) + ' vs ' + r.safeToSpend.headline);
+    ck('after removing differs from now by the spend (1,500 back)', r.period.free.left === T.L.lookahead(before, DAY).period.free.left + 1500, r.period.free.left);
+  }
+  if (await p.$('[data-sureyes]')) { await p.$eval('[data-sureyes]', e => e.click()); await T.w(400); }
   bk = await saved(p);
   ck('remove marks it gone', bk.events.find(e => e.id === spend.id).gone === DAY);
   m = await bar(p);
