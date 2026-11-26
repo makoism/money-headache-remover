@@ -7,7 +7,7 @@
    Main 286,000, pay 240,000 on the 10th, Rent 72,000 on the 27th, Phone 4,800 on the 20th (already out), Free to spend
    60,000. Rent really left on 27 Nov and about 10,000 was spent: the bank shows 204,000 on 30 Nov.
    1. "my bank shows 204,000": the card asks first and names Rent; on OK Main is 204,000, Rent is no longer expected,
-      Free to spend left is 50,000; the next day nothing is left to tick and Main stays 204,000.
+      Free to spend left is 22,000 (32,000 for the 16 days from setup, less 10,000); the next day nothing is left to tick and Main stays 204,000.
    2. The same, but the person says rent has not gone yet (not: [B1]): Rent stays expected, Main 204,000.
    3. With nothing expected on the account (figure on 25 Nov), the figure goes in as before, with no list. */
 'use strict';
@@ -52,7 +52,7 @@ const freeLeft = h => { const p = L.lookahead(h.book, h.day).period; return p &&
     ck('1. the card names Rent of 27 Nov, 72,000, as gone out', /Rent/.test((c.lines || []).join(' ')) && /72,000/.test((c.lines || []).join(' ')), (c.lines || []).join(' | '));
     ck('1. after OK: Main 204,000', main(h) === 204000, main(h));
     ck('1. after OK: Rent is no longer expected', !rentDue(h), JSON.stringify(L.lookahead(h.book, h.day).checkIn.toConfirm));
-    ck('1. after OK: Free to spend left 50,000 (60,000 less the 10,000 spent)', freeLeft(h) === 50000, freeLeft(h));
+    ck('1. after OK: Free to spend left 22,000 (set up 24 Nov: 60,000 x 16/30 = 32,000 for the rest of the period, less the 10,000 spent; before the fix 32,000 - 82,000 = -50,000)', freeLeft(h) === 22000, freeLeft(h));
     h.day = '2026-12-01';
     ck('1. next day: Main still 204,000', main(h) === 204000, main(h));
   }
