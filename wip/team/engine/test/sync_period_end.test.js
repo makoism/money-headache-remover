@@ -62,4 +62,54 @@ t('a goal that was removed is still judged (the list of places is read with remo
   x.book.places.find(p => p.id === x.trip).gone = '2026-12-13';
   eq(asks(x.book), [[x.trip, 3000, [out]]]);
 });
+// [ruling 5, slice 0 part 2] a goal that has given out more than it holds: the question lists the spends made from that
+// goal (newest first, enough to cover what is over) as `spends` beside `undo`, so "count this spend as everyday money
+// instead" can be offered; a negative adjust on the goal can be undone like a move out. GRID: every way a goal can go
+// below nothing (a move out, a spend from it, a negative adjust, two of them), on one device and after a join of two
+// devices (sync.sync of a shared base): the question always has at least one thing to tap. A periodEnd whose own place
+// is a goal: not applicable, no writer makes one in version one.
+const D1 = 'a7k2mq', D2 = 'z9p4wr';
+const mv = (x, a, told, by) => Object.assign(stamp({ id: IDS.idMaker(by || 'q8w3hz')(), k: 'move', date: told.slice(0, 10), a, acct: x.bank, place: x.trip, src: { type: 'typed' } }, told), by ? { by } : {});
+const sp = (x, a, told, by) => Object.assign(stamp({ id: IDS.idMaker(by || 'q8w3hz')(), k: 'spend', date: told.slice(0, 10), a, acct: x.bank, place: x.trip, note: 'trip shop', src: { type: 'typed' } }, told), by ? { by } : {});
+const adj = (x, a, told, by) => Object.assign(stamp({ id: IDS.idMaker(by || 'q8w3hz')(), k: 'adjust', date: told.slice(0, 10), a, acct: x.bank, place: x.trip, src: { type: 'typed' } }, told), by ? { by } : {});
+const T1 = '2026-12-12T19:00:00.000+09:00', T2 = '2026-12-13T09:00:00.000+09:00';
+const filled = () => { const x = base(); x.book.events.push(x.pe(x.food, [{ to: x.trip, a: 9000 }])); return x; };   // Trip holds 9,000
+const tappable = q => (q.undo || []).length + (q.spends || []).length > 0;
+t('a spend of 12,000 from Trip (holds 9,000): 3,000 over, the spend is listed to count as everyday money, nothing to undo', () => {
+  const x = filled(), s1 = sp(x, 12000, T1); x.book.events.push(s1);
+  const q = S.sharesQuestions(x.book);
+  eq(q.map(y => [y.place, y.over, y.undo, y.spends]), [[x.trip, 3000, [], [s1.id]]]);
+});
+t('two spends from Trip, 6,000 then 5,000: 2,000 over, the newest alone covers it', () => {
+  const x = filled(), a = sp(x, 6000, T1), b = sp(x, 5000, T2); x.book.events.push(a, b);
+  eq(S.sharesQuestions(x.book).map(y => [y.over, y.spends]), [[2000, [b.id]]]);
+});
+t('a negative adjust of 10,000 on Trip: 1,000 over, the adjust can be undone', () => {
+  const x = filled(), a = adj(x, -10000, T1); x.book.events.push(a);
+  eq(S.sharesQuestions(x.book).map(y => [y.over, y.undo, y.spends]), [[1000, [a.id], []]]);
+});
+t('the answer "spends": each listed spend loses its place and goes on Free to spend, and the question is gone', () => {
+  const x = filled(), s1 = sp(x, 12000, T1); x.book.events.push(s1);
+  const q = S.sharesQuestions(x.book)[0];
+  const out = S.answer({ copy: x.book, question: q, pick: 'spends', now: T2, by: 'q8w3hz' });
+  const e = out.events.find(y => y.id === s1.id);
+  eq([e.place, e.line, e.a, !!e.gone], [undefined, 'free', 12000, false]);
+  eq(S.sharesQuestions(out), []);
+});
+t('GRID: every way below nothing, on one device and after a join, always has something to tap', () => {
+  const ways = { move: mv, spend: sp, adjust: (x, a, t, by) => adj(x, -a, t, by) };
+  const cells = [];
+  for (const w1 of Object.keys(ways)) for (const w2 of [null].concat(Object.keys(ways))) {
+    // one device: 7,000 then 6,000 out of 9,000
+    const x = filled(); x.book.events.push(ways[w1](x, 7000, T1)); if (w2) x.book.events.push(ways[w2](x, 6000, T2)); else x.book.events.push(ways[w1](x, 6000, T2));
+    cells.push(['one ' + w1 + '+' + (w2 || w1), S.sharesQuestions(x.book)]);
+    // after a join: each device takes 7,000 from the same 9,000
+    const b = filled(), mine = JSON.parse(JSON.stringify(b.book)), theirs = JSON.parse(JSON.stringify(b.book));
+    mine.events.push(ways[w1](b, 7000, T1, D1)); theirs.events.push(ways[w2 || w1](b, 7000, T2, D2));
+    const joined = S.sync(b.book, mine, theirs);
+    cells.push(['join ' + w1 + '+' + (w2 || w1), S.sharesQuestions(joined.copy || joined)]);
+  }
+  const bad = cells.filter(([, qs]) => qs.length !== 1 || !tappable(qs[0])).map(([n, qs]) => n + ':' + JSON.stringify(qs));
+  eq([cells.length, bad], [24, []]);
+});
 done('sync_period_end.test.js');
