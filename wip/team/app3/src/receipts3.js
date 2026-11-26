@@ -51,9 +51,9 @@ function rcRows3() {
 }
 /* [M6, M61; qc-data-safety B1] the one question before a remove on the screens (Receipts and Plan use it; tests/e3_removes.js
    counts every removing button). The first tap writes nothing: `host` shows what goes, with a yes and a no */
-function sure3(host, words, yes, run) {
+function sure3(host, words, yes, run, no) {
   if (!host) return;
-  host.innerHTML = `<div class="a3-sure" data-sure><p class="a3-warn">${esc3(words)}</p><div class="a3-actions"><button type="button" class="a3-btn solid" data-sureyes>${esc3(yes)}</button><button type="button" class="a3-btn" data-sureno>No, keep it</button></div></div>`;
+  host.innerHTML = `<div class="a3-sure" data-sure><p class="a3-warn">${esc3(words)}</p><div class="a3-actions"><button type="button" class="a3-btn solid" data-sureyes>${esc3(yes)}</button><button type="button" class="a3-btn" data-sureno>${esc3(no || 'No, keep it')}</button></div></div>`;
   host.querySelector('[data-sureyes]').addEventListener('click', () => { host.innerHTML = ''; run(); });
   host.querySelector('[data-sureno]').addEventListener('click', () => { host.innerHTML = ''; });
   host.querySelector('[data-sureno]').focus();

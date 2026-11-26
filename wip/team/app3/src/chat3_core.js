@@ -745,11 +745,13 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       const spent = a.to === 'spent', to = spent ? 'spent' : ref(a.to, 'A');
       if (!to) return { bad: 'ask where its money goes: another of their accounts, or is it not there any more (spent)? Then change again with to' };
       const held = ((LA.lookahead(book, today).accounts || {})[id] || {}).bank || 0;
-      if (spent) return { kind: 'closeAccount', args: [id, { to }], text: `Close ${rec.name}: what it held (${m(held, rec.cur)}) counts as spent. Its history stays`, del: true };
+      /* [qc-controls confirm 1] the words are PLAN3W.closeWords, the same as the screens' question */
+      const said = x => { const cw = PW().closeWords(book, today, id, x); return cw && `Close ${rec.name}: ${cw.text}`; };
+      if (spent) return { kind: 'closeAccount', args: [id, { to }], text: said({ to }) || `Close ${rec.name}: what it held (${m(held, rec.cur)}) counts as spent. Its history stays`, del: true };
       /* [qc-foundation controls2to5 F3] what is really in it now moves, never the app's own figure */
       const now = a.amount == null || a.amount === '' ? null : amt(a.amount, rec.cur, true);
       if (now == null) return { bad: `ask what is in ${rec.name} now (the app's own figure is ${m(held, rec.cur)}), then change again with amount` };
-      return { kind: 'closeAccount', args: [id, { to, now }], text: `Close ${rec.name}: ${m(now, rec.cur)} moves to ${nm(to)}${now !== held ? `, the app had ${m(held, rec.cur)}` : ''}. Its history stays`, del: true, amount: now, figs: now ? [now] : [] };
+      return { kind: 'closeAccount', args: [id, { to, now }], text: said({ to, now }) || `Close ${rec.name}: ${m(now, rec.cur)} moves to ${nm(to)}${now !== held ? `, the app had ${m(held, rec.cur)}` : ''}. Its history stays`, del: true, amount: now, figs: now ? [now] : [] };
     }
     /* [E1, M13] a bank, cash or e-wallet renamed, or its own Keep at least set (0 clears it): PLAN3W.changeAccount */
     if (what === 'change_account') {

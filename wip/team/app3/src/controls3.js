@@ -10,7 +10,7 @@
   'use strict';
   const DOOR_KINDS = ['add', 'change', 'end', 'remove'];
   /* PLAN3W exports that are not steps (they list what a pay change would ask about) */
-  const HELPERS = ['linesEachPay', 'linesEachMonth'];
+  const HELPERS = ['linesEachPay', 'linesEachMonth', 'closeWords', 'reopenWords'];   // words and figures read by steps, not steps (closeWords, reopenWords: qc-controls confirm 1 and 5)
   /* writes that go through act3 without a PLAN3W step: the check-in writer, a statement import, setup's fill */
   const OTHER_ACTIONS = ['checkIn', 'statementsAdded', 'fill', 'undo'];
   const ROWS = [

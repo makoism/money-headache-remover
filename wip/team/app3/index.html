@@ -9185,6 +9185,8 @@ const E3 = (() => {
     /* the words a step would be refused with, or null: nothing is written (a question before a remove is only asked
        when Yes would do it) */
     api.refusal = (label, fn) => { try { plan(label, fn, true); return null; } catch (e) { if (e instanceof Bad) return e.message; throw e; } };
+    /* [qc-controls confirm 1] the book any step would make (the step's words are built from it), or throws Bad */
+    api.dryRun = (label, fn) => plan(label, fn, true).book;
     api.dry = (name, ...args) => {
       const n = ARGS[name];
       const p = plan(name, w => ACTIONS[name](w, ...args.slice(0, n)), true);
@@ -9233,6 +9235,7 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
   const dayOfMonth = d => { if (!(Number.isInteger(d) && d >= 1 && d <= 31)) bad('Pick a day of the month, 1 to 31'); return d; };
   const home = w => G.homeOn(w.book, w.today);
   const SMF = node ? require('../../screens/money.js') : root.BurrowScreens.money;
+  const ID = node ? require('../../engine/ids.js') : root.BurrowEngine.ids;
   const nameOf = (w, acctId) => ((w.book.accounts || []).find(y => y.id === acctId) || {}).name || 'That account';
   const mainOf = w => (G.fieldValue((w.book.home || {}).main) || {}).acct;
   const find = (w, list, id) => { const r = A3.listOf(w.book, list).find(x => x && x.id === id); if (!live(r)) bad('That is not in your plan any more'); return r; };
@@ -9770,6 +9773,32 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     w.edit('accounts', id, { closed: w.today });
     return id;
   }
+  /* [qc-controls confirm blocker 1, seen twice; lesson 2] the words for closing a bank, cash or e-wallet: one function for
+     the screens' question and the assistant's card, built from what will be written (x: { to, now }, as closeAccount
+     takes it). Every figure is the engine's: what the app had today, the gap the closing check leaves (its filler: less
+     than the app had counts as spent, more counts as money in) and safe to spend before and after, on the book the close
+     would make. { text: 'nothing moves to Wallet, the app had ...', ask: 'Close Savings? Nothing moves ...' }, or null
+     when the close would be refused (the refusal says why) */
+  function closeWords(book, today, id, x) {
+    const a = (book.accounts || []).find(y => live(y) && y.id === id);
+    if (!a || !OWN_KINDS[a.type]) return null;
+    let b1;
+    try {
+      b1 = A3.make({ book: () => book, put: () => true, told: () => today + 'T12:00:00.000Z', newId: ID.idMaker('dry', () => 0), today: () => today })
+        .dryRun('closeAccount', w => closeAccount(w, id, x));
+    } catch (e) { if (e instanceof A3.Bad) return null; throw e; }
+    const hc = G.homeOn(book, today), cur = a.cur || hc, m = v => SMF.format(v, cur);
+    const r0 = LA.lookahead(book, today), r1 = LA.lookahead(b1, today), held = (r0.accounts[id] || {}).bank || 0;
+    const f = ((r1.accounts[id] || {}).fillers || []).slice(-1)[0], gap = f && f.to === today ? f : {};
+    const spent = x.to === 'spent';
+    /* [coordinator, 26 Nov] the difference is said plainly before it is counted, in the question itself */
+    const had = gap.amount > 0 ? `. The app had ${m(held)}: the other ${m(gap.amount)} counts as spent today, like a bank check` : gap.gain > 0 ? `. The app had ${m(held)}: the other ${m(gap.gain)} counts as money in today, like a bank check` : '';
+    const moves = spent ? `what it held (${m(held)}) counts as spent today` : `${x.now ? m(x.now) : 'nothing'} moves to ${nameOf({ book }, x.to)}${had}`;
+    const s0 = r0.safeToSpend.headline, s1 = r1.safeToSpend.headline;
+    const safe = s0 !== s1 && s0 != null && s1 != null ? `${SN3.label('safeToSpend')} goes from ${SMF.format(s0, hc)} to ${SMF.format(s1, hc)}` : '';
+    const text = [moves, safe, 'Its history stays'].filter(Boolean).join('. ');
+    return { text, ask: `Close ${a.name}? ${text.replace(/^./, c => c.toUpperCase())}` };
+  }
   /* [E3, M27, M40, R3] a card closes at zero: a final check of 0 today and `closed` (its payment day stops: the schedules it
      owns end on the closing day). With something on it, refused: pay it off (payOff) or tick its payment at Check your
      bank first */
@@ -9828,7 +9857,7 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     return id;
   }
 
-  const api = { addPay, addAccount, changeAccount, closeAccount, reopenAccount, removeAccount, payOff, setKeep, setCountry, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan };
+  const api = { addPay, addAccount, changeAccount, closeAccount, closeWords, reopenAccount, removeAccount, payOff, setKeep, setCountry, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan };
   if (node) module.exports = api;
   else root.PLAN3W = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
@@ -10396,9 +10425,9 @@ function rcRows3() {
 }
 /* [M6, M61; qc-data-safety B1] the one question before a remove on the screens (Receipts and Plan use it; tests/e3_removes.js
    counts every removing button). The first tap writes nothing: `host` shows what goes, with a yes and a no */
-function sure3(host, words, yes, run) {
+function sure3(host, words, yes, run, no) {
   if (!host) return;
-  host.innerHTML = `<div class="a3-sure" data-sure><p class="a3-warn">${esc3(words)}</p><div class="a3-actions"><button type="button" class="a3-btn solid" data-sureyes>${esc3(yes)}</button><button type="button" class="a3-btn" data-sureno>No, keep it</button></div></div>`;
+  host.innerHTML = `<div class="a3-sure" data-sure><p class="a3-warn">${esc3(words)}</p><div class="a3-actions"><button type="button" class="a3-btn solid" data-sureyes>${esc3(yes)}</button><button type="button" class="a3-btn" data-sureno>${esc3(no || 'No, keep it')}</button></div></div>`;
   host.querySelector('[data-sureyes]').addEventListener('click', () => { host.innerHTML = ''; run(); });
   host.querySelector('[data-sureno]').addEventListener('click', () => { host.innerHTML = ''; });
   host.querySelector('[data-sureno]').focus();
@@ -10961,16 +10990,30 @@ function plForm3(title, fields, buttons, note) {
     }
     return { vals };
   };
+  /* [qc-controls confirm blocker 1, M6, M61] an open question is about the values it was built from, and the yes writes
+     exactly those: any change to a box or a pick drops it, so the question never names one amount while another moves */
+  let asked = null;
+  const dropAsk = () => { asked = null; $('#plSure').innerHTML = ''; host.querySelectorAll('[data-plbtn]').forEach(x => delete x.dataset.yes); };
+  /* typing in a box (input), or a new pick or date (change). A box's own change on leaving it is not a new value: the
+     question takes the focus, which would otherwise drop it as it opens */
+  for (const f of fields) $('#pl-' + f.key).addEventListener(f.kind === 'pick' || f.kind === 'date' ? 'change' : 'input', () => { if (asked) dropAsk(); });
   host.querySelectorAll('[data-plbtn]').forEach(btn => btn.addEventListener('click', async () => {
-    const got = read(), err = $('#plErr');
+    const yes = btn.dataset.yes && asked && asked.btn === btn;
+    const got = yes ? { vals: asked.vals } : read(), err = $('#plErr');
     if (got.bad) { err.textContent = got.bad; got.el.focus(); return; }
     const b = buttons[Number(btn.dataset.plbtn)];
     /* [E2] a button that opens another sheet (Close this account opens its own sheet) */
     if (b.open) { b.open(); return; }
-    /* [M6, M61] a button that removes asks first (sure3): nothing is written until the yes */
-    if (b.sure && !btn.dataset.yes) { const [l0, f0] = b.step(got.vals), no = ACT3.refusal(l0, f0); if (no) { err.textContent = no; $('#plSure').innerHTML = ''; return; } }
-    if (b.sure && !btn.dataset.yes) { const sq = typeof b.sure === 'function' ? b.sure(got.vals) : b.sure; sure3($('#plSure'), sq[0], sq[1], () => { btn.dataset.yes = '1'; btn.click(); }); return; }
-    delete btn.dataset.yes;
+    /* [M6, M61] a button that removes asks first (sure3): nothing is written until the yes. One message at a time: the
+       refusal or the question, never both, and never an old error under a new question */
+    if (b.sure && !yes) { const [l0, f0] = b.step(got.vals), no = ACT3.refusal(l0, f0); if (no) { dropAsk(); err.textContent = no; return; } }
+    if (b.sure && !yes) {
+      const sq = typeof b.sure === 'function' ? b.sure(got.vals) : b.sure;
+      err.textContent = ''; asked = { btn, vals: got.vals };
+      sure3($('#plSure'), sq[0], sq[1], () => { btn.dataset.yes = '1'; btn.click(); }, sq[2]);
+      return;
+    }
+    delete btn.dataset.yes; asked = null;
     const [label, fn, undo] = b.step(got.vals);
     const res = await ACT3.run(label, fn, { undo, seen });
     if (elsewhere(res)) return;
@@ -11174,7 +11217,7 @@ function plAcctCloseForm3(id) {
   plForm3('Close ' + a.name, [{ key: 'to', label: 'Its money', kind: 'pick', options: opts, value: main && others.some(y => y.id === main.acct) ? main.acct : opts[0].v,
       hint: 'Bills, pays and cards paid from it move to the account you pick (to your main bank if the money is spent)' },
     { key: 'now', label: 'What is in it now', kind: 'amount', optional: true, hint: 'What is really there today, counted or from its app. Not needed if it is not there any more' }],
-    [{ label: 'Close this account', solid: true, sure: v => [v.to === 'spent' ? `Close ${a.name}? What it held counts as spent. Its history stays` : `Close ${a.name}? ${v.now == null ? 'What it holds' : money3(v.now, a.cur || E3.home())} moves to ${E3.nameOf(v.to)}. Its history stays`, 'Yes, close it'],
+    [{ label: 'Close this account', solid: true, sure: v => [(PLAN3W.closeWords(E3.book, E3.today(), id, { to: v.to, now: v.now }) || { ask: `Close ${a.name}?` }).ask, 'Yes, close it', 'No, go back'],
       step: v => ['closeAccount', w => PLAN3W.closeAccount(w, id, { to: v.to, now: v.now }), a.name + ' closed'] }],
     `${esc3(a.name)} holds ${money3(held, a.cur || E3.home())} today (${esc3(label3('bankToday')).toLowerCase()})`);
 }
@@ -14540,11 +14583,13 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       const spent = a.to === 'spent', to = spent ? 'spent' : ref(a.to, 'A');
       if (!to) return { bad: 'ask where its money goes: another of their accounts, or is it not there any more (spent)? Then change again with to' };
       const held = ((LA.lookahead(book, today).accounts || {})[id] || {}).bank || 0;
-      if (spent) return { kind: 'closeAccount', args: [id, { to }], text: `Close ${rec.name}: what it held (${m(held, rec.cur)}) counts as spent. Its history stays`, del: true };
+      /* [qc-controls confirm 1] the words are PLAN3W.closeWords, the same as the screens' question */
+      const said = x => { const cw = PW().closeWords(book, today, id, x); return cw && `Close ${rec.name}: ${cw.text}`; };
+      if (spent) return { kind: 'closeAccount', args: [id, { to }], text: said({ to }) || `Close ${rec.name}: what it held (${m(held, rec.cur)}) counts as spent. Its history stays`, del: true };
       /* [qc-foundation controls2to5 F3] what is really in it now moves, never the app's own figure */
       const now = a.amount == null || a.amount === '' ? null : amt(a.amount, rec.cur, true);
       if (now == null) return { bad: `ask what is in ${rec.name} now (the app's own figure is ${m(held, rec.cur)}), then change again with amount` };
-      return { kind: 'closeAccount', args: [id, { to, now }], text: `Close ${rec.name}: ${m(now, rec.cur)} moves to ${nm(to)}${now !== held ? `, the app had ${m(held, rec.cur)}` : ''}. Its history stays`, del: true, amount: now, figs: now ? [now] : [] };
+      return { kind: 'closeAccount', args: [id, { to, now }], text: said({ to, now }) || `Close ${rec.name}: ${m(now, rec.cur)} moves to ${nm(to)}${now !== held ? `, the app had ${m(held, rec.cur)}` : ''}. Its history stays`, del: true, amount: now, figs: now ? [now] : [] };
     }
     /* [E1, M13] a bank, cash or e-wallet renamed, or its own Keep at least set (0 clears it): PLAN3W.changeAccount */
     if (what === 'change_account') {

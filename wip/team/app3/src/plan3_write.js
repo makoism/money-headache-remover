@@ -30,6 +30,7 @@
   const dayOfMonth = d => { if (!(Number.isInteger(d) && d >= 1 && d <= 31)) bad('Pick a day of the month, 1 to 31'); return d; };
   const home = w => G.homeOn(w.book, w.today);
   const SMF = node ? require('../../screens/money.js') : root.BurrowScreens.money;
+  const ID = node ? require('../../engine/ids.js') : root.BurrowEngine.ids;
   const nameOf = (w, acctId) => ((w.book.accounts || []).find(y => y.id === acctId) || {}).name || 'That account';
   const mainOf = w => (G.fieldValue((w.book.home || {}).main) || {}).acct;
   const find = (w, list, id) => { const r = A3.listOf(w.book, list).find(x => x && x.id === id); if (!live(r)) bad('That is not in your plan any more'); return r; };
@@ -567,6 +568,32 @@
     w.edit('accounts', id, { closed: w.today });
     return id;
   }
+  /* [qc-controls confirm blocker 1, seen twice; lesson 2] the words for closing a bank, cash or e-wallet: one function for
+     the screens' question and the assistant's card, built from what will be written (x: { to, now }, as closeAccount
+     takes it). Every figure is the engine's: what the app had today, the gap the closing check leaves (its filler: less
+     than the app had counts as spent, more counts as money in) and safe to spend before and after, on the book the close
+     would make. { text: 'nothing moves to Wallet, the app had ...', ask: 'Close Savings? Nothing moves ...' }, or null
+     when the close would be refused (the refusal says why) */
+  function closeWords(book, today, id, x) {
+    const a = (book.accounts || []).find(y => live(y) && y.id === id);
+    if (!a || !OWN_KINDS[a.type]) return null;
+    let b1;
+    try {
+      b1 = A3.make({ book: () => book, put: () => true, told: () => today + 'T12:00:00.000Z', newId: ID.idMaker('dry', () => 0), today: () => today })
+        .dryRun('closeAccount', w => closeAccount(w, id, x));
+    } catch (e) { if (e instanceof A3.Bad) return null; throw e; }
+    const hc = G.homeOn(book, today), cur = a.cur || hc, m = v => SMF.format(v, cur);
+    const r0 = LA.lookahead(book, today), r1 = LA.lookahead(b1, today), held = (r0.accounts[id] || {}).bank || 0;
+    const f = ((r1.accounts[id] || {}).fillers || []).slice(-1)[0], gap = f && f.to === today ? f : {};
+    const spent = x.to === 'spent';
+    /* [coordinator, 26 Nov] the difference is said plainly before it is counted, in the question itself */
+    const had = gap.amount > 0 ? `. The app had ${m(held)}: the other ${m(gap.amount)} counts as spent today, like a bank check` : gap.gain > 0 ? `. The app had ${m(held)}: the other ${m(gap.gain)} counts as money in today, like a bank check` : '';
+    const moves = spent ? `what it held (${m(held)}) counts as spent today` : `${x.now ? m(x.now) : 'nothing'} moves to ${nameOf({ book }, x.to)}${had}`;
+    const s0 = r0.safeToSpend.headline, s1 = r1.safeToSpend.headline;
+    const safe = s0 !== s1 && s0 != null && s1 != null ? `${SN3.label('safeToSpend')} goes from ${SMF.format(s0, hc)} to ${SMF.format(s1, hc)}` : '';
+    const text = [moves, safe, 'Its history stays'].filter(Boolean).join('. ');
+    return { text, ask: `Close ${a.name}? ${text.replace(/^./, c => c.toUpperCase())}` };
+  }
   /* [E3, M27, M40, R3] a card closes at zero: a final check of 0 today and `closed` (its payment day stops: the schedules it
      owns end on the closing day). With something on it, refused: pay it off (payOff) or tick its payment at Check your
      bank first */
@@ -625,7 +652,7 @@
     return id;
   }
 
-  const api = { addPay, addAccount, changeAccount, closeAccount, reopenAccount, removeAccount, payOff, setKeep, setCountry, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan };
+  const api = { addPay, addAccount, changeAccount, closeAccount, closeWords, reopenAccount, removeAccount, payOff, setKeep, setCountry, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan };
   if (node) module.exports = api;
   else root.PLAN3W = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
