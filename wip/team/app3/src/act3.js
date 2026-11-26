@@ -462,6 +462,7 @@
        when Yes would do it) */
     api.refusal = (label, fn) => { try { plan(label, fn, true); return null; } catch (e) { if (e instanceof Bad) return e.message; throw e; } };
     api.dry = (name, ...args) => {
+      if (name === 'run') return plan(args[0], args[1], true).book;   // [qc-novice C3] any step, for "what this would leave"
       const n = ARGS[name];
       const p = plan(name, w => ACTIONS[name](w, ...args.slice(0, n)), true);
       return p.book;

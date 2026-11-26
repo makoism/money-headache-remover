@@ -376,7 +376,21 @@ function plGoalForm3(id, fill) {
   [{ label: 'Set aside', solid: true, step: v => ['setAside', w => PLAN3W.setAside(w, id, { amount: v.amount }), 'Set aside for ' + g.name],
      anyway: { label: 'Set aside anyway', step: v => ['setAside', w => PLAN3W.setAside(w, id, { amount: v.amount, anyway: true }), 'Set aside for ' + g.name] } },
    { label: 'Save changes', step: v => ['changeGoal', w => PLAN3W.changeGoal(w, id, { name: v.name, target: v.target, due: v.due }), 'Goal changed'] },
-   { label: 'Take out', step: v => ['takeOut', w => PLAN3W.takeOut(w, id, { amount: v.amount }), 'Taken out of ' + g.name] }]);
+   { label: 'Take out', step: v => { const fn = w => PLAN3W.takeOut(w, id, { amount: v.amount }); return ['takeOut', fn, plTakenWords3(g, v.amount, fn)]; } }]);
+}
+/* [qc-novice C3; M24 M46] money taken out of a goal says where it went (back in the bank, no job yet) and what safe to
+   spend does, the engine's figures before and after on the book the step would make */
+function plTakenWords3(g, a, fn) {
+  const main = ((E3.book.home || {}).main || {}).v, k = g.keptIn || {}, to = k.mode === 'ownAccount' || !k.acct ? main && main.acct : k.acct, cur = E3.home();
+  if (a == null) return `Taken out of ${g.name}`;
+  const words = [`Taken out of ${g.name}: ${money3(a, cur)} is back in ${E3.nameOf(to)}, with no job yet`];
+  try {
+    const r0 = E3.view(E3.today()), r1 = BurrowEngine.lookahead.lookahead(ACT3.dry('run', 'takeOut', fn), E3.today()), s0 = r0.safeToSpend.headline, s1 = r1.safeToSpend.headline;
+    const capped = r1.period && r1.period.free && r1.period.free.left === s1;
+    if (s1 > s0) words.push(`Safe to spend goes up to ${money3(s1, cur)}`);
+    else if (s1 === s0) words.push(`Safe to spend stays ${money3(s1, cur)}${capped ? ", it's what's left of your Free to spend" : ''}`);
+  } catch (e) { /* the step itself says what is wrong */ }
+  return words.join('. ');
 }
 /* a card's or a loan's days and payment */
 function plOwedForm3(id) {
