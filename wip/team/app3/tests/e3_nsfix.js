@@ -59,5 +59,16 @@ async function load(o, bk) {
     } catch (e) { ck('B3: the check ran to its end', false, e.stack); }
     finally { await o.b.close(); }
   }
+  /* [latelist, coordinator 18] Home's late list is the one the AI is told (tests/latelist.test.js): Power, Rent, Internet */
+  {
+    const o = await T.open();
+    try {
+      await o.p.goto(T.URL0 + '?try=mako&today=2026-11-28'); await T.w(500);
+      const late = await o.p.$$eval('[data-fig=duelate] li', ls => ls.map(l => l.textContent.replace(/\s+/g, ' ').trim()));
+      const ok = late.length === 3 && /^Power/.test(late[0]) && /^Rent/.test(late[1]) && /^Internet/.test(late[2]);
+      ck('Home lists Power, Rent, Internet as late, as the AI is told', ok, JSON.stringify(late));
+    } catch (e) { ck('late: the check ran to its end', false, e.stack); }
+    finally { await o.b.close(); }
+  }
   T.done('e3_nsfix');
 })().catch(e => { console.log('FAIL crashed ' + e.stack); process.exit(1); });
