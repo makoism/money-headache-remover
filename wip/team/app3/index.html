@@ -2938,7 +2938,8 @@ details summary { min-height: 44px; }
       const changes = changesFrom(open);
       // [LOAN_CHECK_PLAN rule 2, coordinator's ruling 26 Nov] the latest live check on the loan (by day, then told) sets
       // what is owed from its day; a closing's check of 0 is one too
-      const lc = live().filter(e => e.k === 'check' && e.account === id && !e.stmt).sort((x, z) => x.day - z.day || x.key - z.key || x.idx - z.idx).pop();
+      const lcs = live().filter(e => e.k === 'check' && e.account === id && !e.stmt).sort((x, z) => x.day - z.day || x.key - z.key || x.idx - z.idx);
+      const lc = lcs[lcs.length - 1];
       const base = lc ? Object.assign({}, lc, { loanCheck: true }) : null;
       const days = [];
       const [y, mo] = ymOf(openDay(id));
@@ -2959,20 +2960,21 @@ details summary { min-height: 44px; }
         d.owedThen = owed;
       }
       while (r < changes.length) owed += changes[r++].d;
-      if (base) {
-        // [rule 2b] payment days on or before the check day keep the walk above; from the check, its figure, with what is
-        // not inside it on top and interest from its day
-        const ch2 = changesFrom(base);
-        owed = base.a; r = 0;
-        while (r < ch2.length && ch2[r].day <= base.day) owed += ch2[r++].d;
+      // [rule 2b, qc-foundation loancheck_build finding 1] the checks in a chain: each check starts its own walk, its figure
+      // with what is not inside it on top and interest from its day; a payment day takes what was owed then from the walk
+      // of the check (or the opening) just before it. The latest check's walk gives what is owed now
+      for (let j = 0; j < lcs.length; j++) {
+        const c = lcs[j], upTo = j + 1 < lcs.length ? lcs[j + 1].day : Infinity, ch2 = changesFrom(c);
+        owed = c.a; r = 0;
+        while (r < ch2.length && ch2[r].day <= c.day) owed += ch2[r++].d;
         for (const d of days) {
-          if (d.land <= base.day) continue;
-          if (d.land > knownTo) break;
+          if (d.land <= c.day) continue;
+          if (d.land > knownTo || d.land > upTo) break;
           while (r < ch2.length && ch2[r].day < d.land) owed += ch2[r++].d;
           owed += interestOn(owed, a.apr);
           d.owedThen = owed;
         }
-        while (r < ch2.length) owed += ch2[r++].d;
+        if (upTo === Infinity) while (r < ch2.length) owed += ch2[r++].d;
       }
       const owedNow = owed;
       const own = d => S.keyAmount(a.amounts, dayStr(d.due));   // [AC5, AE1] that payment, whole
