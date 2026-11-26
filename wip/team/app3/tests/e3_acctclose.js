@@ -62,6 +62,11 @@ const closedRows = p => p.$$eval('[data-card="plan-accounts"] [data-acctclosed]'
     const err = () => p.$eval('#plErr', e => e.textContent).catch(() => '');
     const retype = async v => { await p.$eval('#pl-now', e => { e.focus(); e.select(); }); await p.keyboard.type(v); await T.w(150); };
     await p.click(`#a3Plan [data-acct="${WALLET}"]`); await T.w(300); await btn('Close this account'); await T.w(300);
+    /* [confusing 2] a box that cannot be read: the shared words; the old message goes when the next question shows */
+    await retype('99999999999999999999'); await btn('Close this account'); await T.w(300);
+    ck('a huge number: "That amount is too big. Check the digits", no question', /That amount is too big\. Check the digits/.test(await err()) && !(await p.$('[data-sure]')), await err());
+    await retype('abc'); await btn('Close this account'); await T.w(300);
+    ck('not an amount: says what to type, no question', /Type what is in it now as an amount/.test(await err()) && !(await p.$('[data-sure]')), await err());
     await retype('8000'); await btn('Close this account'); await T.w(300);
     ck('typed 8,000: the question names it, and says plainly what the app had and that the other 2,000 counts as spent today', /^Close Wallet\? ¥8,000 moves to Main bank\. The app had ¥10,000: the other ¥2,000 counts as spent today, like a bank check\./.test(await q()), await q());
     ck('the question has a way back: No, go back', (await p.$eval('[data-sure] [data-sureno]', e => e.textContent).catch(() => '')) === 'No, go back');
