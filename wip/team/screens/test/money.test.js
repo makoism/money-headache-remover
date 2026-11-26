@@ -150,3 +150,19 @@ test('[BL4] one cents rule for a whole screen: hasCents, and a sum line told the
 });
 
 run('money.js');
+
+test('[qc-novice, coordinator 18] "80k", "8万" and "80000 yen" read the way a person means them', () => {
+  assert.deepStrictEqual(money.parse('80k', 'JPY'), { ok: true, minor: 80000 });
+  assert.deepStrictEqual(money.parse('80K', 'JPY'), { ok: true, minor: 80000 });
+  assert.deepStrictEqual(money.parse('1.5k', 'JPY'), { ok: true, minor: 1500 });
+  assert.deepStrictEqual(money.parse('8万', 'JPY'), { ok: true, minor: 80000 });
+  assert.deepStrictEqual(money.parse('80000 yen', 'JPY'), { ok: true, minor: 80000 });
+  assert.deepStrictEqual(money.parse('80,000円', 'JPY'), { ok: true, minor: 80000 });
+  assert.deepStrictEqual(money.parse('80000 Yen', 'JPY'), { ok: true, minor: 80000 });
+  assert.deepStrictEqual(money.parse('2.5k dollars', 'USD'), { ok: true, minor: 250000 });
+  assert.deepStrictEqual(money.parse('1.2345k', 'USD'), { ok: true, minor: 123450 });
+  assert.deepStrictEqual(money.parse('1.234567k', 'USD'), { ok: false, reason: 'decimals' });
+  assert.deepStrictEqual(money.parse('k', 'JPY'), { ok: false, reason: 'not_a_number' });
+  assert.deepStrictEqual(money.parse('80kk', 'JPY'), { ok: false, reason: 'not_a_number' });
+  assert.deepStrictEqual(money.parse('yen', 'JPY'), { ok: false, reason: 'empty' });
+});

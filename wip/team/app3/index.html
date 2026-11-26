@@ -4501,6 +4501,7 @@ details summary { min-height: 44px; }
     return (n < 0 ? '-' : '') + p.whole + (hasCents(n, d) ? '.' + p.frac : '');
   }
 
+  const WORDS_RE = { JPY: /(yen|円|えん)$/i, USD: /(dollars?|usd)$/i, EUR: /(euros?|eur)$/i, PHP: /(pesos?|php)$/i };
   /* parse(text, code, { allowMinus }): what a person typed, as whole minor units, or the reason it can't be read:
      'empty', 'not_a_number', 'decimals' (more than the currency has, never rounded), 'minus', 'too_big' */
   function parse(text, code, opts) {
@@ -4509,7 +4510,15 @@ details summary { min-height: 44px; }
     let s = String(text == null ? '' : text).normalize('NFKC').replace(/⁠/g, '').replace(/−/g, '-').replace(/\s+/g, '');
     const sign = symbol(code).trim();
     s = s.split(sign).join('').split(code).join('');
+    /* [qc-novice, coordinator 18] the currency's own word, as people type it ("80000 yen", "80,000円", "20 dollars") */
+    s = s.replace(WORDS_RE[code] || /$^/, '');
     if (s === '') return { ok: false, reason: 'empty' };
+    /* [qc-novice] "80k" is 80,000 and "8万" is 80,000: the point moves 3 or 4 places, the digits are never rounded */
+    const km = /^(-)?(\d[\d,]*)(?:\.(\d*))?(k|K|万)$/.exec(s);
+    if (km) {
+      const n = km[4] === '万' ? 4 : 3, fr = (km[3] || '').padEnd(n, '0');
+      s = (km[1] || '') + km[2] + fr.slice(0, n) + (fr.length > n ? '.' + fr.slice(n) : '');
+    }
     const m = /^(-)?(\d[\d,]*)?(?:\.(\d*))?$/.exec(s);
     if (!m || (!m[2] && !m[3])) return { ok: false, reason: 'not_a_number' };
     /* [qc-numbers run 1 B4] a comma not in a thousands place ("1,0000", "10,00") is a slip: refused with both readings
