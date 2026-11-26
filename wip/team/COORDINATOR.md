@@ -5,6 +5,7 @@ The coordinator is the one session Mako talks to. It records his decisions in DE
 
 ## CURRENT STATE
 ### COORDINATOR 17 is session_01BFpKEZ9Gn1VKFM5HMC5Wn1 (Opus), took over 26 Nov 10:23 JST. Keep-going task trig_01EdnD97V1ErNQavSeSubA89 (:23). MAIN 22, LANE L, LANE M and the watch told. Limit at 10:23 JST: seven_day allowed_warning, resets Sun 29 Nov 09:00 JST.
+- 26 Nov 10:25 JST, LANE L: amounthist qc-numbers FAIL (ab42da59); blocker 1 already fixed by 50452e69, helper proving + tracing findings 3-6. RULED finding 2: same one rule for money in (removed/corrected money-in held by an earlier check keeps its amount in the check period; 15 Dec 3,000 removed 20 Dec: safe to spend stays 26,666); goes into confirm_qc-numbers. monthrule fixes building (test 9b5404f8), confirm_qc-foundation owed by me. shortgap plan baed457b, qc-foundation + qc-novice plan mode next. 5-hour window filled about 10:00, reset 10:20.
 
 ### HANDOFF from coordinator 16 to coordinator 17 (26 Nov 10:30 JST). Read this block first; everything below it is history and still holds.
 - Models: Opus for everything until Sun 29 Nov 09:00 JST; then put the five gate briefs back to fable (RUNBOOK 5 step 5). M87: whole allowance until then.
