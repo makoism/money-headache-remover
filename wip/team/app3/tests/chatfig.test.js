@@ -70,6 +70,23 @@ const freeLeft = h => { const p = L.lookahead(h.book, h.day).period; return p &&
     const c = cards[0] || {};
     ck('3. nothing expected: the figure goes in with no list', main(h) === 285000 && !/gone out|came in/.test((c.lines || []).join(' ')), main(h) + ' ' + (c.lines || []).join(' | '));
   }
+  /* [qc-assistant confirming run 6, CONFUSING 1 and 2] the card's question is about what is ticked, and a corrected
+     figure for the same account replaces the card still waiting, so the old one can no longer be done */
+  {
+    const h = page('2026-11-24'); await setup(h);
+    h.day = '2026-11-30';
+    const [c1] = await talk(h, 'my bank shows 276,000', [{ name: 'change', input: { steps: [{ do: 'bank_figure', account: 'A1', amount: 276000 }] } }], { hold: true });
+    ck('5. the figure card asks whether what is ticked has gone through (its own question)', c1 && c1.ask === 'ticks', c1 && c1.ask);
+    const src = require('fs').readFileSync(require('path').join(__dirname, '../src/chat3.js'), 'utf8');
+    ck('5. the page has words for that question', /ticks: '[^']+'/.test(src));
+    const [c2] = await talk(h, 'rent has not gone yet', [{ name: 'change', input: { steps: [{ do: 'bank_figure', account: 'A1', amount: 276000, not: ['B1'] }] } }], { hold: true });
+    const old = h.state.turns.find(t => t.who === 'card' && t.card && t.card.lines && t.card.lines.join(' ') === c1.lines.join(' '));
+    ck('5. the first card is replaced by the second', old && old.card.status === 'replaced' && /Replaced by the one below/.test(old.card.why || ''), old && JSON.stringify([old.card.status, old.card.why]));
+    ck('5. the second card (Rent left out, a small gap) is done at once: Main 276,000, Rent still expected', c2 && c2.status === 'done' && main(h) === 276000 && rentDue(h), (c2 && c2.status) + ' ' + main(h));
+    const r = await K.confirm(h.state, old.id, h.deps(FAKE.make([]))); h.state = r.state;
+    ck('5. the replaced card cannot be done, and nothing changes', r.ok === false && main(h) === 276000 && rentDue(h), r.text + ' ' + main(h));
+    ck('5. it never says the change came from somewhere else', !/somewhere else/.test(r.text), r.text);
+  }
   console.log(bad ? `chatfig: ${bad} of ${n} FAILED` : `chatfig: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })().catch(e => { console.log('FAIL crashed ' + e.stack); process.exit(1); });
