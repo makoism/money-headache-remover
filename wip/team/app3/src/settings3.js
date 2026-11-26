@@ -15,10 +15,20 @@ async function keepCopy3(why, pin) {
   return (await E3.rec('copy', Object.assign({ copy: JSON.parse(JSON.stringify(E3.book)), why }, pin ? { pin: true } : {}))) || null;
 }
 /* replace this device's book; the old one is kept first when there is one. Gives true when saved. */
+/* [qc-data-safety run 5 CONFUSING 4; M61] with no book here, setup answers saved part way are put aside first (setup3.js
+   asideSetup3), and back as they were when the replace could not be saved. Setup open in this tab closes first, so what
+   is typed in it is kept with them */
 async function replaceBook3(next, why, pin) {
   const had = !!E3.book;
   if (had && !(await keepCopy3(why, pin))) return false;
+  let aside = null;
+  if (!had && typeof asideSetup3 === 'function') {
+    if (typeof setup3 !== 'undefined' && setup3) closeSetup3();
+    aside = await asideSetup3();
+    if (aside === false) return false;
+  }
   const ok = await E3.replace(next);
+  if (!ok && aside) await unasideSetup3(aside.at);
   if (ok && !had && typeof BurrowPersist === 'object') BurrowPersist.afterSetup().catch(() => {});   // the first book on this device [D7]
   if (ok) renderHome3();
   return ok;
@@ -190,7 +200,8 @@ async function readBackup3(file, code) {
   const nAhead = typeof rcAhead3 === 'function' ? rcAhead3(r.copy).length : 0;
   const aheadSay = nAhead ? ` ${nAhead === 1 ? '1 of them is' : nAhead + ' of them are'} dated after today. They do not count until their day, and Receipts lists them.` : '';
   const after = E3.book ? `<br>Anything you logged after this backup was made goes${on ? ', on every device' : ' from this device'}${s.n ? `: ${things3(s.n)} here now ${s.n === 1 ? 'is' : 'are'} not in it ${kinds3(s)}` : ''}.${s.changed ? ` ${things3(s.changed)} here now ${s.changed === 1 ? 'goes back to how the backup has it' : 'go back to how the backup has them'}.` : ''}${s.back && s.back.n ? ` ${things3(s.back.n)} in the backup and not here now ${s.back.n === 1 ? 'comes' : 'come'} back ${kinds3(s.back)}.` : ''} Put it back brings it back.` : '';
-  ask.innerHTML = `<p class="a3-warn" data-set="restoreask">${E3.book ? 'This replaces the money on this device with the backup. What is here now is kept, and Put it back brings it back.' : 'This puts the money from the backup on this device.'} The backup holds ${n} record${n === 1 ? '' : 's'}.${aheadSay}${others}${after}</p>
+  const asideSay = E3.book ? '' : await asideWords3();
+  ask.innerHTML = `<p class="a3-warn" data-set="restoreask">${E3.book ? 'This replaces the money on this device with the backup. What is here now is kept, and Put it back brings it back.' : 'This puts the money from the backup on this device.'}${asideSay} The backup holds ${n} record${n === 1 ? '' : 's'}.${aheadSay}${others}${after}</p>
     <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3BkGo">Restore it</button><button type="button" class="a3-btn" id="a3BkNo">Cancel</button></div>`;
   $('#a3BkGo').addEventListener('click', async () => {
     const ok = await restoreBook3(SET3.restore, 'Before a backup was restored');
@@ -200,6 +211,13 @@ async function readBackup3(file, code) {
     const save = $('#a3BkSave'); if (save) save.disabled = !E3.book;
   });
   $('#a3BkNo').addEventListener('click', () => { SET3.restore = null; ask.innerHTML = ''; });
+}
+/* [qc-data-safety run 5 CONFUSING 4] with no book here: the setup answers saved part way that a restore puts aside,
+   named by section, or '' when there are none */
+async function asideWords3() {
+  const a = typeof setupToAside3 === 'function' ? await setupToAside3() : null;
+  if (!a) return '';
+  return a.names.length ? ` Your saved setup answers (${a.names.join(', ')}) are put aside, and Put it back brings them back.` : ' What you typed in setup is put aside, and Put it back brings it back.';
 }
 /* the one line before Put it back and Drop it: how many things, in which kinds (counts from BACKUP3.since, no sums) */
 const things3 = n => (n === 1 ? '1 thing' : n + ' things');
@@ -233,29 +251,48 @@ async function undrop3() {
 async function paintKept3() {
   const el = $('#a3BkKept'); if (!el) return;
   const list = (await E3.rec('copies')) || [], others = (await cloudOn3()) ? ' ' + OTHERS3 : '';
+  const asides = (await E3.rec('setupAside')) || [];
   if (!SET3.open) return;
   const wire = () => { const u = $('#a3BkUndrop'); if (u) u.addEventListener('click', undrop3); };
-  if (!list.length) { el.innerHTML = dropped3(); wire(); return; }
-  el.innerHTML = `${dropped3()}<p class="a3-sub" data-set="keptnote">The money that was here before each restore is kept. Put it back brings that money back.${others}</p>
-    <ul class="a3-rows">${list.map((c, i) => `<li data-kept="${esc3(c.id)}"${c.pin ? ' data-pin="1"' : ''}><span data-set="kept">${esc3(c.why)}, ${esc3(day3(c.at.slice(0, 10), E3.today().slice(0, 4)))} ${esc3(c.at.slice(11, 16))}${c.pin ? '. Kept until you drop it' : ''}</span>
-      <button type="button" class="a3-btn" data-back${i === 0 ? ' id="a3BkBack"' : ''}>Put it back</button>${c.pin ? '<button type="button" class="a3-btn" data-drop>Drop it</button>' : ''}</li>`).join('')}</ul>
+  if (!list.length && !asides.length) { el.innerHTML = dropped3(); wire(); return; }
+  const when = at => `${esc3(day3(at.slice(0, 10), E3.today().slice(0, 4)))} ${esc3(at.slice(11, 16))}`;
+  /* [qc-data-safety run 5 CONFUSING 4] setup answers a restore put aside: one row each, with Put it back */
+  const asideRows = asides.length ? `<p class="a3-sub" data-set="asidenote">Setup answers you had saved before a restore are kept. Put it back opens setup with them.</p>
+    <ul class="a3-rows">${asides.map(x => `<li data-aside="${esc3(x.at)}"><span data-set="aside">Setup answers from before the restore, ${when(x.at)}</span>
+      <button type="button" class="a3-btn" data-asideback>Put it back</button></li>`).join('')}</ul>` : '';
+  const keptRows = list.length ? `<p class="a3-sub" data-set="keptnote">The money that was here before each restore is kept. Put it back brings that money back.${others}</p>
+    <ul class="a3-rows">${list.map((c, i) => `<li data-kept="${esc3(c.id)}"${c.pin ? ' data-pin="1"' : ''}><span data-set="kept">${esc3(c.why)}, ${when(c.at)}${c.pin ? '. Kept until you drop it' : ''}</span>
+      <button type="button" class="a3-btn" data-back${i === 0 ? ' id="a3BkBack"' : ''}>Put it back</button>${c.pin ? '<button type="button" class="a3-btn" data-drop>Drop it</button>' : ''}</li>`).join('')}</ul>` : '';
+  el.innerHTML = `${dropped3()}${asideRows}${keptRows}
     <div id="a3BkKeptAsk"></div>`;
   wire();
   const ask = $('#a3BkKeptAsk');
   const question = (name, words, yes, go) => {
-    const id = name === 'back' ? 'a3BkBack' : 'a3BkDrop';
+    const id = { back: 'a3BkBack', drop: 'a3BkDrop', aside: 'a3BkAside' }[name];
     ask.innerHTML = `<p class="a3-warn" data-set="${name}ask">${esc3(words)}</p>
       <div class="a3-actions"><button type="button" class="a3-btn solid" id="${id}Go">${yes}</button><button type="button" class="a3-btn" id="${id}No">Cancel</button></div>`;
     $('#' + id + 'Go').addEventListener('click', go);
     $('#' + id + 'No').addEventListener('click', () => { ask.innerHTML = ''; });
     $('#' + id + 'No').focus();
   };
+  for (const li of el.querySelectorAll('[data-aside]')) {
+    const at = li.dataset.aside;
+    li.querySelector('[data-asideback]').addEventListener('click', async () => {
+      const x = ((await E3.rec('setupAside')) || []).find(a => a.at === at);
+      if (!x) { setMsg3('Those setup answers are gone. Nothing changed.', true); paintKept3(); return; }
+      /* the cloud copy would bring the money here back on its next take, over setup: not done while it is on */
+      if (await cloudOn3()) { setMsg3('Your setup answers stay kept. Going back to them needs the cloud copy off first, or it brings this money back.', true); return; }
+      const names = setupNames3(x.draft);
+      question('aside', `Go back to your setup answers${names.length ? ` (${names.join(', ')})` : ''}?${E3.book ? ' The money here now is kept first as a whole copy, with its own Put it back, and setup' : ' Setup'} opens where you left it.`, 'Put it back', () => backAside3(at));
+    });
+  }
   for (const li of el.querySelectorAll('[data-kept]')) {
     const id = li.dataset.kept;
     li.querySelector('[data-back]').addEventListener('click', async () => {
       const k = await E3.rec(id);
       if (!k || !k.copy) { setMsg3('That kept copy is gone. Nothing changed.', true); return; }
-      question('back', backWords3(BACKUP3.since(k.copy, E3.book), await cloudOn3()), 'Put it back', async () => {
+      const words = E3.book ? backWords3(BACKUP3.since(k.copy, E3.book), await cloudOn3()) : 'Put this copy back? This puts that money on this device.' + (await asideWords3());
+      question('back', words, 'Put it back', async () => {
         const ok = await restoreBook3(k.copy, 'Before a kept copy was put back', { back: true });
         setMsg3(ok ? 'Put back. The money that was here a moment ago is kept too.' : 'This could not be saved on this device. Nothing changed.', !ok);
         paintKept3();
@@ -273,6 +310,25 @@ async function paintKept3() {
       });
     });
   }
+}
+/* [qc-data-safety run 5 CONFUSING 4; M61, M14] Put it back of setup answers put aside by a restore: the book here is kept
+   whole first (its own Put it back), the answers go back to the setup draft, then this device goes back to no book (E3.unkeep,
+   the store's discard) and setup opens with them. Each step that fails undoes the ones before it: nothing changes */
+async function backAside3(at) {
+  const fail = () => { setMsg3('This could not be done on this device. Nothing changed.', true); paintKept3(); };
+  const kept = E3.book ? await keepCopy3('Before your setup answers were put back') : 'none';
+  if (!kept) return fail();
+  const entry = await unasideSetup3(at);
+  if (!entry) { if (kept !== 'none') await E3.rec('drop', kept); return fail(); }
+  if (E3.book && !(await E3.unkeep())) {
+    await asideSetup3();   // the same draft, back aside (under a new time)
+    if (kept !== 'none') await E3.rec('drop', kept);
+    return fail();
+  }
+  closeSet3();
+  renderHome3();
+  await openSetup3();
+  msg3('Your setup answers are back. The money that was here is kept in Settings, with Put it back');
 }
 /* [C9, S23] the book was replaced or joined while Settings was open (a restore, Put it back, the cloud copy): the sheet's
    own Money card and Save button are drawn again at once, and Receipts and Plan are drawn again when the sheet closes

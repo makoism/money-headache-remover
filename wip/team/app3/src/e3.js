@@ -166,6 +166,19 @@ const E3 = (() => {
       });
     } catch (e) { return false; }
   }
+  /* recTurn(fn): the whole device record as stored now goes through fn, in the same turn, one tab at a time; fn gives
+     { next, out }: next is written whole (null writes nothing), and out is the answer (false when the write failed).
+     For a move between two keys that must never be half done (the setup draft put aside before a restore, settings3.js) */
+  async function recTurn(fn) {
+    if (mode === 'try' || !store) return false;
+    try {
+      return await devTurn(async () => {
+        const r = fn(Object.assign({}, (await store.getDevice()) || {})) || {};
+        if (r.next && !(await store.putDevice(r.next))) return false;
+        return r.out === undefined ? true : r.out;
+      });
+    } catch (e) { return false; }
+  }
   async function rec(key, value) {
     if (mode === 'try' || !store) return value === undefined ? null : false;
     try {
@@ -239,6 +252,19 @@ const E3 = (() => {
     book = null; mode = 'none'; hold = false;
     return true;
   }
+  /* [qc-data-safety run 5 CONFUSING 4; M61, M14] unkeep(): back to no book, the way the fill's Undo goes (the store's
+     discard: the book and its records go, the device record and the kept whole copies stay, another tab is told it is
+     gone and a tab that saved since is refused, not written over). Only for Put it back of setup answers put aside by a
+     restore, after the caller kept this book whole (rec('copy')), and never with the cloud copy on (the caller's rule). */
+  async function unkeep() {
+    if (mode !== 'kept' || !store || readOnly) return false;
+    const r = await store.discard();
+    if (!r.ok) return false;
+    if (hold) { try { await devTurn(async () => { const d = (await store.getDevice()) || {}; delete d.fillHold; await store.putDevice(d); }); } catch (e) { /* the mark goes with the next fill */ } }
+    book = null; mode = 'none'; hold = false;
+    try { root3.dispatchEvent(new CustomEvent('burrow3:book')); } catch (e) { /* a listener's own fault */ }   // Undo bars and typing kept for the old book go
+    return true;
+  }
   async function release() {
     if (!hold) return false;
     hold = false;
@@ -248,6 +274,6 @@ const E3 = (() => {
   }
   /* is a the day before b (two YYYY-MM-DD days) */
   const dayBefore = (a, b) => BurrowEngine.dates.dayNum(b) - BurrowEngine.dates.dayNum(a) === 1;
-  return { today, setToday, useTry, leaveTry, start, fill, discard, release, held: () => hold, told, dayBefore, newId, load, view, nameOf, occName, lastCheckOf, curOf, home, put, replace, rec, recEdit, onSaved: f => savedFns.push(f),
+  return { today, setToday, useTry, leaveTry, start, fill, discard, unkeep, release, held: () => hold, told, dayBefore, newId, load, view, nameOf, occName, lastCheckOf, curOf, home, put, replace, rec, recEdit, recTurn, onSaved: f => savedFns.push(f),
     get book() { return book; }, get mode() { return mode; }, get startWhy() { return startWhy; } };
 })();

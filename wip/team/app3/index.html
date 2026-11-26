@@ -8691,6 +8691,19 @@ const E3 = (() => {
       });
     } catch (e) { return false; }
   }
+  /* recTurn(fn): the whole device record as stored now goes through fn, in the same turn, one tab at a time; fn gives
+     { next, out }: next is written whole (null writes nothing), and out is the answer (false when the write failed).
+     For a move between two keys that must never be half done (the setup draft put aside before a restore, settings3.js) */
+  async function recTurn(fn) {
+    if (mode === 'try' || !store) return false;
+    try {
+      return await devTurn(async () => {
+        const r = fn(Object.assign({}, (await store.getDevice()) || {})) || {};
+        if (r.next && !(await store.putDevice(r.next))) return false;
+        return r.out === undefined ? true : r.out;
+      });
+    } catch (e) { return false; }
+  }
   async function rec(key, value) {
     if (mode === 'try' || !store) return value === undefined ? null : false;
     try {
@@ -8764,6 +8777,19 @@ const E3 = (() => {
     book = null; mode = 'none'; hold = false;
     return true;
   }
+  /* [qc-data-safety run 5 CONFUSING 4; M61, M14] unkeep(): back to no book, the way the fill's Undo goes (the store's
+     discard: the book and its records go, the device record and the kept whole copies stay, another tab is told it is
+     gone and a tab that saved since is refused, not written over). Only for Put it back of setup answers put aside by a
+     restore, after the caller kept this book whole (rec('copy')), and never with the cloud copy on (the caller's rule). */
+  async function unkeep() {
+    if (mode !== 'kept' || !store || readOnly) return false;
+    const r = await store.discard();
+    if (!r.ok) return false;
+    if (hold) { try { await devTurn(async () => { const d = (await store.getDevice()) || {}; delete d.fillHold; await store.putDevice(d); }); } catch (e) { /* the mark goes with the next fill */ } }
+    book = null; mode = 'none'; hold = false;
+    try { root3.dispatchEvent(new CustomEvent('burrow3:book')); } catch (e) { /* a listener's own fault */ }   // Undo bars and typing kept for the old book go
+    return true;
+  }
   async function release() {
     if (!hold) return false;
     hold = false;
@@ -8773,7 +8799,7 @@ const E3 = (() => {
   }
   /* is a the day before b (two YYYY-MM-DD days) */
   const dayBefore = (a, b) => BurrowEngine.dates.dayNum(b) - BurrowEngine.dates.dayNum(a) === 1;
-  return { today, setToday, useTry, leaveTry, start, fill, discard, release, held: () => hold, told, dayBefore, newId, load, view, nameOf, occName, lastCheckOf, curOf, home, put, replace, rec, recEdit, onSaved: f => savedFns.push(f),
+  return { today, setToday, useTry, leaveTry, start, fill, discard, unkeep, release, held: () => hold, told, dayBefore, newId, load, view, nameOf, occName, lastCheckOf, curOf, home, put, replace, rec, recEdit, recTurn, onSaved: f => savedFns.push(f),
     get book() { return book; }, get mode() { return mode; }, get startWhy() { return startWhy; } };
 })();
 /* ---------- act3: the one door for every write in app3 (SCHEMA_V3 section 0; DECISIONS_ROUND2 H6, D2, BD4) ----------
@@ -11657,6 +11683,34 @@ const draftWrite3 = v => (draftQ3 = draftQ3.then(() => E3.rec('setup', v), () =>
    changed (the sections in `touched`, saved or taken back; the boxes typed and not saved) on the draft as stored now,
    so a section another tab saved is never wiped. E3.recEdit reads and writes in one turn, one tab at a time */
 const draftEdit3 = fn => (draftQ3 = draftQ3.then(() => E3.recEdit('setup', fn), () => E3.recEdit('setup', fn)));
+/* ---- [qc-data-safety run 5 CONFUSING 4; M61, M14] the draft put aside by a restore ----
+   A restore on a device with no book (settings3.js replaceBook3) makes a book, and a draft is only ever read while there
+   is none, so the saved answers would sit unseen. Before the restore writes, the draft is moved whole, in one turn of the
+   device record, to the device record's `setupAside` list ({ at, draft }, newest first); Settings' kept list shows each
+   with Put it back, which moves it back to `setup` (and setup opens with it). Both go through the draft's own queue, so
+   a write of the draft already asked lands first. */
+const setupNames3 = draft => SEC3.filter(([sec]) => draft && draft.sections && draft.sections[sec]).map(([, name]) => name);
+/* the answers a restore would put aside: { names, typed } or null when there is no draft */
+async function setupToAside3() {
+  const d = await E3.rec('setup');
+  return d && (d.sections || d.typed) && (Object.keys(d.sections || {}).length || Object.keys(d.typed || {}).length) ? { names: setupNames3(d), typed: !!Object.keys(d.typed || {}).length } : null;
+}
+/* gives the entry put aside, null when there was no draft, false when it could not be written */
+const asideSetup3 = () => (draftQ3 = draftQ3.then(() => null, () => null).then(() => E3.recTurn(d => {
+  if (!d.setup) return { next: null, out: null };
+  const entry = { at: E3.told(), draft: d.setup }, next = Object.assign({}, d, { setupAside: [entry].concat(d.setupAside || []) });
+  delete next.setup;
+  return { next, out: entry };
+})));
+/* the entry at `at` back to the open draft (Put it back, or a restore that could not be saved); over a draft there now
+   it is refused (false), so nothing typed since is written over */
+const unasideSetup3 = at => (draftQ3 = draftQ3.then(() => null, () => null).then(() => E3.recTurn(d => {
+  const list = d.setupAside || [], entry = list.find(x => x.at === at);
+  if (!entry || d.setup) return { next: null, out: false };
+  const next = Object.assign({}, d, { setup: entry.draft, setupAside: list.filter(x => x !== entry) });
+  if (!next.setupAside.length) delete next.setupAside;
+  return { next, out: entry };
+})));
 const keepDraft3 = (sections, days, skip, kept, touched) => {
   const typed = setup3 && setup3.base ? typedNow3(sections, skip) : Object.assign({}, kept);
   if (skip) delete typed[skip];
@@ -12745,10 +12799,20 @@ async function keepCopy3(why, pin) {
   return (await E3.rec('copy', Object.assign({ copy: JSON.parse(JSON.stringify(E3.book)), why }, pin ? { pin: true } : {}))) || null;
 }
 /* replace this device's book; the old one is kept first when there is one. Gives true when saved. */
+/* [qc-data-safety run 5 CONFUSING 4; M61] with no book here, setup answers saved part way are put aside first (setup3.js
+   asideSetup3), and back as they were when the replace could not be saved. Setup open in this tab closes first, so what
+   is typed in it is kept with them */
 async function replaceBook3(next, why, pin) {
   const had = !!E3.book;
   if (had && !(await keepCopy3(why, pin))) return false;
+  let aside = null;
+  if (!had && typeof asideSetup3 === 'function') {
+    if (typeof setup3 !== 'undefined' && setup3) closeSetup3();
+    aside = await asideSetup3();
+    if (aside === false) return false;
+  }
   const ok = await E3.replace(next);
+  if (!ok && aside) await unasideSetup3(aside.at);
   if (ok && !had && typeof BurrowPersist === 'object') BurrowPersist.afterSetup().catch(() => {});   // the first book on this device [D7]
   if (ok) renderHome3();
   return ok;
@@ -12920,7 +12984,8 @@ async function readBackup3(file, code) {
   const nAhead = typeof rcAhead3 === 'function' ? rcAhead3(r.copy).length : 0;
   const aheadSay = nAhead ? ` ${nAhead === 1 ? '1 of them is' : nAhead + ' of them are'} dated after today. They do not count until their day, and Receipts lists them.` : '';
   const after = E3.book ? `<br>Anything you logged after this backup was made goes${on ? ', on every device' : ' from this device'}${s.n ? `: ${things3(s.n)} here now ${s.n === 1 ? 'is' : 'are'} not in it ${kinds3(s)}` : ''}.${s.changed ? ` ${things3(s.changed)} here now ${s.changed === 1 ? 'goes back to how the backup has it' : 'go back to how the backup has them'}.` : ''}${s.back && s.back.n ? ` ${things3(s.back.n)} in the backup and not here now ${s.back.n === 1 ? 'comes' : 'come'} back ${kinds3(s.back)}.` : ''} Put it back brings it back.` : '';
-  ask.innerHTML = `<p class="a3-warn" data-set="restoreask">${E3.book ? 'This replaces the money on this device with the backup. What is here now is kept, and Put it back brings it back.' : 'This puts the money from the backup on this device.'} The backup holds ${n} record${n === 1 ? '' : 's'}.${aheadSay}${others}${after}</p>
+  const asideSay = E3.book ? '' : await asideWords3();
+  ask.innerHTML = `<p class="a3-warn" data-set="restoreask">${E3.book ? 'This replaces the money on this device with the backup. What is here now is kept, and Put it back brings it back.' : 'This puts the money from the backup on this device.'}${asideSay} The backup holds ${n} record${n === 1 ? '' : 's'}.${aheadSay}${others}${after}</p>
     <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3BkGo">Restore it</button><button type="button" class="a3-btn" id="a3BkNo">Cancel</button></div>`;
   $('#a3BkGo').addEventListener('click', async () => {
     const ok = await restoreBook3(SET3.restore, 'Before a backup was restored');
@@ -12930,6 +12995,13 @@ async function readBackup3(file, code) {
     const save = $('#a3BkSave'); if (save) save.disabled = !E3.book;
   });
   $('#a3BkNo').addEventListener('click', () => { SET3.restore = null; ask.innerHTML = ''; });
+}
+/* [qc-data-safety run 5 CONFUSING 4] with no book here: the setup answers saved part way that a restore puts aside,
+   named by section, or '' when there are none */
+async function asideWords3() {
+  const a = typeof setupToAside3 === 'function' ? await setupToAside3() : null;
+  if (!a) return '';
+  return a.names.length ? ` Your saved setup answers (${a.names.join(', ')}) are put aside, and Put it back brings them back.` : ' What you typed in setup is put aside, and Put it back brings it back.';
 }
 /* the one line before Put it back and Drop it: how many things, in which kinds (counts from BACKUP3.since, no sums) */
 const things3 = n => (n === 1 ? '1 thing' : n + ' things');
@@ -12963,29 +13035,48 @@ async function undrop3() {
 async function paintKept3() {
   const el = $('#a3BkKept'); if (!el) return;
   const list = (await E3.rec('copies')) || [], others = (await cloudOn3()) ? ' ' + OTHERS3 : '';
+  const asides = (await E3.rec('setupAside')) || [];
   if (!SET3.open) return;
   const wire = () => { const u = $('#a3BkUndrop'); if (u) u.addEventListener('click', undrop3); };
-  if (!list.length) { el.innerHTML = dropped3(); wire(); return; }
-  el.innerHTML = `${dropped3()}<p class="a3-sub" data-set="keptnote">The money that was here before each restore is kept. Put it back brings that money back.${others}</p>
-    <ul class="a3-rows">${list.map((c, i) => `<li data-kept="${esc3(c.id)}"${c.pin ? ' data-pin="1"' : ''}><span data-set="kept">${esc3(c.why)}, ${esc3(day3(c.at.slice(0, 10), E3.today().slice(0, 4)))} ${esc3(c.at.slice(11, 16))}${c.pin ? '. Kept until you drop it' : ''}</span>
-      <button type="button" class="a3-btn" data-back${i === 0 ? ' id="a3BkBack"' : ''}>Put it back</button>${c.pin ? '<button type="button" class="a3-btn" data-drop>Drop it</button>' : ''}</li>`).join('')}</ul>
+  if (!list.length && !asides.length) { el.innerHTML = dropped3(); wire(); return; }
+  const when = at => `${esc3(day3(at.slice(0, 10), E3.today().slice(0, 4)))} ${esc3(at.slice(11, 16))}`;
+  /* [qc-data-safety run 5 CONFUSING 4] setup answers a restore put aside: one row each, with Put it back */
+  const asideRows = asides.length ? `<p class="a3-sub" data-set="asidenote">Setup answers you had saved before a restore are kept. Put it back opens setup with them.</p>
+    <ul class="a3-rows">${asides.map(x => `<li data-aside="${esc3(x.at)}"><span data-set="aside">Setup answers from before the restore, ${when(x.at)}</span>
+      <button type="button" class="a3-btn" data-asideback>Put it back</button></li>`).join('')}</ul>` : '';
+  const keptRows = list.length ? `<p class="a3-sub" data-set="keptnote">The money that was here before each restore is kept. Put it back brings that money back.${others}</p>
+    <ul class="a3-rows">${list.map((c, i) => `<li data-kept="${esc3(c.id)}"${c.pin ? ' data-pin="1"' : ''}><span data-set="kept">${esc3(c.why)}, ${when(c.at)}${c.pin ? '. Kept until you drop it' : ''}</span>
+      <button type="button" class="a3-btn" data-back${i === 0 ? ' id="a3BkBack"' : ''}>Put it back</button>${c.pin ? '<button type="button" class="a3-btn" data-drop>Drop it</button>' : ''}</li>`).join('')}</ul>` : '';
+  el.innerHTML = `${dropped3()}${asideRows}${keptRows}
     <div id="a3BkKeptAsk"></div>`;
   wire();
   const ask = $('#a3BkKeptAsk');
   const question = (name, words, yes, go) => {
-    const id = name === 'back' ? 'a3BkBack' : 'a3BkDrop';
+    const id = { back: 'a3BkBack', drop: 'a3BkDrop', aside: 'a3BkAside' }[name];
     ask.innerHTML = `<p class="a3-warn" data-set="${name}ask">${esc3(words)}</p>
       <div class="a3-actions"><button type="button" class="a3-btn solid" id="${id}Go">${yes}</button><button type="button" class="a3-btn" id="${id}No">Cancel</button></div>`;
     $('#' + id + 'Go').addEventListener('click', go);
     $('#' + id + 'No').addEventListener('click', () => { ask.innerHTML = ''; });
     $('#' + id + 'No').focus();
   };
+  for (const li of el.querySelectorAll('[data-aside]')) {
+    const at = li.dataset.aside;
+    li.querySelector('[data-asideback]').addEventListener('click', async () => {
+      const x = ((await E3.rec('setupAside')) || []).find(a => a.at === at);
+      if (!x) { setMsg3('Those setup answers are gone. Nothing changed.', true); paintKept3(); return; }
+      /* the cloud copy would bring the money here back on its next take, over setup: not done while it is on */
+      if (await cloudOn3()) { setMsg3('Your setup answers stay kept. Going back to them needs the cloud copy off first, or it brings this money back.', true); return; }
+      const names = setupNames3(x.draft);
+      question('aside', `Go back to your setup answers${names.length ? ` (${names.join(', ')})` : ''}?${E3.book ? ' The money here now is kept first as a whole copy, with its own Put it back, and setup' : ' Setup'} opens where you left it.`, 'Put it back', () => backAside3(at));
+    });
+  }
   for (const li of el.querySelectorAll('[data-kept]')) {
     const id = li.dataset.kept;
     li.querySelector('[data-back]').addEventListener('click', async () => {
       const k = await E3.rec(id);
       if (!k || !k.copy) { setMsg3('That kept copy is gone. Nothing changed.', true); return; }
-      question('back', backWords3(BACKUP3.since(k.copy, E3.book), await cloudOn3()), 'Put it back', async () => {
+      const words = E3.book ? backWords3(BACKUP3.since(k.copy, E3.book), await cloudOn3()) : 'Put this copy back? This puts that money on this device.' + (await asideWords3());
+      question('back', words, 'Put it back', async () => {
         const ok = await restoreBook3(k.copy, 'Before a kept copy was put back', { back: true });
         setMsg3(ok ? 'Put back. The money that was here a moment ago is kept too.' : 'This could not be saved on this device. Nothing changed.', !ok);
         paintKept3();
@@ -13003,6 +13094,25 @@ async function paintKept3() {
       });
     });
   }
+}
+/* [qc-data-safety run 5 CONFUSING 4; M61, M14] Put it back of setup answers put aside by a restore: the book here is kept
+   whole first (its own Put it back), the answers go back to the setup draft, then this device goes back to no book (E3.unkeep,
+   the store's discard) and setup opens with them. Each step that fails undoes the ones before it: nothing changes */
+async function backAside3(at) {
+  const fail = () => { setMsg3('This could not be done on this device. Nothing changed.', true); paintKept3(); };
+  const kept = E3.book ? await keepCopy3('Before your setup answers were put back') : 'none';
+  if (!kept) return fail();
+  const entry = await unasideSetup3(at);
+  if (!entry) { if (kept !== 'none') await E3.rec('drop', kept); return fail(); }
+  if (E3.book && !(await E3.unkeep())) {
+    await asideSetup3();   // the same draft, back aside (under a new time)
+    if (kept !== 'none') await E3.rec('drop', kept);
+    return fail();
+  }
+  closeSet3();
+  renderHome3();
+  await openSetup3();
+  msg3('Your setup answers are back. The money that was here is kept in Settings, with Put it back');
 }
 /* [C9, S23] the book was replaced or joined while Settings was open (a restore, Put it back, the cloud copy): the sheet's
    own Money card and Save button are drawn again at once, and Receipts and Plan are drawn again when the sheet closes
