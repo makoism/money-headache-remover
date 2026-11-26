@@ -41,7 +41,17 @@
   const noPay = w => !LA.lookahead(w.book, w.today).period;
   /* [E1b, M13, M23] the account that pays a card, a loan or a bill: a live bank, cash or e-wallet of your own (a bill may be
      paid from a card too), not closed */
-  const payerOk = (w, acct, card) => { const y = (w.book.accounts || []).find(z => live(z) && z.id === acct); if (!y || y.closed || !(OWN_KINDS[y.type] || (card && y.type === 'card'))) bad('Pick the account it is paid from'); return acct; };
+  /* [coordinator 18 ruling, 26 Nov, M91] a bank or an e-wallet pays a card, a loan or a bill as usual; cash only once the
+     person said yes to the cash question (cash: true), on the screens and in the assistant. Asked only when the payer is
+     changed to cash, so an old book with cash as a payer keeps working with no nag */
+  const CASHY = { cash: 1, wallet: 1 };
+  const cashQ = name => `Do you pay this in cash, at a shop or an ATM? It will come off ${name} each time`;
+  const payerOk = (w, acct, card, cash) => {
+    const y = (w.book.accounts || []).find(z => live(z) && z.id === acct);
+    if (!y || y.closed || !(OWN_KINDS[y.type] || (card && y.type === 'card'))) bad('Pick the account it is paid from');
+    if (CASHY[y.type] && cash !== true) bad(cashQ(y.name));
+    return acct;
+  };
   /* [E1b] a new paying account (or weekend rule) counts from the next payment on. One gone by and not ticked off would
      move with it, though it may already have left the old account: it is ticked off first */
   const notTicked = day => { if (day) bad(`The payment of ${SN3.dayLabel(day, false)} is not ticked off yet. Tick it at Check your bank first: a change of account counts from the next one`); };
@@ -124,7 +134,7 @@
   }
   function addBill(w, x) {
     const name = nameOk(x.name), a = amountOk(x.amount, 'the amount'), rule = billRule(x), acct = x.acct || mainOf(w);
-    if (!(w.book.accounts || []).some(y => live(y) && y.id === acct)) bad('Pick the account it is paid from');
+    if (x.acct) payerOk(w, acct, true, x.cash); else if (!(w.book.accounts || []).some(y => live(y) && y.id === acct)) bad('Pick the account it is paid from');
     sameName(A3.listOf(w.book, 'schedules').filter(s => s.kind === 'bill'), name);
     const id = w.add('schedules', { kind: 'bill', name, acct, cur: home(w), shift: x.shift || 'after', from: x.from || w.today,
       rules: [{ from: null, rule }], steps: [{ from: null, amount: a }] });
@@ -176,7 +186,7 @@
     const toNone = !!rhythm && rhythm.every === 'none', fromNone = !!rhythm && wasNone;
     if (x.name != null && x.name !== s.name) { ch.name = nameOk(x.name); sameName(A3.listOf(w.book, 'schedules').filter(y => y.kind === s.kind), ch.name, id); }
     /* [E1b, M13] a bill's paying account, from its next one */
-    if (s.kind === 'bill' && x.acct != null && x.acct !== '' && x.acct !== s.acct) { ch.acct = payerOk(w, x.acct, true); notTicked(((v.outstanding || [])[0] || {}).land); }
+    if (s.kind === 'bill' && x.acct != null && x.acct !== '' && x.acct !== s.acct) { ch.acct = payerOk(w, x.acct, true, x.cash); notTicked(((v.outstanding || [])[0] || {}).land); }
     let from = x.from || v.changeFrom;
     if (s.kind === 'income' && x.amount === 0) bad(PAY_NEEDS_AMOUNT);   // [BL1] a pay always has an amount
     if (fromNone && x.amount == null && v.amount == null) bad(PAY_NEEDS_AMOUNT);
@@ -422,7 +432,7 @@
   /* ---- loans, and the days of a card (each owns its payment day [B5, E6]) ---- */
   function addLoan(w, x) {
     const name = nameOk(x.name), owed = amountOk(x.owed, 'what is owed'), pay = amountOk(x.amount, 'the usual payment'), d = dayOfMonth(x.payDay);
-    const payFrom = payerOk(w, x.payFrom || mainOf(w));
+    const payFrom = payerOk(w, x.payFrom || mainOf(w), false, x.cash);
     sameName((w.book.accounts || []), name);
     const id = w.add('accounts', { name, type: 'loan', cur: home(w), owner: null, payDay: d, shift: x.shift || 'after', payFrom, amount: pay });
     w.add('events', { k: 'open', acct: id, date: w.today, a: owed });
@@ -439,7 +449,7 @@
     const cutDay = x.cutDay == null || x.cutDay === '' || x.cutDay === 'not sure' ? null : x.cutDay === 'last' ? 'last' : dayOfMonth(x.cutDay);
     const shift = x.shift == null ? 'after' : x.shift;
     if (!SHIFTS[shift]) bad('Pick what happens on a weekend or holiday');
-    const payFrom = payerOk(w, x.payFrom || mainOf(w));
+    const payFrom = payerOk(w, x.payFrom || mainOf(w), false, x.cash);
     sameName((w.book.accounts || []), name);
     const id = w.add('accounts', { name, type: 'card', cur: home(w), owner: null, inFull: true, cutDay, payDay: d, payMonths: 1, shift, payFrom });
     w.add('events', { k: 'open', acct: id, date: w.today, a: x.owed });
@@ -454,7 +464,7 @@
     if (a.type === 'loan' && x.amount != null && x.amount !== a.amount) ch.amount = amountOk(x.amount, 'the usual payment');
     if (a.type === 'card' && x.cutDay !== undefined && x.cutDay !== a.cutDay) ch.cutDay = x.cutDay === null ? null : dayOfMonth(x.cutDay);
     /* [E1b, M13, M23] the account that pays it and its weekend rule, from the next payment on */
-    if (x.payFrom != null && x.payFrom !== '' && x.payFrom !== (a.payFrom || mainOf(w))) ch.payFrom = payerOk(w, x.payFrom);
+    if (x.payFrom != null && x.payFrom !== '' && x.payFrom !== (a.payFrom || mainOf(w))) ch.payFrom = payerOk(w, x.payFrom, false, x.cash);
     if (x.shift != null && x.shift !== '' && x.shift !== (a.shift || 'after')) { if (!SHIFTS[x.shift]) bad('Pick what happens on a weekend or holiday'); ch.shift = x.shift; }
     if (ch.payFrom || ch.shift) { const r = LA.lookahead(w.book, w.today), k = (a.type === 'card' ? r.cards : r.owed)[id] || {}; notTicked(((k.overdue || [])[0] || {}).payment_date); }
     if (!Object.keys(ch).length) bad('Nothing changed');
@@ -714,7 +724,7 @@
     return id;
   }
 
-  const api = { addPay, addAccount, changeAccount, closeAccount, closeWords, reopenWords, reopenAccount, removeAccount, payOff, setKeep, setCountry, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, removeSchedule, addGoal, changeGoal, setAside, takeOut, removeGoal, addLoan, addCard, changeOwed, closeLoan };
+  const api = { cashQ, addPay, addAccount, changeAccount, closeAccount, closeWords, reopenWords, reopenAccount, removeAccount, payOff, setKeep, setCountry, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, removeSchedule, addGoal, changeGoal, setAside, takeOut, removeGoal, addLoan, addCard, changeOwed, closeLoan };
   if (node) module.exports = api;
   else root.PLAN3W = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
