@@ -239,7 +239,7 @@ const shown = c => S.canon(Object.assign(Object.fromEntries(LISTS.map(k => [k, (
       const out = Bk.restamp(file, A3.copy, { now: '2026-12-07T10:00:00.000+09:00', by: 'dsk001', day: '2026-12-07', also: [A3.dev.base] });
       ck(what + ' restored: this device holds it and nothing more', has(out) === has(file), has(out).slice(0, 300));
       const g = ((out.imports || {}).cats || {})['k:shop a'];
-      ck(what + ': a lesson added after it is kept, marked gone, with the new change time and this device', !!g && g.gone === '2026-12-07' && g.v === 'transport' && g.by === 'dsk001' && g.at === out.accounts[0].at, JSON.stringify(g));
+      ck(what + ': a lesson added after it is kept, marked gone (v null, its value in before), with the new change time and this device', !!g && g.gone === '2026-12-07' && g.v === null && g.before === 'transport' && g.by === 'dsk001' && g.at === out.accounts[0].at, JSON.stringify(g));
       A3 = await s3({ copy: out, dev: A3.dev });
       ck(what + ': after the next send this device still holds it and nothing more', A3.r.pushed && has(A3.copy) === has(file), has(A3.copy).slice(0, 300));
       B3 = await s3(B3);
@@ -289,7 +289,9 @@ const shown = c => S.canon(Object.assign(Object.fromEntries(LISTS.map(k => [k, (
     const file = clone(BOOK); delete file.home.mode;
     const out = Bk.restamp(file, now, { now: '2026-12-07T10:00:00.000+09:00', by: 'dsk001', day: '2026-12-07' });
     ck('restore: home.mode set after the backup is kept marked gone', !!out.home.mode && !!out.home.mode.gone, JSON.stringify(out.home.mode));
-    ck('restore: every reader reads home.mode as the backup has it (not set), never the gone value', L.fieldValue(out.home.mode) === L.fieldValue(file.home.mode), JSON.stringify(L.fieldValue(out.home.mode)));
+    ck('restore: every reader reads home.mode as the backup has it (not set), never the gone value', L.fieldValue(out.home.mode) == null && L.ctx(out, '2026-12-07').wallet === false, JSON.stringify(L.fieldValue(out.home.mode)));
+    const back = Bk.restamp(now, out, { now: '2026-12-07T10:30:00.000+09:00', by: 'dsk001', day: '2026-12-07' });
+    ck('Put it back: home.mode is wallet again and read as wallet, with no gone mark', L.fieldValue(back.home.mode) === 'wallet' && !back.home.mode.gone && L.ctx(back, '2026-12-07').wallet === true, JSON.stringify(back.home.mode));
     for (const k of ['country', 'main']) {
       const f2 = clone(BOOK); delete f2.home[k];
       const o2 = Bk.restamp(f2, clone(BOOK), { now: '2026-12-07T10:00:00.000+09:00', by: 'dsk001', day: '2026-12-07' });
