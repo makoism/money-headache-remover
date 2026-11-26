@@ -35,6 +35,12 @@ async function opened(p) { await p.goto(T.URL0 + '?today=' + DAY); await T.w(700
     }
     const said = await p2.evaluate(() => document.body.innerText);
     ck('tab 2 says the money was set up in another tab, and that what was typed there was not saved', /Your money was set up in another tab, so this tab shows it now\. What you typed here was not saved/.test(said), said.slice(0, 300));
+    /* [qc-data-safety run 5 CONFUSING 2] the line stays until tapped away (a tab in the background is found later) */
+    await T.w(4000);
+    const later = await p2.evaluate(() => document.body.innerText);
+    ck('tab 2: the line is still there 4 s later', /Your money was set up in another tab/.test(later), later.slice(0, 300));
+    await p2.evaluate(() => { const x = [...document.querySelectorAll('.burrow-msg button')].find(b => b.textContent === 'Close'); if (x) x.click(); }); await T.w(300);
+    ck('tab 2: Close takes the line away', !/Your money was set up in another tab/.test(await p2.evaluate(() => document.body.innerText)));
     ck('tab 2 shows the finished book: Main bank 286,000', JSON.stringify(await bankOnHome(p2)) === '[286000]', JSON.stringify(await bankOnHome(p2)));
     for (const [n, p] of [['tab 1', p1], ['tab 2', p2]]) {
       await p.reload(); await T.w(900);
@@ -91,7 +97,8 @@ async function opened(p) { await p.goto(T.URL0 + '?today=' + DAY); await T.w(700
         await p2.$eval('#a3SetupSave', e => e.click()).catch(() => {}); await T.w(900);
       }
       const said = await p2.evaluate(() => document.body.innerText);
-      ck('restore: tab 2 says the money was set up in another tab', /Your money was set up in another tab, so this tab shows it now/.test(said), said.slice(0, 300));
+      /* [qc-data-safety run 5 CONFUSING 3] a restore is said as a restore, never as "set up" and "not saved" */
+      ck('restore: tab 2 says a backup was restored in another tab and what was entered here was replaced', /A backup was restored in another tab, so this tab shows it now\. What you had entered here in setup was replaced/.test(said) && !/set up in another tab|was not saved/.test(said), said.slice(0, 300));
       for (const [n, p] of [['tab 1', p1], ['tab 2', p2]]) {
         await p.bringToFront(); await p.goto(T.URL0 + '?today=' + DAY); await T.w(900);
         const got = JSON.stringify(await bankOnHome(p));
