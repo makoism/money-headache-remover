@@ -215,6 +215,13 @@ const ctxOf = h => ({ book: h.book, today: DAY });
     eq([row('safe').before, row('safe').after], [27096, 25096]);
     eq([row('free').label, row('free').before, row('free').after], ['Free to spend left', 27096, 25096]);
   });
+  /* [coordinator 18, a late pay; M3, M7, M51] on 12 Dec the 10 Dec pay is not ticked: the old Food still holds its money,
+     so the assistant is given it with a ref, in words that never name a passed day as the future */
+  await t('[ended line, late pay] on 12 Dec the summary gives the old Food: "26,666 left until your pay comes in, then it ends"', async () => {
+    const { endedFoodBook, FOOD } = require('./e3_act_book.js'), S2 = K.summary(endedFoodBook(), '2026-12-12');
+    const oldRef = Object.keys(S2.refs).find(k => S2.refs[k] === FOOD), row = S2.text.split('\n').find(l => l.startsWith(oldRef + ' | ')) || '';
+    ok(oldRef && row.startsWith(oldRef + ' | Food (ended) |') && row.endsWith('¥26,666 left until your pay comes in, then it ends'), S2.text);
+  });
   /* [qc-foundation second confirm on monthrule, coordinator 18; M3, M4, M7, M27, M31, M51] Mako is paid on the 10th:
      Food ended on 22 Nov still holds 26,666 this pay period, so the assistant is given both Foods with refs, and a
      receipt to the old one on 25 Nov goes through act3 and comes off it (26,666 to 21,666) */

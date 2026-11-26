@@ -71,4 +71,26 @@ for (const [what, payAt, endAt] of [['ticks his pay, then ends Food', '2026-12-1
     }
   });
 }
+/* [coordinator 18, a late pay; M7, M31, M46, M51] an ended line closes when its period really ends: while the pay that
+   ends it is late and not ticked, it stays open and holds its money (as safe to spend does), and its words never name a
+   passed day as the future. Once the pay is ticked, a spend dated after the pay's day is refused */
+const ST = require('../../screens/status.js');
+t('Mako on 12 Dec, the 10 Dec pay not ticked: the old Food stays open, a receipt dated 11 Dec comes off it', () => {
+  const b = endedFoodBook(), bank = b.home.main.v.acct;
+  b.events.push({ id: 'k7m2qa-f3n8p1x6wd-9980', date: '2026-12-11', told: '2026-12-12T12:00:00.000+09:00', at: '2026-12-12T12:00:00.000+09:00', by: 'k7m2qa', k: 'spend', acct: bank, a: 5000, line: FOOD, src: { type: 'typed' } });
+  for (const day of ['2026-12-12', '2026-12-30']) {
+    const r = LA.lookahead(b, day), old = lineOf(r, FOOD);
+    eq([r.period.waitingForPay, old.left, old.closes, old.closesWithPay, LA.lineLastDay(r, FOOD)], [true, 21666, null, true, null], day);
+    eq(['2026-12-10', '2026-12-11', day].map(d => LA.lineTakes(r, FOOD, d)), [true, true, true], day);
+    eq(ST.endedLeft(old, x => x.toLocaleString('en-US')), '21,666 left until your pay comes in, then it ends', day);
+  }
+  const at = '2026-12-12T13:00:00.000+09:00';
+  payDec10(b, at);
+  const r = LA.lookahead(b, '2026-12-12'), old = lineOf(r, FOOD);
+  eq([r.period.start, old.closes, old.closesWithPay, LA.lineLastDay(r, FOOD)], ['2026-12-10', '2026-12-10', undefined, '2026-12-09']);
+  eq(['2026-12-09', '2026-12-11'].map(d => LA.lineTakes(r, FOOD, d)), [true, false]);
+});
+t('a line still open says nothing ended; a line that ended with its pay not yet ticked says so', () => {
+  eq([ST.endedLeft({ left: 5, closes: null }, String), ST.endedLeft({ left: 5, closes: null, closesWithPay: true }, String)], ['', '5 left until your pay comes in, then it ends']);
+});
 done('line_closes');
