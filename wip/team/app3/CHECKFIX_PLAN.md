@@ -79,3 +79,8 @@ Build order: lane/amounthist (LANE L) is merged into this branch first; then thi
 - FD2 money in (coordinator 17, ruled): every removal of a money record (spend, any money in, own move, logged bill payment) writes `was` (LANE L, amounthist); only removeCheck passes "removed with its check-in, no history" to w.remove; every other removal of a money record writes `was` (LANE L told, amounthist).
 - Where the gap went, cleared: on the Checks sheet "Change" offers the lines and "Nothing, back to Free to spend" (place null); the assistant's change_check takes place: null the same way. On an old book (a fixed gap spend) the change edits that spend's line.
 - The join keeps fillerPlace per account, as it does `settled` (sync.js:202), so two devices changing the place for different accounts keep both. Test.
+
+## After confirm 3 (PASS, qc-foundation_confirm3.md): for the builder
+- B1: a revived check is live only in the engine's copy. changeCheck on a revived check first restores every record with its goneBy (w.restore, same step), then edits; the Checks list reads the revived book. Test: "C1 came back on the phone, the person fixes its figure".
+- B2: add the FB test: C1 latest, its period closed because the pay was logged another way, fixed in the next period: the closed period stays 17,600, the plus 54,000 lands in the new period.
+- B3: reopenAccount writes no check (drop it from the prev list); the loan check is built on lane/controls-6 and writes prev through CK.checkIn.
