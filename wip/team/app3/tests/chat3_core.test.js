@@ -902,6 +902,10 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     eq(K.setupShut(r6.state, h3.book), true, 'a book from the screens closes them');
     ok(lastNote(r6).some(n => /finished on the screens/.test(n)), 'the note is said for this book');
   });
+  await t('[qc-controls run 1 blocker 2] the fill step tells the AI to say where loans, goals and budget lines are added', async () => {
+    const g = K.GUIDE.find(x => x.key === 'fill').ask;
+    ok(/loans, goals and budget lines/i.test(g) && /Plan/.test(g) && /Add a loan/.test(g), g);
+  });
   console.log(bad ? `chat3_core: ${bad} of ${n} FAILED` : `chat3_core: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })();

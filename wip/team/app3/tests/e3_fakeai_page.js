@@ -39,6 +39,9 @@ const fig = (p, sel) => p.$eval(sel, e => Number((e.dataset.amt !== undefined ? 
     await d.p.waitForTimeout(500);
     const safe = await fig(d.p, '#a3Home [data-fig=safe]'), bank = await fig(d.p, '#a3Home [data-card=bank] [data-fig=bank]');
     ck('MAKO_SETUP by chat: safe to spend 201,400, Main bank 286,000, every reply used', safe === MAKO_SETUP.safe && bank === MAKO_SETUP.bank && ai.left() === 0, JSON.stringify({ safe, bank, left: ai.left() }));
+    /* [qc-controls run 1 blocker 2, coordinator 16's ruling B] the Filled in card says where loans, goals and budget lines go */
+    const later = await d.p.$eval('[data-card=chat-fill] [data-chat=later]', e => e.textContent).catch(() => '');
+    ck('the Filled in card says loans, goals and budget lines are added on Plan, with the buttons', /Loans, goals and budget lines/.test(later) && /Plan/.test(later) && /Add a loan/.test(later) && /Add a goal/.test(later) && /Add a line/.test(later), later);
     all.push(...d.errs); await d.close();
   }
   {
