@@ -68,5 +68,38 @@ async function opened(p) { await p.goto(T.URL0 + '?today=' + DAY); await T.w(700
     } catch (e) { ck('chat: the check ran to its end', false, e.stack); }
     finally { await b.close(); }
   }
+  /* [qc-foundation point 7 on TABSETUP_PLAN] third case: tab 2 is on the setup screens while tab 1, with no book yet,
+     restores a backup file. The book the restore wrote is taken in by tab 2, and tab 2's setup never writes over it */
+  {
+    globalThis.window = globalThis; require('../../store/guard.js'); require('../../store/pack.js');
+    const Bk = require('../src/backup3.js'), path = require('path');
+    const { b, p: p1, errs } = await T.open({ profile: fs.mkdtempSync(os.tmpdir() + '/a3tabsetup-') });
+    try {
+      const tmp = fs.mkdtempSync(os.tmpdir() + '/a3tabbk-'), file = path.join(tmp, 'burrow-backup.json');
+      fs.writeFileSync(file, (await Bk.make(T.book())).text);
+      const want = JSON.stringify(T.L.lookahead(T.book(), DAY).accounts ? Object.values(T.L.lookahead(T.book(), DAY).accounts).filter(a => a.spendFrom).map(a => a.bank) : []);
+      const p2 = await b.newPage(); await p2.setViewport({ width: 390, height: 844 }); await opened(p2);
+      await p1.bringToFront(); await p1.goto(T.URL0 + '?today=' + DAY); await T.w(700);
+      await p1.click('#a3SetGo'); await T.w(300);
+      await (await p1.$('#a3BkFile')).uploadFile(file); await T.w(500);
+      await p1.click('#a3BkGo'); await T.w(900);
+      ck('restore: tab 1 restored the backup', /Restored/.test(await p1.$eval('#a3SetMsg', e => e.textContent).catch(() => '')));
+      await p2.bringToFront();
+      if (await p2.$('#s3Bank')) {
+        await typeIn(p2, '#s3BankName', 'Main bank').catch(() => {}); await typeIn(p2, '#s3Bank', '777000').catch(() => {});
+        await save(p2, 'bank').catch(() => {}); await T.w(500);
+        await p2.$eval('#a3SetupSave', e => e.click()).catch(() => {}); await T.w(900);
+      }
+      const said = await p2.evaluate(() => document.body.innerText);
+      ck('restore: tab 2 says the money was set up in another tab', /Your money was set up in another tab, so this tab shows it now/.test(said), said.slice(0, 300));
+      for (const [n, p] of [['tab 1', p1], ['tab 2', p2]]) {
+        await p.bringToFront(); await p.goto(T.URL0 + '?today=' + DAY); await T.w(900);
+        const got = JSON.stringify(await bankOnHome(p));
+        ck(`restore: ${n} after a reload shows the restored book, never 777,000`, !/777000/.test(got) && got === want, got + ' wanted ' + want);
+      }
+      ck('restore: no page errors', !errs.length, errs.join(' | '));
+    } catch (e) { ck('restore: the check ran to its end', false, e.stack); }
+    finally { await b.close(); }
+  }
   T.done('e3_tabsetup');
 })().catch(e => { console.log('FAIL crashed ' + e.stack); process.exit(1); });
