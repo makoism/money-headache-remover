@@ -3,8 +3,13 @@
 LANE N: session_01BFpKEYrXD1v3TRranaJ9WE (took over from LANE M session_01BFpKEWyTdLJxPoDySdQrVW, 26 Nov about 11:45 JST). Coordinator: "Burrow coordinator 18 (talk to this one)" session_01BFpKEVNiZLwPaZF7W9sbtP. MAIN 23 session_01BFpKEW8KtuZCmSEeaQB36v is the only merger. LANE L session_01BFpKEXEN4ow4uyeRCZ9aSM owns lane/amounthist.
 Keep-going task: (LANE N, see Now). LANE M stays until its two running jobs land (close-account helper on controls-5fix, qc-foundation on loancheck): do not touch controls-5fix or the loancheck round until LANE M says.
 
-## Now (LANE N, 26 Nov about 11:45 JST)
-- Set up: tools installed, worktree estate. Next: decide first item (controls-10 B1 helper, controls-8 reviewers, slice 10 waiting on amounthist).
+## Now (LANE N, 26 Nov about 12:00 JST)
+- No keep-going task: create_trigger refused (session lineage depth 8 of 8). Coordinator told; its watch must wake LANE N.
+- Worktrees: .claude/worktrees/estate (this page), c10 (lane/controls-10), c11 (lane/controls-11). Tools: /home/claude/work/tools.
+- HELPER 1 RUNNING on c10: B1 cents always for cent currencies (money3.js + every bypass, tests/e3_cents.js, full check into qc_reports/2026-11-26_cents/check3.txt). Then: report ready to MAIN 23 + coordinator.
+- HELPER 2 RUNNING on c11: lane/controls-11 = controls-9 + merge lane/amounthist + slice 10 build per CHECKFIX_PLAN (all sections, B1-B3), full check into qc_reports/2026-11-26_checkfix_build/check3.txt, QUESTIONS.md if any. Then: qc-controls + qc-data-safety + qc-numbers (Kenji numbers) on the build.
+- Waiting on LANE M: controls-5fix (close-account fix) and the loancheck qc-foundation; then controls-5 fast-forward, controls-8 merge + reviewers.
+- Queue after: controls-9 follow-ups' qc-assistant (now also covered by the controls-11 build), slice 13 plan (main bank closed/replaced).
 
 # Below: LANE M's page at handoff
 
