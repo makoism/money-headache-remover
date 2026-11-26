@@ -10785,6 +10785,15 @@ function plRow3(attrs, left, right, after) {
 function overdueWords3(o, cur, yr, path) {
   return `${fig3(path, o.amount, cur)} due ${esc3(day3(o.payment_date, yr))} ${o.state === 'late' ? 'is late' : 'has not been seen'}. Tick it at Check your bank when it has gone`;
 }
+/* [qc-novice C4] the change saved for a later day, if any: the first "from" after today among the schedule's steps and
+   rules, and what is in force on that day (the engine's scheduleView on it). A lookup, nothing worked out */
+function plWaiting3(book, s, day) {
+  const later = [].concat(s.steps || [], s.rules || []).filter(x => x && !x.gone && x.from && x.from > day).map(x => x.from).sort()[0];
+  if (!later) return null;
+  let v; try { v = BurrowEngine.periods.scheduleView(book, later)[s.id]; } catch (e) { return null; }
+  return v ? { from: later, amount: v.amount, rule: v.rule } : null;
+}
+const plWaitWords3 = (wt, cur, yr, sep = ': ') => `${day3(wt.from, yr)}${sep}${wt.amount == null ? '' : money3(wt.amount, cur) + ', '}${rhythmWords3(wt.rule, yr)}`;
 const PL_OWN3 = { bank: 1, cash: 1, ewallet: 1, wallet: 1 };
 const PL_KIND3 = { bank: 'Bank', cash: 'Cash', ewallet: 'E-wallet', wallet: 'Wallet' };
 function plAccounts3(kinds) { return ((E3.book && E3.book.accounts) || []).filter(a => plLive3(a) && kinds[a.type] && !a.closed); }
@@ -10850,7 +10859,9 @@ function drawPlan3() {
   const ruleWords = v => rhythmWords3(v.rule, yr);
   /* [slice 6, B4] a pay with no fixed day and no amount: words, no figure */
   const payFig = (s, v) => (rowAmount(v) == null ? '<span class="when">comes when it comes</span>' : plFig3((v.outstanding || []).length ? 'schedules.*.outstanding.0.amount' : 'schedules.*.next.amount', rowAmount(v), s.cur));
-  const pays = scheds.filter(s => s.kind === 'income').map(s => plRow3(`data-pay="${esc3(s.id)}"`, `${esc3(s.name)}<br><span class="when">${ruleWords(view[s.id])}${view[s.id].rule && view[s.id].rule.every === 'none' ? '' : ', ' + nextWords(view[s.id], s.cur)}</span>`, payFig(s, view[s.id])));
+  /* [qc-novice C4] a change saved for a later day shows on its row */
+  const waitRow = s => { const wt = plWaiting3(book, s, day); return wt ? `<br><span class="when" data-fig="waiting">Changes on ${esc3(plWaitWords3(wt, s.cur || home, yr))}</span>` : ''; };
+  const pays = scheds.filter(s => s.kind === 'income').map(s => plRow3(`data-pay="${esc3(s.id)}"`, `${esc3(s.name)}<br><span class="when">${ruleWords(view[s.id])}${view[s.id].rule && view[s.id].rule.every === 'none' ? '' : ', ' + nextWords(view[s.id], s.cur)}</span>${waitRow(s)}`, payFig(s, view[s.id])));
   /* [slice 6] a cost that does not come every month: a nudge to set money aside ahead, from the engine (periods.aheadFor),
      until a goal of the same name holds it */
   let ahead = [];
@@ -10863,7 +10874,7 @@ function drawPlan3() {
     const words = a.perPay == null ? `Set money aside ahead: ${f(a.amount)} by ${day3(a.due, yr)}` : `Set aside about ${f(a.perPay)} each pay to have ${f(a.amount)} ready by ${day3(a.due, yr)} (${a.pays === 1 ? '1 pay' : a.pays + ' pays'} before it)`;
     return `<div class="a3-helprow" data-fig="ahead" data-sched="${esc3(s.id)}"><span class="when">${esc3(words)}</span><button type="button" class="a3-btn" data-ahead="${esc3(s.id)}">Make a goal for it</button></div>`;
   };
-  const bills = scheds.filter(s => s.kind === 'bill').map(s => plRow3(`data-bill="${esc3(s.id)}"`, `${esc3(s.name)}<br><span class="when">${ruleWords(view[s.id])}, ${nextWords(view[s.id], s.cur)}${view[s.id].ends && view[s.id].next ? ', last on ' + esc3(day3(view[s.id].ends, yr)) : ''}</span>`, plFig3((view[s.id].outstanding || []).length ? 'schedules.*.outstanding.0.amount' : 'schedules.*.next.amount', rowAmount(view[s.id]), s.cur), aheadOf(s)));
+  const bills = scheds.filter(s => s.kind === 'bill').map(s => plRow3(`data-bill="${esc3(s.id)}"`, `${esc3(s.name)}<br><span class="when">${ruleWords(view[s.id])}, ${nextWords(view[s.id], s.cur)}${view[s.id].ends && view[s.id].next ? ', last on ' + esc3(day3(view[s.id].ends, yr)) : ''}</span>${waitRow(s)}`, plFig3((view[s.id].outstanding || []).length ? 'schedules.*.outstanding.0.amount' : 'schedules.*.next.amount', rowAmount(view[s.id]), s.cur), aheadOf(s)));
   out.push(`<section class="a3-card" data-card="plan-bills"><h2>Pay and bills</h2>
     ${pays.length ? `<ul class="a3-rows a3-rclist">${pays.join('')}</ul>` : ''}
     ${bills.length ? `<ul class="a3-rows a3-rclist">${bills.join('')}</ul>` : '<p class="a3-sub">No bills yet</p>'}
@@ -11066,6 +11077,7 @@ function plBillForm3(id) {
     return;
   }
   const s = book.schedules.find(x => x.id === id), v0 = BurrowEngine.periods.scheduleView(book, E3.today())[id];
+  const plWait = plWaiting3(book, s, E3.today());   // [qc-novice C4]
   /* [E1b] a yearly bill: its month and day */
   const yearly = s.kind === 'bill' && !!(v0.rule && v0.rule.every === 'year');
   const day = v0.rule && v0.rule.every === 'month' && v0.rule.days.length === 1 ? v0.rule.days[0] : yearly ? Number(v0.rule.date.slice(3)) : null;
@@ -11093,7 +11105,8 @@ function plBillForm3(id) {
     ...(every.length ? { every: v.every, day2: v.day2 === 'last' ? 'last' : Number(v.day2), start: v.start, lines: Object.fromEntries(perPay.map(l => [l.key, v['ln-' + l.key] == null ? l.amount : v['ln-' + l.key]])) } : {}) }), pay ? 'Pay changed' : 'Bill changed'] }]
     .concat(pay || !v0.next ? [] : [{ label: 'Change the next one only', step: v => ['changeOnce', w => PLAN3W.changeOnce(w, id, { due: v0.next.due, amount: v.amount }), s.name + ' on ' + day3(v0.next.land, 'any') + ' changed'] },
       { label: 'End this bill', sure: [`End ${s.name}? Nothing is due after the day in "Changes from"`, 'Yes, end it'], step: v => ['endBill', w => PLAN3W.endBill(w, id, { last: v.from }), s.name + ' ends'] }]),
-  pay ? 'A change starts from the day in "Changes from". Pay periods before it stay as they were' : `"Change the next one only" changes the amount of the one on ${esc3(day3(v0.next ? v0.next.land : v0.changeFrom, 'any'))}. End this bill: nothing is due after the day in "Changes from"`);
+  [plWait ? `<span data-fig="waiting">A change is waiting: from ${esc3(plWaitWords3(plWait, s.cur || E3.home(), E3.today().slice(0, 4), ', '))}. The boxes show what is in force today</span><br>` : '',
+   pay ? 'A change starts from the day in "Changes from". Pay periods before it stay as they were' : `"Change the next one only" changes the amount of the one on ${esc3(day3(v0.next ? v0.next.land : v0.changeFrom, 'any'))}. End this bill: nothing is due after the day in "Changes from"`].join(''));
   if (every.length) plPropose3(perPay, r0, everyNow);
 }
 /* [slice 6, qc-foundation 2] when how often the pay lands changes, each line counted each pay is proposed as the same
