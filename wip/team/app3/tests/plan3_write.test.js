@@ -758,6 +758,23 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     const h2 = reloadOf(h); ok((await h2.A.undo(r.step.id)).ok);
     eq(view(h2.book).cards[CARD_A].owedNow, 54000);
   });
+  await t('[LANE J, qc-foundation controls2to5 F1, M45] 12 Dec, Card A\'s 10 Dec payment not ticked: Pay it off and Close are refused with words (tick it first), nothing written; the loan the same', async () => {
+    const was = DAY; DAY = '2026-12-12';
+    try {
+      const h = setup(), before = JSON.stringify(h.book);
+      ok((view(h.book).cards[CARD_A].overdue || []).length, 'the 10 Dec payment is overdue');
+      const z = await h.go('payOff', CARD_A); ok(!z.ok && /^Card A's 10 Dec payment is not ticked off yet: tick it at Check your bank, then try again/.test(z.text), z.text);
+      const c = await h.go('closeAccount', CARD_A, {}); ok(!c.ok && /10 Dec payment is not ticked off yet/.test(c.text), c.text);
+      eq(JSON.stringify(h.book), before, 'nothing written');
+    } finally { DAY = was; }
+  });
+  await t('[LANE J, qc-foundation controls2to5 F2, M46] a card that pays a bill is not closed: it names the bill to move first', async () => {
+    const h = setup();
+    { const b = await h.go('addBill', { name: 'Streaming', amount: 1500, day: 5, acct: CARD_A }); ok(b.ok, JSON.stringify(b)); }
+    ok((await h.go('payOff', CARD_A)).ok);
+    const z = await h.go('closeAccount', CARD_A, {}); ok(!z.ok && /^Streaming is paid by Card A\. Change it to another card or account first/.test(z.text), z.text);
+    ok(!h.book.accounts.find(a => a.id === CARD_A).closed, 'not closed');
+  });
   await t('[E3] closeAccount for a card: refused while something is on it (pay it off or tick its payment first); at zero: a check of 0 and closed; its payment day stops; Reopen', async () => {
     const h = setup();
     const z = await h.go('closeAccount', CARD_A, {}); ok(!z.ok && /still has ¥54,000 on it/.test(z.text), z.text);
