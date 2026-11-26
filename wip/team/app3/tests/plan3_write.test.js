@@ -450,6 +450,34 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     await h.tick('2027-02-05', '2027-01-27');
     const y = await h.go('closeLoan', h.loan); ok(y.text !== z.text, 'ticked, that refusal is gone: ' + y.text);
   });
+  /* [qc-numbers loancheck_build confirm1 new blocker 1] 3 Feb 812,400 No, 4 Feb 0 No, then 6 Feb 812,400: the 27 Jan payment
+     is asked again (every payment gone by and not ticked, from the engine's notTicked), so its 7 Feb tick comes off:
+     812,400 - 30,000 = 782,400 by hand. With the 0 check answered Yes there is nothing left to ask. */
+  for (const at4 of ['no', 'yes']) await tk(`three checks, the 0 check answered ${at4}: checkLoan on 6 Feb ${at4 === 'no' ? 'needs the 27 Jan answer; No then the 7 Feb tick: 782,400' : 'asks nothing: 812,400'}`, async () => {
+    const h = await kenji(), occ = h.occ('2027-01-27');
+    DAY = '2027-02-03'; ok((await h.checkLoan({ amount: 812400, answers: { [occ]: 'no' } })).ok);
+    DAY = '2027-02-04';
+    const z = await h.checkLoan({ amount: 0 });
+    ok(!z.ok && z.text === 'Has the 27 Jan payment of ' + SMF.format(30000, 'JPY') + ' left your bank?', z.text);
+    ok((await h.checkLoan({ amount: 0, answers: { [occ]: at4 } })).ok);
+    eq(h.owed().owedNow, 0);
+    DAY = '2027-02-06';
+    if (at4 === 'yes') {
+      eq(W.loanQuestions(h.book, DAY, h.loan, DAY), []);
+      ok((await h.checkLoan({ amount: 812400 })).ok);
+      eq([h.owed().owedNow, h.owed().overdue.length], [812400, 0]);
+      return;
+    }
+    eq(W.loanQuestions(h.book, DAY, h.loan, DAY).map(q => [q.occ, q.day, q.amount]), [[occ, '2027-01-27', 30000]]);
+    const r = await h.checkLoan({ amount: 812400 });
+    ok(!r.ok && r.text === 'Has the 27 Jan payment of ' + SMF.format(30000, 'JPY') + ' left your bank?', r.text);
+    let msg = ''; try { W.loanCheckArgs(h.book, DAY, h.loan, { amount: 812400 }, { sameIsNothing: false }); } catch (e) { msg = e.message; }
+    eq(msg, r.text, 'Check your bank asks it too');
+    ok((await h.checkLoan({ amount: 812400, answers: { [occ]: 'no' } })).ok);
+    eq([h.owed().owedNow, h.owed().overdue.map(o => o.payment_date)], [812400, ['2027-01-27']]);
+    await h.tick('2027-02-07', '2027-01-27');
+    eq([h.owed().owedNow, h.owed().overdue.length], [782400, 0]);
+  });
   await tk('rule 2e, Kenji book 4: a check dated before the recorded day of a tick is refused with words built from the data; dated that day or today it is taken, owed counted once', async () => {
     const h = await kenji();
     await h.ci('2027-02-04', { figures: { [BANK]: 500000 } });              // the bank checked with 27 Jan unticked

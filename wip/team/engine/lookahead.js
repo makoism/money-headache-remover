@@ -826,7 +826,7 @@
       const asks = (d, i, bal) => (own(d) != null ? own(d) : (parts.length
         ? parts.filter(pt => pt.due <= d.due && (i === 0 || pt.due > days[i - 1].due)).reduce((t, pt) => t + pt.amount, 0)
         : a.amount != null ? a.amount : minPay(a.minRule, bal)) + extraOn(a.extraSteps, d.due));
-      const loanItems = [];
+      const loanItems = [], open1 = [];
       let unpaid = 0, left = null;
       for (let i = 0; i < days.length; i++) {
         const d = days[i], past = d.land <= knownTo;
@@ -835,6 +835,9 @@
         // that figure, so it never asks more than the figure says is owed (a check of 10,000 asks at most 10,000; 0 asks nothing)
         if (past) bal = (base && d.land <= base.day && !(base.notYet || []).includes(d.iid) ? d.owedThen : Math.min(d.owedThen, owedNow)) - unpaid;
         else { if (left === null) left = owedNow - unpaid; if (left <= 0) break; left += interestOn(left, a.apr); bal = left; }
+        // [qc-numbers loancheck_build confirm1 blocker 1] a payment day gone by, not ticked, with something owed on it
+        // then: a loan check asks about it whatever is asked in money now (a check of 0 asks nothing, still asked)
+        if (past && !settledBy[d.iid] && d.owedThen > 0) open1.push({ d, i });
         if (bal <= 0 || settledBy[d.iid]) continue;
         const amt = Math.min(bal, asks(d, i, bal));
         if (amt <= 0) continue;
@@ -844,7 +847,11 @@
       // [F4, H8] a payment past its day and not ticked is overdue (late, then not seen), never the next one
       const shown = x => ({ item: x.id, amount: x.amount, payment_date: dayStr(x.land) });
       const nx = loanItems.find(x => x.land >= today);
-      return { owedNow, loanItems, payFrom, next: nx ? Object.assign(shown(nx), { state: 'coming' }) : null,
+      // the payments to ask about at a loan check: each one's amount is what is asked for it now, or, when nothing is
+      // (a check of 0 after a No), what it would ask on its day
+      const notTicked = open1.map(({ d, i }) => { const li = loanItems.find(x => x.id === d.iid);
+        return { item: d.iid, amount: li ? li.amount : Math.min(d.owedThen, asks(d, i, d.owedThen)), payment_date: dayStr(d.land) }; });
+      return { owedNow, loanItems, payFrom, notTicked, next: nx ? Object.assign(shown(nx), { state: 'coming' }) : null,
         overdue: loanItems.filter(x => x.land < today).map(x => Object.assign(shown(x), { state: payState(x.land, payFrom) })) };
     }
 
@@ -1368,7 +1375,7 @@
       if (acct[k.payFrom] && cur(id) !== cur(k.payFrom)) res.warnings.push({ account: k.payFrom, card: id, code: 'card_other_currency', text: `${acct[id].name} (${cur(id)}) is paid from ${acct[k.payFrom].name} (${cur(k.payFrom)}): it is not taken off safe to spend until it is paid` });   // [H5]
     }
     for (const id in loans) {
-      res.owed[id] = { owedNow: loans[id].owedNow, next: loans[id].next, overdue: loans[id].overdue };
+      res.owed[id] = { owedNow: loans[id].owedNow, next: loans[id].next, overdue: loans[id].overdue, notTicked: loans[id].notTicked };
       const from = loans[id].payFrom;
       if (from && acct[from] && cur(id) !== cur(from)) res.warnings.push({ account: from, loan: id, code: 'loan_other_currency', text: `${acct[id].name} (${cur(id)}) is paid from ${acct[from].name} (${cur(from)}): it is not taken off safe to spend until it is paid` });   // [V2]
     }

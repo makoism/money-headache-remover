@@ -255,5 +255,55 @@ const saved = p => p.evaluate(async () => { const s = await BurrowStore.open(); 
     ck('Receipts: search finds it too', (await p4.$$('#rcList [data-ticked]')).length === 1);
     ck('no page errors (Receipts)', !o4.errs.length, o4.errs.join(' | '));
   } finally { await o4.b.close(); fs.rmSync(prof4, { recursive: true, force: true }); }
+  /* [qc-numbers loancheck_build confirm1 new blocker 1, LESSONS 2] three checks on Plan's loan sheet: 3 Feb 812,400 with
+     No for 27 Jan, 4 Feb 0 (No, or Yes), 6 Feb 812,400. With No at the 0 check the 6 Feb sheet still asks about the 27 Jan
+     payment (it has not been seen); No, then 27 Jan ticked on 7 Feb: 812,400 - 30,000 = 782,400 by hand, after a reload
+     too. With Yes at the 0 check nothing is left to ask: 812,400, nothing overdue */
+  for (const at4 of ['no', 'yes']) {
+    const prof5 = fs.mkdtempSync(require('os').tmpdir() + '/a3loanck5-');
+    const o5 = await T.open({ profile: prof5 }), p5 = o5.p, occ = LOAN + '@2027-01-27';
+    try {
+      const day = async d => { await p5.goto(T.URL0 + '?today=' + d); await T.w(600); };
+      await day('2027-02-03');
+      await p5.evaluate(async bk => { const s = await BurrowStore.open(); await s.load(); const r = await s.save(bk, { full: true }); s.close(); return r.ok; }, kenjiBook());
+      await p5.reload(); await T.w(600);
+      const owed = () => p5.evaluate(id => BurrowApp3.E3.view(BurrowApp3.E3.today()).owed[id], LOAN);
+      const sheet = async () => { await p5.tap('[data-tab="plan"]'); await T.w(300); while (await p5.$('#plBack')) { await p5.click('#plBack'); await T.w(200); } await p5.evaluate(id => document.querySelector(`#a3Plan [data-owed="${id}"]`).click(), LOAN); await T.w(500); };
+      const qs = () => p5.$$eval('#plLcQs [data-lcq]', l => l.map(x => x.textContent.replace(/\s+/g, ' ').trim()));
+      const check = async (amt, ans) => {
+        await sheet();
+        if (ans) await p5.click(`#plLcQs [data-lcans="${ans}"]`);
+        await p5.$eval('#plLcAmt', e => { e.value = ''; }); await p5.type('#plLcAmt', amt);
+        await p5.click('#plLcSave'); await T.w(500);
+        if (await p5.$('#plLcFar [data-faryes]')) { await p5.click('#plLcFar [data-faryes]'); await T.w(700); }
+      };
+      const asked = /Has the 27 Jan payment of ¥30,000 left your bank\?/;
+      await check('812400', 'no');
+      await day('2027-02-04'); await sheet();
+      ck(`[0 check ${at4}] 4 Feb: the sheet asks about 27 Jan before the check of 0`, asked.test((await qs()).join()), JSON.stringify(await qs()));
+      await check('0', at4);
+      ck(`[0 check ${at4}] owed 0 after the check of 0`, (await owed()).owedNow === 0, JSON.stringify(await owed()));
+      await day('2027-02-06'); await sheet();
+      const q6 = await qs();
+      if (at4 === 'no') {
+        ck('[0 check no] 6 Feb: the sheet asks "Has the 27 Jan payment of ¥30,000 left your bank?" again', q6.length === 1 && asked.test(q6[0]), JSON.stringify(q6));
+        await check('812400', 'no');
+        let o = await owed();
+        ck('[0 check no] 6 Feb saved with No: 812,400, 27 Jan still to tick', o.owedNow === 812400 && o.overdue.map(x => x.payment_date).join() === '2027-01-27', JSON.stringify(o));
+        await day('2027-02-07');
+        ck('[0 check no] 7 Feb: 27 Jan ticked', await p5.evaluate(async x => { const { E3, ACT3 } = BurrowApp3; return (await ACT3.addRecords('Check your bank', BurrowEngine.checkin.checkIn(E3.book, { day: E3.today(), told: E3.told(), newId: E3.newId, figures: {}, ticked: [x], expected: { [x]: 30000 }, lands: { [x]: '2027-01-27' }, unticked: [] }))).ok; }, occ));
+        o = await owed();
+        ck('[0 check no] the tick comes off: 782,400, nothing overdue', o.owedNow === 782400 && !o.overdue.length, JSON.stringify(o));
+        await p5.reload(); await T.w(600);
+        ck('[0 check no] after a reload too, and Plan says 782,400', (await owed()).owedNow === 782400 && await p5.tap('[data-tab="plan"]').then(() => T.w(300)).then(() => p5.$eval(`#a3Plan [data-owed="${LOAN}"]`, e => /782,400/.test(e.textContent))));
+      } else {
+        ck('[0 check yes] 6 Feb: nothing is asked (27 Jan was ticked at the check of 0)', !q6.length, JSON.stringify(q6));
+        await check('812400', null);
+        const o = await owed();
+        ck('[0 check yes] 812,400, nothing overdue', o.owedNow === 812400 && !o.overdue.length, JSON.stringify(o));
+      }
+      ck(`no page errors (three checks, 0 check ${at4})`, !o5.errs.length, o5.errs.join(' | '));
+    } finally { await o5.b.close(); fs.rmSync(prof5, { recursive: true, force: true }); }
+  }
   T.done('e3_loancheck');
 })();

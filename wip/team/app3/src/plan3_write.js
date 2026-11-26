@@ -406,7 +406,9 @@
     if (!a || a.type !== 'loan' || !DAY.test(day || '') || day > today) return [];
     /* a payment ticked since (a record that settles it, dated after `day`) is not asked about */
     const ticked = new Set(); for (const e of book.events || []) if (live(e)) for (const st of e.settles || []) if (st && st.s === id) ticked.add(id + '@' + st.due);
-    return dueBy(owedOn(book, day, id), day).filter(x => !ticked.has(x.item)).map(x => ({ occ: x.item, day: x.payment_date, amount: x.amount,
+    /* [qc-numbers loancheck_build confirm1 blocker 1, LESSONS 2] every payment day by then that is not ticked, from the
+       engine (notTicked), whatever it asks in money now: after a check of 0 a payment answered No is still asked */
+    return ((owedOn(book, day, id) || {}).notTicked || []).filter(x => x.payment_date <= day && !ticked.has(x.item)).map(x => ({ occ: x.item, day: x.payment_date, amount: x.amount,
       text: `Has ${payName(book, x.item)} of ${SMF.format(x.amount, a.cur || G.homeOn(book, today))} left your bank?` }));
   }
   /* what a loan check would write, or the refusal with what to do next (the Plan sheet, Check your bank and the assistant

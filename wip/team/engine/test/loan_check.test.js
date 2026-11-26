@@ -156,4 +156,45 @@ t('No at a check of 10,000: 27 Jan asks 10,000; at a check of 0 nothing is asked
   o = L(g, '2027-02-03');
   eq([o.owedNow, o.overdue.length, o.next], [0, 0, null]);
 });
+// [qc-numbers loancheck_build confirm1 new blocker 1] three checks, No, then 0, then a check with no question: the
+// payments to ask about at a loan check are every payment day gone by and not ticked, whatever the engine asks now
+// (notTicked), so the 27 Jan payment is still asked at 6 Feb and its later tick comes off: 812,400 - 30,000 = 782,400
+const threeChecks = (h, at4) => {
+  const occ = h.loan + '@2027-01-27';
+  h.checkIn('2026-12-29', { figures: { [h.bank]: 1200000 } });
+  h.checkIn('2027-02-03', { figures: { [h.loan]: 812400 }, notYet: { [h.loan]: [occ] } });
+  if (at4 === 'yes') h.checkIn('2027-02-04', { figures: { [h.loan]: 0 }, ticked: [occ], expected: { [occ]: 30000 }, lands: { [occ]: '2027-01-27' } });
+  else h.checkIn('2027-02-04', { figures: { [h.loan]: 0 }, notYet: { [h.loan]: [occ] } });
+  return occ;
+};
+const nt = o => o.notTicked.map(x => [x.item.split('@')[1], x.payment_date, x.amount]);
+t('No, then 0 with No: nothing asked in money, but 27 Jan is still a payment to ask about (notTicked); a payment day after the 0 is not', () => {
+  const h = kenji(); threeChecks(h, 'no');
+  let o = L(h, '2027-02-04');
+  eq([o.owedNow, o.overdue.length, nt(o)], [0, 0, [['2027-01-27', '2027-01-27', 30000]]]);
+  o = L(h, '2027-03-01');
+  eq(nt(o), [['2027-01-27', '2027-01-27', 30000]], '27 Feb, after the check of 0, owes nothing and is not listed');
+});
+t('No, 0 with No, then 6 Feb 812,400 with No for 27 Jan; the tick on 7 Feb comes off: 782,400', () => {
+  const h = kenji(), occ = threeChecks(h, 'no');
+  h.checkIn('2027-02-06', { figures: { [h.loan]: 812400 }, notYet: { [h.loan]: [occ] } });
+  let o = L(h, '2027-02-06');
+  eq([o.owedNow, o.overdue.map(x => [x.payment_date, x.amount]), nt(o)], [812400, [['2027-01-27', 30000]], [['2027-01-27', '2027-01-27', 30000]]]);
+  h.checkIn('2027-02-07', { ticked: [occ], expected: { [occ]: 30000 }, lands: { [occ]: '2027-01-27' } });
+  o = L(h, '2027-02-07');
+  eq([o.owedNow, o.overdue.length, o.notTicked.length], [782400, 0, 0]);
+});
+t('No, 0 with No, then 6 Feb 812,400 with Yes for 27 Jan: 812,400 and nothing overdue', () => {
+  const h = kenji(), occ = threeChecks(h, 'no');
+  h.checkIn('2027-02-06', { figures: { [h.loan]: 812400 }, ticked: [occ], expected: { [occ]: 30000 }, lands: { [occ]: '2027-01-27' } });
+  const o = L(h, '2027-02-07');
+  eq([o.owedNow, o.overdue.length, o.notTicked.length, o.next && o.next.payment_date], [812400, 0, 0, '2027-02-27']);
+});
+t('No, then 0 with Yes for 27 Jan: nothing left to ask; 6 Feb 812,400 stays 812,400 with nothing overdue', () => {
+  const h = kenji(); threeChecks(h, 'yes');
+  eq(L(h, '2027-02-06').notTicked, []);
+  h.checkIn('2027-02-06', { figures: { [h.loan]: 812400 } });
+  const o = L(h, '2027-02-07');
+  eq([o.owedNow, o.overdue.length, o.notTicked.length], [812400, 0, 0]);
+});
 done();
