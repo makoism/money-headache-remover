@@ -1,23 +1,23 @@
-VERDICT: FAIL (confirming run 3 against run2_qc-data-safety.md, run 2 PASS; one new blocker: setup open in two tabs, a section that said "Saved" is silently lost)
-(Saved by MAIN 21 from the reviewer's reply: the reviewer did not write the file so as not to overwrite run 2's.)
+VERDICT: FAIL (confirming run 4 against run3_qc-data-safety.md. Run 3's blocker is gone. New blocker next to it: a setup left open in a second tab replaces a finished book without asking.)
 
-CHECK: (full level, 3 at a time, 788 s in all) / ALL GOOD
+CHECK: (full level, 3 at a time, 853 s in all) / ALL GOOD
 
-OWNER'S WORDS: M61 NOT MET (blocker 1). M69 NOT MET (same). M66, M67 MET again on the made-up server. M62 to M65, M68 carried over from run 2, not walked again.
+OWNER'S WORDS: M61 NOT MET, M69 NOT MET (blocker 1). M66, M67 carried over from run 3 (MET on the made-up server). M62 to M65, M68 carried over from run 2, not walked again.
 
-COUNT: 5 confirm checks: 1 STUCK (nothing lost when two saves happen at once), 4 DONE (setup Save/Undo/See my money; Delete the cloud copy; Keep it; run-2 items spot-checked: reload, two tabs, new phone, refused send, backup and restore, End a bill). Kinds of change across reload: 6. Removes: 3, all ask first.
+COUNT: 4 confirm checks. 3 DONE: run-3 blocker (one after the other both ways, and at the same moment); a restore of a backup made without Keep at least, then Put it back; nothing typed lost by these. 1 STUCK: which-to-keep on two devices (not reached). Kinds of change across reload and 10 s: 4 (bank, pay, Free to spend, Keep at least). Removes checked: 2 (restore, Put it back), both ask.
 
 BLOCKERS
-1. Setup in two tabs: Save in one tab silently wipes what the other tab saved (repeated 4 times). 390 wide, new device: tap "Set up on the screens instead" in tab 1 and tab 2. Tab 1: bank 286,000, Save ("Saved", "Your bank: saved"). Tab 2: pay 240,000, Save ("Your pay: saved"). Reload either tab: the bank box is empty. Both Saves at the same moment: the bank stays, pay and Free to spend are gone. Nothing says anything was replaced. Should keep both sections, or refuse the stale save in plain words. Script /tmp/qc/qc-data-safety/r2.js (node r2.js same|seq|one).
+1. A second tab's setup replaces the finished book, with no ask and no Undo (repeated twice). 390 wide, new device, "Set up on the screens instead" in tab 1 and tab 2. Tab 1: bank 300,000 Save, pay 240,000 Save, See my money; Receipts, log 4,321 "groceries test". Tab 2 (still on setup): bank 777,000 Save ("Your bank: saved"), pay 100,000 Save, See my money. Tab 2 says nothing about a book already being there. Reload tab 1: Home "¥777,000 (Main bank today) = ¥777,000", pay 100,000; the 4,321 spend is no longer taken off, and its receipt line reads "10 Dec, rlqjd8-8iympi49m7-3, groceries test" (a raw code where the line name was). The chat refuses the same thing ("There is already a book on this device"); the screens should too, or ask and keep the old book for Undo. Also: tab 2's "Keep at least: saved" with Undo, pressed after tab 1 finished, never reaches the book (Home shows no minimum). Script /tmp/qc/qc-data-safety/t7.js, t4.js.
 
-What held: setup Save then Undo gives 240,000 back on the screens and in the chat's answers, at once, after a reload and after 10 s; saves on the screens show in the chat card; See my money without Save lists what is "Not saved yet", with Save fills the book and survives a reload; three quick spends then an instant reload all kept and sent; two tabs logging a spend at once both kept; new phone by code: Home, Receipts, Plan match; server refusing: Home and Settings say so, also after a reload, Send now worked; Delete the cloud copy asks first ("Delete the cloud copy for good? The earlier saved versions on the server go too ..."); Keep it and Keep it on made no server call; Delete it for good sent one DELETE, the money on the device stayed after a reload; Restore asked first with counts and matched; Put it back brought newer money back after a reload; End this bill asks first.
+What held:
+- Run-3 blocker gone: bank Saved in tab 1, pay and Free to spend in tab 2, all three orders (tab 1 first, tab 2 first, same moment). After reloading each tab and again after 10 s, both tabs show 286,000 / 240,000 / 30,000. A pay typed but not saved in tab 1 stayed on its screen while tab 2 saved the bank, and both were kept.
+- Restore of a backup without Keep at least asked first ("This replaces the money on this device ... Put it back brings it back"). After a reload Home shows no minimum (300,000), not the old 5,000. Put it back asked ("Put this copy back? 4 things added since ...") and, after a reload, brought back "− ¥5,000 (minimum) = ¥290,679" and the 4,321 spend. No page errors.
 
 CONFUSING
-1. After setup is finished on the screens, the chat still shows "Your answers so far" with Free to spend and Keep at least empty and "Still needed: How much for food ...". Carrying on in the chat, every draft step and the fill are refused ("Setup is done ..." / "Not filled in: There is already a book on this device"); nothing damaged, but the made-up AI said "Done. Here's Home" and the cards and bills typed in the chat were never added. Fix: clear or close the setup card when setup ends.
-2. A spend shows "A change is waiting to go to the cloud copy" for about 8 s before it is sent; scope.txt says a spend is sent at once. Not lost, but not at once.
+1. The restore ask says "5 things here now are not in it (money in or out: 2 ...)". Put it back then says "4 things added since it was kept go (money in or out: 1 ...)". Only one spend was logged. Say the same count both times.
 
-POLISH: Save under Your pay also keeps the typed Free to spend and Keep at least across a reload while both read "Not saved yet". d.errs: a 404 on the first cloud read, 500s during the refusal test (the reviewer's own).
+POLISH: none new.
 
 FOR MAKO'S EYE: none.
 
-NOT CHECKED: the rest of run 2 carried over (assistant wipes, old and newer copies, addresses called, two devices changed apart, a backup from a wrong clock, restoring twice); the chat in one tab with the screens in another; a cloud save at the same moment as a setup draft save; the five number fixes beyond Home. Made-up AI and made-up server.
+NOT CHECKED: which-to-keep answers on two devices and Undo right after Keep (stopped at the token limit); a settings item missing from one device in which-to-keep; everything else carried over from run 3 and run 2. Made-up server only, no AI used.
