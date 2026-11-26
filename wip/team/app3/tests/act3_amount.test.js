@@ -171,6 +171,14 @@ const fig = w => { const p = P.periods(w.book, w.day); return [p.past[p.past.len
   }
   await t('[ruling (B)] a logged bill payment removed after the check that held it: the rent stays paid, safe to spend stays 32,000', () => own('bill'));
   await t('[ruling (B)] a move between own accounts removed after the check that held it: safe to spend stays 32,000', () => own('move'));
+  await t('[ruling (A)] a bank check figure changed keeps the old one in was; Undo takes it back', async () => {
+    const w = await base(); w.at('2026-12-14', '09:00');
+    const c = w.book.events.find(e => e.k === 'check' && e.date === '2026-12-13' && !e.gone);
+    const r = await w.A.edit(c.id, { a: 590000 }); ok(r.ok, JSON.stringify(r));
+    eq(w.book.events.find(e => e.id === c.id).was, [{ a: 594300, told: '2026-12-14T09:00:00.000' + TZ }]);
+    ok((await w.A.undo(r.step.id)).ok);
+    eq([w.book.events.find(e => e.id === c.id).a, w.book.events.find(e => e.id === c.id).was], [594300, undefined]);
+  });
   console.log(bad ? `act3_amount: ${bad} of ${n} FAILED` : `act3_amount: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })();

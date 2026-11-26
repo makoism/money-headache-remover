@@ -2644,6 +2644,11 @@ details summary { min-height: 44px; }
       const goneMoves = events.filter(e => e.gone && e.was && e.was.length && delta(e, id) !== 0);   // [AMOUNT_HISTORY] removed after a check
       const fillers = [];
       let lastGap = null;
+      // [coordinator ruled (A), CHECKFIX FB] a check's figure corrected later (`was`): each fix counts its change on the
+      // day of the fix in both gaps beside that check, plus in the gap before it and minus in the gap after it, so with a
+      // later check the two cancel and a closed period never moves; on the latest check only the plus part counts
+      const fixesOf = c => (c.was || []).filter(w => w && w.told).map((w, i, ws) => ({ day: dayNum(String(w.told).slice(0, 10)), d: w.a - (i + 1 < ws.length ? ws[i + 1].a : c.a) }));
+      let carry = [];   // the minus parts the check before leaves to the next gap
       // [T2, AS6] the place a filler was put on is the check-in's `fillerPlace` for this account: the check-in the check
       // was written with (`grp`), or the one whose figures name it
       const fillerPlaceOf = c => {
@@ -2670,7 +2675,14 @@ details summary { min-height: 44px; }
         moves.forEach((e, k) => { if (isIn[k] && !wasIn[k]) { holdAt(e.id, cc.day, cc.key, fp); holdAcct(e.id, id, cc.day, cc.key, fp); if (e.key > cc.key) heldBy.push({ id: e.id, account: id, check: dayStr(cc.day) }); } });
         for (const e of goneMoves) if (!heldAt.has(e.id) && e.day <= cc.day && removedAfter(e, cc.key) && inside(e, cc, id)) { holdAt(e.id, cc.day, cc.key, fp); holdAcct(e.id, id, cc.day, cc.key, fp); }
         wasIn = isIn;
-        fillers.push(Object.assign(makeFiller(id, c.day > base.day ? base.day + 1 : c.day, c.day, computed - c.a), fp ? { place: fp } : {},
+        const filler = makeFiller(id, c.day > base.day ? base.day + 1 : c.day, c.day, computed - c.a);
+        const fixes = fixesOf(c), extra = fixes.map(x => ({ day: x.day, amount: x.d })).concat(carry.map(x => ({ day: x.day, amount: -x.d })));
+        carry = fixes;
+        if (extra.some(x => x.amount)) {
+          const own = filler.amount - extra.reduce((t, x) => t + x.amount, 0);
+          filler.parts = [{ from: dayStr(c.day), to: dayStr(c.day), days: 1, amount: own }].concat(extra.filter(x => x.amount).map(x => ({ from: dayStr(x.day), to: dayStr(x.day), days: 1, amount: x.amount }))).filter(x => x.amount);
+        }
+        fillers.push(Object.assign(filler, fp ? { place: fp } : {},
           { had: computed, gain: c.a - computed, answer: c.gain || null }));
         base = cc;
         lastGap = { day: c.day, had: computed, gain: c.a - computed, answer: c.gain || null };
