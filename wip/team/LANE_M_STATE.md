@@ -1,4 +1,14 @@
-# LANE J state page (controls slices after the AI-first candidate)
+# LANE M state page (controls slices after the AI-first candidate)
+
+LANE M: session_01BFpKEWyTdLJxPoDySdQrVW (took over from LANE J session_01BFpKEXkcELFPCxnuiX8jFx, 26 Nov about 09:40 JST... see Now). Coordinator: "Burrow coordinator 16 (talk to this one)" session_01BFpKEXBhaZ6NZ92Lntxb2A. MAIN 22 (session_01BFpKEVPdcTtDvMBQEUFsEx) is the only session that merges. LANE L (session_01BFpKEXEN4ow4uyeRCZ9aSM) owns lane/amounthist (engine lane; slice 10 merges it first; both touch act3.js).
+Keep-going task: trig_01ETjeofWVuqzY2qbB7xDS4H (hourly, bound to LANE M). Switch off at handoff or pause.
+
+## Now (LANE M, 26 Nov)
+- Push probe OK. Worktrees: .claude/worktrees/estate (lane/e-state), c6 (lane/controls-6).
+- Working on: loan check doors on lane/controls-6 (step 1 schema/guard/sync tests next).
+- Queue after: slices 2 to 5 qc-controls fixes on controls-5fix then confirming runs; slice 10 plan revise FD1/FD2 (merge amounthist first) and send commit for confirm file 2; slices 7/8 reviewers after 2 to 5 merged up; controls-9 follow-ups (change card before/after, statements to Home Add statements, failed call once plainly, Keep at least in SCREENS list, setup Q4 one thing + second bank).
+
+# Below: LANE J's page at handoff
 
 LANE J: session_01BFpKEXkcELFPCxnuiX8jFx (handing off 26 Nov about 12:10 JST) (took over from LANE H session_01BFpKEX35AmbptMfHTaRc9F on 26 Nov 2026, about 09:10 JST; LANE H took over from LANE E).
 Report to: Burrow coordinator 16 (talk to this one), session_01BFpKEXBhaZ6NZ92Lntxb2A. MAIN 21 (session_01BFpKEVHbyeXL6RPkGN8J84) is the only session that merges into wip-38.31. LANE I (session_01BFpKEXsvX4vt1YU8Dx8ePx) runs engine slices and touches act3.js plan(), writer, undo(): agree merge order in one message when needed.
