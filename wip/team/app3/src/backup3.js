@@ -145,14 +145,22 @@
     })(isMap(copy) ? copy : {}, '', true);
     return out;
   }
+  /* [qc-foundation point 6 on TABSETUP_PLAN] ONE diff by record id, each record counted once: only in `now` (n, by
+     kind), only in `from` (back, by kind: what Put it back or a restore brings back), in both and different (changed).
+     since(b, a) is since(a, b) with n and back swapped, so the restore question and Put it back count the same things */
   function since(from, now) {
-    const a = holds(from), b = holds(now), out = { n: 0, money: 0, checks: 0, other: 0, changed: 0, all: 0 };   // all: added and changed together
+    const a = holds(from), b = holds(now), out = { n: 0, money: 0, checks: 0, other: 0, changed: 0, all: 0, back: { n: 0, money: 0, checks: 0, other: 0 } };   // all: every record counted, once
     for (const [k, v] of b) {
       const w = a.get(k);
       if (w) { if (w.c !== v.c) { out.changed++; out.all++; } }
       else if (k.startsWith('/checkins#')) continue;
       else if (v.kind === 'plain') { out.changed++; out.all++; }
       else { out.n++; out.all++; out[v.kind]++; }
+    }
+    for (const [k, w] of a) {
+      if (b.has(k) || k.startsWith('/checkins#')) continue;
+      if (w.kind === 'plain') { out.changed++; out.all++; }   // a plain value only one side has: it differs
+      else { out.back.n++; out.all++; out.back[w.kind]++; }
     }
     return out;
   }

@@ -90,6 +90,17 @@
     if (s === '') return { ok: false, reason: 'empty' };
     const m = /^(-)?(\d[\d,]*)?(?:\.(\d*))?$/.exec(s);
     if (!m || (!m[2] && !m[3])) return { ok: false, reason: 'not_a_number' };
+    /* [qc-numbers run 1 B4] a comma not in a thousands place ("1,0000", "10,00") is a slip: refused with both readings
+       (the commas dropped, or each group after the first made three digits), never read one way silently */
+    if (m[2] && m[2].includes(',')) {
+      const g = m[2].split(',');
+      if (g[0].length > 3 || g.slice(1).some(x => x.length !== 3)) {
+        const fr = (m[3] || '').padEnd(d, '0').slice(0, d);
+        const a = g.join(''), b = g[0] + g.slice(1).map(x => x.slice(0, 3).padEnd(3, '0')).join('');
+        const means = [...new Set([a, b].map(x => Number(x.replace(/^0+(?=\d)/, '') + fr)))].sort((x, y) => x - y);
+        return { ok: false, reason: 'commas', means };
+      }
+    }
     const whole = (m[2] || '0').replace(/,/g, '').replace(/^0+(?=\d)/, ''), frac = m[3] || '';
     if (frac.length > d) return { ok: false, reason: 'decimals' };
     if (whole.length > MAX_WHOLE_DIGITS) return { ok: false, reason: 'too_big' };

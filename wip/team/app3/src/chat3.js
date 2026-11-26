@@ -77,7 +77,7 @@ function chat3Deps() {
   return {
     send: chat3Send, today: () => E3.today(), told: () => E3.told(), newId: () => E3.newId(),
     book: () => E3.book, mode: () => E3.mode, door: E3.book ? ACT3 : null,
-    start: b => E3.fill(b), discard: () => E3.discard(),
+    start: b => E3.fill(b), discard: () => E3.discard(), why: () => E3.startWhy,
     anon: CHAT3.anon || '', invite: chat3Invite(), screen: chat3Screen, sheet: chat3Sheet,
   };
 }
@@ -125,7 +125,7 @@ function chat3Card(t) {
       : c.status === 'ask' ? `<p class="a3-sub" data-chat="status" data-ask="${esc3(c.ask || '')}">${esc3(CHAT3_WORDS.ask[c.ask] || CHAT3_WORDS.ask.large)}</p><div class="a3-actions"><button type="button" class="a3-btn solid" data-chatok="${id}">Do it</button><button type="button" class="a3-btn" data-chatnot="${id}">Not now</button></div>`
       : `<p class="a3-sub" data-chat="status">${esc3(c.status === 'undone' ? 'Taken back' : c.status === 'not now' ? 'Not done' : (c.why || 'The app refused it'))}</p>`;
     return `<div class="a3-card a3-chat-card" data-card="chat-change" data-turn="${id}" data-status="${esc3(c.status)}"><h3>${c.status === 'ask' ? 'A change to check' : c.status === 'refused' || c.status === 'not now' ? 'Not changed' : 'Changed'}</h3>
-      <ul class="a3-chat-lines">${(c.lines || []).map(l => `<li>${esc3(l)}</li>`).join('')}</ul>${(c.left || []).length ? `<p class="a3-warn" data-chat="left">Not done: ${esc3(c.left.join(', and '))}. Say that part again on its own</p>` : ''}${chat3Figs(c.rows)}${c.note && c.status === 'done' ? `<p class="a3-sub" data-chat="note">${esc3(c.note)}</p>` : ''}${foot}</div>`;
+      <ul class="a3-chat-lines">${(c.lines || []).map(l => `<li>${esc3(l)}</li>`).join('')}</ul>${(c.left || []).length ? `<p class="a3-warn" data-chat="left">Not done: ${esc3(c.left.join(', and '))}${c.again === false ? '' : '. Say that part again on its own'}</p>` : ''}${chat3Figs(c.rows)}${c.note && c.status === 'done' ? `<p class="a3-sub" data-chat="note">${esc3(c.note)}</p>` : ''}${foot}</div>`;
   }
   /* [CONFUSING 1] a setup card is not drawn while a book is here that the chat did not fill (worked out each time) */
   if (c.kind === 'draft' && CHAT3C.setupShut(CHAT3.state || CHAT3C.fresh(), E3.book)) return '';

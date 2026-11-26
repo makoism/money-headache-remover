@@ -487,7 +487,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     const past = hist.slice(0, hist.length - 1).slice(-TURNS), messages = [];
     const push = (role, text) => { const last = messages[messages.length - 1]; if (last && last.role === role) last.content[0].text += '\n\n' + text; else messages.push({ role, content: [{ type: 'text', text }] }); };
     /* [qc-foundation on CONFUSING1_PLAN, 3] its own words from a turn where nothing was done are sent with that said */
-    for (const t of past) push(t.who === 'person' ? 'user' : 'assistant', (t.text || '(a card)') + (t.notDone ? ' (the app did not do this: nothing was added)' : ''));
+    for (const t of past) push(t.who === 'person' ? 'user' : 'assistant', (t.text || '(a card)') + (t.notDone ? ' (the app did not do this: nothing changed)' : ''));
     if (messages.length && messages[0].role === 'assistant') messages.shift();
     const now = stateText(state, ctx);
     const first = (rounds || []).length ? 'THE PERSON SAYS\n' + message : now + '\n\nTHE PERSON SAYS\n' + message;
@@ -808,7 +808,9 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
   }
   /* [CONFUSING 1, coordinator 16's ruling b] what a turn did: a refused step tells the person in a note; a turn where
      steps were refused and nothing was written or asked marks the AI's words as not done (never changed or hidden) */
-  const DONE_WORDS = 'The app did not do this: nothing was added';
+  /* [TABSETUP_PLAN 4] the fill found a book another tab made: the same words as the setup screens */
+  const OTHER_TAB = 'Your money was set up in another tab, so this tab shows it now. What you typed here was not saved';
+  const DONE_WORDS = 'The app did not do this: nothing changed';
   function refused(frame, state, shown, deps, text) {
     if (frame) frame.refused++;
     addTurn(state, { who: 'note', text, at: deps.told() }, shown);
@@ -871,12 +873,14 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       }
       const raw = Array.isArray(x.steps) ? x.steps : [];
       const refs = allRefs(book, today), plan = [], dropped = [], left = [];
+      let again = false;   // [qc-controls run 2 CONFUSING] some left-out step could work if said again (not one the app cannot do)
       for (const a of raw) {
-        if (plan.length >= MAX_STEPS) { dropped.push('more than ' + MAX_STEPS + ' at a time'); if (!left.includes('the changes after the first ' + MAX_STEPS)) left.push('the changes after the first ' + MAX_STEPS); continue; }
+        if (plan.length >= MAX_STEPS) { again = true; dropped.push('more than ' + MAX_STEPS + ' at a time'); if (!left.includes('the changes after the first ' + MAX_STEPS)) left.push('the changes after the first ' + MAX_STEPS); continue; }
         const s = stepOf(a, { book, today, refs, payWith: state.payWith });
         if (s.bad) {
           dropped.push(s.bad); if (s.payWith) state.askPay = true;
           /* a note that tells the AI to ask something is no words for the person */
+          if (!s.left) again = true;
           left.push(s.left || (/^(ask|which account)/i.test(s.bad) ? 'one step that needs an answer from you first' : DO_WORDS[a && a.do] || 'a change the assistant can\'t make here'));
         } else plan.push(s);
       }
@@ -897,7 +901,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
          check, on the book the step would make, larger than safe to spend) asks first, with the gap in words: an extra
          zero never goes in silently */
       const far = farFigures(plan, book, today, deps, safe);
-      const card = { kind: 'change', status: 'ask', ver: verNow, lines: plan.map(s => s.text + (far.has(s) ? '. ' + far.get(s) : '') + (guess.includes(s) ? ' (my guess)' : '')), rows: [], plan, dropped, left };
+      const card = { kind: 'change', status: 'ask', ver: verNow, lines: plan.map(s => s.text + (far.has(s) ? '. ' + far.get(s) : '') + (guess.includes(s) ? ' (my guess)' : '')), rows: [], plan, dropped, left, again };
       if (del || big || far.size || guess.length) {
         card.ask = del ? 'delete' : big ? 'large' : far.size ? 'gap' : 'guess';
         card.why = del ? 'this removes something' : big ? 'this is more than safe to spend' : far.size ? 'the figure is far from what the app expected' : 'I guessed an amount';
@@ -1028,7 +1032,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     const told = deps.told();
     let built;
     try { built = ANS.build(state.draft, { day: today, told, newId: deps.newId }); } catch (e) { return { state, shown, ok: false, text: e.message }; }
-    if (!(await deps.start(built.book))) return { state, shown, ok: false, text: 'This could not be saved on this device. Nothing changed' };
+    if (!(await deps.start(built.book))) return { state, shown, ok: false, text: deps.why && deps.why() === 'there' ? OTHER_TAB : 'This could not be saved on this device. Nothing changed' };
     const v = LA.lookahead(built.book, today), main = built.ids.bank1;
     state.fill = { at: told, told, day: today };
     state.wrote = true;   // [M6] what was typed for setup is not typed for a later change

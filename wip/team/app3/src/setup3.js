@@ -9,6 +9,19 @@
    answers into a book through engine/build_book.js and keeps it through the store (the draft section below says
    how). Nothing is worked out here. The words are drafts for Mako's copy pass. */
 /* [qc-controls run 1 blocker 2, coordinator 16's ruling B] setup has no step for these: its last step says where they go */
+/* [TABSETUP_PLAN 3, coordinator 17] setup finished in another tab while this one was still on setup (the screens or the
+   chat): this tab closes onto Home with the book from there, and says so; nothing typed here is written */
+/* [qc-foundation 4, 5] the line says what was typed here only when something was (setup open, or the chat's setup
+   answers); a fill still held in the other tab is said; the setup draft as stored is cleared, so it never comes back */
+addEventListener('burrow3:started', e => {
+  const st = typeof CHAT3 !== 'undefined' && CHAT3.state, typed = !!setup3 || !!(st && st.draft);
+  if (setup3) endSetup3();
+  draftWrite3(null).catch(() => {});
+  renderHome3();
+  if (typeof renderChat3 === 'function') renderChat3();
+  const held = e && e.detail && e.detail.held;
+  msg3('Your money was set up in another tab, so this tab shows it now' + (held ? '. It can still be undone in that tab' : '') + (typed ? '. What you typed here was not saved' : ''));
+});
 const SETUP3_LATER = 'Loans, goals and budget lines like Gifts are not part of setup. Add them on Plan after this: Add a loan, Add a goal, Add a line';
 let setup3 = null;
 function dayOptions3(sel, extra) {
@@ -251,7 +264,7 @@ function form3(strict, sec) {
   const asks = el => strict && (!sec || sec.contains(el));
   const ask = (el, words) => { fieldErr3(el, words); el.focus(); throw new Error('asked'); };
   /* [M47] a bank's own box reads a minus (bankBox3) */
-  const amount = (el, words) => { const v = bankBox3(el) ? typedBank3(el.value, cur) : typed3(el.value, cur); if (v !== null) return v; return asks(el) ? ask(el, words) : null; };
+  const amount = (el, words) => { const v = bankBox3(el) ? typedBank3(el.value, cur) : typed3(el.value, cur); if (v !== null) return v; return asks(el) ? ask(el, typedSlip3(el.value, cur) || words) : null; };
   const maybe = (el, words) => (el.value.trim() ? amount(el, words) : null);
   const text = (el, dflt) => (el.value || '').trim() || dflt;
   const dayOf = v => (v === 'last' ? 'last' : Number(v));
@@ -587,6 +600,7 @@ async function saveSetup3() {
   let built;
   try { built = ANSWERS3.build(ans, { day: E3.today(), told: E3.told(), newId: E3.newId, currency: $('#s3Cur').value }); } catch (e) { err.textContent = e.message; return; }
   const ok = await E3.start(built.book);
+  if (!ok && E3.startWhy === 'there') return;   // another tab finished setup: its book is shown and said (burrow3:started)
   if (!ok) { err.textContent = 'This could not be saved on this device. Nothing changed'; return; }
   endSetup3();   // first: no typed-keeping write is asked after this
   await draftWrite3(null);

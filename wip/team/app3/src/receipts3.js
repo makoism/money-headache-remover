@@ -177,7 +177,7 @@ function rcFormHtml3() {
 function rcDraft3() {
   const m = RC3.mode, acct = m === 'moved' ? $('#rcFrom').value : $('#rcAcct').value;
   const a = typed3($('#rcAmt').value, E3.curOf(acct));
-  if (a === null) return { bad: 'Type the amount, like 1200' };
+  if (a === null) return { bad: typedSlip3($('#rcAmt').value, E3.curOf(acct)) || 'Type the amount, like 1200' };
   const x = { date: $('#rcDate').value, a, note: $('#rcNote').value };
   if (m === 'moved') return Object.assign(x, { from: acct, to: $('#rcTo').value });
   x.acct = acct;
@@ -268,7 +268,12 @@ async function rcSave3(sure) {
     ov = rcOver3(df, x); onCard = rcCardWords3(dry, x);
     /* [C2] a spend on Free to spend while Free to spend left caps safe to spend (the engine, on the book with the spend):
        the bar says it lowers both, and why */
-    both = RC3.mode === 'spend' && x.line === 'free' && df && df.capped ? 'Safe to spend goes down with it, it\'s what\'s left of your Free to spend' : null;
+    /* [qc-numbers run 1 B2] only when the engine's safe to spend after the spend is lower; a spend dated before the last
+       bank check is already inside that figure, so safe to spend stays, and the bar says so */
+    if (RC3.mode === 'spend' && x.line === 'free' && df && before && df.safe != null && before.safe != null) {
+      if (df.safe < before.safe && df.capped) both = 'Safe to spend goes down with it, it\'s what\'s left of your Free to spend';
+      else if (df.safe === before.safe && !onCard) both = `Safe to spend stays ${money3(df.safe, E3.home())}`;
+    }
   } catch (e) { ov = null; }
   const said = [rcWords3(x), onCard, ov, both].filter(Boolean).join('. ');
   const r = RC3.edit ? await ACT3.edit(RC3.edit.id, rcFields3(x), { undo: said, seen: rcSeen3() }) : await ACT3[RC_KIND3[RC3.mode]](x, { undo: said });

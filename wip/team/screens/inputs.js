@@ -25,6 +25,7 @@
     decimals_none: E('{name} has no decimals. Type a whole amount'),
     minus: E('That can\'t be below zero. Type it without the minus'),
     too_big: E('That amount is too big. Check the digits'),
+    commas: E('Did you mean {means}?'),
   };
   const CURRENCY_NAMES = { JPY: 'Yen', KRW: 'Won' };
 
@@ -37,7 +38,8 @@
     if (r.ok) return { ok: true, minor: r.minor, value: money.toInput(r.minor, opts.code) };
     const d = money.digits(opts.code);
     const key = r.reason === 'decimals' && d === 0 ? 'decimals_none' : r.reason;
-    const message = ERRORS[key].text.replace('{digits}', String(d)).replace('{name}', CURRENCY_NAMES[opts.code] || opts.code);
+    const means = (r.means || []).map(n => money.format(n, opts.code)).join(' or ');
+    const message = ERRORS[key].text.replace('{digits}', String(d)).replace('{name}', CURRENCY_NAMES[opts.code] || opts.code).replace('{means}', means);
     return { ok: false, reason: r.reason, value: raw, message };
   }
 

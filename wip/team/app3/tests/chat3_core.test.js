@@ -554,6 +554,17 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const f3 = FAKE.make([say('', [call('change', { steps: [{ do: 'log_spend', amount: 600, account: 'A1' }] })]), say('Logged.')]);
     const r3 = await K.turn(r2.state, 'I spent 600 from Main bank', hp.deps(f3));
     eq(r3.shown.find(x => x.who === 'card').card.left, []);
+    /* [qc-controls run 2 CONFUSING] a left-out step that can be said again keeps "again"; one the app cannot do (removing
+       a pay) does not, so the card never tells the person to say it again */
+    eq(c.again, true, 'set aside: can be said again');
+    const f4 = FAKE.make([say('', [call('change', { steps: [{ do: 'log_spend', amount: 300, account: 'A1' }, { do: 'remove', ref: 'P1' }] })]), say('Logged the 300.')]);
+    const r4 = await K.turn(r3.state, 'log 300 from Main bank and remove my pay', hp.deps(f4));
+    const c4 = r4.shown.find(x => x.who === 'card').card;
+    ok(c4.left.length === 1 && /removing a pay, which the app cannot do yet/.test(c4.left[0]) && c4.again === false, JSON.stringify([c4.left, c4.again]));
+  });
+  /* [qc-controls run 2 CONFUSING] after a refused remove nothing was added and nothing was removed: the words say nothing changed */
+  await t('the not-done words say nothing changed', async () => {
+    eq(K.DONE_WORDS, 'The app did not do this: nothing changed');
   });
   /* [qc-assistant blocker 3; M17] "what does this screen do?": one table with a plain line for every screen and every
      sheet, told to the assistant, and the open sheet's own name with each message */
@@ -883,7 +894,7 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     eq(r2.shown.filter(x => x.who === 'ai').pop().notDone, undefined, 'words with nothing refused are not marked');
     /* the AI is told its own Done was not done */
     const sent = JSON.stringify(K.request(r2.state, 'next', [], { book: h.book, today: h.day }).messages);
-    ok(/Done\. Here's Home\. \(the app did not do this: nothing was added\)/.test(sent), 'the AI is sent that its Done was not done');
+    ok(/Done\. Here's Home\. \(the app did not do this: nothing changed\)/.test(sent), 'the AI is sent that its Done was not done');
     /* a change with every step refused says not done too */
     const r3 = await K.turn(r2.state, 'do something odd', h.deps(FAKE.make([say('', [call('change', { steps: [{ do: 'no_such_thing' }] })]), say('Done.')])));
     ok(lastNote(r3).some(n => /^Not done: /.test(n)), 'a change with nothing done says Not done: ' + JSON.stringify(lastNote(r3)));

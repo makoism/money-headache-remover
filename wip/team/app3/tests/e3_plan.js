@@ -72,7 +72,11 @@ const view = bk => T.L.lookahead(bk, DAY);
   ck('Food for this pay period only: a once key named by the pay, the period shows 50,000', Object.keys(bk.plan.budgets[0].once || {}).join() === r.period.startsWith && await amt(p, `[data-line="${food.id}"] [data-fig=line-amount]`) === r.period.lines[0].counts);
 
   /* a bill: add, then change Rent from a date */
+  /* [qc-numbers run 1 B4] "1,0000" is a misplaced comma or an extra zero: it asks which, and nothing is saved */
   await p.click('#plAddBill'); await T.w(200);
+  await fill(p, { name: 'Gym', amount: '1,0000', day: '31', acct: BANK }); await save(p);
+  ck('B4: a comma not in a thousands place asks which was meant', /Did you mean ¥1,000 or ¥10,000\?/.test(await err(p) || ''), await err(p));
+  ck('B4: and nothing is saved', !(await saved(p)).schedules.some(s => s.name === 'Gym'));
   await fill(p, { name: 'Gym', amount: '8000', day: '1', acct: BANK }); await save(p);
   bk = await saved(p);
   const gym = bk.schedules.find(s => s.name === 'Gym');

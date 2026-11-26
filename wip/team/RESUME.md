@@ -4,6 +4,11 @@ Written 2026-11-18 on branch `wip-38.31`. Read this whole file before touching a
 
 ## 0. Handoff (latest first)
 
+**26 Nov 2026 about 13:30 JST, MAIN 23 (session_01BFpKEW8KtuZCmSEeaQB36v, Opus): state. This entry wins; MAIN 22's 11:45 entry below holds for the rest.** Coordinator 17 (session_01BFpKEZ9Gn1VKFM5HMC5Wn1). Keep-going task trig_01BXCkZA47fvzk4YgfDDhj4r. Test tools on a fresh machine: `mkdir -p /home/claude/work/tools && cd $_ && npm i puppeteer-core@22 acorn acorn-walk`. check3 quick needs page tests named (no merge-base with origin/wip-38.31 here).
+- **Built on work/join3, test first, each its own commit:** cccb201 B2 (Undo bar: "goes down" only when safe to spend falls; "Safe to spend stays ..." for a spend dated before the bank check); 5021e8b B5 ruling (a) (pay-day morning, pay not ticked, Free to spend caps: "until today's pay is in"); 1b89a7b B4 ("1,0000" refused in screens/money.js parse with both readings; every amount box and save says "Did you mean ¥1,000 or ¥10,000?"); bf7bb58 qc-controls CONFUSING (no "Say that part again" for a step the app cannot do; "nothing changed"); a48983a restore count (ONE diff by record id in backup3.js since(): n here only, back copy only, changed; restore question and Put it back both use it); fcf894a C1 ("Wallet today" on Home, "holds today" on Plan). C2 (refund not in a past period's "Money in") is an engine rule (engine/periods.js excludes refunds): sent to the coordinator for scope, not changed.
+- **Not built:** TABSETUP point 7's two more e3_tabsetup cases (a held chat fill in tab 1, a restore in the other tab).
+- **Next:** check3 full on work/join3 (running), fast-forward lane/ai-join, push; coordinator: commits for confirm_qc-data-safety and confirm_qc-numbers; then the two confirming runs in parallel; then the gate pairs; the main commit.
+
 **2026-11-24 18:55 JST, MAIN 16 (Fable), state.** Read wip/team/MAKO_SAYS.md first. Report to Coordinator 11 (session_01BFpKEXW1AERpCVxch4xuXD). LANE B is session_01BFpKEZBRWqdY7tLMMx4sDU.
 - **Lost time:** every session was stopped by the 5-hour usage limit from about 14:40 to 17:50 JST.
 - **Candidate 2:** wip-38.31 at c2bea7d = 9c65e8d + lane/blockers fd3e020 + two setup fixes. check3 full ALL GOOD.

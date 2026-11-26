@@ -80,14 +80,14 @@ function readCheck3(strict) {
     const id = el.dataset.bankfig;
     if (!el.value.trim()) continue;   // [qc-controls run 1 blocker 3] blank: not looked at today, nothing written for it, as for a card
     const v = typedBank3(el.value, E3.curOf(id));
-    if (v === null) { if (strict) return bad(`Type what ${E3.nameOf(id)} shows today, as an amount, or leave it blank`, el); continue; }
+    if (v === null) { if (strict) return bad(typedSlip3(el.value, E3.curOf(id)) || `Type what ${E3.nameOf(id)} shows today, as an amount, or leave it blank`, el); continue; }
     figures[id] = v;
   }
   for (const el of sheet.querySelectorAll("[data-cardfig]")) {
     const id = el.dataset.cardfig;
     if (!el.value.trim()) continue;   // blank: this card is not checked
     const v = typed3(el.value, E3.curOf(id));
-    if (v === null) { if (strict) return bad(`Type what is on ${E3.nameOf(id)} now, as an amount, or leave it blank`, el); continue; }
+    if (v === null) { if (strict) return bad(typedSlip3(el.value, E3.curOf(id)) || `Type what is on ${E3.nameOf(id)} now, as an amount, or leave it blank`, el); continue; }
     figures[id] = v;
   }
   const ticked = [], amounts = {}, expected = {}, lands = {}, landed = {};
@@ -96,7 +96,7 @@ function readCheck3(strict) {
     const row = [...sheet.querySelectorAll('.a3-tick')].find(x => x.dataset.item === o.item);
     if (!row || !row.querySelector('input[type=checkbox]').checked) continue;
     const v = typed3(row.querySelector('[data-amt]').value, E3.curOf(o.account));
-    if (v === null) { if (strict) return bad(`Type the amount for ${E3.occName(o.item)}`, row.querySelector('[data-amt]')); continue; }
+    if (v === null) { if (strict) return bad(typedSlip3(row.querySelector('[data-amt]').value, E3.curOf(o.account)) || `Type the amount for ${E3.occName(o.item)}`, row.querySelector('[data-amt]')); continue; }
     ticked.push(o.item); if (v !== o.amount) amounts[o.item] = v;
     const ld = row.querySelector('[data-landed]');
     if (ld) {
