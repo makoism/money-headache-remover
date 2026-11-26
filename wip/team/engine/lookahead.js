@@ -448,7 +448,9 @@
     // amount corrected later, `was`; removed later: minus what it had) counts on the check's day, where it only explains
     // part of that check's gap, so a closed period never moves and safe to spend never goes up by it
     const heldAt = new Map();
-    const holdAt = (rid, day, key) => { const h = heldAt.get(rid); if (!h || h.day > day || (h.day === day && keyCmp(h.key, key) > 0)) heldAt.set(rid, { day, key }); };
+    // `place`: the line that check's gap goes on (a bank check-in's fillerPlace, else Free to spend), where a money-in
+    // record's change counts [coordinator ruled qc-numbers amounthist finding 2]
+    const holdAt = (rid, day, key, place) => { const h = heldAt.get(rid); if (!h || h.day > day || (h.day === day && keyCmp(h.key, key) > 0)) heldAt.set(rid, { day, key, place: place || null }); };
     const amountAt = (e, key) => {
       if (keyCmp(e.key, key) > 0) return 0;   // told after the check: none of it was known there
       for (const w of e.was || []) if (w && w.told && keyCmp(keyOf(w.told), key) > 0) return w.a;   // the amount it had then
@@ -496,10 +498,10 @@
         let computed = base.amount;
         moves.forEach((e, k) => { if (isIn[k] !== wasIn[k]) computed += isIn[k] ? delta(e, id) : -delta(e, id); });
         // [S3, AN4] a record told after this check but inside it: named, so the screens can say the figure holds it
-        moves.forEach((e, k) => { if (isIn[k] && !wasIn[k]) { holdAt(e.id, cc.day, cc.key); if (e.key > cc.key) heldBy.push({ id: e.id, account: id, check: dayStr(cc.day) }); } });
-        for (const e of goneMoves) if (!heldAt.has(e.id) && e.day <= cc.day && removedAfter(e, cc.key) && inside(e, cc, id)) holdAt(e.id, cc.day, cc.key);
-        wasIn = isIn;
         const fp = fillerPlaceOf(c);
+        moves.forEach((e, k) => { if (isIn[k] && !wasIn[k]) { holdAt(e.id, cc.day, cc.key, fp); if (e.key > cc.key) heldBy.push({ id: e.id, account: id, check: dayStr(cc.day) }); } });
+        for (const e of goneMoves) if (!heldAt.has(e.id) && e.day <= cc.day && removedAfter(e, cc.key) && inside(e, cc, id)) holdAt(e.id, cc.day, cc.key, fp);
+        wasIn = isIn;
         fillers.push(Object.assign(makeFiller(id, c.day > base.day ? base.day + 1 : c.day, c.day, computed - c.a), fp ? { place: fp } : {},
           { had: computed, gain: c.a - computed, answer: c.gain || null }));
         base = cc;
@@ -834,10 +836,10 @@
       else banks[id] = bankInfo(id);
     }
     res.heldByCheck = heldBy;
-    // [AMOUNT_HISTORY_PLAN 4] each spend or refund whose amount was corrected (or that was removed) after the check that
+    // [AMOUNT_HISTORY_PLAN 4] each spend, refund or money in (finding 2) whose amount was corrected (or that was removed) after the check that
     // first held it, split in two: what it was at the check counts on its own day, `after` on the check's day. Receipts
     // lists the record in its own period at `atCheck` and the change as its own row in the check's period
-    res.splits = events.filter(e => e.was && e.was.length && heldAt.has(e.id) && (e.k === 'spend' || (e.k === 'in' && e.sub === 'refund')))
+    res.splits = events.filter(e => e.was && e.was.length && heldAt.has(e.id) && (e.k === 'spend' || e.k === 'in'))
       .map(e => { const h = heldAt.get(e.id), a0 = amountAt(e, h.key), last = e.was[e.was.length - 1];
         const after = (e.gone ? 0 : e.a) - a0;
         return { id: e.id, check: dayStr(h.day), atCheck: a0, after, more: Math.max(after, 0), less: Math.max(-after, 0), told: String(last.told).slice(0, 10), day: h.day, own: e.day }; })
@@ -1078,9 +1080,21 @@
           if (cur(cid) !== cur(acctId)) continue;
           for (const f of cards[cid].fillers) for (const pt of f.parts) if ((fromOpening || dayNum(pt.from) >= lp) && dayNum(pt.from) <= upTo) filled += pt.amount;   // [CARDGAP] by part, as a bank's
         }
+        // [AMOUNT_HISTORY, coordinator ruled qc-numbers amounthist finding 2] money in (not a refund) is on no line, but its
+        // check's gap is: an amount it had at the check that first held it, corrected or removed since (`was`), counts the
+        // change on the check's day on the line that check's gap goes on, so the gap it opens there is explained and safe
+        // to spend does not move. Told after the check (never in `was`): nothing here, as before
+        const inChange = e => {
+          const h = heldAt.get(e.id);
+          if (!h || !(e.was && e.was.length) || keyCmp(e.key, h.key) > 0 || (h.place || 'free') !== lineId) return 0;
+          if (!e.account || !openEv[e.account] || inside(e, openingOf(e.account), e.account) || cur(e.account) !== cur(acctId)) return 0;
+          const d = Math.max(e.day, h.day);
+          return inDays(d) ? (e.gone ? 0 : e.a) - amountAt(e, h.key) : 0;
+        };
         const kept = e => !e.gone || (e.was && e.was.length && heldAt.has(e.id));   // [AMOUNT_HISTORY] removed after its check still counts what it had then
         const spent = events.filter(e => kept(e) && e.k === 'spend' && !isFeeRecord(e)).reduce((t, e) => t + inSum(e), 0)
-          - events.filter(e => kept(e) && e.k === 'in' && e.sub === 'refund').reduce((t, e) => t + inSum(e), 0) + filled;   // [O] a refund given back to its line
+          - events.filter(e => kept(e) && e.k === 'in' && e.sub === 'refund').reduce((t, e) => t + inSum(e), 0) + filled   // [O] a refund given back to its line
+          - events.filter(e => kept(e) && e.k === 'in' && e.sub !== 'refund').reduce((t, e) => t + inChange(e), 0);   // [finding 2] money in: only a change after its check
         if (lineId !== 'free') { partsOf[lineId] = { start, spent }; return win ? { start, left: start - spent } : start - spent; }
         const inPeriod = (e, id) => openEv[id] && !inside(e, openingOf(id), id) && (fromOpening || e.day >= lp) && e.day <= upTo;
         // [Q2, S5] a fee in one currency comes out of Free to spend unless its fee record names another place

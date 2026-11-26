@@ -144,9 +144,10 @@
         const before = { at: r.at, by: r.by };
         /* [AMOUNT_HISTORY_PLAN] removing an event is a correction to 0 at this step's `told`: the amount it had is kept in
            `was`, so a removal after a bank check agrees with correcting it down; Undo puts `was` back as it was */
-        /* [coordinator 16 ruling (a)] only a spend or refund of the person's own: a check-in's records (its check, ticks
-           and the gap spend logged with it, marked dayInside) are removed with no history */
-        const ownMoney = r.k === 'spend' || (r.k === 'in' && r.sub === 'refund');
+        /* [coordinator 16 ruling (a)] only a spend, refund or money in of the person's own (money in: coordinator ruled
+           qc-numbers amounthist finding 2): a check-in's records (its check, ticks and the gap spend logged with it,
+           marked dayInside) are removed with no history */
+        const ownMoney = r.k === 'spend' || r.k === 'in';
         if (list === 'events' && ownMoney && !r.dayInside && !(r.settles && r.settles.length)) { before.was = r.was === undefined ? null : clone(r.was); r.was = (r.was || []).concat([Object.assign({ a: r.a }, r.a2 != null ? { a2: r.a2 } : {}, { told: s.told })]); }
         r.gone = s.day; r.goneBy = s.id; stamp(r);
         log.removed.push({ list, id, before });
