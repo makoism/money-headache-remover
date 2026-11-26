@@ -79,7 +79,7 @@ const row = (p, attr, name) => p.evaluate(([a, n]) => { const b = [...document.q
   await tab(p, 'plan');
   ck('7 Dec Plan: the pay every 2 weeks, on Fridays', /every 2 weeks, on Fridays/.test(await row(p, 'data-pay', 'Pay')), await row(p, 'data-pay', 'Pay'));
   const car = await row(p, 'data-bill', 'Car insurance');
-  ck('7 Dec Plan: car insurance each year on 1 Mar, with the nudge: $80.00 each pay', /each year on 1 Mar/.test(car) && /Set aside about \$80 each pay to have \$480 ready by 1 Mar 2027 \(6 pays before it\)/.test(car), car);
+  ck('7 Dec Plan: car insurance each year on 1 Mar, with the nudge: $80.00 each pay', /each year on 1 Mar/.test(car) && /Set aside about \$80\.00 each pay to have \$480\.00 ready by 1 Mar 2027 \(6 pays before it\)/.test(car), car);
   /* 8 Dec: a line each pay */
   await go(p, '2026-12-08');
   await tab(p, 'plan'); await p.click('#plAddLine'); await w(200);

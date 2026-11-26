@@ -594,7 +594,7 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     ok(card.need.filter(x => x === 'What does Main bank show today?').length === 1 && card.need.some(x => /everyday/.test(x)), JSON.stringify(card.need));
     st = edits2(h, st, [['banks', [{ name: 'Main bank', amount: 50000 }]]]);
     ok(K.draftCard(st.draft, h.day).need.includes('How much is Rent?'), 'then the bill\'s amount is asked again: ' + JSON.stringify(K.draftCard(st.draft, h.day).need));
-    ok(/₱50,000 on/.test(JSON.stringify(K.draftCard(st.draft, h.day))), JSON.stringify(K.draftCard(st.draft, h.day).sections[2]));
+    ok(/₱50,000\.00 on/.test(JSON.stringify(K.draftCard(st.draft, h.day))), JSON.stringify(K.draftCard(st.draft, h.day).sections[2]));
   });
   await t('[C] saying the currency the amounts were already read in loses nothing (Japan, then 286,000, then "yen")', async () => {
     const h = page('2026-11-24'), st = edits(h, [['country', 'JP'], ['banks', [{ name: 'Main bank', amount: 286000 }]], ['currency', 'JPY']]);

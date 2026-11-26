@@ -2,8 +2,8 @@
 /* Home words the engine's warnings itself (screens/status.js, money.js, names.js), never printing the engine's text:
    with no minimum it says "below zero", with one it names it, and no raw ISO day or "2027-03" month is ever shown.
    Made-up US dollars, set up 1 Dec 2026, seen on 2 Dec: pay $2,500.00 on the 25th, rent $3,000.00 on the 1st.
-   A. $400.00 in Checking, no minimum: 400 + 2,500 - 3,000 = -100 on 1 Jan, "Checking goes $100 below zero on 1 Jan".
-   B. The same with a minimum of $50.00: "Checking goes $150 below its minimum of $50 on 1 Jan".
+   A. $400.00 in Checking, no minimum: 400 + 2,500 - 3,000 = -100 on 1 Jan, "Checking goes $100.00 below zero on 1 Jan".
+   B. The same with a minimum of $50.00: "Checking goes $150.00 below its minimum of $50.00 on 1 Jan".
    C. $1,000.00, no minimum: 1 Jan 500, 1 Feb 0, 1 Mar -500, past the safe to spend walk: "Later on: Checking goes below
       zero in Mar 2027". */
 'use strict';
@@ -42,7 +42,7 @@ async function warns(bk, day) {
   {
     const { out, status, all, errs } = await warns(usBook(40000));
     const w = out.find(x => x.code === 'below_minimum');
-    ck('A: no minimum, below zero in words', w && w.text === 'Checking goes $100 below zero on 1 Jan', JSON.stringify(out));
+    ck('A: no minimum, below zero in words', w && w.text === 'Checking goes $100.00 below zero on 1 Jan', JSON.stringify(out));
     ck('A: the status line never speaks of a minimum there is not', /1 Jan/.test(status) && !/minimum/.test(status), status);
     ck('A: no raw ISO day on Home', !ISO.test(all), (all.match(/.{20}\d{4}-\d{2}.{10}/) || [])[0]);
     ck('A: no page errors', errs.length === 0, errs.join(' | '));
@@ -50,7 +50,7 @@ async function warns(bk, day) {
   {
     const { out, all, errs } = await warns(usBook(40000, 5000));
     const w = out.find(x => x.code === 'below_minimum');
-    ck('B: a minimum is named with its amount', w && w.text === 'Checking goes $150 below its minimum of $50 on 1 Jan', JSON.stringify(out));
+    ck('B: a minimum is named with its amount', w && w.text === 'Checking goes $150.00 below its minimum of $50.00 on 1 Jan', JSON.stringify(out));
     ck('B: no raw ISO day on Home', !ISO.test(all));
     ck('B: no page errors', errs.length === 0, errs.join(' | '));
   }

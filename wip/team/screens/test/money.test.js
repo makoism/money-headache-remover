@@ -27,9 +27,11 @@ test('minus is U+2212 joined to the amount by U+2060, never a hyphen', () => {
   assert.ok(!money.format(-5, 'USD').includes('-'));
 });
 
-test('a whole amount reads whole on its own, cents only when it has them', () => {
-  assert.strictEqual(money.format(120000, 'USD'), '$1,200');
+test('[M48, qc-numbers B1] a whole amount in a currency with cents is written with its cents, everywhere', () => {
+  assert.strictEqual(money.format(120000, 'USD'), '$1,200.00');
+  assert.strictEqual(money.format(0, 'USD'), '$0.00');
   assert.strictEqual(money.format(120000, 'USD', { cents: true }), '$1,200.00');
+  assert.strictEqual(money.format(120000, 'USD', { cents: false }), '$1,200');
 });
 
 test('yen never shows decimals, even when cents are asked for', () => {
@@ -66,13 +68,14 @@ test('one screen, one way of writing cents: any amount with cents gives every am
   assert.strictEqual(f(12000), '$120.00');
   assert.strictEqual(f(8001), '$80.01');
   const g = money.formatter('USD', [12000, 8000, -500]);
-  assert.strictEqual(g(12000), '$120');
-  assert.strictEqual(g(-500), M + '$5');
+  assert.strictEqual(g(12000), '$120.00');
+  assert.strictEqual(g(-500), M + '$5.00');
 });
 
-test('an amount the screen did not declare, with cents, makes the whole-number formatter refuse', () => {
+test('an amount the screen did not declare is still written with its cents, never dropped', () => {
   const g = money.formatter('USD', [12000]);
-  assert.throws(() => g(8001), /cents/);
+  assert.strictEqual(g(8001), '$80.01');
+  assert.throws(() => money.formatter('USD', [1.5]), /whole minor units/);
 });
 
 test('reading a typed amount: commas, a sign and spaces are fine, the result is whole minor units', () => {
@@ -131,11 +134,11 @@ test('a sum line (numbers review S4): the engine\'s parts written with one minus
   for (const s of [money.sumLine([{ label: 'a', amount: -5 }], -5, 'JPY')]) assert.ok(!/ - /.test(s) && !s.includes('-'), s);
 });
 
-test('[BL4] one cents rule for a whole screen: hasCents, and a sum line told the screen has cents', () => {
+test('[BL4, M48] hasCents, and a sum line in dollars always has cents', () => {
   assert.strictEqual(money.hasCents(15000, 'USD'), false);
   assert.strictEqual(money.hasCents(3750, 'USD'), true);
   assert.strictEqual(money.hasCents(3750, 'JPY'), false);
-  assert.strictEqual(money.sumLine([{ label: 'Bank today', amount: 15000 }], 15000, 'USD'), '$150 (Bank today) = $150');
+  assert.strictEqual(money.sumLine([{ label: 'Bank today', amount: 15000 }], 15000, 'USD'), '$150.00 (Bank today) = $150.00');
   assert.strictEqual(money.sumLine([{ label: 'Bank today', amount: 15000 }], 15000, 'USD', { cents: true }), '$150.00 (Bank today) = $150.00');
   assert.strictEqual(money.sumLine([{ label: 'Bank today', amount: 1000 }], 1000, 'JPY', { cents: true }), '¥1,000 (Bank today) = ¥1,000');
 });

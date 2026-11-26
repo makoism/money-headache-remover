@@ -110,7 +110,7 @@ async function fill(p, ai) { ai.push(R.say('', [R.call('fill_book', {})]), R.say
   {
     const { o, ai } = await start('D', 'USD');
     try {
-      ck('D: the chat holds Sora Bank 2,500', bankLine(await draftText(o.p)) === 'Sora Bank: $2,500', bankLine(await draftText(o.p)));
+      ck('D: the chat holds Sora Bank 2,500', bankLine(await draftText(o.p)) === 'Sora Bank: $2,500.00', bankLine(await draftText(o.p)));
       await screensSave(o.p, '2600.50');
       await back(o.p);
       ck('D: after Back, the chat reads 2,600.50', bankLine(await draftText(o.p)) === 'Sora Bank: $2,600.50', bankLine(await draftText(o.p)));

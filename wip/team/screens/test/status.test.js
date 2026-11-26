@@ -83,7 +83,7 @@ test('one account under its minimum while the headline is fine: never "ok" (free
   assert.strictEqual(s.state, 'warning');
   assert.strictEqual(s.level, 'warn');
   assert.strictEqual(s.reason.account, 'ewallet');
-  assert.strictEqual(s.text.reason, 'E-wallet goes ₱1,500 below zero on 12 Mar');
+  assert.strictEqual(s.text.reason, 'E-wallet goes ₱1,500.00 below zero on 12 Mar');
   assert.ok(s.also.includes('later_on'));
 });
 
@@ -203,14 +203,14 @@ test('warnings are worded here from the engine\'s data, never its text: "below z
   const ctx = { currency: 'USD', names: { bank: 'Checking' } };
   const iso = /\d{4}-\d{2}/;
   const zero = status.warningText({ account: 'bank', code: 'below_minimum', day: '2027-01-05', amount: 1000, short: 1000, minimum: null, text: 'engine 2027-01-05' }, ctx);
-  assert.strictEqual(zero, 'Checking goes $10 below zero on 5 Jan');
+  assert.strictEqual(zero, 'Checking goes $10.00 below zero on 5 Jan');
   /* [M47, K29] the bank itself below zero today (the engine's own bank figure): said as it is, no amount beside the figure */
   const now = status.warningText({ account: 'bank', code: 'below_minimum', day: '2027-01-05', amount: 1000, minimum: null }, Object.assign({ accounts: { bank: { bank: -1000, currency: 'USD' } } }, ctx));
   assert.strictEqual(now, 'Checking is below zero today. Everything here counts from what it shows');
   const above = status.warningText({ account: 'bank', code: 'below_minimum', day: '2027-01-05', amount: 1000, minimum: null }, Object.assign({ accounts: { bank: { bank: 4000, currency: 'USD' } } }, ctx));
-  assert.strictEqual(above, 'Checking goes $10 below zero on 5 Jan');
+  assert.strictEqual(above, 'Checking goes $10.00 below zero on 5 Jan');
   const min = status.warningText({ account: 'bank', code: 'below_minimum', day: '2027-01-05', amount: 1000, short: 1000, minimum: 5000, text: 'x' }, ctx);
-  assert.strictEqual(min, 'Checking goes $10 below its minimum of $50 on 5 Jan');
+  assert.strictEqual(min, 'Checking goes $10.00 below its minimum of $50.00 on 5 Jan');
   const later = status.laterText({ account: 'bank', day: '2027-02-01', balance: -2500, amount: 2500, minimum: null, text: 'Later on: Checking goes below zero in 2027-02' }, ctx);
   assert.strictEqual(later, 'Later on: Checking goes below zero in Feb 2027');
   const again = status.warningText({ account: 'bank', code: 'check_again', day: '2026-12-03', text: 'raw 2026-12-03' }, ctx);

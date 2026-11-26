@@ -4470,26 +4470,30 @@ details summary { min-height: 44px; }
   const group = w => w.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
   /* format(minor, code, { cents, sign })
-     cents: true writes every decimal the currency has; false writes whole units and refuses an amount that has cents
-     (they are never dropped); left out, cents show only when the amount has them. sign: false leaves out the currency sign. */
+     [M48, M51, qc-numbers run 1 B1] cents where the currency has them: every amount of a currency with minor units is
+     written with all of them, "$300.00" and "$0.00" on every screen and in every sentence, never "$300" beside
+     "$300.00"; yen and other whole currencies stay whole. cents: false writes whole units and refuses an amount that has
+     cents (they are never dropped). sign: false leaves out the currency sign. Boxes the person types into keep their own
+     rule (toInput, parse): nothing forces ".00" while typing. */
   function format(n, code, opts) {
     opts = opts || {};
     checkMinor(n);
     const d = digits(code);
     const p = parts(n, d);
     let cents = opts.cents;
-    if (cents === undefined) cents = hasCents(n, d);
-    if (cents === false && hasCents(n, d)) throw new Error('money: ' + n + ' ' + code + ' has cents, but the screen asked for whole amounts. Build the formatter from every amount on the screen');
+    if (cents === undefined) cents = d > 0;
+    if (cents === false && hasCents(n, d)) throw new Error('money: ' + n + ' ' + code + ' has cents, but whole amounts were asked for');
     const body = group(p.whole) + (cents && d ? '.' + p.frac : '');
     return (n < 0 ? MINUS : '') + (opts.sign === false ? '' : symbol(code)) + body;
   }
 
-  /* formatter(code, amounts): one way of writing cents for one screen or one sentence. When any amount on it has cents,
-     every amount is written with cents (€20.00 beside €80.01, never €20); otherwise all are whole. */
+  /* formatter(code, amounts): the formatter for one screen or one sentence. Every amount is written with the
+     currency's cents (€20.00 beside €80.01, and €20.00 when nothing on it has cents), so one amount reads the same on
+     every screen. The amounts are still checked to be whole minor units. */
   function formatter(code, amounts) {
-    const d = digits(code);
-    const cents = (amounts || []).some(n => hasCents(checkMinor(n), d));
-    return (n, opts) => format(n, code, Object.assign({}, opts, { cents }));
+    digits(code);
+    (amounts || []).forEach(checkMinor);
+    return (n, opts) => format(n, code, Object.assign({}, opts, { cents: undefined }));
   }
 
   /* what an input box shows: plain digits, a hyphen for minus, decimals only when the amount has them */
@@ -4520,18 +4524,18 @@ details summary { min-height: 44px; }
 
   /* sumLine(parts, result, code): the engine's sum as a person reads it (numbers review S4), "¥312,000 (Main bank today)
      − ¥100,000 (Trip) = ¥212,000". parts: [{ label, amount }] in order, signed; a part of zero is left out (no
-     "- 0 (minimum)"). One minus sign (U+2212) everywhere, one way of writing cents for the whole line. It writes the
-     engine's figures only: nothing is added up here. opts.cents true writes every amount with cents (the screen has some). */
+     "- 0 (minimum)"). One minus sign (U+2212) everywhere, cents where the currency has them. It writes the engine's
+     figures only: nothing is added up here. opts is kept for older callers and changes nothing. */
   function sumLine(parts, result, code, opts) {
     const shown = (parts || []).filter(p => p.amount !== 0);
-    /* opts.cents: the screen's own cents rule (BL4), so the sum is written the way every other amount on it is */
-    const f = opts && opts.cents ? (n => format(n, code, { cents: true })) : formatter(code, shown.map(p => p.amount).concat([result]));
+    /* every amount with the currency's cents, as every other amount on the screen is (M48) */
+    const f = formatter(code, shown.map(p => p.amount).concat([result]));
     const label = p => ' (' + String(p.label).replace(/[()]/g, '') + ')';
     const body = shown.map((p, i) => (i === 0 ? f(p.amount) : (p.amount < 0 ? ' \u2212 ' + f(-p.amount) : ' + ' + f(p.amount))) + label(p)).join('');
     return body + ' = ' + f(result);
   }
 
-  /* hasCents(minor, code): whether the amount has a part below one whole unit (for one cents rule per screen, BL4) */
+  /* hasCents(minor, code): whether the amount has a part below one whole unit */
   function hasCentsOf(n, code) { return hasCents(checkMinor(n), digits(code)); }
 
   return { MINUS, digits, symbol, format, formatter, hasCents: hasCentsOf, toInput, parse, sumLine };
@@ -8405,22 +8409,15 @@ RULES
    money.js writes and reads amounts, names.js gives every label and day, status.js the one verdict, inputs.js the one
    box behaviour, provenance.js the typed-or-sample mark, messages.js the one message band. No sums here. */
 const SM = BurrowScreens.money, SN = BurrowScreens.names;
-/* [BL4] one way of writing cents per screen, the sum lines included: a screen draws itself through screen3(draw); every
-   amount written while it draws is noted, and when any has cents the screen draws again with cents on every amount
-   ("$0.00" over "= $0.00", never "$0"). Outside a screen's drawing each amount or sentence keeps its own rule. */
-const CENTS3 = { on: false, seen: false };
-function note3(amounts, cur) { if (!CENTS3.on && amounts.some(n => SM.hasCents(n, cur))) CENTS3.seen = true; }
-const money3 = (minor, cur) => { note3([minor], cur); return SM.format(minor, cur, CENTS3.on ? { cents: true } : {}); };
-/* the one formatter for a sentence: the screen's rule when it has cents, else the sentence's own */
-function fmt3(cur, amounts) { note3(amounts, cur); return CENTS3.on ? (n => SM.format(n, cur, { cents: true })) : SM.formatter(cur, amounts); }
-function sum3(parts, result, cur) { note3(parts.map(x => x.amount).concat([result]), cur); return SM.sumLine(parts, result, cur, CENTS3.on ? { cents: true } : undefined); }
-function screen3(draw) {
-  CENTS3.on = false; CENTS3.seen = false;
-  draw();
-  if (!CENTS3.seen) return;
-  CENTS3.on = true;
-  try { draw(); } finally { CENTS3.on = false; }
-}
+/* [M48, M51, qc-numbers run 1 B1] cents where the currency has them, on every screen and in every sentence: the one
+   formatter (screens/money.js) writes "$300.00" and "$0.00" for a currency with cents and yen whole, so one amount
+   reads the same on Home, Receipts, Plan, the sheets and the assistant. These are its short names for app3. */
+const money3 = (minor, cur) => SM.format(minor, cur);
+/* the formatter for a sentence (the amounts are checked to be whole minor units) */
+const fmt3 = (cur, amounts) => SM.formatter(cur, amounts);
+const sum3 = (parts, result, cur) => SM.sumLine(parts, result, cur);
+/* a screen draws itself through screen3(draw) (kept so every screen has one place to draw from) */
+function screen3(draw) { draw(); }
 /* a typed amount as whole minor units, or null (never rounded; a minus is refused) */
 function typed3(text, cur) { const r = SM.parse(text, cur); return r.ok ? r.minor : null; }
 /* [M47, K29] what a bank shows today can be below zero: the one box where a minus is read (a bank only, never a card,
