@@ -36,7 +36,7 @@ const saved = p => p.evaluate(async () => { const s = await BurrowStore.open(); 
     await open();
     let before = JSON.stringify((await saved(p)).events.length);
     await btn('Close this card'); await T.w(300);
-    ck('Close while 54,000 is on it: pay it off first, nothing asked', /still has ¥54,000 on it\. Pay it off first/.test(await err()) && !(await p.$('[data-sure]')), await err());
+    ck('Close while 54,000 is on it: pay it off first, nothing asked', /still has ¥54,000 on it\. Use Pay it off now/.test(await err()) && !(await p.$('[data-sure]')), await err());
     await btn('Pay it off now'); await T.w(300);
     ck('Pay it off now asks, naming the amount and the bank', /Did you pay all ¥54,000 on Card A today, from Main bank\?/.test(await q()), await q());
     await p.$eval('[data-sure] [data-sureno]', e => e.click()); await T.w(300);
@@ -70,7 +70,13 @@ const saved = p => p.evaluate(async () => { const s = await BurrowStore.open(); 
     await p.type('#pl-name', 'Bike loan'); await p.type('#pl-owed', '100000'); await p.type('#pl-amount', '10000'); await p.type('#pl-payDay', '27'); await btn('Add'); await T.w(600);
     const bike = (await saved(p)).accounts.find(a => a.name === 'Bike loan').id;
     await plan(); await p.click(`#a3Plan [data-owed="${bike}"]`); await T.w(300);
+    /* [qc-controls confirm 4] Close while it owes: refused naming Pay it off (the button beside it), no question; then
+       Pay it off now shows its question alone, the refusal gone (one message at a time) */
+    await btn('Close this loan'); await T.w(300);
+    const lerr = await p.$eval('#plErr', e => e.textContent);
+    ck('Close this loan while it owes: refused, naming the amount and Pay it off now, no question', /^Bike loan still owes ¥100,000\. Use Pay it off now if you paid it all, or tick its last payment at Check your bank when it has gone$/.test(lerr) && !(await p.$('[data-sure]')), lerr);
     await btn('Pay it off now'); await T.w(300);
+    ck('then Pay it off now: its question shows, the refusal gone', !!(await p.$('[data-sure]')) && (await p.$eval('#plErr', e => e.textContent)) === '', await p.$eval('#plErr', e => e.textContent));
     ck('a loan: Pay it off now asks with its amount', /Did you pay all ¥100,000 on Bike loan/.test(await q()), await q());
     await yes();
     await plan(); await p.click(`#a3Plan [data-owed="${bike}"]`); await T.w(300); await btn('Close this loan'); await T.w(300); await yes();

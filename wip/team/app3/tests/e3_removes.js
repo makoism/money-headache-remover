@@ -93,7 +93,7 @@ const bare = b => JSON.stringify([b.events, b.schedules, (b.plan || {}).budgets,
     const loan = ((await saved(p)).accounts.find(x => x.name === 'Bike loan') || {}).id;
     /* a loan that still owes: the refusal comes first, with no question (the question is only asked when Yes would do it) */
     await plan(`#a3Plan [data-owed="${loan}"]`); await btn('Close this loan'); await T.w(300);
-    ck('Close this loan, still owing: refused in words at once, no question', !(await p.$('[data-sure]')) && /still owes money/.test(await p.$eval('#plErr', e => e.textContent)), await p.$eval('#plErr', e => e.textContent));
+    ck('Close this loan, still owing: refused in words at once, no question', !(await p.$('[data-sure]')) && /still owes ¥[\d,]+\. Use Pay it off now/.test(await p.$eval('#plErr', e => e.textContent)), await p.$eval('#plErr', e => e.textContent));
     ck('no page errors', errs.length === 0, errs.join(' | '));
   } finally { await b.close(); }
   T.done('e3_removes');

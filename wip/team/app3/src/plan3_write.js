@@ -366,6 +366,8 @@
     if (a.closed) bad(a.name + ' is already closed');
     owedTicked(w, a);
     const o = LA.lookahead(w.book, w.today).owed[id];
+    /* [qc-controls confirm 4] the refusal names Pay it off now, the button beside it, as a card's does */
+    if (o && o.owedNow > 0) bad(a.name + ' still owes ' + SMF.format(o.owedNow, a.cur || home(w)) + '. Use Pay it off now if you paid it all, or tick its last payment at Check your bank when it has gone');
     if (o && o.owedNow !== 0) bad(a.name + ' still owes money. Tick its last payment at Check your bank first');
     w.add('events', { k: 'check', acct: id, date: w.today, a: 0 });
     w.edit('accounts', id, { closed: w.today });
@@ -611,7 +613,7 @@
     /* [qc-foundation controls2to5 F2, M46] a bill it pays would end with it, silently: it is moved first */
     const pays = A3.listOf(w.book, 'schedules').filter(s => s.kind === 'bill' && s.acct === id && !(s.ends && s.ends < w.today));
     if (pays.length) bad(`${pays.map(s => s.name).join(' and ')} ${pays.length > 1 ? 'are' : 'is'} paid by ${a.name}. Change ${pays.length > 1 ? 'them' : 'it'} to another card or account first`);
-    if (c && c.owedNow > 0) bad(a.name + ' still has ' + SMF.format(c.owedNow, a.cur || home(w)) + ' on it. Pay it off first, or tick its payment at Check your bank when it has gone');
+    if (c && c.owedNow > 0) bad(a.name + ' still has ' + SMF.format(c.owedNow, a.cur || home(w)) + ' on it. Use Pay it off now if you paid it all, or tick its payment at Check your bank when it has gone');
     w.add('events', { k: 'check', acct: id, date: w.today, a: 0 });
     w.edit('accounts', id, { closed: w.today });
     return id;

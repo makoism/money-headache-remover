@@ -310,12 +310,12 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const shown = r => JSON.stringify(r.shown.map(x => x.card || x.text));
     const r5 = await K.turn(r2.state, 'close card B', d);
     ok(!r5.shown.some(x => x.who === 'card' && x.card.status === 'ask'), 'no question first: ' + shown(r5));
-    ok(r5.shown.some(x => x.who === 'card' && x.card.status === 'refused' && /Card B still has ¥23,000 on it\. Pay it off first/.test(x.card.why)), shown(r5));
+    ok(r5.shown.some(x => x.who === 'card' && x.card.status === 'refused' && /Card B still has ¥23,000 on it\. Use Pay it off now/.test(x.card.why)), shown(r5));
     eq(JSON.stringify(hp.book), before, 'nothing written');
     const r6 = await K.turn(r5.state, 'add a car loan, 100,000 owed, 10,000 on the 27th', d);
     const r7 = await K.turn(r6.state, 'close the car loan', d);
     ok(!r7.shown.some(x => x.who === 'card' && x.card.status === 'ask'), 'no question first: ' + shown(r7));
-    ok(r7.shown.some(x => x.who === 'card' && x.card.status === 'refused' && /Car loan still owes/.test(x.card.why)), shown(r7));
+    ok(r7.shown.some(x => x.who === 'card' && x.card.status === 'refused' && /Car loan still owes ¥100,000\. Use Pay it off now/.test(x.card.why)), shown(r7));
   });
   await t('[E3, M3, M13, M27] cards and loans by asking: add_loan, change_card, change_loan, pay_off (asks first: the amount was never typed), close_account on a card at zero, remove_account on a loan added by mistake', async () => {
     const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
