@@ -915,9 +915,17 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       const far = farFigures(plan, book, today, deps, safe);
       const card = { kind: 'change', status: 'ask', ver: verNow, lines: plan.map(s => s.text + (far.has(s) ? '. ' + far.get(s) : '') + (guess.includes(s) ? ' (my guess)' : '')), rows: [], plan, dropped, left, again };
       const ticks = plan.some(s => s.ticks);   // [qc-foundation F1] a figure that ticks what the app expected asks first
+      /* [qc-assistant confirming run 6, CONFUSING 1] a new figure for an account replaces a card still waiting with a
+         figure for that account: the old one can no longer be done, and says so */
+      const figAccts = new Set([].concat(...plan.filter(s => s.kind === 'checkIn' && s.ci && s.ci.figures).map(s => Object.keys(s.ci.figures))));
+      if (figAccts.size) for (const t of state.turns) {
+        const c = t.who === 'card' && t.card;
+        if (c && c.kind === 'change' && c.status === 'ask' && (c.plan || []).some(s => s.kind === 'checkIn' && s.ci && s.ci.figures && Object.keys(s.ci.figures).some(a => figAccts.has(a)))) { c.status = 'replaced'; c.why = 'Replaced by the one below'; }
+      }
       if (del || big || far.size || ticks || guess.length) {
-        card.ask = del ? 'delete' : big ? 'large' : far.size ? 'gap' : ticks ? 'ticks' : 'guess';
-        card.why = del ? 'this removes something' : big ? 'this is more than safe to spend' : far.size ? 'the figure is far from what the app expected' : ticks ? 'it also ticks what the app expected to have gone through' : 'I guessed an amount';
+        /* [qc-assistant confirming run 6, CONFUSING 2] a figure that ticks asks its own question, also when the gap is far */
+        card.ask = del ? 'delete' : big ? 'large' : ticks ? 'ticks' : far.size ? 'gap' : 'guess';
+        card.why = del ? 'this removes something' : big ? 'this is more than safe to spend' : ticks ? 'it also ticks what the app expected to have gone through' + (far.size ? ', and the figure is far from what the app expected' : '') : far.size ? 'the figure is far from what the app expected' : 'I guessed an amount';
         did(frame);
         addTurn(state, { who: 'card', text: card.lines.join('. '), at: deps.told(), card }, shown);
         return resultOf(card) + (dropped.length ? ' Left out: ' + dropped.join('; ') : '');
