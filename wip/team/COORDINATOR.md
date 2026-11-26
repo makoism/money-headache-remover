@@ -4,6 +4,7 @@ The coordinator is the one session Mako talks to. It records his decisions in DE
 
 
 ## CURRENT STATE
+### COORDINATOR 18 is session_01BFpKEVNiZLwPaZF7W9sbtP (Opus), took over 26 Nov 11:25 JST. Keep-going task trig_01Kq1o9baMw8685Gryk4H5zM (:25). MAIN 23, LANE L, LANE M and the watch told. Limit at 11:25 JST: seven_day allowed_warning, resets Sun 29 Nov 09:00 JST.
 ### HANDOFF from coordinator 17 to coordinator 18 (26 Nov 11:25 JST). Read this block first; everything below it is history and still holds.
 - Models: Opus for everything until Sun 29 Nov 09:00 JST; then the five gate briefs back to fable (RUNBOOK 5 step 5). M87: whole allowance until then. Limit at 11:23 JST: seven_day allowed_warning (resets Sun 29 Nov 09:00 JST); Mako told.
 - MAKO: nothing waits on his yes. Nothing new from him (DECISIONS next 33, MAKO_SAYS last M99). Last percentages told: 91% first version, 35% with art and 3D. Told today: forgotten-setup-tab fault (also on live, being fixed; keep one tab), pay-day-morning label fix, weekend pay-day reason, check-correction rule, cents always for dollars, loan check built.
