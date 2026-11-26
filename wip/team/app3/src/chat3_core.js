@@ -110,6 +110,7 @@
   const PW = () => (node ? require('./plan3_write.js') : root.PLAN3W);
   const CK = node ? require('../../engine/checkin.js') : E.checkin;
   const IDS = node ? require('../../engine/ids.js') : E.ids;
+  const A3M = node ? require('./act3.js') : root.BurrowAct3;
   const ROUNDS = 6, TURNS = 10, KEEP = 200, MAX_TOKENS = 2000, MAX_STEPS = 6;
   const DAY = /^\d{4}-\d{2}-\d{2}$/;
   const live = x => x && !x.gone;
@@ -733,7 +734,8 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       if (!rec || (rec.type !== 'card' && rec.type !== 'loan')) return { bad: 'pay_off is for a card or a loan' };
       const r0 = LA.lookahead(book, today), k = rec.type === 'card' ? r0.cards[id] : r0.owed[id], owed = k ? k.owedNow : 0;
       if (!(owed > 0)) return { bad: 'nothing is owed on ' + rec.name };
-      return { kind: 'payOff', args: [id], text: `Pay off ${rec.name}: ${m(owed, rec.cur)} from ${nm(rec.payFrom || mainAcct)}, today`, amount: owed, figs: [owed] };
+      /* [qc-controls confirm 6] the amount is the app's own figure, never the AI's guess: it asks whether they paid it all */
+      return { kind: 'payOff', args: [id], text: `Pay off ${rec.name}: ${m(owed, rec.cur)} from ${nm(rec.payFrom || mainAcct)}, today`, amount: owed, figs: [], paid: true };
     }
     if (what === 'change_card' || what === 'change_loan') {
       const id = ref(a.account || a.ref, 'A'), rec = id && acctRec(id), card = what === 'change_card';
@@ -759,17 +761,19 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     if (what === 'close_account' || what === 'reopen_account' || what === 'remove_account') {
       const id = ref(a.account || a.ref, 'A'), rec = id && acctRec(id);
       if (!rec) return { bad: what.replace('_', ' ') + ' for an account I do not know' };
-      if (what === 'reopen_account') return { kind: 'reopenAccount', args: [id], text: `Reopen ${rec.name}` };
+      if (what === 'reopen_account') { const rw = PW().reopenWords(book, today, id); return { kind: 'reopenAccount', args: [id], text: `Reopen ${rec.name}${rw ? '. ' + rw : ''}` }; }
       if (what === 'remove_account') return { kind: 'removeAccount', args: [id], text: `Remove ${rec.name}, as if it was never added`, del: true };
       if (rec.type === 'card' || rec.type === 'loan') return { kind: 'closeAccount', args: [id, {}], text: `Close ${rec.name}. Its history stays`, del: true };
       const spent = a.to === 'spent', to = spent ? 'spent' : ref(a.to, 'A');
-      if (!to) return { bad: 'ask where its money goes: another of their accounts, or is it not there any more (spent)? Then change again with to' };
+      if (!to) return { bad: 'ask where its money goes: another of their accounts, or is it not there any more (spent)? Then change again with to', need: `Where did the money in ${rec.name} go: to another of your accounts, or is it not there any more?` };
       const held = ((LA.lookahead(book, today).accounts || {})[id] || {}).bank || 0;
-      if (spent) return { kind: 'closeAccount', args: [id, { to }], text: `Close ${rec.name}: what it held (${m(held, rec.cur)}) counts as spent. Its history stays`, del: true };
+      /* [qc-controls confirm 1] the words are PLAN3W.closeWords, the same as the screens' question */
+      const said = x => { const cw = PW().closeWords(book, today, id, x); return cw && `Close ${rec.name}: ${cw.text}`; };
+      if (spent) return { kind: 'closeAccount', args: [id, { to }], text: said({ to }) || `Close ${rec.name}: what it held (${m(held, rec.cur)}) counts as spent. Its history stays`, del: true };
       /* [qc-foundation controls2to5 F3] what is really in it now moves, never the app's own figure */
       const now = a.amount == null || a.amount === '' ? null : amt(a.amount, rec.cur, true);
-      if (now == null) return { bad: `ask what is in ${rec.name} now (the app's own figure is ${m(held, rec.cur)}), then change again with amount` };
-      return { kind: 'closeAccount', args: [id, { to, now }], text: `Close ${rec.name}: ${m(now, rec.cur)} moves to ${nm(to)}${now !== held ? `, the app had ${m(held, rec.cur)}` : ''}. Its history stays`, del: true, amount: now, figs: now ? [now] : [] };
+      if (now == null) return { bad: `ask what is in ${rec.name} now (the app's own figure is ${m(held, rec.cur)}), then change again with amount`, need: `How much is in ${rec.name} now?` };
+      return { kind: 'closeAccount', args: [id, { to, now }], text: said({ to, now }) || `Close ${rec.name}: ${m(now, rec.cur)} moves to ${nm(to)}${now !== held ? `, the app had ${m(held, rec.cur)}` : ''}. Its history stays`, del: true, amount: now, figs: now ? [now] : [] };
     }
     /* [E1, M13] a bank, cash or e-wallet renamed, or its own Keep at least set (0 clears it): PLAN3W.changeAccount */
     if (what === 'change_account') {
@@ -842,6 +846,20 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     }
     card.status = 'done'; card.steps = done.map(s => s.id); card.rows = rowsOf(before, deps.book(), today, card.plan); card.note = noteOf(before, deps.book(), today);
     return { ok: true };
+  }
+  /* [qc-controls confirm 3] the first step of a plan the door would refuse, tried in order on copies (each on the book the
+     steps before it would make), with the door's own words: { s, text }, or null. Nothing is written */
+  function firstRefusal(plan, book, today, deps) {
+    let cur = book;
+    const tmp = A3M.make({ book: () => cur, put: () => true, told: deps.told, newId: deps.newId || IDS.idMaker('dry', () => 0), today: () => today });
+    for (const s of plan) {
+      try {
+        if (ACT[s.kind]) cur = tmp.dry(s.kind, ...s.args);
+        else if (s.kind === 'checkIn') cur = tmp.dry('addRecords', 'Check your bank', CK.checkIn(cur, Object.assign({ day: today, told: deps.told(), newId: deps.newId, unticked: [] }, s.ci)));
+        else cur = tmp.dryRun('Assistant: ' + s.text, w => PW()[s.kind](w, ...s.args));
+      } catch (e) { if (e instanceof A3M.Bad) return { s, text: e.message }; return null; }
+    }
+    return null;
   }
   const resultOf = card => card.status === 'done' ? 'Done, with Undo on the card. ' + card.rows.map(r => `${r.label}: ${r.before == null ? '-' : r.before} to ${r.after == null ? '-' : r.after} (minor units)`).join('; ')
     : card.status === 'ask' ? 'Waiting for the person\'s OK: ' + card.why : 'Not changed: ' + card.why;
@@ -957,12 +975,13 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
         return 'Not changed: the book changed somewhere else after FIGURES were sent, so the refs may be old. Nothing was done. Use list again before any change, or ask the person to say it again.';
       }
       const raw = Array.isArray(x.steps) ? x.steps : [];
-      const refs = allRefs(book, today), plan = [], dropped = [], left = [];
+      const refs = allRefs(book, today), plan = [], dropped = [], left = [], needs = [];
       for (const a of raw) {
         if (plan.length >= MAX_STEPS) { dropped.push('more than ' + MAX_STEPS + ' at a time'); if (!left.includes('the changes after the first ' + MAX_STEPS)) left.push('the changes after the first ' + MAX_STEPS); continue; }
         const s = stepOf(a, { book, today, refs, payWith: state.payWith });
         if (s.bad) {
           dropped.push(s.bad); if (s.payWith) state.askPay = true;
+          if (s.need) needs.push(s.need);   // [qc-controls confirm 3] which answer is needed, in words for the person
           /* a note that tells the AI to ask something is no words for the person */
           left.push(s.left || (/^(ask|which account)/i.test(s.bad) ? 'one step that needs an answer from you first' : DO_WORDS[a && a.do] || 'a change the assistant can\'t make here'));
         } else plan.push(s);
@@ -970,12 +989,12 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       /* [AI_JOIN_FIXES H6] the answer to "card or bank?" is kept for this chat */
       const named = plan.find(s => s.named);
       if (state.askPay && named) { state.payWith = named.named; state.askPay = false; }
-      if (!plan.length) { refused(frame, state, shown, deps, 'Not done: ' + (left.length ? left.join(', and ') : 'nothing was asked for') + '. Nothing changed'); return 'Nothing changed: ' + (dropped.join('; ') || 'no steps'); }
+      if (!plan.length) { refused(frame, state, shown, deps, 'Not done: ' + (left.length ? left.join(', and ') : 'nothing was asked for') + '. Nothing changed' + (needs.length ? '. ' + needs.join(' ') : '')); return 'Nothing changed: ' + (dropped.join('; ') || 'no steps'); }
       /* [BW] a delete, or a change larger than safe to spend, asks first; [AI_FIRST_PLAN 7] an amount the person did not
          type is a guess and asks first too */
       const safe = LA.lookahead(book, today).safeToSpend.headline;
       /* [qc-foundation F2] the size is the step's real figure: a new pay and new money count too */
-      const big = plan.some(s => s.amount && s.amount > safe), del = plan.some(s => s.del);
+      const big = plan.some(s => s.amount && s.amount > safe), del = plan.some(s => s.del), paid = plan.some(s => s.paid);
       /* every figure in a step (an amount, a target, what is owed, even 0) must be one the person typed, in their own
          messages since the last written change, and not used up by a change already written [M6] */
       const plain = plainOf(book, today), typedN = typedLeft(state);
@@ -985,9 +1004,16 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
          zero never goes in silently */
       const far = farFigures(plan, book, today, deps, safe);
       const card = { kind: 'change', status: 'ask', ver: verNow, lines: plan.map(s => s.text + (far.has(s) ? '. ' + far.get(s) : '') + (guess.includes(s) ? ' (my guess)' : '')), rows: [], plan, dropped, left };
-      if (del || big || far.size || guess.length) {
-        card.ask = del ? 'delete' : big ? 'large' : far.size ? 'gap' : 'guess';
-        card.why = del ? 'this removes something' : big ? 'this is more than safe to spend' : far.size ? 'the figure is far from what the app expected' : 'I guessed an amount';
+      if (del || big || far.size || guess.length || paid) {
+        /* [qc-controls confirm 3] a step the door would refuse is refused now, never after a question and a "Do it" */
+        const no = firstRefusal(plan, book, today, deps);
+        if (no) {
+          card.status = 'refused'; card.why = no.s.text + ': ' + no.text; if (frame) frame.refused++;
+          addTurn(state, { who: 'card', text: card.lines.join('. '), at: deps.told(), card }, shown);
+          return 'Not changed: ' + card.why + (dropped.length ? ' Left out: ' + dropped.join('; ') : '');
+        }
+        card.ask = del ? 'delete' : big ? 'large' : far.size ? 'gap' : guess.length ? 'guess' : 'paid';
+        card.why = del ? 'this removes something' : big ? 'this is more than safe to spend' : far.size ? 'the figure is far from what the app expected' : guess.length ? 'I guessed an amount' : 'it is written as paid today: only if they really paid it all';
         did(frame);
         addTurn(state, { who: 'card', text: card.lines.join('. '), at: deps.told(), card }, shown);
         return resultOf(card) + (dropped.length ? ' Left out: ' + dropped.join('; ') : '');

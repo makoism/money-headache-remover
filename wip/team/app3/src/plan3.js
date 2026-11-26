@@ -205,22 +205,42 @@ function plForm3(title, fields, buttons, note) {
       const el = $('#pl-' + f.key), t = el.value.trim();
       if (f.kind === 'amount') {
         if (!t) vals[f.key] = f.optional ? null : undefined;
-        else { const v = typed3(t, cur); if (v === null) return { bad: `Type ${f.label.toLowerCase()} as an amount`, el }; vals[f.key] = v; }
+        else {
+          const v = typed3(t, cur);
+          /* [qc-controls confirm 2] the shared words of every amount box (screens/inputs.js), except plain not-a-number,
+             which names the box */
+          if (v === null) { const r = BurrowScreens.inputs.commit(t, { code: cur }); return { bad: r.reason === 'not_a_number' || r.ok ? `Type ${f.label.toLowerCase()} as an amount` : r.message, el }; }
+          vals[f.key] = v;
+        }
       } else if (f.kind === 'day') vals[f.key] = t ? Number(t) : null;
       else vals[f.key] = t;
     }
     return { vals };
   };
+  /* [qc-controls confirm blocker 1, M6, M61] an open question is about the values it was built from, and the yes writes
+     exactly those: any change to a box or a pick drops it, so the question never names one amount while another moves */
+  let asked = null;
+  const dropAsk = () => { asked = null; $('#plSure').innerHTML = ''; host.querySelectorAll('[data-plbtn]').forEach(x => delete x.dataset.yes); };
+  /* typing in a box (input), or a new pick or date (change). A box's own change on leaving it is not a new value: the
+     question takes the focus, which would otherwise drop it as it opens */
+  for (const f of fields) $('#pl-' + f.key).addEventListener(f.kind === 'pick' || f.kind === 'date' ? 'change' : 'input', () => { if (asked) dropAsk(); });
   host.querySelectorAll('[data-plbtn]').forEach(btn => btn.addEventListener('click', async () => {
-    const got = read(), err = $('#plErr');
+    const yes = btn.dataset.yes && asked && asked.btn === btn;
+    const got = yes ? { vals: asked.vals } : read(), err = $('#plErr');
     if (got.bad) { err.textContent = got.bad; got.el.focus(); return; }
     const b = buttons[Number(btn.dataset.plbtn)];
     /* [E2] a button that opens another sheet (Close this account opens its own sheet) */
     if (b.open) { b.open(); return; }
-    /* [M6, M61] a button that removes asks first (sure3): nothing is written until the yes */
-    if (b.sure && !btn.dataset.yes) { const [l0, f0] = b.step(got.vals), no = ACT3.refusal(l0, f0); if (no) { err.textContent = no; $('#plSure').innerHTML = ''; return; } }
-    if (b.sure && !btn.dataset.yes) { const sq = typeof b.sure === 'function' ? b.sure(got.vals) : b.sure; sure3($('#plSure'), sq[0], sq[1], () => { btn.dataset.yes = '1'; btn.click(); }); return; }
-    delete btn.dataset.yes;
+    /* [M6, M61] a button that removes asks first (sure3): nothing is written until the yes. One message at a time: the
+       refusal or the question, never both, and never an old error under a new question */
+    if (b.sure && !yes) { const [l0, f0] = b.step(got.vals), no = ACT3.refusal(l0, f0); if (no) { dropAsk(); err.textContent = no; return; } }
+    if (b.sure && !yes) {
+      const sq = typeof b.sure === 'function' ? b.sure(got.vals) : b.sure;
+      err.textContent = ''; asked = { btn, vals: got.vals };
+      sure3($('#plSure'), sq[0], sq[1], () => { btn.dataset.yes = '1'; btn.click(); }, sq[2]);
+      return;
+    }
+    delete btn.dataset.yes; asked = null;
     const [label, fn, undo] = b.step(got.vals);
     const res = await ACT3.run(label, fn, { undo, seen });
     if (elsewhere(res)) return;
@@ -453,7 +473,7 @@ function plAcctCloseForm3(id) {
   plForm3('Close ' + a.name, [{ key: 'to', label: 'Its money', kind: 'pick', options: opts, value: main && others.some(y => y.id === main.acct) ? main.acct : opts[0].v,
       hint: 'Bills, pays and cards paid from it move to the account you pick (to your main bank if the money is spent)' },
     { key: 'now', label: 'What is in it now', kind: 'amount', optional: true, hint: 'What is really there today, counted or from its app. Not needed if it is not there any more' }],
-    [{ label: 'Close this account', solid: true, sure: v => [v.to === 'spent' ? `Close ${a.name}? What it held counts as spent. Its history stays` : `Close ${a.name}? ${v.now == null ? 'What it holds' : money3(v.now, a.cur || E3.home())} moves to ${E3.nameOf(v.to)}. Its history stays`, 'Yes, close it'],
+    [{ label: 'Close this account', solid: true, sure: v => [(PLAN3W.closeWords(E3.book, E3.today(), id, { to: v.to, now: v.now }) || { ask: `Close ${a.name}?` }).ask, 'Yes, close it', 'No, go back'],
       step: v => ['closeAccount', w => PLAN3W.closeAccount(w, id, { to: v.to, now: v.now }), a.name + ' closed'] }],
     `${esc3(a.name)} holds ${money3(held, a.cur || E3.home())} today (${esc3(label3('bankToday')).toLowerCase()})`);
 }
@@ -462,7 +482,7 @@ function plAcctClosedForm3(id) {
   PL3.sheet = 'closedAccount';
   const a = E3.book.accounts.find(x => x.id === id);
   plForm3(a.name, [], [{ label: 'Reopen', solid: true, step: () => ['reopenAccount', w => PLAN3W.reopenAccount(w, id), a.name + ' open again'] }],
-    `Closed ${esc3(day3(a.closed, E3.today().slice(0, 4)))}. Its history stays. Reopen it if it was closed by mistake or you use it again`);
+    `Closed ${esc3(day3(a.closed, E3.today().slice(0, 4)))}. Its history stays. Reopen it if you use it again. ${esc3(PLAN3W.reopenWords(E3.book, E3.today(), id) || '')}`);
 }
 /* [E1, M13, M23] a bank, cash or e-wallet after setup: what it holds today, and whether that money was taken from the
    main bank since its last figure (then it moves from there, never counted twice) [qc-foundation F3] */

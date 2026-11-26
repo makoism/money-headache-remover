@@ -475,6 +475,8 @@
     /* the words a step would be refused with, or null: nothing is written (a question before a remove is only asked
        when Yes would do it) */
     api.refusal = (label, fn) => { try { plan(label, fn, true); return null; } catch (e) { if (e instanceof Bad) return e.message; throw e; } };
+    /* [qc-controls confirm 1] the book any step would make (the step's words are built from it), or throws Bad */
+    api.dryRun = (label, fn) => plan(label, fn, true).book;
     api.dry = (name, ...args) => {
       const n = ARGS[name];
       const p = plan(name, w => ACTIONS[name](w, ...args.slice(0, n)), true);

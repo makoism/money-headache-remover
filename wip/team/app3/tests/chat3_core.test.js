@@ -257,9 +257,8 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     eq([r3.shown.find(x => x.who === 'card').card.status, hp.book.accounts.find(a => a.id === savId).closed || null], ['done', null]);
     const r4 = await K.turn(r3.state, 'remove savings, it was a mistake', d);
     const c4 = r4.shown.find(x => x.who === 'card');
-    eq([c4.card.status, c4.card.ask], ['ask', 'delete']);
-    const k4 = await K.confirm(r4.state, c4.id, d);
-    ok(!k4.ok && /history/.test(k4.text), 'it has history now (the close and its move): refused with words ' + JSON.stringify(k4.text));
+    /* [qc-controls confirm 3] refused before any question */
+    ok(c4.card.status === 'refused' && !c4.card.ask && /history/.test(c4.card.why), 'it has history now (the close and its move): refused with words, no question first ' + JSON.stringify(c4.card));
     ok(!hp.book.accounts.find(a => a.id === savId).gone, 'not removed');
   });
   await t('[LANE J, qc-foundation controls2to5 F3] close_account moving money without what is in it now is not made: the assistant is told to ask', async () => {
@@ -275,6 +274,67 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     ok(!r2.shown.some(x => x.who === 'card' && x.card.status === 'done'), 'nothing closed');
     ok(/ask what is in Wallet now/.test(told), told);
     eq(JSON.stringify(hp.book), before, 'nothing written');
+  });
+  /* [qc-controls confirm, 26 Nov] the close and pay off doors by asking: a made-up Wallet beside Mako's setup */
+  const wallet = async (more) => {
+    const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
+    const aref = (body, re) => FAKE.results(body)[0].text.split('\n').find(l => re.test(l)).split(' | ')[0];
+    const R = {};
+    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'add_account', name: 'Wallet', type: 'cash', amount: 20000, moved: false }] })]), say('Added.'),
+      say('', [call('list', { what: 'cards' })]), body => { R.cb = aref(body, /Card B/); return say('', [call('list', { what: 'accounts' })]); }, body => { R.w = aref(body, /Wallet/); return say('Listed.'); }].concat(more(R)));
+    const d = hp.deps(f);
+    const r1 = await K.turn(state, 'Add cash called Wallet with 20,000, new money', d);
+    eq(r1.shown.find(x => x.who === 'card').card.status, 'done');
+    const r2 = await K.turn(r1.state, 'what accounts do I have?', d);
+    return { hp, d, st: r2.state, wid: hp.book.accounts.find(a => a.name === 'Wallet').id };
+  };
+  await t('[qc-controls confirm 1] by asking, a close with a gap is worded by PLAN3W.closeWords, the same function the screens\' question uses: what moves, what the app had, what counts as spent', async () => {
+    const P = require('../src/plan3_write.js');
+    const { hp, d, st, wid } = await wallet(R => [() => say('', [call('change', { steps: [{ do: 'close_account', account: R.w, to: 'A1', amount: 5000 }] })]), say('Tap Do it.')]);
+    const r3 = await K.turn(st, 'close my wallet, there is 5,000 in it, it goes to the bank', d);
+    const c3 = r3.shown.find(x => x.who === 'card'), words = P.closeWords(hp.book, '2026-11-24', wid, { to: hp.book.home.main.v.acct, now: 5000 });
+    eq([c3.card.status, c3.card.ask], ['ask', 'delete'], JSON.stringify(c3.card));
+    ok(/^Close Wallet: ¥5,000 moves to Main bank\. The app had ¥20,000: the other ¥15,000 counts as spent today, like a bank check\./.test(c3.card.lines[0]) && c3.card.lines[0] === 'Close Wallet: ' + words.text, c3.card.lines[0] + ' | ' + JSON.stringify(words));
+    ok(/^Close Wallet\? ¥5,000 moves/.test(words.ask), 'the screens\' question from the same function: ' + words.ask);
+    const k3 = await K.confirm(r3.state, c3.id, d); ok(k3.ok, JSON.stringify(k3));
+    eq(hp.book.accounts.find(a => a.id === wid).closed, '2026-11-24');
+  });
+  await t('[qc-controls confirm 3] by asking: a close with no amount says which answer is needed; close card B and close the car loan while they owe are refused before any question, nothing written', async () => {
+    const { hp, d, st } = await wallet(R => [() => say('', [call('change', { steps: [{ do: 'close_account', account: R.w, to: 'A1' }] })]), say('How much is in it now?'),
+      () => say('', [call('change', { steps: [{ do: 'close_account', account: R.cb }] })]), say('It still has money on it.'),
+      say('', [call('change', { steps: [{ do: 'add_loan', name: 'Car loan', owed: 100000, amount: 10000, payDay: 27 }] })]), say('Added.'),
+      say('', [call('list', { what: 'accounts' })]), body => say('', [call('change', { steps: [{ do: 'close_account', account: FAKE.results(body)[0].text.split('\n').find(l => /Car loan/.test(l)).split(' | ')[0] }] })]), say('It still owes.')]);
+    const r2 = await K.turn(st, 'close my wallet, put it in the bank', d);
+    ok(lastNote(r2).some(x => /How much is in Wallet now\?/.test(x)), 'says which answer is needed: ' + JSON.stringify(lastNote(r2)));
+    const before = JSON.stringify(hp.book);
+    const shown = r => JSON.stringify(r.shown.map(x => x.card || x.text));
+    const r5 = await K.turn(r2.state, 'close card B', d);
+    ok(!r5.shown.some(x => x.who === 'card' && x.card.status === 'ask'), 'no question first: ' + shown(r5));
+    ok(r5.shown.some(x => x.who === 'card' && x.card.status === 'refused' && /Card B still has ¥23,000 on it\. Use Pay it off now/.test(x.card.why)), shown(r5));
+    eq(JSON.stringify(hp.book), before, 'nothing written');
+    const r6 = await K.turn(r5.state, 'add a car loan, 100,000 owed, 10,000 on the 27th', d);
+    const r7 = await K.turn(r6.state, 'close the car loan', d);
+    ok(!r7.shown.some(x => x.who === 'card' && x.card.status === 'ask'), 'no question first: ' + shown(r7));
+    ok(r7.shown.some(x => x.who === 'card' && x.card.status === 'refused' && /Car loan still owes ¥100,000\. Use Pay it off now/.test(x.card.why)), shown(r7));
+  });
+  await t('[qc-controls confirm 5] by asking, reopening a closed account says plainly it comes back at 0 and where to type what is in it (PLAN3W.reopenWords, the screens\' words)', async () => {
+    const P = require('../src/plan3_write.js');
+    const { hp, d, st, wid } = await wallet(R => [() => say('', [call('change', { steps: [{ do: 'close_account', account: R.w, to: 'spent' }] })]), say('Tap Do it.'),
+      () => say('', [call('change', { steps: [{ do: 'reopen_account', account: R.w }] })]), say('Open again.')]);
+    const r3 = await K.turn(st, 'my wallet is gone, I spent it all', d);
+    const k3 = await K.confirm(r3.state, r3.shown.find(x => x.who === 'card').id, d); ok(k3.ok, JSON.stringify(k3));
+    const words = P.reopenWords(hp.book, '2026-11-24', wid);
+    const r4 = await K.turn(k3.state, 'oh, reopen the wallet', d);
+    const c4 = r4.shown.find(x => x.who === 'card');
+    ok(c4.card.status === 'done' && c4.card.lines[0] === 'Reopen Wallet. ' + words && /^It comes back at ¥0\. Type what is in it now at Check your bank$/.test(words), c4.card.lines.join(' | ') + ' | ' + words);
+  });
+  await t('[qc-controls confirm 6] by asking, pay off asks "did you pay it all" and never marks the app\'s own figure as the AI\'s guess', async () => {
+    const { hp, d, st } = await wallet(R => [() => say('', [call('change', { steps: [{ do: 'pay_off', account: R.cb }] })]), say('Tap Do it if you paid it.')]);
+    const r8 = await K.turn(st, 'I paid off card B', d);
+    const c8 = r8.shown.find(x => x.who === 'card');
+    ok(c8.card.status === 'ask' && c8.card.ask === 'paid' && !/my guess/.test(c8.card.lines.join(' ')) && /Pay off Card B: ¥23,000/.test(c8.card.lines[0]), JSON.stringify(c8.card));
+    const k8 = await K.confirm(r8.state, c8.id, d); ok(k8.ok, JSON.stringify(k8));
+    eq(L.lookahead(hp.book, '2026-11-24').cards[hp.book.accounts.find(a => a.name === 'Card B').id].owedNow, 0);
   });
   await t('[E3, M3, M13, M27] cards and loans by asking: add_loan, change_card, change_loan, pay_off (asks first: the amount was never typed), close_account on a card at zero, remove_account on a loan added by mistake', async () => {
     const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));

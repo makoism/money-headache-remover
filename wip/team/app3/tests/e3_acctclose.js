@@ -54,6 +54,51 @@ const closedRows = p => p.$$eval('[data-card="plan-accounts"] [data-acctclosed]'
     ck('Undo takes the close back', await undo()); await T.w(600);
     bk = await saved(p);
     ck('after Undo: open, its money back', !bk.accounts.find(a => a.id === WALLET).closed && await fig(WALLET) === 10000 && await fig(bank) === bank0);
+    /* [qc-controls confirm blocker 1, seen twice; lesson 2: the shared piece is plForm3's question and PLAN3W.closeWords]
+       the question is built from what will be written: any change to a box drops an open question; a gap between the
+       app's figure and what is in it now is named as the assistant's card names it, with safe to spend before and after */
+    const safeOf = bk => p.evaluate((x, d) => BurrowEngine.lookahead.lookahead(x, d).safeToSpend.headline, bk, DAY);
+    const yen = n => '¥' + Number(n).toLocaleString('en-US');
+    const err = () => p.$eval('#plErr', e => e.textContent).catch(() => '');
+    const retype = async v => { await p.$eval('#pl-now', e => { e.focus(); e.select(); }); await p.keyboard.type(v); await T.w(150); };
+    await p.click(`#a3Plan [data-acct="${WALLET}"]`); await T.w(300); await btn('Close this account'); await T.w(300);
+    /* [confusing 2] a box that cannot be read: the shared words; the old message goes when the next question shows */
+    await retype('99999999999999999999'); await btn('Close this account'); await T.w(300);
+    ck('a huge number: "That amount is too big. Check the digits", no question', /That amount is too big\. Check the digits/.test(await err()) && !(await p.$('[data-sure]')), await err());
+    await retype('abc'); await btn('Close this account'); await T.w(300);
+    ck('not an amount: says what to type, no question', /Type what is in it now as an amount/.test(await err()) && !(await p.$('[data-sure]')), await err());
+    await retype('8000'); await btn('Close this account'); await T.w(300);
+    ck('typed 8,000: the question names it, and says plainly what the app had and that the other 2,000 counts as spent today', /^Close Wallet\? ¥8,000 moves to Main bank\. The app had ¥10,000: the other ¥2,000 counts as spent today, like a bank check\./.test(await q()), await q());
+    ck('the question has a way back: No, go back', (await p.$eval('[data-sure] [data-sureno]', e => e.textContent).catch(() => '')) === 'No, go back');
+    ck('the old error is gone when the question shows (one message at a time)', (await err()) === '', await err());
+    await retype('3000');
+    ck('changing the box drops the open question', !(await p.$('[data-sure]')));
+    before = bare(await saved(p));
+    const safe0 = await safeOf(await saved(p));
+    await btn('Close this account'); await T.w(300);
+    const q3 = await q();
+    ck('asked again: 3,000 moves, the app had 10,000, 7,000 counts as spent', /^Close Wallet\? ¥3,000 moves to Main bank\. The app had ¥10,000: the other ¥7,000 counts as spent today, like a bank check\./.test(q3) && bare(await saved(p)) === before, q3);
+    await p.$eval('[data-sure] [data-sureyes]', e => e.click()); await T.w(600);
+    bk = await saved(p);
+    ck('Yes moves exactly the 3,000 asked', bk.accounts.find(a => a.id === WALLET).closed === DAY && await fig(bank) === bank0 + 3000, String(await fig(bank)));
+    const safe1 = await safeOf(bk);
+    ck('safe to spend before and after is in the question when it moves (and not when it does not)', safe0 === safe1 ? !/Safe to spend/.test(q3) : q3.includes(`Safe to spend goes from ${yen(safe0)} to ${yen(safe1)}`), `${safe0} ${safe1} ${q3}`);
+    ck('Undo takes it back', await undo()); await T.w(600);
+    ck('after Undo: Wallet open with 10,000 again', !(await saved(p)).accounts.find(a => a.id === WALLET).closed && await fig(WALLET) === 10000);
+    /* 0 typed for Savings (50,000): nothing moves, all 50,000 counts as spent, said */
+    await p.click(`#a3Plan [data-acct="${SAVINGS}"]`); await T.w(300); await btn('Close this account'); await T.w(300);
+    await p.select('#pl-to', WALLET); await retype('0');
+    const safeS0 = await safeOf(await saved(p));
+    await btn('Close this account'); await T.w(300);
+    const q0 = await q();
+    ck('0 typed: nothing moves, and the 50,000 the app had is said to count as spent before it is counted', /^Close Savings\? Nothing moves to Wallet\. The app had ¥50,000: the other ¥50,000 counts as spent today, like a bank check\./.test(q0), q0);
+    await p.select('#pl-to', bank); await T.w(150);
+    ck('changing where it goes drops the open question too', !(await p.$('[data-sure]')));
+    await p.select('#pl-to', WALLET); await btn('Close this account'); await T.w(300);
+    await p.$eval('[data-sure] [data-sureyes]', e => e.click()); await T.w(600);
+    const safeS1 = await safeOf(await saved(p));
+    ck('0 typed: safe to spend before and after named when it moves', safeS0 === safeS1 ? !/Safe to spend/.test(q0) : q0.includes(`Safe to spend goes from ${yen(safeS0)} to ${yen(safeS1)}`), `${safeS0} ${safeS1} ${q0}`);
+    ck('Undo takes the Savings close back', await undo()); await T.w(600);
     /* close as spent, then reopen */
     await p.click(`#a3Plan [data-acct="${WALLET}"]`); await T.w(300); await btn('Close this account'); await T.w(300);
     await p.select('#pl-to', 'spent'); await btn('Close this account'); await T.w(300);
@@ -62,6 +107,9 @@ const closedRows = p => p.$$eval('[data-card="plan-accounts"] [data-acctclosed]'
     bk = await saved(p);
     ck('spent: closed, the main bank unchanged', bk.accounts.find(a => a.id === WALLET).closed === DAY && await fig(bank) === bank0);
     await p.click(`#a3Plan [data-acctclosed="${WALLET}"]`); await T.w(300);
+    /* [qc-controls confirm 5] plain and true: no promise it was closed by mistake; it comes back at 0, and where to fix that */
+    const rs = await p.$eval('[data-card="plan-form"]', e => e.textContent.replace(/\s+/g, ' '));
+    ck('the closed sheet says it comes back at ¥0 and to type what is in it at Check your bank, no "by mistake"', /It comes back at ¥0\. Type what is in it now at Check your bank/.test(rs) && !/by mistake/.test(rs), rs);
     await btn('Reopen'); await T.w(600);
     ck('Reopen opens it again', !(await saved(p)).accounts.find(a => a.id === WALLET).closed && (await rows(p)).some(x => x.id === WALLET));
     /* remove: refused with history; allowed for one added by mistake */
