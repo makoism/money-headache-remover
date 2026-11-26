@@ -72,13 +72,13 @@ const fig = w => { const p = P.periods(w.book, w.day); return [p.past[p.past.len
     a.day = b.day = '2026-12-14';
     eq(fig(a), fig(b)); eq(fig(a), [5700, 0, 60000]);
   });
-  await t('[coordinator 16 ruling (a)] removing a whole check-in writes no was on its records (only a spend or refund of its own gets one)', async () => {
+  await t('[coordinator 16 ruling (a)] removing a whole check-in writes no was on its records (the step says so: removed with its check-in)', async () => {
     const w = await base();
     w.check('2026-12-13', 594300);
     const recs = w.book.events.filter(e => !e.gone && String(e.told || '').startsWith('2026-12-13') && e.note !== 'lunch');
     ok(recs.length > 0, 'the check-in has records');
     w.at('2026-12-14', '09:00');
-    const r = await w.A.run('Remove the check', wr => { for (const e of recs) wr.remove('events', e.id); }, {});
+    const r = await w.A.run('Remove the check', wr => { for (const e of recs) wr.remove('events', e.id, { withCheckIn: true }); }, {});
     ok(r.ok, JSON.stringify(r));
     eq(w.book.events.filter(e => recs.some(x => x.id === e.id)).map(e => [!!e.gone, e.was === undefined]), recs.map(() => [true, true]));
   });
@@ -132,6 +132,45 @@ const fig = w => { const p = P.periods(w.book, w.day); return [p.past[p.past.len
     ok((await w.A.edit(w.gift().id, { a: 1000 })).ok);
     eq(w.safe(), 26666, '20 Dec after the correction');
   });
+  /* [coordinator ruled (B), qc-foundation confirm2 on CHECKFIX] decided by the step, not the record's shape: every removal
+     of a money record that is not the removal of a whole check-in keeps `was`, and the engine holds it at a check
+     written before. Made-up yen, Mako's shape (world): pay 300,000 on the 10th, Free to spend 60,000, set up 24 Nov,
+     Main bank 300,000; Savings 100,000 added here; Rent 72,000 on the 27th.
+     Hand-worked: the period is 10 Nov to 9 Dec; Free to spend from the setup day is 60,000 x 16 / 30 = 32,000.
+     (1) A logged bill payment: Rent 72,000 paid 27 Nov (settles the 27 Nov rent), 28 Nov check 228,000: no gap, safe
+         to spend 32,000. Removed 1 Dec: the check held it, so the rent stays paid and the 72,000 stays in the check's
+         figure; the change (-72,000) counts on the check's day beside the 72,000 gap it opens: safe to spend 32,000
+         (today 0: the gap is spending and the rent is due again).
+     (2) A move of 20,000 Main bank to Savings on 27 Nov, the 28 Nov check of Main bank only, 280,000: no gap, 32,000.
+         Removed 1 Dec: the change (+20,000 back in Main bank) counts on the check's day beside the 20,000 gap: 32,000
+         (today 12,000). */
+  async function own(kind) {
+    const newId = IDS.idMaker('a3b7own');
+    const out = BB.buildBook({ day: '2026-11-24', told: '2026-11-24T12:00:00.000' + TZ, currency: 'JPY', country: 'JP',
+      banks: [{ key: 'bank1', name: 'Main bank', amount: 300000, main: true, min: null }, { key: 'bank2', name: 'Savings', amount: 100000 }],
+      pays: [{ key: 'pay1', name: 'Pay', bank: 'bank1', amount: 300000, every: 'month', day: 10, shift: 'none', startsPeriod: true }],
+      cards: [], bills: [{ key: 'b1', name: 'Rent', from: 'bank1', amount: 72000, day: 27, shift: 'none' }], free: 60000 }, { newId });
+    const w = { book: out.book || out, day: '2026-11-27', told: '2026-11-27T18:00:00.000' + TZ };
+    const [main, sav] = ['Main bank', 'Savings'].map(n => w.book.accounts.find(a => a.name === n).id);
+    const rent = w.book.schedules.find(x => x.name === 'Rent');
+    w.A = A3.make({ book: () => w.book, put: async x => { w.book = x; return true; }, told: () => w.told, newId, today: () => w.day, queue: { post: () => {} }, check: x => LA.lookahead(x, w.day) });
+    if (kind === 'bill') ok((await w.A.run('Rent paid', wr => { wr.add('events', { k: 'spend', acct: main, a: 72000, date: '2026-11-27', settles: [{ s: rent.id, due: '2026-11-27' }], note: 'rent', src: { type: 'typed' } }); }, {})).ok);
+    else ok((await w.A.moveMoney({ date: '2026-11-27', a: 20000, from: main, to: sav, note: 'rent' })).ok);
+    const r = LA.lookahead(w.book, '2026-11-28'), expected = {}, lands = {};
+    for (const x of r.checkIn.toConfirm) { expected[x.item] = x.amount; lands[x.item] = x.lands; }
+    w.book = CI.apply(w.book, CI.checkIn(w.book, { day: '2026-11-28', told: '2026-11-28T12:00:00.000' + TZ, newId, figures: { [main]: kind === 'bill' ? 228000 : 280000 }, ticked: [], unticked: [], amounts: {}, expected, lands, landed: {} }));
+    w.rec = () => w.book.events.find(e => e.note === 'rent');
+    w.safe = () => LA.lookahead(w.book, w.day).safeToSpend.headline;
+    w.day = '2026-11-29'; eq(w.safe(), 32000, kind + ': after the check');
+    w.day = '2026-12-01'; w.told = '2026-12-01T09:00:00.000' + TZ;
+    const rm = await w.A.remove(w.rec().id); ok(rm.ok, JSON.stringify(rm));
+    eq(w.rec().was, [Object.assign({ a: w.rec().a }, kind === 'bill' ? {} : { a2: w.rec().a2 != null ? w.rec().a2 : undefined }, { told: w.told })].map(x => JSON.parse(JSON.stringify(x))), kind + ': the door keeps its amount');
+    eq(w.safe(), 32000, kind + ': removed after the check that held it');
+    ok((await w.A.undo(rm.step.id)).ok);
+    eq([w.rec().gone, w.rec().was, w.safe()], [undefined, undefined, 32000], kind + ': after Undo');
+  }
+  await t('[ruling (B)] a logged bill payment removed after the check that held it: the rent stays paid, safe to spend stays 32,000', () => own('bill'));
+  await t('[ruling (B)] a move between own accounts removed after the check that held it: safe to spend stays 32,000', () => own('move'));
   console.log(bad ? `act3_amount: ${bad} of ${n} FAILED` : `act3_amount: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })();

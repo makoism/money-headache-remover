@@ -38,7 +38,7 @@ function life(fix) {
   if (fix && fix.after) fix.after(book.events.find(e => e.id === 'lunch8'));
   return { book, bank };
 }
-const view = (book, day) => { const p = P.periods(book, day); return { old: p.past[p.past.length - 1].free.spent, now: p.current.free.spent, safe: LA.lookahead(book, day).safeToSpend.headline, r: LA.lookahead(book, day) }; };
+const view = (book, day) => { const p = P.periods(book, day); return { old: p.past.length ? p.past[p.past.length - 1].free.spent : null, now: p.current.free.spent, safe: LA.lookahead(book, day).safeToSpend.headline, r: LA.lookahead(book, day) }; };
 const fix = (e, a, told) => { e.was = (e.was || []).concat([{ a: e.a, told }]); e.a = a; e.at = told; };
 
 t('before any correction: old period 5,700, this period 0, 60,000 left', () => {
@@ -92,5 +92,49 @@ t('removed before any check held it, then a new check: nothing in the closed per
   const { book } = life({ before: e => { e.was = [{ a: 700, told: T9 }]; e.gone = '2026-12-09'; e.goneBy = 'stepx'; }, bank13: 595000 }), v = view(book, '2026-12-14');
   eq([v.old, v.now, v.safe], [5000, 0, 60000]);
   eq(v.r.splits, []);
+});
+// [coordinator ruled (A), qc-foundation confirm2 on CHECKFIX point FB] a bank check's figure corrected later counts its
+// change on the day of the fix in both gaps beside that check: plus in the gap before it, minus in the gap after it;
+// with a later check the two cancel; when the fixed check is the latest, only the plus part, in the fix's period.
+// Kenji, made-up yen: set up 24 Nov, bank 200,000 (C0), pay 300,000 on the 10th, Free to spend 100,000 (from the setup
+// day 100,000 x 16 / 30 = 53,333 in the first period). Nothing logged.
+//   C1 5 Dec typed 182,400 (really 128,400): the first period spent 17,600.
+//   C2 12 Dec, pay ticked, 182,400 + 300,000 - 62,400 = 420,000: this period spent 62,400, left 37,600.
+//   Fixed 14 Dec to 128,400: the first period stays 17,600; this period 62,400 + 54,000 (plus, C1's gap, on 14 Dec)
+//   - 54,000 (minus, C2's gap, on 14 Dec) = 62,400; safe to spend unchanged. Today nothing reads a check's was:
+//   71,600 and 8,400, safe to spend up 54,000.
+function kenji(withC2, fixDay, which) {
+  const newId = IDS.idMaker('k3n7ji');
+  const out = BB.buildBook({ day: '2026-11-24', told: '2026-11-24T12:00:00.000' + TZ, currency: 'JPY', country: 'JP',
+    banks: [{ key: 'bank1', name: 'Main bank', amount: 200000, main: true, min: null }],
+    pays: [{ key: 'pay1', name: 'Pay', bank: 'bank1', amount: 300000, every: 'month', day: 10, shift: 'none', startsPeriod: true }],
+    cards: [], bills: [], free: 100000 }, { newId });
+  let book = out.book || out;
+  const bank = book.accounts.find(a => a.type !== 'card').id;
+  const check = (day, fig) => {
+    const r = LA.lookahead(book, day), expected = {}, lands = {};
+    for (const x of r.checkIn.toConfirm) { expected[x.item] = x.amount; lands[x.item] = x.lands; }
+    book = CI.apply(book, CI.checkIn(book, { day, told: day + 'T12:00:00.000' + TZ, newId, figures: { [bank]: fig }, ticked: r.checkIn.toConfirm.map(x => x.item), unticked: [], amounts: {}, expected, lands, landed: {} }));
+  };
+  check('2026-12-05', 182400);
+  if (withC2) check('2026-12-12', 420000);
+  const c = d => book.events.find(e => e.k === 'check' && e.date === d && !e.gone);
+  const before = view(book, fixDay);
+  if (which === 'c2') fix(c('2026-12-12'), 410000, fixDay + 'T09:00:00.000' + TZ); else fix(c('2026-12-05'), 128400, fixDay + 'T09:00:00.000' + TZ);
+  return { before, after: view(book, fixDay), bank, book };
+}
+t('[ruling (A)] a check in the closed period fixed, a later check in this one (Kenji): 17,600 and 62,400 stay, safe to spend unchanged', () => {
+  const { before, after } = kenji(true, '2026-12-14');
+  eq([before.old, before.now], [17600, 62400]);
+  eq([after.old, after.now, after.safe], [17600, 62400, before.safe]);
+});
+t('[ruling (A)] the fixed check is the latest (C2 420,000 fixed to 410,000 on 14 Dec): only the plus part, 10,000 more spent this period; the closed period stays 17,600', () => {
+  const k = kenji(true, '2026-12-14', 'c2'), { before, after, bank } = k;
+  eq([after.old, after.now, after.safe], [17600, 72400, before.safe - 10000]);
+  eq(after.r.accounts[bank].bank, 410000);   // the bank today is the fixed figure
+});
+t('[ruling (A)] the check and its fix in the same period (C1 fixed on 7 Dec, no later check): spent as if 128,400 was typed, 71,600', () => {
+  const { before, after } = kenji(false, '2026-12-07');
+  eq([before.now, after.now], [17600, 71600]);
 });
 done('amount_history.test.js');
