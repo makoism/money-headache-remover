@@ -728,7 +728,7 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
   const withCash = async (h, x) => { const r = await h.go('addAccount', Object.assign({ name: 'Cash', type: 'cash', amount: 12000, moved: false }, x || {})); ok(r.ok, JSON.stringify(r)); return h.book.accounts.find(a => a.name === 'Cash' && !a.gone).id; };
   await t('[E2] closeAccount, money moved: one move of all of it to the account picked, closed today; the bank gains exactly that; Undo after a reload puts it all back', async () => {
     const h = setup(), cash = await withCash(h), bank0 = view(h.book).accounts[BANK].bank;
-    const r = await h.go('closeAccount', cash, { to: BANK }); ok(r.ok, JSON.stringify(r));
+    const r = await h.go('closeAccount', cash, { to: BANK, now: 12000 }); ok(r.ok, JSON.stringify(r));
     const a = h.book.accounts.find(x => x.id === cash), ev = h.book.events.filter(e => !e.gone && e.grp === r.step.id);
     eq(a.closed, DAY, 'closed today');
     eq(ev.filter(e => e.k === 'transfer').map(e => [e.acct, e.acct2, e.date, e.a]), [[cash, BANK, DAY, 12000]], 'one move');
@@ -737,6 +737,16 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     ok(!v.accounts[cash] || v.accounts[cash].bank === 0, 'it holds nothing');
     const h2 = reloadOf(h), u = await h2.A.undo(r.step.id); ok(u.ok, JSON.stringify(u));
     eq([h2.book.accounts.find(x => x.id === cash).closed || null, view(h2.book).accounts[cash].bank, view(h2.book).accounts[BANK].bank], [null, 12000, bank0]);
+  });
+  await t('[LANE J, qc-foundation controls2to5 F3, M36, M95] closing cash the app thinks holds 12,000 that really holds 5,000: asked what is in it now; 5,000 moves, the 7,000 not there counts as spent, it holds nothing; without the figure it is refused', async () => {
+    const h = setup(), cash = await withCash(h), v0 = view(h.book), bank0 = v0.accounts[BANK].bank;
+    const z = await h.go('closeAccount', cash, { to: BANK }); ok(!z.ok && /^Type what is in Cash now/.test(z.text), z.text);
+    const r = await h.go('closeAccount', cash, { to: BANK, now: 5000 }); ok(r.ok, JSON.stringify(r));
+    eq(h.book.events.filter(e => !e.gone && e.grp === r.step.id && e.k === 'transfer').map(e => [e.acct, e.acct2, e.a]), [[cash, BANK, 5000]], 'what is really there moves');
+    const v = view(h.book);
+    eq(v.accounts[BANK].bank, bank0 + 5000, 'the bank gains 5,000, not 12,000');
+    ok(!v.accounts[cash] || v.accounts[cash].bank === 0, 'it holds nothing');
+    ok(v.safeToSpend.headline <= v0.safeToSpend.headline, 'the 7,000 gap never raises safe to spend');
   });
   await t('[E2] closeAccount, money not there any more: a final check of nothing (the gap counts as spending, as at Check your bank), closed', async () => {
     const h = setup(), cash = await withCash(h), safe0 = view(h.book).safeToSpend.headline;
@@ -755,20 +765,21 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     await z(cash, {}, 'Pick where its money goes');
     ok((await h.go('addBill', { name: 'Gym', amount: 3000, day: 5, acct: cash })).ok);
     const gym = h.book.schedules.find(s => s.name === 'Gym').id;
-    const r = await h.go('closeAccount', cash, { to: BANK }); ok(r.ok, JSON.stringify(r));
+    const r = await h.go('closeAccount', cash, { to: BANK, now: 12000 }); ok(r.ok, JSON.stringify(r));
     eq(h.book.schedules.find(s => s.id === gym).acct, BANK, 'the bill now comes from the account picked');
-    await z(cash, { to: BANK }, 'already closed');
+    await z(cash, { to: BANK, now: 0 }, 'already closed');
     const h3 = setup(), c3 = await withCash(h3);
     ok((await h3.A.logSpend({ date: DAY, a: 15000, acct: c3, line: 'free' })).ok);
-    const r3 = await h3.go('closeAccount', c3, { to: BANK }); ok(!r3.ok && /below zero/.test(r3.text), r3.text);
+    const r3 = await h3.go('closeAccount', c3, { to: 'spent' }); ok(!r3.ok && /below zero/.test(r3.text), r3.text);
+    ok((await h3.go('closeAccount', c3, { to: BANK, now: 0 })).ok, 'with what is in it now typed, the app\'s own figure below zero does not stop it');
     const h4 = setup(); ok((await h4.go('addAccount', { name: 'Trip bank', type: 'bank', amount: 0, moved: false })).ok);
     const tb = h4.book.accounts.find(a => a.name === 'Trip bank').id;
     ok((await h4.go('addGoal', { name: 'Trip', target: 50000, mode: 'ownAccount', acct: tb })).ok, 'a goal kept in it');
-    const r4 = await h4.go('closeAccount', tb, { to: BANK }); ok(!r4.ok && /Trip is kept in Trip bank/.test(r4.text), r4.text);
+    const r4 = await h4.go('closeAccount', tb, { to: BANK, now: 0 }); ok(!r4.ok && /Trip is kept in Trip bank/.test(r4.text), r4.text);
   });
   await t('[E2] reopenAccount: a closed account opens again with its history kept; refused when it is not closed', async () => {
     const h = setup(), cash = await withCash(h);
-    const r = await h.go('closeAccount', cash, { to: BANK }); ok(r.ok);
+    const r = await h.go('closeAccount', cash, { to: BANK, now: 12000 }); ok(r.ok);
     const n = h.book.events.filter(e => !e.gone).length;
     const o = await h.go('reopenAccount', cash); ok(o.ok, JSON.stringify(o));
     eq([h.book.accounts.find(x => x.id === cash).closed || null, h.book.events.filter(e => !e.gone).length], [null, n], 'open, every record kept');
@@ -809,6 +820,23 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     const z = await h.go('payOff', CARD_A); ok(!z.ok && /Nothing is owed/.test(z.text), z.text);
     const h2 = reloadOf(h); ok((await h2.A.undo(r.step.id)).ok);
     eq(view(h2.book).cards[CARD_A].owedNow, 54000);
+  });
+  await t('[LANE J, qc-foundation controls2to5 F1, M45] 12 Dec, Card A\'s 10 Dec payment not ticked: Pay it off and Close are refused with words (tick it first), nothing written; the loan the same', async () => {
+    const was = DAY; DAY = '2026-12-12';
+    try {
+      const h = setup(), before = JSON.stringify(h.book);
+      ok((view(h.book).cards[CARD_A].overdue || []).length, 'the 10 Dec payment is overdue');
+      const z = await h.go('payOff', CARD_A); ok(!z.ok && /^Card A's 10 Dec payment is not ticked off yet: tick it at Check your bank, then try again/.test(z.text), z.text);
+      const c = await h.go('closeAccount', CARD_A, {}); ok(!c.ok && /10 Dec payment is not ticked off yet/.test(c.text), c.text);
+      eq(JSON.stringify(h.book), before, 'nothing written');
+    } finally { DAY = was; }
+  });
+  await t('[LANE J, qc-foundation controls2to5 F2, M46] a card that pays a bill is not closed: it names the bill to move first', async () => {
+    const h = setup();
+    { const b = await h.go('addBill', { name: 'Streaming', amount: 1500, day: 5, acct: CARD_A }); ok(b.ok, JSON.stringify(b)); }
+    ok((await h.go('payOff', CARD_A)).ok);
+    const z = await h.go('closeAccount', CARD_A, {}); ok(!z.ok && /^Streaming is paid by Card A\. Change it to another card or account first/.test(z.text), z.text);
+    ok(!h.book.accounts.find(a => a.id === CARD_A).closed, 'not closed');
   });
   await t('[E3] closeAccount for a card: refused while something is on it (pay it off or tick its payment first); at zero: a check of 0 and closed; its payment day stops; Reopen', async () => {
     const h = setup();

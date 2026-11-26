@@ -4700,6 +4700,17 @@ details summary { min-height: 44px; }
     return { y: m[1], m: m[2], d: m[3].replace(/^0/, ''), s: m[0] };
   }
   function dayLabel(s, withYear) { const p = parseDay(s); return [p.d, MONTHS[p.m]].concat(withYear ? [p.y] : []).join(' '); }
+  /* [qc-controls 2to5 F2] the day a pay or bill lands, in one set of words for every screen and the assistant: its
+     landing day, and when a weekend or holiday moved it off its due day, why: "25 Dec (26 Dec is a Saturday, so the
+     working day before)". Without the reason a row reading "day 26 each month, next 25 Dec" looks like the change did
+     not take effect. The engine's occurrence gives both days (land, due); nothing is worked out here but the weekday. */
+  const WEEKDAY = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  function landLabel(land, due, withYear) {
+    const at = dayLabel(land, withYear);
+    if (!due || due === land) return at;
+    const wd = new Date(parseDay(due).s + 'T00:00:00Z').getUTCDay();
+    return `${at} (${dayLabel(due, withYear)} is ${wd === 0 || wd === 6 ? 'a ' + WEEKDAY[wd] : 'a holiday'}, so the working day ${land < due ? 'before' : 'after'})`;
+  }
   /* a month as VOICE says: "Feb 2027" (from a real day in it) */
   function monthLabel(s) { const p = parseDay(s); return MONTHS[p.m] + ' ' + p.y; }
   /* "10 Nov to 9 Dec"; across the new year both days carry their year (for Mako: whether the year shows otherwise) */
@@ -4720,7 +4731,7 @@ details summary { min-height: 44px; }
     return words.length ? words.join(', ') + ' and ' + tail : tail;
   }
 
-  return { NAMES, label, byFigure, labelKey, check, forMako, notInEngine, dayLabel, dayList, monthLabel, periodLabel };
+  return { NAMES, label, byFigure, labelKey, check, forMako, notInEngine, dayLabel, landLabel, dayList, monthLabel, periodLabel };
 });
 /* The one status every screen reads (DECISIONS_ROUND2 C, sweep2_repeats A1 and B2, LESSONS lesson 2). It is worked out
    from the engine's result only (SCHEMA_V3 section 12: safe to spend, warnings, next pay, not seen yet, the check-in
@@ -6840,15 +6851,15 @@ function stmtReceipts(rows, catOf, acctOf) {
   function mainQuestion(copy, which, mins) {
     const kv = id => (copy.keptVersions || []).find(k => k.id === id);
     const mk = which.find(q => q.of === 'home.main');
-    const banks = new Set([].concat(mk ? kv(mk.kept).versions.map(v => v.v && v.v.acct) : [], copy.home && copy.home.main ? [copy.home.main.v.acct] : [], mins.map(q => q.account)).filter(Boolean));
+    const banks = new Set([].concat(mk ? kv(mk.kept).versions.map(v => v.v && v.v.acct) : [], copy.home && copy.home.main && copy.home.main.v ? [copy.home.main.v.acct] : [], mins.map(q => q.account)).filter(Boolean));
     const accts = which.filter(q => kv(q.kept).in === 'accounts' && banks.has(q.of) && new Set(kv(q.kept).versions.map(v => canon(v.minBank === undefined ? null : v.minBank))).size > 1);
     const parts = (mk ? 1 : 0) + accts.length + mins.length;
     if (parts < 2 || !(mk || mins.length)) return null;
     const kept = [].concat(mk ? [mk.kept] : [], accts.map(q => q.kept)).sort();
-    const acct = mins.length ? mins[0].account : accts.length ? accts[0].of : copy.home.main.v.acct;
+    const acct = mins.length ? mins[0].account : accts.length ? accts[0].of : ((copy.home.main || {}).v || {}).acct;   // [marker] v null is not set
     const a = (copy.accounts || []).find(x => x.id === acct) || {};
     const options = [...new Set([].concat(...kept.map(id => kv(id).versions.map(v => v.by))))].filter(Boolean).sort();
-    return { q: 'main', account: acct, kept, main: copy.home.main.v.min == null ? null : copy.home.main.v.min, own: a.minBank == null ? null : a.minBank, options };
+    return { q: 'main', account: acct, kept, main: ((copy.home.main || {}).v || {}).min == null ? null : copy.home.main.v.min, own: a.minBank == null ? null : a.minBank, options };
   }
   function afterSync(copy) {
     const c = closedChecks(copy);
@@ -6922,13 +6933,13 @@ function stmtReceipts(rows, catOf, acctOf) {
       if (pick === 'reopen') Object.assign(a, { closed: null }, stamp);
       else if (pick === 'move') {   // what is left goes to the main bank, dated the closing day, as the closing's next record [S3]
         const n = out.events.filter(e => isClosing(e, a.id)).length + 1;
-        const main = out.home.main.v.acct;
+        const main = ((out.home.main || {}).v || {}).acct;   // [marker] v null is not set
         const rec = q.left > 0 ? { acct: a.id, acct2: main, a: q.left } : { acct: main, acct2: a.id, a: -q.left };
         out.events.push(Object.assign({ id: 'close:' + a.id + ':' + n, k: 'transfer', date: a.closed }, rec, { told: stamp.at }, stamp));
       }
     } else if (q.q === 'minimum') {
       const a = out.accounts.find(x => x.id === q.account);
-      const min = pick === 'own' ? a.minBank : out.home.main.v.min;
+      const min = pick === 'own' ? a.minBank : (((out.home.main || {}).v || {}).min ?? null);   // [marker] v null is not set
       out.home.main = Object.assign({}, out.home.main, { v: { acct: q.account, min } }, stamp);
       Object.assign(a, { minBank: null }, stamp);
     } else if (q.q === 'main') {   // [AW4] one device's view: its version of each kept item, then the minimum from that view
@@ -8428,6 +8439,9 @@ function typed3(text, cur) { const r = SM.parse(text, cur); return r.ok ? r.mino
 function typedBank3(text, cur) { const r = SM.parse(text, cur, { allowMinus: true }); return r.ok ? r.minor : null; }
 /* '2026-12-10' as '10 Dec', with the year when it is not the shown day's year */
 const day3 = (s, thisYear) => (s ? SN.dayLabel(s, !!thisYear && s.slice(0, 4) !== thisYear) : '');
+/* [qc-controls 2to5 F2] a pay or bill's landing day, and why when a weekend or holiday moved it (screens/names.js
+   landLabel): `o` is the engine's occurrence { land, due } */
+const land3 = (o, thisYear) => (o && o.land ? SN.landLabel(o.land, o.due, !!thisYear && o.land.slice(0, 4) !== thisYear) : '');
 const label3 = (key, ctx) => SN.label(key, ctx);
 /* [slice 6] a schedule's rhythm in words, one function for every screen: "day 10 each month", "day 15 and the last day
    each month", "every 2 weeks, on Fridays", "every 3 months, on day 15", "each year in May and Nov, on day 31", "each
@@ -8561,7 +8575,10 @@ const E3 = (() => {
     book = newBook; mode = 'kept';
     const ok = await save({ full: true });
     if (!ok) { book = before.book; mode = before.mode; }
-    else if (root3.BurrowPersist) root3.BurrowPersist.afterSetup().catch(() => {});
+    else {
+      if (root3.BurrowPersist) root3.BurrowPersist.afterSetup().catch(() => {});
+      if (typeof setup3Filled === 'function') setup3Filled();   // a setup Save's Undo has nothing left to undo
+    }
     return ok;
   }
   /* backup lane: a whole new book from a restore or the cloud copy; the first one makes this device keep a book.
@@ -8590,7 +8607,22 @@ const E3 = (() => {
      through one queue, in the order asked, so two keys written at once are both kept (before, one write was lost and
      still said true). Nothing else in the app writes the device record (store/idb.js putDevice is called only here) */
   let devQ = Promise.resolve();
-  const devTurn = fn => { const r = devQ.then(fn, fn); devQ = r.catch(() => {}); return r; };
+  /* [qc-data-safety 26 Nov, blocker 1] and one tab at a time: two tabs of one phone share the record, so each read-then-write
+     holds the browser's lock across tabs (where there is one) */
+  const locked = fn => () => (root3.navigator && root3.navigator.locks ? root3.navigator.locks.request('burrow3-device', fn) : fn());
+  const devTurn = fn => { const r = devQ.then(locked(fn), locked(fn)); devQ = r.catch(() => {}); return r; };
+  /* recEdit(key, fn): the value as stored now goes through fn, and what fn gives is written (null removes it), in the same
+     turn, so a change made in another tab since this tab read it is kept */
+  async function recEdit(key, fn) {
+    if (mode === 'try' || !store) return false;
+    try {
+      return await devTurn(async () => {
+        const d = (await store.getDevice()) || {}, next = fn(d[key] === undefined ? null : d[key]);
+        const out = Object.assign({}, d); if (next == null) delete out[key]; else out[key] = next;
+        return await store.putDevice(out);
+      });
+    } catch (e) { return false; }
+  }
   async function rec(key, value) {
     if (mode === 'try' || !store) return value === undefined ? null : false;
     try {
@@ -8673,7 +8705,7 @@ const E3 = (() => {
   }
   /* is a the day before b (two YYYY-MM-DD days) */
   const dayBefore = (a, b) => BurrowEngine.dates.dayNum(b) - BurrowEngine.dates.dayNum(a) === 1;
-  return { today, setToday, useTry, leaveTry, start, fill, discard, release, held: () => hold, told, dayBefore, newId, load, view, nameOf, occName, lastCheckOf, curOf, home, put, replace, rec, onSaved: f => savedFns.push(f),
+  return { today, setToday, useTry, leaveTry, start, fill, discard, release, held: () => hold, told, dayBefore, newId, load, view, nameOf, occName, lastCheckOf, curOf, home, put, replace, rec, recEdit, onSaved: f => savedFns.push(f),
     get book() { return book; }, get mode() { return mode; } };
 })();
 /* ---------- act3: the one door for every write in app3 (SCHEMA_V3 section 0; DECISIONS_ROUND2 H6, D2, BD4) ----------
@@ -8763,7 +8795,7 @@ const E3 = (() => {
   const sig = r => (r.at || '') + '|' + (r.by || '');
   const other = () => { const e = new Bad(OTHER); e.why = 'other'; return e; };
   function writer(book, s, seen) {
-    const log = { added: [], edited: [], removed: [], revived: [] };
+    const log = { added: [], edited: [], removed: [], revived: [], swapped: [] };
     const mine = new Set();   // records this step itself wrote: never refused by the note
     const fresh = (list, r) => { if (seen && !mine.has(r.id) && seen[r.id] !== sig(r)) throw other(); };
     const wholeList = list => { if (seen && REPLACES[list]) for (const r of listOf(book, list)) if (r && !mine.has(r.id) && seen[r.id] !== sig(r)) throw other(); };
@@ -8849,10 +8881,80 @@ const E3 = (() => {
         log.edited.push({ list, id, before });
         return r;
       },
+      /* [WHICH_DOOR_PLAN] one item the cloud copy names as engine/sync.js names it, set whole: `where` the dotted path of
+         its holder ('' the book), `of` a record id in a list of records or `where.key` for a settings item; `value`
+         undefined takes it out. opts.stamp moves its `at` and `by` to this step's (an Undo, so other devices take it). */
+      swap(where, of, value, opts) {
+        const sl = slot(book, where, of, value !== undefined);
+        const old = sl.get();
+        /* [qc-foundation on WHICH_DOOR_PLAN, F1] a record is never taken out of its list (a delete does not last: the store
+           keeps it and a join brings it back): it is marked gone, as Remove does */
+        const marked = value === undefined && sl.list && !!old;
+        /* [qc-foundation confirm on lane/whichdoor, WATCH] a record already removed stays as its Remove left it, so that
+           Remove's own Undo still works */
+        if (marked && old.gone) return old;
+        if (marked) value = Object.assign(clone(old), { gone: s.day, goneBy: s.id });
+        /* [coordinator 15, 26 Nov; SCHEMA_V3 2.1] a settings item ({ v, at, by }) is never deleted either: a delete does
+           not last (the next join brings the other copy's value back). It is marked not set, { v: null, at, by, gone },
+           and every reader takes v null as not set */
+        const unset = value === undefined && !sl.list && fieldValue(old);
+        if (unset && old.v === null && old.gone) return old;   // already not set: left as it was, so the earlier answer's Undo still works
+        if (unset) value = Object.assign({}, old, { v: null, gone: s.day });
+        const v = value === undefined ? undefined : clone(value);
+        if ((marked || unset || (opts && opts.stamp)) && v && typeof v === 'object' && !Array.isArray(v)) stamp(v);
+        sl.set(v);
+        log.swapped.push({ where, of, had: old !== undefined, before: old === undefined ? null : clone(old), after: v && v.at ? v.at : null });
+        return v;
+      },
       find: id => findIn(book, id),
       book,
     };
   }
+
+  /* ---- [WHICH_DOOR_PLAN] the cloud copy's answers: the engine makes the answer (engine/sync.js answer, answerCheck);
+     the door carries the difference item by item. Nothing here decides what an answer means. ---- */
+  const isMapV = x => !!x && typeof x === 'object' && !Array.isArray(x);
+  const isRecs = l => Array.isArray(l) && l.every(r => isMapV(r) && typeof r.id === 'string');
+  const fieldValue = x => isMapV(x) && 'v' in x && 'at' in x;   // a settings item, as engine/sync.js keeps one
+  const canonJ = x => (Array.isArray(x) ? '[' + x.map(canonJ).join(',') + ']' : isMapV(x) ? '{' + Object.keys(x).filter(k => x[k] !== undefined).sort().map(k => JSON.stringify(k) + ':' + canonJ(x[k])).join(',') + '}' : JSON.stringify(x === undefined ? null : x));
+  const sameJ = (a, b) => (a === undefined || b === undefined ? a === b : canonJ(a) === canonJ(b));
+  function holderAt(book, where, make) {
+    let o = book;
+    if (!where) return o;
+    for (const k of where.split('.')) { if (o[k] === undefined) { if (!make) return undefined; o[k] = {}; } o = o[k]; if (o === null || typeof o !== 'object') return undefined; }
+    return o;
+  }
+  function slot(book, where, of, make) {
+    const h = holderAt(book, where, make);
+    if (h === undefined) return { get: () => undefined, set: () => { throw new Bad('That is not there any more'); } };
+    if (Array.isArray(h)) return {
+      list: true,
+      get: () => h.find(r => r && r.id === of),
+      set: v => { const i = h.findIndex(r => r && r.id === of); if (v === undefined) { if (i >= 0) h.splice(i, 1); } else if (i >= 0) h[i] = v; else h.push(v); },
+    };
+    const key = where ? of.split('.').pop() : of;   // a settings item's key is the last part of its name, as the page reads it
+    return { get: () => h[key], set: v => { if (v === undefined) delete h[key]; else h[key] = v; } };
+  }
+  /* every item that differs between two books, as the cloud copy names items: a list of records by id (order never
+     counts), a plain object walked into, anything else whole. The book's `rev`, `at`, `fmt` and Undo `journal` are not its content */
+  function syncDiff(cur, next) {
+    const out = [];
+    const index = l => new Map((l || []).map(r => [r.id, r]));
+    (function walk(a, b, where) {
+      const keys = [...new Set(Object.keys(a || {}).concat(Object.keys(b || {})))].sort();
+      for (const k of keys) {
+        if (!where && (k === 'rev' || k === 'journal' || k === 'at' || k === 'fmt')) continue;   // the store's own marks (store/idb.js NOT_IN_BOOK) and the Undo journal
+        const p = where ? where + '.' + k : k, x = a ? a[k] : undefined, y = b ? b[k] : undefined;
+        if ((Array.isArray(x) || Array.isArray(y)) && (x === undefined || isRecs(x)) && (y === undefined || isRecs(y))) {
+          const X = index(x), Y = index(y);
+          for (const id of [...new Set([...X.keys(), ...Y.keys()])].sort()) if (!sameJ(X.get(id), Y.get(id))) out.push({ where: p, of: id, value: Y.get(id) });
+        } else if ((isMapV(x) || x === undefined) && (isMapV(y) || y === undefined) && !fieldValue(x) && !fieldValue(y)) walk(x, y, p);   // a holder one copy lacks is walked into too, so each settings item in it is swapped (and marked) on its own
+        else if (!sameJ(x, y)) out.push({ where, of: p, value: y });
+      }
+    })(cur, next, '');
+    return out;
+  }
+  const BIG = 50;   // an answer that swaps more items than this, or the whole-copy question (two whole books), keeps no old values in the saved journal
 
   /* ---- the named actions, as steps on a writer ---- */
   const typed = () => ({ type: 'typed' });
@@ -8928,8 +9030,9 @@ const E3 = (() => {
   const keptEdit = x => { const before = {}; for (const k of Object.keys(x.before)) before[k] = x.before[k] === undefined ? null : clone(x.before[k]); return { list: x.list, id: x.id, before }; };
   const ownAt = (j, id) => (j.moved && j.moved[id]) || j.moment;
   function fromJournal(j) {
-    const m = { id: j.id, label: j.label, at: j.moment, added: j.added || [], edited: j.edited || [], removed: j.removed || [], revived: j.revived || [], own: {} };
+    const m = { id: j.id, label: j.label, at: j.moment, added: j.added || [], edited: j.edited || [], removed: j.removed || [], revived: j.revived || [], swapped: j.swapped || [], own: {} };
     for (const x of m.added.concat(m.edited, m.removed, m.revived)) m.own[x.id] = ownAt(j, x.id);
+    for (const x of m.swapped) m.own[x.of] = x.after;   // [WHICH_DOOR_PLAN] the `at` the answer left on each item
     return m;
   }
 
@@ -8951,17 +9054,18 @@ const E3 = (() => {
       if (!by) by = String(id).split('-')[0];
       const s = { id, label, at: nowAt(), by, told: o.told(), day: o.today(), newId: o.newId };
       const w = writer(book, s, guard && guard.seen);
-      w.today = s.day;
+      w.today = s.day; w.at = s.at; w.by = s.by;
       const out = fn(w);
-      if (!w.log.added.length && !w.log.edited.length && !w.log.removed.length && !w.log.revived.length) throw new Bad('Nothing changed');
+      if (!w.log.added.length && !w.log.edited.length && !w.log.removed.length && !w.log.revived.length && !w.log.swapped.length) throw new Bad('Nothing changed');
       if (o.check && !dry) {
         try { o.check(book); } catch (e) { const err = new Bad('This would leave numbers the app refuses: ' + e.message); err.why = 'engine'; throw err; }
       }
-      const step = { id, label, out, at: s.at, added: w.log.added, edited: w.log.edited, removed: w.log.removed, revived: w.log.revived };
+      const step = { id, label, out, at: s.at, added: w.log.added, edited: w.log.edited, removed: w.log.removed, revived: w.log.revived, swapped: w.log.swapped };
       /* [BZ1] the step's journal entry goes into the same save, so an Undo after a reload finds what it edited too */
       /* [E4, M14] with the words its Undo bar shows, so the list of recent changes can name it after a reload */
       if (!dry && !undoing) journalAdd(book, { id, label, words: words || LABELS[label] || label, moment: s.at, day: s.day, by: s.by, told: s.told,
-        added: clone(w.log.added), edited: w.log.edited.map(keptEdit), removed: clone(w.log.removed), revived: clone(w.log.revived) });
+        added: clone(w.log.added), edited: w.log.edited.map(keptEdit), removed: clone(w.log.removed), revived: clone(w.log.revived),
+        swapped: w.log.swapped.length > BIG || w.log.swapped.some(x => x.of === 'kept:copy') ? w.log.swapped.map(x => ({ where: x.where, of: x.of, after: x.after, big: true })) : clone(w.log.swapped) });
       if (undoing) undoing(book, s);
       return { book, step };
     }
@@ -8978,6 +9082,7 @@ const E3 = (() => {
         if (clock) clock.see(planned.step.at);
         const st = planned.step;
         st.own = {}; for (const x of st.added.concat(st.edited, st.removed, st.revived)) st.own[x.id] = st.at;   // the `at` this step left on each record
+        for (const x of st.swapped || []) st.own[x.of] = x.after;
         if (opts.seen && !opts.isUndo) for (const x of st.added.concat(st.edited, st.removed, st.revived)) { const f = findIn(planned.book, x.id); if (f) opts.seen[x.id] = sig(f.rec); }   // the caller's own step: its note follows
         if (opts.after) opts.after(st);
         if (!opts.isUndo) steps.push(st);
@@ -9023,7 +9128,11 @@ const E3 = (() => {
         const revived = mem ? mem.revived || [] : [];   // after a reload a revived record is found by grp with the added ones, and marked gone
         const recOf = x => (x.list === 'home' ? ((w.book.home || {})[x.id] || null) : listOf(w.book, x.list).find(r => r && r.id === x.id));
         const later = x => { const r = recOf(x); return !r || (mem && r.at !== mem.own[x.id]); };
-        if (added.concat(removed, edited, revived).some(later)) { const e = new Bad('Something changed it since. Undo that change first'); e.why = 'later'; throw e; }
+        const swapped = mem ? mem.swapped || [] : [];
+        const laterSwap = x => { const v = slot(w.book, x.where, x.of, false).get(); return ((v && v.at) || null) !== mem.own[x.of]; };
+        if (added.concat(removed, edited, revived).some(later) || swapped.some(laterSwap)) { const e = new Bad('Something changed it since. Undo that change first'); e.why = 'later'; throw e; }
+        if (swapped.some(x => x.big)) bad('This was the choice of a whole copy. It can be undone only until the app is closed, so nothing changed');
+        for (const x of swapped) w.swap(x.where, x.of, x.had ? x.before : undefined, { stamp: true });   // a record the answer added is marked gone
         for (const x of added) w.remove(x.list, x.id);
         for (const x of revived) w.putBack(x.list, x.id, x.before);
         for (const x of removed) {
@@ -9059,6 +9168,12 @@ const E3 = (() => {
       return C && C.markOf ? C.markOf(stamps) : stamps.sort().join(',');   // the hash lives in store/clock.js (no sums in a screen file)
     }
     const api = { run, undo, seen, ver: () => ver(), steps: () => steps.slice(), onChange: f => listeners.push(f) };
+    /* [WHICH_DOOR_PLAN] A.answerSync(label, make, opts): make(book, { now, by }) is the engine's answer on the book as it
+       is in this step (S.answer or S.answerCheck); the door writes what differs, item by item, with Undo */
+    api.answerSync = (label, make, opts) => run(label, w => {
+      const next = make(clone(w.book), { now: w.at, by: w.by });
+      for (const x of syncDiff(w.book, next)) w.swap(x.where, x.of, x.value);
+    }, opts);
     for (const name of Object.keys(ACTIONS)) {
       const n = ARGS[name];   // the action's own arguments, before the options
       api[name] = (...args) => {
@@ -9078,7 +9193,7 @@ const E3 = (() => {
     return api;
   }
 
-  const api = { make, PATHS, listOf, Bad, OTHER, SPEND_FROM, ACTION_NAMES: Object.keys(ACTIONS) };   // the last two are read by tests/controls3.test.js
+  const api = { make, PATHS, listOf, Bad, OTHER, syncDiff, SPEND_FROM, ACTION_NAMES: Object.keys(ACTIONS) };   // the last two are read by tests/controls3.test.js
   if (node) module.exports = api;
   else root.BurrowAct3 = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
@@ -9496,6 +9611,7 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     const a = find(w, 'accounts', id);
     if (a.type !== 'loan') bad('Only a loan closes here');
     if (a.closed) bad(a.name + ' is already closed');
+    owedTicked(w, a);
     const o = LA.lookahead(w.book, w.today).owed[id];
     if (o && o.owedNow !== 0) bad(a.name + ' still owes money. Tick its last payment at Check your bank first');
     w.add('events', { k: 'check', acct: id, date: w.today, a: 0 });
@@ -9689,20 +9805,33 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     const dest = !spent && (w.book.accounts || []).find(y => live(y) && y.id === to && y.id !== id && !y.closed && OWN_KINDS[y.type] && (y.cur || home(w)) === (a.cur || home(w)));
     if (!spent && !dest) bad('Pick where its money goes: another account of yours, or "it is not there any more"');
     const v = LA.lookahead(w.book, w.today).accounts[id], held = v && v.bank != null ? v.bank : 0;
-    if (held < 0) bad(a.name + ' is below zero. Move money into it first, then close it');
+    if (spent && held < 0) bad(a.name + ' is below zero. Move money into it first, then close it');
+    /* [qc-foundation controls2to5 F3, M36, M95] what is really in it now, typed: that moves, and a final check of 0 after
+       it (same step, same moment) counts any difference from the app's own figure as at Check your bank */
+    const now = spent ? 0 : x.now == null || x.now === '' ? bad(`Type what is in ${a.name} now`) : x.now === 0 || x.now === '0' ? 0 : amountOk(x.now, `what is in ${a.name} now`);
     for (const l of linksTo(w, id)) w.edit(l.list, l.rec.id, { [l.field]: to });
-    if (spent) w.add('events', { k: 'check', acct: id, date: w.today, a: 0 });
-    else if (held > 0) w.add('events', { k: 'transfer', date: w.today, a: held, acct: id, acct2: to, src: { type: 'typed' } });
+    if (now > 0) w.add('events', { k: 'transfer', date: w.today, a: now, acct: id, acct2: to, src: { type: 'typed' } });
+    if (spent || now !== held) w.add('events', { k: 'check', acct: id, date: w.today, a: 0 });
     w.edit('accounts', id, { closed: w.today });
     return id;
   }
   /* [E3, M27, M40, R3] a card closes at zero: a final check of 0 today and `closed` (its payment day stops: the schedules it
      owns end on the closing day). With something on it, refused: pay it off (payOff) or tick its payment at Check your
      bank first */
+  /* [qc-foundation controls2to5 F1, M45] a card's or a loan's payment gone by and not ticked off keeps its own amount
+     due: a pay off or a close on top of it would count the money twice, so it is ticked off first */
+  function owedTicked(w, a) {
+    const r = LA.lookahead(w.book, w.today), k = (a.type === 'card' ? r.cards : r.owed)[a.id] || {}, d = ((k.overdue || [])[0] || {}).payment_date;
+    if (d) bad(`${a.name}'s ${SN3.dayLabel(d, false)} payment is not ticked off yet: tick it at Check your bank, then try again`);
+  }
   function closeCard(w, id) {
     const a = find(w, 'accounts', id);
     if (a.closed) bad(a.name + ' is already closed');
     const c = LA.lookahead(w.book, w.today).cards[id];
+    owedTicked(w, a);
+    /* [qc-foundation controls2to5 F2, M46] a bill it pays would end with it, silently: it is moved first */
+    const pays = A3.listOf(w.book, 'schedules').filter(s => s.kind === 'bill' && s.acct === id && !(s.ends && s.ends < w.today));
+    if (pays.length) bad(`${pays.map(s => s.name).join(' and ')} ${pays.length > 1 ? 'are' : 'is'} paid by ${a.name}. Change ${pays.length > 1 ? 'them' : 'it'} to another card or account first`);
     if (c && c.owedNow > 0) bad(a.name + ' still has ' + SMF.format(c.owedNow, a.cur || home(w)) + ' on it. Pay it off first, or tick its payment at Check your bank when it has gone');
     w.add('events', { k: 'check', acct: id, date: w.today, a: 0 });
     w.edit('accounts', id, { closed: w.today });
@@ -9715,6 +9844,7 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     if (a.type !== 'card' && a.type !== 'loan') bad('Only a card or a loan is paid off');
     if (a.closed) bad(a.name + ' is closed');
     const r = LA.lookahead(w.book, w.today), k = a.type === 'card' ? r.cards[id] : r.owed[id], owed = k ? k.owedNow : 0;
+    owedTicked(w, a);
     if (!(owed > 0)) bad('Nothing is owed on ' + a.name);
     const from = a.payFrom || mainOf(w);
     if (!(w.book.accounts || []).some(y => live(y) && !y.closed && y.id === from)) bad('The account ' + a.name + ' is paid from is closed. Change that first');
@@ -10058,7 +10188,7 @@ function openCheck3() {
     </div>`).join('');
   const figs = Object.keys(r.accounts).map(id => `<div class="a3-field"><label for="a3f-${esc3(id)}">What does ${esc3(E3.nameOf(id))} show today?</label>
       <input class="a3-in" data-amount type="text" inputmode="decimal" autocomplete="off" id="a3f-${esc3(id)}" data-bankfig="${esc3(id)}" placeholder="${esc3(SM.symbol(r.accounts[id].currency).trim())}">
-      <p class="a3-sub" data-expected="${esc3(id)}"></p><p class="a3-warn" data-gap="${esc3(id)}" aria-live="polite" hidden></p>
+      <p class="a3-sub">Leave it blank if you have not looked. <span data-expected="${esc3(id)}"></span></p><p class="a3-warn" data-gap="${esc3(id)}" aria-live="polite" hidden></p>
       <div class="a3-gapask" data-gapask="${esc3(id)}" hidden><p class="a3-sub" data-gapq="${esc3(id)}"></p><button type="button" class="a3-btn" data-gapyes="${esc3(id)}">Yes, that was it</button></div>
       <div class="a3-gapopt" data-gapopt="${esc3(id)}" hidden><label><input type="checkbox" data-gapspend="${esc3(id)}"> Log it as a spend now, on</label>
         <select class="a3-in a3-sel" data-gapline="${esc3(id)}" aria-label="Which line the spend goes on">${rcOptions3(rcFors3(), 'line:free')}</select></div></div>`).join('');
@@ -10107,8 +10237,10 @@ function closeCheck3() { $('#a3Check').hidden = true; $('#a3Home').hidden = fals
 function readCheck3(strict) {
   const sheet = $('#a3Check'), figures = {}, bad = (text, el) => ({ bad: text, el });
   for (const el of sheet.querySelectorAll("[data-bankfig]")) {
-    const id = el.dataset.bankfig, v = typedBank3(el.value, E3.curOf(id));
-    if (v === null) { if (strict) return bad(`Type what ${E3.nameOf(id)} shows today, as an amount`, el); continue; }
+    const id = el.dataset.bankfig;
+    if (!el.value.trim()) continue;   // [qc-controls run 1 blocker 3] blank: not looked at today, nothing written for it, as for a card
+    const v = typedBank3(el.value, E3.curOf(id));
+    if (v === null) { if (strict) return bad(`Type what ${E3.nameOf(id)} shows today, as an amount, or leave it blank`, el); continue; }
     figures[id] = v;
   }
   for (const el of sheet.querySelectorAll("[data-cardfig]")) {
@@ -10222,6 +10354,8 @@ async function saveCheck3() {
   const sheet = $('#a3Check'), err = $('#a3CheckErr');
   const d = readCheck3(true);
   if (d.bad) { err.textContent = d.bad; d.el.focus(); return; }
+  /* every box blank and nothing ticked: nothing to save, said so; Cancel is still there */
+  if (!Object.keys(d.figures).length && !d.ticked.length) { err.textContent = 'Nothing to save yet. Type what a bank or card shows today, or tick what came in'; const f = sheet.querySelector('[data-bankfig]'); if (f) f.focus(); return; }
   /* [card payment question] asked first, once: Save again saves it as typed, so nobody is trapped */
   const asks = Object.keys(check3.payAsk || {}), askKey = asks.join(' ');
   if (asks.length && check3.payAsked !== askKey) {
@@ -10737,8 +10871,8 @@ function drawPlan3() {
   /* [BJ5] what has landed and is not ticked off comes first, then the next one */
   const owing = { late: 'late', notSeen: 'not seen yet', unticked: 'not ticked off yet' };
   /* [walk 4] each outstanding one with its own amount, and then the next with its own when they differ in time */
-  const owingWords = (v, cur) => (v.outstanding || []).map(o => `due ${esc3(day3(o.land, yr))}, ${owing[o.state]}, ${money3(o.amount, cur || home)}, `).join('');
-  const nextWords = (v, cur) => `${owingWords(v, cur)}${v.next ? `next ${esc3(day3(v.next.land, yr))}${(v.outstanding || []).length ? ', ' + money3(v.next.amount, cur || home) : ''}` : v.ends ? `ended ${esc3(day3(v.ends, yr))}` : 'nothing coming'}`;
+  const owingWords = (v, cur) => (v.outstanding || []).map(o => `due ${esc3(land3(o, yr))}, ${owing[o.state]}, ${money3(o.amount, cur || home)}, `).join('');
+  const nextWords = (v, cur) => `${owingWords(v, cur)}${v.next ? `next ${esc3(land3(v.next, yr))}${(v.outstanding || []).length ? ', ' + money3(v.next.amount, cur || home) : ''}` : v.ends ? `ended ${esc3(day3(v.ends, yr))}` : 'nothing coming'}`;
   /* the row's figure: the first outstanding one's own amount (scheduleView outstanding[].amount), else the next one's */
   const rowAmount = v => ((v.outstanding || []).length ? v.outstanding[0].amount : v.next ? v.next.amount : v.amount);
   const ruleWords = v => rhythmWords3(v.rule, yr);
@@ -11113,9 +11247,10 @@ function plAcctCloseForm3(id) {
   const main = ((book.home || {}).main || {}).v;
   const opts = others.map(y => ({ v: y.id, name: 'Move it to ' + y.name })).concat([{ v: 'spent', name: 'It is not there any more (spent)' }]);
   plForm3('Close ' + a.name, [{ key: 'to', label: 'Its money', kind: 'pick', options: opts, value: main && others.some(y => y.id === main.acct) ? main.acct : opts[0].v,
-      hint: 'Bills, pays and cards paid from it move to the account you pick (to your main bank if the money is spent)' }],
-    [{ label: 'Close this account', solid: true, sure: v => [v.to === 'spent' ? `Close ${a.name}? What it held counts as spent. Its history stays` : `Close ${a.name}? What it holds moves to ${E3.nameOf(v.to)}. Its history stays`, 'Yes, close it'],
-      step: v => ['closeAccount', w => PLAN3W.closeAccount(w, id, { to: v.to }), a.name + ' closed'] }],
+      hint: 'Bills, pays and cards paid from it move to the account you pick (to your main bank if the money is spent)' },
+    { key: 'now', label: 'What is in it now', kind: 'amount', optional: true, hint: 'What is really there today, counted or from its app. Not needed if it is not there any more' }],
+    [{ label: 'Close this account', solid: true, sure: v => [v.to === 'spent' ? `Close ${a.name}? What it held counts as spent. Its history stays` : `Close ${a.name}? ${v.now == null ? 'What it holds' : money3(v.now, a.cur || E3.home())} moves to ${E3.nameOf(v.to)}. Its history stays`, 'Yes, close it'],
+      step: v => ['closeAccount', w => PLAN3W.closeAccount(w, id, { to: v.to, now: v.now }), a.name + ' closed'] }],
     `${esc3(a.name)} holds ${money3(held, a.cur || E3.home())} today (${esc3(label3('bankToday')).toLowerCase()})`);
 }
 /* [E2] a closed account: Reopen (its history was kept) */
@@ -11192,6 +11327,8 @@ if (ACT3) ACT3.onChange(() => { if (!PL3.form) renderPlan3(); });
    [item 14] Each section has its own Save and is held as a draft on this device until "See my money" turns the saved
    answers into a book through engine/build_book.js and keeps it through the store (the draft section below says
    how). Nothing is worked out here. The words are drafts for Mako's copy pass. */
+/* [qc-controls run 1 blocker 2, coordinator 16's ruling B] setup has no step for these: its last step says where they go */
+const SETUP3_LATER = 'Loans, goals and budget lines like Gifts are not part of setup. Add them on Plan after this: Add a loan, Add a goal, Add a line';
 let setup3 = null;
 function dayOptions3(sel, extra) {
   const out = [];
@@ -11342,6 +11479,7 @@ async function openSetup3() {
         <p class="a3-sub" id="s3MinH" data-hint="min">Safe to spend leaves this much in your bank as a cushion</p></div>
       ${saveBar3('min')}
     </section>
+    <p class="a3-sub" data-hint="later">${esc3(SETUP3_LATER)}</p>
     <p class="a3-err" id="a3SetupErr" role="alert"></p>
     <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3SetupSave">See my money</button><button type="button" class="a3-btn" id="a3SetupX">Back</button></div>
   </div>`;
@@ -11661,10 +11799,23 @@ function typedNow3(sections, skip) {
    on its way never lands after a later one (See my money's clear above all: E3.rec reads, then writes the device record) */
 let draftQ3 = Promise.resolve();
 const draftWrite3 = v => (draftQ3 = draftQ3.then(() => E3.rec('setup', v), () => E3.rec('setup', v)));
-const keepDraft3 = (sections, days, skip, kept) => {
+/* [qc-data-safety 26 Nov, blocker 1; M61] two tabs of one phone share the draft: a write changes only what this tab
+   changed (the sections in `touched`, saved or taken back; the boxes typed and not saved) on the draft as stored now,
+   so a section another tab saved is never wiped. E3.recEdit reads and writes in one turn, one tab at a time */
+const draftEdit3 = fn => (draftQ3 = draftQ3.then(() => E3.recEdit('setup', fn), () => E3.recEdit('setup', fn)));
+const keepDraft3 = (sections, days, skip, kept, touched) => {
   const typed = setup3 && setup3.base ? typedNow3(sections, skip) : Object.assign({}, kept);
   if (skip) delete typed[skip];
-  return draftWrite3(Object.keys(sections).length || Object.keys(typed).length ? { v: 1, sections, days, typed } : null);
+  return draftEdit3(cur => {
+    const d = cur && cur.v ? { v: 1, sections: Object.assign({}, cur.sections), days: Object.assign({}, cur.days), typed: Object.assign({}, cur.typed) } : { v: 1, sections: {}, days: {}, typed: {} };
+    for (const sec of touched || []) {
+      if (sections[sec]) { d.sections[sec] = sections[sec]; d.days[sec] = days[sec]; } else { delete d.sections[sec]; delete d.days[sec]; }
+      delete d.typed[sec];
+    }
+    if (skip) delete d.typed[skip];
+    Object.assign(d.typed, typed);
+    return Object.keys(d.sections).length || Object.keys(d.typed).length ? d : null;
+  });
 };
 /* what is typed is kept a moment after the typing stops, and at once on Back */
 /* what a row shows (its questions and their words) is worked out while the person types, not only when the box is left:
@@ -11688,7 +11839,7 @@ async function saveSec3(sec) {
   const before = setup3.saved[sec] || null, beforeDay = setup3.days[sec] || null, now = snap3(sec);
   const sections = Object.assign({}, setup3.saved, { [sec]: now }), days = Object.assign({}, setup3.days, { [sec]: E3.today() });
   setup3.busy = true;
-  const ok = await keepDraft3(sections, days);
+  const ok = await keepDraft3(sections, days, null, null, [sec]);
   setup3.busy = false;
   if (!setup3) return;
   if (ok !== true) { el.querySelector(`[data-saved="${sec}"]`).textContent = 'This could not be saved on this device. Nothing changed'; return; }
@@ -11697,8 +11848,12 @@ async function saveSec3(sec) {
   /* [qc-assistant run 4, fix B] the section goes into the chat's draft too: one set of answers (chat3.js) */
   const cw = typeof chat3FromScreens === 'function' ? chat3FromScreens(sec) : null;
   markAll3();
-  MSG3.post({ kind: 'undo', key: 'act3', text: `${secName3(sec)}: saved`, action: { label: 'Undo', run: () => undoSec3(sec, before, beforeDay, now, cw) } });
+  setup3Undo = MSG3.post({ kind: 'undo', key: 'act3', text: `${secName3(sec)}: saved`, action: { label: 'Undo', run: () => undoSec3(sec, before, beforeDay, now, cw) } });
 }
+/* [coordinator 16, 26 Nov] once the app is filled (by the chat or by See my money) a section's Save has nothing left to undo:
+   its Undo is taken off, never left to say "Undone" while nothing changes. E3.start calls this */
+let setup3Undo = null;
+function setup3Filled() { if (setup3Undo) { MSG3.dismiss(setup3Undo); setup3Undo = null; } }
 /* Undo a section's Save: the section as it was before it (or as it started); refused when it was saved again since */
 async function undoSec3(sec, before, beforeDay, now, cw) {
   const open = !!setup3, kept = open ? null : ((await E3.rec('setup')) || {});
@@ -11711,7 +11866,7 @@ async function undoSec3(sec, before, beforeDay, now, cw) {
      section is put back, or its write, made from the save being undone, would land after this one and win */
   const me = open ? setup3 : null;
   if (me) me.busy = true;
-  const ok = await keepDraft3(sections, days, sec, open ? null : kept.typed);
+  const ok = await keepDraft3(sections, days, sec, open ? null : kept.typed, [sec]);
   if (me) me.busy = false;
   if (ok !== true) { MSG3.post({ kind: 'toast', key: 'act3', text: 'This could not be saved on this device. Nothing changed' }); return; }
   if (me && setup3 === me) { setup3.saved = sections; setup3.days = days; put3(sec, before || setup3.base[sec]); }
@@ -11859,9 +12014,10 @@ async function saveSetup3() {
           out[k] = list;
         } else if (isRecords(x)) out[k] = x.map(mark);
         else if (isSetting(x)) out[k] = mark(x);   // a setting, { v } with or without a change time
-        // a setting here (or in the copy last synced) that the restored copy lacks is saved marked gone, its value kept
-        // beside the mark (SCHEMA_V3 0 "Nothing is deleted"): left out, the join would read "never changed" and bring it back
-        else if (x === undefined && os.some(o => isSetting(o[k]))) { const e = os.map(o => o[k]).find(isSetting); out[k] = Object.assign(mark(e), { gone: e.gone || gone }); }
+        // a setting here (or in the copy last synced) that the restored copy lacks is saved as whichdoor's marker, v null
+        // (every reader reads it as not set, as the restored copy has it), marked gone, its value kept beside the mark in
+        // `before` (SCHEMA_V3 0 "Nothing is deleted"): left out, the join would read "never changed" and bring it back
+        else if (x === undefined && os.some(o => isSetting(o[k]))) { const e = os.map(o => o[k]).find(isSetting); out[k] = Object.assign(mark(e), { v: null, before: e.v === undefined ? null : e.v, gone: e.gone || gone }); }
         else if (isMap(x)) out[k] = walk(x, os.map(o => o[k]).filter(isMap), false);
         else if (x === undefined) { const w = walk({}, os.map(o => o[k]).filter(isMap), false); if (Object.keys(w).length) out[k] = w; }
         else out[k] = C(x);
@@ -12646,22 +12802,16 @@ function paintOther3() {
       <div class="a3-actions"><button type="button" class="a3-btn" data-useother="${n}:${o.i}">Use the other one</button></div></div>`).join('')).join('');
   for (const b of box.querySelectorAll('[data-useother]')) b.addEventListener('click', () => { const [n, i] = b.dataset.useother.split(':').map(Number); useOther3(lines[n], i); });
 }
-/* the other version back: the engine's own answer (every version stays kept), with an Undo that puts the one before back */
-async function pickVersion3(of, matches) {
-  const S = BurrowEngine.sync, k = (E3.book.keptVersions || []).find(r => r.of === of);
-  const i = k ? k.versions.findIndex(matches) : -1;
-  if (i < 0) return false;
-  let next;
-  try { next = S.answer({ copy: E3.book, of, pick: i, now: nowIso3(), by: deviceBy3() }); } catch (e) { return false; }
-  return (await E3.put(next)) === true;
-}
+/* [WHICH_DOOR_PLAN] the other version back: the engine's own answer (every version stays kept), written through the one
+   write door (ACT3.answerSync), so it has the door's check, the saved Undo journal and its Undo bar like every write */
 async function useOther3(x, i) {
-  const S = BurrowEngine.sync, before = x.inUse, want = x.k.versions[i], name = x.cur.name || nameOf3(x.k);
-  if (!(await pickVersion3(x.k.of, v => S.same(v, want)))) { setMsg3('That choice could not be made, so nothing changed', true); return; }
-  renderHome3(); if (SET3.open) paintQuestions3();
-  MSG3.post({ kind: 'undo', key: 'act3', text: `${name}: the other one is back`, action: { label: 'Undo', run: async () => {
-    if (await pickVersion3(x.k.of, v => S.same(v, before))) { renderHome3(); if (SET3.open) paintQuestions3(); }
-  } } });
+  const S = BurrowEngine.sync, want = x.k.versions[i], name = x.cur.name || nameOf3(x.k), of = x.k.of;
+  const r = await ACT3.answerSync('Use the other one', (b, o) => {
+    const k = (b.keptVersions || []).find(y => y.of === of), j = k ? k.versions.findIndex(v => S.same(v, want)) : -1;
+    if (j < 0) throw new BurrowAct3.Bad(STALE3);
+    return S.answer({ copy: b, of, pick: j, now: o.now, by: o.by });
+  }, { undo: `${name}: the other one is back` });
+  if (!r.ok) setMsg3(r.why === 'bad' && r.text ? r.text : 'That choice could not be made, so nothing changed', true);
 }
 function paintQuestions3() {
   const box = $('#a3CloudQs'); if (!box || !E3.book) { if (box) box.innerHTML = ''; return; }
@@ -12679,7 +12829,11 @@ function paintQuestions3() {
     return `<div class="a3-q" data-cloudq="${esc3(q.q)}"><p class="a3-next">${esc3(QWORDS3[q.q] || 'Something needs a choice after joining your devices.')}</p>
       <div class="a3-actions">${picks.map(([p, t]) => `<button type="button" class="a3-btn" data-q="${i}" data-pick="${esc3(p)}">${esc3(t)}</button>`).join('')}</div></div>`;
   }).join('');
-  const drawn = qs.map(q => (q.q === 'which' ? stampsOf3(E3.book, q.of) : null));   // what the rows were drawn from
+  /* what the rows were drawn from: a "which" row its item's stamps; a check question (x8, closed, minimum, main) has no
+     row stamps, so it carries the door's whole-book mark from paint time (WHICH_DOOR_PLAN item 6): answered on a book
+     that changed since, it is refused, never written over the newer book */
+  const paintVer = typeof ACT3 === 'object' && ACT3 && ACT3.ver ? ACT3.ver() : null;
+  const drawn = qs.map(q => (q.q === 'which' ? stampsOf3(E3.book, q.of) : { ver: paintVer }));
   for (const b of box.querySelectorAll('[data-q]')) b.addEventListener('click', () => answer3(qs[+b.dataset.q], b.dataset.pick, drawn[+b.dataset.q]));
 }
 /* [M20, M61] a "which to keep" answer is written only on the book its row was drawn from: the question still open, its
@@ -12695,45 +12849,22 @@ function stampsOf3(book, of) {
   return { ask: !!(k && k.ask), k: k ? k.at || '' : '', item: it && it.at ? it.at : '' };
 }
 const STALE3 = 'This was already chosen or changed somewhere else, so nothing changed';
-/* Undo right after Keep: the item and its kept versions as they were before the answer, written with a newer time so the
-   other devices take the Undo too. Refused when either changed since the answer */
-async function undoAnswer3(of, before, answered) {
-  const now = stampsOf3(E3.book, of), was = stampsOf3(answered, of);
-  if (now.k !== was.k || now.item !== was.item) { setMsg3(STALE3, true); return; }
-  const clock = BurrowClock.makeClock(); clock.see(E3.book);
-  const stamp = { at: clock.stamp(), by: deviceBy3() };
-  const kb = (before.keptVersions || []).find(r => r.of === of);
-  let out;
-  if (of === 'copy') out = JSON.parse(JSON.stringify(before));
-  else {
-    out = JSON.parse(JSON.stringify(E3.book));
-    const holder = pathOf3(out, kb.in), it = itemOf3(before, kb);
-    if (Array.isArray(holder)) { const i = holder.findIndex(r => r && r.id === of); if (it && i >= 0) holder[i] = Object.assign(JSON.parse(JSON.stringify(it)), stamp); }
-    else if (holder && it) holder[of.split('.').pop()] = Object.assign(JSON.parse(JSON.stringify(it)), stamp);
-  }
-  out.keptVersions = (out.keptVersions || []).map(r => (r.of === of ? Object.assign(JSON.parse(JSON.stringify(kb)), stamp) : r));
-  const ok = await E3.put(out);
-  if (ok !== true) { setMsg3('This could not be saved on this device, so nothing changed', true); return; }
-  renderHome3(); if (SET3.open) paintQuestions3();
-}
 async function answer3(q, pick, drawn) {
-  if (drawn) {
+  if (drawn && q.q === 'which') {
     const now = stampsOf3(E3.book, q.of);
     if (!now.ask || now.k !== drawn.k || now.item !== drawn.item) { setMsg3(STALE3, true); paintQuestions3(); return; }
   }
-  const S = BurrowEngine.sync, before = E3.book, base = { copy: E3.book, now: nowIso3(), by: deviceBy3() };
-  let next;
-  try {
-    if (q.q === 'which') next = S.answer(Object.assign(base, { of: q.of, pick: pick === 'both' ? 'both' : +pick }));
-    else next = S.answerCheck(Object.assign(base, { question: q, pick }));
-  } catch (e) { setMsg3('That choice could not be made, so nothing changed', true); return; }
-  const ok = await E3.put(next);   // an edit with this device's clock; every version stays kept
-  if (ok !== true) { setMsg3(ok && ok.text ? ok.text : 'This could not be saved on this device, so nothing changed', true); paintQuestions3(); return; }
-  renderHome3();
-  if (q.q === 'which') MSG3.post({ kind: 'undo', key: 'act3', text: 'Kept - the other version can still come back', action: { label: 'Undo', run: () => undoAnswer3(q.of, before, next) } });
-  else setMsg3('Kept - the other version can still come back');
-  paintQuestions3();
+  /* [WHICH_DOOR_PLAN] the engine makes the answer on the book as it is in the step; the one write door writes what differs,
+     with its check, the saved Undo journal (Undo after a reload) and its Undo bar; every version stays kept */
+  const S = BurrowEngine.sync;
+  const r = await ACT3.answerSync(q.q === 'which' ? 'Kept' : 'Chosen', (b, o) => (q.q === 'which'
+    ? S.answer({ copy: b, of: q.of, pick: pick === 'both' ? 'both' : +pick, now: o.now, by: o.by })
+    : S.answerCheck({ copy: b, question: q, pick, now: o.now, by: o.by })), Object.assign({ undo: 'Kept - the other version can still come back' }, q.q !== 'which' && drawn && drawn.ver != null ? { ver: drawn.ver } : {}));
+  if (!r.ok && r.why === 'other') { setMsg3(STALE3, true); paintQuestions3(); return; }
+  if (!r.ok) { setMsg3(r.why === 'save' ? r.text || 'This could not be saved on this device, so nothing changed' : 'That choice could not be made, so nothing changed', true); paintQuestions3(); }
 }
+/* every write through the door redraws the questions while Settings is open (an answer, its Undo, a change elsewhere) */
+if (typeof ACT3 === 'object' && ACT3) ACT3.onChange(() => { if (typeof SET3 === 'object' && SET3.open) { try { paintQuestions3(); } catch (e) { /* drawn next time */ } } });
 /* ---------- Settings (DECISIONS_ROUND2 D2, D5, D7, E2, BD5, BE3) ----------
    One sheet: the currency shown, this device's storage line (store/persist.js), the backup file (src/backup3.js) and the
    cloud copy (src/cloud3_page.js adds its own card when it is in the page). Nothing here works out money.
@@ -13873,7 +14004,7 @@ Actions:
     { n: 12, key: 'asked', ask: 'For each bill in NEEDED that was due since your last pay: "Phone was due on 20 Nov. Has it come out of your bank already?" For each card statement in NEEDED: how much was on it. If a pay lands today: has it already landed in that figure?' },
     { n: 13, key: 'free', ask: "How much do you want for food and everyday stuff each pay period? Groceries, eating out, getting around, fun. Leave it blank if you don't know yet." },
     { n: 14, key: 'min', ask: 'Keep at least ___ in your bank? Skip it and there is no minimum.' },
-    { n: 15, key: 'fill', ask: 'Show what you have (the draft), then ask: shall I fill in your Burrow? When they say yes, call fill_book.' },
+    { n: 15, key: 'fill', ask: 'Show what you have (the draft), then ask: shall I fill in your Burrow? When they say yes, call fill_book. After it is filled, say that loans, goals and budget lines like Gifts are not part of setup: they are added on Plan (Add a loan, Add a goal, Add a line), and goals and budget lines can also be told to you.' },
   ];
   /* [qc-assistant blocker 3; M17] ONE table: what every screen and every sheet is for, in one plain line each. The
      assistant is told all of it (SYSTEM), and with each message which screen is open and which sheet is on top
@@ -13957,7 +14088,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     { name: 'draft_set', description: 'Save one setup section into the draft, its whole value. Nothing reaches the app until fill_book. Sections: country "JP"|"PH"|"XX"; currency "JPY"|"PHP"|"USD"|"EUR" (a change of currency drops the amounts saved before it: ask each again); banks [{name, amount, type?, confirmed?}] (first is where pay lands; confirmed true when the person gave the figure again today); pays [{name, amount, every: month|days|weeks|none, day?, day2?, n?, start?, shift?: before|after, bank?, afterTax, same?}]; cards [{name, owed, payDay, closeDay: day|"last"|"not sure", shift?, payFrom?, confirmed?}]; bills [{name, amount, day, every?: month|year, month?, from?}]; asked [{name, out: true|false}]; statements [{name, amount|"not sure"}]; payToday {landed: true|false}; free amount|null; min amount|null.',
       input_schema: { type: 'object', properties: { section: { type: 'string', enum: SECTIONS }, value: { description: 'The section\'s whole value.' } }, required: ['section', 'value'] } },
     { name: 'fill_book', description: 'Turn the draft into the person\'s Burrow. Only when they said to fill it in. Refused while NEEDED is not empty.', input_schema: { type: 'object', properties: {} } },
-    { name: 'change', description: 'Make up to ' + MAX_STEPS + ' changes, each a named step: ' + DO.join(', ') + '. landed {ref: the P, B or card A ref, amount? only if it was different, date? the day it landed}; bank_figure and card_figure {account, amount}. Fields: amount, account (A ref), every (add_bill: month|year|months, with month 1..12 for a year, n and start for months), from and to (A refs), line (L ref), goal (G ref), ref (the record: S, B, P, L or G ref), date (YYYY-MM-DD, today or before), note, name, day, day2, every (month|days|weeks1..4|none), start, when (now|next|once), target, due, owed, payDay, closeDay, type (bank|cash|ewallet), moved (true|false), shift (after|before: a card or loan weekend rule), payFrom (the A ref that pays a card or loan), from (the A ref the money came from), afterFigure (true|false: moved after they looked at that bank on the day of its figure). change_account {account: a bank, cash or e-wallet A ref, name?, min?: its own Keep at least, 0 for none}. close_account {account, to: the A ref its money goes to, or "spent" when it is not there any more}: bills and cards paid from it move there too, its history stays. reopen_account {account}. remove_account {account}: only for one added by mistake; anything with history is closed instead. close_account and remove_account also take a card or loan (a card or loan closes at zero). pay_off {account: card or loan}: all it owes, paid today from its paying account, only when they say they paid it. change_card {account, name?, payDay?, closeDay?}. change_loan {account, name?, payDay?, amount: the usual payment}. add_loan {name, owed, amount, payDay}. set_keep {amount: Keep at least for the main bank, 0 for none}. set_country {country: JP|PH|XX (somewhere else)}.',
+    { name: 'change', description: 'Make up to ' + MAX_STEPS + ' changes, each a named step: ' + DO.join(', ') + '. landed {ref: the P, B or card A ref, amount? only if it was different, date? the day it landed}; bank_figure and card_figure {account, amount}. Fields: amount, account (A ref), every (add_bill: month|year|months, with month 1..12 for a year, n and start for months), from and to (A refs), line (L ref), goal (G ref), ref (the record: S, B, P, L or G ref), date (YYYY-MM-DD, today or before), note, name, day, day2, every (month|days|weeks1..4|none), start, when (now|next|once), target, due, owed, payDay, closeDay, type (bank|cash|ewallet), moved (true|false), shift (after|before: a card or loan weekend rule), payFrom (the A ref that pays a card or loan), from (the A ref the money came from), afterFigure (true|false: moved after they looked at that bank on the day of its figure). change_account {account: a bank, cash or e-wallet A ref, name?, min?: its own Keep at least, 0 for none}. close_account {account, to: the A ref its money goes to, or "spent" when it is not there any more, amount: what is in it now when it moves}: bills and cards paid from it move there too, its history stays. reopen_account {account}. remove_account {account}: only for one added by mistake; anything with history is closed instead. close_account and remove_account also take a card or loan (a card or loan closes at zero). pay_off {account: card or loan}: all it owes, paid today from its paying account, only when they say they paid it. change_card {account, name?, payDay?, closeDay?}. change_loan {account, name?, payDay?, amount: the usual payment}. add_loan {name, owed, amount, payDay}. set_keep {amount: Keep at least for the main bank, 0 for none}. set_country {country: JP|PH|XX (somewhere else)}.',
       input_schema: { type: 'object', properties: { steps: { type: 'array', items: { type: 'object', properties: { do: { type: 'string', enum: DO }, amount: num }, required: ['do'] } } }, required: ['steps'] } },
   ];
 
@@ -13972,9 +14103,10 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     for (const x of sch) {
       const ref = x.kind === 'income' ? 'P' + (++p) : 'B' + (++b); refs[ref] = x.id;
       /* one figure, one source: the amount and the rhythm in force today are the engine's own answer (its schedule view,
-         the one Plan shows), never worked out again here from the saved lists (a change dated later is not today's) */
+         the one Plan shows), never worked out again here from the saved lists (a change dated later is not today's);
+         [qc-controls 2to5 F2] its next day in Plan's words, with why when a weekend or holiday moved it */
       const v = view[x.id] || {};
-      lines.push(`${ref} | ${x.name} | ${v.amount != null ? SM.format(v.amount, x.cur || home) : 'no fixed amount'} | ${ruleWords(v.rule)}${x.ends ? ' | ends ' + day1(x.ends) : ''}`);
+      lines.push(`${ref} | ${x.name} | ${v.amount != null ? SM.format(v.amount, x.cur || home) : 'no fixed amount'} | ${ruleWords(v.rule)}${v.next ? ', next ' + SN.landLabel(v.next.land, v.next.due, v.next.land.slice(0, 4) !== today.slice(0, 4)) : ''}${x.ends ? ' | ends ' + day1(x.ends) : ''}`);
     }
     if (lines.length) out.push('Pays and bills (ref | name | amount | when):\n' + lines.join('\n'));
     /* [E2] closed accounts keep a ref after every open one, so "reopen it" can name one */
@@ -14235,7 +14367,8 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     const hist = state.turns.filter(t => t.who === 'person' || t.who === 'ai');
     const past = hist.slice(0, hist.length - 1).slice(-TURNS), messages = [];
     const push = (role, text) => { const last = messages[messages.length - 1]; if (last && last.role === role) last.content[0].text += '\n\n' + text; else messages.push({ role, content: [{ type: 'text', text }] }); };
-    for (const t of past) push(t.who === 'person' ? 'user' : 'assistant', t.text || '(a card)');
+    /* [qc-foundation on CONFUSING1_PLAN, 3] its own words from a turn where nothing was done are sent with that said */
+    for (const t of past) push(t.who === 'person' ? 'user' : 'assistant', (t.text || '(a card)') + (t.notDone ? ' (the app did not do this: nothing was added)' : ''));
     if (messages.length && messages[0].role === 'assistant') messages.shift();
     const now = stateText(state, ctx);
     const first = (rounds || []).length ? 'THE PERSON SAYS\n' + message : now + '\n\nTHE PERSON SAYS\n' + message;
@@ -14500,7 +14633,11 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       const spent = a.to === 'spent', to = spent ? 'spent' : ref(a.to, 'A');
       if (!to) return { bad: 'ask where its money goes: another of their accounts, or is it not there any more (spent)? Then change again with to' };
       const held = ((LA.lookahead(book, today).accounts || {})[id] || {}).bank || 0;
-      return { kind: 'closeAccount', args: [id, { to }], text: spent ? `Close ${rec.name}: what it held (${m(held, rec.cur)}) counts as spent. Its history stays` : `Close ${rec.name}: ${m(held, rec.cur)} moves to ${nm(to)}. Its history stays`, del: true };
+      if (spent) return { kind: 'closeAccount', args: [id, { to }], text: `Close ${rec.name}: what it held (${m(held, rec.cur)}) counts as spent. Its history stays`, del: true };
+      /* [qc-foundation controls2to5 F3] what is really in it now moves, never the app's own figure */
+      const now = a.amount == null || a.amount === '' ? null : amt(a.amount, rec.cur, true);
+      if (now == null) return { bad: `ask what is in ${rec.name} now (the app's own figure is ${m(held, rec.cur)}), then change again with amount` };
+      return { kind: 'closeAccount', args: [id, { to, now }], text: `Close ${rec.name}: ${m(now, rec.cur)} moves to ${nm(to)}${now !== held ? `, the app had ${m(held, rec.cur)}` : ''}. Its history stays`, del: true, amount: now, figs: now ? [now] : [] };
     }
     /* [E1, M13] a bank, cash or e-wallet renamed, or its own Keep at least set (0 clears it): PLAN3W.changeAccount */
     if (what === 'change_account') {
@@ -14624,6 +14761,33 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     state.used = (state.used || []).concat(...card.plan.map(s => figsOf(s).map(plain)));
     state.wrote = true;
   }
+  /* [CONFUSING 1, coordinator 16's ruling b] what a turn did: a refused step tells the person in a note; a turn where
+     steps were refused and nothing was written or asked marks the AI's words as not done (never changed or hidden) */
+  const DONE_WORDS = 'The app did not do this: nothing was added';
+  function refused(frame, state, shown, deps, text) {
+    if (frame) frame.refused++;
+    addTurn(state, { who: 'note', text, at: deps.told() }, shown);
+  }
+  function did(frame) { if (frame) frame.did = true; }
+  /* [qc-foundation on CONFUSING1_PLAN, 1 and 2] the chat's own book: a book that still holds a record written at the
+     chat's fill. Any other book was made on the screens (or elsewhere). Nothing about it is saved: it is worked out from
+     the book each time, so a book that goes away opens the setup answers again */
+  function ownBook(state, book) {
+    if (!book || !state.fill) return false;
+    const recs = [].concat(book.accounts || [], book.schedules || [], book.events || [], book.checkins || [], book.places || []);
+    return recs.some(r => r && r.at === state.fill.told);
+  }
+  const setupShut = (state, book) => !!book && !ownBook(state, book);
+  /* setup finished on the screens while the chat was part way: one note, once per book (said again for a later book) */
+  const SETUP_CLOSED = 'Setup was finished on the screens, so these setup answers are closed. Change things on the screens, or tell me what to change';
+  function closeSetup(state, book, shown, told) {
+    if (!book) { if (state.fill) state.fill = null; state.shutSaid = false; return false; }
+    if (!setupShut(state, book) || state.shutSaid) return false;
+    if (!state.turns.some(t => t.who === 'card' && t.card && t.card.kind === 'draft')) return false;
+    state.shutSaid = true;
+    addTurn(state, { who: 'note', text: SETUP_CLOSED, at: told }, shown);
+    return true;
+  }
   /* ---- one tool call ---- */
   function addTurn(state, t, shown) {
     const turn = Object.assign({ id: 't' + (++state.seq) }, t);
@@ -14637,15 +14801,19 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     if (call.name === 'list') return list(book, today, x);
     if (call.name === 'explain') return explain(x.topic);
     if (call.name === 'draft_set') {
-      if (book) return 'Setup is done: change things with change instead.';
+      if (book) { refused(frame, state, shown, deps, 'Not saved: setup is done. Change it on the screens, or tell me what to change'); return 'Setup is done: change things with change instead.'; }
       const r = draftSet(state.draft, x.section, x.value, today);
-      if (!r.ok) { addTurn(state, { who: 'note', text: 'Not saved: ' + r.text, at: deps.told() }, shown); return 'Not saved: ' + r.text; }
-      state.draft = r.draft;
+      if (!r.ok) { refused(frame, state, shown, deps, 'Not saved: ' + r.text); return 'Not saved: ' + r.text; }
+      state.draft = r.draft; did(frame);
       addTurn(state, { who: 'note', text: r.text, at: deps.told() }, shown);
       const need = ANS.need(r.draft, { day: today });
       return r.text + '. NEEDED now: ' + (need.length ? need.join(' ') : 'nothing');
     }
-    if (call.name === 'fill_book') { const f = await fillNow(state, deps, shown, true); return f.ok ? 'Filled in. ' + f.text : 'Not filled in: ' + f.text; }
+    if (call.name === 'fill_book') {
+      const f = await fillNow(state, deps, shown, true);
+      if (f.ok) did(frame); else refused(frame, state, shown, deps, 'Not filled in: ' + f.text);
+      return f.ok ? 'Filled in. ' + f.text : 'Not filled in: ' + f.text;
+    }
     if (call.name === 'change') {
       if (!book || !deps.door) return 'There is no book yet: finish setup first.';
       /* [STALE_SHEET_PLAN, M61] the refs the AI holds are places in lists (S7 is the seventh spend told): if the book
@@ -14653,7 +14821,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       const verNow = typeof deps.door.ver === 'function' ? deps.door.ver() : null;
       if (frame && frame.ver != null && verNow !== frame.ver) {
         frame.ver = verNow;
-        addTurn(state, { who: 'note', text: 'Nothing was changed, because something changed somewhere else while I was answering. Say it again', at: deps.told() }, shown);
+        refused(frame, state, shown, deps, 'Nothing was changed, because something changed somewhere else while I was answering. Say it again');
         return 'Not changed: the book changed somewhere else after FIGURES were sent, so the refs may be old. Nothing was done. Use list again before any change, or ask the person to say it again.';
       }
       const raw = Array.isArray(x.steps) ? x.steps : [];
@@ -14664,13 +14832,13 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
         if (s.bad) {
           dropped.push(s.bad); if (s.payWith) state.askPay = true;
           /* a note that tells the AI to ask something is no words for the person */
-          left.push(/^(ask|which account)/i.test(s.bad) ? 'one step that needs an answer from you first' : DO_WORDS[a && a.do] || 'a change the assistant can\'t make here');
+          left.push(s.left || (/^(ask|which account)/i.test(s.bad) ? 'one step that needs an answer from you first' : DO_WORDS[a && a.do] || 'a change the assistant can\'t make here'));
         } else plan.push(s);
       }
       /* [AI_JOIN_FIXES H6] the answer to "card or bank?" is kept for this chat */
       const named = plan.find(s => s.named);
       if (state.askPay && named) { state.payWith = named.named; state.askPay = false; }
-      if (!plan.length) return 'Nothing changed: ' + (dropped.join('; ') || 'no steps');
+      if (!plan.length) { refused(frame, state, shown, deps, 'Not done: ' + (left.length ? left.join(', and ') : 'nothing was asked for') + '. Nothing changed'); return 'Nothing changed: ' + (dropped.join('; ') || 'no steps'); }
       /* [BW] a delete, or a change larger than safe to spend, asks first; [AI_FIRST_PLAN 7] an amount the person did not
          type is a guess and asks first too */
       const safe = LA.lookahead(book, today).safeToSpend.headline;
@@ -14688,11 +14856,12 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       if (del || big || far.size || guess.length) {
         card.ask = del ? 'delete' : big ? 'large' : far.size ? 'gap' : 'guess';
         card.why = del ? 'this removes something' : big ? 'this is more than safe to spend' : far.size ? 'the figure is far from what the app expected' : 'I guessed an amount';
+        did(frame);
         addTurn(state, { who: 'card', text: card.lines.join('. '), at: deps.told(), card }, shown);
         return resultOf(card) + (dropped.length ? ' Left out: ' + dropped.join('; ') : '');
       }
       const res = await carryOut(state, card, deps);
-      if (res.ok) wrote(state, card, book, today);
+      if (res.ok) { wrote(state, card, book, today); did(frame); } else if (frame) frame.refused++;   // its card says why
       if (frame && typeof deps.door.ver === 'function') frame.ver = deps.door.ver();   // the turn's own steps
       addTurn(state, { who: 'card', text: card.lines.join('. '), at: deps.told(), card }, shown);
       return (res.ok ? resultOf(card) : 'Not changed: ' + res.text) + (dropped.length ? ' Left out: ' + dropped.join('; ') : '');
@@ -14709,6 +14878,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     const rounds = [];
     const draftWas = JSON.stringify(state.draft);
     const end = stop => {
+      if (frame.refused && !frame.did) for (const t of shown) if (t.who === 'ai') t.notDone = true;
       if (!state.fill && state.draft && JSON.stringify(state.draft) !== draftWas) {
         state.turns = state.turns.filter(t => !(t.who === 'card' && t.card && t.card.kind === 'draft'));
         addTurn(state, { who: 'card', text: 'The draft so far', at: deps.told(), card: draftCard(state.draft, deps.today()) }, shown);
@@ -14716,7 +14886,8 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       return { state, shown, stop };
     };
     /* the book as it is when the figures are sent, kept beside the chat state (never in it, never sent) */
-    const frame = { ver: deps.door && typeof deps.door.ver === 'function' && deps.book && deps.book() ? deps.door.ver() : null };
+    const frame = { ver: deps.door && typeof deps.door.ver === 'function' && deps.book && deps.book() ? deps.door.ver() : null, refused: 0, did: false };
+    closeSetup(state, deps.book ? deps.book() : null, shown, deps.told());
     for (let i = 0; i < ROUNDS; i++) {
       const body = request(state, clean(message, 4000), rounds, ctxOf(deps));
       let res;
@@ -14874,7 +15045,7 @@ ${card.need.length && state.draft ? 'STILL NEEDED: ' + card.need.join(' ') : ''}
   const api = {
     ROUNDS, TURNS, KEEP, MAX_TOKENS, MAX_STEPS, TIER: 'default', EFFORT: 'low', GUIDE, TOOLS, SYSTEM, SCREENS,
     fresh: () => ({ v: 1, turns: [], draft: null, fill: null, seq: 0 }),
-    turn, confirm, notNow, undo, startOver, draftEdit,
+    turn, confirm, notNow, undo, startOver, draftEdit, DONE_WORDS, setupShut,
     SCREEN_SECS, fromScreens, undoScreens, chatNewer,
     /* [AI_JOIN_FIXES H2] what the first screen says before anything is typed: the welcome, and the first question */
     welcome: () => [GUIDE[0].ask, GUIDE[1].ask, GUIDE[2].ask],
@@ -14906,6 +15077,7 @@ const CHAT3_WORDS = {
   /* why a change card asks first (M6): the core's card.ask; its card.why is the AI's own words, not shown here */
   ask: { delete: 'This takes something away. Do it?', large: 'This is more than safe to spend. Do it?', guess: 'You didn\'t type this amount, it\'s the AI\'s guess. Is it right?', gap: 'This is far from what the app expected. Is the figure right?' },
   fillKept: 'To change something, tell me or change it on its screen',
+  later: 'Loans, goals and budget lines like Gifts are not part of setup. Add them on Plan after this: Add a loan, Add a goal, Add a line',   // [qc-controls run 1 blocker 2] the same words as setup's last step
 };
 
 /* below the wide screen the page scrolls inside #a3, above the bar (app3.css): every screen's scrollTo moves it too.
@@ -15014,6 +15186,8 @@ function chat3Card(t) {
     return `<div class="a3-card a3-chat-card" data-card="chat-change" data-turn="${id}" data-status="${esc3(c.status)}"><h3>${c.status === 'ask' ? 'A change to check' : c.status === 'refused' || c.status === 'not now' ? 'Not changed' : 'Changed'}</h3>
       <ul class="a3-chat-lines">${(c.lines || []).map(l => `<li>${esc3(l)}</li>`).join('')}</ul>${(c.left || []).length ? `<p class="a3-warn" data-chat="left">Not done: ${esc3(c.left.join(', and '))}. Say that part again on its own</p>` : ''}${chat3Figs(c.rows)}${c.note && c.status === 'done' ? `<p class="a3-sub" data-chat="note">${esc3(c.note)}</p>` : ''}${foot}</div>`;
   }
+  /* [CONFUSING 1] a setup card is not drawn while a book is here that the chat did not fill (worked out each time) */
+  if (c.kind === 'draft' && CHAT3C.setupShut(CHAT3.state || CHAT3C.fresh(), E3.book)) return '';
   if (c.kind === 'draft') {
     return `<div class="a3-card a3-chat-card" data-card="chat-draft" data-turn="${id}"><h3>Your answers so far</h3>
       ${(c.sections || []).map(s => `<div data-section="${esc3(s.key)}"><p class="a3-acct">${esc3(s.title)}</p><ul class="a3-chat-lines">${(s.lines || []).map(l => `<li>${esc3(l)}</li>`).join('')}</ul></div>`).join('')}
@@ -15027,14 +15201,14 @@ function chat3Card(t) {
        that there is no Start over (the store refuses it once the hold is gone): the card says how to change things */
     const foot = c.status === 'done' ? (E3.held() ? `<div class="a3-actions"><button type="button" class="a3-btn" data-chatundo="${id}">Undo</button></div>` : `<p class="a3-sub" data-chat="status">${esc3(CHAT3_WORDS.fillKept)}</p>`)
       : `<p class="a3-sub" data-chat="status">${c.status === 'undone' ? 'Taken back. Your answers are kept' : 'Started over. Your answers are kept'}</p>`;
-    return `<div class="a3-card a3-chat-card" data-card="chat-fill" data-turn="${id}" data-status="${esc3(c.status)}"><h3>Filled in</h3>${figs}${foot}</div>`;
+    return `<div class="a3-card a3-chat-card" data-card="chat-fill" data-turn="${id}" data-status="${esc3(c.status)}"><h3>Filled in</h3>${figs}${c.status === 'done' ? `<p class="a3-sub" data-chat="later">${esc3(CHAT3_WORDS.later)}</p>` : ''}${foot}</div>`;
   }
   return '';
 }
 function chat3Turn(t) {
   if (t.who === 'person') return `<p class="a3-ask-me" data-turn="${esc3(t.id)}">${esc3(t.text)}</p>`;
   /* [AI_FIRST_PLAN 7] an amount the AI wrote that is in nothing it was given: marked for checking against the screens */
-  if (t.who === 'ai') return `<p class="a3-ask-ai" data-turn="${esc3(t.id)}">${esc3(t.text)}${(t.check || []).length ? `<span class="a3-chat-check" data-chat="check"><br>Check this: ${esc3(t.check.join(', '))} is the AI's own figure, not the app's. The screens have the app's figures</span>` : ''}</p>`;
+  if (t.who === 'ai') return `<p class="a3-ask-ai" data-turn="${esc3(t.id)}">${esc3(t.text)}${(t.check || []).length ? `<span class="a3-chat-check" data-chat="check"><br>Check this: ${esc3(t.check.join(', '))} is the AI's own figure, not the app's. The screens have the app's figures</span>` : ''}${t.notDone ? `<span class="a3-chat-check" data-chat="notdone"><br>${esc3(CHAT3C.DONE_WORDS)}</span>` : ''}</p>`;
   if (t.who === 'note') return `<p class="a3-chat-saved" data-turn="${esc3(t.id)}" role="status">${esc3(t.text)}</p>`;
   if (t.who === 'card') return chat3Card(t);
   return '';

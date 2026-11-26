@@ -408,6 +408,7 @@
     const a = find(w, 'accounts', id);
     if (a.type !== 'loan') bad('Only a loan closes here');
     if (a.closed) bad(a.name + ' is already closed');
+    owedTicked(w, a);
     const o = LA.lookahead(w.book, w.today).owed[id];
     if (o && o.owedNow !== 0) bad(a.name + ' still owes money. Tick its last payment at Check your bank first');
     w.add('events', { k: 'check', acct: id, date: w.today, a: 0 });
@@ -601,20 +602,33 @@
     const dest = !spent && (w.book.accounts || []).find(y => live(y) && y.id === to && y.id !== id && !y.closed && OWN_KINDS[y.type] && (y.cur || home(w)) === (a.cur || home(w)));
     if (!spent && !dest) bad('Pick where its money goes: another account of yours, or "it is not there any more"');
     const v = LA.lookahead(w.book, w.today).accounts[id], held = v && v.bank != null ? v.bank : 0;
-    if (held < 0) bad(a.name + ' is below zero. Move money into it first, then close it');
+    if (spent && held < 0) bad(a.name + ' is below zero. Move money into it first, then close it');
+    /* [qc-foundation controls2to5 F3, M36, M95] what is really in it now, typed: that moves, and a final check of 0 after
+       it (same step, same moment) counts any difference from the app's own figure as at Check your bank */
+    const now = spent ? 0 : x.now == null || x.now === '' ? bad(`Type what is in ${a.name} now`) : x.now === 0 || x.now === '0' ? 0 : amountOk(x.now, `what is in ${a.name} now`);
     for (const l of linksTo(w, id)) w.edit(l.list, l.rec.id, { [l.field]: to });
-    if (spent) w.add('events', { k: 'check', acct: id, date: w.today, a: 0 });
-    else if (held > 0) w.add('events', { k: 'transfer', date: w.today, a: held, acct: id, acct2: to, src: { type: 'typed' } });
+    if (now > 0) w.add('events', { k: 'transfer', date: w.today, a: now, acct: id, acct2: to, src: { type: 'typed' } });
+    if (spent || now !== held) w.add('events', { k: 'check', acct: id, date: w.today, a: 0 });
     w.edit('accounts', id, { closed: w.today });
     return id;
   }
   /* [E3, M27, M40, R3] a card closes at zero: a final check of 0 today and `closed` (its payment day stops: the schedules it
      owns end on the closing day). With something on it, refused: pay it off (payOff) or tick its payment at Check your
      bank first */
+  /* [qc-foundation controls2to5 F1, M45] a card's or a loan's payment gone by and not ticked off keeps its own amount
+     due: a pay off or a close on top of it would count the money twice, so it is ticked off first */
+  function owedTicked(w, a) {
+    const r = LA.lookahead(w.book, w.today), k = (a.type === 'card' ? r.cards : r.owed)[a.id] || {}, d = ((k.overdue || [])[0] || {}).payment_date;
+    if (d) bad(`${a.name}'s ${SN3.dayLabel(d, false)} payment is not ticked off yet: tick it at Check your bank, then try again`);
+  }
   function closeCard(w, id) {
     const a = find(w, 'accounts', id);
     if (a.closed) bad(a.name + ' is already closed');
     const c = LA.lookahead(w.book, w.today).cards[id];
+    owedTicked(w, a);
+    /* [qc-foundation controls2to5 F2, M46] a bill it pays would end with it, silently: it is moved first */
+    const pays = A3.listOf(w.book, 'schedules').filter(s => s.kind === 'bill' && s.acct === id && !(s.ends && s.ends < w.today));
+    if (pays.length) bad(`${pays.map(s => s.name).join(' and ')} ${pays.length > 1 ? 'are' : 'is'} paid by ${a.name}. Change ${pays.length > 1 ? 'them' : 'it'} to another card or account first`);
     if (c && c.owedNow > 0) bad(a.name + ' still has ' + SMF.format(c.owedNow, a.cur || home(w)) + ' on it. Pay it off first, or tick its payment at Check your bank when it has gone');
     w.add('events', { k: 'check', acct: id, date: w.today, a: 0 });
     w.edit('accounts', id, { closed: w.today });
@@ -627,6 +641,7 @@
     if (a.type !== 'card' && a.type !== 'loan') bad('Only a card or a loan is paid off');
     if (a.closed) bad(a.name + ' is closed');
     const r = LA.lookahead(w.book, w.today), k = a.type === 'card' ? r.cards[id] : r.owed[id], owed = k ? k.owedNow : 0;
+    owedTicked(w, a);
     if (!(owed > 0)) bad('Nothing is owed on ' + a.name);
     const from = a.payFrom || mainOf(w);
     if (!(w.book.accounts || []).some(y => live(y) && !y.closed && y.id === from)) bad('The account ' + a.name + ' is paid from is closed. Change that first');

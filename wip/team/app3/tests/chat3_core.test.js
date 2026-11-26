@@ -239,13 +239,13 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const sref = body => FAKE.results(body)[0].text.split('\n').find(l => /Savings/.test(l)).split(' | ')[0];
     let sv;
     const f = FAKE.make([say('', [call('change', { steps: [{ do: 'add_account', name: 'Savings', type: 'bank', amount: 40000, moved: false }] })]), say('Added.'),
-      say('', [call('list', { what: 'accounts' })]), body => { sv = sref(body); return say('', [call('change', { steps: [{ do: 'close_account', account: sv, to: 'A1' }] })]); }, say('Tap OK to close it.'),
+      say('', [call('list', { what: 'accounts' })]), body => { sv = sref(body); return say('', [call('change', { steps: [{ do: 'close_account', account: sv, to: 'A1', amount: 40000 }] })]); }, say('Tap OK to close it.'),
       () => say('', [call('change', { steps: [{ do: 'reopen_account', account: sv }] })]), say('Open again.'),
       () => say('', [call('change', { steps: [{ do: 'remove_account', account: sv }] })]), say('Tap OK.'), say('It has history.')]);
     const d = hp.deps(f), main = hp.book.home.main.v.acct;
     const r1 = await K.turn(state, 'Add a bank called Savings with 40,000 in it, new money', d);
     const bank0 = require(E + 'lookahead.js').lookahead(hp.book, '2026-11-24').accounts[main].bank;
-    const r2 = await K.turn(r1.state, 'I closed my savings, the money went to my bank', d);
+    const r2 = await K.turn(r1.state, 'I closed my savings, the 40,000 in it went to my bank', d);
     const c2 = r2.shown.find(x => x.who === 'card');
     eq([c2.card.status, c2.card.ask], ['ask', 'delete'], JSON.stringify(c2.card));
     ok(/Close Savings.*40,000.*Main bank/.test(c2.card.lines.join(' ')), c2.card.lines.join(' | '));
@@ -261,6 +261,20 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const k4 = await K.confirm(r4.state, c4.id, d);
     ok(!k4.ok && /history/.test(k4.text), 'it has history now (the close and its move): refused with words ' + JSON.stringify(k4.text));
     ok(!hp.book.accounts.find(a => a.id === savId).gone, 'not removed');
+  });
+  await t('[LANE J, qc-foundation controls2to5 F3] close_account moving money without what is in it now is not made: the assistant is told to ask', async () => {
+    const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
+    let told = '';
+    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'add_account', name: 'Wallet', type: 'cash', amount: 20000, moved: false }] })]), say('Added.'),
+      say('', [call('list', { what: 'accounts' })]), body => { const w = FAKE.results(body)[0].text.split('\n').find(l => /Wallet/.test(l)).split(' | ')[0]; return say('', [call('change', { steps: [{ do: 'close_account', account: w, to: 'A1' }] })]); },
+      body => { told = JSON.stringify(FAKE.results(body)); return say('How much is in it now?'); }]);
+    const d = hp.deps(f);
+    const r1 = await K.turn(state, 'Add cash called Wallet with 20,000, new money', d);
+    const before = JSON.stringify(hp.book);
+    const r2 = await K.turn(r1.state, 'close my wallet, put it in the bank', d);
+    ok(!r2.shown.some(x => x.who === 'card' && x.card.status === 'done'), 'nothing closed');
+    ok(/ask what is in Wallet now/.test(told), told);
+    eq(JSON.stringify(hp.book), before, 'nothing written');
   });
   await t('[E3, M3, M13, M27] cards and loans by asking: add_loan, change_card, change_loan, pay_off (asks first: the amount was never typed), close_account on a card at zero, remove_account on a loan added by mistake', async () => {
     const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
@@ -1002,6 +1016,73 @@ const steps = list => [].concat(...list.map(([, r]) => r));
       eq(K.fillCheck(st.draft, DAY2, 'none').ok, true, 'the chat\'s fill asks nothing more');
     });
   }
+  /* [qc-data-safety run 3 CONFUSING 1, coordinator 16's ruling b] setup finished on the screens while the chat was part
+     way: the chat's setup card closes (one note says why), every refused step says it was not done, and the AI's own
+     "Done" after a turn where nothing was added is marked as not done */
+  await t('[CONFUSING 1] setup finished on the screens: the setup card closes, refused steps say not done, never Done', async () => {
+    const h = page('2026-11-24');
+    let { state } = await runSetup(h, FAKE.make(steps(SETUP.slice(0, 13))), 13);
+    ok(state.turns.some(x => x.who === 'card' && x.card.kind === 'draft'), 'a setup card is in the chat before');
+    /* the screens finish setup: a book appears that the chat did not make */
+    const h2 = page('2026-11-24'); await runSetup(h2, FAKE.make(steps(SETUP)));
+    h.book = h2.book;
+    const before = JSON.stringify(h.book);
+    const fake = FAKE.make([
+      say('', [call('draft_set', { section: 'cards', value: [{ name: 'Card C', owed: 10000, payDay: 5, closeDay: 'not sure', shift: 'after' }] }), call('fill_book', {})]),
+      say("Done. Here's Home."),
+    ]);
+    const r = await K.turn(state, 'add Card C, 10,000, paid on the 5th', h.deps(fake));
+    eq(JSON.stringify(h.book), before, 'nothing was added to the book');
+    eq(K.setupShut(r.state, h.book), true, 'the setup cards are closed while the screens\' book is here');
+    ok(!r.shown.some(x => x.who === 'card' && x.card.kind === 'draft'), 'no new setup card');
+    const notes = lastNote(r);
+    ok(notes.some(n => /finished on the screens/.test(n)), 'one note says setup was finished on the screens: ' + JSON.stringify(notes));
+    ok(notes.some(n => /^Not saved: /.test(n)), 'the refused answer says it was not saved: ' + JSON.stringify(notes));
+    ok(notes.some(n => /^Not filled in: /.test(n)), 'the refused fill says it was not done: ' + JSON.stringify(notes));
+    const ai = r.shown.filter(x => x.who === 'ai').pop();
+    eq(ai.notDone, true, 'the AI\'s Done is marked not done');
+    /* a second turn does not add the closing note again */
+    const r2 = await K.turn(r.state, 'thanks', h.deps(FAKE.make([say('You are welcome')])));
+    ok(!lastNote(r2).some(n => /finished on the screens/.test(n)), 'the closing note is said once');
+    eq(r2.shown.filter(x => x.who === 'ai').pop().notDone, undefined, 'words with nothing refused are not marked');
+    /* the AI is told its own Done was not done */
+    const sent = JSON.stringify(K.request(r2.state, 'next', [], { book: h.book, today: h.day }).messages);
+    ok(/Done\. Here's Home\. \(the app did not do this: nothing was added\)/.test(sent), 'the AI is sent that its Done was not done');
+    /* a change with every step refused says not done too */
+    const r3 = await K.turn(r2.state, 'do something odd', h.deps(FAKE.make([say('', [call('change', { steps: [{ do: 'no_such_thing' }] })]), say('Done.')])));
+    ok(lastNote(r3).some(n => /^Not done: /.test(n)), 'a change with nothing done says Not done: ' + JSON.stringify(lastNote(r3)));
+    eq(r3.shown.filter(x => x.who === 'ai').pop().notDone, true, 'its Done is marked');
+    /* a setup the chat filled itself keeps its cards as they were */
+    const h3 = page('2026-11-24'); const s3 = await runSetup(h3, FAKE.make(steps(SETUP)));
+    const r4 = await K.turn(s3.state, 'hello', h3.deps(FAKE.make([say('Hi')])));
+    eq(K.setupShut(r4.state, h3.book), false, 'the chat\'s own fill closes nothing');
+    ok(!lastNote(r4).some(n => /finished on the screens/.test(n)), 'and says nothing');
+    /* [qc-foundation 1, 2] the chat's book removed elsewhere, then setup finished on the screens: closed, said again */
+    h3.book = null;
+    const r5 = await K.turn(r4.state, 'hello again', h3.deps(FAKE.make([say('Hi')])));
+    eq([r5.state.fill, K.setupShut(r5.state, null)], [null, false], 'no book: the setup answers are open again');
+    h3.book = h2.book;
+    const r6 = await K.turn(r5.state, 'and now?', h3.deps(FAKE.make([say('Hi')])));
+    eq(K.setupShut(r6.state, h3.book), true, 'a book from the screens closes them');
+    ok(lastNote(r6).some(n => /finished on the screens/.test(n)), 'the note is said for this book');
+  });
+  await t('[qc-controls run 1 blocker 2] the fill step tells the AI to say where loans, goals and budget lines are added', async () => {
+    const g = K.GUIDE.find(x => x.key === 'fill').ask;
+    ok(/loans, goals and budget lines/i.test(g) && /Plan/.test(g) && /Add a loan/.test(g), g);
+  });
+  await t('[qc-controls run 1 blocker 6, slices 7 and 8] a plain remove of a pay or a goal is that pay or goal own remove: it asks first, nothing changes until OK, never "a record I do not know"', async () => {
+    const desc = K.TOOLS.find(x => x.name === 'change').description;
+    ok(/remove_pay/.test(desc) && /remove_goal/.test(desc), 'the tool names the pay and goal removes');
+    const h = page('2026-11-24'); await runSetup(h, FAKE.make(steps(SETUP)));
+    const before = JSON.stringify(h.book);
+    for (const [ref, what] of [['P1', 'a pay'], ['G1', 'a goal']]) {
+      const r = await K.turn(K.fresh(), 'remove it', h.deps(FAKE.make([say('', [call('change', { steps: [{ do: 'remove', ref }] })]), say('OK')])));
+      const n = lastNote(r).join(' | ');
+      const card = r.shown.filter(x => x.who === 'card' && x.card.kind === 'change').map(x => x.card)[0];
+      if (ref === 'P1') ok(card && card.status === 'ask' && !/a record|do not know/.test(n), ref + ': ' + n + ' ' + JSON.stringify(card && card.lines));   // this book has no goal: G1 is refused, nothing changed
+      eq(JSON.stringify(h.book), before, ref + ': nothing changed');
+    }
+  });
   console.log(bad ? `chat3_core: ${bad} of ${n} FAILED` : `chat3_core: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })();

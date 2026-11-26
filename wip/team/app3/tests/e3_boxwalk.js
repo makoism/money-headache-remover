@@ -60,7 +60,7 @@ const FORMS = {
   'Plan: Free to spend': PL(), 'Plan: Add a line': PL(), 'Plan: a line': PL(), 'Plan: the pay': PL(), 'Plan: a bill': PL(), 'Plan: Add a bill': PL(),
   'Plan: Add a goal': PL(), 'Plan: a goal': PL({ save: '[data-plbtn="1"]' }), 'Plan: a goal, Set aside': PL({ only: /Set aside now/, fill: { 'Set aside now': '1000' }, noValid: 'how much can be set aside depends on what the bank can spare that day (tests/e3_plan.js)' }),
   'Plan: a card': PL({ mayBeEmpty: [/^Day the statement closes/] }), 'Plan: Add a card': PL(), 'Plan: Add a loan': PL(), 'Plan: a loan': PL(),
-  'Check your bank': { save: '#a3CheckSave', mayBeEmpty: [/^What is on .* now\?/], minusOk: [/^What does .* show today\?/] },   // a bank below zero (M47, tests/e3_overdrawn.js)   // a card's figure is asked, never needed: left empty it is not checked
+  'Check your bank': { save: '#a3CheckSave', mayBeEmpty: [/^What is on .* now\?/, /^What does .* show today\?/], minusOk: [/^What does .* show today\?/] },   // a bank below zero (M47, tests/e3_overdrawn.js)   // a card's or a bank's figure is asked, never needed: left empty it is not checked (qc-controls run 1 blocker 3)
   'Settings': { save: '#a3SetWordKeep', only: /ode word/, fill: { 'ode word': 'walkword' } },
   'Settings: a backup file locked with a code': { save: '#a3BkSave', only: /Code for this file/, wrongText: ['', 'abc'], noValid: 'a right code saves a file to the device (tests/e3_backup.js)' },
   'Settings: I have a code': { save: '#a3CloudUse', only: /cloud code/, wrongText: ['', 'abc'], noValid: 'a right code calls the cloud (tests/e3_cloud.js)' },

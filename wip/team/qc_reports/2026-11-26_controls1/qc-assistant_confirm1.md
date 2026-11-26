@@ -1,0 +1,7 @@
+VERDICT: PASS (qc-assistant confirming run on lane/controls-1 at e9bbd420, 26 Nov 2026; saved by LANE H from the reviewer's reply: it would not overwrite qc-assistant.md, the report it confirms)
+Made-up AI only. Note: confirm_qc-assistant.txt promised a commit line from LANE H that was not there; the page as built at e9bbd420 was judged.
+CHECKS: 1 blocker gone (main bank Keep at least says it cannot be changed after setup yet). 2 change_bill with an account DONE with Undo. 3 add_card with an account DONE with Undo. 4 refused while a payment gone by is not ticked DONE, nothing changed. 5 CONFUSING 4 of the earlier report NOT FIXED (remove of a G ref says "a ref I do not know"): fixed on lane/controls-7 (remove_goal, remove of a G ref).
+CONFUSING: (1) a bill moved to an account that cannot cover it: the card shows only safe to spend; show the item's own before/after and the below-zero line. (2) the refusal reads as if done: say "Phone stays on Main bank for now. Its 20 Nov payment is not ticked off yet: tick it at Check your bank, then ask again." (3) "nothing on it" counts as a guess; a typed nothing or zero should count as typed. (4) the main bank Keep at least refusal gives no way forward (slice 5 puts it in Settings).
+POLISH: Plan's bill rows do not say which account pays them.
+NOT CHECKED: yearly bill, Reminders, boxwalk (not asked); desktop and 320; Undo after a reload for these cards.
+Grid: two cells NO to YES (card add with paying account, bill change paying account). Page errors 0.
