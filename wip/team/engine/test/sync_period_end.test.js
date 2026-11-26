@@ -86,12 +86,12 @@ t('two spends from Trip, 6,000 then 5,000: 2,000 over, the newest alone covers i
 });
 t('a negative adjust of 10,000 on Trip: 1,000 over, the adjust can be undone', () => {
   const x = filled(), a = adj(x, -10000, T1); x.book.events.push(a);
-  eq(S.sharesQuestions(x.book).map(y => [y.over, y.undo, y.spends]), [[1000, [a.id], []]]);
+  eq(S.sharesQuestions(x.book).map(y => [y.over, y.undo, y.spends || []]), [[1000, [a.id], []]]);
 });
 t('the answer "spends": each listed spend loses its place and goes on Free to spend, and the question is gone', () => {
   const x = filled(), s1 = sp(x, 12000, T1); x.book.events.push(s1);
   const q = S.sharesQuestions(x.book)[0];
-  const out = S.answer({ copy: x.book, question: q, pick: 'spends', now: T2, by: 'q8w3hz' });
+  const out = S.answerCheck({ copy: x.book, question: q, pick: 'spends', now: T2, by: 'q8w3hz' });
   const e = out.events.find(y => y.id === s1.id);
   eq([e.place, e.line, e.a, !!e.gone], [undefined, 'free', 12000, false]);
   eq(S.sharesQuestions(out), []);

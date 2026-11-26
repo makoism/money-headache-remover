@@ -511,10 +511,16 @@
     const kept = new Set((copy.places || []).filter(x => x && typeof x.id === 'string').map(x => x.id).concat(['waiting']));
     for (const [p, f] of [...fig].sort((x, y) => (x[0] < y[0] ? -1 : 1))) {
       if (p === 'free' || f >= 0 || !kept.has(p)) continue;
-      const outs = evs.filter(e => e.k === 'move' && e.place === p).sort((x, y) => ms(y.at) - ms(x.at) || (x.id < y.id ? 1 : -1));
-      const undoFrom = list => { const u = []; let g = f; for (const o of list) { if (g >= 0) break; u.push(o.id); g += Number(o.a) || 0; } return u; };
+      // [ruling 5] a move out of the place and a negative adjust on it can be undone; a spend made from it can instead be
+      // counted as everyday money (`spends`, only when there are any, so older answers read the same). Newest first, as many
+      // as cover what is over
+      const newest = (x, y) => ms(y.at) - ms(x.at) || (x.id < y.id ? 1 : -1);
+      const outs = evs.filter(e => e.place === p && (e.k === 'move' || (e.k === 'adjust' && (Number(e.a) || 0) < 0))).sort(newest);
+      const size = o => Math.abs(Number(o.a) || 0);
+      const undoFrom = list => { const u = []; let g = f; for (const o of list) { if (g >= 0) break; u.push(o.id); g += size(o); } return u; };
+      const spends = evs.filter(e => e.k === 'spend' && e.place === p).sort(newest);
       // [AW6] either placing may give way: the newest first (`undo`), or the oldest first (`undoOlder`)
-      out.push({ q: 'shares', place: p, over: -f, undo: undoFrom(outs), undoOlder: undoFrom(outs.slice().reverse()) });
+      out.push(Object.assign({ q: 'shares', place: p, over: -f, undo: undoFrom(outs), undoOlder: undoFrom(outs.slice().reverse()) }, spends.length ? { spends: undoFrom(spends) } : {}));
     }
     return out;
   }
@@ -627,6 +633,8 @@
     } else if (q.q === 'shares') {
       if (pick === 'undoOlder') out.events = out.events.map(e => ((q.undoOlder || []).includes(e.id) ? Object.assign({}, e, { gone: day }, stamp) : e));
       if (pick === 'undo') out.events = out.events.map(e => (q.undo.includes(e.id) ? Object.assign({}, e, { gone: day }, stamp) : e));
+      // [ruling 5] count each listed spend as everyday money: its place taken off, on Free to spend
+      if (pick === 'spends') out.events = out.events.map(e => { if (!(q.spends || []).includes(e.id)) return e; const n = Object.assign({}, e, { line: 'free' }, stamp); delete n.place; return n; });
     } else throw new Error('no answer for ' + q.q);
     return out;
   }
