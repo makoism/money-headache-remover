@@ -8748,6 +8748,8 @@ const E3 = (() => {
     if (kinds && !kinds[a.type]) bad(a.name + ' can not be used for this. Pick another account');
     return a;
   }
+  const MON = { '01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr', '05': 'May', '06': 'Jun', '07': 'Jul', '08': 'Aug', '09': 'Sep', '10': 'Oct', '11': 'Nov', '12': 'Dec' };
+  const dayWords = d => d.slice(8, 10).replace(/^0/, '') + ' ' + MON[d.slice(5, 7)] + ' ' + d.slice(0, 4);   // "2026-11-22" as "22 Nov 2026
   function checkEvent(book, e, today) {
     if (!Number.isInteger(e.a) || !(e.a > 0)) bad('Type an amount above zero');
     if (!DAY_RE.test(String(e.date || ''))) bad('Pick the day');
@@ -8760,6 +8762,9 @@ const E3 = (() => {
     else account(book, e.acct, SPEND_FROM, e.k === 'in' ? 'the money came back to' : 'it was paid from');
     if (e.line != null && e.place != null) bad('Pick a line or a place, not both');
     if (e.line != null && e.line !== 'free' && !((book.plan || {}).budgets || []).some(l => live(l) && l.id === e.line)) bad('That line is not in your plan any more. Pick another');
+    /* [qc-foundation confirm on monthrule, 26 Nov; M7, M51] a line that has ended takes nothing dated after its end */
+    const ln = e.line != null && e.line !== 'free' && ((book.plan || {}).budgets || []).find(l => live(l) && l.id === e.line);
+    if (ln && ln.ends && e.date > ln.ends) bad(ln.name + ' ended on ' + dayWords(ln.ends) + '. Pick another line');
     if (e.place != null && !(book.places || []).some(g => live(g) && g.id === e.place)) bad('That place is not there any more. Pick another');
     if (e.note != null && typeof e.note !== 'string') bad('A note is words');
   }
@@ -10061,9 +10066,15 @@ const RC_OWN3 = { bank: 1, cash: 1, ewallet: 1, wallet: 1 };
 /* ---- what is in the book, by name (lookups, nothing worked out) ---- */
 const rcLive3 = x => x && !x.gone;
 function rcAccounts3(kinds) { return ((E3.book && E3.book.accounts) || []).filter(a => rcLive3(a) && kinds[a.type] && !a.closed); }
-function rcFors3() {
+/* [qc-foundation confirm on monthrule, 26 Nov; M51] a line that has ended (its `ends` on or before today) is not offered
+   for a new spend; a record already filed to it keeps it, marked ended, so it can still be changed (`keep`) */
+function rcFors3(keep) {
   const b = E3.book || {}, out = [{ v: 'line:free', name: 'Free to spend' }];
-  for (const l of ((b.plan || {}).budgets || []).filter(rcLive3)) out.push({ v: 'line:' + l.id, name: l.name });
+  for (const l of ((b.plan || {}).budgets || []).filter(rcLive3)) {
+    const ended = !!l.ends && l.ends <= E3.today();
+    if (!ended) out.push({ v: 'line:' + l.id, name: l.name });
+    else if (l.id === keep) out.push({ v: 'line:' + l.id, name: l.name + ' (ended)' });
+  }
   for (const g of (b.places || []).filter(rcLive3)) out.push({ v: 'place:' + g.id, name: g.name });
   return out;
 }
@@ -10195,7 +10206,7 @@ function rcFormHtml3() {
   } else if (m === 'in') {
     fields = `<div class="a3-field"><label for="rcAcct">Came into</label><select class="a3-in a3-sel" id="rcAcct">${rcOptions3(fromList, fromSel)}</select></div>`;
   } else {
-    const fors = m === 'refund' ? [{ v: '', name: 'Nothing, it only comes back to the account' }].concat(rcFors3()) : rcFors3();
+    const keep = e && e.line, fors = m === 'refund' ? [{ v: '', name: 'Nothing, it only comes back to the account' }].concat(rcFors3(keep)) : rcFors3(keep);
     const forSel = e ? (e.place ? 'place:' + e.place : e.line ? 'line:' + e.line : m === 'refund' ? '' : 'line:free') : m === 'refund' ? '' : 'line:free';
     fields = `<div class="a3-field"><label for="rcFor">${m === 'refund' ? 'Give it back to' : 'What it was for'}</label><select class="a3-in a3-sel" id="rcFor">${rcOptions3(fors, forSel)}</select></div>
       <div class="a3-field"><label for="rcAcct">${m === 'refund' ? 'Came back to' : 'Paid from'}</label><select class="a3-in a3-sel" id="rcAcct">${rcOptions3(fromList, fromSel)}</select></div>`;
@@ -13182,12 +13193,16 @@ function stmt3Bar() {
     const shA = sh && r.accounts[sh.account] && r.accounts[sh.account].real;
     if (shA) out.push(`How the short amount is worked out: ${SM.sumLine(shA.whyParts, shA.headroom, r.accounts[sh.account].currency)}`);
     const pm = p || r.month, perW = p ? 'pay period' : 'month';   // [F2] no fixed pay: this month's lines, from the engine
-    const lines = (pm && pm.lines) || [];
+    /* [qc-foundation confirm on monthrule, 26 Nov; M4, M51] a line that has ended gets no ref: no new spend can go to it */
+    const endedL = new Set(((book.plan || {}).budgets || []).filter(l => live(l) && l.ends && l.ends <= today).map(l => l.id));
+    const lines = ((pm && pm.lines) || []).filter(l => !endedL.has(l.id));
     if (lines.length) {
       // [QC F5, B2] the amount that counts this period, the full amount a period beside it only when they differ
       out.push(`Budget lines this ${perW} (ref | name | amount | left):\n` + lines.map((l, i) => { const ref = 'L' + (i + 1); refs[ref] = l.id; return `${ref} | ${l.name} | ${m(l.counts)}${l.counts !== l.amount ? ` (part of ${m(l.amount)} a ${p ? 'period' : 'month'}, for the days left)` : ''} | ${m(l.left)} left`; }).join('\n'));
     } else out.push('Budget lines: none yet.');
-    out.push(p && p.free ? `Free to spend this pay period: ${m(p.free.counts)}${p.free.counts !== p.free.amount ? ` (part of ${m(p.free.amount)} a period, for the days left)` : ''}, ${m(p.free.left)} left.` : 'Free to spend: not set yet.');
+    /* [qc-foundation confirm, 26 Nov; M1, M3, M7] no fixed pay: Free to spend is the month's, as the headline reads it */
+    const fr = pm && pm.free;
+    out.push(fr ? `Free to spend this ${perW}: ${m(fr.counts)}${fr.counts !== fr.amount ? ` (part of ${m(fr.amount)} a ${p ? 'period' : 'month'}, for the days left)` : ''}, ${m(fr.left)} left.` : 'Free to spend: not set yet.');
     const goals = (book.places || []).filter(g => live(g) && g.kind === 'goal');
     if (goals.length) {
       out.push('Goals (ref | name | set aside | date | pace):\n' + goals.map((g, i) => {
@@ -13308,7 +13323,7 @@ Actions:
     if (!res.ok) return res;
     const r0 = LA.lookahead(book, o.today), r1 = LA.lookahead(b, o.today);
     const rows = [{ key: 'safe', label: SN.label('safeToSpend'), before: r0.safeToSpend.headline, after: r1.safeToSpend.headline }];
-    const f0 = r0.period && r0.period.free, f1 = r1.period && r1.period.free;
+    const f0 = (r0.period || r0.month || {}).free, f1 = (r1.period || r1.month || {}).free;   // no fixed pay: the month's
     if (f0 || f1) rows.push({ key: 'free', label: 'Free to spend left', before: f0 ? f0.left : null, after: f1 ? f1.left : null });
     const seen = {};
     for (const s of steps) {
@@ -13826,7 +13841,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     }
     if (what === 'pays' || what === 'bills') return figures(book, today).text.split('Pays and bills (ref | name | amount | when):\n')[1]?.split('\n').filter(l => l.startsWith(what === 'pays' ? 'P' : 'B')).join('\n') || 'None.';
     /* [F2] with no fixed pay the engine's month section, shaped like the period's (never "None." for a person with lines) */
-    if (what === 'lines') { const pm = r.period || r.month, per = r.period ? 'each pay' : 'each month'; return ((pm && pm.lines) || []).map(l => `${back(l.id)} | ${l.name} | ${m(l.amount)} ${per} | ${m(l.left)} left`).join('\n') || 'None.'; }
+    if (what === 'lines') { const pm = r.period || r.month, per = r.period ? 'each pay' : 'each month'; const ended = new Set(((book.plan || {}).budgets || []).filter(l => live(l) && l.ends && l.ends <= today).map(l => l.id)); return ((pm && pm.lines) || []).filter(l => !ended.has(l.id)).map(l => `${back(l.id)} | ${l.name} | ${m(l.amount)} ${per} | ${m(l.left)} left`).join('\n') || 'None.'; }
     if (what === 'goals') return (book.places || []).filter(g => live(g) && g.kind === 'goal').map(g => `${back(g.id)} | ${g.name} | ${m((r.places[g.id] || {}).kept || 0)} set aside of ${m(g.target)}`).join('\n') || 'None.';
     return 'Pick accounts, pays, bills, cards, lines, goals or spends.';
   }
@@ -13976,7 +13991,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
   function rowsOf(b0, b1, today, steps) {
     const r0 = LA.lookahead(b0, today), r1 = LA.lookahead(b1, today);
     const rows = [{ key: 'safe', label: SN.label('safeToSpend'), before: r0.safeToSpend.headline, after: r1.safeToSpend.headline }];
-    const f0 = r0.period && r0.period.free, f1 = r1.period && r1.period.free;
+    const f0 = (r0.period || r0.month || {}).free, f1 = (r1.period || r1.month || {}).free;   // no fixed pay: the month's
     if ((f0 || f1) && steps.some(s => s.kind === 'logSpend' || s.kind === 'setFree' || s.kind === 'refund')) rows.push({ key: 'free', label: 'Free to spend left', before: f0 ? f0.left : null, after: f1 ? f1.left : null });
     for (const id of Object.keys(r1.accounts)) {
       const a0 = r0.accounts[id], a1 = r1.accounts[id];
