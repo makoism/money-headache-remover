@@ -14396,7 +14396,17 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       if (due.length) Object.assign(ci, { ticked: tick.map(o => o.item), expected: Object.fromEntries(due.map(o => [o.item, o.amount])), lands: Object.fromEntries(due.map(o => [o.item, o.lands])) });
       const occ = o => `${schName(schOf(o)) || nm(schOf(o)) || 'a payment'} ${day1(o.lands)} ${m(o.amount, rec.cur)}`;
       const also = (tick.length ? `. Already through, so ticked: ${tick.map(occ).join(', ')}` : '') + (wait.length ? `. Not through yet, still expected: ${wait.map(occ).join(', ')}` : '');
-      return { kind: 'checkIn', ci, text: `${rec.name} shows ${m(x, rec.cur)} today${also}`, amount: 0, figs: [x], ticks: tick.length };
+      /* [coordinator 18's queue; M36 M45] the gap the figure leaves, as Check your bank says it: the engine's filler on the
+         book this check would make (a bank, not a card; never a gain called spending) */
+      let gapW = '';
+      if (!card) try {
+        let k = 0;
+        const r2 = LA.lookahead(CK.apply(book, CK.checkIn(book, Object.assign({ day: today, told: today + 'T00:00:00.000Z', newId: () => 'dry' + (k++), unticked: [] }, ci))), today);
+        const f = ((r2.accounts[id] || {}).fillers || []).filter(y => !y.apart && !y.held && y.parts && y.parts.length && y.parts[0].from === today).pop();
+        if (f && f.amount > 0) gapW = `. That is ${m(f.amount, rec.cur)} less than the app expected, it counts as spending this pay period`;
+        else if (f && f.amount < 0) gapW = `. That is ${m(-f.amount, rec.cur)} more than the app expected`;
+      } catch (e) { gapW = ''; }
+      return { kind: 'checkIn', ci, text: `${rec.name} shows ${m(x, rec.cur)} today${also}${gapW}`, amount: 0, figs: [x], ticks: tick.length };
     }
     /* [AI_JOIN_FIXES H6; M30] a spend with no account named while there are cards: the account the person named for
        this chat, else asked once ("card or bank?"), never the main bank unasked */

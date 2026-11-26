@@ -50,6 +50,8 @@ const freeLeft = h => { const p = L.lookahead(h.book, h.day).period; return p &&
     const c = cards[0] || {};
     ck('1. the figure card asks first', c.status === 'ask' || c.ask, JSON.stringify(c.status) + ' ' + c.ask);
     ck('1. the card names Rent of 27 Nov, 72,000, as gone out', /Rent/.test((c.lines || []).join(' ')) && /72,000/.test((c.lines || []).join(' ')), (c.lines || []).join(' | '));
+    /* [coordinator 18's queue] the card names the gap the figure leaves, as Check your bank does */
+    ck('1. the card names the gap: 10,000 less than the app expected, counted as spending', /¥10,000 less than the app expected, it counts as spending this pay period/.test((c.lines || []).join(' ')), (c.lines || []).join(' | '));
     ck('1. after OK: Main 204,000', main(h) === 204000, main(h));
     ck('1. after OK: Rent is no longer expected', !rentDue(h), JSON.stringify(L.lookahead(h.book, h.day).checkIn.toConfirm));
     ck('1. after OK: Free to spend left 22,000 (set up 24 Nov: 60,000 x 16/30 = 32,000 for the rest of the period, less the 10,000 spent; before the fix 32,000 - 82,000 = -50,000)', freeLeft(h) === 22000, freeLeft(h));

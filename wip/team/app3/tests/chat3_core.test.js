@@ -351,7 +351,7 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const f = FAKE.make([say('', [call('change', { steps: [{ do: 'bank_figure', account: 'A1', amount: 250000 }, { do: 'card_figure', account: 'A2', amount: 60000 }] })]), say('Noted.')]);
     const r = await K.turn(state, 'my bank shows 250,000 and Card A shows 60,000', hp.deps(f));
     const c = r.shown.find(x => x.who === 'card').card;
-    eq([c.status, c.lines], ['done', ['Main bank shows ¥250,000 today', 'Card A shows ¥60,000 today']]);
+    eq([c.status, c.lines], ['done', ['Main bank shows ¥250,000 today. That is ¥36,000 less than the app expected, it counts as spending this pay period', 'Card A shows ¥60,000 today']]);
     const v = L.lookahead(hp.book, hp.day);
     eq([v.accounts[main].bank, v.cards[cardA].owedNow], [250000, 60000]);
     eq(hp.book.checkins.length, 2, 'one check-in record each');
