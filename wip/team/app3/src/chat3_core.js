@@ -231,9 +231,10 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     for (const x of sch) {
       const ref = x.kind === 'income' ? 'P' + (++p) : 'B' + (++b); refs[ref] = x.id;
       /* one figure, one source: the amount and the rhythm in force today are the engine's own answer (its schedule view,
-         the one Plan shows), never worked out again here from the saved lists (a change dated later is not today's) */
+         the one Plan shows), never worked out again here from the saved lists (a change dated later is not today's);
+         [qc-controls 2to5 F2] its next day in Plan's words, with why when a weekend or holiday moved it */
       const v = view[x.id] || {};
-      lines.push(`${ref} | ${x.name} | ${v.amount != null ? SM.format(v.amount, x.cur || home) : 'no fixed amount'} | ${ruleWords(v.rule)}${x.ends ? ' | ends ' + day1(x.ends) : ''}`);
+      lines.push(`${ref} | ${x.name} | ${v.amount != null ? SM.format(v.amount, x.cur || home) : 'no fixed amount'} | ${ruleWords(v.rule)}${v.next ? ', next ' + SN.landLabel(v.next.land, v.next.due, v.next.land.slice(0, 4) !== today.slice(0, 4)) : ''}${x.ends ? ' | ends ' + day1(x.ends) : ''}`);
     }
     if (lines.length) out.push('Pays and bills (ref | name | amount | when):\n' + lines.join('\n'));
     return { text: out.join('\n'), refs };

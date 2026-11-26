@@ -62,6 +62,9 @@ const SN = require('../../screens/names.js');
     await o.p.reload(); await T.w(400);
     const h5 = await o.p.$eval('[data-card=safe] h2', e => e.textContent);
     ck('B5: the heading names the old period: until today\'s pay is in', h5 === 'Safe to spend until today\'s pay is in', h5);
+    /* [qc-numbers run 2] the list under it runs to the pay after today's (the engine's dueBeforeNextPay), so its heading says so */
+    const d5 = await o.p.$eval('[data-card=due] h2', e => e.textContent);
+    ck('B5: the due list is headed as running to the pay after today\'s', d5 === 'Due before the pay after today\'s', d5);
     ck('no page errors (B5)', o.errs.length === 0, o.errs.join(' | '));
     await o.b.close();
   }

@@ -103,6 +103,12 @@ test('every figure with engine: true is in the engine result; the missing ones a
 test('a day reads "10 Nov", a period "10 Nov to 9 Dec"', () => {
   assert.strictEqual(names.dayLabel('2026-11-10'), '10 Nov');
   assert.strictEqual(names.dayLabel('2026-12-01'), '1 Dec');
+  // [qc-controls 2to5 F2] a landing day moved by a weekend or holiday says why
+  assert.strictEqual(names.landLabel('2026-12-25', '2026-12-26'), '25 Dec (26 Dec is a Saturday, so the working day before)');
+  assert.strictEqual(names.landLabel('2026-12-28', '2026-12-27'), '28 Dec (27 Dec is a Sunday, so the working day after)');
+  assert.strictEqual(names.landLabel('2026-09-24', '2026-09-23'), '24 Sep (23 Sep is a holiday, so the working day after)');
+  assert.strictEqual(names.landLabel('2026-12-28', '2026-12-28'), '28 Dec');
+  assert.strictEqual(names.landLabel('2027-01-04', null, true), '4 Jan 2027');
   assert.strictEqual(names.periodLabel('2026-11-10', '2026-12-09'), '10 Nov to 9 Dec');
 });
 

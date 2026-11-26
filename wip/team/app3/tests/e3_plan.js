@@ -77,6 +77,9 @@ const view = bk => T.L.lookahead(bk, DAY);
   await fill(p, { name: 'Gym', amount: '1,0000', day: '31', acct: BANK }); await save(p);
   ck('B4: a comma not in a thousands place asks which was meant', /Did you mean ¥1,000 or ¥10,000\?/.test(await err(p) || ''), await err(p));
   ck('B4: and nothing is saved', !(await saved(p)).schedules.some(s => s.name === 'Gym'));
+  /* [qc-numbers run 1 POLISH] a decimal in yen says why at Save, in the box's own words */
+  await fill(p, { amount: '3000.5' }); await save(p);
+  ck('POLISH: 3000.5 yen says yen has no decimals', (await err(p)) === 'Yen has no decimals. Type a whole amount', await err(p));
   await fill(p, { name: 'Gym', amount: '8000', day: '1', acct: BANK }); await save(p);
   bk = await saved(p);
   const gym = bk.schedules.find(s => s.name === 'Gym');

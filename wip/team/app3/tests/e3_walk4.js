@@ -23,7 +23,7 @@ async function keep(p, bk) { return p.evaluate(async b => { const s = await Burr
     await p.tap('[data-tab="plan"]'); await T.w(300);
     const row = await p.$eval(`[data-pay="${job.id}"]`, e => ({ text: e.textContent.replace(/\s+/g, ' '), amt: Number((e.querySelector('[data-amt]') || {}).dataset.amt) })).catch(e => ({ err: e.message }));
     ck('the row shows the outstanding pay\'s 180,000, not the next 185,000', row.amt === 180000, JSON.stringify(row));
-    ck('the words name the outstanding pay with its own amount, and the next with its own', /due 10 Dec 2026, not seen yet, ¥180,000, due 8 Jan, late, ¥185,000, next 10 Feb, ¥185,000/.test(row.text), row.text);
+    ck('the words name the outstanding pay with its own amount, and the next with its own', /due 10 Dec 2026, not seen yet, ¥180,000, due 8 Jan \(10 Jan is a Sunday, so the working day before\), late, ¥185,000, next 10 Feb, ¥185,000/.test(row.text), row.text);
     await T.shot(p, 'walk4_plan_outstanding');
     ck('no page errors (plan)', errs.length === 0, errs.join(' | '));
     await b.close();
