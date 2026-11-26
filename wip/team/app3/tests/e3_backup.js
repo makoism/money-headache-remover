@@ -76,7 +76,7 @@ async function download(p, dir, click) {
     await (await p.$('#a3BkFile')).uploadFile(otherFile); await T.w(400);
     ck('restoring asks first and says what is here is kept', /replaces the money on this device.*kept/.test(await p.$eval('[data-set=restoreask]', e => e.textContent)));
     ck('[qc-data-safety B2] it says how many of the backup\'s records are dated after today and where they will show', /3 of them are dated after today\. They do not count until their day, and Receipts lists them/.test(await p.$eval('[data-set=restoreask]', e => e.textContent)), await p.$eval('[data-set=restoreask]', e => e.textContent));
-    ck('with the cloud copy off it says money logged after the backup goes from this device, and how to get it back', (await p.$eval('[data-set=restoreask]', e => e.textContent)).includes('Anything you logged after this backup was made goes from this device. Put it back brings it back.'));
+    const ra = await p.$eval('[data-set=restoreask]', e => e.textContent); ck('with the cloud copy off it says money logged after the backup goes from this device, and how to get it back', ra.includes('Anything you logged after this backup was made goes from this device. 1 thing here now goes back to how the backup has it. Put it back brings it back.'), ra);   // [qc-foundation point 6] the job renamed in the backup: counted once, as changed
     await p.click('#a3BkGo'); await T.w(500);
     ck('restored', /Restored/.test(await msg(p)));
     ck('the book is the backup now', (await stored(p, 'book')).book.schedules[0].name === 'Main job (from backup)');

@@ -211,7 +211,7 @@ async function figsMatch(p, book, what) {
     const B = require('../../engine/build_book.js'), I = require('../../engine/ids.js'), nid = I.idMaker('s3rcpt', () => 0.3);
     const bk = B.buildBook({ day: '2026-11-23', told: '2026-11-23T09:00+09:00', country: 'JP', currency: 'JPY',
       banks: [{ key: 'b', name: 'Main bank', amount: 300000 }],
-      pays: [{ key: 'pay', name: 'Pay', bank: 'b', amount: 250000, day: 25, shift: 'none', startsPeriod: true }], bills: [] }, { newId: I.idMaker('s3book', () => 0.5) }).book;
+      pays: [{ key: 'pay', name: 'Pay', bank: 'b', amount: 250000, day: 25, shift: 'none', startsPeriod: true }], bills: [], free: 50000 }, { newId: I.idMaker('s3book', () => 0.5) }).book;
     const acct = bk.accounts[0].id, pay = bk.schedules[0].id, late = nid(), after = nid();
     bk.events.push({ id: nid(), k: 'in', acct, date: '2026-11-25', a: 250000, settles: [pay + '@2026-11-25'], told: '2026-11-25T20:00+09:00' },
       { id: nid(), k: 'check', acct, date: '2026-11-28', a: 550000, told: '2026-11-28T20:00+09:00' },
@@ -230,6 +230,15 @@ async function figsMatch(p, book, what) {
     const rs = await rows(p), one = rs.find(x => x.id === late), two = rs.find(x => x.id === after);
     ck('S3: the 24 Nov row says it is already in the 28 Nov bank figure', one && /already in your bank figure of 28 Nov/.test(one.text), JSON.stringify(rs));
     ck('S3: the 28 Nov row told after the check says nothing of it', two && !/already in/.test(two.text), JSON.stringify(two));
+    /* [qc-numbers run 1 B2] a spend logged now, dated before the 28 Nov check, is inside that check's bank figure: safe
+       to spend does not move, so the Undo bar must not say it goes down; it says it stays */
+    await p.$eval('#rcSearch', e => { e.value = ''; e.dispatchEvent(new Event('input', { bubbles: true })); }); await T.w(150);
+    const safe0 = T.L.lookahead(await saved(p), '2026-11-29').safeToSpend.headline;
+    await type(p, '#rcAmt', '500'); await setVal(p, '#rcDate', '2026-11-26'); await T.w(100);
+    await p.tap('#rcSave'); await T.w(400);
+    const bkB2 = await saved(p), safe1 = T.L.lookahead(bkB2, '2026-11-29').safeToSpend.headline, mB2 = await bar(p);
+    ck('B2: the engine keeps safe to spend the same for a spend dated before the check', bkB2.events.some(e => e.k === 'spend' && e.a === 500 && e.date === '2026-11-26') && safe1 === safe0, JSON.stringify([safe0, safe1]));
+    ck('B2: the Undo bar does not say safe to spend goes down, it says it stays', !!mB2 && !/goes down/.test(mB2.text) && mB2.text.includes('Safe to spend stays ¥' + safe0.toLocaleString('en-US')), JSON.stringify(mB2));
     ck('no page errors (S3)', errs.length === 0, errs.join(' | '));
     await b.close();
   }

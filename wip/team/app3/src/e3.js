@@ -58,7 +58,7 @@ const E3 = (() => {
       const r = await store.load();
       readOnly = !!r.readOnly;
       if (!r.empty && r.copy) { book = r.copy; mode = 'kept'; }
-      store.onOther(ch => { if (joinIn(ch)) shown(); });   // another tab saved: take it in and draw it
+      store.onOther(ch => { if (joinIn(ch)) shown(); else if (!book && mode === 'none') adopt(); });   // another tab saved: take it in and draw it
       hold = !!(mode === 'kept' && r.device && r.device.fillHold);
     } catch (e) { store = null; }
   }
@@ -73,6 +73,18 @@ const E3 = (() => {
     const byId = (mine, theirs) => { const m = new Map((mine || []).map(r => [r.id, r])); for (const r of theirs || []) m.set(r.id, r); return [...m.values()]; };
     const rest = ch.book || BurrowStore.bookOf(book);
     book = Object.assign({}, rest, { events: byId(book.events, ch.events), keptVersions: byId(book.keptVersions, ch.keptVersions), rev: ch.rev, at: book.at });
+    return true;
+  }
+  /* [TABSETUP_PLAN 1, qc-data-safety run 4 blocker 1; M61] this page has no book and another tab made one (setup
+     finished there): read it from the store and take it in; nothing is written. The screens are told with
+     'burrow3:started' (setup and the chat close onto Home and say so). Gives true when a book was taken in */
+  async function adopt() {
+    if (!store || mode !== 'none') return false;
+    let r; try { r = await store.load(); } catch (e) { return 'error'; }
+    if (!r || r.empty || !r.copy || mode !== 'none') return false;
+    book = r.copy; mode = 'kept'; readOnly = !!r.readOnly;
+    hold = !!(r.device && r.device.fillHold);   // [qc-foundation 3] a chat fill still held in the other tab stays held here
+    try { root3.dispatchEvent(new CustomEvent('burrow3:started', { detail: { held: hold } })); } catch (e) { /* a screen's own fault */ }
     return true;
   }
   function shown() { try { root3.dispatchEvent(new CustomEvent('burrow3:other')); } catch (e) { /* a screen's own fault */ } }
@@ -90,12 +102,26 @@ const E3 = (() => {
   /* refused as behind: take in what the other tab saved (this page's book becomes the latest) */
   async function catchUp() { const ch = await store.catchUp(); joinIn(ch); return book; }
   /* setup3's new book: kept from now on */
+  /* [TABSETUP_PLAN 2] never over a book another tab made: under one lock across tabs the store is read first; a book
+     there is taken in (adopt), nothing is written, and E3.startWhy says 'there' */
+  let startWhy = null;
   async function start(newBook) {
+    const run = () => startNow(newBook);
+    return root3.navigator && root3.navigator.locks ? root3.navigator.locks.request('burrow3-start', run) : run();
+  }
+  async function startNow(newBook) {
+    startWhy = null;
+    /* [qc-foundation 1] a book already here (taken in from another tab) is never written over, whatever the screens do */
+    if (mode !== 'none') { startWhy = 'there'; return false; }
+    if (store) { const a = await adopt(); if (a === 'error') { startWhy = 'error'; return false; } if (a) { startWhy = 'there'; return false; } }
     const before = { book, mode };
     book = newBook; mode = 'kept';
     const ok = await save({ full: true });
     if (!ok) { book = before.book; mode = before.mode; }
-    else if (root3.BurrowPersist) root3.BurrowPersist.afterSetup().catch(() => {});
+    else {
+      if (root3.BurrowPersist) root3.BurrowPersist.afterSetup().catch(() => {});
+      if (typeof setup3Filled === 'function') setup3Filled();   // a setup Save's Undo has nothing left to undo
+    }
     return ok;
   }
   /* backup lane: a whole new book from a restore or the cloud copy; the first one makes this device keep a book.
@@ -124,7 +150,22 @@ const E3 = (() => {
      through one queue, in the order asked, so two keys written at once are both kept (before, one write was lost and
      still said true). Nothing else in the app writes the device record (store/idb.js putDevice is called only here) */
   let devQ = Promise.resolve();
-  const devTurn = fn => { const r = devQ.then(fn, fn); devQ = r.catch(() => {}); return r; };
+  /* [qc-data-safety 26 Nov, blocker 1] and one tab at a time: two tabs of one phone share the record, so each read-then-write
+     holds the browser's lock across tabs (where there is one) */
+  const locked = fn => () => (root3.navigator && root3.navigator.locks ? root3.navigator.locks.request('burrow3-device', fn) : fn());
+  const devTurn = fn => { const r = devQ.then(locked(fn), locked(fn)); devQ = r.catch(() => {}); return r; };
+  /* recEdit(key, fn): the value as stored now goes through fn, and what fn gives is written (null removes it), in the same
+     turn, so a change made in another tab since this tab read it is kept */
+  async function recEdit(key, fn) {
+    if (mode === 'try' || !store) return false;
+    try {
+      return await devTurn(async () => {
+        const d = (await store.getDevice()) || {}, next = fn(d[key] === undefined ? null : d[key]);
+        const out = Object.assign({}, d); if (next == null) delete out[key]; else out[key] = next;
+        return await store.putDevice(out);
+      });
+    } catch (e) { return false; }
+  }
   async function rec(key, value) {
     if (mode === 'try' || !store) return value === undefined ? null : false;
     try {
@@ -184,7 +225,7 @@ const E3 = (() => {
      release(): something else was written, so the fill can no longer be undone: the mark goes and the cloud copy may send. */
   let hold = false;
   async function fill(newBook) {
-    if (mode !== 'none') return false;
+    if (mode !== 'none') { startWhy = 'there'; return false; }   // [qc-foundation 2]
     if (!(await start(newBook))) return false;
     hold = true;
     await rec('fillHold', true);
@@ -207,6 +248,6 @@ const E3 = (() => {
   }
   /* is a the day before b (two YYYY-MM-DD days) */
   const dayBefore = (a, b) => BurrowEngine.dates.dayNum(b) - BurrowEngine.dates.dayNum(a) === 1;
-  return { today, setToday, useTry, leaveTry, start, fill, discard, release, held: () => hold, told, dayBefore, newId, load, view, nameOf, occName, lastCheckOf, curOf, home, put, replace, rec, onSaved: f => savedFns.push(f),
-    get book() { return book; }, get mode() { return mode; } };
+  return { today, setToday, useTry, leaveTry, start, fill, discard, release, held: () => hold, told, dayBefore, newId, load, view, nameOf, occName, lastCheckOf, curOf, home, put, replace, rec, recEdit, onSaved: f => savedFns.push(f),
+    get book() { return book; }, get mode() { return mode; }, get startWhy() { return startWhy; } };
 })();

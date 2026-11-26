@@ -91,7 +91,7 @@ const homeFigs = async p => JSON.stringify((await T.figs(p)).filter(f => f.amt !
     await A.p.click('#a3BkBack'); await T.w(400);
     const backAsk = await A.p.$eval('[data-set=backask]', e => e.textContent).catch(() => '');
     ck('Put it back asks first: one line with how many things logged since go, on every device, and how to get them back',
-      backAsk === 'Put this copy back? 1 thing added since it was kept goes (bank checks: 1), and 6 things changed since go back to how they were, on every device after the next send. What is here now is kept first, and its own Put it back brings them back.', backAsk);
+      backAsk === 'Put this copy back? 1 thing added since it was kept goes (bank checks: 1), 6 things changed since go back to how they were, and 1 thing taken out since comes back (bank checks: 1), on every device after the next send. What is here now is kept first, and its own Put it back brings them back.', backAsk);
     ck('nothing has changed while it asks', (await evs()) === bookWas && !/Put back/.test(await A.p.$eval('#a3SetMsg', e => e.textContent)));
     await A.p.click('#a3BkBackNo').catch(() => {}); await T.w(200);
     ck('Cancel changes nothing and the question goes', (await evs()) === bookWas && !(await A.p.$('[data-set=backask]')));

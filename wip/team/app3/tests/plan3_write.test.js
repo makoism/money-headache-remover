@@ -647,6 +647,31 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     ok(u.ok, JSON.stringify(u));
     eq([h2.book.schedules.find(s => s.id === job).gone, holderOn(h2.book)], [DAY, MAINJ]);
   });
+  await t('[E1, M13] changeAccount: a bank, cash or e-wallet renamed, and its own Keep at least set and cleared; Undo after a reload brings both back', async () => {
+    const h = setup();
+    const r0 = await h.go('addAccount', { name: 'Cash', type: 'cash', amount: 12000, moved: false }); ok(r0.ok, JSON.stringify(r0));
+    const cash = h.book.accounts.find(a => a.name === 'Cash').id;
+    const r = await h.go('changeAccount', cash, { name: 'Wallet cash', min: 2000 }); ok(r.ok, JSON.stringify(r));
+    const a = h.book.accounts.find(x => x.id === cash);
+    eq([a.name, a.minBank], ['Wallet cash', { a: 2000, cur: 'JPY' }]);
+    eq(view(h.book).accounts[cash].bank, 12000, 'the figure is not touched');
+    const r2 = await h.go('changeAccount', cash, { name: 'Wallet cash', min: null }); ok(r2.ok, JSON.stringify(r2));
+    ok(!h.book.accounts.find(x => x.id === cash).minBank, 'cleared');
+    const h2 = reloadOf(h); ok((await h2.A.undo(r2.step.id)).ok); ok((await h2.A.undo(r.step.id)).ok, 'undo after a reload');
+    const b = h2.book.accounts.find(x => x.id === cash);
+    eq([b.name, b.minBank || null], ['Cash', null]);
+  });
+  await t('[E1] changeAccount refuses: a name already used, an empty name, nothing changed, a card or loan, and Keep at least on the main bank (Settings, E5)', async () => {
+    const h = setup();
+    ok((await h.go('addAccount', { name: 'Cash', type: 'cash', amount: 12000, moved: false })).ok);
+    const cash = h.book.accounts.find(a => a.name === 'Cash').id, bankName = h.book.accounts.find(a => a.id === BANK).name;
+    for (const [id, x, words] of [[cash, { name: bankName }, 'There is already one called'], [cash, { name: '  ' }, 'Type a name'], [cash, { name: 'Cash' }, 'Nothing changed'],
+      [CARD_A, { name: 'New' }, 'Plan, under Cards and loans'], [BANK, { name: bankName, min: 5000 }, 'Keep at least for your main bank cannot be changed after setup yet']]) {
+      const z = await h.go('changeAccount', id, x); ok(!z.ok && z.text.includes(words), JSON.stringify([x, z.text]));
+    }
+    const r = await h.go('changeAccount', BANK, { name: 'Everyday bank' }); ok(r.ok, 'the main bank renames ' + JSON.stringify(r));
+    eq(h.book.accounts.find(a => a.id === BANK).name, 'Everyday bank');
+  });
   console.log(bad ? `plan3_write: ${bad} FAIL of ${n}` : `plan3_write: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })();

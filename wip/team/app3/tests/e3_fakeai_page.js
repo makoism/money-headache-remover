@@ -39,6 +39,9 @@ const fig = (p, sel) => p.$eval(sel, e => Number((e.dataset.amt !== undefined ? 
     await d.p.waitForTimeout(500);
     const safe = await fig(d.p, '#a3Home [data-fig=safe]'), bank = await fig(d.p, '#a3Home [data-card=bank] [data-fig=bank]');
     ck('MAKO_SETUP by chat: safe to spend 201,400, Main bank 286,000, every reply used', safe === MAKO_SETUP.safe && bank === MAKO_SETUP.bank && ai.left() === 0, JSON.stringify({ safe, bank, left: ai.left() }));
+    /* [qc-controls run 1 blocker 2, coordinator 16's ruling B] the Filled in card says where loans, goals and budget lines go */
+    const later = await d.p.$eval('[data-card=chat-fill] [data-chat=later]', e => e.textContent).catch(() => '');
+    ck('the Filled in card says loans, goals and budget lines are added on Plan, with the buttons', /Loans, goals and budget lines/.test(later) && /Plan/.test(later) && /Add a loan/.test(later) && /Add a goal/.test(later) && /Add a line/.test(later), later);
     all.push(...d.errs); await d.close();
   }
   {
@@ -83,7 +86,7 @@ const fig = (p, sel) => p.$eval(sel, e => Number((e.dataset.amt !== undefined ? 
     const shut = async () => { if (await d.p.$('#a3Chat[data-open] #a3ChatClose')) await d.p.$eval('#a3ChatClose', e => e.click()); await d.p.waitForTimeout(150); };
     const got = [];
     await shut(); await d.p.$eval('.a3-tabs [data-tab=plan]', e => e.click()); await d.p.waitForTimeout(300);
-    for (const [sel, key] of [['#plAddCard', 'addCard'], ['#plAddLoan', 'addLoan'], ['#plAddBill', 'addBill'], ['#plAddGoal', 'addGoal'], ['#plAddLine', 'addLine'], ['#plSetFree', 'free'], ['[data-bill]', 'bill'], ['[data-pay]', 'pay'], ['[data-owed]', 'card']]) {
+    for (const [sel, key] of [['#plAddCard', 'addCard'], ['#plAddLoan', 'addLoan'], ['#plAddBill', 'addBill'], ['#plAddGoal', 'addGoal'], ['#plAddLine', 'addLine'], ['#plSetFree', 'free'], ['[data-bill]', 'bill'], ['[data-pay]', 'pay'], ['[data-owed]', 'card'], ['#plAddAcct', 'addAccount'], ['[data-acct]', 'account']]) {
       await shut(); await d.p.$eval('.a3-tabs [data-tab=home]', e => e.click()); await d.p.$eval('.a3-tabs [data-tab=plan]', e => e.click()); await d.p.waitForTimeout(250);
       await d.p.$eval('#a3Plan ' + sel, e => e.click()); await d.p.waitForTimeout(250);
       const title = await d.p.$eval('#a3Plan [data-card=plan-form] h2', e => e.textContent);
@@ -92,7 +95,7 @@ const fig = (p, sel) => p.$eval(sel, e => Number((e.dataset.amt !== undefined ? 
       got.push([key, line.includes('"' + title + '"') && line.includes(rows[key].does)]);
       if (!got[got.length - 1][1]) console.log('  ' + key + ': ' + line);
     }
-    ck('on each of Plan\'s sheets the assistant is told the sheet\'s own name and what it is for (9 sheets)', got.length === 9 && got.every(x => x[1]), JSON.stringify(got.filter(x => !x[1])));
+    ck('on each of Plan\'s sheets the assistant is told the sheet\'s own name and what it is for (11 sheets)', got.length === 11 && got.every(x => x[1]), JSON.stringify(got.filter(x => !x[1])));
     await shut(); await d.p.$eval('.a3-tabs [data-tab=home]', e => e.click()); await d.p.waitForTimeout(250);
     await tell(d.p, 'what does this screen do?');
     ck('on Home, with no sheet open, it is told Home and what Home is for', screenLine() === 'SCREEN: the person has Home open. ' + rows.home.does, screenLine());
