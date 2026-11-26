@@ -31,15 +31,23 @@ What else could be true (M98):
 3. The paying bank: among the other accounts with spendFrom in the same currency, the one with the most headroom (the same rule as moveText). If none, no cover (step 5 as today).
 4. Walk the paying bank again with the covering moves as its own steps (order 1, after a pay the same day, as a bill), in both its walks (full and real). Its headroom now takes each gap in the period its day falls in, exactly as if the bill were its own.
 5. `shortfalls` counts only accounts left uncovered. A covered account adds 0.
-6. Output: res.accounts[id].cover = { from, moves: [{ day, amount }] } on the short account; the paying bank's `why` lists "Move to Beta Bank by 10 Dec" lines. The short account's own walks, firstUnder and warnings stay as they are (Beta still says it goes under on 10 Dec).
-7. One rule, no order dependence: the result does not depend on the order accounts or records arrive in.
+6. walk() takes a covers map, so every call (the full walk, the real walk, the warnings, realWalks used by canSetAside) sees the payer's covering moves. Covers are worked from the short account's full walk for the full walk, and from its real walk for the payer's real walk (planned money never shows the main bank below zero, BM2). Partial cover: the payer covers what it can spare and the rest stays a shortfall. Ties: most headroom, then the lower id.
+7. A covered account does not set safeToSpend.short (one verdict on Home: never "Short by" beside a headline that already took the move off); its below_minimum warning carries covered: { from } and the screens show the move line instead.
+8. Output: res.accounts[id].cover = { from, moves: [{ day, amount }] } on the short account; the paying bank's `why` lists "Move to Beta Bank by 10 Dec" lines. The short account's own walks, firstUnder and warnings stay as they are (Beta still says it goes under on 10 Dec).
+9. One rule, no order dependence: the result does not depend on the order accounts or records arrive in.
 
 ## Screens
 - Home's move line (screens/status.js moveText) reads res.accounts[id].cover: "Move 22,000 from Main bank to Beta Bank by 10 Dec, and 79,400 more by 28 Dec" (wording to qc-voice; one line). It no longer picks the bank itself.
 - The change card's short-by row (LANE J builds it on top of this commit).
 
+## Review points taken in (qc-foundation on the plan, FAIL, qc_reports/2026-11-26_shortgap_plan/qc-foundation.md)
+- F1 the cover's day against a pay the same day: RULING ASKED of coordinator 18 (recommended: due the day before the bill).
+- F2 one verdict: rule 7. F3 M90 is not built: the tests pin res.canSpare and the cover moves, and the headline only where no card is left (M90 joins later without taking a card twice).
+- F4 (a move made in the bank app and only the main bank checked counts as spending): WATCH, the check-in offering "moved to Beta" is the controls lane's; named in scope.
+- Assistant (M1, M3, M4): the summary sent to it names each cover (from, amount, day), so it can say it; its move_money step already exists.
+
 ## Tests (failing first, these numbers)
-- engine/test/shortgap.test.js: the book above on 1 Dec: headline 179,400; Beta cover from main, moves [22,000 on 10 Dec]; after Rent to Beta: 179,400, moves [22,000 on 10 Dec, 72,000 on 28 Dec]; after Power too: 179,400, moves [22,000, 79,400 on 28 Dec]. Plus: no bank can cover (headline as today); two spendFrom banks (the one with most room); a gap today; record orders (nine orders, the same result).
+- engine/test/shortgap.test.js: the book above on 1 Dec: headline 179,400; Beta cover from main, moves [22,000 on 10 Dec]; after Rent to Beta: 179,400, moves [22,000 on 10 Dec, 72,000 on 28 Dec]; after Power too: 179,400, moves [22,000, 79,400 on 28 Dec]. Plus: no bank can cover (headline as today); a partial cover; two spendFrom banks (the one with most room, tie by id); a gap today; a bill on pay day and the day after pay; a covered account sets no short; record orders (nine orders, the same result).
 - app3/tests/e3_shortgap.js: the repro walk (LANE J's repro.js, Beta 32,000) on the real page: Home shows 179,400 before and after, the move line names both amounts and days.
 
 ## Not in this slice (scope)
