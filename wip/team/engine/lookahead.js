@@ -1407,12 +1407,13 @@
     // over (`over` on that part, and safeToSpend.freeOver), never hides it; the sum still adds up
     const over = res.safeToSpend.cappedByFreeToSpend && cap < 0 ? -cap : null;
     if (over !== null) res.safeToSpend.freeOver = over;
-    res.safeToSpend.why = !res.safeToSpend.cappedByFreeToSpend ? null : over !== null && raw <= 0 ? `Free to spend is ${fmt(over, home)} over this period` : over !== null
-      ? `${fmt(raw, home)} (what your accounts can spare) - ${fmt(raw, home)} (Free to spend is ${fmt(over, home)} over this period) = ${fmt(res.safeToSpend.headline, home)}`
-      : `${fmt(raw, home)} (what your accounts can spare) - ${fmt(raw - cap, home)} (more than Free to spend left this period) = ${fmt(res.safeToSpend.headline, home)}`;
+    const perW = res.period ? 'this period' : 'this month';   // [coordinator 18, M51] with no fixed pay the month
+    res.safeToSpend.why = !res.safeToSpend.cappedByFreeToSpend ? null : over !== null && raw <= 0 ? `Free to spend is ${fmt(over, home)} over ${perW}` : over !== null
+      ? `${fmt(raw, home)} (what your accounts can spare) - ${fmt(raw, home)} (Free to spend is ${fmt(over, home)} over ${perW}) = ${fmt(res.safeToSpend.headline, home)}`
+      : `${fmt(raw, home)} (what your accounts can spare) - ${fmt(raw - cap, home)} (more than Free to spend left ${perW}) = ${fmt(res.safeToSpend.headline, home)}`;
     res.safeToSpend.whyParts = !res.safeToSpend.cappedByFreeToSpend ? null : over !== null
-      ? [{ label: 'what your accounts can spare', amount: Math.max(0, raw) }, { label: 'Free to spend is over this period', amount: -Math.max(0, raw), over }]
-      : [{ label: 'what your accounts can spare', amount: raw }, { label: 'more than Free to spend left this period', amount: -(raw - cap) }];
+      ? [{ label: 'what your accounts can spare', amount: Math.max(0, raw) }, { label: `Free to spend is over ${perW}`, amount: -Math.max(0, raw), over }]
+      : [{ label: 'what your accounts can spare', amount: raw }, { label: `more than Free to spend left ${perW}`, amount: -(raw - cap) }];
 
     // ----- days to next pay [F3, F8, F12, F13, H8] -----
     const np = nextPays[0];

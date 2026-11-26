@@ -240,7 +240,7 @@ t('[slice 6b] pay on two days a month changed to no fixed pay mid-period: by day
   // was floor(100,000 x 12 / 365) = 3,287). The walk reaches 27 Jan: 27 x 3,225 = 87,075. What the accounts can spare:
   // 493,000 - rent 28 Dec and 27 Jan 160,000 - 87,075 = 245,925 (it was 244,251). Less Free to spend left 66,967:
   // 178,958 with no job. The headline is the same 66,967.
-  eq(r.safeToSpend.whyParts, [{ label: 'what your accounts can spare', amount: 245925 }, { label: 'more than Free to spend left this period', amount: -178958 }]);
+  eq(r.safeToSpend.whyParts, [{ label: 'what your accounts can spare', amount: 245925 }, { label: 'more than Free to spend left this month', amount: -178958 }]);   // [coordinator 18, M51] no fixed pay: the month
   eq([r.canSpare.amount, r.everyday.left, r.noJob.amount, r.everyday.kind, r.everyday.lastDay], [245925, 66967, 178958, 'month', '2026-12-31']);
   b.book.events.push(Object.assign({ id: 'sixb2k-aaaaaaaaaa-5', k: 'spend', acct: bank, a: 6000, date: '2027-01-03' }, at6('2027-01-03')));
   const j = lookahead(b.book, '2027-01-05').safeToSpend;

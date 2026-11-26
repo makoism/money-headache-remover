@@ -262,9 +262,10 @@
     const s = r.safeToSpend, w = s.whyParts;
     if (!w) return null;
     const all = s.headline === 0 ? 'all of it: ' : '';
-    return w.map((x, i) => (x.over ? Object.assign({}, x, { label: `${all}Free to spend is ${fmt(x.over)} over this period` })
-      : i > 0 && all && r.period && r.period.free && r.period.free.left === 0 ? Object.assign({}, x, { label: `${all}Free to spend is used up this period` })
-      : i > 0 && !all ? Object.assign({}, x, { label: `held back: Free to spend has only ${fmt(s.headline)} left this period` }) : x));
+    const pm = r.period || r.month, per = r.period ? 'this period' : 'this month';   // [coordinator 18, M51] no fixed pay: the month
+    return w.map((x, i) => (x.over ? Object.assign({}, x, { label: `${all}Free to spend is ${fmt(x.over)} over ${per}` })
+      : i > 0 && all && pm && pm.free && pm.free.left === 0 ? Object.assign({}, x, { label: `${all}Free to spend is used up ${per}` })
+      : i > 0 && !all ? Object.assign({}, x, { label: `held back: Free to spend has only ${fmt(s.headline)} left ${per}` }) : x));
   }
   function laterText(l, ctx) { return fill('warn.later_on', { account: l.account, month: l.day }, ctx || {}); }
   /* [B1] a below-minimum warning's lower point after its first day under, in words with its own day; '' when none */

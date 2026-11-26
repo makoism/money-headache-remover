@@ -182,9 +182,9 @@ function drawHome3() {
   const capSay = (() => {
     const s = r.safeToSpend, w = s.whyParts;
     if (!s.cappedByFreeToSpend || !w || !w.length || !(w[0].amount > 0)) return '';   // nothing to spare: the short line says it
-    const f = fmt3(home, [w[0].amount, s.headline]);
-    const words = s.headline === 0 ? `Your accounts can spare ${f(w[0].amount)}, but your Free to spend is used up this period, so nothing is safe to spend`
-      : `Your accounts can spare ${f(w[0].amount)}, but only ${f(s.headline)} of your Free to spend is left this period, so ${f(s.headline)} is safe to spend`;
+    const f = fmt3(home, [w[0].amount, s.headline]), per = r.period ? 'this period' : 'this month';   // [coordinator 18, M51]
+    const words = s.headline === 0 ? `Your accounts can spare ${f(w[0].amount)}, but your Free to spend is used up ${per}, so nothing is safe to spend`
+      : `Your accounts can spare ${f(w[0].amount)}, but only ${f(s.headline)} of your Free to spend is left ${per}, so ${f(s.headline)} is safe to spend`;
     return `<p class="a3-next" data-fig="capsay">${esc3(words)}</p>`;
   })();
   /* [C3] when short, the short line's own sum is the one sum for that account: the same sum is never printed twice */
