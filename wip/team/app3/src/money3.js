@@ -73,3 +73,5 @@ const HELP3 = BurrowScreens.help;
 const helpHead3 = (h2, keys, ctx) => `<div class="a3-head">${h2}${HELP3.button([].concat(keys)[0])}</div>${HELP3.text(keys, ctx)}`;
 const MSG3 = BurrowScreens.messages.createQueue();
 const msg3 = text => MSG3.post({ kind: 'toast', key: 'a3', text });
+/* [qc-north-star B2] a whole new book (a restore or a cloud load, e3.js replace): no Undo bar is left for a change it took away */
+addEventListener('burrow3:book', () => MSG3.drop('undo'));

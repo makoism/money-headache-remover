@@ -141,4 +141,15 @@ test('a covered message that runs out of time is never shown late [K37]', () => 
   assert.strictEqual(shown(q), null);
 });
 
+test('[qc-north-star B2] drop(kind) takes every message of that kind at once, covered ones too, and leaves the rest', () => {
+  const { q } = make();
+  q.post({ kind: 'notice', text: 'Saved to the cloud', key: 'sync' });
+  q.post({ kind: 'undo', text: 'Bank checked', action: { label: 'Undo', run: () => {} } });
+  q.cover('undo', q.mark());
+  q.post({ kind: 'undo', text: 'Spend removed', action: { label: 'Undo', run: () => {} } });
+  q.drop('undo');
+  q.cover('undo', null);
+  assert.strictEqual(shown(q), 'Saved to the cloud');
+});
+
 run('messages.js');

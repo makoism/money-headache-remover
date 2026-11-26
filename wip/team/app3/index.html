@@ -5296,6 +5296,9 @@ details summary { min-height: 44px; }
       return item.id;
     }
     function dismiss(id) { items = items.filter(x => x.id !== id); changed(); }
+    /* [qc-north-star B2] every message of one kind goes at once: a whole new book (a restore, a cloud load) leaves no Undo
+       for a change it took away */
+    function drop(kind) { items = items.filter(x => x.kind !== kind); changed(); }
     /* [K37] a sheet opened after an Undo bar never has that bar over it: cover(kind, mark) holds back every message of
        that kind posted up to the mark (mark() gives the newest message's place in line) while the sheet is open, and
        cover(kind, null) lets them show again if their time is not up. Their time keeps running, nothing is lost or
@@ -5317,7 +5320,7 @@ details summary { min-height: 44px; }
     function waiting() { purge(); return items.length ? items.length - 1 : 0; }   // not money: a count
     function view() { purge(); const c = current(); return c ? { id: c.id, kind: c.kind, text: c.text, action: c.action ? c.action.label : null } : null; }
     function onChange(f) { listeners.push(f); }
-    return { post, dismiss, cover, mark, act, waiting, current: view, onChange };
+    return { post, dismiss, drop, cover, mark, act, waiting, current: view, onChange };
   }
 
   /* ---- the band, in a page ---- */
@@ -8502,6 +8505,8 @@ const HELP3 = BurrowScreens.help;
 const helpHead3 = (h2, keys, ctx) => `<div class="a3-head">${h2}${HELP3.button([].concat(keys)[0])}</div>${HELP3.text(keys, ctx)}`;
 const MSG3 = BurrowScreens.messages.createQueue();
 const msg3 = text => MSG3.post({ kind: 'toast', key: 'a3', text });
+/* [qc-north-star B2] a whole new book (a restore or a cloud load, e3.js replace): no Undo bar is left for a change it took away */
+addEventListener('burrow3:book', () => MSG3.drop('undo'));
 /* ---------- E3: the book and the one call the screens use (WIRING_PLAN 1.2, as changed by DECISIONS_ROUND2 AZ1) ----------
    The page holds one book (shape v3). E3.view(day) is the engine's look ahead for that day; the screens only place and
    write what it returns. No sums here.

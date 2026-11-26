@@ -60,6 +60,9 @@
       return item.id;
     }
     function dismiss(id) { items = items.filter(x => x.id !== id); changed(); }
+    /* [qc-north-star B2] every message of one kind goes at once: a whole new book (a restore, a cloud load) leaves no Undo
+       for a change it took away */
+    function drop(kind) { items = items.filter(x => x.kind !== kind); changed(); }
     /* [K37] a sheet opened after an Undo bar never has that bar over it: cover(kind, mark) holds back every message of
        that kind posted up to the mark (mark() gives the newest message's place in line) while the sheet is open, and
        cover(kind, null) lets them show again if their time is not up. Their time keeps running, nothing is lost or
@@ -81,7 +84,7 @@
     function waiting() { purge(); return items.length ? items.length - 1 : 0; }   // not money: a count
     function view() { purge(); const c = current(); return c ? { id: c.id, kind: c.kind, text: c.text, action: c.action ? c.action.label : null } : null; }
     function onChange(f) { listeners.push(f); }
-    return { post, dismiss, cover, mark, act, waiting, current: view, onChange };
+    return { post, dismiss, drop, cover, mark, act, waiting, current: view, onChange };
   }
 
   /* ---- the band, in a page ---- */
