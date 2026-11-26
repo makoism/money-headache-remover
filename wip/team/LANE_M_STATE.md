@@ -3,16 +3,14 @@
 LANE M: session_01BFpKEWyTdLJxPoDySdQrVW (took over from LANE J session_01BFpKEXkcELFPCxnuiX8jFx, 26 Nov about 09:40 JST... see Now). Coordinator: "Burrow coordinator 17 (talk to this one)" session_01BFpKEZ9Gn1VKFM5HMC5Wn1 (from 26 Nov 10:23 JST; 16 was session_01BFpKEXBhaZ6NZ92Lntxb2A). MAIN 22 (session_01BFpKEVPdcTtDvMBQEUFsEx) is the only session that merges. LANE L (session_01BFpKEXEN4ow4uyeRCZ9aSM) owns lane/amounthist (engine lane; slice 10 merges it first; both touch act3.js).
 Keep-going task: trig_01ETjeofWVuqzY2qbB7xDS4H (hourly, bound to LANE M). Switch off at handoff or pause.
 
-## Now (LANE M, 26 Nov about 11:10 JST)
-- Tools in /home/claude/work/tools. Worktrees: .claude/worktrees/estate, c6 (controls-6), c5f (controls-5fix), c9 (controls-9). Union merge helper: scratchpad union.py (page_tests_for lines).
-- Loan doors: helper building 1-5 on controls-6 (c6), then full check; next qc-foundation + qc-numbers, round 2026-11-26_loancheck_build (ask coordinator for scope.txt).
-- Slices 2-5 (controls-5fix): blocker 2 fixed 5c9d9c78 (cause: weekend moved the landing day and the row never said why; shared landLabel in screens/names.js; SAME on ai-join plan3.js:79, tell coordinator). e3_plan stale words fixed 66d1f810. ai-join merged (act3 words+swapped). Full check RUNNING. Then: push controls-5fix:controls-5, ask coordinator for confirming runs (qc-foundation report + qc-controls.md 838f2c66, commits since). Blocker 1 = slice 13 (after slice 10).
-- Slice 10: plan revised eb0bb168; confirm2 file cd619e4a by coordinator; confirming qc-foundation RUNNING (writes nothing: save its reply as qc-foundation_confirm2.md on controls-9). Then build after PASS: merge lane/amounthist first.
-- controls-9 follow-ups: DONE a1f895ad statements to Home Add statements + Keep at least on map. TO DO: change cards show own before/after + why line; failed call once plainly, no network says connection down; setup Q4 one thing at a time + second bank figure.
-- Slices 7/8 (controls-8): reviewers after 2-5 fixes merged up.
-- Queued (coordinator 17): qc-numbers B1 on candidate (ai-join 2256e94e, qc_reports/2026-11-25_ai_first/qc-numbers.md): dollars "$300" next to "$300.00": every screen through the one formatter + a check3 script failing on an amount written two ways. Maybe B4 ("1,0000" should ask) if MAIN 22 does not.
-- Coordinator 17 ruling: amounthist's rule covers money in too (removed/corrected money-in row held by an earlier check keeps its amount in that period): fold into CHECKFIX_PLAN if it touches slice 10 (after confirm 2 reply). Loan scope.txt: ask with commit + M lines left when quick is green. LANE L amounthist tip ab42da59 (will change for qc-numbers fixes).
-- controls-9: failure words change (shared failText in chat3_core, stmt3_ai codes offline/said) uncommitted in c9, quick RUNNING.
+## Now (LANE M, 26 Nov about 11:55 JST, history ~155k)
+- Worktrees: estate, c6 (controls-6), c5f (controls-5fix), c9 (controls-9), c10 (controls-10 from ai-join, for B1). Tools /home/claude/work/tools. union.py in scratchpad (lost on restart: it unions page_tests_for echo lines).
+- Loan doors: helper 1 building on controls-6. When quick green: ask coordinator for scope.txt (commit + M lines left), then qc-foundation + qc-numbers round 2026-11-26_loancheck_build.
+- Slices 2-5: controls-5fix 50045d72 full ALL GOOD, controls-5 fast-forwarded. Asked coordinator for confirm files (qc-foundation, qc-controls); run both at once when written.
+- Slice 10: confirm 2 FAIL (d0296f1b); plan revised 41c7c351 (FA etc). Waiting coordinator ruling FB (corrected check figure engine rule; who builds, LANE L owns bankInfo). LANE L told money-in finding. Then send commit for confirm 3.
+- controls-9 follow-ups DONE: a1f895ad, 4db76124 (failText), 84e315c1 (Q4). Helper 2 building change cards' own before/after + why line on c9.
+- B1 (dollars two ways): asked coordinator to rule (always cents for cent currencies + check3 test); branch lane/controls-10 ready (not pushed yet). Then a helper builds it.
+- After: slices 7/8 reviewers (merge controls-5 up into controls-8 first, full check), slice 13 main bank switch (plan, qc-foundation), B4 maybe.
 
 # Below: LANE J's page at handoff
 
