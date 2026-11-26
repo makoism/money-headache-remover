@@ -63,3 +63,8 @@ What else could be true:
 - N6 (C4): each landed item may carry its own amount ("yes, but it was 73,000").
 - WATCH: an item answered "not yet" that is days late is asked about again (the late list already exists; the nudge is for later).
 - For Mako's run: on the "I don't know" path, which reading is the big number until they answer.
+
+## Coordinator 18, 26 Nov (rulings)
+- CHECKGAP gains: "An expected item settled on or before a check's day takes its amount out of that check's gap and out of what is still expected, so safe to spend can rise; a spend changed or added later never moves it up."
+- The rise never happens silently: one plain line on Home ("Rent was already out on 27 Nov, so 48,000 is back in safe to spend"), and the same on the assistant's change card (N4). A page test.
+- Every future way a figure gets in (a statement or screenshot reader, the cloud merge) lists and ticks the same way (`listed`, the day asked after an unlisted figure), each with its own test like the chat figure one.
