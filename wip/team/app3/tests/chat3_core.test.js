@@ -890,6 +890,20 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     ok(/^S\d+ \| 25 Nov \| ¥777 \| spend/m.test(byAmt) && byAmt.split('\n').length === 2, byAmt);
     ok(/¥777/.test(byDay) && byDay.split('\n').length === 2, 'by day finds it too: ' + byDay);
   });
+  await t('[amount history] the card says when the bank check that held the spend takes the change', async () => {
+    const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
+    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'log_spend', amount: 900, account: 'A1' }] })]), say('Logged.'),
+      say('', [call('change', { steps: [{ do: 'bank_figure', account: 'A1', amount: 285100 }] })]), say('Matches.'),
+      say('', [call('list', { what: 'spends', account: 'A1' })]), body => { const ref = FAKE.results(body)[0].text.split('\n').find(l => /¥900/.test(l)).split(' | ')[0]; return say('', [call('change', { steps: [{ do: 'change_spend', ref, amount: 1500 }] })]); }, say('Changed.')]);
+    const d = hp.deps(f);
+    let r = await K.turn(state, 'lunch, 900 from Main bank', d);
+    hp.day = '2026-11-25';
+    r = await K.turn(r.state, 'Main bank shows 285,100', Object.assign(hp.deps(f), { door: d.door }));
+    hp.day = '2026-11-26';
+    r = await K.turn(r.state, 'that lunch was 1,500 not 900', Object.assign(hp.deps(f), { door: d.door }));
+    const c = r.shown.find(x => x.who === 'card').card;
+    eq([c.status, c.lines], ['done', ['Change the spend of ¥900 on 24 Nov to ¥1,500. It was ¥900 at your bank check on 25 Nov, so the change counts in that check\'s pay period']]);
+  });
   console.log(bad ? `chat3_core: ${bad} of ${n} FAILED` : `chat3_core: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })();
