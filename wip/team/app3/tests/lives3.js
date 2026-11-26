@@ -83,7 +83,7 @@ function make(label) {
     const got = await p.evaluate(() => {
       const amt = e => (e ? Number((e.dataset.amt !== undefined ? e : e.querySelector('[data-amt]')).dataset.amt) : null);
       const out = { safe: amt(document.querySelector('#a3Home [data-fig="safe"]')) };
-      for (const c of document.querySelectorAll('#a3Home [data-card=bank]')) out[c.querySelector('h2').textContent.replace(/^[^:]*:\s*/, '')] = amt(c.querySelector('[data-fig=bank]'));
+      for (const c of document.querySelectorAll('#a3Home [data-card=bank]')) out[c.querySelector('h2').textContent.replace(/^[^:]*:\s*/, '').replace(/ today$/, '')] = amt(c.querySelector('[data-fig=bank]'));
       return out;
     });
     const want = Object.assign({ safe }, banks);

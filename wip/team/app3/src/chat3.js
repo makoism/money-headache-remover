@@ -18,6 +18,7 @@ const CHAT3_WORDS = {
   /* why a change card asks first (M6): the core's card.ask; its card.why is the AI's own words, not shown here */
   ask: { delete: 'This takes something away. Do it?', large: 'This is more than safe to spend. Do it?', guess: 'You didn\'t type this amount, it\'s the AI\'s guess. Is it right?', gap: 'This is far from what the app expected. Is the figure right?' },
   fillKept: 'To change something, tell me or change it on its screen',
+  later: 'Loans, goals and budget lines like Gifts are not part of setup. Add them on Plan after this: Add a loan, Add a goal, Add a line',   // [qc-controls run 1 blocker 2] the same words as setup's last step
 };
 
 /* below the wide screen the page scrolls inside #a3, above the bar (app3.css): every screen's scrollTo moves it too.
@@ -76,7 +77,7 @@ function chat3Deps() {
   return {
     send: chat3Send, today: () => E3.today(), told: () => E3.told(), newId: () => E3.newId(),
     book: () => E3.book, mode: () => E3.mode, door: E3.book ? ACT3 : null,
-    start: b => E3.fill(b), discard: () => E3.discard(),
+    start: b => E3.fill(b), discard: () => E3.discard(), why: () => E3.startWhy,
     anon: CHAT3.anon || '', invite: chat3Invite(), screen: chat3Screen, sheet: chat3Sheet,
   };
 }
@@ -124,8 +125,10 @@ function chat3Card(t) {
       : c.status === 'ask' ? `<p class="a3-sub" data-chat="status" data-ask="${esc3(c.ask || '')}">${esc3(CHAT3_WORDS.ask[c.ask] || CHAT3_WORDS.ask.large)}</p><div class="a3-actions"><button type="button" class="a3-btn solid" data-chatok="${id}">Do it</button><button type="button" class="a3-btn" data-chatnot="${id}">Not now</button></div>`
       : `<p class="a3-sub" data-chat="status">${esc3(c.status === 'undone' ? 'Taken back' : c.status === 'not now' ? 'Not done' : (c.why || 'The app refused it'))}</p>`;
     return `<div class="a3-card a3-chat-card" data-card="chat-change" data-turn="${id}" data-status="${esc3(c.status)}"><h3>${c.status === 'ask' ? 'A change to check' : c.status === 'refused' || c.status === 'not now' ? 'Not changed' : 'Changed'}</h3>
-      <ul class="a3-chat-lines">${(c.lines || []).map(l => `<li>${esc3(l)}</li>`).join('')}</ul>${(c.left || []).length ? `<p class="a3-warn" data-chat="left">Not done: ${esc3(c.left.join(', and '))}. Say that part again on its own</p>` : ''}${chat3Figs(c.rows)}${c.note && c.status === 'done' ? `<p class="a3-sub" data-chat="note">${esc3(c.note)}</p>` : ''}${foot}</div>`;
+      <ul class="a3-chat-lines">${(c.lines || []).map(l => `<li>${esc3(l)}</li>`).join('')}</ul>${(c.left || []).length ? `<p class="a3-warn" data-chat="left">Not done: ${esc3(c.left.join(', and '))}${c.again === false ? '' : '. Say that part again on its own'}</p>` : ''}${chat3Figs(c.rows)}${c.note && c.status === 'done' ? `<p class="a3-sub" data-chat="note">${esc3(c.note)}</p>` : ''}${foot}</div>`;
   }
+  /* [CONFUSING 1] a setup card is not drawn while a book is here that the chat did not fill (worked out each time) */
+  if (c.kind === 'draft' && CHAT3C.setupShut(CHAT3.state || CHAT3C.fresh(), E3.book)) return '';
   if (c.kind === 'draft') {
     return `<div class="a3-card a3-chat-card" data-card="chat-draft" data-turn="${id}"><h3>Your answers so far</h3>
       ${(c.sections || []).map(s => `<div data-section="${esc3(s.key)}"><p class="a3-acct">${esc3(s.title)}</p><ul class="a3-chat-lines">${(s.lines || []).map(l => `<li>${esc3(l)}</li>`).join('')}</ul></div>`).join('')}
@@ -139,14 +142,14 @@ function chat3Card(t) {
        that there is no Start over (the store refuses it once the hold is gone): the card says how to change things */
     const foot = c.status === 'done' ? (E3.held() ? `<div class="a3-actions"><button type="button" class="a3-btn" data-chatundo="${id}">Undo</button></div>` : `<p class="a3-sub" data-chat="status">${esc3(CHAT3_WORDS.fillKept)}</p>`)
       : `<p class="a3-sub" data-chat="status">${c.status === 'undone' ? 'Taken back. Your answers are kept' : 'Started over. Your answers are kept'}</p>`;
-    return `<div class="a3-card a3-chat-card" data-card="chat-fill" data-turn="${id}" data-status="${esc3(c.status)}"><h3>Filled in</h3>${figs}${foot}</div>`;
+    return `<div class="a3-card a3-chat-card" data-card="chat-fill" data-turn="${id}" data-status="${esc3(c.status)}"><h3>Filled in</h3>${figs}${c.status === 'done' ? `<p class="a3-sub" data-chat="later">${esc3(CHAT3_WORDS.later)}</p>` : ''}${foot}</div>`;
   }
   return '';
 }
 function chat3Turn(t) {
   if (t.who === 'person') return `<p class="a3-ask-me" data-turn="${esc3(t.id)}">${esc3(t.text)}</p>`;
   /* [AI_FIRST_PLAN 7] an amount the AI wrote that is in nothing it was given: marked for checking against the screens */
-  if (t.who === 'ai') return `<p class="a3-ask-ai" data-turn="${esc3(t.id)}">${esc3(t.text)}${(t.check || []).length ? `<span class="a3-chat-check" data-chat="check"><br>Check this: ${esc3(t.check.join(', '))} is the AI's own figure, not the app's. The screens have the app's figures</span>` : ''}</p>`;
+  if (t.who === 'ai') return `<p class="a3-ask-ai" data-turn="${esc3(t.id)}">${esc3(t.text)}${(t.check || []).length ? `<span class="a3-chat-check" data-chat="check"><br>Check this: ${esc3(t.check.join(', '))} is the AI's own figure, not the app's. The screens have the app's figures</span>` : ''}${t.notDone ? `<span class="a3-chat-check" data-chat="notdone"><br>${esc3(CHAT3C.DONE_WORDS)}</span>` : ''}</p>`;
   if (t.who === 'note') return `<p class="a3-chat-saved" data-turn="${esc3(t.id)}" role="status">${esc3(t.text)}</p>`;
   if (t.who === 'card') return chat3Card(t);
   return '';
@@ -315,36 +318,85 @@ async function chat3Undo(turnId) {
   if (r && r.ok !== false) MSG3.post({ kind: 'toast', key: 'chat3', text: 'Undone' });
 }
 /* "Set up on the screens": setup3, filled from the draft (ANSWERS3.toForm, the one shared answers function); the boxes
-   are setup3's own, filled as a person would, so its Save is the same */
+   are setup3's own, filled as a person would, so its Save is the same.
+   [qc-assistant run 4, fix B] one set of answers before the book exists, the newest winning section by section: setup3
+   first puts back what was saved or typed on the screens (its own draft). A section typed there and not saved stays as
+   typed. A section saved there stays unless the chat changed it since (CHAT3C.chatNewer). Every other section the chat
+   holds is filled from the chat, and when the bank is, so are the sections that point at its accounts. */
 async function chat3Screens() {
-  /* setup3 first puts back what was saved or typed on the screens before (lane/setupfix, its own draft). When it
-     holds something, that stays as it is: the chat's answers are never typed over it, or added to it a second time */
   await openSetup3();
-  if (!$('#a3SetupBack') || !$('#a3SetupBack').hidden) return;
-  const d = CHAT3.state && CHAT3.state.draft;
-  if (!d || !(d.banks || []).length || typeof ANSWERS3 !== 'object') return;
-  try { chat3FormFill(ANSWERS3.toForm(d, { day: E3.today() })); setupFromChat3(); } catch (e) { /* the form stays as it was: every box can still be typed */ }
+  const st = CHAT3.state, d = st && st.draft;
+  if (!setup3 || !d || !(d.banks || []).length || typeof ANSWERS3 !== 'object') return;
+  const holds = sec => CHAT3C.chatNewer(Object.assign({}, st, { screens: {} }), sec);
+  const typed = sec => state3(sec) === 'changed';
+  const take = new Set(SEC3.map(([sec]) => sec).filter(sec => !typed(sec) && holds(sec) && (!setup3.saved[sec] || CHAT3C.chatNewer(st, sec))));
+  if (take.has('bank')) for (const sec of ['pay', 'cards', 'bills']) if (!typed(sec) && holds(sec)) take.add(sec);
+  if (!take.size) return;
+  try {
+    const f = ANSWERS3.toForm(d, { day: E3.today() });
+    for (const sec of take) if (setup3.saved[sec]) put3(sec, setup3.base[sec]);   // its rows go, the chat's come
+    chat3FormFill(f, take);
+    setupFromChat3(take);
+  } catch (e) { /* the form stays as it was: every box can still be typed */ }
 }
-function chat3FormFill(f) {
+/* a section's Save on the screens, into the chat's draft: { before, wrote } for its Undo, or null (a book, the made-up
+   numbers, nothing to write). Amounts go as the screens read them, in minor units */
+function chat3FromScreens(sec) {
+  if (E3.book || E3.mode === 'try' || !CHAT3.state || typeof ANSWERS3 !== 'object') return null;
+  let ans;
+  try {
+    const f = form3(false);
+    /* another section's blank day of one pay must not stop this one: only this section's answers are taken */
+    if (sec !== 'pay') { f.pay.start = f.pay.start || E3.today(); (f.pays || []).forEach(x => { x.start = x.start || E3.today(); }); }
+    ans = ANSWERS3.fromForm(f, { day: E3.today() });
+  } catch (e) { return null; }
+  const r = CHAT3C.fromScreens(CHAT3.state, sec, ans);
+  if (r.wrote == null) return null;
+  CHAT3.state = r.state;
+  chat3Save();
+  return { before: r.before, wrote: r.wrote };
+}
+/* that Save's Undo, in the chat's draft too (the chat's newer answer for that section stays) */
+async function chat3UndoScreens(sec, cw) {
+  if (!cw || !CHAT3.state) return;
+  const r = CHAT3C.undoScreens(CHAT3.state, sec, cw.before, cw.wrote);
+  if (r.ok === false) return;
+  CHAT3.state = r.state;
+  await chat3Save();
+  if (!setup3) chat3Redraw();
+}
+/* after an Undo leaves a section as it started, the chat's answer for it is shown again (not saved) */
+function chat3RefillSec(sec) {
+  const st = CHAT3.state, d = st && st.draft;
+  if (!setup3 || !d || !(d.banks || []).length || !CHAT3C.chatNewer(Object.assign({}, st, { screens: {} }), sec)) return;
+  try { chat3FormFill(ANSWERS3.toForm(d, { day: E3.today() }), new Set([sec])); setupFromChat3(new Set([sec])); } catch (e) { /* as it started */ }
+}
+function chat3FormFill(f, only) {
+  const on = sec => !only || only.has(sec);
   const cur = f.cur || 'JPY';
   const amt = (el, v) => { if (el && v != null) el.value = SM.toInput(v, cur); };
   const val = (el, v) => { if (el && v != null) { el.value = String(v); el.dispatchEvent(new Event('change', { bubbles: true })); } };
   const txt = (el, v) => { if (el && v != null) el.value = v; };
   const last = sel => $$(sel).pop();
+  if (on('bank')) {
   val($('#s3Cur'), cur); val($('#s3Country'), f.country);
   txt($('#s3BankName'), f.bankName); amt($('#s3Bank'), f.bank);
   for (const a of f.accts || []) { $('#s3AddAcct').click(); const row = last('#a3Setup [data-row^=acct]'); txt(row.querySelector('[data-f=name]'), a.name); amt(row.querySelector('[data-f=amount]'), a.amount); val(row.querySelector('[data-f=type]'), a.type); }
+  }
   const p = f.pay || {};
+  if (on('pay')) {
   txt($('#s3PayName'), p.name); amt($('#s3PayAmt'), p.amount); val($('#s3PayEvery'), p.every); val($('#s3PayDay'), p.day); val($('#s3PayDay2'), p.day2);
   txt($('#s3PayStart'), p.start); val($('#s3PayShift'), p.shift); val($('#s3PayAcct'), p.acct);
   for (const x of f.pays || []) { $('#s3AddPay').click(); const row = last('#a3Setup [data-row^=pay]'); txt(row.querySelector('[data-f=name]'), x.name); amt(row.querySelector('[data-f=amount]'), x.amount); val(row.querySelector('[data-f=every]'), x.every); val(row.querySelector('[data-f=day]'), x.day); val(row.querySelector('[data-f=day2]'), x.day2); txt(row.querySelector('[data-f=start]'), x.start); val(row.querySelector('[data-f=acct]'), x.acct); }
-  for (const c of f.cards || []) { $('#s3AddCard').click(); const row = last('#a3Setup [data-row^=card]'); txt(row.querySelector('[data-f=name]'), c.name); amt(row.querySelector('[data-f=owed]'), c.owed); val(row.querySelector('[data-f=payDay]'), c.payDay); val(row.querySelector('[data-f=closeDay]'), c.closeDay); val(row.querySelector('[data-f=payFrom]'), c.payFrom); val(row.querySelector('[data-f=shift]'), c.shift); amt(row.querySelector('[data-f=statement]'), c.statement); }
-  for (const b of f.bills || []) { $('#s3AddBill').click(); const row = last('#a3Setup [data-row^=bill]'); txt(row.querySelector('[data-f=name]'), b.name); amt(row.querySelector('[data-f=amount]'), b.amount); val(row.querySelector('[data-f=every]'), b.every); val(row.querySelector('[data-f=month]'), b.month); val(row.querySelector('[data-f=day]'), b.day); val(row.querySelector('[data-f=from]'), b.from); }
-  amt($('#s3Free'), f.free); amt($('#s3Min'), f.min);
+  }
+  if (on('cards')) for (const c of f.cards || []) { $('#s3AddCard').click(); const row = last('#a3Setup [data-row^=card]'); txt(row.querySelector('[data-f=name]'), c.name); amt(row.querySelector('[data-f=owed]'), c.owed); val(row.querySelector('[data-f=payDay]'), c.payDay); val(row.querySelector('[data-f=closeDay]'), c.closeDay); val(row.querySelector('[data-f=payFrom]'), c.payFrom); val(row.querySelector('[data-f=shift]'), c.shift); amt(row.querySelector('[data-f=statement]'), c.statement); }
+  if (on('bills')) for (const b of f.bills || []) { $('#s3AddBill').click(); const row = last('#a3Setup [data-row^=bill]'); txt(row.querySelector('[data-f=name]'), b.name); amt(row.querySelector('[data-f=amount]'), b.amount); val(row.querySelector('[data-f=every]'), b.every); val(row.querySelector('[data-f=month]'), b.month); val(row.querySelector('[data-f=day]'), b.day); val(row.querySelector('[data-f=from]'), b.from); }
+  if (on('free')) amt($('#s3Free'), f.free);
+  if (on('min')) amt($('#s3Min'), f.min);
   /* the questions the day asks (bills already out, a statement), from the boxes just filled, then their answers */
   $('#a3Setup').dispatchEvent(new Event('change', { bubbles: true }));
-  (f.bills || []).forEach((b, i) => val($$('#a3Setup [data-row^=bill]')[i].querySelector('[data-f=takenOut]'), b.takenOut));
-  if (f.payToday && $('#s3PayToday')) val($('#s3PayToday'), f.payToday);   // setup3's own question (lane/setupfix), when it has it
+  if (on('bills')) (f.bills || []).forEach((b, i) => val($$('#a3Setup [data-row^=bill]')[i].querySelector('[data-f=takenOut]'), b.takenOut));
+  if (on('bank') && f.payToday && $('#s3PayToday')) val($('#s3PayToday'), f.payToday);   // setup3's own question (lane/setupfix), when it has it
 }
 /* "Use any AI": the core's questions and answer shape as one request to copy (CHAT3C.copyPrompt); the answer pasted
    back goes through the same draft checks (CHAT3C.pasteBack), then the same draft card and Fill */

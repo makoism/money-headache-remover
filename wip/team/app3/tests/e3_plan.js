@@ -72,7 +72,14 @@ const view = bk => T.L.lookahead(bk, DAY);
   ck('Food for this pay period only: a once key named by the pay, the period shows 50,000', Object.keys(bk.plan.budgets[0].once || {}).join() === r.period.startsWith && await amt(p, `[data-line="${food.id}"] [data-fig=line-amount]`) === r.period.lines[0].counts);
 
   /* a bill: add, then change Rent from a date */
+  /* [qc-numbers run 1 B4] "1,0000" is a misplaced comma or an extra zero: it asks which, and nothing is saved */
   await p.click('#plAddBill'); await T.w(200);
+  await fill(p, { name: 'Gym', amount: '1,0000', day: '31', acct: BANK }); await save(p);
+  ck('B4: a comma not in a thousands place asks which was meant', /Did you mean ¥1,000 or ¥10,000\?/.test(await err(p) || ''), await err(p));
+  ck('B4: and nothing is saved', !(await saved(p)).schedules.some(s => s.name === 'Gym'));
+  /* [qc-numbers run 1 POLISH] a decimal in yen says why at Save, in the box's own words */
+  await fill(p, { amount: '3000.5' }); await save(p);
+  ck('POLISH: 3000.5 yen says yen has no decimals', (await err(p)) === 'Yen has no decimals. Type a whole amount', await err(p));
   await fill(p, { name: 'Gym', amount: '8000', day: '1', acct: BANK }); await save(p);
   bk = await saved(p);
   const gym = bk.schedules.find(s => s.name === 'Gym');
@@ -148,7 +155,7 @@ const view = bk => T.L.lookahead(bk, DAY);
   ck('Cards and loans offers Add a card', /Add a card/.test(await p.$eval('[data-card=plan-owed]', e => e.textContent)));
   await p.click('#plAddCard'); await T.w(200);
   const asks = await p.$$eval('[data-card=plan-form] label', ls => ls.map(l => l.textContent));
-  ck('it asks the name, what is on it now, the payment day, the close day or not sure, and the weekend rule', JSON.stringify(asks) === JSON.stringify(['Name', 'What is on it now', 'Day of the month it is paid from your bank', 'Day its statement closes', 'When that day is a weekend or holiday, it comes out']), JSON.stringify(asks));
+  ck('it asks the name, what is on it now, the payment day, the close day or not sure, the paying account [E1b] and the weekend rule', JSON.stringify(asks) === JSON.stringify(['Name', 'What is on it now', 'Day of the month it is paid from your bank', 'Day its statement closes', 'Paid from', 'When that day is a weekend or holiday, it comes out']), JSON.stringify(asks));
   await fill(p, { name: 'Card C', owed: '12000', payDay: '27' }); await save(p);
   bk = await saved(p); r = view(bk);
   const cardC = bk.accounts.find(a => a.name === 'Card C');

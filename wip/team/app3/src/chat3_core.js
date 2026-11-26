@@ -134,7 +134,7 @@
     { n: 12, key: 'asked', ask: 'For each bill in NEEDED that was due since your last pay: "Phone was due on 20 Nov. Has it come out of your bank already?" For each card statement in NEEDED: how much was on it. If a pay lands today: has it already landed in that figure?' },
     { n: 13, key: 'free', ask: "How much do you want for food and everyday stuff each pay period? Groceries, eating out, getting around, fun. Leave it blank if you don't know yet." },
     { n: 14, key: 'min', ask: 'Keep at least ___ in your bank? Skip it and there is no minimum.' },
-    { n: 15, key: 'fill', ask: 'Show what you have (the draft), then ask: shall I fill in your Burrow? When they say yes, call fill_book.' },
+    { n: 15, key: 'fill', ask: 'Show what you have (the draft), then ask: shall I fill in your Burrow? When they say yes, call fill_book. After it is filled, say that loans, goals and budget lines like Gifts are not part of setup: they are added on Plan (Add a loan, Add a goal, Add a line), and goals and budget lines can also be told to you.' },
   ];
   /* [qc-assistant blocker 3; M17] ONE table: what every screen and every sheet is for, in one plain line each. The
      assistant is told all of it (SYSTEM), and with each message which screen is open and which sheet is on top
@@ -142,7 +142,7 @@
      tests/e3_fakeai_page.js opens each of Plan's sheets. These are words for a person too: the wording lint reads them. */
   const SCREENS = {
     home: { name: 'Home', does: 'Home shows what is safe to spend until your next pay, what each account holds today, what is due before pay, and your goals' },
-    plan: { name: 'Plan', does: 'Plan shows your pay and bills, Free to spend and your budget lines, goals, cards and loans. Tap a row to change it' },
+    plan: { name: 'Plan', does: 'Plan shows your pay and bills, Free to spend and your budget lines, goals, your accounts, cards and loans. Tap a row to change it' },
     receipts: { name: 'Receipts', does: 'Receipts is where you log money that came in, went out or moved between your accounts, and see what you logged. Tap a record to change or remove it' },
     settings: { name: 'Settings', does: 'Settings holds the backup file, the cloud copy, the code word for the AI and the assistant\'s error log' },
     check: { name: 'Check your bank', does: 'Check your bank is where you type what your bank and cards show today. The app compares each with what it expected and asks about the gap' },
@@ -162,6 +162,8 @@
     card: { name: 'A card\'s own sheet', does: 'Changes the card\'s name, the day it is paid and the day its statement closes' },
     addLoan: { name: 'Add a loan', does: 'Adds a loan: its name, what is still owed, the usual payment and the day it is paid' },
     loan: { name: 'A loan\'s own sheet', does: 'Changes the loan\'s name, the day it is paid or the usual payment, or closes the loan' },
+    addAccount: { name: 'Add an account', does: 'Adds a bank, cash or e-wallet after setup: its name, what it holds today, and whether that money was moved from your main bank' },
+    account: { name: 'An account\'s own sheet', does: 'Renames a bank, cash or e-wallet, or sets its own Keep at least' },
     record: { name: 'A record\'s own sheet', does: 'Changes or removes one thing you logged on Receipts' },
   };
   const SYSTEM = `You are the assistant inside The Burrow, a money app the person has open right now. You set it up with them by talking, and after that you answer questions and make changes for them.
@@ -198,12 +200,12 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
   /* ---- the tools (BU2: no figures or draft read tool) ---- */
   const num = { type: 'number', description: 'A plain number in the currency, no symbol.' };
   const str = d => ({ type: 'string', description: d });
-  const DO = ['landed', 'bank_figure', 'card_figure', 'log_spend', 'refund', 'money_in', 'move_money', 'remove', 'add_bill', 'change_bill', 'end_bill', 'add_pay', 'add_line', 'change_line', 'end_line', 'set_free', 'add_goal', 'set_aside', 'add_card', 'add_account'];
+  const DO = ['landed', 'bank_figure', 'card_figure', 'log_spend', 'refund', 'money_in', 'move_money', 'remove', 'add_bill', 'change_bill', 'end_bill', 'add_pay', 'add_line', 'change_line', 'end_line', 'set_free', 'add_goal', 'set_aside', 'add_card', 'add_account', 'change_account'];
   /* a step that was asked for and left out, in words for the person (the card says which was not done) */
   const DO_WORDS = { landed: 'ticking off a pay or bill', bank_figure: 'a bank figure', card_figure: 'a card figure', log_spend: 'a spend', refund: 'a refund', money_in: 'money that came in',
     move_money: 'money moved between accounts', remove: 'removing a record', add_bill: 'a new bill', change_bill: 'a change to a bill or pay', end_bill: 'ending a bill', add_pay: 'a new pay',
     add_line: 'a new line', change_line: 'a change to a line', end_line: 'ending a line', set_free: 'a change to Free to spend', add_goal: 'a new goal', set_aside: 'money set aside for a goal',
-    add_card: 'a new card', add_account: 'a new account' };
+    add_card: 'a new card', add_account: 'a new account', change_account: 'a change to an account' };
   const CURS = ['JPY', 'PHP', 'USD', 'EUR'];
   const SECTIONS = ['country', 'currency', 'banks', 'pays', 'cards', 'bills', 'asked', 'statements', 'payToday', 'free', 'min'];
   const TOOLS = [
@@ -214,7 +216,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     { name: 'draft_set', description: 'Save one setup section into the draft, its whole value. Nothing reaches the app until fill_book. Sections: country "JP"|"PH"|"XX"; currency "JPY"|"PHP"|"USD"|"EUR" (a change of currency drops the amounts saved before it: ask each again); banks [{name, amount, type?, confirmed?}] (first is where pay lands; confirmed true when the person gave the figure again today); pays [{name, amount, every: month|days|weeks|none, day?, day2?, n?, start?, shift?: before|after, bank?, afterTax, same?}]; cards [{name, owed, payDay, closeDay: day|"last"|"not sure", shift?, payFrom?, confirmed?}]; bills [{name, amount, day, every?: month|year, month?, from?}]; asked [{name, out: true|false}]; statements [{name, amount|"not sure"}]; payToday {landed: true|false}; free amount|null; min amount|null.',
       input_schema: { type: 'object', properties: { section: { type: 'string', enum: SECTIONS }, value: { description: 'The section\'s whole value.' } }, required: ['section', 'value'] } },
     { name: 'fill_book', description: 'Turn the draft into the person\'s Burrow. Only when they said to fill it in. Refused while NEEDED is not empty.', input_schema: { type: 'object', properties: {} } },
-    { name: 'change', description: 'Make up to ' + MAX_STEPS + ' changes, each a named step: ' + DO.join(', ') + '. landed {ref: the P, B or card A ref, amount? only if it was different, date? the day it landed}; bank_figure and card_figure {account, amount}. Fields: amount, account (A ref), every (add_bill: month|year|months, with month 1..12 for a year, n and start for months), from and to (A refs), line (L ref), goal (G ref), ref (the record: S, B, P, L or G ref), date (YYYY-MM-DD, today or before), note, name, day, day2, every (month|days|weeks1..4|none), start, when (now|next|once), target, due, owed, payDay, closeDay, type (bank|cash|ewallet), moved (true|false), from (the A ref the money came from), afterFigure (true|false: moved after they looked at that bank on the day of its figure).',
+    { name: 'change', description: 'Make up to ' + MAX_STEPS + ' changes, each a named step: ' + DO.join(', ') + '. landed {ref: the P, B or card A ref, amount? only if it was different, date? the day it landed}; bank_figure and card_figure {account, amount}. Fields: amount, account (A ref), every (add_bill: month|year|months, with month 1..12 for a year, n and start for months), from and to (A refs), line (L ref), goal (G ref), ref (the record: S, B, P, L or G ref; remove takes an S, B or L ref only: a pay or a goal cannot be removed in this app yet, so say that and that it can be changed on Plan), date (YYYY-MM-DD, today or before), note, name, day, day2, every (month|days|weeks1..4|none), start, when (now|next|once), target, due, owed, payDay, closeDay, type (bank|cash|ewallet), moved (true|false), shift (after|before: a card weekend rule), from (the A ref the money came from), afterFigure (true|false: moved after they looked at that bank on the day of its figure). change_account {account: a bank, cash or e-wallet A ref, name?, min?: its own Keep at least, 0 for none}.',
       input_schema: { type: 'object', properties: { steps: { type: 'array', items: { type: 'object', properties: { do: { type: 'string', enum: DO }, amount: num }, required: ['do'] } } }, required: ['steps'] } },
   ];
 
@@ -229,9 +231,10 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     for (const x of sch) {
       const ref = x.kind === 'income' ? 'P' + (++p) : 'B' + (++b); refs[ref] = x.id;
       /* one figure, one source: the amount and the rhythm in force today are the engine's own answer (its schedule view,
-         the one Plan shows), never worked out again here from the saved lists (a change dated later is not today's) */
+         the one Plan shows), never worked out again here from the saved lists (a change dated later is not today's);
+         [qc-controls 2to5 F2] its next day in Plan's words, with why when a weekend or holiday moved it */
       const v = view[x.id] || {};
-      lines.push(`${ref} | ${x.name} | ${v.amount != null ? SM.format(v.amount, x.cur || home) : 'no fixed amount'} | ${ruleWords(v.rule)}${x.ends ? ' | ends ' + day1(x.ends) : ''}`);
+      lines.push(`${ref} | ${x.name} | ${v.amount != null ? SM.format(v.amount, x.cur || home) : 'no fixed amount'} | ${ruleWords(v.rule)}${v.next ? ', next ' + SN.landLabel(v.next.land, v.next.due, v.next.land.slice(0, 4) !== today.slice(0, 4)) : ''}${x.ends ? ' | ends ' + day1(x.ends) : ''}`);
     }
     if (lines.length) out.push('Pays and bills (ref | name | amount | when):\n' + lines.join('\n'));
     return { text: out.join('\n'), refs };
@@ -376,15 +379,63 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       d[section] = a;
     } else return no('No such section: ' + String(section).slice(0, 20));
     if (curOf(d) !== cur) {   // the currency the amounts are read in changed (by the currency answer, or by the country before it)
-      let n = 0;
-      for (const b of d.banks) if (b.amount != null) { b.amount = null; b.on = null; delete b.payToday; n++; }
-      for (const c of d.cards) if (c.owed != null) { c.owed = null; c.on = null; delete c.statement; n++; }
-      for (const x of d.pays) if (x.amount != null) { x.amount = null; n++; }
-      for (const x of d.bills) if (x.amount != null) { x.amount = null; n++; }
-      for (const k of ['free', 'min']) if (d[k] != null) { delete d[k]; n++; }
+      const n = dropAmounts(d);
       if (n) return { ok: true, draft: d, text: 'Saved: ' + TITLES[section] + '. The amounts from before were typed before the currency was known, so each is asked again' };
     }
     return { ok: true, draft: d, text: 'Saved: ' + TITLES[section] };
+  }
+  /* the amounts typed before the currency they are read in changed: dropped, asked again (never converted); keep: the
+     sections whose amounts came in the new currency */
+  function dropAmounts(d, keep) {
+    let n = 0;
+    if (!(keep && keep.banks)) for (const b of d.banks) if (b.amount != null) { b.amount = null; b.on = null; delete b.payToday; n++; }
+    for (const c of d.cards) if (c.owed != null) { c.owed = null; c.on = null; delete c.statement; n++; }
+    for (const x of d.pays) if (x.amount != null) { x.amount = null; n++; }
+    for (const x of d.bills) if (x.amount != null) { x.amount = null; n++; }
+    for (const k of ['free', 'min']) if (d[k] != null) { delete d[k]; n++; }
+    return n;
+  }
+  /* ---- [qc-assistant run 4, fix B] the setup screens' sections and the chat's draft: one set of answers before the book
+     exists. A section's Save on the screens writes that section's answers (ANSWERS3.fromForm, amounts in minor units,
+     never read as typed) into the draft; its Undo puts the draft back; the newest answer wins both ways. state.screens
+     holds, per section, what the screens' last Save wrote (the stamp) ---- */
+  const SCREEN_SECS = { bank: ['country', 'currency', 'banks'], pay: ['pays'], free: ['free'], cards: ['cards'], bills: ['bills'], min: ['min'] };
+  const secJson = (d, sec) => JSON.stringify(SCREEN_SECS[sec].map(k => (d && d[k] !== undefined ? d[k] : null)));   // null and missing are one answer
+  function fromScreens(state0, sec, ans) {
+    const state = clone(state0) || {}, keys = SCREEN_SECS[sec];
+    if (state.fill || !keys || !ans) return { state, before: null, wrote: null };
+    const before = state.draft ? clone(state.draft) : null, d = state.draft || emptyDraft(), curWas = curOf(d);
+    if (sec === 'bank') {
+      /* [qc-foundation 1] an account renamed in place (the same row) is renamed where the pays, cards and bills name it */
+      const ren = {};
+      (ans.banks || []).forEach((b, i) => { const o = d.banks[i]; if (o && ANS.keyOf('banks', o.name) !== ANS.keyOf('banks', b.name)) ren[ANS.keyOf('banks', o.name)] = b.name; });
+      const to = n => (n != null && ren[ANS.keyOf('banks', n)]) || n;
+      d.pays.forEach(p => { if (p.bank) p.bank = to(p.bank); });
+      d.cards.forEach(c => { if (c.payFrom) c.payFrom = to(c.payFrom); });
+      d.bills.forEach(b => { if (b.from) b.from = to(b.from); });
+    }
+    for (const k of keys) { if (ans[k] === undefined) delete d[k]; else d[k] = clone(ans[k]); }
+    if (curOf(d) !== curWas) dropAmounts(d, { banks: true });
+    state.draft = d;
+    state.screens = Object.assign({}, state.screens, { [sec]: secJson(d, sec) });
+    return { state, before, wrote: JSON.stringify(d) };
+  }
+  function undoScreens(state0, sec, before, wrote) {
+    const state = clone(state0), keys = SCREEN_SECS[sec];
+    if (state.fill || !keys || wrote == null) return { state, ok: false, text: state.fill ? 'Setup is done. Change it on the screens or ask me' : 'Nothing to undo' };
+    if (JSON.stringify(state.draft) === wrote) state.draft = clone(before);
+    else if (state.draft && state.screens && secJson(state.draft, sec) === state.screens[sec]) {
+      const was = before || emptyDraft();
+      for (const k of keys) { if (was[k] === undefined) delete state.draft[k]; else state.draft[k] = clone(was[k]); }
+    } else return { state, ok: true };   // the chat changed that section since: its newer answer stays
+    state.screens = Object.assign({}, state.screens, { [sec]: secJson(state.draft, sec) });
+    return { state, ok: true };
+  }
+  function chatNewer(state, sec) {
+    const d = state && state.draft, keys = SCREEN_SECS[sec];
+    if (!d || !keys) return false;
+    const holds = sec === 'bank' ? (d.banks || []).length > 0 : Array.isArray(d[keys[0]]) ? d[keys[0]].length > 0 : d[keys[0]] != null;
+    return holds && (!state.screens || state.screens[sec] !== secJson(d, sec));
   }
   /* the draft in plain lines (what is sent, and the draft card) */
   function draftLines(d) {
@@ -436,7 +487,8 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     const hist = state.turns.filter(t => t.who === 'person' || t.who === 'ai');
     const past = hist.slice(0, hist.length - 1).slice(-TURNS), messages = [];
     const push = (role, text) => { const last = messages[messages.length - 1]; if (last && last.role === role) last.content[0].text += '\n\n' + text; else messages.push({ role, content: [{ type: 'text', text }] }); };
-    for (const t of past) push(t.who === 'person' ? 'user' : 'assistant', t.text || '(a card)');
+    /* [qc-foundation on CONFUSING1_PLAN, 3] its own words from a turn where nothing was done are sent with that said */
+    for (const t of past) push(t.who === 'person' ? 'user' : 'assistant', (t.text || '(a card)') + (t.notDone ? ' (the app did not do this: nothing changed)' : ''));
     if (messages.length && messages[0].role === 'assistant') messages.shift();
     const now = stateText(state, ctx);
     const first = (rounds || []).length ? 'THE PERSON SAYS\n' + message : now + '\n\nTHE PERSON SAYS\n' + message;
@@ -566,6 +618,12 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       if (!from || !to || !x || !d) return { bad: 'a move I could not read' };
       return { kind: 'moveMoney', args: [{ date: d, a: x, from, to }], text: `Move ${m(x)} from ${nm(from)} to ${nm(to)}, ${on(d)}`, amount: x };
     }
+    /* [qc-controls run 1 blocker 6] a pay or a goal cannot be removed anywhere in the app yet: said plainly, with where
+       it can be changed (Plan, tap it), never "a ref I do not know" */
+    if (what === 'remove' && /^[PG]\d/.test(String(a.ref || ''))) {
+      const which = String(a.ref).charAt(0) === 'P' ? 'a pay' : 'a goal';
+      return { bad: 'remove takes an S, B or L ref: ' + which + ' cannot be removed in this app yet. Say so, and that it can be changed on Plan', left: 'removing ' + which + ', which the app cannot do yet. You can change it on Plan: tap it' };
+    }
     if (what === 'remove' || what === 'end_bill' || what === 'end_line') {
       const id = ref(a.ref, what === 'end_line' ? 'L' : what === 'end_bill' ? 'BP' : 'SBL');
       if (!id) return { bad: 'a ' + what.replace('_', ' ') + ' for a ref I do not know' };
@@ -588,7 +646,8 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       const id = ref(a.ref, 'BP'); if (!id) return { bad: 'a change to a bill or pay I do not know' };
       const ch = {}; if (a.amount != null) { ch.amount = amt(a.amount); if (!ch.amount) return { bad: 'an amount I could not read' }; }
       if (a.day != null) ch.day = a.day; if (a.every) { ch.every = a.every; ch.day2 = a.day2; ch.start = a.start; } if (a.name) ch.name = clean(a.name, 60);
-      return { kind: 'changeBill', args: [id, ch], text: `${schName(id)}: ` + [ch.amount ? m(ch.amount) : '', ch.day ? 'on day ' + ch.day : '', ch.every ? ch.every : '', ch.name ? 'called ' + ch.name : ''].filter(Boolean).join(', ') + ' from its next one', amount: ch.amount || 0, figs: ch.amount ? [ch.amount] : [], ref: a.ref };
+      if (a.account) { ch.acct = ref(a.account, 'A'); if (!ch.acct) return { bad: 'a bill paid from an account I do not know' }; }   // [E1b, M13] its paying account
+      return { kind: 'changeBill', args: [id, ch], text: `${schName(id)}: ` + [ch.amount ? m(ch.amount) : '', ch.day ? 'on day ' + ch.day : '', ch.every ? ch.every : '', ch.name ? 'called ' + ch.name : '', ch.acct ? 'paid from ' + nm(ch.acct) : ''].filter(Boolean).join(', ') + ' from its next one', amount: ch.amount || 0, figs: ch.amount ? [ch.amount] : [], ref: a.ref };
     }
     if (what === 'add_pay') {
       const x = a.amount == null ? null : amt(a.amount), acct = acctOr(a.account);
@@ -609,7 +668,9 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     }
     if (what === 'add_card') {
       const x = amt(a.owed != null ? a.owed : a.amount, null, true); if (x == null || !a.name || !dayOk(a.payDay)) return { bad: 'a card I could not read' };
-      return { kind: 'addCard', args: [{ name: clean(a.name, 60), owed: x, payDay: a.payDay, cutDay: a.closeDay }], text: `Add ${clean(a.name, 60)}: ${m(x)} on it now, paid on day ${a.payDay}`, amount: x, figs: [x] };
+      /* [E1b, M23] the account that pays it (the main bank when none is named) and its weekend rule */
+      const pf = a.account ? ref(a.account, 'A') : mainAcct; if (!pf) return { bad: 'a card paid from an account I do not know' };
+      return { kind: 'addCard', args: [Object.assign({ name: clean(a.name, 60), owed: x, payDay: a.payDay, cutDay: a.closeDay, payFrom: pf }, a.shift ? { shift: a.shift } : {})], text: `Add ${clean(a.name, 60)}: ${m(x)} on it now, paid on day ${a.payDay} from ${nm(pf)}${a.shift === 'before' ? ', the working day before a weekend or holiday' : ''}`, amount: x, figs: [x] };
     }
     if (what === 'add_account') {
       const x = amt(a.amount, null, true); if (x == null || !a.name) return { bad: 'an account I could not read' };
@@ -623,6 +684,16 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       if (a.moved === true && needLooked && typeof a.afterFigure !== 'boolean') return { bad: `ask: "${lookedQ.replace('If it was moved: was', 'Was')}" Then change again with afterFigure` };
       return { kind: 'addAccount', args: [Object.assign({ name: clean(a.name, 60), type: a.type || 'bank', amount: x, moved: a.moved }, a.date ? { date: a.date } : {},
         a.from ? { from: ref(a.from, 'A') || 'none' } : {}, typeof a.afterFigure === 'boolean' ? { afterFigure: a.afterFigure } : {})], text: `Add ${clean(a.name, 60)} with ${m(x)}${a.moved ? ' moved from ' + nm(a.from ? ref(a.from, 'A') : mainAcct) : ''}`, amount: x, figs: [x] };
+    }
+    /* [E1, M13] a bank, cash or e-wallet renamed, or its own Keep at least set (0 clears it): PLAN3W.changeAccount */
+    if (what === 'change_account') {
+      const id = ref(a.account || a.ref, 'A'), rec = id && acctRec(id);
+      if (!rec || rec.type === 'card' || rec.type === 'loan') return { bad: 'change_account is for a bank, cash or e-wallet. ' + whereOf(rec && rec.type === 'loan' ? 'loan' : 'card') };
+      const ch = {}; if (a.name) ch.name = clean(a.name, 60);
+      if (a.min !== undefined) { if (a.min === null || a.min === 0 || a.min === '') ch.min = null; else { ch.min = amt(a.min, rec.cur); if (!ch.min) return { bad: 'a Keep at least I could not read' }; } }
+      if (!Object.keys(ch).length) return { bad: 'a change to an account with nothing to change' };
+      const words = [ch.name ? 'called ' + ch.name : '', ch.min !== undefined ? (ch.min ? 'keep at least ' + m(ch.min, rec.cur) : 'no Keep at least') : ''].filter(Boolean).join(', ');
+      return { kind: 'changeAccount', args: [id, ch], text: `${rec.name}: ${words}`, amount: 0, figs: ch.min ? [ch.min] : [] };
     }
     return { bad: what ? 'a change I can\'t make (' + what.slice(0, 30) + '). ' + whereOf(what) : 'a change I could not read' };
   }
@@ -736,6 +807,35 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     state.used = (state.used || []).concat(...card.plan.map(s => figsOf(s).map(plain)));
     state.wrote = true;
   }
+  /* [CONFUSING 1, coordinator 16's ruling b] what a turn did: a refused step tells the person in a note; a turn where
+     steps were refused and nothing was written or asked marks the AI's words as not done (never changed or hidden) */
+  /* [TABSETUP_PLAN 4] the fill found a book another tab made: the same words as the setup screens */
+  const OTHER_TAB = 'Your money was set up in another tab, so this tab shows it now. What you typed here was not saved';
+  const DONE_WORDS = 'The app did not do this: nothing changed';
+  function refused(frame, state, shown, deps, text) {
+    if (frame) frame.refused++;
+    addTurn(state, { who: 'note', text, at: deps.told() }, shown);
+  }
+  function did(frame) { if (frame) frame.did = true; }
+  /* [qc-foundation on CONFUSING1_PLAN, 1 and 2] the chat's own book: a book that still holds a record written at the
+     chat's fill. Any other book was made on the screens (or elsewhere). Nothing about it is saved: it is worked out from
+     the book each time, so a book that goes away opens the setup answers again */
+  function ownBook(state, book) {
+    if (!book || !state.fill) return false;
+    const recs = [].concat(book.accounts || [], book.schedules || [], book.events || [], book.checkins || [], book.places || []);
+    return recs.some(r => r && r.at === state.fill.told);
+  }
+  const setupShut = (state, book) => !!book && !ownBook(state, book);
+  /* setup finished on the screens while the chat was part way: one note, once per book (said again for a later book) */
+  const SETUP_CLOSED = 'Setup was finished on the screens, so these setup answers are closed. Change things on the screens, or tell me what to change';
+  function closeSetup(state, book, shown, told) {
+    if (!book) { if (state.fill) state.fill = null; state.shutSaid = false; return false; }
+    if (!setupShut(state, book) || state.shutSaid) return false;
+    if (!state.turns.some(t => t.who === 'card' && t.card && t.card.kind === 'draft')) return false;
+    state.shutSaid = true;
+    addTurn(state, { who: 'note', text: SETUP_CLOSED, at: told }, shown);
+    return true;
+  }
   /* ---- one tool call ---- */
   function addTurn(state, t, shown) {
     const turn = Object.assign({ id: 't' + (++state.seq) }, t);
@@ -749,15 +849,19 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     if (call.name === 'list') return list(book, today, x);
     if (call.name === 'explain') return explain(x.topic);
     if (call.name === 'draft_set') {
-      if (book) return 'Setup is done: change things with change instead.';
+      if (book) { refused(frame, state, shown, deps, 'Not saved: setup is done. Change it on the screens, or tell me what to change'); return 'Setup is done: change things with change instead.'; }
       const r = draftSet(state.draft, x.section, x.value, today);
-      if (!r.ok) { addTurn(state, { who: 'note', text: 'Not saved: ' + r.text, at: deps.told() }, shown); return 'Not saved: ' + r.text; }
-      state.draft = r.draft;
+      if (!r.ok) { refused(frame, state, shown, deps, 'Not saved: ' + r.text); return 'Not saved: ' + r.text; }
+      state.draft = r.draft; did(frame);
       addTurn(state, { who: 'note', text: r.text, at: deps.told() }, shown);
       const need = ANS.need(r.draft, { day: today });
       return r.text + '. NEEDED now: ' + (need.length ? need.join(' ') : 'nothing');
     }
-    if (call.name === 'fill_book') { const f = await fillNow(state, deps, shown, true); return f.ok ? 'Filled in. ' + f.text : 'Not filled in: ' + f.text; }
+    if (call.name === 'fill_book') {
+      const f = await fillNow(state, deps, shown, true);
+      if (f.ok) did(frame); else refused(frame, state, shown, deps, 'Not filled in: ' + f.text);
+      return f.ok ? 'Filled in. ' + f.text : 'Not filled in: ' + f.text;
+    }
     if (call.name === 'change') {
       if (!book || !deps.door) return 'There is no book yet: finish setup first.';
       /* [STALE_SHEET_PLAN, M61] the refs the AI holds are places in lists (S7 is the seventh spend told): if the book
@@ -765,24 +869,26 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       const verNow = typeof deps.door.ver === 'function' ? deps.door.ver() : null;
       if (frame && frame.ver != null && verNow !== frame.ver) {
         frame.ver = verNow;
-        addTurn(state, { who: 'note', text: 'Nothing was changed, because something changed somewhere else while I was answering. Say it again', at: deps.told() }, shown);
+        refused(frame, state, shown, deps, 'Nothing was changed, because something changed somewhere else while I was answering. Say it again');
         return 'Not changed: the book changed somewhere else after FIGURES were sent, so the refs may be old. Nothing was done. Use list again before any change, or ask the person to say it again.';
       }
       const raw = Array.isArray(x.steps) ? x.steps : [];
       const refs = allRefs(book, today), plan = [], dropped = [], left = [];
+      let again = false;   // [qc-controls run 2 CONFUSING] some left-out step could work if said again (not one the app cannot do)
       for (const a of raw) {
-        if (plan.length >= MAX_STEPS) { dropped.push('more than ' + MAX_STEPS + ' at a time'); if (!left.includes('the changes after the first ' + MAX_STEPS)) left.push('the changes after the first ' + MAX_STEPS); continue; }
+        if (plan.length >= MAX_STEPS) { again = true; dropped.push('more than ' + MAX_STEPS + ' at a time'); if (!left.includes('the changes after the first ' + MAX_STEPS)) left.push('the changes after the first ' + MAX_STEPS); continue; }
         const s = stepOf(a, { book, today, refs, payWith: state.payWith });
         if (s.bad) {
           dropped.push(s.bad); if (s.payWith) state.askPay = true;
           /* a note that tells the AI to ask something is no words for the person */
-          left.push(/^(ask|which account)/i.test(s.bad) ? 'one step that needs an answer from you first' : DO_WORDS[a && a.do] || 'a change the assistant can\'t make here');
+          if (!s.left) again = true;
+          left.push(s.left || (/^(ask|which account)/i.test(s.bad) ? 'one step that needs an answer from you first' : DO_WORDS[a && a.do] || 'a change the assistant can\'t make here'));
         } else plan.push(s);
       }
       /* [AI_JOIN_FIXES H6] the answer to "card or bank?" is kept for this chat */
       const named = plan.find(s => s.named);
       if (state.askPay && named) { state.payWith = named.named; state.askPay = false; }
-      if (!plan.length) return 'Nothing changed: ' + (dropped.join('; ') || 'no steps');
+      if (!plan.length) { refused(frame, state, shown, deps, 'Not done: ' + (left.length ? left.join(', and ') : 'nothing was asked for') + '. Nothing changed'); return 'Nothing changed: ' + (dropped.join('; ') || 'no steps'); }
       /* [BW] a delete, or a change larger than safe to spend, asks first; [AI_FIRST_PLAN 7] an amount the person did not
          type is a guess and asks first too */
       const safe = LA.lookahead(book, today).safeToSpend.headline;
@@ -796,15 +902,16 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
          check, on the book the step would make, larger than safe to spend) asks first, with the gap in words: an extra
          zero never goes in silently */
       const far = farFigures(plan, book, today, deps, safe);
-      const card = { kind: 'change', status: 'ask', ver: verNow, lines: plan.map(s => s.text + (far.has(s) ? '. ' + far.get(s) : '') + (guess.includes(s) ? ' (my guess)' : '')), rows: [], plan, dropped, left };
+      const card = { kind: 'change', status: 'ask', ver: verNow, lines: plan.map(s => s.text + (far.has(s) ? '. ' + far.get(s) : '') + (guess.includes(s) ? ' (my guess)' : '')), rows: [], plan, dropped, left, again };
       if (del || big || far.size || guess.length) {
         card.ask = del ? 'delete' : big ? 'large' : far.size ? 'gap' : 'guess';
         card.why = del ? 'this removes something' : big ? 'this is more than safe to spend' : far.size ? 'the figure is far from what the app expected' : 'I guessed an amount';
+        did(frame);
         addTurn(state, { who: 'card', text: card.lines.join('. '), at: deps.told(), card }, shown);
         return resultOf(card) + (dropped.length ? ' Left out: ' + dropped.join('; ') : '');
       }
       const res = await carryOut(state, card, deps);
-      if (res.ok) wrote(state, card, book, today);
+      if (res.ok) { wrote(state, card, book, today); did(frame); } else if (frame) frame.refused++;   // its card says why
       if (frame && typeof deps.door.ver === 'function') frame.ver = deps.door.ver();   // the turn's own steps
       addTurn(state, { who: 'card', text: card.lines.join('. '), at: deps.told(), card }, shown);
       return (res.ok ? resultOf(card) : 'Not changed: ' + res.text) + (dropped.length ? ' Left out: ' + dropped.join('; ') : '');
@@ -821,6 +928,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     const rounds = [];
     const draftWas = JSON.stringify(state.draft);
     const end = stop => {
+      if (frame.refused && !frame.did) for (const t of shown) if (t.who === 'ai') t.notDone = true;
       if (!state.fill && state.draft && JSON.stringify(state.draft) !== draftWas) {
         state.turns = state.turns.filter(t => !(t.who === 'card' && t.card && t.card.kind === 'draft'));
         addTurn(state, { who: 'card', text: 'The draft so far', at: deps.told(), card: draftCard(state.draft, deps.today()) }, shown);
@@ -828,7 +936,8 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       return { state, shown, stop };
     };
     /* the book as it is when the figures are sent, kept beside the chat state (never in it, never sent) */
-    const frame = { ver: deps.door && typeof deps.door.ver === 'function' && deps.book && deps.book() ? deps.door.ver() : null };
+    const frame = { ver: deps.door && typeof deps.door.ver === 'function' && deps.book && deps.book() ? deps.door.ver() : null, refused: 0, did: false };
+    closeSetup(state, deps.book ? deps.book() : null, shown, deps.told());
     for (let i = 0; i < ROUNDS; i++) {
       const body = request(state, clean(message, 4000), rounds, ctxOf(deps));
       let res;
@@ -924,7 +1033,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     const told = deps.told();
     let built;
     try { built = ANS.build(state.draft, { day: today, told, newId: deps.newId }); } catch (e) { return { state, shown, ok: false, text: e.message }; }
-    if (!(await deps.start(built.book))) return { state, shown, ok: false, text: 'This could not be saved on this device. Nothing changed' };
+    if (!(await deps.start(built.book))) return { state, shown, ok: false, text: deps.why && deps.why() === 'there' ? OTHER_TAB : 'This could not be saved on this device. Nothing changed' };
     const v = LA.lookahead(built.book, today), main = built.ids.bank1;
     state.fill = { at: told, told, day: today };
     state.wrote = true;   // [M6] what was typed for setup is not typed for a later change
@@ -986,7 +1095,8 @@ ${card.need.length && state.draft ? 'STILL NEEDED: ' + card.need.join(' ') : ''}
   const api = {
     ROUNDS, TURNS, KEEP, MAX_TOKENS, MAX_STEPS, TIER: 'default', EFFORT: 'low', GUIDE, TOOLS, SYSTEM, SCREENS,
     fresh: () => ({ v: 1, turns: [], draft: null, fill: null, seq: 0 }),
-    turn, confirm, notNow, undo, startOver, draftEdit,
+    turn, confirm, notNow, undo, startOver, draftEdit, DONE_WORDS, setupShut,
+    SCREEN_SECS, fromScreens, undoScreens, chatNewer,
     /* [AI_JOIN_FIXES H2] what the first screen says before anything is typed: the welcome, and the first question */
     welcome: () => [GUIDE[0].ask, GUIDE[1].ask, GUIDE[2].ask],
     fillNow: (s, deps) => fillNow(s, deps),

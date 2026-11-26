@@ -92,6 +92,15 @@ test('more decimals than the currency has are refused, never rounded (12.345 is 
   assert.deepStrictEqual(money.parse('15.5', 'JPY'), { ok: false, reason: 'decimals' });
 });
 
+test('a comma not in a thousands place is refused with both readings, never read one way silently (qc-numbers run 1 B4)', () => {
+  assert.deepStrictEqual(money.parse('1,0000', 'JPY'), { ok: false, reason: 'commas', means: [1000, 10000] });
+  assert.deepStrictEqual(money.parse('10,00', 'JPY'), { ok: false, reason: 'commas', means: [1000, 10000] });
+  assert.deepStrictEqual(money.parse('1,00.50', 'USD'), { ok: false, reason: 'commas', means: [10050, 100050] });
+  assert.deepStrictEqual(money.parse('1,000', 'JPY'), { ok: true, minor: 1000 });
+  assert.deepStrictEqual(money.parse('12,345,678', 'JPY'), { ok: true, minor: 12345678 });
+  assert.deepStrictEqual(money.parse('1234', 'JPY'), { ok: true, minor: 1234 });
+});
+
 test('empty, not a number, minus and too big each say why', () => {
   assert.deepStrictEqual(money.parse('', 'USD'), { ok: false, reason: 'empty' });
   assert.deepStrictEqual(money.parse('abc', 'USD'), { ok: false, reason: 'not_a_number' });

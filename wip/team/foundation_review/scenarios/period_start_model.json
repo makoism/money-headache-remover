@@ -1,7 +1,7 @@
 {
   "life": "period_start_model",
   "title": "A period started without the pay is in the model and names the pay it stands in for; the late pay then starts no new period (decisions T1 and T6, final_review_3 finding 6, f2)",
-  "story": "Set up Fri 20 Nov 2026: the bank holds 400,000, of which 20,000 is what is left of Food and 30,000 of Free to spend (typed). Pay of 300,000 on the 10th (moved earlier, posting window 3 working days) starts the period; Food is 40,000 and Free to spend 60,000 a month. The pay due Thu 10 Dec is late. On Mon 14 Dec the person starts the new period without it: the record is ps:pay@2026-12-10 (the pay it stands in for), dated the day they chose. That day they spend 5,000 on food and 3,000 from Free to spend. On Tue 15 Dec the pay arrives inside its window and is ticked: it settles its occurrence and starts no new period. On Thu 17 Dec a check-in shows 682,000: 10,000 went out unlogged since the opening, a filler split by days at the period start of 14 Dec. Every amount is made up.",
+  "story": "Set up Fri 20 Nov 2026: the bank holds 400,000, of which 20,000 is what is left of Food and 30,000 of Free to spend (typed). Pay of 300,000 on the 10th (moved earlier, posting window 3 working days) starts the period; Food is 40,000 and Free to spend 60,000 a month. The pay due Thu 10 Dec is late. On Mon 14 Dec the person starts the new period without it: the record is ps:pay@2026-12-10 (the pay it stands in for), dated the day they chose. That day they spend 5,000 on food and 3,000 from Free to spend. On Tue 15 Dec the pay arrives inside its window and is ticked: it settles its occurrence and starts no new period. On Thu 17 Dec a check-in shows 682,000: 10,000 went out unlogged since the opening, a filler, whole in the period begun 14 Dec, where the check is [CHECKGAP]. Every amount is made up.",
   "currency": "JPY",
   "window": { "from": "2026-11-20", "to": "2026-12-31" },
   "holidays": { "country": "none", "dates": [], "bank_closed": [] },
@@ -37,8 +37,8 @@
       "why": "400,000 (opening) - 5,000 (food) - 3,000 (Free to spend) + 300,000 (pay, Tue 15 Dec) = 692,000" },
     { "id": "psm-06", "date": "2026-12-17", "question": "not_explained", "account": "b", "expected": 10000,
       "why": "692,000 (what the events say) - 682,000 (check-in figure) = 10,000" },
-    { "id": "psm-07", "date": "2026-12-17", "question": "headline", "expected": 55519,
-      "why": "60,000 (Free to spend for the period begun Mon 14 Dec) - 3,000 (spent Mon 14 Dec) - 1,481 (the filler's share for 14 to 17 Dec: 10,000 less the old period's 8,519, which is 10,000 x 23 / 27 days, rounded) = 55,519",
-      "note": "The filler is spending [T2], split by days at the period start [A4], which is the period start record's day [T6]." }
+    { "id": "psm-07", "date": "2026-12-17", "question": "headline", "expected": 47000,
+      "why": "60,000 (Free to spend for the period begun Mon 14 Dec) - 3,000 (spent Mon 14 Dec) - 10,000 (the filler found at the Thu 17 Dec check, whole: the check is in this period) = 47,000",
+      "note": "The filler is spending [T2]; a check's gap is its own period's, whole [CHECKGAP, coordinator 15, 26 Nov, replacing A4's split by days, which gave 55,519]." }
   ]
 }

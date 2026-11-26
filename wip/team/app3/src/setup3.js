@@ -8,6 +8,21 @@
    [item 14] Each section has its own Save and is held as a draft on this device until "See my money" turns the saved
    answers into a book through engine/build_book.js and keeps it through the store (the draft section below says
    how). Nothing is worked out here. The words are drafts for Mako's copy pass. */
+/* [qc-controls run 1 blocker 2, coordinator 16's ruling B] setup has no step for these: its last step says where they go */
+/* [TABSETUP_PLAN 3, coordinator 17] setup finished in another tab while this one was still on setup (the screens or the
+   chat): this tab closes onto Home with the book from there, and says so; nothing typed here is written */
+/* [qc-foundation 4, 5] the line says what was typed here only when something was (setup open, or the chat's setup
+   answers); a fill still held in the other tab is said; the setup draft as stored is cleared, so it never comes back */
+addEventListener('burrow3:started', e => {
+  const st = typeof CHAT3 !== 'undefined' && CHAT3.state, typed = !!setup3 || !!(st && st.draft);
+  if (setup3) endSetup3();
+  draftWrite3(null).catch(() => {});
+  renderHome3();
+  if (typeof renderChat3 === 'function') renderChat3();
+  const held = e && e.detail && e.detail.held;
+  msg3('Your money was set up in another tab, so this tab shows it now' + (held ? '. It can still be undone in that tab' : '') + (typed ? '. What you typed here was not saved' : ''));
+});
+const SETUP3_LATER = 'Loans, goals and budget lines like Gifts are not part of setup. Add them on Plan after this: Add a loan, Add a goal, Add a line';
 let setup3 = null;
 function dayOptions3(sel, extra) {
   const out = [];
@@ -158,6 +173,7 @@ async function openSetup3() {
         <p class="a3-sub" id="s3MinH" data-hint="min">Safe to spend leaves this much in your bank as a cushion</p></div>
       ${saveBar3('min')}
     </section>
+    <p class="a3-sub" data-hint="later">${esc3(SETUP3_LATER)}</p>
     <p class="a3-err" id="a3SetupErr" role="alert"></p>
     <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3SetupSave">See my money</button><button type="button" class="a3-btn" id="a3SetupX">Back</button></div>
   </div>`;
@@ -248,7 +264,7 @@ function form3(strict, sec) {
   const asks = el => strict && (!sec || sec.contains(el));
   const ask = (el, words) => { fieldErr3(el, words); el.focus(); throw new Error('asked'); };
   /* [M47] a bank's own box reads a minus (bankBox3) */
-  const amount = (el, words) => { const v = bankBox3(el) ? typedBank3(el.value, cur) : typed3(el.value, cur); if (v !== null) return v; return asks(el) ? ask(el, words) : null; };
+  const amount = (el, words) => { const v = bankBox3(el) ? typedBank3(el.value, cur) : typed3(el.value, cur); if (v !== null) return v; return asks(el) ? ask(el, typedSlip3(el.value, cur) || words) : null; };
   const maybe = (el, words) => (el.value.trim() ? amount(el, words) : null);
   const text = (el, dflt) => (el.value || '').trim() || dflt;
   const dayOf = v => (v === 'last' ? 'last' : Number(v));
@@ -437,13 +453,16 @@ function markAll3() {
      still need Save, and why */
   const todo = $('#a3SetupTodo');
   if (todo) {
-    const open = setup3.fromChat ? SEC3.filter(([sec]) => state3(sec) === 'changed' || state3(sec) === 'stale').map(([, name]) => name) : [];
+    /* only the sections the chat filled are said to be from the chat; one typed by hand is just not saved yet */
+    const open = setup3.fromChat ? SEC3.filter(([sec]) => state3(sec) === 'changed' || state3(sec) === 'stale') : [], chat = setup3.fromChatSecs;
+    const from = open.filter(([sec]) => !chat || chat.has(sec)).map(([, name]) => name), hand = open.filter(([sec]) => chat && !chat.has(sec)).map(([, name]) => name);
     todo.hidden = !open.length;
-    todo.textContent = open.length ? `Filled in from the chat, not saved yet: ${open.join(', ')}. Press Save under each` : '';
+    todo.textContent = open.length ? [from.length ? `Filled in from the chat, not saved yet: ${from.join(', ')}` : '', hand.length ? `Not saved yet: ${hand.join(', ')}` : ''].filter(Boolean).join('. ') + '. Press Save under each' : '';
   }
 }
 /* "Set up on the screens" filled the boxes from the chat's answers (chat3.js) */
-function setupFromChat3() { if (setup3) { setup3.fromChat = true; markAll3(); } }
+/* secs: the sections the chat filled (all, when not given) */
+function setupFromChat3(secs) { if (setup3) { setup3.fromChat = true; if (secs) setup3.fromChatSecs = new Set([...(setup3.fromChatSecs || []), ...secs]); markAll3(); } }
 /* puts a section back as a snapshot holds it: its rows, then every box (the account choices need the rows first) */
 function put3(sec, snap) {
   const kind = SEC_ROWS3[sec];
@@ -470,10 +489,27 @@ function typedNow3(sections, skip) {
 }
 /* skip: a section about to be put back as `sections` holds it (Undo), so what its boxes show now is not kept as typed */
 /* kept: with setup closed there are no boxes to read, so the typed sections already in the draft are carried over */
-const keepDraft3 = (sections, days, skip, kept) => {
+/* [found by check3 full, 26 Nov] every write of the draft goes through one queue, in the order asked, so a write already
+   on its way never lands after a later one (See my money's clear above all: E3.rec reads, then writes the device record) */
+let draftQ3 = Promise.resolve();
+const draftWrite3 = v => (draftQ3 = draftQ3.then(() => E3.rec('setup', v), () => E3.rec('setup', v)));
+/* [qc-data-safety 26 Nov, blocker 1; M61] two tabs of one phone share the draft: a write changes only what this tab
+   changed (the sections in `touched`, saved or taken back; the boxes typed and not saved) on the draft as stored now,
+   so a section another tab saved is never wiped. E3.recEdit reads and writes in one turn, one tab at a time */
+const draftEdit3 = fn => (draftQ3 = draftQ3.then(() => E3.recEdit('setup', fn), () => E3.recEdit('setup', fn)));
+const keepDraft3 = (sections, days, skip, kept, touched) => {
   const typed = setup3 && setup3.base ? typedNow3(sections, skip) : Object.assign({}, kept);
   if (skip) delete typed[skip];
-  return E3.rec('setup', Object.keys(sections).length || Object.keys(typed).length ? { v: 1, sections, days, typed } : null);
+  return draftEdit3(cur => {
+    const d = cur && cur.v ? { v: 1, sections: Object.assign({}, cur.sections), days: Object.assign({}, cur.days), typed: Object.assign({}, cur.typed) } : { v: 1, sections: {}, days: {}, typed: {} };
+    for (const sec of touched || []) {
+      if (sections[sec]) { d.sections[sec] = sections[sec]; d.days[sec] = days[sec]; } else { delete d.sections[sec]; delete d.days[sec]; }
+      delete d.typed[sec];
+    }
+    if (skip) delete d.typed[skip];
+    Object.assign(d.typed, typed);
+    return Object.keys(d.sections).length || Object.keys(d.typed).length ? d : null;
+  });
 };
 /* what is typed is kept a moment after the typing stops, and at once on Back */
 /* what a row shows (its questions and their words) is worked out while the person types, not only when the box is left:
@@ -497,16 +533,23 @@ async function saveSec3(sec) {
   const before = setup3.saved[sec] || null, beforeDay = setup3.days[sec] || null, now = snap3(sec);
   const sections = Object.assign({}, setup3.saved, { [sec]: now }), days = Object.assign({}, setup3.days, { [sec]: E3.today() });
   setup3.busy = true;
-  const ok = await keepDraft3(sections, days);
+  const ok = await keepDraft3(sections, days, null, null, [sec]);
   setup3.busy = false;
   if (!setup3) return;
   if (ok !== true) { el.querySelector(`[data-saved="${sec}"]`).textContent = 'This could not be saved on this device. Nothing changed'; return; }
   setup3.saved = sections; setup3.days = days;
+  if (setup3.fromChatSecs) setup3.fromChatSecs.delete(sec);
+  /* [qc-assistant run 4, fix B] the section goes into the chat's draft too: one set of answers (chat3.js) */
+  const cw = typeof chat3FromScreens === 'function' ? chat3FromScreens(sec) : null;
   markAll3();
-  MSG3.post({ kind: 'undo', key: 'act3', text: `${secName3(sec)}: saved`, action: { label: 'Undo', run: () => undoSec3(sec, before, beforeDay, now) } });
+  setup3Undo = MSG3.post({ kind: 'undo', key: 'act3', text: `${secName3(sec)}: saved`, action: { label: 'Undo', run: () => undoSec3(sec, before, beforeDay, now, cw) } });
 }
+/* [coordinator 16, 26 Nov] once the app is filled (by the chat or by See my money) a section's Save has nothing left to undo:
+   its Undo is taken off, never left to say "Undone" while nothing changes. E3.start calls this */
+let setup3Undo = null;
+function setup3Filled() { if (setup3Undo) { MSG3.dismiss(setup3Undo); setup3Undo = null; } }
 /* Undo a section's Save: the section as it was before it (or as it started); refused when it was saved again since */
-async function undoSec3(sec, before, beforeDay, now) {
+async function undoSec3(sec, before, beforeDay, now, cw) {
   const open = !!setup3, kept = open ? null : ((await E3.rec('setup')) || {});
   const saved = open ? setup3.saved : (kept.sections || {}), savedDays = open ? setup3.days : (kept.days || {});
   if (!same3(saved[sec] || null, now)) { MSG3.post({ kind: 'toast', key: 'act3', text: 'Something changed it since. Undo that change first' }); return; }
@@ -517,10 +560,13 @@ async function undoSec3(sec, before, beforeDay, now) {
      section is put back, or its write, made from the save being undone, would land after this one and win */
   const me = open ? setup3 : null;
   if (me) me.busy = true;
-  const ok = await keepDraft3(sections, days, sec, open ? null : kept.typed);
+  const ok = await keepDraft3(sections, days, sec, open ? null : kept.typed, [sec]);
   if (me) me.busy = false;
   if (ok !== true) { MSG3.post({ kind: 'toast', key: 'act3', text: 'This could not be saved on this device. Nothing changed' }); return; }
   if (me && setup3 === me) { setup3.saved = sections; setup3.days = days; put3(sec, before || setup3.base[sec]); }
+  /* [fix B] the chat's draft goes back too; a section back as it started shows the chat's answer again, not saved */
+  if (typeof chat3UndoScreens === 'function') await chat3UndoScreens(sec, cw);
+  if (!before && me && setup3 === me && typeof chat3RefillSec === 'function') chat3RefillSec(sec);
   MSG3.post({ kind: 'toast', key: 'act3', text: 'Undone' });
 }
 /* opening setup again: every saved section comes back, in order (the accounts first: the others choose from them) */
@@ -554,8 +600,9 @@ async function saveSetup3() {
   let built;
   try { built = ANSWERS3.build(ans, { day: E3.today(), told: E3.told(), newId: E3.newId, currency: $('#s3Cur').value }); } catch (e) { err.textContent = e.message; return; }
   const ok = await E3.start(built.book);
+  if (!ok && E3.startWhy === 'there') return;   // another tab finished setup: its book is shown and said (burrow3:started)
   if (!ok) { err.textContent = 'This could not be saved on this device. Nothing changed'; return; }
-  await E3.rec('setup', null);
-  endSetup3();
+  endSetup3();   // first: no typed-keeping write is asked after this
+  await draftWrite3(null);
   renderHome3(); msg3('Saved on this device');
 }

@@ -167,7 +167,7 @@ const NO_SAVE = () => {
     ck('7. B3: and the other device shows it', await until(async () => /bread four/.test(await rowsText(B.p)), 3 * TICK + 1500), await rowsText(B.p));
 
     /* ---- 8. deleted on another device: found by the timed check ---- */
-    await B.p.click('#a3SetGo'); await until(async () => !!(await B.p.$('#a3CloudOff'))); await B.p.click('#a3CloudOff'); await T.w(100); await B.p.click('#a3CloudDel');
+    await B.p.click('#a3SetGo'); await until(async () => !!(await B.p.$('#a3CloudOff'))); await B.p.click('#a3CloudOff'); await T.w(100); await B.p.click('#a3CloudDel'); await T.w(200); await B.p.click('#a3CloudDelYes');
     ck('(B deleted the cloud copy)', await until(() => vault.rows.size === 0));
     ck('8. A finds it at a timed check and turns off, keeping its money', await until(async () => { const d = await device(A.p); return !!d && d.on === false && !!d.gone; }, 3 * TICK + 1500) && (await stored(A.p)).events.some(e => e.note === 'bread four'));
     ck('8. A says it was deleted on another device', await until(async () => /deleted on another device/.test(await band(A.p)), 2000), await band(A.p));

@@ -469,7 +469,7 @@
     return api;
   }
 
-  const api = { make, PATHS, listOf, Bad, OTHER, syncDiff };
+  const api = { make, PATHS, listOf, Bad, OTHER, syncDiff, SPEND_FROM, ACTION_NAMES: Object.keys(ACTIONS) };   // the last two are read by tests/controls3.test.js
   if (node) module.exports = api;
   else root.BurrowAct3 = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
