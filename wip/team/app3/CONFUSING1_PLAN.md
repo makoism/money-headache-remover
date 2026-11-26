@@ -12,3 +12,5 @@ What changes (chat only; the book, the engine and the saved book shape do not ch
 
 Not changed: what the AI may write, the write door, Undo, the engine, the book.
 Test: chat3_core.test.js "[CONFUSING 1]".
+
+qc-foundation on this plan (26 Nov): FAIL with four points, all taken in before building: (1) "the chat's own book" is a book that still holds a record written at the chat's fill (state.fill.told), and state.fill is cleared when there is no book; (2) nothing "closed" is saved on the cards: it is worked out from the book each time (setupShut), and only a "said" flag for the note is kept, reset when the book goes away; (3) the AI is sent its own past words with "(the app did not do this: nothing was added)" when they were marked; (4) every AI message of the turn is marked; a saved draft answer counts as done, a refused card as refused.
