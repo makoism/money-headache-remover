@@ -11696,9 +11696,9 @@ async function setupToAside3() {
   return d && (d.sections || d.typed) && (Object.keys(d.sections || {}).length || Object.keys(d.typed || {}).length) ? { names: setupNames3(d), typed: !!Object.keys(d.typed || {}).length } : null;
 }
 /* gives the entry put aside, null when there was no draft, false when it could not be written */
-const asideSetup3 = () => (draftQ3 = draftQ3.then(() => null, () => null).then(() => E3.recTurn(d => {
+const asideSetup3 = why => (draftQ3 = draftQ3.then(() => null, () => null).then(() => E3.recTurn(d => {
   if (!d.setup) return { next: null, out: null };
-  const entry = { at: E3.told(), draft: d.setup }, next = Object.assign({}, d, { setupAside: [entry].concat(d.setupAside || []) });
+  const entry = Object.assign({ at: E3.told(), draft: d.setup }, why ? { why } : {}), next = Object.assign({}, d, { setupAside: [entry].concat(d.setupAside || []) });
   delete next.setup;
   return { next, out: entry };
 })));
@@ -12351,9 +12351,17 @@ async function syncNow3(opts) {
     if (S3same(next, E3.book) === false && hold) { C3.heldMiss = true; C3.dirty = true; return r; }   // never replaced under a held layer, so the base stays too
     if (S3same(next, E3.book) === false) {
       if (r.firstJoin && E3.book) await keepCopy3('Before this device joined the cloud copy');
+      /* [qc-data-safety run 5 CONFUSING 4, by the cloud door; M61] a device joining part way through setup: the saved setup
+         answers are put aside first (Settings' kept list shows them), and back as they were when the book could not be saved */
+      let aside = null;
+      if (!E3.book && typeof asideSetup3 === 'function') {
+        if (typeof setup3 !== 'undefined' && setup3) closeSetup3();
+        aside = await asideSetup3('cloud');
+      }
       C3.applying = true;
       const ok = await E3.replace(next);
       C3.applying = false;
+      if (!ok && aside) await unasideSetup3(aside.at);
       if (ok) { try { redraw3(); } catch (e) { /* a screen's own fault: the book is saved */ } }   // the one redraw, as when another tab saved
       else {   // [B1] it would write again at every timed sync and still not land: stop, and say so once
         await keepCloud3(st, Object.assign({ failAt: st.failAt || Date.now() }, sends));
@@ -13070,8 +13078,8 @@ async function paintKept3() {
   if (!list.length && !asides.length) { el.innerHTML = dropped3(); wire(); return; }
   const when = at => `${esc3(day3(at.slice(0, 10), E3.today().slice(0, 4)))} ${esc3(at.slice(11, 16))}`;
   /* [qc-data-safety run 5 CONFUSING 4] setup answers a restore put aside: one row each, with Put it back */
-  const asideRows = asides.length ? `<p class="a3-sub" data-set="asidenote">Setup answers you had saved before a restore are kept. Put it back opens setup with them.</p>
-    <ul class="a3-rows">${asides.map(x => `<li data-aside="${esc3(x.at)}"><span data-set="aside">Setup answers from before the restore, ${when(x.at)}</span>
+  const asideRows = asides.length ? `<p class="a3-sub" data-set="asidenote">Setup answers you had saved are kept. Put it back opens setup with them.</p>
+    <ul class="a3-rows">${asides.map(x => `<li data-aside="${esc3(x.at)}"><span data-set="aside">Setup answers from before ${x.why === 'cloud' ? 'this device joined the cloud copy' : 'the restore'}, ${when(x.at)}</span>
       <button type="button" class="a3-btn" data-asideback>Put it back</button></li>`).join('')}</ul>` : '';
   const keptRows = list.length ? `<p class="a3-sub" data-set="keptnote">The money that was here before each restore is kept. Put it back brings that money back.${others}</p>
     <ul class="a3-rows">${list.map((c, i) => `<li data-kept="${esc3(c.id)}"${c.pin ? ' data-pin="1"' : ''}><span data-set="kept">${esc3(c.why)}, ${when(c.at)}${c.pin ? '. Kept until you drop it' : ''}</span>

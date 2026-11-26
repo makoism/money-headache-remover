@@ -257,8 +257,8 @@ async function paintKept3() {
   if (!list.length && !asides.length) { el.innerHTML = dropped3(); wire(); return; }
   const when = at => `${esc3(day3(at.slice(0, 10), E3.today().slice(0, 4)))} ${esc3(at.slice(11, 16))}`;
   /* [qc-data-safety run 5 CONFUSING 4] setup answers a restore put aside: one row each, with Put it back */
-  const asideRows = asides.length ? `<p class="a3-sub" data-set="asidenote">Setup answers you had saved before a restore are kept. Put it back opens setup with them.</p>
-    <ul class="a3-rows">${asides.map(x => `<li data-aside="${esc3(x.at)}"><span data-set="aside">Setup answers from before the restore, ${when(x.at)}</span>
+  const asideRows = asides.length ? `<p class="a3-sub" data-set="asidenote">Setup answers you had saved are kept. Put it back opens setup with them.</p>
+    <ul class="a3-rows">${asides.map(x => `<li data-aside="${esc3(x.at)}"><span data-set="aside">Setup answers from before ${x.why === 'cloud' ? 'this device joined the cloud copy' : 'the restore'}, ${when(x.at)}</span>
       <button type="button" class="a3-btn" data-asideback>Put it back</button></li>`).join('')}</ul>` : '';
   const keptRows = list.length ? `<p class="a3-sub" data-set="keptnote">The money that was here before each restore is kept. Put it back brings that money back.${others}</p>
     <ul class="a3-rows">${list.map((c, i) => `<li data-kept="${esc3(c.id)}"${c.pin ? ' data-pin="1"' : ''}><span data-set="kept">${esc3(c.why)}, ${when(c.at)}${c.pin ? '. Kept until you drop it' : ''}</span>

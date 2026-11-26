@@ -158,9 +158,17 @@ async function syncNow3(opts) {
     if (S3same(next, E3.book) === false && hold) { C3.heldMiss = true; C3.dirty = true; return r; }   // never replaced under a held layer, so the base stays too
     if (S3same(next, E3.book) === false) {
       if (r.firstJoin && E3.book) await keepCopy3('Before this device joined the cloud copy');
+      /* [qc-data-safety run 5 CONFUSING 4, by the cloud door; M61] a device joining part way through setup: the saved setup
+         answers are put aside first (Settings' kept list shows them), and back as they were when the book could not be saved */
+      let aside = null;
+      if (!E3.book && typeof asideSetup3 === 'function') {
+        if (typeof setup3 !== 'undefined' && setup3) closeSetup3();
+        aside = await asideSetup3('cloud');
+      }
       C3.applying = true;
       const ok = await E3.replace(next);
       C3.applying = false;
+      if (!ok && aside) await unasideSetup3(aside.at);
       if (ok) { try { redraw3(); } catch (e) { /* a screen's own fault: the book is saved */ } }   // the one redraw, as when another tab saved
       else {   // [B1] it would write again at every timed sync and still not land: stop, and say so once
         await keepCloud3(st, Object.assign({ failAt: st.failAt || Date.now() }, sends));

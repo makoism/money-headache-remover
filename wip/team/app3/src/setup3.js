@@ -510,9 +510,9 @@ async function setupToAside3() {
   return d && (d.sections || d.typed) && (Object.keys(d.sections || {}).length || Object.keys(d.typed || {}).length) ? { names: setupNames3(d), typed: !!Object.keys(d.typed || {}).length } : null;
 }
 /* gives the entry put aside, null when there was no draft, false when it could not be written */
-const asideSetup3 = () => (draftQ3 = draftQ3.then(() => null, () => null).then(() => E3.recTurn(d => {
+const asideSetup3 = why => (draftQ3 = draftQ3.then(() => null, () => null).then(() => E3.recTurn(d => {
   if (!d.setup) return { next: null, out: null };
-  const entry = { at: E3.told(), draft: d.setup }, next = Object.assign({}, d, { setupAside: [entry].concat(d.setupAside || []) });
+  const entry = Object.assign({ at: E3.told(), draft: d.setup }, why ? { why } : {}), next = Object.assign({}, d, { setupAside: [entry].concat(d.setupAside || []) });
   delete next.setup;
   return { next, out: entry };
 })));
