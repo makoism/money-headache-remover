@@ -13785,7 +13785,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     { name: 'draft_set', description: 'Save one setup section into the draft, its whole value. Nothing reaches the app until fill_book. Sections: country "JP"|"PH"|"XX"; currency "JPY"|"PHP"|"USD"|"EUR" (a change of currency drops the amounts saved before it: ask each again); banks [{name, amount, type?, confirmed?}] (first is where pay lands; confirmed true when the person gave the figure again today); pays [{name, amount, every: month|days|weeks|none, day?, day2?, n?, start?, shift?: before|after, bank?, afterTax, same?}]; cards [{name, owed, payDay, closeDay: day|"last"|"not sure", shift?, payFrom?, confirmed?}]; bills [{name, amount, day, every?: month|year, month?, from?}]; asked [{name, out: true|false}]; statements [{name, amount|"not sure"}]; payToday {landed: true|false}; free amount|null; min amount|null.',
       input_schema: { type: 'object', properties: { section: { type: 'string', enum: SECTIONS }, value: { description: 'The section\'s whole value.' } }, required: ['section', 'value'] } },
     { name: 'fill_book', description: 'Turn the draft into the person\'s Burrow. Only when they said to fill it in. Refused while NEEDED is not empty.', input_schema: { type: 'object', properties: {} } },
-    { name: 'change', description: 'Make up to ' + MAX_STEPS + ' changes, each a named step: ' + DO.join(', ') + '. landed {ref: the P, B or card A ref, amount? only if it was different, date? the day it landed}; bank_figure and card_figure {account, amount}. Fields: amount, account (A ref), every (add_bill: month|year|months, with month 1..12 for a year, n and start for months), from and to (A refs), line (L ref), goal (G ref), ref (the record: S, B, P, L or G ref), date (YYYY-MM-DD, today or before), note, name, day, day2, every (month|days|weeks1..4|none), start, when (now|next|once), target, due, owed, payDay, closeDay, type (bank|cash|ewallet), moved (true|false), shift (after|before: a card weekend rule), from (the A ref the money came from), afterFigure (true|false: moved after they looked at that bank on the day of its figure). change_account {account: a bank, cash or e-wallet A ref, name?, min?: its own Keep at least, 0 for none}.',
+    { name: 'change', description: 'Make up to ' + MAX_STEPS + ' changes, each a named step: ' + DO.join(', ') + '. landed {ref: the P, B or card A ref, amount? only if it was different, date? the day it landed}; bank_figure and card_figure {account, amount}. Fields: amount, account (A ref), every (add_bill: month|year|months, with month 1..12 for a year, n and start for months), from and to (A refs), line (L ref), goal (G ref), ref (the record: S, B, P, L or G ref; remove takes an S, B or L ref only: a pay or a goal cannot be removed in this app yet, so say that and that it can be changed on Plan), date (YYYY-MM-DD, today or before), note, name, day, day2, every (month|days|weeks1..4|none), start, when (now|next|once), target, due, owed, payDay, closeDay, type (bank|cash|ewallet), moved (true|false), shift (after|before: a card weekend rule), from (the A ref the money came from), afterFigure (true|false: moved after they looked at that bank on the day of its figure). change_account {account: a bank, cash or e-wallet A ref, name?, min?: its own Keep at least, 0 for none}.',
       input_schema: { type: 'object', properties: { steps: { type: 'array', items: { type: 'object', properties: { do: { type: 'string', enum: DO }, amount: num }, required: ['do'] } } }, required: ['steps'] } },
   ];
 
@@ -14186,6 +14186,12 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       if (!from || !to || !x || !d) return { bad: 'a move I could not read' };
       return { kind: 'moveMoney', args: [{ date: d, a: x, from, to }], text: `Move ${m(x)} from ${nm(from)} to ${nm(to)}, ${on(d)}`, amount: x };
     }
+    /* [qc-controls run 1 blocker 6] a pay or a goal cannot be removed anywhere in the app yet: said plainly, with where
+       it can be changed (Plan, tap it), never "a ref I do not know" */
+    if (what === 'remove' && /^[PG]\d/.test(String(a.ref || ''))) {
+      const which = String(a.ref).charAt(0) === 'P' ? 'a pay' : 'a goal';
+      return { bad: 'remove takes an S, B or L ref: ' + which + ' cannot be removed in this app yet. Say so, and that it can be changed on Plan', left: 'removing ' + which + ', which the app cannot do yet. You can change it on Plan: tap it' };
+    }
     if (what === 'remove' || what === 'end_bill' || what === 'end_line') {
       const id = ref(a.ref, what === 'end_line' ? 'L' : what === 'end_bill' ? 'BP' : 'SBL');
       if (!id) return { bad: 'a ' + what.replace('_', ' ') + ' for a ref I do not know' };
@@ -14440,7 +14446,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
         if (s.bad) {
           dropped.push(s.bad); if (s.payWith) state.askPay = true;
           /* a note that tells the AI to ask something is no words for the person */
-          left.push(/^(ask|which account)/i.test(s.bad) ? 'one step that needs an answer from you first' : DO_WORDS[a && a.do] || 'a change the assistant can\'t make here');
+          left.push(s.left || (/^(ask|which account)/i.test(s.bad) ? 'one step that needs an answer from you first' : DO_WORDS[a && a.do] || 'a change the assistant can\'t make here'));
         } else plan.push(s);
       }
       /* [AI_JOIN_FIXES H6] the answer to "card or bank?" is kept for this chat */

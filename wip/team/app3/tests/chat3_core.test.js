@@ -906,6 +906,18 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const g = K.GUIDE.find(x => x.key === 'fill').ask;
     ok(/loans, goals and budget lines/i.test(g) && /Plan/.test(g) && /Add a loan/.test(g), g);
   });
+  await t('[qc-controls run 1 blocker 6] remove is offered only for refs it can remove; a pay or a goal says it cannot be removed yet and where to change it', async () => {
+    const desc = K.TOOLS.find(x => x.name === 'change').description;
+    ok(/remove takes an S, B or L ref/.test(desc), 'the tool says which refs remove takes');
+    const h = page('2026-11-24'); await runSetup(h, FAKE.make(steps(SETUP)));
+    const before = JSON.stringify(h.book);
+    for (const [ref, what] of [['P1', 'a pay'], ['G1', 'a goal']]) {
+      const r = await K.turn(K.fresh(), 'remove it', h.deps(FAKE.make([say('', [call('change', { steps: [{ do: 'remove', ref }] })]), say('OK')])));
+      const n = lastNote(r).join(' | ');
+      ok(new RegExp('Not done: removing ' + what + ', which the app cannot do yet\\. You can change it on Plan: tap it').test(n), ref + ': ' + n);
+      eq(JSON.stringify(h.book), before, ref + ': nothing changed');
+    }
+  });
   console.log(bad ? `chat3_core: ${bad} of ${n} FAILED` : `chat3_core: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })();
