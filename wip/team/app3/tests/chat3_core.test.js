@@ -805,6 +805,9 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const res = FAKE.results(f.bodies[1])[0].text;
     ok(/^Nothing changed: /.test(res) && /Receipts, tap it/.test(res), res);
     ok(/WHERE ON THE SCREENS/.test(K.SYSTEM) && /Receipts, tap it/.test(K.SYSTEM) && /Settings/.test(K.SYSTEM), 'the map of the screens');
+    /* [LANE M, controls-9 follow-ups] Keep at least has a place on the map; after setup statement files go to Home, Add statements */
+    ok(/WHERE ON THE SCREENS[^]*Keep at least: Settings, Money/.test(K.SYSTEM), 'Keep at least is on the map of the screens');
+    ok(/after setup[^.]*Home, Add statements/i.test(K.SYSTEM.split('Files:')[1].split('\n')[0]), 'the files line sends statements to Home, Add statements after setup');
     eq(r.shown.filter(x => x.who === 'card' && x.card.kind === 'change').length, 0, 'nothing changed, no change card');
     const f2 = FAKE.make([say('ok')]);
     await K.turn(state, 'hi', Object.assign(h.deps(f2), { door: d0.door }));

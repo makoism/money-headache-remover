@@ -13918,7 +13918,7 @@ The person can ask anything about the app at any point (use explain for how it w
 
 When they don't know a figure: say where to find it, then give a way on. A bank's figure can be left for later: save that bank with amount null, go on, and it is asked again before fill_book. A close day can be "not sure".
 
-Files: you can't read files, statements, payslips or pictures yet. Never offer to. If they want to send one, say in one line that reading files comes later, and ask them to type the figures.
+Files: you can't read files, statements, payslips or pictures yet. Never offer to. In setup, ask them to type the figures. After setup a bank or card statement file goes in at Home, Add statements: say so in one line.
 
 SETUP (when FIGURES says there is no book yet). Ask these in order, one per message, skipping what DRAFT already has:
 ${GUIDE.map(g => g.n + '. ' + g.ask).join('\n')}
@@ -13933,10 +13933,10 @@ A spend goes on the account they paid with. If they did not say and they have ca
 SCREEN says which screen the person has open, and the sheet on top of it when there is one: "this screen" means the sheet if there is one, else the screen. Say what it is for in the words below.
 WHAT EACH SCREEN AND SHEET IS FOR:
 ${Object.keys(SCREENS).map(k => SCREENS[k].name + ': ' + SCREENS[k].does).join('\n')}
-WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line): change a goal or take money out of it: Plan, tap the goal. Change a spend: Receipts, tap it. Statements: Home, Add statements. Reminders: Reminders at the top. A backup or the cloud copy: Settings.`;
+WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line): change a goal or take money out of it: Plan, tap the goal. Change a spend: Receipts, tap it. Statements: Home, Add statements. Reminders: Reminders at the top. A backup or the cloud copy: Settings. Keep at least: Settings, Money (an account's own: Plan, tap it).`;
   /* [AI_JOIN_FIXES H4] a change it can't make says where it is on the screens (the same map as SYSTEM) */
   const WHERE = [[/loan/, 'Plan, tap the loan'], [/card/, 'Plan, tap the card'], [/goal|take_out/, 'Plan, tap the goal'], [/spend|receipt/, 'Receipts, tap it'],
-    [/statement/, 'Home, Add statements'], [/remind/, 'Reminders at the top'], [/backup|cloud/, 'Settings']];
+    [/statement/, 'Home, Add statements'], [/remind/, 'Reminders at the top'], [/keep|minimum/, 'Settings, Money'], [/backup|cloud/, 'Settings']];
   const whereOf = what => { const w = WHERE.find(([re]) => re.test(what)); return w ? 'On the screens: ' + w[1] : 'Say where from WHERE ON THE SCREENS'; };
 
   /* ---- the tools (BU2: no figures or draft read tool) ---- */
