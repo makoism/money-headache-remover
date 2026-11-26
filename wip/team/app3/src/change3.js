@@ -13,7 +13,8 @@
      why(b0, b1, today, j)     when safe to spend does not move: one true line why, from the engine's own dates and
                                flags, or null when no reason can be told truly (never a guess)
      amber(b0, b1, today)      a bank that now goes below zero and did not before: one plain line each (M47, never red)
-     said(b0, b1, today, j)    the Undo bar's words: the things, then safe to spend (or the why line), then the amber
+     said(b0, b1, today, j)    the Undo bar's words: the things, then safe to spend (or the why line), then the amber;
+                               nothing for a step that only logged money (Receipts and Check your bank word their own)
    A row: { key, label, before, after, money?: true (minor units), state?: 'new' | 'removed' }. Words rows hold words.
    Every figure is the engine's or the record's own; nothing here adds or takes away. Plain browser JavaScript. */
 (function (root) {
@@ -233,7 +234,9 @@
   /* the Undo bar's words after the step's own label: its things, safe to spend (or why it stays), a bank going below zero */
   function said(b0, b1, today, j) {
     if (!b0 || !b1) return '';
-    const home = G.homeOn(b1, today), rows = things(b0, b1, today, j), safe = figures(b0, b1, today)[0];
+    const rows = things(b0, b1, today, j);
+    if (!rows.length) return '';   // money logged (a spend, a check): Receipts and Check your bank word their own bar
+    const home = G.homeOn(b1, today), safe = figures(b0, b1, today)[0];
     const amounts = [].concat(...rows.filter(r => r.money).map(r => [r.before, r.after]), safe.before, safe.after).filter(x => typeof x === 'number');
     const fmt = SM.formatter(home, amounts);
     const parts = rows.slice(0, 4).map(r => rowText(r, fmt));

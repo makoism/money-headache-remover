@@ -60,6 +60,27 @@ async function spend(p, amt) { await p.click('[data-tab=receipts]'); await w(200
   await p.click('#a3Msg button'); await w(450);
   const b4 = await band(p);
   ck('and its Undo still works', /Undone/.test(b4.text) && !b4.undo, JSON.stringify(b4));
+  /* [coordinator follow-up, found twice; LESSONS 2] the Undo bar names what changed, its own before and after (the one
+     piece the assistant's card reads too, src/change3.js): Rent's amount; then Phone's, whose next one is after pay,
+     says why safe to spend stays, only because it is true */
+  await p.click('[data-tab=plan]'); await w(250);
+  const billId = name => p.$$eval('[data-bill]', (es, n) => (es.find(e => e.textContent.trim().startsWith(n)) || {}).dataset.bill, name);
+  const RENT = await billId('Rent'), PHONE = await billId('Phone');
+  const safeNow = async () => { await p.click('[data-tab=home]'); await w(250); return p.$eval('#a3Home [data-fig=safe]', e => Number((e.dataset.amt !== undefined ? e : e.querySelector('[data-amt]')).dataset.amt)); };
+  const yen = n => '¥' + n.toLocaleString('en-US');
+  const billTo = async (id, a) => { await p.click('[data-tab=plan]'); await w(250); await p.click(`[data-bill="${id}"]`); await w(300); await p.$eval('#pl-amount', (e, v) => { e.focus(); e.value = v; e.dispatchEvent(new Event('input', { bubbles: true })); e.blur(); }, String(a)); await p.click('[data-plbtn="0"]'); await w(450); };
+  let s0 = await safeNow();
+  await billTo(RENT, 92000);
+  let s1 = await safeNow();
+  const b7 = await band(p);
+  ck('Rent made 92,000 on Plan: the Undo bar says Rent, amount 72,000 to 92,000, and safe to spend before and after', b7.undo && b7.text.includes('Rent, amount: ¥72,000 to ¥92,000') && s1 !== s0 && b7.text.includes(`Safe to spend: ${yen(s0)} to ${yen(s1)}`), JSON.stringify([b7, s0, s1]));
+  s0 = s1;
+  await billTo(PHONE, 5000);
+  const b8 = await band(p);
+  ck('Phone made 5,000: the bar says Phone, amount 4,800 to 5,000, and why safe to spend stays (the next one is after pay)', b8.undo && b8.text.includes('Phone, amount: ¥4,800 to ¥5,000') && (await safeNow()) === s0 && b8.text.includes(`Safe to spend stays ${yen(s0)}: Phone is not due again before your next pay on 10 Dec`), JSON.stringify([b8, s0]));
+  await p.click('#a3Msg button'); await w(450);
+  await p.click('[data-tab=plan]'); await w(250);
+  ck('and its Undo puts Phone back', await p.$eval(`[data-bill="${PHONE}"]`, e => Number((e.dataset.amt !== undefined ? e : e.querySelector('[data-amt]')).dataset.amt)) === 4800);
   await c.close();
   /* in setup: a row removed inside the open sheet keeps its Undo there */
   {

@@ -4,7 +4,8 @@
 
    API (BurrowAct3 in a page, module.exports in node; the page's instance is ACT3, made in receipts3.js):
      const A = BurrowAct3.make({ book: () => book, put: async newBook => saved?, told: () => iso, newId: () => id,
-                                 today: () => 'YYYY-MM-DD', queue: <screens/messages queue>, check: book => throws? })
+                                 today: () => 'YYYY-MM-DD', queue: <screens/messages queue>, check: book => throws?,
+                                 said: (bookBefore, bookAfter, today, step) => words after the step's own on its Undo bar })
      A.logSpend({ date, a, acct, line | place, note })      a spend; `line: 'free'` (or none) is Free to spend
      A.refund({ date, a, acct, line, note })                money back: `in` with sub 'refund'; `line` gives it back
      A.moveMoney({ date, a, from, to, note })              money between two of your own accounts (`transfer`)
@@ -285,7 +286,7 @@
       if (!dry && !undoing) journalAdd(book, { id, label, words: words || LABELS[label] || label, moment: s.at, day: s.day, by: s.by, told: s.told,
         added: clone(w.log.added), edited: w.log.edited.map(keptEdit), removed: clone(w.log.removed), revived: clone(w.log.revived) });
       if (undoing) undoing(book, s);
-      return { book, step };
+      return { book, step, was: cur };
     }
     function run(label, fn, opts) {
       opts = opts || {};
@@ -304,7 +305,12 @@
         if (opts.after) opts.after(st);
         if (!opts.isUndo) steps.push(st);
         if (o.queue && !opts.quiet && !opts.isUndo) {
-          o.queue.post({ kind: 'undo', key: 'act3', text: opts.undo || LABELS[label] || label, action: { label: 'Undo', run: () => undo(planned.step.id) } });
+          /* [coordinator follow-up, found twice; LESSONS 2] the bar names what changed, its own before and after, and safe
+             to spend or why it stays (o.said: src/change3.js, the piece the assistant's card reads too) */
+          let more = '';
+          try { more = o.said ? o.said(planned.was, planned.book, o.today(), st) || '' : ''; } catch (e) { more = ''; }   // words only: a fault here never stops the save or its Undo
+          const words = opts.undo || LABELS[label] || label;
+          o.queue.post({ kind: 'undo', key: 'act3', text: more ? `${words}. ${more}` : words, action: { label: 'Undo', run: () => undo(planned.step.id) } });
         }
         listeners.forEach(f => { try { f(planned.step, opts); } catch (e) { /* a screen's redraw must not stop the others */ } });
         return { ok: true, step: planned.step, book: planned.book };
@@ -407,4 +413,4 @@
 /* the page's door: one for the whole page, over E3's book (src/e3.js), its Undo bar in the one message band (MSG3) */
 const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAct3.make({
   book: () => E3.book, put: b => E3.put(b), told: () => E3.told(), newId: () => E3.newId(), today: () => E3.today(),
-  queue: MSG3, check: b => BurrowEngine.lookahead.lookahead(b, E3.today()) }) : null;
+  queue: MSG3, check: b => BurrowEngine.lookahead.lookahead(b, E3.today()), said: (b0, b1, today, st) => (typeof CHANGE3 === 'object' ? CHANGE3.said(b0, b1, today, st) : '') }) : null;

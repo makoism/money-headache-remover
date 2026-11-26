@@ -8416,7 +8416,8 @@ RULES
      why(b0, b1, today, j)     when safe to spend does not move: one true line why, from the engine's own dates and
                                flags, or null when no reason can be told truly (never a guess)
      amber(b0, b1, today)      a bank that now goes below zero and did not before: one plain line each (M47, never red)
-     said(b0, b1, today, j)    the Undo bar's words: the things, then safe to spend (or the why line), then the amber
+     said(b0, b1, today, j)    the Undo bar's words: the things, then safe to spend (or the why line), then the amber;
+                               nothing for a step that only logged money (Receipts and Check your bank word their own)
    A row: { key, label, before, after, money?: true (minor units), state?: 'new' | 'removed' }. Words rows hold words.
    Every figure is the engine's or the record's own; nothing here adds or takes away. Plain browser JavaScript. */
 (function (root) {
@@ -8636,7 +8637,9 @@ RULES
   /* the Undo bar's words after the step's own label: its things, safe to spend (or why it stays), a bank going below zero */
   function said(b0, b1, today, j) {
     if (!b0 || !b1) return '';
-    const home = G.homeOn(b1, today), rows = things(b0, b1, today, j), safe = figures(b0, b1, today)[0];
+    const rows = things(b0, b1, today, j);
+    if (!rows.length) return '';   // money logged (a spend, a check): Receipts and Check your bank word their own bar
+    const home = G.homeOn(b1, today), safe = figures(b0, b1, today)[0];
     const amounts = [].concat(...rows.filter(r => r.money).map(r => [r.before, r.after]), safe.before, safe.after).filter(x => typeof x === 'number');
     const fmt = SM.formatter(home, amounts);
     const parts = rows.slice(0, 4).map(r => rowText(r, fmt));
@@ -8931,7 +8934,8 @@ const E3 = (() => {
 
    API (BurrowAct3 in a page, module.exports in node; the page's instance is ACT3, made in receipts3.js):
      const A = BurrowAct3.make({ book: () => book, put: async newBook => saved?, told: () => iso, newId: () => id,
-                                 today: () => 'YYYY-MM-DD', queue: <screens/messages queue>, check: book => throws? })
+                                 today: () => 'YYYY-MM-DD', queue: <screens/messages queue>, check: book => throws?,
+                                 said: (bookBefore, bookAfter, today, step) => words after the step's own on its Undo bar })
      A.logSpend({ date, a, acct, line | place, note })      a spend; `line: 'free'` (or none) is Free to spend
      A.refund({ date, a, acct, line, note })                money back: `in` with sub 'refund'; `line` gives it back
      A.moveMoney({ date, a, from, to, note })              money between two of your own accounts (`transfer`)
@@ -9212,7 +9216,7 @@ const E3 = (() => {
       if (!dry && !undoing) journalAdd(book, { id, label, words: words || LABELS[label] || label, moment: s.at, day: s.day, by: s.by, told: s.told,
         added: clone(w.log.added), edited: w.log.edited.map(keptEdit), removed: clone(w.log.removed), revived: clone(w.log.revived) });
       if (undoing) undoing(book, s);
-      return { book, step };
+      return { book, step, was: cur };
     }
     function run(label, fn, opts) {
       opts = opts || {};
@@ -9231,7 +9235,12 @@ const E3 = (() => {
         if (opts.after) opts.after(st);
         if (!opts.isUndo) steps.push(st);
         if (o.queue && !opts.quiet && !opts.isUndo) {
-          o.queue.post({ kind: 'undo', key: 'act3', text: opts.undo || LABELS[label] || label, action: { label: 'Undo', run: () => undo(planned.step.id) } });
+          /* [coordinator follow-up, found twice; LESSONS 2] the bar names what changed, its own before and after, and safe
+             to spend or why it stays (o.said: src/change3.js, the piece the assistant's card reads too) */
+          let more = '';
+          try { more = o.said ? o.said(planned.was, planned.book, o.today(), st) || '' : ''; } catch (e) { more = ''; }   // words only: a fault here never stops the save or its Undo
+          const words = opts.undo || LABELS[label] || label;
+          o.queue.post({ kind: 'undo', key: 'act3', text: more ? `${words}. ${more}` : words, action: { label: 'Undo', run: () => undo(planned.step.id) } });
         }
         listeners.forEach(f => { try { f(planned.step, opts); } catch (e) { /* a screen's redraw must not stop the others */ } });
         return { ok: true, step: planned.step, book: planned.book };
@@ -9334,7 +9343,7 @@ const E3 = (() => {
 /* the page's door: one for the whole page, over E3's book (src/e3.js), its Undo bar in the one message band (MSG3) */
 const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAct3.make({
   book: () => E3.book, put: b => E3.put(b), told: () => E3.told(), newId: () => E3.newId(), today: () => E3.today(),
-  queue: MSG3, check: b => BurrowEngine.lookahead.lookahead(b, E3.today()) }) : null;
+  queue: MSG3, check: b => BurrowEngine.lookahead.lookahead(b, E3.today()), said: (b0, b1, today, st) => (typeof CHANGE3 === 'object' ? CHANGE3.said(b0, b1, today, st) : '') }) : null;
 /* ---------- plan3_write: the Plan tab's steps, written through act3 (SCHEMA_V3 sections 3, 4, 5 and 8) ----------
    Each function is one step for ACT3.run(label, w => PLAN3W.<name>(w, ...)): it turns what the person typed into plan
    records and works nothing out (the engine does: engine/periods.js scheduleView gives each schedule's first day a
