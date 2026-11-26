@@ -522,15 +522,15 @@
   function mainQuestion(copy, which, mins) {
     const kv = id => (copy.keptVersions || []).find(k => k.id === id);
     const mk = which.find(q => q.of === 'home.main');
-    const banks = new Set([].concat(mk ? kv(mk.kept).versions.map(v => v.v && v.v.acct) : [], copy.home && copy.home.main ? [copy.home.main.v.acct] : [], mins.map(q => q.account)).filter(Boolean));
+    const banks = new Set([].concat(mk ? kv(mk.kept).versions.map(v => v.v && v.v.acct) : [], copy.home && copy.home.main && copy.home.main.v ? [copy.home.main.v.acct] : [], mins.map(q => q.account)).filter(Boolean));
     const accts = which.filter(q => kv(q.kept).in === 'accounts' && banks.has(q.of) && new Set(kv(q.kept).versions.map(v => canon(v.minBank === undefined ? null : v.minBank))).size > 1);
     const parts = (mk ? 1 : 0) + accts.length + mins.length;
     if (parts < 2 || !(mk || mins.length)) return null;
     const kept = [].concat(mk ? [mk.kept] : [], accts.map(q => q.kept)).sort();
-    const acct = mins.length ? mins[0].account : accts.length ? accts[0].of : copy.home.main.v.acct;
+    const acct = mins.length ? mins[0].account : accts.length ? accts[0].of : ((copy.home.main || {}).v || {}).acct;   // [marker] v null is not set
     const a = (copy.accounts || []).find(x => x.id === acct) || {};
     const options = [...new Set([].concat(...kept.map(id => kv(id).versions.map(v => v.by))))].filter(Boolean).sort();
-    return { q: 'main', account: acct, kept, main: copy.home.main.v.min == null ? null : copy.home.main.v.min, own: a.minBank == null ? null : a.minBank, options };
+    return { q: 'main', account: acct, kept, main: ((copy.home.main || {}).v || {}).min == null ? null : copy.home.main.v.min, own: a.minBank == null ? null : a.minBank, options };
   }
   function afterSync(copy) {
     const c = closedChecks(copy);
@@ -604,13 +604,13 @@
       if (pick === 'reopen') Object.assign(a, { closed: null }, stamp);
       else if (pick === 'move') {   // what is left goes to the main bank, dated the closing day, as the closing's next record [S3]
         const n = out.events.filter(e => isClosing(e, a.id)).length + 1;
-        const main = out.home.main.v.acct;
+        const main = ((out.home.main || {}).v || {}).acct;   // [marker] v null is not set
         const rec = q.left > 0 ? { acct: a.id, acct2: main, a: q.left } : { acct: main, acct2: a.id, a: -q.left };
         out.events.push(Object.assign({ id: 'close:' + a.id + ':' + n, k: 'transfer', date: a.closed }, rec, { told: stamp.at }, stamp));
       }
     } else if (q.q === 'minimum') {
       const a = out.accounts.find(x => x.id === q.account);
-      const min = pick === 'own' ? a.minBank : out.home.main.v.min;
+      const min = pick === 'own' ? a.minBank : (((out.home.main || {}).v || {}).min ?? null);   // [marker] v null is not set
       out.home.main = Object.assign({}, out.home.main, { v: { acct: q.account, min } }, stamp);
       Object.assign(a, { minBank: null }, stamp);
     } else if (q.q === 'main') {   // [AW4] one device's view: its version of each kept item, then the minimum from that view
