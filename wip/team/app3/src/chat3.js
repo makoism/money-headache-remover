@@ -157,7 +157,8 @@ function chat3Turn(t) {
 /* the parts every form of the panel shares: the log, the box, the privacy line and "See what is sent", the ways when off */
 function chat3Inner() {
   const st = CHAT3.state || CHAT3C.fresh();
-  const welcome = chat3Full() && !st.turns.length ? CHAT3C.welcome().map(w => `<p class="a3-ask-ai">${esc3(w)}</p>`).join('') : '';
+  /* [qc-novice C8] the welcome and its first question stay at the top of the chat after the first message */
+  const welcome = chat3Full() ? CHAT3C.welcome().map(w => `<p class="a3-ask-ai">${esc3(w)}</p>`).join('') : '';
   const off = CHAT3.off || CHAT3.failed ? `<div class="a3-card" data-card="chat-off"><p class="a3-sub">${esc3(CHAT3.off ? CHAT3_WORDS.off : CHAT3_WORDS.failed)}</p><div class="a3-chat-ways">
       ${chat3Full() ? '<button type="button" class="a3-btn" id="a3ChatScreens">Set up on the screens</button>' : ''}
       <button type="button" class="a3-btn" id="a3ChatAny">Use any AI</button></div><div id="a3ChatAnyBox"></div></div>` : '';

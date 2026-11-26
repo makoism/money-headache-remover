@@ -132,6 +132,8 @@ async function say(p, text) { await p.$eval('#a3ChatIn', (e, v) => { e.value = v
     await say(p, 'hi there');
     ck('the message went through the page\'s relay, with x-app and the core\'s body', p.__sent.length === 1 && p.__sent[0].headers['x-app'] === 'mhr2000' && p.__sent[0].body.max_tokens === 2000 && /^[a-z0-9]{20}$/.test(p.__sent[0].body.anon), JSON.stringify(p.__sent[0] && p.__sent[0].body).slice(0, 200));
     ck('the person\'s words and the answer show', JSON.stringify(await turns(p)) === '["hi there","Heard: hi there"]', JSON.stringify(await turns(p)));
+    /* [qc-novice C8] the welcome and its first question stay above the first message, never cleared by it */
+    ck('C8: after the first message the welcome and the first question are still in the chat, above it', await p.$eval('#a3ChatLog', e => { const t = e.textContent, w = t.indexOf("I'll set up your Burrow with you"), h = t.indexOf('hi there'); return w >= 0 && h > w; }), await p.$eval('#a3ChatLog', e => e.textContent.slice(0, 200)));
     fail.on = true;
     await say(p, 'are you there');
     ck('a relay that fails says so, puts the message back and shows the ways', /didn't go through: the AI did not answer \(500\)/.test(await p.$eval('#a3ChatLog', e => e.textContent)) && (await p.$eval('#a3ChatIn', e => e.value)) === 'are you there' && await shows(p, '#a3ChatAny'));
