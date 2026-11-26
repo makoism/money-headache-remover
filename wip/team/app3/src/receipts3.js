@@ -13,14 +13,16 @@ const RC_OWN3 = { bank: 1, cash: 1, ewallet: 1, wallet: 1 };
 /* ---- what is in the book, by name (lookups, nothing worked out) ---- */
 const rcLive3 = x => x && !x.gone;
 function rcAccounts3(kinds) { return ((E3.book && E3.book.accounts) || []).filter(a => rcLive3(a) && kinds[a.type] && !a.closed); }
-/* [qc-foundation confirm on monthrule, 26 Nov; M51] a line that has ended (its `ends` on or before today) is not offered
-   for a new spend; a record already filed to it keeps it, marked ended, so it can still be changed (`keep`) */
+/* [coordinator 18; M7, M31, M51] a line is offered while it takes a spend today, by the engine's one rule (lineTakes):
+   with fixed pay an ended line stays to the end of the pay period it ended in, marked ended; a record already filed to
+   a line that no longer takes one keeps it, marked ended, so it can still be changed (`keep`) */
 function rcFors3(keep) {
-  const b = E3.book || {}, out = [{ v: 'line:free', name: 'Free to spend' }];
+  const b = E3.book || {}, out = [{ v: 'line:free', name: 'Free to spend' }], day = E3.today();
+  let r = null;
+  try { r = E3.view(day); } catch (e) { r = null; }
   for (const l of ((b.plan || {}).budgets || []).filter(rcLive3)) {
-    const ended = !!l.ends && l.ends <= E3.today();
-    if (!ended) out.push({ v: 'line:' + l.id, name: l.name });
-    else if (l.id === keep) out.push({ v: 'line:' + l.id, name: l.name + ' (ended)' });
+    const takes = !l.ends || !r || BurrowEngine.lookahead.lineTakes(r, l.id, day);   // no answer: the door still checks
+    if (takes || l.id === keep) out.push({ v: 'line:' + l.id, name: l.ends ? `${l.name} (ended)` : l.name });
   }
   for (const g of (b.places || []).filter(rcLive3)) out.push({ v: 'place:' + g.id, name: g.name });
   return out;

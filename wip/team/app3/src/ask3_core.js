@@ -66,9 +66,9 @@
     const shA = sh && r.accounts[sh.account] && r.accounts[sh.account].real;
     if (shA) out.push(`How the short amount is worked out: ${SM.sumLine(shA.whyParts, shA.headroom, r.accounts[sh.account].currency)}`);
     const pm = p || r.month, perW = p ? 'pay period' : 'month';   // [F2] no fixed pay: this month's lines, from the engine
-    /* [qc-foundation confirm on monthrule, 26 Nov; M4, M51] a line that has ended gets no ref: no new spend can go to it */
-    const endedL = new Set(((book.plan || {}).budgets || []).filter(l => live(l) && l.ends && l.ends <= today).map(l => l.id));
-    const lines = ((pm && pm.lines) || []).filter(l => !endedL.has(l.id));
+    /* [coordinator 18; M3, M4, M51] a line gets a ref while it takes a spend today, by the engine's one rule (lineTakes):
+       with fixed pay an ended line keeps its ref to the end of the pay period it ended in */
+    const lines = ((pm && pm.lines) || []).filter(l => LA.lineTakes(r, l.id, today));
     if (lines.length) {
       // [QC F5, B2] the amount that counts this period, the full amount a period beside it only when they differ
       out.push(`Budget lines this ${perW} (ref | name | amount | left):\n` + lines.map((l, i) => { const ref = 'L' + (i + 1); refs[ref] = l.id; return `${ref} | ${l.name} | ${m(l.counts)}${l.counts !== l.amount ? ` (part of ${m(l.amount)} a ${p ? 'period' : 'month'}, for the days left)` : ''} | ${m(l.left)} left`; }).join('\n'));

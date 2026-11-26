@@ -31,6 +31,7 @@
   'use strict';
   const node = typeof module === 'object' && module.exports;
   const C = node ? require('../../store/clock.js') : root.BurrowClock;
+  const ENG = () => (node ? require('../../engine/lookahead.js') : root.BurrowEngine.lookahead);
   const PATHS = { events: ['events'], checkins: ['checkins'], accounts: ['accounts'], schedules: ['schedules'], places: ['places'],
     people: ['people'], budgets: ['plan', 'budgets'], shares: ['plan', 'shares'] };
   const SPEND_FROM = { bank: 1, cash: 1, ewallet: 1, wallet: 1, card: 1, paylater: 1 };   // where a spend can be paid from
@@ -73,9 +74,17 @@
     else account(book, e.acct, SPEND_FROM, e.k === 'in' ? 'the money came back to' : 'it was paid from');
     if (e.line != null && e.place != null) bad('Pick a line or a place, not both');
     if (e.line != null && e.line !== 'free' && !((book.plan || {}).budgets || []).some(l => live(l) && l.id === e.line)) bad('That line is not in your plan any more. Pick another');
-    /* [qc-foundation confirm on monthrule, 26 Nov; M7, M51] a line that has ended takes nothing dated after its end */
+    /* [qc-foundation second confirm on monthrule, coordinator 18; M7, M31, M51] a line that has ended takes a spend by the
+       engine's one rule (lookahead.lineTakes): with fixed pay up to the end of the pay period it ended in, with no fixed
+       pay up to its end day */
     const ln = e.line != null && e.line !== 'free' && ((book.plan || {}).budgets || []).find(l => live(l) && l.id === e.line);
-    if (ln && ln.ends && e.date > ln.ends) bad(ln.name + ' ended on ' + dayWords(ln.ends) + '. Pick another line');
+    if (ln && ln.ends) {
+      const LA = ENG(), res = LA.lookahead(book, today);
+      if (!LA.lineTakes(res, ln.id, e.date)) {
+        const last = LA.lineLastDay(res, ln.id);
+        bad(ln.name + ' ended on ' + dayWords(ln.ends) + (last > ln.ends ? ' and takes spends dated up to ' + dayWords(last) : '') + '. Pick another line');
+      }
+    }
     if (e.place != null && !(book.places || []).some(g => live(g) && g.id === e.place)) bad('That place is not there any more. Pick another');
     if (e.note != null && typeof e.note !== 'string') bad('A note is words');
   }

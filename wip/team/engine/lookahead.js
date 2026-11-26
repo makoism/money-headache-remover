@@ -835,6 +835,7 @@
     // ----- the plan: shares and budget lines [B1, B2, B8, O4, T watch, V] -----
     const plan = book.plan || {};
     const budgets = (plan.budgets || []).filter(l => l && !l.gone);
+    const endsOf = id => (budgets.find(l => l.id === id) || {}).ends || null;   // the day a line was ended (Plan's End)
     const shares = (plan.shares || []).filter(x => x && !x.gone && x.free != null);
     // A change applies from the first period start on or after the day it was made [T watch, V]
     // [BJ2] an amount set for the first time carries the day it was set: the period it was set in has it, a period
@@ -1111,6 +1112,18 @@
       const next = pays.filter(o => !o.settled && (n.start === null || o.land > n.start)).sort((x, z) => x.land - z.land)[0];
       const waiting = !!next && next.land <= today;
       const state = !next ? null : next.land >= today ? 'coming' : nextPays.includes(next) ? 'late' : 'notSeen';
+      // [qc-foundation second confirm on monthrule, coordinator 18; M7, M31, M51] the one rule for "does this line take
+      // a spend dated on a day" (lineTakes below): `closes` is the first day it takes none, null while it is open. A
+      // line that ended stays open to the end of the pay period it ended in, as its amount here does ("Ends after this
+      // pay period"): it closes on the pay that starts the next period (while that pay is late, the day after the end)
+      const closesOf = id => {
+        const ends = endsOf(id);
+        if (!ends) return null;
+        const e = dayNum(ends);
+        if (n.start === null || e >= n.start) return next ? dayStr(Math.max(next.land, e + 1)) : null;
+        const after = allStartDays.filter(d => d > e);
+        return dayStr(after.length ? Math.min(...after) : Math.max(n.start, e + 1));
+      };
       res.period = {
         start: n.start === null ? null : dayStr(n.start),
         end: next ? dayStr(waiting ? today : next.land - 1) : n.end === null ? null : dayStr(Math.max(today, n.end - 1)),
@@ -1118,7 +1131,7 @@
         nextPay: next ? { occ: next.id, due: dayStr(next.due), state } : null,
         // [QC F5, B2] amount: the line's full amount a period; counts: the part that counts in this period (less when it
         // started mid-period); spent; left = counts - spent; over: how far past it, taken from safe to spend
-        lines: (planLeft.lines || []).map(l => ({ id: l.src.id, name: l.name, acct: l.acct, per: l.per, amount: l.amount, left: l.left, counts: l.counts, spent: l.spent, over: Math.max(0, -l.left) })),
+        lines: (planLeft.lines || []).map(l => ({ id: l.src.id, name: l.name, acct: l.acct, per: l.per, amount: l.amount, left: l.left, counts: l.counts, spent: l.spent, over: Math.max(0, -l.left), closes: closesOf(l.src.id) })),
         free: planLeft.free ? { acct: planLeft.free.acct, per: planLeft.free.per, amount: planLeft.free.amount, left: planLeft.free.left, counts: planLeft.free.counts } : null };
     } else res.period = null;   // [B4] no fixed pay: no periods
     // [F2, qc-foundation on the month rule build, 26 Nov] no fixed pay: this calendar month's lines and Free to spend,
@@ -1126,7 +1139,8 @@
     if (!periodStream) {
       const [my, mm] = ymOf(today);
       res.month = { start: dayStr(dayIn(my, mm, 1)), end: dayStr(dayIn(my, mm + 1, 1) - 1),
-        lines: (planLeft.lines || []).map(l => ({ id: l.src.id, name: l.name, acct: l.acct, per: l.per, amount: l.amount, left: l.left, counts: l.counts, spent: l.spent, over: Math.max(0, -l.left) })),
+        // [coordinator 18] with no fixed pay a line that ended closes the day after its end day (lineTakes below)
+        lines: (planLeft.lines || []).map(l => ({ id: l.src.id, name: l.name, acct: l.acct, per: l.per, amount: l.amount, left: l.left, counts: l.counts, spent: l.spent, over: Math.max(0, -l.left), closes: endsOf(l.src.id) ? dayStr(dayNum(endsOf(l.src.id)) + 1) : null })),
         free: planLeft.free ? { acct: planLeft.free.acct, per: planLeft.free.per, amount: planLeft.free.amount, left: planLeft.free.left, counts: planLeft.free.counts } : null };
     } else res.month = null;
     // [periods.js] opts.periods: every period gone by, oldest first, each counted only from what is dated inside it, with
@@ -1537,7 +1551,15 @@
     const away = (res && res.dropped) || {};
     return (book.events || []).filter(e => e && !e.gone && !Object.prototype.hasOwnProperty.call(away, e.id));
   }
-  const api = { lookahead, countOnce };
+  /* [qc-foundation second confirm on monthrule, coordinator 18; M3, M4, M7, M31, M51] the one rule every screen, the
+     assistant and the write door read: does budget line `id` take a spend dated `day`? From the look ahead's answer
+     (`res`): the line's `closes` on the period (fixed pay) or the month (no fixed pay). A line the answer does not list
+     is not refused here (the door checks that it is in the plan). */
+  function lineOf(res, id) { const pm = res && (res.period || res.month); return ((pm && pm.lines) || []).find(l => l.id === id) || null; }
+  function lineTakes(res, id, day) { const l = lineOf(res, id); return !l || !l.closes || day < l.closes; }
+  /* the last day line `id` takes a spend (the day before it closes), null while it is open */
+  function lineLastDay(res, id) { const l = lineOf(res, id); return l && l.closes ? D.dayStr(D.dayNum(l.closes) - 1) : null; }
+  const api = { lookahead, countOnce, lineOf, lineTakes, lineLastDay };
   if (node) module.exports = api;
   else (root.BurrowEngine = root.BurrowEngine || {}).lookahead = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
