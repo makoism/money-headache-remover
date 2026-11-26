@@ -74,6 +74,7 @@ page|tests/e3_period.js|e3_period: ALL PASS||300|the period by its dates
 page|tests/e3_receipts.js|e3_receipts: ALL PASS||300|Receipts
 page|tests/e3_listfix.js|e3_listfix: ALL PASS||300|the LISTFIX fixes on the page (app3/LISTFIX.md): gaps in Receipts and the rest
 page|tests/e3_cardgap.js|e3_cardgap: ALL PASS||300|a card's gap across pay day (CARDGAP): Mako's shape from setup, cards typed 6 and 13 Dec, two rows in Receipts, the rows add up to each period's spent, Plan and Home agree, a reload
+page|tests/e3_nsfix.js|e3_nsfix: ALL PASS||300|qc-north-star B1 to B3: the "?" on Home's Free to spend card, no stale Undo bar after a restore, the chat box whole at 320
 page|tests/e3_cardpay.js|e3_cardpay: ALL PASS||300|Check your bank asks whether a card's unticked payment went out when the card shows far less than the app had; Yes ticks it (M11, M27)
 page|tests/e3_doors.js|e3_doors: ALL PASS||300|Receipts' two doors at 320 (M22): Money went out and Money came in, Refund and Moved under them, one of each door saved
 page|tests/e3_moved1.js|e3_moved1: ALL PASS||300|Moved with one account of your own says a second account is needed, no empty To list and no Save (K18)
@@ -173,7 +174,7 @@ page_tests_for() {   # page_tests_for <changed path, relative to app3/>
     src/receipts3.js)         echo e3_removes e3_receipts e3_listfix e3_moneyin e3_bigspend e3_stmt_once e3_period e3_names e3_doors e3_moved1 e3_moved2 e3_cardgap ;;
     src/plan3.js|src/plan3_write.js) echo e3_accounts e3_billyear e3_payfrom e3_removes e3_aijoin e3_plan e3_rhythms e3_lineshare e3_homeplan e3_paychange e3_names ;;
     src/setup3.js|src/answers3.js) echo e3_twodrafts e3_fillcard e3_setup e3_setupfix e3_setup6 e3_income2 e3_weeks3 e3_first e3_onepay e3_overdrawn e3_paytoday e3_chatwalk e3_chat e3_setup2tabs e3_setuplater e3_tabsetup ;;
-    src/chat3*.js)            echo e3_twodrafts e3_ailog e3_aiwords e3_fillcard e3_cloudfirst e3_aijoin e3_chat e3_chatwalk e3_fakeai_page e3_fillundo e3_invite e3_back e3_cloudhold ;;
+    src/chat3*.js)            echo e3_nsfix e3_twodrafts e3_ailog e3_aiwords e3_fillcard e3_cloudfirst e3_aijoin e3_chat e3_chatwalk e3_fakeai_page e3_fillundo e3_invite e3_back e3_cloudhold ;;
     src/start3.js)            echo e3_first e3_file e3_try e3_chat e3_cloudtake ;;
     src/back3.js)             echo e3_back e3_undobar e3_checkin e3_plan e3_receipts e3_setupfix e3_stmt e3_remind e3_backup e3_tabs e3_stalesheet e3_cloudhold ;;
     src/stmt3*.js)            echo e3_stmt e3_stmt_once e3_walk4 e3_invite e3_chat ;;
