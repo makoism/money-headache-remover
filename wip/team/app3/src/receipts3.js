@@ -58,6 +58,15 @@ function sure3(host, words, yes, run) {
   host.querySelector('[data-sureno]').addEventListener('click', () => { host.innerHTML = ''; });
   host.querySelector('[data-sureno]').focus();
 }
+/* [coordinator, slice 10; loancheck_build CONFUSING 4] the one question before a figure far from what the app expected is
+   saved (the words: screens/status.js farText): Yes saves it as typed; Fix it keeps the figure in its box, nothing saved */
+function farSure3(host, text, yes, fix) {
+  if (!host) return;
+  host.innerHTML = `<div class="a3-sure" data-far><p class="a3-warn">${esc3(text)}</p><div class="a3-actions"><button type="button" class="a3-btn solid" data-faryes>Yes</button><button type="button" class="a3-btn" data-farfix>Fix it</button></div></div>`;
+  host.querySelector('[data-faryes]').addEventListener('click', () => { host.innerHTML = ''; yes(); });
+  host.querySelector('[data-farfix]').addEventListener('click', () => { host.innerHTML = ''; fix(); });
+  host.querySelector('[data-farfix]').focus();
+}
 /* [M7, M61; qc-data-safety B2] what the book holds that is dated or told after today (a backup or another device whose
    clock was ahead): not counted yet by the engine's rule, and never hidden. Listed apart, found by search, opened and
    removed like any row */

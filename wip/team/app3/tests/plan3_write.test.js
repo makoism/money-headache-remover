@@ -472,6 +472,17 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     const g = W.loanCheckArgs(h.book, DAY, h.loan, { amount: 840000, answers: { [h.occ('2027-01-27')]: 'no' } }, { sameIsNothing: false });
     eq([g.amount, g.day, g.yes, g.no], [840000, DAY, [], [h.occ('2027-01-27')]]);
   });
+  /* [qc-numbers loancheck_build CONFUSING 4] a loan figure far from what the app shows still owed that day asks once before
+     it is saved, by the bank check's one rule (engine/checkin.js farFigure) and in its words (screens/status.js farText) */
+  await tk('loanFar: the bank check\'s far rule on what is still owed that day, in its words; null when near', async () => {
+    const h = await kenji(); DAY = '2027-02-03';
+    const m = x => SMF.format(x, 'JPY');
+    eq(W.loanFar(h.book, h.loan, 8400000, DAY), `That is ${m(7560000)} more than expected. Is ${m(8400000)} right?`);
+    eq(W.loanFar(h.book, h.loan, 999999999, DAY), `That is ${m(999159999)} more than expected. Is ${m(999999999)} right?`);
+    eq(W.loanFar(h.book, h.loan, 812400, DAY), null);
+    eq(W.loanFar(h.book, h.loan, 840000, DAY), null);
+    eq(W.loanFar(h.book, h.loan, 845000, '2026-12-01'), null, 'by the day typed: 870,000 owed on 1 Dec');
+  });
   /* [qc-numbers loancheck_build CONFUSING 1, LESSONS 2] one payment, one date: 27 Dec 2026 is a Sunday, so a loan paid on
      the 27th with the weekend rule "after" pays on Monday 28 Dec. Every place that names that payment says 28 Dec, through
      one shared piece (payDay / payName); its id stays <loan>@2026-12-27 */

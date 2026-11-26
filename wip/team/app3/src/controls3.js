@@ -10,7 +10,7 @@
   'use strict';
   const DOOR_KINDS = ['add', 'change', 'end', 'remove'];
   /* PLAN3W exports that are not steps (they list what a pay change would ask about) */
-  const HELPERS = ['linesEachPay', 'linesEachMonth', 'loanQuestions', 'loanCheckArgs', 'payDay', 'payName'];
+  const HELPERS = ['linesEachPay', 'linesEachMonth', 'loanQuestions', 'loanCheckArgs', 'payDay', 'payName', 'loanFar'];
   /* writes that go through act3 without a PLAN3W step: the check-in writer, a statement import, setup's fill */
   const OTHER_ACTIONS = ['checkIn', 'statementsAdded', 'fill', 'undo'];
   const ROWS = [

@@ -92,13 +92,33 @@
     const D = node ? require('./dates.js') : root.BurrowEngine.dates;
     return D.dayStr(D.dayNum(prev) + 1);
   }
+  // [coordinator, slice 10: a check typed 950,000 meaning 99,000] A typed figure far from what the app expected: more than
+  // double it, less than half of it, or off by more than the pay amount. The one rule every screen and the assistant
+  // ask by, before saving. Gives null, or { dir: 'more' | 'less', by } (minor units). `pay` is the usual pay (0 or null:
+  // that test is left out); with nothing expected (0 or less) only the pay test counts.
+  function farFigure(expected, typed, pay) {
+    if (!Number.isInteger(expected) || !Number.isInteger(typed) || typed === expected) return null;
+    const by = Math.abs(typed - expected), dir = typed > expected ? 'more' : 'less';
+    const far = (expected > 0 && (typed > 2 * expected || 2 * typed < expected)) || (pay > 0 && by > pay);
+    return far ? { dir, by } : null;
+  }
+  // the usual pay, for farFigure: the largest pay amount in force today (0 when there is none)
+  function usualPay(book, day) {
+    let best = 0;
+    for (const s of book.schedules || []) {
+      if (!s || s.gone || s.kind !== 'income' || (s.ends && s.ends < day)) continue;
+      let a = 0; for (const st of s.steps || []) if (st && !st.gone && (st.from == null || st.from <= day) && Number.isInteger(st.amount)) a = st.amount;
+      if (a > best) best = a;
+    }
+    return best;
+  }
   function apply(book, out) {
     const b = JSON.parse(JSON.stringify(book));
     b.events = (b.events || []).concat(out.events);
     b.checkins = (b.checkins || []).concat(out.checkins);
     return b;
   }
-  const api = { checkIn, apply, landedFrom };
+  const api = { checkIn, apply, landedFrom, farFigure, usualPay };
   if (node) module.exports = api;
   else (root.BurrowEngine = root.BurrowEngine || {}).checkin = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

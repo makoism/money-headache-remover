@@ -4271,13 +4271,33 @@ details summary { min-height: 44px; }
     const D = node ? require('./dates.js') : root.BurrowEngine.dates;
     return D.dayStr(D.dayNum(prev) + 1);
   }
+  // [coordinator, slice 10: a check typed 950,000 meaning 99,000] A typed figure far from what the app expected: more than
+  // double it, less than half of it, or off by more than the pay amount. The one rule every screen and the assistant
+  // ask by, before saving. Gives null, or { dir: 'more' | 'less', by } (minor units). `pay` is the usual pay (0 or null:
+  // that test is left out); with nothing expected (0 or less) only the pay test counts.
+  function farFigure(expected, typed, pay) {
+    if (!Number.isInteger(expected) || !Number.isInteger(typed) || typed === expected) return null;
+    const by = Math.abs(typed - expected), dir = typed > expected ? 'more' : 'less';
+    const far = (expected > 0 && (typed > 2 * expected || 2 * typed < expected)) || (pay > 0 && by > pay);
+    return far ? { dir, by } : null;
+  }
+  // the usual pay, for farFigure: the largest pay amount in force today (0 when there is none)
+  function usualPay(book, day) {
+    let best = 0;
+    for (const s of book.schedules || []) {
+      if (!s || s.gone || s.kind !== 'income' || (s.ends && s.ends < day)) continue;
+      let a = 0; for (const st of s.steps || []) if (st && !st.gone && (st.from == null || st.from <= day) && Number.isInteger(st.amount)) a = st.amount;
+      if (a > best) best = a;
+    }
+    return best;
+  }
   function apply(book, out) {
     const b = JSON.parse(JSON.stringify(book));
     b.events = (b.events || []).concat(out.events);
     b.checkins = (b.checkins || []).concat(out.checkins);
     return b;
   }
-  const api = { checkIn, apply, landedFrom };
+  const api = { checkIn, apply, landedFrom, farFigure, usualPay };
   if (node) module.exports = api;
   else (root.BurrowEngine = root.BurrowEngine || {}).checkin = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
@@ -5061,7 +5081,10 @@ details summary { min-height: 44px; }
     return deepFreeze(s);
   }
 
-  return { statusOf, capParts, warningText, laterText, laterLowText, moveText, WORDS, STALE_DAYS, OLD_DAYS };
+  /* [coordinator, slice 10] the one question before a figure far from what the app expected is saved (engine/checkin.js
+     farFigure gives the rule): Check your bank, the Checks sheet and the assistant all ask it in these words */
+  function farText(far, typed, fmt) { return `That is ${fmt(far.by)} ${far.dir} than expected. Is ${fmt(typed)} right?`; }
+  return { statusOf, capParts, warningText, farText, laterText, laterLowText, moveText, WORDS, STALE_DAYS, OLD_DAYS };
 });
 /* One input behaviour for every box (DECISIONS_ROUND2 C, sweep2_repeats A11: "$1,212", "TripLisbon"). The first tap or
    click into a box selects what is in it, so what is typed next replaces the old value instead of adding to it. A
@@ -9574,6 +9597,15 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     }
     return { id, amount: x.amount, day, yes, no, expected, lands };
   }
+  /* [qc-numbers loancheck_build CONFUSING 4] a loan figure far from what the app shows still owed on that day asks once
+     before it is saved: the bank check's one rule (engine/checkin.js farFigure, with the usual pay) in its words
+     (screens/status.js farText). Plan's loan sheet, Check your bank and the assistant all ask by this; null when near */
+  function loanFar(book, id, amount, day) {
+    const o = owedOn(book, day, id), a = (book.accounts || []).find(y => live(y) && y.id === id) || {};
+    const f = o ? CK.farFigure(o.owedNow, amount, CK.usualPay(book, day)) : null;
+    const ST = node ? require('../../screens/status.js') : root.BurrowScreens.status;
+    return f ? ST.farText(f, amount, v => SMF.format(v, a.cur || G.homeOn(book, day))) : null;
+  }
   function checkLoan(w, id, x) {
     const g = loanCheckArgs(w.book, w.today, id, x);
     const out = CK.checkIn(w.book, { day: g.day, told: w.told, newId: w.newId, figures: { [id]: g.amount }, ticked: g.yes, expected: g.expected, lands: g.lands, unticked: [], notYet: g.no.length ? { [id]: g.no } : undefined });
@@ -9822,7 +9854,7 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     return id;
   }
 
-  const api = { addPay, addAccount, changeAccount, closeAccount, reopenAccount, removeAccount, payOff, setKeep, setCountry, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan, checkLoan, loanQuestions, loanCheckArgs, payDay, payName };
+  const api = { addPay, addAccount, changeAccount, closeAccount, reopenAccount, removeAccount, payOff, setKeep, setCountry, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan, checkLoan, loanQuestions, loanCheckArgs, payDay, payName, loanFar };
   if (node) module.exports = api;
   else root.PLAN3W = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
@@ -10160,7 +10192,7 @@ function openCheck3() {
   sheet.innerHTML = `<div class="a3-sheet-in">
     <h1 id="a3CheckT">Check your bank</h1>
     <section class="a3-card"><h2>${esc3(label3('checkInList'))} since ${esc3(day3(r.checkIn.since, yr))}</h2>${list.length ? '<p class="a3-sub">Untick anything that has not gone through yet. Change an amount if it was different</p>' + rows : '<p class="a3-sub">Nothing was due since then</p>'}</section>
-    <section class="a3-card"><h2>Your bank today</h2>${figs}${cardFigs ? '<h2>Your cards today</h2>' + cardFigs : ''}${loanFigs ? '<h2>Your loans today</h2>' + loanFigs : ''}<p class="a3-err" id="a3CheckErr"></p></section>
+    <section class="a3-card"><h2>Your bank today</h2>${figs}${cardFigs ? '<h2>Your cards today</h2>' + cardFigs : ''}${loanFigs ? '<h2>Your loans today</h2>' + loanFigs : ''}<p class="a3-err" id="a3CheckErr"></p><div id="a3CheckFar"></div></section>
     <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3CheckSave">Save</button><button type="button" class="a3-btn" id="a3CheckX">Back</button></div>
   </div>`;
   sheet.hidden = false; $('#a3Home').hidden = true; scrollTo(0, 0);
@@ -10231,7 +10263,7 @@ function readCheck3(strict) {
   }
   /* [LOAN_CHECK_PLAN] each loan figure typed, through the same refusals as the Plan sheet (PLAN3W.loanCheckArgs): a payment
      answered Yes is ticked in this step, one answered No rides on the check as notYet. Only when saving (strict) */
-  const notYet = {};
+  const notYet = {}, loanFar = [];
   if (strict) for (const el of sheet.querySelectorAll("[data-loanfig]")) {
     const id = el.dataset.loanfig;
     if (!el.value.trim()) continue;   // blank: this loan is not looked at
@@ -10242,10 +10274,12 @@ function readCheck3(strict) {
     let g;
     try { g = PLAN3W.loanCheckArgs(E3.book, check3.day, id, { amount: v, answers }, { sameIsNothing: false }); } catch (e) { return bad(e.message, el); }
     figures[id] = v;
+    const fw = PLAN3W.loanFar(E3.book, id, v, check3.day);   // [CONFUSING 4] asked once before saving
+    if (fw) loanFar.push({ id, v, text: fw });
     for (const occ of g.yes) if (!ticked.includes(occ)) { ticked.push(occ); expected[occ] = g.expected[occ]; lands[occ] = g.lands[occ]; }
     if (g.no.length) notYet[id] = g.no;
   }
-  return { figures, ticked, amounts, expected, lands, landed, notYet };
+  return { figures, ticked, amounts, expected, lands, landed, notYet, loanFar };
 }
 const checkOut3 = d => BurrowEngine.checkin.checkIn(E3.book, { day: check3.day, told: E3.told(), newId: E3.newId, figures: d.figures, ticked: d.ticked, unticked: [], amounts: d.amounts, expected: d.expected, lands: d.lands, landed: d.landed, notYet: d.notYet && Object.keys(d.notYet).length ? d.notYet : undefined });
 const checkView3 = out => BurrowEngine.lookahead.lookahead(BurrowEngine.checkin.apply(E3.book, out), check3.day);
@@ -10337,6 +10371,15 @@ async function saveCheck3() {
     const q = sheet.querySelector('[data-payask]:not([hidden]) button'); if (q) q.focus();
     return;
   }
+  /* [qc-numbers loancheck_build CONFUSING 4] a loan figure far from what the app shows still owed (PLAN3W.loanFar, the bank
+     check's one rule and words) asks once: Yes saves it as typed, Fix it keeps it in the box, nothing saved */
+  const lfKey = JSON.stringify(d.loanFar.map(x => [x.id, x.v]));
+  if (d.loanFar.length && check3.loanFarOk !== lfKey) {
+    err.textContent = '';
+    farSure3($('#a3CheckFar'), d.loanFar.map(x => x.text).join(' '), () => { check3.loanFarOk = lfKey; saveCheck3(); },
+      () => { const el = sheet.querySelector(`[data-loanfig="${CSS.escape(d.loanFar[0].id)}"]`); if (el) el.focus(); });
+    return;
+  }
   const out = checkOut3(d), day = check3.day;
   /* a gap the person logs as a spend now: one spend on the line picked, for the engine's gap, dated the check's day and
      marked inside its figure (dayInside, BK4), written with the check-in (the same moment and group), so the gap is gone
@@ -10419,6 +10462,15 @@ function sure3(host, words, yes, run) {
   host.querySelector('[data-sureyes]').addEventListener('click', () => { host.innerHTML = ''; run(); });
   host.querySelector('[data-sureno]').addEventListener('click', () => { host.innerHTML = ''; });
   host.querySelector('[data-sureno]').focus();
+}
+/* [coordinator, slice 10; loancheck_build CONFUSING 4] the one question before a figure far from what the app expected is
+   saved (the words: screens/status.js farText): Yes saves it as typed; Fix it keeps the figure in its box, nothing saved */
+function farSure3(host, text, yes, fix) {
+  if (!host) return;
+  host.innerHTML = `<div class="a3-sure" data-far><p class="a3-warn">${esc3(text)}</p><div class="a3-actions"><button type="button" class="a3-btn solid" data-faryes>Yes</button><button type="button" class="a3-btn" data-farfix>Fix it</button></div></div>`;
+  host.querySelector('[data-faryes]').addEventListener('click', () => { host.innerHTML = ''; yes(); });
+  host.querySelector('[data-farfix]').addEventListener('click', () => { host.innerHTML = ''; fix(); });
+  host.querySelector('[data-farfix]').focus();
 }
 /* [M7, M61; qc-data-safety B2] what the book holds that is dated or told after today (a backup or another device whose
    clock was ahead): not counted yet by the engine's rule, and never hidden. Listed apart, found by search, opened and
@@ -11204,18 +11256,25 @@ async function plLoanCheck3(a) {
     <p class="a3-sub" id="plLcDraft"${draft ? '' : ' hidden'}><strong>Not saved yet</strong></p>
     <div class="a3-field"><label for="plLcAmt">Still owed today</label><input class="a3-in" data-amount id="plLcAmt" type="text" inputmode="decimal" autocomplete="off" value="${amt == null ? '' : SM.toInput(amt, cur)}" placeholder="${esc3(SM.symbol(cur).trim())}"></div>
     <div class="a3-field"><label for="plLcDay">The day the lender showed it</label><input class="a3-in a3-date" type="date" id="plLcDay" value="${esc3(day)}" max="${esc3(today)}"></div>
-    <div id="plLcQs"></div><p class="a3-err" id="plLcErr" role="alert"></p>
+    <div id="plLcQs"></div><p class="a3-err" id="plLcErr" role="alert"></p><div id="plLcFar"></div>
     <div class="a3-actions"><button type="button" class="a3-btn solid" id="plLcSave">Save</button><button type="button" class="a3-btn" id="plLcLater">Not now</button><button type="button" class="a3-btn" id="plLcForget"${draft ? '' : ' hidden'}>Forget it</button></div></section>`);
   BurrowScreens.inputs.bind($('#plLcAmt'), { kind: 'amount', code: cur, optional: true });
   const qsHost = $('#plLcQs'), err = $('#plLcErr');
   const ask = () => { qsHost.innerHTML = loanQsHtml3(PLAN3W.loanQuestions(E3.book, E3.today(), a.id, $('#plLcDay').value)); loanQsBind3(qsHost); };
   ask(); $('#plLcDay').addEventListener('change', ask);
   const read = () => { const t = $('#plLcAmt').value.trim(); return { amount: t ? typed3(t, cur) : null, typed: t, day: $('#plLcDay').value || today }; };
+  let farOk = null;
   $('#plLcSave').addEventListener('click', async () => {
     const v = read();
     if (v.typed && v.amount === null) { err.textContent = 'Type what is still owed as an amount'; $('#plLcAmt').focus(); return; }
     if (v.amount === null) { err.textContent = 'Nothing changed. Type what the lender shows, or press Not now'; $('#plLcAmt').focus(); return; }
-    const res = await ACT3.run('checkLoan', w => PLAN3W.checkLoan(w, a.id, { amount: v.amount, date: v.day, answers: loanQsRead3(qsHost) }), { undo: `${a.name}: still owed ${money3(v.amount, cur)} saved` });
+    /* [CONFUSING 4] far from what the app shows still owed that day: asked once (PLAN3W.loanFar), after the sheet's own
+       refusals so a question is never asked about a figure that would not be taken */
+    const answers = loanQsRead3(qsHost), key = JSON.stringify([v.amount, v.day]);
+    try { PLAN3W.loanCheckArgs(E3.book, E3.today(), a.id, { amount: v.amount, date: v.day, answers }); } catch (e) { err.textContent = e.message; return; }
+    const far = PLAN3W.loanFar(E3.book, a.id, v.amount, v.day);
+    if (far && farOk !== key) { err.textContent = ''; farSure3($('#plLcFar'), far, () => { farOk = key; $('#plLcSave').click(); }, () => $('#plLcAmt').focus()); return; }
+    const res = await ACT3.run('checkLoan', w => PLAN3W.checkLoan(w, a.id, { amount: v.amount, date: v.day, answers }), { undo: `${a.name}: still owed ${money3(v.amount, cur)} saved` });
     if (!res.ok) { err.textContent = res.text; return; }   // a draft stays as it was
     await loanDraftPut3(a.id, null);
     plClose3();
@@ -14509,7 +14568,9 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       }
       for (const o of g.yes) said.push(`${PW().payName(book, o)} left your bank`);
       for (const o of g.no) said.push(`${PW().payName(book, o)} not gone yet`);
-      return { kind: 'checkLoan', args: [id, { amount: x, date: d, answers }], text: [`${rec.name} still owed ${m(x, rec.cur)} ${on(d)}`].concat(said).join(', '), amount: 0, figs: [x] };
+      /* [CONFUSING 4] far from what the app shows still owed: the change card asks first (s.far, as for a far bank figure) */
+      const far = PW().loanFar(book, id, x, d);
+      return Object.assign({ kind: 'checkLoan', args: [id, { amount: x, date: d, answers }], text: [`${rec.name} still owed ${m(x, rec.cur)} ${on(d)}`].concat(said).join(', '), amount: 0, figs: [x] }, far ? { far } : {});
     }
     if (what === 'bank_figure' || what === 'card_figure') {
       const id = ref(a.account, 'A'), rec = id && acctRec(id), card = what === 'card_figure';
@@ -14845,6 +14906,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
          check, on the book the step would make, larger than safe to spend) asks first, with the gap in words: an extra
          zero never goes in silently */
       const far = farFigures(plan, book, today, deps, safe);
+      for (const s of plan) if (s.far) far.set(s, s.far);
       const card = { kind: 'change', status: 'ask', ver: verNow, lines: plan.map(s => s.text + (far.has(s) ? '. ' + far.get(s) : '') + (guess.includes(s) ? ' (my guess)' : '')), rows: [], plan, dropped, left };
       if (del || big || far.size || guess.length) {
         card.ask = del ? 'delete' : big ? 'large' : far.size ? 'gap' : 'guess';

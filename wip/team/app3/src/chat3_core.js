@@ -632,7 +632,9 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       }
       for (const o of g.yes) said.push(`${PW().payName(book, o)} left your bank`);
       for (const o of g.no) said.push(`${PW().payName(book, o)} not gone yet`);
-      return { kind: 'checkLoan', args: [id, { amount: x, date: d, answers }], text: [`${rec.name} still owed ${m(x, rec.cur)} ${on(d)}`].concat(said).join(', '), amount: 0, figs: [x] };
+      /* [CONFUSING 4] far from what the app shows still owed: the change card asks first (s.far, as for a far bank figure) */
+      const far = PW().loanFar(book, id, x, d);
+      return Object.assign({ kind: 'checkLoan', args: [id, { amount: x, date: d, answers }], text: [`${rec.name} still owed ${m(x, rec.cur)} ${on(d)}`].concat(said).join(', '), amount: 0, figs: [x] }, far ? { far } : {});
     }
     if (what === 'bank_figure' || what === 'card_figure') {
       const id = ref(a.account, 'A'), rec = id && acctRec(id), card = what === 'card_figure';
@@ -968,6 +970,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
          check, on the book the step would make, larger than safe to spend) asks first, with the gap in words: an extra
          zero never goes in silently */
       const far = farFigures(plan, book, today, deps, safe);
+      for (const s of plan) if (s.far) far.set(s, s.far);
       const card = { kind: 'change', status: 'ask', ver: verNow, lines: plan.map(s => s.text + (far.has(s) ? '. ' + far.get(s) : '') + (guess.includes(s) ? ' (my guess)' : '')), rows: [], plan, dropped, left };
       if (del || big || far.size || guess.length) {
         card.ask = del ? 'delete' : big ? 'large' : far.size ? 'gap' : 'guess';

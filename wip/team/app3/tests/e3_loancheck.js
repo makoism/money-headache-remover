@@ -172,5 +172,58 @@ const saved = p => p.evaluate(async () => { const s = await BurrowStore.open(); 
     ck('owed 812,400 once, nothing overdue', o.owedNow === 812400 && !o.overdue.length, JSON.stringify(o));
     ck('no page errors (Check your bank)', !o2.errs.length, o2.errs.join(' | '));
   } finally { await o2.b.close(); fs.rmSync(prof2, { recursive: true, force: true }); }
+
+  /* [qc-numbers loancheck_build CONFUSING 4] a figure far from what the app shows still owed (840,000 on 3 Feb) asks once
+     before it is saved, by the bank check's rule and in its words: "That is ... more than expected. Is ... right?" with Yes
+     and Fix it. Fix it keeps the figure in the box and saves nothing; Yes saves it as today. On Plan's loan sheet and on
+     Check your bank's loan box (the assistant: tests/chat3_core.test.js) */
+  const prof3 = fs.mkdtempSync(require('os').tmpdir() + '/a3loanck3-');
+  const o3 = await T.open({ profile: prof3 }), p3 = o3.p;
+  try {
+    const bk0 = kenjiBook();
+    await p3.goto(T.URL0 + '?today=2027-02-03'); await T.w(600);
+    await p3.evaluate(async bk => { const s = await BurrowStore.open(); await s.load(); const r = await s.save(bk, { full: true }); s.close(); return r.ok; }, bk0);
+    await p3.reload(); await T.w(600);
+    const owed = () => p3.evaluate(id => BurrowApp3.E3.view(BurrowApp3.E3.today()).owed[id].owedNow, LOAN);
+    const text = sel => p3.$eval(sel, e => (e.hidden ? '' : e.textContent.replace(/\s+/g, ' ').trim())).catch(() => '');
+    const val = sel => p3.$eval(sel, e => e.value).catch(() => null);
+    const fill = async (sel, v) => { await p3.$eval(sel, e => { e.value = ''; }); await p3.type(sel, v); };
+    const far = 'That is ¥7,560,000 more than expected. Is ¥8,400,000 right?';
+    /* Plan's loan sheet */
+    await p3.tap('[data-tab="plan"]'); await T.w(300);
+    await p3.evaluate(id => document.querySelector(`#a3Plan [data-owed="${id}"]`).click(), LOAN); await T.w(500);
+    await p3.click('#plLcQs [data-lcans="yes"]');
+    await fill('#plLcAmt', '8400000');
+    const b0 = JSON.stringify(await saved(p3));
+    await p3.click('#plLcSave'); await T.w(500);
+    ck('Plan: 8,400,000 over 840,000 asks first, in the bank check\'s words, with Yes and Fix it', await text('#plLcFar [data-far] p') === far && !!(await p3.$('#plLcFar [data-faryes]')) && !!(await p3.$('#plLcFar [data-farfix]')), await text('#plLcFar'));
+    ck('Plan: nothing saved while it asks', JSON.stringify(await saved(p3)) === b0);
+    await p3.click('#plLcFar [data-farfix]'); await T.w(300);
+    ck('Plan: Fix it keeps the typed figure in the box, the question goes, nothing saved', (await val('#plLcAmt') || '').replace(/\D/g, '') === '8400000' && !(await text('#plLcFar')) && JSON.stringify(await saved(p3)) === b0);
+    await p3.click('#plLcSave'); await T.w(500);
+    ck('Plan: Save again asks again', await text('#plLcFar [data-far] p') === far);
+    await p3.click('#plLcFar [data-faryes]'); await T.w(700);
+    ck('Plan: Yes saves it as typed', await owed() === 8400000, await owed());
+    ck('Plan: a near figure is saved at once', await p3.evaluate(() => { const x = [...document.querySelectorAll('#a3Msg button')].find(y => /Undo/.test(y.textContent)); if (x) x.click(); return !!x; }));
+    await T.w(600);
+    await p3.evaluate(id => document.querySelector(`#a3Plan [data-owed="${id}"]`).click(), LOAN); await T.w(500);
+    await p3.click('#plLcQs [data-lcans="yes"]'); await fill('#plLcAmt', '812400'); await p3.click('#plLcSave'); await T.w(700);
+    ck('Plan: 812,400 (near) saved with no question', await owed() === 812400 && !(await p3.$('#plLcFar [data-far]')), await owed());
+    /* Check your bank's loan box */
+    await p3.goto(T.URL0 + '?today=2027-02-04'); await T.w(600);
+    await p3.click('#a3CheckGo'); await T.w(400);
+    for (const id of await p3.$$eval('[data-bankfig]', l => l.map(x => x.dataset.bankfig))) { await p3.tap(`[data-bankfig="${id}"]`); await p3.keyboard.type('100000'); }
+    await p3.tap(`[data-loanfig="${LOAN}"]`); await p3.keyboard.type('5617000');
+    const b1 = JSON.stringify(await saved(p3));
+    await p3.click('#a3CheckSave'); await T.w(700);
+    const far2 = 'That is ¥4,804,600 more than expected. Is ¥5,617,000 right?';
+    ck('Check your bank: 5,617,000 over 812,400 asks first, nothing saved', await text('#a3CheckFar [data-far] p') === far2 && JSON.stringify(await saved(p3)) === b1, await text('#a3CheckFar'));
+    await p3.click('#a3CheckFar [data-farfix]'); await T.w(300);
+    ck('Check your bank: Fix it keeps 5,617,000 in the box, nothing saved', (await p3.$eval(`[data-loanfig="${LOAN}"]`, e => e.value)).replace(/\D/g, '') === '5617000' && !(await text('#a3CheckFar')) && JSON.stringify(await saved(p3)) === b1);
+    await p3.click('#a3CheckSave'); await T.w(700);
+    await p3.click('#a3CheckFar [data-faryes]'); await T.w(900);
+    ck('Check your bank: Yes saves it as typed', await owed() === 5617000, await owed());
+    ck('no page errors (far figures)', !o3.errs.length, o3.errs.join(' | '));
+  } finally { await o3.b.close(); fs.rmSync(prof3, { recursive: true, force: true }); }
   T.done('e3_loancheck');
 })();

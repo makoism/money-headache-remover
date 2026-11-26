@@ -536,6 +536,15 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const c = r.shown.find(x => x.who === 'card').card;
     eq([c.status, c.lines], ['done', ['Car loan still owed ¥850,000 today, the 28 Dec payment left your bank']]);
     ok(hp.book.events.some(e => e.id === 'set:' + loan + '@2026-12-27' && !e.gone), 'the 28 Dec answer ticked that payment');
+    /* [qc-numbers loancheck_build CONFUSING 4] a loan figure far from what the app shows still owed asks first, in the
+       bank check's words (screens/status.js farText); nothing is written until the OK */
+    const f4 = FAKE.make([say('', [call('change', { steps: [{ do: 'card_figure', account: A, amount: 8500000 }] })]), say('Tap OK.')]);
+    const r4 = await K.turn(r.state, 'the car loan is 8,500,000', hp.deps(f4));
+    const t4 = r4.shown.find(x => x.who === 'card');
+    eq([t4.card.status, t4.card.ask, t4.card.lines], ['ask', 'gap', ['Car loan still owed ¥8,500,000 today. That is ¥7,650,000 more than expected. Is ¥8,500,000 right?']]);
+    eq(L.lookahead(hp.book, hp.day).owed[loan].owedNow, 850000, 'nothing written before the OK');
+    const k4 = await K.confirm(r4.state, t4.id, hp.deps(f4)); ok(k4.ok, JSON.stringify(k4));
+    eq(L.lookahead(hp.book, hp.day).owed[loan].owedNow, 8500000, 'Yes saves it as typed');
   });
   await t('a yearly bill by chat: "car insurance 12,000 every March 15th" is added once a year (qc-foundation confirm)', async () => {
     const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));

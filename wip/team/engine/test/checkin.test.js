@@ -127,4 +127,15 @@ t('a check-in counts its ticked pay once whatever order its records come back in
   withLine.events.push({ id: 'imp:' + bank + ':zz1', k: 'in', acct: bank, date: DAY, a: pay.a, told: '2026-12-15T09:00:00.000+09:00', src: { type: 'statement', acct: bank } });
   eq(L.lookahead(withLine, '2026-12-15').accounts[bank].bank, L.lookahead(W.apply(book0, back), '2026-12-15').accounts[bank].bank);
 });
+// [coordinator, slice 10; loancheck_build CONFUSING 4] the one far rule every door asks by: more than double, less than
+// half, or off by more than the usual pay; the usual pay is the largest pay amount in force that day
+t('farFigure and usualPay: a loan typed 5,617,000 over 561,700 is far; 540,000 is not', () => {
+  eq(W.farFigure(561700, 5617000, 300000), { dir: 'more', by: 5055300 });
+  eq(W.farFigure(561700, 999999999, 0), { dir: 'more', by: 999438299 });
+  eq(W.farFigure(561700, 540000, 300000), null);
+  eq(W.farFigure(561700, 561700, 300000), null);
+  eq(W.farFigure(561700, 200000, 0), { dir: 'less', by: 361700 });
+  eq(W.usualPay({ schedules: [{ id: 'p', kind: 'income', steps: [{ amount: 280000 }, { amount: 300000, from: '2027-01-01' }] }] }, '2026-12-10'), 280000);
+  eq(W.usualPay({ schedules: [] }, '2026-12-10'), 0);
+});
 done('checkin');

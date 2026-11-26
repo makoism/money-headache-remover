@@ -437,18 +437,25 @@ async function plLoanCheck3(a) {
     <p class="a3-sub" id="plLcDraft"${draft ? '' : ' hidden'}><strong>Not saved yet</strong></p>
     <div class="a3-field"><label for="plLcAmt">Still owed today</label><input class="a3-in" data-amount id="plLcAmt" type="text" inputmode="decimal" autocomplete="off" value="${amt == null ? '' : SM.toInput(amt, cur)}" placeholder="${esc3(SM.symbol(cur).trim())}"></div>
     <div class="a3-field"><label for="plLcDay">The day the lender showed it</label><input class="a3-in a3-date" type="date" id="plLcDay" value="${esc3(day)}" max="${esc3(today)}"></div>
-    <div id="plLcQs"></div><p class="a3-err" id="plLcErr" role="alert"></p>
+    <div id="plLcQs"></div><p class="a3-err" id="plLcErr" role="alert"></p><div id="plLcFar"></div>
     <div class="a3-actions"><button type="button" class="a3-btn solid" id="plLcSave">Save</button><button type="button" class="a3-btn" id="plLcLater">Not now</button><button type="button" class="a3-btn" id="plLcForget"${draft ? '' : ' hidden'}>Forget it</button></div></section>`);
   BurrowScreens.inputs.bind($('#plLcAmt'), { kind: 'amount', code: cur, optional: true });
   const qsHost = $('#plLcQs'), err = $('#plLcErr');
   const ask = () => { qsHost.innerHTML = loanQsHtml3(PLAN3W.loanQuestions(E3.book, E3.today(), a.id, $('#plLcDay').value)); loanQsBind3(qsHost); };
   ask(); $('#plLcDay').addEventListener('change', ask);
   const read = () => { const t = $('#plLcAmt').value.trim(); return { amount: t ? typed3(t, cur) : null, typed: t, day: $('#plLcDay').value || today }; };
+  let farOk = null;
   $('#plLcSave').addEventListener('click', async () => {
     const v = read();
     if (v.typed && v.amount === null) { err.textContent = 'Type what is still owed as an amount'; $('#plLcAmt').focus(); return; }
     if (v.amount === null) { err.textContent = 'Nothing changed. Type what the lender shows, or press Not now'; $('#plLcAmt').focus(); return; }
-    const res = await ACT3.run('checkLoan', w => PLAN3W.checkLoan(w, a.id, { amount: v.amount, date: v.day, answers: loanQsRead3(qsHost) }), { undo: `${a.name}: still owed ${money3(v.amount, cur)} saved` });
+    /* [CONFUSING 4] far from what the app shows still owed that day: asked once (PLAN3W.loanFar), after the sheet's own
+       refusals so a question is never asked about a figure that would not be taken */
+    const answers = loanQsRead3(qsHost), key = JSON.stringify([v.amount, v.day]);
+    try { PLAN3W.loanCheckArgs(E3.book, E3.today(), a.id, { amount: v.amount, date: v.day, answers }); } catch (e) { err.textContent = e.message; return; }
+    const far = PLAN3W.loanFar(E3.book, a.id, v.amount, v.day);
+    if (far && farOk !== key) { err.textContent = ''; farSure3($('#plLcFar'), far, () => { farOk = key; $('#plLcSave').click(); }, () => $('#plLcAmt').focus()); return; }
+    const res = await ACT3.run('checkLoan', w => PLAN3W.checkLoan(w, a.id, { amount: v.amount, date: v.day, answers }), { undo: `${a.name}: still owed ${money3(v.amount, cur)} saved` });
     if (!res.ok) { err.textContent = res.text; return; }   // a draft stays as it was
     await loanDraftPut3(a.id, null);
     plClose3();

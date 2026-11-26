@@ -441,6 +441,15 @@
     }
     return { id, amount: x.amount, day, yes, no, expected, lands };
   }
+  /* [qc-numbers loancheck_build CONFUSING 4] a loan figure far from what the app shows still owed on that day asks once
+     before it is saved: the bank check's one rule (engine/checkin.js farFigure, with the usual pay) in its words
+     (screens/status.js farText). Plan's loan sheet, Check your bank and the assistant all ask by this; null when near */
+  function loanFar(book, id, amount, day) {
+    const o = owedOn(book, day, id), a = (book.accounts || []).find(y => live(y) && y.id === id) || {};
+    const f = o ? CK.farFigure(o.owedNow, amount, CK.usualPay(book, day)) : null;
+    const ST = node ? require('../../screens/status.js') : root.BurrowScreens.status;
+    return f ? ST.farText(f, amount, v => SMF.format(v, a.cur || G.homeOn(book, day))) : null;
+  }
   function checkLoan(w, id, x) {
     const g = loanCheckArgs(w.book, w.today, id, x);
     const out = CK.checkIn(w.book, { day: g.day, told: w.told, newId: w.newId, figures: { [id]: g.amount }, ticked: g.yes, expected: g.expected, lands: g.lands, unticked: [], notYet: g.no.length ? { [id]: g.no } : undefined });
@@ -689,7 +698,7 @@
     return id;
   }
 
-  const api = { addPay, addAccount, changeAccount, closeAccount, reopenAccount, removeAccount, payOff, setKeep, setCountry, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan, checkLoan, loanQuestions, loanCheckArgs, payDay, payName };
+  const api = { addPay, addAccount, changeAccount, closeAccount, reopenAccount, removeAccount, payOff, setKeep, setCountry, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan, checkLoan, loanQuestions, loanCheckArgs, payDay, payName, loanFar };
   if (node) module.exports = api;
   else root.PLAN3W = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

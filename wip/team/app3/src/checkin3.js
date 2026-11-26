@@ -51,7 +51,7 @@ function openCheck3() {
   sheet.innerHTML = `<div class="a3-sheet-in">
     <h1 id="a3CheckT">Check your bank</h1>
     <section class="a3-card"><h2>${esc3(label3('checkInList'))} since ${esc3(day3(r.checkIn.since, yr))}</h2>${list.length ? '<p class="a3-sub">Untick anything that has not gone through yet. Change an amount if it was different</p>' + rows : '<p class="a3-sub">Nothing was due since then</p>'}</section>
-    <section class="a3-card"><h2>Your bank today</h2>${figs}${cardFigs ? '<h2>Your cards today</h2>' + cardFigs : ''}${loanFigs ? '<h2>Your loans today</h2>' + loanFigs : ''}<p class="a3-err" id="a3CheckErr"></p></section>
+    <section class="a3-card"><h2>Your bank today</h2>${figs}${cardFigs ? '<h2>Your cards today</h2>' + cardFigs : ''}${loanFigs ? '<h2>Your loans today</h2>' + loanFigs : ''}<p class="a3-err" id="a3CheckErr"></p><div id="a3CheckFar"></div></section>
     <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3CheckSave">Save</button><button type="button" class="a3-btn" id="a3CheckX">Back</button></div>
   </div>`;
   sheet.hidden = false; $('#a3Home').hidden = true; scrollTo(0, 0);
@@ -122,7 +122,7 @@ function readCheck3(strict) {
   }
   /* [LOAN_CHECK_PLAN] each loan figure typed, through the same refusals as the Plan sheet (PLAN3W.loanCheckArgs): a payment
      answered Yes is ticked in this step, one answered No rides on the check as notYet. Only when saving (strict) */
-  const notYet = {};
+  const notYet = {}, loanFar = [];
   if (strict) for (const el of sheet.querySelectorAll("[data-loanfig]")) {
     const id = el.dataset.loanfig;
     if (!el.value.trim()) continue;   // blank: this loan is not looked at
@@ -133,10 +133,12 @@ function readCheck3(strict) {
     let g;
     try { g = PLAN3W.loanCheckArgs(E3.book, check3.day, id, { amount: v, answers }, { sameIsNothing: false }); } catch (e) { return bad(e.message, el); }
     figures[id] = v;
+    const fw = PLAN3W.loanFar(E3.book, id, v, check3.day);   // [CONFUSING 4] asked once before saving
+    if (fw) loanFar.push({ id, v, text: fw });
     for (const occ of g.yes) if (!ticked.includes(occ)) { ticked.push(occ); expected[occ] = g.expected[occ]; lands[occ] = g.lands[occ]; }
     if (g.no.length) notYet[id] = g.no;
   }
-  return { figures, ticked, amounts, expected, lands, landed, notYet };
+  return { figures, ticked, amounts, expected, lands, landed, notYet, loanFar };
 }
 const checkOut3 = d => BurrowEngine.checkin.checkIn(E3.book, { day: check3.day, told: E3.told(), newId: E3.newId, figures: d.figures, ticked: d.ticked, unticked: [], amounts: d.amounts, expected: d.expected, lands: d.lands, landed: d.landed, notYet: d.notYet && Object.keys(d.notYet).length ? d.notYet : undefined });
 const checkView3 = out => BurrowEngine.lookahead.lookahead(BurrowEngine.checkin.apply(E3.book, out), check3.day);
@@ -226,6 +228,15 @@ async function saveCheck3() {
     const names = asks.map(id => E3.nameOf(id));
     err.textContent = `${names.join(' and ')} ${names.length > 1 ? 'show' : 'shows'} far less than the app had, and ${names.length > 1 ? 'their payments are' : 'its payment is'} not ticked. Answer the question under ${names.length > 1 ? 'each' : 'it'}, or press Save again to save it as it is`;
     const q = sheet.querySelector('[data-payask]:not([hidden]) button'); if (q) q.focus();
+    return;
+  }
+  /* [qc-numbers loancheck_build CONFUSING 4] a loan figure far from what the app shows still owed (PLAN3W.loanFar, the bank
+     check's one rule and words) asks once: Yes saves it as typed, Fix it keeps it in the box, nothing saved */
+  const lfKey = JSON.stringify(d.loanFar.map(x => [x.id, x.v]));
+  if (d.loanFar.length && check3.loanFarOk !== lfKey) {
+    err.textContent = '';
+    farSure3($('#a3CheckFar'), d.loanFar.map(x => x.text).join(' '), () => { check3.loanFarOk = lfKey; saveCheck3(); },
+      () => { const el = sheet.querySelector(`[data-loanfig="${CSS.escape(d.loanFar[0].id)}"]`); if (el) el.focus(); });
     return;
   }
   const out = checkOut3(d), day = check3.day;
