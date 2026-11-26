@@ -12,7 +12,7 @@ What he does: opens Home to see how much he can spend before pay. What he needs 
 
 What the app should say:
 - Safe to spend before pay: 179,400, before the moves and after both (moving which bank pays a bill does not make money appear or vanish; Rent and Power fall after pay, in the next period).
-- Home's move line: move 22,000 from the main bank to Beta Bank by 10 Dec, and the rest (79,400) by 28 Dec.
+- Home's move line: move 22,000 from the main bank to Beta Bank by 9 Dec, and the rest (79,400) by 27 Dec (F1 ruling: the day before each bill).
 
 What it says today: 107,400, then 100,000 after both moves. Cause: engine/lookahead.js, the `shortfalls` sum near line 1337 takes the whole of every account's negative headroom (its lowest point over the whole look ahead, months long, with no pay of its own) off this period's headline at once, whatever day the bill falls on.
 
@@ -41,7 +41,7 @@ What else could be true (M98):
 - The change card's short-by row (LANE J builds it on top of this commit).
 
 ## Review points taken in (qc-foundation on the plan, FAIL, qc_reports/2026-11-26_shortgap_plan/qc-foundation.md)
-- F1 the cover's day against a pay the same day: RULING ASKED of coordinator 18 (recommended: due the day before the bill).
+- F1 RULED (coordinator 18, (a)): a cover is due the calendar day before the bill's real (weekend or holiday moved) date, so it comes off the period before: 179,400, and Home says "move 22,000 by 9 Dec". Safety first: a card payment taken early on the 10th must not bounce because the pay shows later. Rule 2's move days are therefore the day before each new low (22,000 by 9 Dec, 79,400 by 27 Dec); tests add a bill on pay day and the day after pay.
 - F2 one verdict: rule 7. F3 M90 is not built: the tests pin res.canSpare and the cover moves, and the headline only where no card is left (M90 joins later without taking a card twice).
 - F4 (a move made in the bank app and only the main bank checked counts as spending): WATCH, the check-in offering "moved to Beta" is the controls lane's; named in scope.
 - Assistant (M1, M3, M4): the summary sent to it names each cover (from, amount, day), so it can say it; its move_money step already exists.
