@@ -781,9 +781,11 @@
       const changes = changesFrom(open);
       // [LOAN_CHECK_PLAN rule 2, coordinator's ruling 26 Nov] the latest live check on the loan (by day, then told) sets
       // what is owed from its day; a closing's check of 0 is one too
-      const lcs = live().filter(e => e.k === 'check' && e.account === id && !e.stmt).sort((x, z) => x.day - z.day || x.key - z.key || x.idx - z.idx);
-      const lc = lcs[lcs.length - 1];
-      const base = lc ? Object.assign({}, lc, { loanCheck: true }) : null;
+      // [qc-numbers loancheck_build blocker 1] each check in the chain is read as a loan check, so a payment answered No at
+      // it stays out of its figure whatever its day (rule 3), in every link, not only the latest
+      const lcs = live().filter(e => e.k === 'check' && e.account === id && !e.stmt).sort((x, z) => x.day - z.day || x.key - z.key || x.idx - z.idx)
+        .map(x => Object.assign({}, x, { loanCheck: true }));
+      const base = lcs.length ? lcs[lcs.length - 1] : null;
       const days = [];
       const [y, mo] = ymOf(openDay(id));
       const stmtPaid = (openChecks[id] || []).filter(x => x.stmt && x.paid === true && x.stmtPay).map(x => x.stmtPay);
@@ -829,7 +831,9 @@
       for (let i = 0; i < days.length; i++) {
         const d = days[i], past = d.land <= knownTo;
         let bal;
-        if (past) bal = (base && d.land <= base.day ? d.owedThen : Math.min(d.owedThen, owedNow)) - unpaid;
+        // [qc-numbers loancheck_build blocker 2] a payment before the latest check that was answered No at it is still in
+        // that figure, so it never asks more than the figure says is owed (a check of 10,000 asks at most 10,000; 0 asks nothing)
+        if (past) bal = (base && d.land <= base.day && !(base.notYet || []).includes(d.iid) ? d.owedThen : Math.min(d.owedThen, owedNow)) - unpaid;
         else { if (left === null) left = owedNow - unpaid; if (left <= 0) break; left += interestOn(left, a.apr); bal = left; }
         if (bal <= 0 || settledBy[d.iid]) continue;
         const amt = Math.min(bal, asks(d, i, bal));
