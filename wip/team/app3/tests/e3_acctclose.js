@@ -38,9 +38,11 @@ const closedRows = p => p.$$eval('[data-card="plan-accounts"] [data-acctclosed]'
     await btn('Close this account'); await T.w(300);
     const sheet = await p.$eval('[data-card="plan-form"]', e => e.textContent.replace(/\s+/g, ' '));
     ck('Close opens its own sheet saying what it holds', /Close Wallet/.test(sheet) && /holds ¥10,000 today/.test(sheet), sheet);
+    ck('[LANE J, F3] it asks what is in it now, the box empty', (await p.$eval('#pl-now', e => e.value)) === '');
+    await p.click('#pl-now'); await p.keyboard.type('10000');
     let before = bare(await saved(p));
     await btn('Close this account'); await T.w(300);
-    ck('Close asks first, naming where the money goes, and writes nothing', /Close Wallet\? What it holds moves to Main bank/.test(await q()) && bare(await saved(p)) === before, await q());
+    ck('Close asks first, naming what moves and where, and writes nothing', /Close Wallet\? ¥10,000 moves to Main bank/.test(await q()) && bare(await saved(p)) === before, await q());
     await p.$eval('[data-sure] [data-sureno]', e => e.click()); await T.w(300);
     ck('No writes nothing', bare(await saved(p)) === before);
     await btn('Close this account'); await T.w(300);
@@ -80,7 +82,8 @@ const closedRows = p => p.$$eval('[data-card="plan-accounts"] [data-acctclosed]'
     ck('Undo brings it back', await undo()); await T.w(600);
     ck('after Undo it is listed with 3,000', await fig(oops) === 3000);
     /* close Wallet again, reload */
-    await p.click(`#a3Plan [data-acct="${WALLET}"]`); await T.w(300); await btn('Close this account'); await T.w(300); await btn('Close this account'); await T.w(300);
+    await p.click(`#a3Plan [data-acct="${WALLET}"]`); await T.w(300); await btn('Close this account'); await T.w(300);
+    await p.click('#pl-now'); await p.keyboard.type('10000'); await btn('Close this account'); await T.w(300);
     await p.$eval('[data-sure] [data-sureyes]', e => e.click()); await T.w(600);
     await p.reload(); await T.w(600); await plan();
     ck('after a reload Wallet is still under Closed', (await closedRows(p)).some(x => x.id === WALLET) && !(await rows(p)).some(x => x.id === WALLET));

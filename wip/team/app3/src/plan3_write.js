@@ -557,10 +557,13 @@
     const dest = !spent && (w.book.accounts || []).find(y => live(y) && y.id === to && y.id !== id && !y.closed && OWN_KINDS[y.type] && (y.cur || home(w)) === (a.cur || home(w)));
     if (!spent && !dest) bad('Pick where its money goes: another account of yours, or "it is not there any more"');
     const v = LA.lookahead(w.book, w.today).accounts[id], held = v && v.bank != null ? v.bank : 0;
-    if (held < 0) bad(a.name + ' is below zero. Move money into it first, then close it');
+    if (spent && held < 0) bad(a.name + ' is below zero. Move money into it first, then close it');
+    /* [qc-foundation controls2to5 F3, M36, M95] what is really in it now, typed: that moves, and a final check of 0 after
+       it (same step, same moment) counts any difference from the app's own figure as at Check your bank */
+    const now = spent ? 0 : x.now == null || x.now === '' ? bad(`Type what is in ${a.name} now`) : x.now === 0 || x.now === '0' ? 0 : amountOk(x.now, `what is in ${a.name} now`);
     for (const l of linksTo(w, id)) w.edit(l.list, l.rec.id, { [l.field]: to });
-    if (spent) w.add('events', { k: 'check', acct: id, date: w.today, a: 0 });
-    else if (held > 0) w.add('events', { k: 'transfer', date: w.today, a: held, acct: id, acct2: to, src: { type: 'typed' } });
+    if (now > 0) w.add('events', { k: 'transfer', date: w.today, a: now, acct: id, acct2: to, src: { type: 'typed' } });
+    if (spent || now !== held) w.add('events', { k: 'check', acct: id, date: w.today, a: 0 });
     w.edit('accounts', id, { closed: w.today });
     return id;
   }

@@ -239,13 +239,13 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const sref = body => FAKE.results(body)[0].text.split('\n').find(l => /Savings/.test(l)).split(' | ')[0];
     let sv;
     const f = FAKE.make([say('', [call('change', { steps: [{ do: 'add_account', name: 'Savings', type: 'bank', amount: 40000, moved: false }] })]), say('Added.'),
-      say('', [call('list', { what: 'accounts' })]), body => { sv = sref(body); return say('', [call('change', { steps: [{ do: 'close_account', account: sv, to: 'A1' }] })]); }, say('Tap OK to close it.'),
+      say('', [call('list', { what: 'accounts' })]), body => { sv = sref(body); return say('', [call('change', { steps: [{ do: 'close_account', account: sv, to: 'A1', amount: 40000 }] })]); }, say('Tap OK to close it.'),
       () => say('', [call('change', { steps: [{ do: 'reopen_account', account: sv }] })]), say('Open again.'),
       () => say('', [call('change', { steps: [{ do: 'remove_account', account: sv }] })]), say('Tap OK.'), say('It has history.')]);
     const d = hp.deps(f), main = hp.book.home.main.v.acct;
     const r1 = await K.turn(state, 'Add a bank called Savings with 40,000 in it, new money', d);
     const bank0 = require(E + 'lookahead.js').lookahead(hp.book, '2026-11-24').accounts[main].bank;
-    const r2 = await K.turn(r1.state, 'I closed my savings, the money went to my bank', d);
+    const r2 = await K.turn(r1.state, 'I closed my savings, the 40,000 in it went to my bank', d);
     const c2 = r2.shown.find(x => x.who === 'card');
     eq([c2.card.status, c2.card.ask], ['ask', 'delete'], JSON.stringify(c2.card));
     ok(/Close Savings.*40,000.*Main bank/.test(c2.card.lines.join(' ')), c2.card.lines.join(' | '));
@@ -261,6 +261,20 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const k4 = await K.confirm(r4.state, c4.id, d);
     ok(!k4.ok && /history/.test(k4.text), 'it has history now (the close and its move): refused with words ' + JSON.stringify(k4.text));
     ok(!hp.book.accounts.find(a => a.id === savId).gone, 'not removed');
+  });
+  await t('[LANE J, qc-foundation controls2to5 F3] close_account moving money without what is in it now is not made: the assistant is told to ask', async () => {
+    const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
+    let told = '';
+    const f = FAKE.make([say('', [call('change', { steps: [{ do: 'add_account', name: 'Wallet', type: 'cash', amount: 20000, moved: false }] })]), say('Added.'),
+      say('', [call('list', { what: 'accounts' })]), body => { const w = FAKE.results(body)[0].text.split('\n').find(l => /Wallet/.test(l)).split(' | ')[0]; return say('', [call('change', { steps: [{ do: 'close_account', account: w, to: 'A1' }] })]); },
+      body => { told = JSON.stringify(FAKE.results(body)); return say('How much is in it now?'); }]);
+    const d = hp.deps(f);
+    const r1 = await K.turn(state, 'Add cash called Wallet with 20,000, new money', d);
+    const before = JSON.stringify(hp.book);
+    const r2 = await K.turn(r1.state, 'close my wallet, put it in the bank', d);
+    ok(!r2.shown.some(x => x.who === 'card' && x.card.status === 'done'), 'nothing closed');
+    ok(/ask what is in Wallet now/.test(told), told);
+    eq(JSON.stringify(hp.book), before, 'nothing written');
   });
   await t('[E3, M3, M13, M27] cards and loans by asking: add_loan, change_card, change_loan, pay_off (asks first: the amount was never typed), close_account on a card at zero, remove_account on a loan added by mistake', async () => {
     const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));

@@ -421,9 +421,10 @@ function plAcctCloseForm3(id) {
   const main = ((book.home || {}).main || {}).v;
   const opts = others.map(y => ({ v: y.id, name: 'Move it to ' + y.name })).concat([{ v: 'spent', name: 'It is not there any more (spent)' }]);
   plForm3('Close ' + a.name, [{ key: 'to', label: 'Its money', kind: 'pick', options: opts, value: main && others.some(y => y.id === main.acct) ? main.acct : opts[0].v,
-      hint: 'Bills, pays and cards paid from it move to the account you pick (to your main bank if the money is spent)' }],
-    [{ label: 'Close this account', solid: true, sure: v => [v.to === 'spent' ? `Close ${a.name}? What it held counts as spent. Its history stays` : `Close ${a.name}? What it holds moves to ${E3.nameOf(v.to)}. Its history stays`, 'Yes, close it'],
-      step: v => ['closeAccount', w => PLAN3W.closeAccount(w, id, { to: v.to }), a.name + ' closed'] }],
+      hint: 'Bills, pays and cards paid from it move to the account you pick (to your main bank if the money is spent)' },
+    { key: 'now', label: 'What is in it now', kind: 'amount', optional: true, hint: 'What is really there today, counted or from its app. Not needed if it is not there any more' }],
+    [{ label: 'Close this account', solid: true, sure: v => [v.to === 'spent' ? `Close ${a.name}? What it held counts as spent. Its history stays` : `Close ${a.name}? ${v.now == null ? 'What it holds' : money3(v.now, a.cur || E3.home())} moves to ${E3.nameOf(v.to)}. Its history stays`, 'Yes, close it'],
+      step: v => ['closeAccount', w => PLAN3W.closeAccount(w, id, { to: v.to, now: v.now }), a.name + ' closed'] }],
     `${esc3(a.name)} holds ${money3(held, a.cur || E3.home())} today (${esc3(label3('bankToday')).toLowerCase()})`);
 }
 /* [E2] a closed account: Reopen (its history was kept) */
