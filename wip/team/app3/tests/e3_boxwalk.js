@@ -36,7 +36,8 @@ const T = Q.make('e3_boxwalk', KNOWN), { ck } = T;
    wrongText   wrong values for a text box (default: only left empty)
    emptyQuiet  why pressing the button with the box empty may say nothing (the box must take the focus)
    atOnce      there is no Save: a change counts at once
-   noValid     why the last step (every box right, then Save) is not done here, and the test that does it */
+   noValid     why the last step (every box right, then Save) is not done here, and the test that does it
+   then        a button to press when the form asks one question after its own button (Money came in: is this your pay?) */
 const SETUP = { save: null, fill: { 'The day of one': '2026-11-27' }, mayBeEmpty: [/^Called/, /^Its name/], minusOk: [/^What does your bank show today/, /^What it holds today/],   // a bank below zero is typed as it is (M47, tests/e3_overdrawn.js)
   noValid: 'the made-up book every other row walks is this form saved with every box right (qc_places.js buildBook)' };
 const PL = extra => Object.assign({ save: '[data-plbtn="0"]' }, extra);
@@ -54,7 +55,7 @@ const FORMS = {
   'Settings from "I already use the burrow on another device"': { save: '#a3CloudUse', only: /cloud code/, wrongText: ['', 'abc'], noValid: 'a right code calls the cloud (tests/e3_cloud.js)' },
   'Settings (new device)': { save: '#a3SetWordKeep', only: /ode word/, fill: { 'ode word': 'walkword' } },
   'Home (made-up numbers)': { atOnce: true, noValid: 'the day box already holds a right day' },
-  'Receipts: Money went out': RCF(), 'Receipts: Money came in': RCF(), 'Receipts: Refund': RCF(), 'Receipts: Moved': RCF(),
+  'Receipts: Money went out': RCF(), 'Receipts: Money came in': RCF({ then: '[data-payno]' }) /* [qc-novice B1] the made-up pay is due: "No, other money" (tests/e3_payin.js walks Yes) */, 'Receipts: Refund': RCF(), 'Receipts: Moved': RCF(),
   'Receipts: a receipt opened to change': RCF(),
   'Receipts: Search': { atOnce: true, only: /^Search/, wrongText: ['zzzz'], noValid: 'a search saves nothing' },
   'Plan: Free to spend': PL(), 'Plan: Add a line': PL(), 'Plan: a line': PL(), 'Plan: the pay': PL(), 'Plan: a bill': PL(), 'Plan: Add a bill': PL(),
@@ -244,6 +245,8 @@ const leave = p => p.evaluate(() => { const a = document.activeElement; if (a &&
       await wipe(p, place.root);
       const before = await snap(p);
       await p.click(b.ownSave || form.save); await w(450);
+      /* a form that asks one question after its button (Money came in: "Is this your pay?") is answered with form.then */
+      if (form.then && await p.$eval(form.then, e => !!e.offsetParent).catch(() => false)) { await p.click(form.then); await w(450); }
       const after = await snap(p), m = await msgs(p, place.root, '.a3-err, [role=alert], [data-err-for]');   // "kept" and "saved" notices are not errors
       ck(`${place.name}: with every box right, its button saves and says nothing wrong`, before !== after && !m.length, (before === after ? 'nothing was saved. ' : '') + m.join(' / '));
     }
