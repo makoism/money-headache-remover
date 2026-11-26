@@ -1,0 +1,348 @@
+24 Nov home {"safe":179400,"bank":286000}
+cards so far ["done: Changed Power of 26 Nov landed: ¥7,400 from Main bankBeforeAfterSafe to spend¥179,400¥179,400Main bank today¥286,000¥278,600DoneUndo","done: Changed Rent of 27 Nov landed: ¥72,000 from Main bankBeforeAfterSafe to spend¥179,400¥179,400Main bank today¥278,600¥206,600DoneUndo","done: Changed Internet of 27 Nov landed: ¥5,200 from Main bankBeforeAfterSafe to spend¥179,400¥179,400Main bank today¥206,600¥201,400DoneUndo","done: Changed Rent: paid from Beta Bank from its next oneBeforeAfterSafe to spend¥179,400¥107,400DoneUndo","ask: A change to check Add Card D: ¥0 on it now, paid on day 20 from Beta Bank, the working day before a weekend or holiday (my guess)You didn't type this amount, it's the AI's guess. Is it right?Do itNot now"]
+=== BEFORE HOME ===
+Under a minimum
+?
+
+Beta Bank goes ¥22,000 below zero on 10 Dec
+
+Bank today: Main bank
+
+¥201,400
+
+¥286,000 (checked 24 Nov) −⁠ ¥84,600 (out, logged since) = ¥201,400
+
+Bank today: Beta Bank
+
+¥32,000
+
+checked 7 days ago, on 24 Nov
+
+Safe to spend until next pay on 10 Dec
+?
+
+¥107,400
+
+Short by ¥94,000, below zero from 10 Dec
+
+¥32,000 (Beta Bank today) − ¥54,000 (Card A, all owed, paid 10 Dec) − ¥72,000 (Rent 28 Dec) = −⁠¥94,000
+
+¥201,400 (Main bank today) = ¥201,400
+
+Beta Bank goes ¥22,000 below zero on 10 Dec
+
+Later on: Beta Bank goes ¥94,000 below zero on 28 Dec
+
+Move ¥94,000 from Main bank to Beta Bank by 10 Dec. Main bank can spare it
+
+This pay period
+?
+
+10 Nov to 9 Dec
+
+Next pay 10 Dec, in 9 days
+
+Due before next pay
+
+Nothing is due before next pay
+
+Still owed on your cards
+Card A
+Comes out on 10 Dec, the day your pay lands
+checked 24 Nov
+¥54,000
+Card B
+Comes out on 11 Dec
+checked 24 Nov
+¥23,000
+After your cards are paid on 11 Dec: Main bank
+Your pay on 10 Dec is in it. It counts everything on the cards now, as their close days are not sure. This is the bank, not safe to spend
+¥418,400
+After your cards are paid on 10 Dec: Beta Bank
+It counts everything on the cards now, as their close days are not sure. This is the bank, not safe to spend
+−⁠¥22,000
+Add a card
+Check your bank
+Log a spend
+=== BEFORE PLAN ===
+This pay period
+
+10 Nov to 9 Dec
+
+No budget lines yet. A line keeps money for one thing, like food, each pay period
+
+Add a line
+Set Free to spend
+Pay and bills
+Pay
+day 10 each month, next 10 Dec
+¥240,000
+Rent
+day 27 each month, next 28 Dec
+¥72,000
+Power
+day 26 each month, next 28 Dec
+¥7,400
+Phone
+day 20 each month, next 21 Dec
+¥4,800
+Internet
+day 27 each month, next 28 Dec
+¥5,200
+Add a bill
+Goals
+
+No goals yet. A goal is money set aside for something, kept in your bank or in an account of its own
+
+Add a goal
+Accounts
+Main bank
+Your main bank, where pay lands
+¥201,400
+bank today
+Beta Bank
+Bank
+¥32,000
+bank today
+
+What each holds changes at Check your bank
+
+Add an account
+Cards and loans
+Card A
+paid on day 10 from Beta Bank, close day not sure
+Next payment ¥54,000 on 10 Dec
+¥54,000
+still owed
+Card B
+paid on day 11 from Main bank, close day not sure
+Next payment ¥23,000 on 11 Dec
+¥23,000
+still owed
+Add a card
+Add a loan
+Pay periods gone by
+
+None yet. When your next pay is ticked off, this pay period shows here with what was spent
+=== BEFORE ENGINE ===
+{
+ "safe": {
+  "headline": 107400,
+  "shortfall": 0,
+  "cappedByFreeToSpend": false,
+  "oldestInput": "2026-11-24",
+  "short": {
+   "account": "x638hc-wml8cv9826-6",
+   "day": "2026-12-10",
+   "amount": 94000,
+   "minimum": null,
+   "beforePay": null,
+   "first": 22000
+  },
+  "why": null,
+  "whyParts": null,
+  "until": "2026-12-10",
+  "untilPay": "x638hc-wml8cv9826-15@2026-12-10",
+  "notCounting": null
+ },
+ "accts": {
+  "Main bank": {
+   "bank": 201400,
+   "min": 0,
+   "lowest": 201400,
+   "lowestDay": "2026-12-01",
+   "headroom": 201400,
+   "spendFrom": true,
+   "why": "201,400 (Main bank today) - 0 (minimum) = 201,400",
+   "firstUnder": null
+  },
+  "Beta Bank": {
+   "bank": 32000,
+   "min": 0,
+   "lowest": -94000,
+   "lowestDay": "2026-12-28",
+   "headroom": -94000,
+   "spendFrom": true,
+   "why": "32,000 (Beta Bank today) - 54,000 (Card A, all owed, paid 10 Dec) - 72,000 (Rent 28 Dec) - 0 (minimum) = -94,000",
+   "firstUnder": "2026-12-10"
+  }
+ },
+ "warn": [
+  "Beta Bank goes 22,000 below zero on 10 Dec"
+ ]
+}
+=== POWER CHANGE CARD ===
+done: Changed
+      Power: paid from Beta Bank from its next oneBeforeAfterSafe to spend¥107,400¥100,000DoneUndo
+=== AFTER HOME ===
+Under a minimum
+?
+
+Beta Bank goes ¥22,000 below zero on 10 Dec
+
+Bank today: Main bank
+
+¥201,400
+
+¥286,000 (checked 24 Nov) −⁠ ¥84,600 (out, logged since) = ¥201,400
+
+Bank today: Beta Bank
+
+¥32,000
+
+checked 7 days ago, on 24 Nov
+
+Safe to spend until next pay on 10 Dec
+?
+
+¥100,000
+
+Short by ¥101,400, below zero from 10 Dec
+
+¥32,000 (Beta Bank today) − ¥54,000 (Card A, all owed, paid 10 Dec) − ¥72,000 (Rent 28 Dec) − ¥7,400 (Power 28 Dec) = −⁠¥101,400
+
+¥201,400 (Main bank today) = ¥201,400
+
+Beta Bank goes ¥22,000 below zero on 10 Dec
+
+Later on: Beta Bank goes ¥101,400 below zero on 28 Dec
+
+Move ¥101,400 from Main bank to Beta Bank by 10 Dec. Main bank can spare it
+
+This pay period
+?
+
+10 Nov to 9 Dec
+
+Next pay 10 Dec, in 9 days
+
+Due before next pay
+
+Nothing is due before next pay
+
+Still owed on your cards
+Card A
+Comes out on 10 Dec, the day your pay lands
+checked 24 Nov
+¥54,000
+Card B
+Comes out on 11 Dec
+checked 24 Nov
+¥23,000
+After your cards are paid on 11 Dec: Main bank
+Your pay on 10 Dec is in it. It counts everything on the cards now, as their close days are not sure. This is the bank, not safe to spend
+¥418,400
+After your cards are paid on 10 Dec: Beta Bank
+It counts everything on the cards now, as their close days are not sure. This is the bank, not safe to spend
+−⁠¥22,000
+Add a card
+Check your bank
+Log a spend
+=== AFTER PLAN ===
+This pay period
+
+10 Nov to 9 Dec
+
+No budget lines yet. A line keeps money for one thing, like food, each pay period
+
+Add a line
+Set Free to spend
+Pay and bills
+Pay
+day 10 each month, next 10 Dec
+¥240,000
+Rent
+day 27 each month, next 28 Dec
+¥72,000
+Power
+day 26 each month, next 28 Dec
+¥7,400
+Phone
+day 20 each month, next 21 Dec
+¥4,800
+Internet
+day 27 each month, next 28 Dec
+¥5,200
+Add a bill
+Goals
+
+No goals yet. A goal is money set aside for something, kept in your bank or in an account of its own
+
+Add a goal
+Accounts
+Main bank
+Your main bank, where pay lands
+¥201,400
+bank today
+Beta Bank
+Bank
+¥32,000
+bank today
+
+What each holds changes at Check your bank
+
+Add an account
+Cards and loans
+Card A
+paid on day 10 from Beta Bank, close day not sure
+Next payment ¥54,000 on 10 Dec
+¥54,000
+still owed
+Card B
+paid on day 11 from Main bank, close day not sure
+Next payment ¥23,000 on 11 Dec
+¥23,000
+still owed
+Add a card
+Add a loan
+Pay periods gone by
+
+None yet. When your next pay is ticked off, this pay period shows here with what was spent
+=== AFTER ENGINE ===
+{
+ "safe": {
+  "headline": 100000,
+  "shortfall": 0,
+  "cappedByFreeToSpend": false,
+  "oldestInput": "2026-11-24",
+  "short": {
+   "account": "x638hc-wml8cv9826-6",
+   "day": "2026-12-10",
+   "amount": 101400,
+   "minimum": null,
+   "beforePay": null,
+   "first": 22000
+  },
+  "why": null,
+  "whyParts": null,
+  "until": "2026-12-10",
+  "untilPay": "x638hc-wml8cv9826-15@2026-12-10",
+  "notCounting": null
+ },
+ "accts": {
+  "Main bank": {
+   "bank": 201400,
+   "min": 0,
+   "lowest": 201400,
+   "lowestDay": "2026-12-01",
+   "headroom": 201400,
+   "spendFrom": true,
+   "why": "201,400 (Main bank today) - 0 (minimum) = 201,400",
+   "firstUnder": null
+  },
+  "Beta Bank": {
+   "bank": 32000,
+   "min": 0,
+   "lowest": -101400,
+   "lowestDay": "2026-12-28",
+   "headroom": -101400,
+   "spendFrom": true,
+   "why": "32,000 (Beta Bank today) - 54,000 (Card A, all owed, paid 10 Dec) - 72,000 (Rent 28 Dec) - 7,400 (Power 28 Dec) - 0 (minimum) = -101,400",
+   "firstUnder": "2026-12-10"
+  }
+ },
+ "warn": [
+  "Beta Bank goes 22,000 below zero on 10 Dec"
+ ]
+}
+errs []
