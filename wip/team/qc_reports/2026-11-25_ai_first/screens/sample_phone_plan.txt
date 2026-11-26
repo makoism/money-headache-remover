@@ -19,22 +19,22 @@ Add a line
 Set Free to spend
 Pay and bills
 Main job
-day 10 each month, due 10 Dec, not ticked off yet, ¥180,000, next 8 Jan 2027, ¥180,000
+day 10 each month, due 10 Dec, not ticked off yet, ¥180,000, next 8 Jan 2027 (10 Jan 2027 is a Sunday, so the working day before), ¥180,000
 ¥180,000
 Side job
-day 10 each month, due 10 Dec, not ticked off yet, ¥60,000, next 8 Jan 2027, ¥60,000
+day 10 each month, due 10 Dec, not ticked off yet, ¥60,000, next 8 Jan 2027 (10 Jan 2027 is a Sunday, so the working day before), ¥60,000
 ¥60,000
 Rent
-day 27 each month, due 27 Nov, not seen yet, ¥72,000, next 28 Dec, ¥72,000
+day 27 each month, due 27 Nov, not seen yet, ¥72,000, next 28 Dec (27 Dec is a Sunday, so the working day after), ¥72,000
 ¥72,000
 Power
-day 26 each month, due 26 Nov, not seen yet, ¥7,400, next 28 Dec, ¥7,400
+day 26 each month, due 26 Nov, not seen yet, ¥7,400, next 28 Dec (26 Dec is a Saturday, so the working day after), ¥7,400
 ¥7,400
 Phone
-day 20 each month, next 21 Dec
+day 20 each month, next 21 Dec (20 Dec is a Sunday, so the working day after)
 ¥4,800
 Internet
-day 27 each month, due 27 Nov, not seen yet, ¥5,200, next 28 Dec, ¥5,200
+day 27 each month, due 27 Nov, not seen yet, ¥5,200, next 28 Dec (27 Dec is a Sunday, so the working day after), ¥5,200
 ¥5,200
 Add a bill
 Goals
@@ -42,6 +42,15 @@ Goals
 No goals yet. A goal is money set aside for something, kept in your bank or in an account of its own
 
 Add a goal
+Accounts
+Main bank
+Your main bank, where pay lands
+¥286,000
+bank today
+
+What each holds changes at Check your bank
+
+Add an account
 Cards and loans
 Card A
 paid on day 10 from Main bank, close day not sure

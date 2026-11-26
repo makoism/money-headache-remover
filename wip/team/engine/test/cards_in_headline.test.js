@@ -19,6 +19,8 @@
 //
 // Run with --write-golden to write fixtures/cards_golden.json from the engine as it is now. It was written once, from
 // today's engine, before the change (commit 2), and is never written again by the new engine.
+// Written again once at the merge of lane/ai-join (26 Nov, LANE O) from ai-join's engine without this change (the
+// check gap rule moved two lives' filler parts whole to the check's period), never from this branch's engine.
 const fs = require('fs');
 const path = require('path');
 const { t, done, eq, ok } = require('./t.js');

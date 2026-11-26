@@ -38,6 +38,8 @@ node|../../../tests/vault_server/relay_cap.test.mjs|relay_cap: ALL PASS||300|the
 node|tests/e3_stmt_read.js|e3_stmt_read: ALL PASS||300|statements, the reading half (pure)
 node|tests/e3_stmt_plan.js|e3_stmt_plan: ALL PASS||300|statements, the writing half (pure): lines, matching, records
 node|tests/plan3_write.test.js|plan3_write: ALL PASS||300|the Plan tab's steps (pure)
+node|tests/controls3.test.js|controls3: ALL PASS||300|the controls table: every list, account type, step and assistant step has a door, missing doors named with their slice (M13, M3)
+node|tests/act3_sync.test.js|act3_sync: ALL PASS||300|the cloud copy's answers through the one write door (act3 answerSync): each kind, Undo after a reload, marked gone never deleted (WHICH_DOOR_PLAN, M61, M14, M20)
 node|tests/backup3.test.js|backup3: ALL PASS||300|the backup file's core
 node|tests/answers3.test.js|answers3: ALL PASS||300|answers3, the one answers-to-book function (BV1): same answers, same book
 node|tests/chat3_core.test.js|chat3_core: ALL PASS||300|the assistant's core with the fake model: Mako's setup chat to 124,400, before tax, a side job, a stale draft, a skipped question, changes with Undo (BU, BV, BW)
@@ -54,7 +56,12 @@ page|tests/e3_payday.js|e3_payday: ALL PASS||300|pay day in two steps: the pay a
 page|tests/e3_ns.js|e3_ns: ALL PASS||300|the north-star review's small fixes (the glow at 1280, the day a card was checked, Log a spend, the help marks)
 page|tests/e3_homeplan.js|e3_homeplan: ALL PASS||300|Home's ways into the plan: goals with what is set aside, Add a card (north star F2, F3)
 page|tests/e3_checkin.js|e3_checkin: ALL PASS||300|Check your bank
+page|tests/e3_setup2tabs.js|e3_setup2tabs: ALL PASS||300|Setup in two tabs: each Save keeps the other tab's saved sections (qc-data-safety 26 Nov blocker 1)
+page|tests/e3_paycame.js|e3_paycame: ALL PASS||300|A pay ticked after its due day asks when it came in (monthrule2 1b, way c)
 page|tests/e3_checkgap.js|e3_checkgap: ALL PASS||300|Check your bank names the gap before and after saving (BK2, BK4)
+page|tests/e3_checkblank.js|e3_checkblank: ALL PASS||300|Check your bank with a box left blank: the rest saves, nothing written for it; nothing typed or ticked says so (qc-controls run 1 blocker 3)
+page|tests/e3_setuplater.js|e3_setuplater: ALL PASS||300|setup's last step says loans, goals and budget lines are added on Plan, with the buttons (qc-controls run 1 blocker 2)
+page|tests/e3_tabsetup.js|e3_tabsetup: ALL PASS||300|setup left open in a second tab never writes over a book another tab made; the tab takes it in and says so (qc-data-safety run 4 blocker 1)
 page|tests/e3_warnwords.js|e3_warnwords: ALL PASS||300|Home words the engine's warnings itself: below zero with no minimum, no raw ISO day or month
 page|tests/e3_cardline.js|e3_cardline: ALL PASS||300|a card with an overdue payment never says nothing to pay yet
 page|tests/e3_bankparts.js|e3_bankparts: ALL PASS||300|bank today in its parts once something is logged after the check
@@ -69,12 +76,17 @@ page|tests/e3_cardgap.js|e3_cardgap: ALL PASS||300|a card's gap across pay day (
 page|tests/e3_cardpay.js|e3_cardpay: ALL PASS||300|Check your bank asks whether a card's unticked payment went out when the card shows far less than the app had; Yes ticks it (M11, M27)
 page|tests/e3_doors.js|e3_doors: ALL PASS||300|Receipts' two doors at 320 (M22): Money went out and Money came in, Refund and Moved under them, one of each door saved
 page|tests/e3_moved1.js|e3_moved1: ALL PASS||300|Moved with one account of your own says a second account is needed, no empty To list and no Save (K18)
+page|tests/e3_moved2.js|e3_moved2: ALL PASS||300|Moved: To follows From, money can be moved into the main bank (qc-numbers monthrule2 blocker 2)
 page|tests/e3_moneyin.js|e3_moneyin: ALL PASS||300|Receipts: Money in, a client payment or a gift (slice 6)
 page|tests/e3_amounts.js|e3_amounts: ALL PASS||300|every amount box: a tap, click or Tab, or a form's own focus, selects, so typing replaces (screens/inputs.js)
 page|tests/e3_bigspend.js|e3_bigspend: ALL PASS||300|a spend larger than what its account holds asks first, new or changed (north star F5)
 page|tests/e3_panels.js|e3_panels: ALL PASS||300|only the tapped tab's panel shows (every tab after every other, the sheets)
 page|tests/e3_lineshare.js|e3_lineshare: ALL PASS||300|a line added mid-period: one amount that counts now, the full one in a sentence, how far over
 page|tests/e3_plan.js|e3_plan: ALL PASS||300|the Plan tab
+page|tests/e3_accounts.js|e3_accounts: ALL PASS||300|Plan > Accounts after setup (M13, M23): every bank, cash and e-wallet listed, Add an account (new money as it is, moved money as a move), rename, its own Keep at least, Undo, after a reload
+page|tests/e3_billyear.js|e3_billyear: ALL PASS||300|a yearly bill after setup (M13): Add a bill asks how often, once a year asks the month and day; its sheet changes them from a date; Undo; after a reload
+page|tests/e3_payfrom.js|e3_payfrom: ALL PASS||300|which account pays a card, a loan or a bill, chosen and changed after setup (M13, M23), with a card's weekend rule; refused with words while a payment gone by is not ticked off; Undo; after a reload
+page|tests/e3_remkeep.js|e3_remkeep: ALL PASS||300|Reminders keep each choice on this phone (M13, M61): after Close and a reload as left, and the sheet says so; a calendar already filled changes only with a new file
 page|tests/e3_rhythms.js|e3_rhythms: ALL PASS||300|Plan names every rhythm: two days, weeks with the weekday, every few months, set months, once a year, once, the last working day, no fixed day (slice 6)
 page|tests/e3_names.js|e3_names: ALL PASS||300|one figure, one name on Home, Receipts and Plan (labels from screens/names.js)
 page|tests/e3_first.js|e3_first: ALL PASS||300|the ways out of the first screen and the made-up numbers
@@ -156,10 +168,10 @@ page_tests_for() {   # page_tests_for <changed path, relative to app3/>
     tests/chat_real.js)       echo e3_ailog e3_aiwords e3_fillcard e3_cloudfirst e3_aijoin ;;   # a helper (the real core and panel with the fake model behind a made-up relay), not a test
     tests/*.js)               [ -f "$1" ] && basename "$1" .js ;;   # a test file removed on purpose has no test to run
     src/home3.js)             echo e3_cloudstatus e3_home e3_ns e3_homeplan e3_warnwords e3_cardline e3_bankparts e3_names e3_payday ;;
-    src/checkin3.js)          echo e3_checkin e3_checkgap e3_cardfig e3_reload e3_bankparts e3_payday e3_overdrawn e3_cardpay ;;
-    src/receipts3.js)         echo e3_removes e3_receipts e3_listfix e3_moneyin e3_bigspend e3_stmt_once e3_period e3_names e3_doors e3_moved1 e3_cardgap ;;
-    src/plan3.js|src/plan3_write.js) echo e3_removes e3_aijoin e3_plan e3_rhythms e3_lineshare e3_homeplan e3_paychange e3_names ;;
-    src/setup3.js|src/answers3.js) echo e3_twodrafts e3_fillcard e3_setup e3_setupfix e3_setup6 e3_income2 e3_weeks3 e3_first e3_onepay e3_overdrawn e3_paytoday e3_chatwalk e3_chat ;;
+    src/checkin3.js)          echo e3_checkin e3_checkgap e3_checkblank e3_cardfig e3_reload e3_bankparts e3_payday e3_overdrawn e3_cardpay e3_paycame ;;
+    src/receipts3.js)         echo e3_removes e3_receipts e3_listfix e3_moneyin e3_bigspend e3_stmt_once e3_period e3_names e3_doors e3_moved1 e3_moved2 e3_cardgap ;;
+    src/plan3.js|src/plan3_write.js) echo e3_accounts e3_billyear e3_payfrom e3_removes e3_aijoin e3_plan e3_rhythms e3_lineshare e3_homeplan e3_paychange e3_names ;;
+    src/setup3.js|src/answers3.js) echo e3_twodrafts e3_fillcard e3_setup e3_setupfix e3_setup6 e3_income2 e3_weeks3 e3_first e3_onepay e3_overdrawn e3_paytoday e3_chatwalk e3_chat e3_setup2tabs e3_setuplater e3_tabsetup ;;
     src/chat3*.js)            echo e3_twodrafts e3_ailog e3_aiwords e3_fillcard e3_cloudfirst e3_aijoin e3_chat e3_chatwalk e3_fakeai_page e3_fillundo e3_invite e3_back e3_cloudhold ;;
     src/start3.js)            echo e3_first e3_file e3_try e3_chat e3_cloudtake ;;
     src/back3.js)             echo e3_back e3_undobar e3_checkin e3_plan e3_receipts e3_setupfix e3_stmt e3_remind e3_backup e3_tabs e3_stalesheet e3_cloudhold ;;
@@ -168,7 +180,7 @@ page_tests_for() {   # page_tests_for <changed path, relative to app3/>
     src/backup3.js|src/settings3.js) echo e3_backup e3_tabs e3_ailog e3_invite e3_restore e3_cloudhold ;;
     src/sw3.js|src/settings3_sw.js|sw3.js) echo e3_sw offline e3_install ;;
     src/cloud3*.js)           echo e3_cloudfirst e3_cloud e3_cloudbase e3_cloudtake e3_cloudsend e3_cloudhold e3_cloudwhich e3_cloudwhich2 e3_cloudstatus e3_restore ;;
-    src/remind3*.js)          echo e3_remind ;;
+    src/remind3*.js)          echo e3_remind e3_remkeep ;;
     publish3.sh)              echo e3_publish e3_install ;;
     manifest3.webmanifest|make_icons3.js|icon3-*.png) echo e3_install ;;
   esac

@@ -35,6 +35,10 @@ const homeBank = (p, id) => p.$eval(`#a3Home [data-card=bank][data-acct="${id}"]
   ck('the list shows it as Money in', list.some(x => x.id === e.id && /^Money in/.test(x.text)), JSON.stringify(list));
   await p.tap('[data-tab="home"]'); await T.w(200);
   let r = T.L.lookahead(bk, DAY);
+  /* [qc-numbers run 1 C1, M51] cash is never called a bank: the wallet's card on Home reads "Wallet today", the bank's "Bank today: <name>" */
+  const heads = await p.$$eval('#a3Home [data-card=bank]', es => es.map(e => [e.dataset.acct, e.querySelector('h2').textContent]));
+  const wh = (heads.find(h => h[0] === WALLET) || [])[1], bh = (heads.find(h => h[0] === bank) || [])[1];
+  ck('C1: the wallet on Home is "Wallet today", never "Bank today"', wh === 'Wallet today' && /^Bank today: /.test(bh || ''), JSON.stringify(heads));
   ck('Home: the bank is up by 25,000, as the engine says', (await homeBank(p, bank)) === r0.accounts[bank].bank + 25000 && r.accounts[bank].bank === r0.accounts[bank].bank + 25000);
   /* a gift in cash, into the wallet */
   await p.tap('[data-tab="receipts"]'); await T.w(200);

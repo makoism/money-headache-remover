@@ -97,6 +97,10 @@ function safeUntil3(r, yr, home) {
   /* [CA8] on the morning of pay day, before the pay is ticked, today is still the old period's last day: the engine says
      the figure runs to today's pay (safeToSpend.untilPay is today's own pay), and the heading says so */
   if (n.days === 0 && r.safeToSpend.untilPay && r.safeToSpend.untilPay === np.item) return ` until today's pay is in`;
+  /* [qc-numbers run 1 B5, coordinator 17's ruling (a)] pay-day morning, today's pay not ticked (the period running now
+     still ends with it) and Free to spend left caps safe to spend: the figure is the old period's Free to spend left, so
+     the heading names the old period until the pay is ticked */
+  if (n.days === 0 && r.safeToSpend.cappedByFreeToSpend && r.period.end >= np.next_pay) return ` until today's pay is in`;
   /* [C8, M51] "next pay" on this screen is today's pay (the period card), so this one is named "the pay after today's" */
   if (n.days === 0 && r.safeToSpend.until) return ` until the pay after today's, on ${esc3(day3(r.safeToSpend.until, yr))}${r.safeToSpend.notCounting ? ', not counting today\'s pay (not in at your check today)' : ''}${notInWords}`;
   return ` until next pay on ${d}${notInWords}`;
@@ -164,8 +168,9 @@ function drawHome3() {
   if (cloudLine) out.push(`<p class="a3-warn" data-cloud="home">${esc3(cloudLine)}</p>`);
   /* bank today, one figure per account, with its age */
   for (const id of ids) {
-    const a = r.accounts[id];
-    out.push(`<section class="a3-card" data-card="bank" data-acct="${esc3(id)}"><h2>${esc3(label3('bankToday'))}: ${esc3(E3.nameOf(id))}</h2>
+    const a = r.accounts[id], isBank = ((E3.book.accounts || []).find(x => x.id === id) || {}).type === 'bank';
+    /* [qc-numbers run 1 C1, M51] cash or an e-wallet is never called a bank: "Wallet today" */
+    out.push(`<section class="a3-card" data-card="bank" data-acct="${esc3(id)}"><h2>${isBank ? `${esc3(label3('bankToday'))}: ${esc3(E3.nameOf(id))}` : `${esc3(E3.nameOf(id))} today`}</h2>
       <p class="a3-big" data-fig="bank">${fig3('accounts.*.bank', a.bank, a.currency)}</p>
       <p class="a3-sub" data-fig="age">${bankParts3(a, yr)}</p></section>`);
   }
@@ -216,7 +221,9 @@ function drawHome3() {
   const due = r.dueBeforeNextPay;
   const byAcct = Object.keys(due.byAccount).map(acct => `<p class="a3-acct">From ${esc3(E3.nameOf(acct))}</p><ul class="a3-rows">${rowsHtml3(due.items.filter(o => o.account === acct), E3.curOf(acct), yr, 'dueBeforeNextPay.items')}</ul>`).join('');
   /* [F13] with no fixed pay, "due" is the next 30 days */
-  const dueName = label3('dueBeforeNextPay', { noFixedPay: !r.period });
+  /* [qc-numbers confirming run 2, B5] on a pay day the engine's list runs to the pay after today's (G4): its heading says so */
+  const np0 = r.daysToNextPay || {};
+  const dueName = label3('dueBeforeNextPay', { noFixedPay: !r.period, payToday: !!r.period && np0.days === 0 && !!r.safeToSpend.until && r.safeToSpend.until !== np0.next_pay });
   /* the late card and loan payments (the engine's overdue lists): listed once, in the overdue card [C10] */
   const odSeen = new Set([].concat(...[r.cards, r.owed || {}].map(m => [].concat(...Object.keys(m).map(id => (m[id].overdue || []).map(o => o.item))))));
   /* [C11] bills past their day and not ticked: the sum takes them off today (", late"), so they are listed here too, under

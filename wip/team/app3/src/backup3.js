@@ -101,9 +101,10 @@
           out[k] = list;
         } else if (isRecords(x)) out[k] = x.map(mark);
         else if (isSetting(x)) out[k] = mark(x);   // a setting, { v } with or without a change time
-        // a setting here (or in the copy last synced) that the restored copy lacks is saved marked gone, its value kept
-        // beside the mark (SCHEMA_V3 0 "Nothing is deleted"): left out, the join would read "never changed" and bring it back
-        else if (x === undefined && os.some(o => isSetting(o[k]))) { const e = os.map(o => o[k]).find(isSetting); out[k] = Object.assign(mark(e), { gone: e.gone || gone }); }
+        // a setting here (or in the copy last synced) that the restored copy lacks is saved as whichdoor's marker, v null
+        // (every reader reads it as not set, as the restored copy has it), marked gone, its value kept beside the mark in
+        // `before` (SCHEMA_V3 0 "Nothing is deleted"): left out, the join would read "never changed" and bring it back
+        else if (x === undefined && os.some(o => isSetting(o[k]))) { const e = os.map(o => o[k]).find(isSetting); out[k] = Object.assign(mark(e), { v: null, before: e.v === undefined ? null : e.v, gone: e.gone || gone }); }
         else if (isMap(x)) out[k] = walk(x, os.map(o => o[k]).filter(isMap), false);
         else if (x === undefined) { const w = walk({}, os.map(o => o[k]).filter(isMap), false); if (Object.keys(w).length) out[k] = w; }
         else out[k] = C(x);
@@ -144,14 +145,22 @@
     })(isMap(copy) ? copy : {}, '', true);
     return out;
   }
+  /* [qc-foundation point 6 on TABSETUP_PLAN] ONE diff by record id, each record counted once: only in `now` (n, by
+     kind), only in `from` (back, by kind: what Put it back or a restore brings back), in both and different (changed).
+     since(b, a) is since(a, b) with n and back swapped, so the restore question and Put it back count the same things */
   function since(from, now) {
-    const a = holds(from), b = holds(now), out = { n: 0, money: 0, checks: 0, other: 0, changed: 0, all: 0 };   // all: added and changed together
+    const a = holds(from), b = holds(now), out = { n: 0, money: 0, checks: 0, other: 0, changed: 0, all: 0, back: { n: 0, money: 0, checks: 0, other: 0 } };   // all: every record counted, once
     for (const [k, v] of b) {
       const w = a.get(k);
       if (w) { if (w.c !== v.c) { out.changed++; out.all++; } }
       else if (k.startsWith('/checkins#')) continue;
       else if (v.kind === 'plain') { out.changed++; out.all++; }
       else { out.n++; out.all++; out[v.kind]++; }
+    }
+    for (const [k, w] of a) {
+      if (b.has(k) || k.startsWith('/checkins#')) continue;
+      if (w.kind === 'plain') { out.changed++; out.all++; }   // a plain value only one side has: it differs
+      else { out.back.n++; out.all++; out.back[w.kind]++; }
     }
     return out;
   }

@@ -189,7 +189,7 @@ async function readBackup3(file, code) {
   /* [M7; qc-data-safety B2] records in the backup dated or told after today (a clock that was ahead): said before the yes */
   const nAhead = typeof rcAhead3 === 'function' ? rcAhead3(r.copy).length : 0;
   const aheadSay = nAhead ? ` ${nAhead === 1 ? '1 of them is' : nAhead + ' of them are'} dated after today. They do not count until their day, and Receipts lists them.` : '';
-  const after = E3.book ? `<br>Anything you logged after this backup was made goes${on ? ', on every device' : ' from this device'}${s.n ? `: ${things3(s.n)} here now ${s.n === 1 ? 'is' : 'are'} not in it ${kinds3(s)}` : ''}. Put it back brings it back.` : '';
+  const after = E3.book ? `<br>Anything you logged after this backup was made goes${on ? ', on every device' : ' from this device'}${s.n ? `: ${things3(s.n)} here now ${s.n === 1 ? 'is' : 'are'} not in it ${kinds3(s)}` : ''}.${s.changed ? ` ${things3(s.changed)} here now ${s.changed === 1 ? 'goes back to how the backup has it' : 'go back to how the backup has them'}.` : ''}${s.back && s.back.n ? ` ${things3(s.back.n)} in the backup and not here now ${s.back.n === 1 ? 'comes' : 'come'} back ${kinds3(s.back)}.` : ''} Put it back brings it back.` : '';
   ask.innerHTML = `<p class="a3-warn" data-set="restoreask">${E3.book ? 'This replaces the money on this device with the backup. What is here now is kept, and Put it back brings it back.' : 'This puts the money from the backup on this device.'} The backup holds ${n} record${n === 1 ? '' : 's'}.${aheadSay}${others}${after}</p>
     <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3BkGo">Restore it</button><button type="button" class="a3-btn" id="a3BkNo">Cancel</button></div>`;
   $('#a3BkGo').addEventListener('click', async () => {
@@ -208,8 +208,11 @@ function backWords3(s, on) {
   const all = s.all, where = on ? ', on every device after the next send' : ', from this device';
   if (!all) return 'Put this copy back? Nothing was added or changed since it was kept. What is here now is kept first, with its own Put it back.';
   const added = s.n ? `${things3(s.n)} added since it was kept ${s.n === 1 ? 'goes' : 'go'} ${kinds3(s)}` : 'Nothing was added since it was kept';
-  const changed = s.changed ? `, and ${things3(s.changed)} changed since ${s.changed === 1 ? 'goes back to how it was' : 'go back to how they were'}` : '';
-  return `Put this copy back? ${added}${changed}${where}. What is here now is kept first, and its own Put it back brings ${all === 1 ? 'it' : 'them'} back.`;
+  const b = s.back || { n: 0 };
+  const changed = s.changed ? `${b.n ? ',' : ', and'} ${things3(s.changed)} changed since ${s.changed === 1 ? 'goes back to how it was' : 'go back to how they were'}` : '';
+  /* [qc-foundation point 6] what the copy holds that is not here now (taken out since, by a restore or a remove) comes back */
+  const back = b.n ? `, and ${things3(b.n)} taken out since ${b.n === 1 ? 'comes' : 'come'} back ${kinds3(b)}` : '';
+  return `Put this copy back? ${added}${changed}${back}${where}. What is here now is kept first, and its own Put it back brings ${all === 1 ? 'it' : 'them'} back.`;
 }
 function dropWords3(s) {
   return `Drop this copy? It is the only copy of the money from before your first restore${s.n ? `, with ${things3(s.n)} that ${s.n === 1 ? 'is' : 'are'} not in the money here now ${kinds3(s)}` : ''}. Undo brings it back while Settings stays open, and after that nothing can.`;

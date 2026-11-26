@@ -1500,6 +1500,7 @@ details summary { min-height: 44px; }
    "Landed on") takes the row's full width instead of the tick's narrow column (qc-layout blocker 1) */
 .a3-in[type="date"] { min-width: min(100%, 10.5em); }
 .a3-tick > .a3-field { grid-column: 1 / -1; }
+.a3-came { border: 0; padding: 0; margin: 8px 0 0; min-width: 0; } .a3-came .a3-q { padding: 0; margin-bottom: 6px; font-size: var(--t-sm); } .a3-came .a3-segs { flex-wrap: wrap; } .a3-came input[type=date] { margin-top: 8px; }
 </style>
 </head>
 <body>
@@ -2163,7 +2164,7 @@ details summary { min-height: 44px; }
      opts.at            'end of day' (default) or 'start of day'
      opts.calendars     { <country>: { holidays: [dates], bankClosed: [dates] } } replacing the built-in tables
      opts.deviceOffset  the device's offset ('+09:00'), for a time saved with no offset of its own [X9]
-     opts.mostlyBeforePay  the person's answer to the filler question [A4]
+     opts.mostlyBeforePay  no longer read: a check's gap is its own period's, whole [CHECKGAP, replacing A4]
    The result's names are those of SCHEMA_V3 section 12. Every amount is in whole minor units, every date a whole day
    number inside (D8). A copy the rules forbid (a closed account still holding money [P6], a schedule change that no
    longer makes a settled or named occurrence [X8]) is refused with an error that names the decision.
@@ -2599,6 +2600,12 @@ details summary { min-height: 44px; }
     const byTime = (x, y) => x.day - y.day || keyCmp(x.key, y.key) || x.idx - y.idx;
     const isClosingRecord = (e, id) => e.id === I.built.close(id) || String(e.id).startsWith(I.built.close(id) + ':');
     const heldBy = [];   // [S3] records told after a check that holds them: { id, account, check }
+    // [CHECKGAP] a record told after the first check that holds it (bank or card) only explains part of that check's
+    // gap, so it counts in the check's period (the day of the check), never in a closed one, and never moves safe to
+    // spend up: id -> the check's day, the earliest when two hold it
+    const lateDay = new Map();
+    const lateTo = (rid, day) => { if (!lateDay.has(rid) || lateDay.get(rid) > day) lateDay.set(rid, day); };
+    const countDay = e => (lateDay.has(e.id) ? Math.max(e.day, lateDay.get(e.id)) : e.day);
     function bankInfo(id) {
       let base = openingOf(id);
       // [Z1] a check whose large gain was answered "wrong" counts nowhere; the account asks for the figure again
@@ -2630,7 +2637,7 @@ details summary { min-height: 44px; }
         let computed = base.amount;
         moves.forEach((e, k) => { if (isIn[k] !== wasIn[k]) computed += isIn[k] ? delta(e, id) : -delta(e, id); });
         // [S3, AN4] a record told after this check but inside it: named, so the screens can say the figure holds it
-        moves.forEach((e, k) => { if (isIn[k] && !wasIn[k] && e.key > cc.key) heldBy.push({ id: e.id, account: id, check: dayStr(cc.day) }); });
+        moves.forEach((e, k) => { if (isIn[k] && !wasIn[k] && e.key > cc.key) { heldBy.push({ id: e.id, account: id, check: dayStr(cc.day) }); lateTo(e.id, cc.day); } });
         wasIn = isIn;
         const fp = fillerPlaceOf(c);
         fillers.push(Object.assign(makeFiller(id, c.day > base.day ? base.day + 1 : c.day, c.day, computed - c.a), fp ? { place: fp } : {},
@@ -2647,27 +2654,11 @@ details summary { min-height: 44px; }
       const bank = base.amount + loggedIn - loggedOut;
       return { bank, checked: base.amount, loggedIn, loggedOut, asOfDay: base.day, fillers, lastGap, askAgain: askAgain ? wrong.day : null };
     }
-    // [A3, A4, T6] the filler of a stretch, split by days at each period start in it (or all to the older period)
+    // [CHECKGAP] the filler of a stretch: the days it covers (`from`, `to`, for the words) and ONE part, on the check's
+    // own day, holding the whole gap: a gap found at a check is that check's period's, whole (coordinator 15, 26 Nov,
+    // replacing BZ1's and CARDGAP 2b's by-days split and A4's `mostlyBeforePay`); a closed period never changes by it
     function makeFiller(id, first, last, amount) {
-      // [CARDGAP 2b] cut at every day a reader counts from: each period start, and, while the plan runs by the day (no
-      // fixed pay), each calendar month's first day and the day of the change to no fixed pay; so a gap across the 1st
-      // is split by days and never counts nowhere
-      const byDayCuts = [];
-      if (!periodStream) {
-        const [fy, fm] = ymOf(first);
-        for (let k = 1; ; k++) { const d = dayIn(fy, fm + k, 1); if (d > last) break; byDayCuts.push(d); }
-        if (noneSince != null) byDayCuts.push(noneSince);
-      }
-      const starts = [...new Set(periodStartDays.concat(byDayCuts))].filter(d => d > first && d <= last).sort((x, y) => x - y);
-      const cuts = [first, ...starts, last + 1], days = last - first + 1, parts = [];
-      let given = 0;
-      for (let i = 0; i < cuts.length - 1; i++) {
-        const n = cuts[i + 1] - cuts[i];
-        const share = opts.mostlyBeforePay ? (i === 0 ? amount : 0) : i === cuts.length - 2 ? amount - given : Math.round(amount * n / days);
-        given += share;
-        parts.push({ from: dayStr(cuts[i]), to: dayStr(cuts[i + 1] - 1), days: n, amount: share });
-      }
-      return { account: id, from: dayStr(first), to: dayStr(last), amount, parts };
+      return { account: id, from: dayStr(first), to: dayStr(last), amount, parts: [{ from: dayStr(last), to: dayStr(last), days: 1, amount }] };
     }
 
     // ----- plans of a loan or pay-later [Q3] -----
@@ -2779,8 +2770,10 @@ details summary { min-height: 44px; }
       const stmtAmount = cl => { const b = statementsTo(cl, cl).list.find(x => x.close === cl); return b ? b.amount : owedAt(cl); };
       // a card check sets the statement it names and what is owed now; the gaps are its fillers [A3]
       const fillers = [];
-      // [CARDGAP] each gap carries the days it covers (the day after this card's check before it, to this check) and
-      // is cut by days like a bank's (makeFiller); the checks are walked in the bank's order, never as told
+      // [CARDGAP, CHECKGAP] each gap carries the days it covers (the day after this card's check before it, to this
+      // check) for the words, and counts whole on the check's own day, as a bank's (makeFiller); the checks are walked in
+      // the bank's order, never as told. A record on the card dated by a check and told after it explains part of that
+      // check's gap and counts with it (lateTo)
       const cardChecks = live().filter(x => x.k === 'check' && x.account === id && !x.stmt).sort(byTime);
       for (const e of cardChecks) {
         // the check before this one: the latest on an earlier day, else the card's opening day (its opening check is not
@@ -2789,15 +2782,15 @@ details summary { min-height: 44px; }
         const sameDayEarlier = cardChecks.slice(0, cardChecks.indexOf(e)).some(x => x.day === e.day);
         const openD = openEv[id] ? openDay(id) : null;
         const prevDay = sameDayEarlier ? e.day - 1 : before.length ? Math.max(...before) : openD != null && openD < e.day ? openD : null;
-        const parts = [];
-        const stretch = (from, to, amount) => { if (amount) parts.push(...makeFiller(id, Math.min(from, to), to, amount).parts); };
-        let gap = 0, closed = null;
+        for (const x of live()) if (x.account === id && x.k !== 'check' && x.day <= e.day && keyCmp(x.key, e.key) > 0) lateTo(x.id, e.day);
+        let gap = 0, closed = null, first0 = null;
+        const stretch = (from, to) => { const f = Math.min(from, to); if (first0 === null || f < first0) first0 = f; };
         const sx = live().find(x => x.k === 'check' && x.account === id && x.stmt && x.grp != null && x.grp === e.grp);
         if (sx) {
           const cl = dayNum(sx.stmtDate), g = sx.a - stmtAmount(cl);
           if (g) lines.push({ day: cl, amount: g, what: 'filler' });
           gap += g;
-          stretch(prevDay != null && prevDay < cl ? prevDay + 1 : cl, cl, g);   // a close day on or before the check before it: that one day
+          stretch(prevDay != null && prevDay < cl ? prevDay + 1 : cl, cl);   // a close day on or before the check before it: that one day
           closed = cl;
         }
         const g2 = e.a - owedAt(e.day);
@@ -2837,10 +2830,10 @@ details summary { min-height: 44px; }
           if (rest) lines.push({ day: e.day, amount: rest, what: 'filler' });
         }
         gap += g2;
-        stretch(last0 === -Infinity ? e.day : last0 + 1, e.day, g2);
+        if (g2) stretch(last0 === -Infinity ? e.day : last0 + 1, e.day);
         // more: typed above what the app had (spending not logged); less: below it (comes off spending), each 0 or more
         fillers.push({ account: id, day: e.date, amount: gap, more: Math.max(0, gap), less: Math.max(0, -gap),
-          from: parts.length ? parts[0].from : e.date, to: e.date, parts });
+          from: gap && first0 !== null ? dayStr(first0) : e.date, to: e.date, parts: gap ? makeFiller(id, e.day, e.day, gap).parts : [] });
       }
       const owedNow = owedAt(knownTo) + lines.filter(l => l.day > knownTo).reduce((t, l) => t + l.amount, 0);
 
@@ -3202,7 +3195,7 @@ details summary { min-height: 44px; }
         const fromOpening = !byDay && (lastPay === null || lastPay <= openDay(moved ? sa : acctId));
         const perOf = lineId === 'free' ? fPer : (lineSrcs.find(x => x.id === lineId) || {}).per;
         const start = byDay ? monthShare(amount, perOf, moved ? sa : acctId) : fromOpening ? (atOpening != null ? atOpening : amount) : amount;
-        const inLine = e => lineOfSpend(e) === lineId && e.account && openEv[e.account] && !inside(e, openingOf(e.account), e.account) && (fromOpening || e.day >= lp) && e.day <= upTo;
+        const inLine = e => lineOfSpend(e) === lineId && e.account && openEv[e.account] && !inside(e, openingOf(e.account), e.account) && (fromOpening || countDay(e) >= lp) && countDay(e) <= upTo;   // [CHECKGAP] told after its check: the check's day
         const counts = e => inLine(e) && cur(e.account) === cur(acctId);   // [T5] only spends in the line's own currency
         if (!past) for (const e of live().filter(x => x.k === 'spend' && !isFeeRecord(x) && inLine(x) && cur(x.account) !== cur(acctId)))
           res.warnings.push({ account: e.account, code: 'spend_other_currency', line: lineId, event: e.id,
@@ -3656,10 +3649,20 @@ details summary { min-height: 44px; }
       const inStretch = cardSteps.filter(x => x.day <= last);
       const laterCardDays = [];
       for (const c of mine) if (firstOf[c] != null) for (const d of cards[c].landsBetween(firstOf[c], last)) if (!cardSteps.some(x => x.card === c && x.day === d)) laterCardDays.push({ card: c, day: dayStr(d) });
+      // [qc-numbers monthrule2 blocker 4] a card paid in full whose close day is "not sure": the figure says it counts
+      // everything on the card now, so what is on it beyond the payments in the stretch (a spend after an overdue
+      // payment, held for the next payment) goes out with that card's first payment
+      const extraOn = {};
+      for (const c of mine) {
+        if (firstOf[c] == null || acct[c].inFull === false || !cards[c].cardItems.some(x => x.statement === 'all owed')) continue;
+        const taken = inStretch.filter(x => x.card === c).reduce((t, x) => t - x.amount, 0), extra = cards[c].owedNow - taken;
+        if (extra > 0) extraOn[firstOf[c]] = (extraOn[firstOf[c]] || 0) + extra;
+      }
       let bal = w.start, dip = null;
       const upTo = real.filter(x => x.day <= last);
       for (let i = 0; i < upTo.length; i++) {
         bal += upTo[i].amount + (upTo[i].fromPlace ? -upTo[i].fromPlace.amount : 0);
+        if (upTo[i].card && extraOn[upTo[i].day] && firstOf[upTo[i].card] === upTo[i].day) { bal -= extraOn[upTo[i].day]; delete extraOn[upTo[i].day]; }
         if (upTo[i + 1] && upTo[i + 1].day === upTo[i].day) continue;
         if (upTo[i].day < last && bal < 0 && (!dip || -bal > dip.amount)) dip = { day: dayStr(upTo[i].day), amount: -bal };
       }
@@ -4557,6 +4560,17 @@ details summary { min-height: 44px; }
     if (s === '') return { ok: false, reason: 'empty' };
     const m = /^(-)?(\d[\d,]*)?(?:\.(\d*))?$/.exec(s);
     if (!m || (!m[2] && !m[3])) return { ok: false, reason: 'not_a_number' };
+    /* [qc-numbers run 1 B4] a comma not in a thousands place ("1,0000", "10,00") is a slip: refused with both readings
+       (the commas dropped, or each group after the first made three digits), never read one way silently */
+    if (m[2] && m[2].includes(',')) {
+      const g = m[2].split(',');
+      if (g[0].length > 3 || g.slice(1).some(x => x.length !== 3)) {
+        const fr = (m[3] || '').padEnd(d, '0').slice(0, d);
+        const a = g.join(''), b = g[0] + g.slice(1).map(x => x.slice(0, 3).padEnd(3, '0')).join('');
+        const means = [...new Set([a, b].map(x => Number(x.replace(/^0+(?=\d)/, '') + fr)))].sort((x, y) => x - y);
+        return { ok: false, reason: 'commas', means };
+      }
+    }
     const whole = (m[2] || '0').replace(/,/g, '').replace(/^0+(?=\d)/, ''), frac = m[3] || '';
     if (frac.length > d) return { ok: false, reason: 'decimals' };
     if (whole.length > MAX_WHOLE_DIGITS) return { ok: false, reason: 'too_big' };
@@ -4667,8 +4681,8 @@ details summary { min-height: 44px; }
       source: 'DECISIONS_ROUND2 F11 (other currencies beside Total, never converted)',
     },
     dueBeforeNextPay: {
-      label: 'Due before next pay', when: { noFixedPay: 'Due in the next 30 days' }, figures: ['dueBeforeNextPay.total'], state: 'decided',
-      source: 'DECISIONS_ROUND2 F7, F13, F21',
+      label: 'Due before next pay', when: { noFixedPay: 'Due in the next 30 days', payToday: 'Due before the pay after today\'s' }, figures: ['dueBeforeNextPay.total'], state: 'decided',
+      source: 'DECISIONS_ROUND2 F7, F13, F21; payToday: qc-numbers confirming run 2 (B5), on a pay day the list runs to the pay after it (G4)',
     },
     notSeenYet: {
       label: 'Not seen yet', figures: ['notSeenYet.items'], state: 'decided', source: 'DECISIONS_ROUND2 F3, F4',
@@ -4747,6 +4761,17 @@ details summary { min-height: 44px; }
     return { y: m[1], m: m[2], d: m[3].replace(/^0/, ''), s: m[0] };
   }
   function dayLabel(s, withYear) { const p = parseDay(s); return [p.d, MONTHS[p.m]].concat(withYear ? [p.y] : []).join(' '); }
+  /* [qc-controls 2to5 F2] the day a pay or bill lands, in one set of words for every screen and the assistant: its
+     landing day, and when a weekend or holiday moved it off its due day, why: "25 Dec (26 Dec is a Saturday, so the
+     working day before)". Without the reason a row reading "day 26 each month, next 25 Dec" looks like the change did
+     not take effect. The engine's occurrence gives both days (land, due); nothing is worked out here but the weekday. */
+  const WEEKDAY = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  function landLabel(land, due, withYear) {
+    const at = dayLabel(land, withYear);
+    if (!due || due === land) return at;
+    const wd = new Date(parseDay(due).s + 'T00:00:00Z').getUTCDay();
+    return `${at} (${dayLabel(due, withYear)} is ${wd === 0 || wd === 6 ? 'a ' + WEEKDAY[wd] : 'a holiday'}, so the working day ${land < due ? 'before' : 'after'})`;
+  }
   /* a month as VOICE says: "Feb 2027" (from a real day in it) */
   function monthLabel(s) { const p = parseDay(s); return MONTHS[p.m] + ' ' + p.y; }
   /* "10 Nov to 9 Dec"; across the new year both days carry their year (for Mako: whether the year shows otherwise) */
@@ -4767,7 +4792,7 @@ details summary { min-height: 44px; }
     return words.length ? words.join(', ') + ' and ' + tail : tail;
   }
 
-  return { NAMES, label, byFigure, labelKey, check, forMako, notInEngine, dayLabel, dayList, monthLabel, periodLabel };
+  return { NAMES, label, byFigure, labelKey, check, forMako, notInEngine, dayLabel, landLabel, dayList, monthLabel, periodLabel };
 });
 /* The one status every screen reads (DECISIONS_ROUND2 C, sweep2_repeats A1 and B2, LESSONS lesson 2). It is worked out
    from the engine's result only (SCHEMA_V3 section 12: safe to spend, warnings, next pay, not seen yet, the check-in
@@ -5105,6 +5130,7 @@ details summary { min-height: 44px; }
     decimals_none: E('{name} has no decimals. Type a whole amount'),
     minus: E('That can\'t be below zero. Type it without the minus'),
     too_big: E('That amount is too big. Check the digits'),
+    commas: E('Did you mean {means}?'),
   };
   const CURRENCY_NAMES = { JPY: 'Yen', KRW: 'Won' };
 
@@ -5117,7 +5143,8 @@ details summary { min-height: 44px; }
     if (r.ok) return { ok: true, minor: r.minor, value: money.toInput(r.minor, opts.code) };
     const d = money.digits(opts.code);
     const key = r.reason === 'decimals' && d === 0 ? 'decimals_none' : r.reason;
-    const message = ERRORS[key].text.replace('{digits}', String(d)).replace('{name}', CURRENCY_NAMES[opts.code] || opts.code);
+    const means = (r.means || []).map(n => money.format(n, opts.code)).join(' or ');
+    const message = ERRORS[key].text.replace('{digits}', String(d)).replace('{name}', CURRENCY_NAMES[opts.code] || opts.code).replace('{means}', means);
     return { ok: false, reason: r.reason, value: raw, message };
   }
 
@@ -6903,15 +6930,15 @@ function stmtReceipts(rows, catOf, acctOf) {
   function mainQuestion(copy, which, mins) {
     const kv = id => (copy.keptVersions || []).find(k => k.id === id);
     const mk = which.find(q => q.of === 'home.main');
-    const banks = new Set([].concat(mk ? kv(mk.kept).versions.map(v => v.v && v.v.acct) : [], copy.home && copy.home.main ? [copy.home.main.v.acct] : [], mins.map(q => q.account)).filter(Boolean));
+    const banks = new Set([].concat(mk ? kv(mk.kept).versions.map(v => v.v && v.v.acct) : [], copy.home && copy.home.main && copy.home.main.v ? [copy.home.main.v.acct] : [], mins.map(q => q.account)).filter(Boolean));
     const accts = which.filter(q => kv(q.kept).in === 'accounts' && banks.has(q.of) && new Set(kv(q.kept).versions.map(v => canon(v.minBank === undefined ? null : v.minBank))).size > 1);
     const parts = (mk ? 1 : 0) + accts.length + mins.length;
     if (parts < 2 || !(mk || mins.length)) return null;
     const kept = [].concat(mk ? [mk.kept] : [], accts.map(q => q.kept)).sort();
-    const acct = mins.length ? mins[0].account : accts.length ? accts[0].of : copy.home.main.v.acct;
+    const acct = mins.length ? mins[0].account : accts.length ? accts[0].of : ((copy.home.main || {}).v || {}).acct;   // [marker] v null is not set
     const a = (copy.accounts || []).find(x => x.id === acct) || {};
     const options = [...new Set([].concat(...kept.map(id => kv(id).versions.map(v => v.by))))].filter(Boolean).sort();
-    return { q: 'main', account: acct, kept, main: copy.home.main.v.min == null ? null : copy.home.main.v.min, own: a.minBank == null ? null : a.minBank, options };
+    return { q: 'main', account: acct, kept, main: ((copy.home.main || {}).v || {}).min == null ? null : copy.home.main.v.min, own: a.minBank == null ? null : a.minBank, options };
   }
   function afterSync(copy) {
     const c = closedChecks(copy);
@@ -6985,13 +7012,13 @@ function stmtReceipts(rows, catOf, acctOf) {
       if (pick === 'reopen') Object.assign(a, { closed: null }, stamp);
       else if (pick === 'move') {   // what is left goes to the main bank, dated the closing day, as the closing's next record [S3]
         const n = out.events.filter(e => isClosing(e, a.id)).length + 1;
-        const main = out.home.main.v.acct;
+        const main = ((out.home.main || {}).v || {}).acct;   // [marker] v null is not set
         const rec = q.left > 0 ? { acct: a.id, acct2: main, a: q.left } : { acct: main, acct2: a.id, a: -q.left };
         out.events.push(Object.assign({ id: 'close:' + a.id + ':' + n, k: 'transfer', date: a.closed }, rec, { told: stamp.at }, stamp));
       }
     } else if (q.q === 'minimum') {
       const a = out.accounts.find(x => x.id === q.account);
-      const min = pick === 'own' ? a.minBank : out.home.main.v.min;
+      const min = pick === 'own' ? a.minBank : (((out.home.main || {}).v || {}).min ?? null);   // [marker] v null is not set
       out.home.main = Object.assign({}, out.home.main, { v: { acct: q.account, min } }, stamp);
       Object.assign(a, { minBank: null }, stamp);
     } else if (q.q === 'main') {   // [AW4] one device's view: its version of each kept item, then the minimum from that view
@@ -8082,6 +8109,15 @@ RULES
         .map(x => ({ x, g: Math.abs(dayNum(x.lands) - dayNum(l.date)) })).filter(y => y.g <= 10).sort((p1, p2) => p1.g - p2.g || (p1.x.lands < p2.x.lands ? -1 : 1))[0];
       if (best) { l.settles = [best.x.item]; l.status = 'settles'; taken.add(best.x.item); }
     }
+    // [monthrule2 1b, way c part a] a pay ticked at a check is dated its due day; a statement line that replaces it with
+    // another day moves it (statement over typed) and the review says so, never silently: { s, was, now, starts }
+    const moved = [];
+    for (const l of all) {
+      const t = l.status === 'typed' && kept[l.typed];
+      if (!t || t.k !== 'in' || t.sub !== 'pay' || t.date === l.date || !(t.settles || []).length) continue;
+      const sc = (book.schedules || []).find(x => x && !x.gone && x.id === t.settles[0].s);
+      if (sc) moved.push({ s: sc.id, was: t.date, now: l.date, starts: !!sc.startsPeriod });
+    }
     const statements = [];
     for (const g of byRead) {
       const st = g.read.statement;
@@ -8097,7 +8133,7 @@ RULES
       if (l.dir === 'in') m.inA += l.a; else m.outA += l.a;
     }
     const count = s => all.filter(l => l.status === s).length;
-    return { today, lines: all, statements, merchants: Object.values(merchants).sort((x, y) => (y.inA + y.outA) - (x.inA + x.outA)),
+    return { today, lines: all, moved, statements, merchants: Object.values(merchants).sort((x, y) => (y.inA + y.outA) - (x.inA + x.outA)),
       counts: { read: all.length, repeat: count('repeat'), typed: count('typed'), settles: count('settles'), meets: count('meets'), new: count('new'), pick: count('pick'), askmove: count('askmove') },
       reads: byRead.map(g => ({ idx: g.idx, file: g.read.file, acct: g.acct.id, from: g.read.from, to: g.read.to, rows: g.lines.length, notes: g.read.notes || [] })) };
   }
@@ -8132,6 +8168,7 @@ RULES
         if (t.told) e.told = t.told;                          // [O1] it keeps the typed record's told
         if (!e.line && t.line) e.line = t.line;               // [BC4] and its budget line, so a coffee typed on Food stays on Food
         if (!e.place && t.place) e.place = t.place;
+        if (!e.sub && t.sub && t.k === e.k) e.sub = t.sub;     // [monthrule2 blocker 1] and what it is: a typed refund stays a refund
       }
       if (l.status === 'meets' && l.metImport) { e.gone = o.told ? o.told.slice(0, 10) : l.date; e.goneBy = l.meets; }   // the same payment, already read from the other side
       events.push(e);
@@ -8191,7 +8228,12 @@ RULES
     return { bank: d.balance !== null ? { a: m(d.balance), date: d.balanceDate } : null, pay: d.pay !== null ? { a: m(d.pay), how: d.how } : null, bills, cards: d.card !== null ? m(d.card) : null };
   }
 
-  const api = { plan, records, catsToKeep, knownCats, knownCards, knownMoves, setupHints, expectedOf, use };
+  /* the review's one line for a pay whose day a statement moved (name: schedule id to its name; day: a date to words) */
+  function movedWords(m, name, day) {
+    const end = new Date((dayNum(m.now) - 1) * MS).toISOString().slice(0, 10);
+    return `Your ${name(m.s)} came in on ${day(m.now)}, not ${day(m.was)}` + (m.starts ? `, so your last period now ends ${day(end)}` : '');
+  }
+  const api = { plan, records, movedWords, catsToKeep, knownCats, knownCards, knownMoves, setupHints, expectedOf, use };
   if (node) module.exports = api;
   else root.STMT3P = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
@@ -8473,9 +8515,21 @@ function screen3(draw) {
 function typed3(text, cur) { const r = SM.parse(text, cur); return r.ok ? r.minor : null; }
 /* [M47, K29] what a bank shows today can be below zero: the one box where a minus is read (a bank only, never a card,
    a pay or a bill), as whole minor units or null */
+/* [qc-numbers run 1 B4] a comma not in a thousands place ("1,0000"): the question to show in place of the box's own
+   words, "Did you mean ¥1,000 or ¥10,000?", or null for any other text */
+/* [qc-numbers run 1 POLISH] too many decimals says so at Save too, in the box's own words (screens/inputs.js) */
+function typedSlip3(text, cur) {
+  const r = SM.parse(text, cur, { allowMinus: true });
+  if (r.ok) return null;
+  if (r.reason === 'commas') return `Did you mean ${r.means.map(n => money3(n, cur)).join(' or ')}?`;
+  return r.reason === 'decimals' ? BurrowScreens.inputs.commit(text, { code: cur, allowMinus: true }).message : null;
+}
 function typedBank3(text, cur) { const r = SM.parse(text, cur, { allowMinus: true }); return r.ok ? r.minor : null; }
 /* '2026-12-10' as '10 Dec', with the year when it is not the shown day's year */
 const day3 = (s, thisYear) => (s ? SN.dayLabel(s, !!thisYear && s.slice(0, 4) !== thisYear) : '');
+/* [qc-controls 2to5 F2] a pay or bill's landing day, and why when a weekend or holiday moved it (screens/names.js
+   landLabel): `o` is the engine's occurrence { land, due } */
+const land3 = (o, thisYear) => (o && o.land ? SN.landLabel(o.land, o.due, !!thisYear && o.land.slice(0, 4) !== thisYear) : '');
 const label3 = (key, ctx) => SN.label(key, ctx);
 /* [slice 6] a schedule's rhythm in words, one function for every screen: "day 10 each month", "day 15 and the last day
    each month", "every 2 weeks, on Fridays", "every 3 months, on day 15", "each year in May and Nov, on day 31", "each
@@ -8572,7 +8626,7 @@ const E3 = (() => {
       const r = await store.load();
       readOnly = !!r.readOnly;
       if (!r.empty && r.copy) { book = r.copy; mode = 'kept'; }
-      store.onOther(ch => { if (joinIn(ch)) shown(); });   // another tab saved: take it in and draw it
+      store.onOther(ch => { if (joinIn(ch)) shown(); else if (!book && mode === 'none') adopt(); });   // another tab saved: take it in and draw it
       hold = !!(mode === 'kept' && r.device && r.device.fillHold);
     } catch (e) { store = null; }
   }
@@ -8587,6 +8641,18 @@ const E3 = (() => {
     const byId = (mine, theirs) => { const m = new Map((mine || []).map(r => [r.id, r])); for (const r of theirs || []) m.set(r.id, r); return [...m.values()]; };
     const rest = ch.book || BurrowStore.bookOf(book);
     book = Object.assign({}, rest, { events: byId(book.events, ch.events), keptVersions: byId(book.keptVersions, ch.keptVersions), rev: ch.rev, at: book.at });
+    return true;
+  }
+  /* [TABSETUP_PLAN 1, qc-data-safety run 4 blocker 1; M61] this page has no book and another tab made one (setup
+     finished there): read it from the store and take it in; nothing is written. The screens are told with
+     'burrow3:started' (setup and the chat close onto Home and say so). Gives true when a book was taken in */
+  async function adopt() {
+    if (!store || mode !== 'none') return false;
+    let r; try { r = await store.load(); } catch (e) { return 'error'; }
+    if (!r || r.empty || !r.copy || mode !== 'none') return false;
+    book = r.copy; mode = 'kept'; readOnly = !!r.readOnly;
+    hold = !!(r.device && r.device.fillHold);   // [qc-foundation 3] a chat fill still held in the other tab stays held here
+    try { root3.dispatchEvent(new CustomEvent('burrow3:started', { detail: { held: hold } })); } catch (e) { /* a screen's own fault */ }
     return true;
   }
   function shown() { try { root3.dispatchEvent(new CustomEvent('burrow3:other')); } catch (e) { /* a screen's own fault */ } }
@@ -8604,12 +8670,26 @@ const E3 = (() => {
   /* refused as behind: take in what the other tab saved (this page's book becomes the latest) */
   async function catchUp() { const ch = await store.catchUp(); joinIn(ch); return book; }
   /* setup3's new book: kept from now on */
+  /* [TABSETUP_PLAN 2] never over a book another tab made: under one lock across tabs the store is read first; a book
+     there is taken in (adopt), nothing is written, and E3.startWhy says 'there' */
+  let startWhy = null;
   async function start(newBook) {
+    const run = () => startNow(newBook);
+    return root3.navigator && root3.navigator.locks ? root3.navigator.locks.request('burrow3-start', run) : run();
+  }
+  async function startNow(newBook) {
+    startWhy = null;
+    /* [qc-foundation 1] a book already here (taken in from another tab) is never written over, whatever the screens do */
+    if (mode !== 'none') { startWhy = 'there'; return false; }
+    if (store) { const a = await adopt(); if (a === 'error') { startWhy = 'error'; return false; } if (a) { startWhy = 'there'; return false; } }
     const before = { book, mode };
     book = newBook; mode = 'kept';
     const ok = await save({ full: true });
     if (!ok) { book = before.book; mode = before.mode; }
-    else if (root3.BurrowPersist) root3.BurrowPersist.afterSetup().catch(() => {});
+    else {
+      if (root3.BurrowPersist) root3.BurrowPersist.afterSetup().catch(() => {});
+      if (typeof setup3Filled === 'function') setup3Filled();   // a setup Save's Undo has nothing left to undo
+    }
     return ok;
   }
   /* backup lane: a whole new book from a restore or the cloud copy; the first one makes this device keep a book.
@@ -8638,7 +8718,22 @@ const E3 = (() => {
      through one queue, in the order asked, so two keys written at once are both kept (before, one write was lost and
      still said true). Nothing else in the app writes the device record (store/idb.js putDevice is called only here) */
   let devQ = Promise.resolve();
-  const devTurn = fn => { const r = devQ.then(fn, fn); devQ = r.catch(() => {}); return r; };
+  /* [qc-data-safety 26 Nov, blocker 1] and one tab at a time: two tabs of one phone share the record, so each read-then-write
+     holds the browser's lock across tabs (where there is one) */
+  const locked = fn => () => (root3.navigator && root3.navigator.locks ? root3.navigator.locks.request('burrow3-device', fn) : fn());
+  const devTurn = fn => { const r = devQ.then(locked(fn), locked(fn)); devQ = r.catch(() => {}); return r; };
+  /* recEdit(key, fn): the value as stored now goes through fn, and what fn gives is written (null removes it), in the same
+     turn, so a change made in another tab since this tab read it is kept */
+  async function recEdit(key, fn) {
+    if (mode === 'try' || !store) return false;
+    try {
+      return await devTurn(async () => {
+        const d = (await store.getDevice()) || {}, next = fn(d[key] === undefined ? null : d[key]);
+        const out = Object.assign({}, d); if (next == null) delete out[key]; else out[key] = next;
+        return await store.putDevice(out);
+      });
+    } catch (e) { return false; }
+  }
   async function rec(key, value) {
     if (mode === 'try' || !store) return value === undefined ? null : false;
     try {
@@ -8698,7 +8793,7 @@ const E3 = (() => {
      release(): something else was written, so the fill can no longer be undone: the mark goes and the cloud copy may send. */
   let hold = false;
   async function fill(newBook) {
-    if (mode !== 'none') return false;
+    if (mode !== 'none') { startWhy = 'there'; return false; }   // [qc-foundation 2]
     if (!(await start(newBook))) return false;
     hold = true;
     await rec('fillHold', true);
@@ -8721,8 +8816,8 @@ const E3 = (() => {
   }
   /* is a the day before b (two YYYY-MM-DD days) */
   const dayBefore = (a, b) => BurrowEngine.dates.dayNum(b) - BurrowEngine.dates.dayNum(a) === 1;
-  return { today, setToday, useTry, leaveTry, start, fill, discard, release, held: () => hold, told, dayBefore, newId, load, view, nameOf, occName, lastCheckOf, curOf, home, put, replace, rec, onSaved: f => savedFns.push(f),
-    get book() { return book; }, get mode() { return mode; } };
+  return { today, setToday, useTry, leaveTry, start, fill, discard, release, held: () => hold, told, dayBefore, newId, load, view, nameOf, occName, lastCheckOf, curOf, home, put, replace, rec, recEdit, onSaved: f => savedFns.push(f),
+    get book() { return book; }, get mode() { return mode; }, get startWhy() { return startWhy; } };
 })();
 /* ---------- act3: the one door for every write in app3 (SCHEMA_V3 section 0; DECISIONS_ROUND2 H6, D2, BD4) ----------
    Every change a person makes goes through here as one named step: one save, one redraw, one Undo. Nothing here works
@@ -8810,7 +8905,7 @@ const E3 = (() => {
   const sig = r => (r.at || '') + '|' + (r.by || '');
   const other = () => { const e = new Bad(OTHER); e.why = 'other'; return e; };
   function writer(book, s, seen) {
-    const log = { added: [], edited: [], removed: [], revived: [] };
+    const log = { added: [], edited: [], removed: [], revived: [], swapped: [] };
     const mine = new Set();   // records this step itself wrote: never refused by the note
     const fresh = (list, r) => { if (seen && !mine.has(r.id) && seen[r.id] !== sig(r)) throw other(); };
     const wholeList = list => { if (seen && REPLACES[list]) for (const r of listOf(book, list)) if (r && !mine.has(r.id) && seen[r.id] !== sig(r)) throw other(); };
@@ -8885,10 +8980,80 @@ const E3 = (() => {
         log.edited.push({ list, id, before });
         return r;
       },
+      /* [WHICH_DOOR_PLAN] one item the cloud copy names as engine/sync.js names it, set whole: `where` the dotted path of
+         its holder ('' the book), `of` a record id in a list of records or `where.key` for a settings item; `value`
+         undefined takes it out. opts.stamp moves its `at` and `by` to this step's (an Undo, so other devices take it). */
+      swap(where, of, value, opts) {
+        const sl = slot(book, where, of, value !== undefined);
+        const old = sl.get();
+        /* [qc-foundation on WHICH_DOOR_PLAN, F1] a record is never taken out of its list (a delete does not last: the store
+           keeps it and a join brings it back): it is marked gone, as Remove does */
+        const marked = value === undefined && sl.list && !!old;
+        /* [qc-foundation confirm on lane/whichdoor, WATCH] a record already removed stays as its Remove left it, so that
+           Remove's own Undo still works */
+        if (marked && old.gone) return old;
+        if (marked) value = Object.assign(clone(old), { gone: s.day, goneBy: s.id });
+        /* [coordinator 15, 26 Nov; SCHEMA_V3 2.1] a settings item ({ v, at, by }) is never deleted either: a delete does
+           not last (the next join brings the other copy's value back). It is marked not set, { v: null, at, by, gone },
+           and every reader takes v null as not set */
+        const unset = value === undefined && !sl.list && fieldValue(old);
+        if (unset && old.v === null && old.gone) return old;   // already not set: left as it was, so the earlier answer's Undo still works
+        if (unset) value = Object.assign({}, old, { v: null, gone: s.day });
+        const v = value === undefined ? undefined : clone(value);
+        if ((marked || unset || (opts && opts.stamp)) && v && typeof v === 'object' && !Array.isArray(v)) stamp(v);
+        sl.set(v);
+        log.swapped.push({ where, of, had: old !== undefined, before: old === undefined ? null : clone(old), after: v && v.at ? v.at : null });
+        return v;
+      },
       find: id => findIn(book, id),
       book,
     };
   }
+
+  /* ---- [WHICH_DOOR_PLAN] the cloud copy's answers: the engine makes the answer (engine/sync.js answer, answerCheck);
+     the door carries the difference item by item. Nothing here decides what an answer means. ---- */
+  const isMapV = x => !!x && typeof x === 'object' && !Array.isArray(x);
+  const isRecs = l => Array.isArray(l) && l.every(r => isMapV(r) && typeof r.id === 'string');
+  const fieldValue = x => isMapV(x) && 'v' in x && 'at' in x;   // a settings item, as engine/sync.js keeps one
+  const canonJ = x => (Array.isArray(x) ? '[' + x.map(canonJ).join(',') + ']' : isMapV(x) ? '{' + Object.keys(x).filter(k => x[k] !== undefined).sort().map(k => JSON.stringify(k) + ':' + canonJ(x[k])).join(',') + '}' : JSON.stringify(x === undefined ? null : x));
+  const sameJ = (a, b) => (a === undefined || b === undefined ? a === b : canonJ(a) === canonJ(b));
+  function holderAt(book, where, make) {
+    let o = book;
+    if (!where) return o;
+    for (const k of where.split('.')) { if (o[k] === undefined) { if (!make) return undefined; o[k] = {}; } o = o[k]; if (o === null || typeof o !== 'object') return undefined; }
+    return o;
+  }
+  function slot(book, where, of, make) {
+    const h = holderAt(book, where, make);
+    if (h === undefined) return { get: () => undefined, set: () => { throw new Bad('That is not there any more'); } };
+    if (Array.isArray(h)) return {
+      list: true,
+      get: () => h.find(r => r && r.id === of),
+      set: v => { const i = h.findIndex(r => r && r.id === of); if (v === undefined) { if (i >= 0) h.splice(i, 1); } else if (i >= 0) h[i] = v; else h.push(v); },
+    };
+    const key = where ? of.split('.').pop() : of;   // a settings item's key is the last part of its name, as the page reads it
+    return { get: () => h[key], set: v => { if (v === undefined) delete h[key]; else h[key] = v; } };
+  }
+  /* every item that differs between two books, as the cloud copy names items: a list of records by id (order never
+     counts), a plain object walked into, anything else whole. The book's `rev`, `at`, `fmt` and Undo `journal` are not its content */
+  function syncDiff(cur, next) {
+    const out = [];
+    const index = l => new Map((l || []).map(r => [r.id, r]));
+    (function walk(a, b, where) {
+      const keys = [...new Set(Object.keys(a || {}).concat(Object.keys(b || {})))].sort();
+      for (const k of keys) {
+        if (!where && (k === 'rev' || k === 'journal' || k === 'at' || k === 'fmt')) continue;   // the store's own marks (store/idb.js NOT_IN_BOOK) and the Undo journal
+        const p = where ? where + '.' + k : k, x = a ? a[k] : undefined, y = b ? b[k] : undefined;
+        if ((Array.isArray(x) || Array.isArray(y)) && (x === undefined || isRecs(x)) && (y === undefined || isRecs(y))) {
+          const X = index(x), Y = index(y);
+          for (const id of [...new Set([...X.keys(), ...Y.keys()])].sort()) if (!sameJ(X.get(id), Y.get(id))) out.push({ where: p, of: id, value: Y.get(id) });
+        } else if ((isMapV(x) || x === undefined) && (isMapV(y) || y === undefined) && !fieldValue(x) && !fieldValue(y)) walk(x, y, p);   // a holder one copy lacks is walked into too, so each settings item in it is swapped (and marked) on its own
+        else if (!sameJ(x, y)) out.push({ where, of: p, value: y });
+      }
+    })(cur, next, '');
+    return out;
+  }
+  const BIG = 50;   // an answer that swaps more items than this, or the whole-copy question (two whole books), keeps no old values in the saved journal
 
   /* ---- the named actions, as steps on a writer ---- */
   const typed = () => ({ type: 'typed' });
@@ -8964,8 +9129,9 @@ const E3 = (() => {
   const keptEdit = x => { const before = {}; for (const k of Object.keys(x.before)) before[k] = x.before[k] === undefined ? null : clone(x.before[k]); return { list: x.list, id: x.id, before }; };
   const ownAt = (j, id) => (j.moved && j.moved[id]) || j.moment;
   function fromJournal(j) {
-    const m = { id: j.id, label: j.label, at: j.moment, added: j.added || [], edited: j.edited || [], removed: j.removed || [], revived: j.revived || [], own: {} };
+    const m = { id: j.id, label: j.label, at: j.moment, added: j.added || [], edited: j.edited || [], removed: j.removed || [], revived: j.revived || [], swapped: j.swapped || [], own: {} };
     for (const x of m.added.concat(m.edited, m.removed, m.revived)) m.own[x.id] = ownAt(j, x.id);
+    for (const x of m.swapped) m.own[x.of] = x.after;   // [WHICH_DOOR_PLAN] the `at` the answer left on each item
     return m;
   }
 
@@ -8987,16 +9153,17 @@ const E3 = (() => {
       if (!by) by = String(id).split('-')[0];
       const s = { id, label, at: nowAt(), by, told: o.told(), day: o.today(), newId: o.newId };
       const w = writer(book, s, guard && guard.seen);
-      w.today = s.day;
+      w.today = s.day; w.at = s.at; w.by = s.by;
       const out = fn(w);
-      if (!w.log.added.length && !w.log.edited.length && !w.log.removed.length && !w.log.revived.length) throw new Bad('Nothing changed');
+      if (!w.log.added.length && !w.log.edited.length && !w.log.removed.length && !w.log.revived.length && !w.log.swapped.length) throw new Bad('Nothing changed');
       if (o.check && !dry) {
         try { o.check(book); } catch (e) { const err = new Bad('This would leave numbers the app refuses: ' + e.message); err.why = 'engine'; throw err; }
       }
-      const step = { id, label, out, at: s.at, added: w.log.added, edited: w.log.edited, removed: w.log.removed, revived: w.log.revived };
+      const step = { id, label, out, at: s.at, added: w.log.added, edited: w.log.edited, removed: w.log.removed, revived: w.log.revived, swapped: w.log.swapped };
       /* [BZ1] the step's journal entry goes into the same save, so an Undo after a reload finds what it edited too */
       if (!dry && !undoing) journalAdd(book, { id, label, moment: s.at, day: s.day, by: s.by, told: s.told,
-        added: clone(w.log.added), edited: w.log.edited.map(keptEdit), removed: clone(w.log.removed), revived: clone(w.log.revived) });
+        added: clone(w.log.added), edited: w.log.edited.map(keptEdit), removed: clone(w.log.removed), revived: clone(w.log.revived),
+        swapped: w.log.swapped.length > BIG || w.log.swapped.some(x => x.of === 'kept:copy') ? w.log.swapped.map(x => ({ where: x.where, of: x.of, after: x.after, big: true })) : clone(w.log.swapped) });
       if (undoing) undoing(book, s);
       return { book, step };
     }
@@ -9013,6 +9180,7 @@ const E3 = (() => {
         if (clock) clock.see(planned.step.at);
         const st = planned.step;
         st.own = {}; for (const x of st.added.concat(st.edited, st.removed, st.revived)) st.own[x.id] = st.at;   // the `at` this step left on each record
+        for (const x of st.swapped || []) st.own[x.of] = x.after;
         if (opts.seen && !opts.isUndo) for (const x of st.added.concat(st.edited, st.removed, st.revived)) { const f = findIn(planned.book, x.id); if (f) opts.seen[x.id] = sig(f.rec); }   // the caller's own step: its note follows
         if (opts.after) opts.after(st);
         if (!opts.isUndo) steps.push(st);
@@ -9058,7 +9226,11 @@ const E3 = (() => {
         const revived = mem ? mem.revived || [] : [];   // after a reload a revived record is found by grp with the added ones, and marked gone
         const recOf = x => listOf(w.book, x.list).find(r => r && r.id === x.id);
         const later = x => { const r = recOf(x); return !r || (mem && r.at !== mem.own[x.id]); };
-        if (added.concat(removed, edited, revived).some(later)) { const e = new Bad('Something changed it since. Undo that change first'); e.why = 'later'; throw e; }
+        const swapped = mem ? mem.swapped || [] : [];
+        const laterSwap = x => { const v = slot(w.book, x.where, x.of, false).get(); return ((v && v.at) || null) !== mem.own[x.of]; };
+        if (added.concat(removed, edited, revived).some(later) || swapped.some(laterSwap)) { const e = new Bad('Something changed it since. Undo that change first'); e.why = 'later'; throw e; }
+        if (swapped.some(x => x.big)) bad('This was the choice of a whole copy. It can be undone only until the app is closed, so nothing changed');
+        for (const x of swapped) w.swap(x.where, x.of, x.had ? x.before : undefined, { stamp: true });   // a record the answer added is marked gone
         for (const x of added) w.remove(x.list, x.id);
         for (const x of revived) w.putBack(x.list, x.id, x.before);
         for (const x of removed) {
@@ -9093,6 +9265,12 @@ const E3 = (() => {
       return C && C.markOf ? C.markOf(stamps) : stamps.sort().join(',');   // the hash lives in store/clock.js (no sums in a screen file)
     }
     const api = { run, undo, seen, ver: () => ver(), steps: () => steps.slice(), onChange: f => listeners.push(f) };
+    /* [WHICH_DOOR_PLAN] A.answerSync(label, make, opts): make(book, { now, by }) is the engine's answer on the book as it
+       is in this step (S.answer or S.answerCheck); the door writes what differs, item by item, with Undo */
+    api.answerSync = (label, make, opts) => run(label, w => {
+      const next = make(clone(w.book), { now: w.at, by: w.by });
+      for (const x of syncDiff(w.book, next)) w.swap(x.where, x.of, x.value);
+    }, opts);
     for (const name of Object.keys(ACTIONS)) {
       const n = ARGS[name];   // the action's own arguments, before the options
       api[name] = (...args) => {
@@ -9112,7 +9290,7 @@ const E3 = (() => {
     return api;
   }
 
-  const api = { make, PATHS, listOf, Bad, OTHER };
+  const api = { make, PATHS, listOf, Bad, OTHER, syncDiff, SPEND_FROM, ACTION_NAMES: Object.keys(ACTIONS) };   // the last two are read by tests/controls3.test.js
   if (node) module.exports = api;
   else root.BurrowAct3 = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
@@ -9160,6 +9338,12 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
   const period = w => { const p = LA.lookahead(w.book, w.today).period; if (!p) bad('Your plan needs a pay day first'); return p; };
   /* [slice 6, B4] with no fixed pay there are no pay periods: lines and Free to spend are each month, by the day */
   const noPay = w => !LA.lookahead(w.book, w.today).period;
+  /* [E1b, M13, M23] the account that pays a card, a loan or a bill: a live bank, cash or e-wallet of your own (a bill may be
+     paid from a card too), not closed */
+  const payerOk = (w, acct, card) => { const y = (w.book.accounts || []).find(z => live(z) && z.id === acct); if (!y || y.closed || !(OWN_KINDS[y.type] || (card && y.type === 'card'))) bad('Pick the account it is paid from'); return acct; };
+  /* [E1b] a new paying account (or weekend rule) counts from the next payment on. One gone by and not ticked off would
+     move with it, though it may already have left the old account: it is ticked off first */
+  const notTicked = day => { if (day) bad(`The payment of ${SN3.dayLabel(day, false)} is not ticked off yet. Tick it at Check your bank first: a change of account counts from the next one`); };
   const sameName = (list, name, id) => { if (list.some(x => live(x) && x.id !== id && String(x.name).toLowerCase() === name.toLowerCase())) bad('There is already one called ' + name); };
 
   /* ---- budget lines and Free to spend ---- */
@@ -9293,11 +9477,20 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     }
     const toNone = !!rhythm && rhythm.every === 'none', fromNone = !!rhythm && wasNone;
     if (x.name != null && x.name !== s.name) { ch.name = nameOk(x.name); sameName(A3.listOf(w.book, 'schedules').filter(y => y.kind === s.kind), ch.name, id); }
+    /* [E1b, M13] a bill's paying account, from its next one */
+    if (s.kind === 'bill' && x.acct != null && x.acct !== '' && x.acct !== s.acct) { ch.acct = payerOk(w, x.acct, true); notTicked(((v.outstanding || [])[0] || {}).land); }
     let from = x.from || v.changeFrom;
     if (s.kind === 'income' && x.amount === 0) bad(PAY_NEEDS_AMOUNT);   // [BL1] a pay always has an amount
     if (fromNone && x.amount == null && v.amount == null) bad(PAY_NEEDS_AMOUNT);
-    const dayMoved = x.every == null && x.day != null && !(v.rule && v.rule.every === 'month' && v.rule.days.length === 1 && v.rule.days[0] === x.day);
-    if ((x.amount != null && x.amount !== v.amount) || dayMoved || rhythm) {
+    /* [E1b, M13] a yearly bill: its month and day change from a date, a new rule as a monthly bill's day */
+    const yearly = s.kind === 'bill' && !!(v.rule && v.rule.every === 'year');
+    let yearRule = null;
+    if (yearly && (x.month != null || x.day != null)) {
+      const r = billRule({ every: 'year', month: x.month != null ? x.month : Number(v.rule.date.slice(0, 2)), day: x.day != null ? x.day : Number(v.rule.date.slice(3)) });
+      if (r.date !== v.rule.date) yearRule = r;
+    }
+    const dayMoved = !yearly && x.every == null && x.day != null && !(v.rule && v.rule.every === 'month' && v.rule.days.length === 1 && v.rule.days[0] === x.day);
+    if ((x.amount != null && x.amount !== v.amount) || dayMoved || rhythm || yearRule) {
       if (!DAY.test(from)) bad('Pick the day the change starts');
       if (from < v.changeFrom) bad('The change can start on ' + v.changeFrom + ' at the earliest: an earlier one is already paid or noted');
       /* [slice 6b] from no fixed pay: the new rule and the pay's amount start with its first pay on or after `from` */
@@ -9313,6 +9506,7 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
       if ((x.amount != null && x.amount !== v.amount) || (fromNone && x.amount != null)) ch.steps = (s.steps || []).concat([{ from, amount: amountOk(x.amount, 'the amount') }]);
       if (dayMoved) ch.rules = (s.rules || []).concat([{ from, rule: { every: 'month', days: [dayOfMonth(x.day)] } }]);
       if (rhythm) ch.rules = (s.rules || []).concat([{ from, rule: rhythm }]);
+      if (yearRule) ch.rules = (s.rules || []).concat([{ from, rule: yearRule }]);
     }
     if (!Object.keys(ch).length) bad('Nothing changed');
     /* [slice 6] the pay that starts the period changes how often it lands: each line counted each pay is asked about;
@@ -9482,7 +9676,7 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
   /* ---- loans, and the days of a card (each owns its payment day [B5, E6]) ---- */
   function addLoan(w, x) {
     const name = nameOk(x.name), owed = amountOk(x.owed, 'what is owed'), pay = amountOk(x.amount, 'the usual payment'), d = dayOfMonth(x.payDay);
-    const payFrom = x.payFrom || mainOf(w);
+    const payFrom = payerOk(w, x.payFrom || mainOf(w));
     sameName((w.book.accounts || []), name);
     const id = w.add('accounts', { name, type: 'loan', cur: home(w), owner: null, payDay: d, shift: x.shift || 'after', payFrom, amount: pay });
     w.add('events', { k: 'open', acct: id, date: w.today, a: owed });
@@ -9490,7 +9684,7 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     return id;
   }
   /* a card added after setup (QC F1), the same shape setup writes (engine/build_book.js): it owns its payment day, is
-     paid in full from the main bank, and opens with what is on it today; close day null is "not sure" (all that is owed
+     paid in full from the account chosen (the main bank by default) [E1b], and opens with what is on it today; close day null is "not sure" (all that is owed
      is due on each payment day) [H4] */
   const SHIFTS = { after: 1, before: 1, none: 1 };
   function addCard(w, x) {
@@ -9499,7 +9693,7 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     const cutDay = x.cutDay == null || x.cutDay === '' || x.cutDay === 'not sure' ? null : x.cutDay === 'last' ? 'last' : dayOfMonth(x.cutDay);
     const shift = x.shift == null ? 'after' : x.shift;
     if (!SHIFTS[shift]) bad('Pick what happens on a weekend or holiday');
-    const payFrom = x.payFrom || mainOf(w);
+    const payFrom = payerOk(w, x.payFrom || mainOf(w));
     sameName((w.book.accounts || []), name);
     const id = w.add('accounts', { name, type: 'card', cur: home(w), owner: null, inFull: true, cutDay, payDay: d, payMonths: 1, shift, payFrom });
     w.add('events', { k: 'open', acct: id, date: w.today, a: x.owed });
@@ -9513,6 +9707,10 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     if (x.payDay != null && x.payDay !== a.payDay) ch.payDay = dayOfMonth(x.payDay);
     if (a.type === 'loan' && x.amount != null && x.amount !== a.amount) ch.amount = amountOk(x.amount, 'the usual payment');
     if (a.type === 'card' && x.cutDay !== undefined && x.cutDay !== a.cutDay) ch.cutDay = x.cutDay === null ? null : dayOfMonth(x.cutDay);
+    /* [E1b, M13, M23] the account that pays it and its weekend rule, from the next payment on */
+    if (x.payFrom != null && x.payFrom !== '' && x.payFrom !== (a.payFrom || mainOf(w))) ch.payFrom = payerOk(w, x.payFrom);
+    if (x.shift != null && x.shift !== '' && x.shift !== (a.shift || 'after')) { if (!SHIFTS[x.shift]) bad('Pick what happens on a weekend or holiday'); ch.shift = x.shift; }
+    if (ch.payFrom || ch.shift) { const r = LA.lookahead(w.book, w.today), k = (a.type === 'card' ? r.cards : r.owed)[id] || {}; notTicked(((k.overdue || [])[0] || {}).payment_date); }
     if (!Object.keys(ch).length) bad('Nothing changed');
     w.edit('accounts', id, ch);
     return id;
@@ -9597,7 +9795,26 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     return id;
   }
 
-  const api = { addPay, addAccount, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan };
+  /* [E1, M13] a bank, cash or e-wallet renamed, and its own Keep at least (minBank: blank clears it). The main bank's
+     Keep at least lives in home.main and is changed in Settings (E5). Its figure changes at Check your bank. x: { name?, min? } */
+  function changeAccount(w, id, x) {
+    const a = find(w, 'accounts', id), ch = {};
+    if (!OWN_KINDS[a.type]) bad(a.type === 'card' || a.type === 'loan' ? 'Change a card or a loan on Plan, under Cards and loans' : 'That account cannot be changed here');
+    if (a.closed) bad(a.name + ' is closed');
+    if (x.name != null && String(x.name).trim() !== a.name) { ch.name = nameOk(x.name); sameName(w.book.accounts || [], ch.name, id); }
+    if (x.min !== undefined) {
+      const was = a.minBank ? a.minBank.a : null, now = x.min === '' || x.min === null || x.min === 0 ? null : x.min;
+      if (now !== was) {
+        if (id === mainOf(w)) bad('Keep at least for your main bank cannot be changed after setup yet');   // [qc-assistant controls1 B1] slice 5 adds it in Settings and says so
+        ch.minBank = now === null ? null : { a: amountOk(now, 'the amount to keep'), cur: a.cur || home(w) };
+      }
+    }
+    if (!Object.keys(ch).length) bad('Nothing changed');
+    w.edit('accounts', id, ch);
+    return id;
+  }
+
+  const api = { addPay, addAccount, changeAccount, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan };
   if (node) module.exports = api;
   else root.PLAN3W = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
@@ -9700,6 +9917,10 @@ function safeUntil3(r, yr, home) {
   /* [CA8] on the morning of pay day, before the pay is ticked, today is still the old period's last day: the engine says
      the figure runs to today's pay (safeToSpend.untilPay is today's own pay), and the heading says so */
   if (n.days === 0 && r.safeToSpend.untilPay && r.safeToSpend.untilPay === np.item) return ` until today's pay is in`;
+  /* [qc-numbers run 1 B5, coordinator 17's ruling (a)] pay-day morning, today's pay not ticked (the period running now
+     still ends with it) and Free to spend left caps safe to spend: the figure is the old period's Free to spend left, so
+     the heading names the old period until the pay is ticked */
+  if (n.days === 0 && r.safeToSpend.cappedByFreeToSpend && r.period.end >= np.next_pay) return ` until today's pay is in`;
   /* [C8, M51] "next pay" on this screen is today's pay (the period card), so this one is named "the pay after today's" */
   if (n.days === 0 && r.safeToSpend.until) return ` until the pay after today's, on ${esc3(day3(r.safeToSpend.until, yr))}${r.safeToSpend.notCounting ? ', not counting today\'s pay (not in at your check today)' : ''}${notInWords}`;
   return ` until next pay on ${d}${notInWords}`;
@@ -9767,8 +9988,9 @@ function drawHome3() {
   if (cloudLine) out.push(`<p class="a3-warn" data-cloud="home">${esc3(cloudLine)}</p>`);
   /* bank today, one figure per account, with its age */
   for (const id of ids) {
-    const a = r.accounts[id];
-    out.push(`<section class="a3-card" data-card="bank" data-acct="${esc3(id)}"><h2>${esc3(label3('bankToday'))}: ${esc3(E3.nameOf(id))}</h2>
+    const a = r.accounts[id], isBank = ((E3.book.accounts || []).find(x => x.id === id) || {}).type === 'bank';
+    /* [qc-numbers run 1 C1, M51] cash or an e-wallet is never called a bank: "Wallet today" */
+    out.push(`<section class="a3-card" data-card="bank" data-acct="${esc3(id)}"><h2>${isBank ? `${esc3(label3('bankToday'))}: ${esc3(E3.nameOf(id))}` : `${esc3(E3.nameOf(id))} today`}</h2>
       <p class="a3-big" data-fig="bank">${fig3('accounts.*.bank', a.bank, a.currency)}</p>
       <p class="a3-sub" data-fig="age">${bankParts3(a, yr)}</p></section>`);
   }
@@ -9819,7 +10041,9 @@ function drawHome3() {
   const due = r.dueBeforeNextPay;
   const byAcct = Object.keys(due.byAccount).map(acct => `<p class="a3-acct">From ${esc3(E3.nameOf(acct))}</p><ul class="a3-rows">${rowsHtml3(due.items.filter(o => o.account === acct), E3.curOf(acct), yr, 'dueBeforeNextPay.items')}</ul>`).join('');
   /* [F13] with no fixed pay, "due" is the next 30 days */
-  const dueName = label3('dueBeforeNextPay', { noFixedPay: !r.period });
+  /* [qc-numbers confirming run 2, B5] on a pay day the engine's list runs to the pay after today's (G4): its heading says so */
+  const np0 = r.daysToNextPay || {};
+  const dueName = label3('dueBeforeNextPay', { noFixedPay: !r.period, payToday: !!r.period && np0.days === 0 && !!r.safeToSpend.until && r.safeToSpend.until !== np0.next_pay });
   /* the late card and loan payments (the engine's overdue lists): listed once, in the overdue card [C10] */
   const odSeen = new Set([].concat(...[r.cards, r.owed || {}].map(m => [].concat(...Object.keys(m).map(id => (m[id].overdue || []).map(o => o.item))))));
   /* [C11] bills past their day and not ticked: the sum takes them off today (", late"), so they are listed here too, under
@@ -9892,7 +10116,15 @@ function openCheck3() {
   /* [BI1] an item left unticked at an earlier check-in did not land before that check: the sheet asks the day it landed,
      the day after that check by default (the engine's landedFrom gives it) */
   const from = {}; for (const o of list) { const f = BurrowEngine.checkin.landedFrom(E3.book, { day }, o.item); if (f && o.lands < f) from[o.item] = f > day ? day : f; }
-  check3 = { day, list, from, sure: {}, ver: ACT3.ver() };   // [STALE_SHEET_PLAN] the book as this sheet saw it
+  /* [monthrule2 1b, coordinator's ruling way c; M31, M38, M44] a pay ticked after its due day: when did it come in? The due
+     day is picked, so one tap goes on as before; Today, or another day in a date box. Asked once per pay, on this sheet */
+  const isPay = it => (E3.book.schedules || []).some(s => s && !s.gone && s.kind === 'income' && s.id === BurrowEngine.ids.scheduleOf(it));
+  const came = {}; for (const o of list) if (!from[o.item] && o.lands < day && isPay(o.item)) came[o.item] = { pick: 'due', min: BurrowEngine.checkin.landedFrom(E3.book, { day }, o.item) || '' };
+  check3 = { day, list, from, came, sure: {}, ver: ACT3.ver() };   // [STALE_SHEET_PLAN] the book as this sheet saw it
+  const wd = d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date(d + 'T00:00:00Z').getUTCDay()] + ' ' + day3(d, yr);
+  const cameRow = (o, i) => (came[o.item] ? `<fieldset class="a3-field a3-came" data-camein="${esc3(o.item)}"><legend class="a3-q">When did it come in?</legend>
+      <div class="a3-segs"><button type="button" class="a3-seg a3-seg-s" data-came="due" aria-pressed="true">${esc3(wd(o.lands))} (the due day)</button><button type="button" class="a3-seg a3-seg-s" data-came="today" aria-pressed="false">Today, ${esc3(wd(day))}</button><button type="button" class="a3-seg a3-seg-s" data-came="other" aria-pressed="false">Another day</button></div>
+      <input class="a3-in" type="date" id="a3cm${i}" aria-label="The day ${esc3(E3.occName(o.item))} came in" data-cameday="${esc3(o.item)}" value="${esc3(o.lands)}"${came[o.item].min ? ` min="${esc3(came[o.item].min)}"` : ''} max="${esc3(day)}" hidden></fieldset>` : '');
   const landedRow = (o, i) => (from[o.item] ? `<div class="a3-field a3-landed"><label for="a3l${i}">Landed on</label>
       <input class="a3-in" type="date" id="a3l${i}" data-landed="${esc3(o.item)}" value="${esc3(from[o.item])}" min="${esc3(from[o.item])}" max="${esc3(day)}"></div>` : '');
   const rows = list.map((o, i) => `<div class="a3-tick" data-item="${esc3(o.item)}">
@@ -9900,10 +10132,11 @@ function openCheck3() {
       <label for="a3t${i}"><span>${esc3(E3.occName(o.item))}</span><span class="when" id="a3d${i}">${esc3(day3(o.lands, yr))}, ${esc3(E3.nameOf(o.account))}</span></label>
       <input class="a3-in" data-amount type="text" inputmode="decimal" autocomplete="off" aria-label="Amount for ${esc3(E3.occName(o.item))}" data-amt="${esc3(o.item)}" value="${SM.toInput(o.amount, E3.curOf(o.account))}">
       ${landedRow(o, i)}
+      ${cameRow(o, i)}
     </div>`).join('');
   const figs = Object.keys(r.accounts).map(id => `<div class="a3-field"><label for="a3f-${esc3(id)}">What does ${esc3(E3.nameOf(id))} show today?</label>
       <input class="a3-in" data-amount type="text" inputmode="decimal" autocomplete="off" id="a3f-${esc3(id)}" data-bankfig="${esc3(id)}" placeholder="${esc3(SM.symbol(r.accounts[id].currency).trim())}">
-      <p class="a3-sub" data-expected="${esc3(id)}"></p><p class="a3-warn" data-gap="${esc3(id)}" aria-live="polite" hidden></p>
+      <p class="a3-sub">Leave it blank if you have not looked. <span data-expected="${esc3(id)}"></span></p><p class="a3-warn" data-gap="${esc3(id)}" aria-live="polite" hidden></p>
       <div class="a3-gapask" data-gapask="${esc3(id)}" hidden><p class="a3-sub" data-gapq="${esc3(id)}"></p><button type="button" class="a3-btn" data-gapyes="${esc3(id)}">Yes, that was it</button></div>
       <div class="a3-gapopt" data-gapopt="${esc3(id)}" hidden><label><input type="checkbox" data-gapspend="${esc3(id)}"> Log it as a spend now, on</label>
         <select class="a3-in a3-sel" data-gapline="${esc3(id)}" aria-label="Which line the spend goes on">${rcOptions3(rcFors3(), 'line:free')}</select></div></div>`).join('');
@@ -9934,6 +10167,13 @@ function openCheck3() {
     if (box && !box.checked) { box.checked = true; box.dispatchEvent(new Event('change', { bubbles: true })); }
     checkPreview3();
   }));
+  sheet.querySelectorAll('[data-came]').forEach(el => el.addEventListener('click', () => {
+    const box = el.closest('[data-camein]'), c = check3.came[box.dataset.camein];
+    c.pick = el.dataset.came;
+    box.querySelectorAll('[data-came]').forEach(x => x.setAttribute('aria-pressed', String(x === el)));
+    const d = box.querySelector('[data-cameday]'); d.hidden = c.pick !== 'other'; if (!d.hidden) d.focus();
+    checkPreview3();
+  }));
   checkPreview3();
   $('#a3CheckX').addEventListener('click', closeCheck3);
   $('#a3CheckSave').addEventListener('click', saveCheck3);
@@ -9945,15 +10185,17 @@ function closeCheck3() { $('#a3Check').hidden = true; $('#a3Home').hidden = fals
 function readCheck3(strict) {
   const sheet = $('#a3Check'), figures = {}, bad = (text, el) => ({ bad: text, el });
   for (const el of sheet.querySelectorAll("[data-bankfig]")) {
-    const id = el.dataset.bankfig, v = typedBank3(el.value, E3.curOf(id));
-    if (v === null) { if (strict) return bad(`Type what ${E3.nameOf(id)} shows today, as an amount`, el); continue; }
+    const id = el.dataset.bankfig;
+    if (!el.value.trim()) continue;   // [qc-controls run 1 blocker 3] blank: not looked at today, nothing written for it, as for a card
+    const v = typedBank3(el.value, E3.curOf(id));
+    if (v === null) { if (strict) return bad(typedSlip3(el.value, E3.curOf(id)) || `Type what ${E3.nameOf(id)} shows today, as an amount, or leave it blank`, el); continue; }
     figures[id] = v;
   }
   for (const el of sheet.querySelectorAll("[data-cardfig]")) {
     const id = el.dataset.cardfig;
     if (!el.value.trim()) continue;   // blank: this card is not checked
     const v = typed3(el.value, E3.curOf(id));
-    if (v === null) { if (strict) return bad(`Type what is on ${E3.nameOf(id)} now, as an amount, or leave it blank`, el); continue; }
+    if (v === null) { if (strict) return bad(typedSlip3(el.value, E3.curOf(id)) || `Type what is on ${E3.nameOf(id)} now, as an amount, or leave it blank`, el); continue; }
     figures[id] = v;
   }
   const ticked = [], amounts = {}, expected = {}, lands = {}, landed = {};
@@ -9962,12 +10204,19 @@ function readCheck3(strict) {
     const row = [...sheet.querySelectorAll('.a3-tick')].find(x => x.dataset.item === o.item);
     if (!row || !row.querySelector('input[type=checkbox]').checked) continue;
     const v = typed3(row.querySelector('[data-amt]').value, E3.curOf(o.account));
-    if (v === null) { if (strict) return bad(`Type the amount for ${E3.occName(o.item)}`, row.querySelector('[data-amt]')); continue; }
+    if (v === null) { if (strict) return bad(typedSlip3(row.querySelector('[data-amt]').value, E3.curOf(o.account)) || `Type the amount for ${E3.occName(o.item)}`, row.querySelector('[data-amt]')); continue; }
     ticked.push(o.item); if (v !== o.amount) amounts[o.item] = v;
     const ld = row.querySelector('[data-landed]');
     if (ld) {
       if (!ld.value || ld.value < check3.from[o.item] || ld.value > check3.day) { if (strict) return bad(`${E3.occName(o.item)} was not in your last check, so it landed between ${day3(check3.from[o.item], check3.day.slice(0, 4))} and today`, ld); continue; }
       landed[o.item] = ld.value;
+    }
+    const c = (check3.came || {})[o.item];
+    if (c && c.pick === 'today') landed[o.item] = check3.day;
+    if (c && c.pick === 'other') {
+      const cd = row.querySelector('[data-cameday]');
+      if (!cd.value || cd.value > check3.day || (c.min && cd.value < c.min)) { if (strict) return bad(`Pick the day ${E3.occName(o.item)} came in, ${c.min ? `between ${day3(c.min, check3.day.slice(0, 4))} and today` : 'today or before'}`, cd); continue; }
+      landed[o.item] = cd.value;
     }
   }
   return { figures, ticked, amounts, expected, lands, landed };
@@ -10053,6 +10302,8 @@ async function saveCheck3() {
   const sheet = $('#a3Check'), err = $('#a3CheckErr');
   const d = readCheck3(true);
   if (d.bad) { err.textContent = d.bad; d.el.focus(); return; }
+  /* every box blank and nothing ticked: nothing to save, said so; Cancel is still there */
+  if (!Object.keys(d.figures).length && !d.ticked.length) { err.textContent = 'Nothing to save yet. Type what a bank or card shows today, or tick what came in'; const f = sheet.querySelector('[data-bankfig]'); if (f) f.focus(); return; }
   /* [card payment question] asked first, once: Save again saves it as typed, so nobody is trapped */
   const asks = Object.keys(check3.payAsk || {}), askKey = asks.join(' ');
   if (asks.length && check3.payAsked !== askKey) {
@@ -10092,7 +10343,7 @@ async function saveCheck3() {
    write goes through ACT3 (src/act3.js), which gives the Undo bar. Free to spend left and safe to spend are the
    engine's, before and after: for a draft the engine is asked about the book the draft would make (ACT3.dry). This
    file chooses, writes and places; it never adds, takes away or rounds (tests: no_maths.js, e3_receipts.js). */
-const RC3 = { mode: 'spend', edit: null, at: null, search: '', last: null, held: null };
+const RC3 = { mode: 'spend', edit: null, at: null, search: '', last: null, held: null, from: null };
 const RC_KIND3 = { spend: 'logSpend', refund: 'refund', moved: 'moveMoney', in: 'moneyIn' };
 const RC_SPEND_FROM3 = { bank: 1, cash: 1, ewallet: 1, wallet: 1, card: 1, paylater: 1 };
 const RC_OWN3 = { bank: 1, cash: 1, ewallet: 1, wallet: 1 };
@@ -10221,7 +10472,9 @@ function rcFormHtml3() {
   const pick = (cur, list, dflt) => (cur != null ? cur : list.some(o => o.v === dflt) ? dflt : list[0] && list[0].v);
   const fromList = acctOpts(m === 'moved' || m === 'in' ? RC_OWN3 : RC_SPEND_FROM3);
   const mainId = main && main.acct;
-  const fromSel = pick(e ? e.acct : null, fromList, mainId);
+  /* [qc-numbers monthrule2 blocker 2] the From a person picked wins (also on a change), so To is every own account but that one */
+  const held = RC3.from && fromList.some(o => o.v === RC3.from) ? RC3.from : null;
+  const fromSel = pick(held || (e ? e.acct : null), fromList, mainId);
   let fields = '';
   /* [K18] money moves only between your own accounts: with one, there is nowhere to move it to, so the form says so
      instead of an empty To list and a Save that fails (a way to add an account goes here once the app has one) */
@@ -10263,7 +10516,7 @@ function rcFormHtml3() {
 function rcDraft3() {
   const m = RC3.mode, acct = m === 'moved' ? $('#rcFrom').value : $('#rcAcct').value;
   const a = typed3($('#rcAmt').value, E3.curOf(acct));
-  if (a === null) return { bad: 'Type the amount, like 1200' };
+  if (a === null) return { bad: typedSlip3($('#rcAmt').value, E3.curOf(acct)) || 'Type the amount, like 1200' };
   const x = { date: $('#rcDate').value, a, note: $('#rcNote').value };
   if (m === 'moved') return Object.assign(x, { from: acct, to: $('#rcTo').value });
   x.acct = acct;
@@ -10301,14 +10554,14 @@ function rcWire3() {
   BurrowScreens.inputs.bind(amt, { kind: 'amount', code: E3.home(), optional: true });
   for (const el of document.querySelectorAll('#rcForm input, #rcForm select')) { el.addEventListener('input', rcPreview3); el.addEventListener('change', rcPreview3); }
   const from = $('#rcFrom');
-  if (from) from.addEventListener('change', () => { const keep = rcKeep3(); $('#rcForm').innerHTML = rcFormHtml3(); rcPut3(keep); rcWire3(); });
+  if (from) from.addEventListener('change', () => { const keep = rcKeep3(); RC3.from = from.value; $('#rcForm').innerHTML = rcFormHtml3(); rcPut3(keep); rcWire3(); });
   $('#rcSave').addEventListener('click', () => rcSave3());
   $('#rcAskYes').addEventListener('click', () => rcSave3(true));
   $('#rcAskNo').addEventListener('click', () => { rcAskOff3(); $('#rcAmt').focus(); });
   amt.addEventListener('keydown', e => { if (e.key === 'Enter') rcSave3(); });
   amt.addEventListener('input', rcAskOff3);
   if ($('#rcRemove')) $('#rcRemove').addEventListener('click', rcRemove3);
-  if ($('#rcCancel')) $('#rcCancel').addEventListener('click', () => { RC3.edit = null; RC3.mode = 'spend'; renderRc3(); });
+  if ($('#rcCancel')) $('#rcCancel').addEventListener('click', () => { RC3.from = null; RC3.edit = null; RC3.mode = 'spend'; renderRc3(); });
   rcPreview3();
 }
 /* what was typed survives a change of mode or account */
@@ -10354,13 +10607,18 @@ async function rcSave3(sure) {
     ov = rcOver3(df, x); onCard = rcCardWords3(dry, x);
     /* [C2] a spend on Free to spend while Free to spend left caps safe to spend (the engine, on the book with the spend):
        the bar says it lowers both, and why */
-    both = RC3.mode === 'spend' && x.line === 'free' && df && df.capped ? 'Safe to spend goes down with it, it\'s what\'s left of your Free to spend' : null;
+    /* [qc-numbers run 1 B2] only when the engine's safe to spend after the spend is lower; a spend dated before the last
+       bank check is already inside that figure, so safe to spend stays, and the bar says so */
+    if (RC3.mode === 'spend' && x.line === 'free' && df && before && df.safe != null && before.safe != null) {
+      if (df.safe < before.safe && df.capped) both = 'Safe to spend goes down with it, it\'s what\'s left of your Free to spend';
+      else if (df.safe === before.safe && !onCard) both = `Safe to spend stays ${money3(df.safe, E3.home())}`;
+    }
   } catch (e) { ov = null; }
   const said = [rcWords3(x), onCard, ov, both].filter(Boolean).join('. ');
   const r = RC3.edit ? await ACT3.edit(RC3.edit.id, rcFields3(x), { undo: said, seen: rcSeen3() }) : await ACT3[RC_KIND3[RC3.mode]](x, { undo: said });
   if (!r.ok) { $('#rcErr').textContent = r.text; rcLook3(r); return; }   // the form may have been drawn again meanwhile (another tab)
   RC3.last = before;
-  if (RC3.edit) { RC3.edit = null; RC3.mode = 'spend'; }
+  if (RC3.edit) { RC3.from = null; RC3.edit = null; RC3.mode = 'spend'; }
   renderRc3();
   const a = $('#rcAmt'); if (a) a.focus();
 }
@@ -10371,7 +10629,7 @@ const rcSeen3 = () => ({ [RC3.edit.id]: (RC3.edit.at || '') + '|' + (RC3.edit.by
 function rcLook3(r) {
   if (r.why !== 'other' || !RC3.edit) return;
   const now = ((E3.book && E3.book.events) || []).find(e => e.id === RC3.edit.id && !e.gone);
-  if (!now) { const t = $('#rcErr').textContent; RC3.edit = null; RC3.mode = 'spend'; renderRc3(); $('#rcErr').textContent = t; return; }
+  if (!now) { const t = $('#rcErr').textContent; RC3.from = null; RC3.edit = null; RC3.mode = 'spend'; renderRc3(); $('#rcErr').textContent = t; return; }
   RC3.edit = JSON.parse(JSON.stringify(now));
   if (typeof rcList3 === 'function') rcList3();
 }
@@ -10384,12 +10642,12 @@ async function rcRemoveGo3() {
   const before = rcFigs3(E3.book);
   const r = await ACT3.remove(e.id, { undo: `Removed ${money3(e.a, E3.curOf(e.acct))}, ${rcWhat3(e)}`, seen: rcSeen3() });
   if (!r.ok) { $('#rcErr').textContent = r.text; rcLook3(r); return; }
-  RC3.last = before; RC3.edit = null; RC3.mode = 'spend';
+  RC3.last = before; RC3.from = null; RC3.edit = null; RC3.mode = 'spend';
   renderRc3();
 }
 function rcOpen3(id) {
   const e = rcRows3().concat(rcAhead3()).find(x => x.id === id); if (!e) return;
-  RC3.edit = JSON.parse(JSON.stringify(e)); RC3.mode = e.k === 'transfer' ? 'moved' : rcMoneyIn3(e) ? 'in' : e.k === 'in' ? 'refund' : 'spend';
+  RC3.from = null; RC3.edit = JSON.parse(JSON.stringify(e)); RC3.mode = e.k === 'transfer' ? 'moved' : rcMoneyIn3(e) ? 'in' : e.k === 'in' ? 'refund' : 'spend';
   $('#rcForm').innerHTML = rcFormHtml3(); rcWire3();
   $('#rcForm').scrollIntoView({ block: 'start' }); $('#rcAmt').focus();
 }
@@ -10421,8 +10679,9 @@ function rcHeld3() {
   try { for (const h of E3.view(E3.today()).heldByCheck || []) out[h.id] = h.check; } catch (e) { /* no figures: nothing to say */ }
   return out;
 }
-/* [LISTFIX A1, T2] a gap found at Check your bank is spending: the engine's fillers (each account's, cut at the period
-   starts, and each card's), listed in the period each part counts in, so the list and the spent figure agree. A gain
+/* [LISTFIX A1, T2, CHECKGAP] a gap found at Check your bank is spending: the engine's fillers (each account's and each
+   card's), listed in the period its one part counts in (the check's own, whole), so the list and the spent figure
+   agree; the row's dates are the days the gap covers. A gain
    held for its question counts nowhere and is left out. Not a button: a gap changes only at a check. */
 function rcGaps3(per) {
   let r; try { r = E3.view(E3.today()); } catch (e) { return []; }
@@ -10430,12 +10689,12 @@ function rcGaps3(per) {
   const onWhat = place => (!place || place === 'free' ? { line: 'free' } : ((E3.book.plan || {}).budgets || []).some(l => l.id === place) ? { line: place } : { place });
   for (const id of Object.keys(r.accounts || {})) for (const f of r.accounts[id].fillers || []) {
     if (f.held || f.apart) continue;   // [LISTFIX2] held for its question, or never spending (the engine's marks)
-    for (const pt of f.parts || []) if (pt.amount && inPer(pt.from)) out.push({ acct: id, check: f.to, from: pt.from, to: pt.to, amount: pt.amount, on: onWhat(f.place) });
+    for (const pt of f.parts || []) if (pt.amount && inPer(pt.from)) out.push({ acct: id, check: f.to, from: f.from, to: f.to, amount: pt.amount, on: onWhat(f.place) });
   }
   /* [CARDGAP] a card's gap by its parts too (the engine cuts it by days at each period start, as a bank's) */
   for (const id of Object.keys(r.cards || {})) for (const f of r.cards[id].fillers || []) {
     if (f.apart) continue;
-    for (const pt of f.parts || []) if (pt.amount && inPer(pt.from)) out.push({ acct: id, check: f.day, from: pt.from, to: pt.to, amount: pt.amount, on: { line: 'free' } });
+    for (const pt of f.parts || []) if (pt.amount && inPer(pt.from)) out.push({ acct: id, check: f.day, from: f.from, to: f.to, amount: pt.amount, on: { line: 'free' } });
   }
   return out;
 }
@@ -10477,7 +10736,7 @@ function rcList3() {
 
 /* [NS-FIX 3] Home's "Log a spend": Receipts' own log form, in spend mode, with the amount box ready (no second form) */
 function rcLogFromHome3() {
-  RC3.edit = null; RC3.mode = 'spend';
+  RC3.from = null; RC3.edit = null; RC3.mode = 'spend';
   showTab3('receipts'); renderRc3();
   const f = $('#rcForm'); if (f) f.scrollIntoView({ block: 'start' });
   const a = $('#rcAmt'); if (a) a.focus();
@@ -10485,7 +10744,7 @@ function rcLogFromHome3() {
 /* every saved write and Undo draws Home and Receipts again */
 if (ACT3) ACT3.onChange((step, opts) => {
   if (opts && opts.isUndo) RC3.last = null;   // "was" figures belong to the step just taken back
-  if (RC3.edit && !rcRows3().concat(rcAhead3()).some(e => e.id === RC3.edit.id)) { RC3.edit = null; RC3.mode = 'spend'; }
+  if (RC3.edit && !rcRows3().concat(rcAhead3()).some(e => e.id === RC3.edit.id)) { RC3.from = null; RC3.edit = null; RC3.mode = 'spend'; }
   try { renderHome3(); } catch (e) { /* Home draws itself next time */ }
   renderRc3();
 });
@@ -10508,6 +10767,8 @@ function plRow3(attrs, left, right, after) {
 function overdueWords3(o, cur, yr, path) {
   return `${fig3(path, o.amount, cur)} due ${esc3(day3(o.payment_date, yr))} ${o.state === 'late' ? 'is late' : 'has not been seen'}. Tick it at Check your bank when it has gone`;
 }
+const PL_OWN3 = { bank: 1, cash: 1, ewallet: 1, wallet: 1 };
+const PL_KIND3 = { bank: 'Bank', cash: 'Cash', ewallet: 'E-wallet', wallet: 'Wallet' };
 function plAccounts3(kinds) { return ((E3.book && E3.book.accounts) || []).filter(a => plLive3(a) && kinds[a.type] && !a.closed); }
 
 /* [slice 6, B4] no fixed pay: no pay periods. Each line and Free to spend is an amount a month that comes off by the day;
@@ -10564,8 +10825,8 @@ function drawPlan3() {
   /* [BJ5] what has landed and is not ticked off comes first, then the next one */
   const owing = { late: 'late', notSeen: 'not seen yet', unticked: 'not ticked off yet' };
   /* [walk 4] each outstanding one with its own amount, and then the next with its own when they differ in time */
-  const owingWords = (v, cur) => (v.outstanding || []).map(o => `due ${esc3(day3(o.land, yr))}, ${owing[o.state]}, ${money3(o.amount, cur || home)}, `).join('');
-  const nextWords = (v, cur) => `${owingWords(v, cur)}${v.next ? `next ${esc3(day3(v.next.land, yr))}${(v.outstanding || []).length ? ', ' + money3(v.next.amount, cur || home) : ''}` : v.ends ? `ended ${esc3(day3(v.ends, yr))}` : 'nothing coming'}`;
+  const owingWords = (v, cur) => (v.outstanding || []).map(o => `due ${esc3(land3(o, yr))}, ${owing[o.state]}, ${money3(o.amount, cur || home)}, `).join('');
+  const nextWords = (v, cur) => `${owingWords(v, cur)}${v.next ? `next ${esc3(land3(v.next, yr))}${(v.outstanding || []).length ? ', ' + money3(v.next.amount, cur || home) : ''}` : v.ends ? `ended ${esc3(day3(v.ends, yr))}` : 'nothing coming'}`;
   /* the row's figure: the first outstanding one's own amount (scheduleView outstanding[].amount), else the next one's */
   const rowAmount = v => ((v.outstanding || []).length ? v.outstanding[0].amount : v.next ? v.next.amount : v.amount);
   const ruleWords = v => rhythmWords3(v.rule, yr);
@@ -10600,6 +10861,19 @@ function drawPlan3() {
   });
   out.push(`<section class="a3-card" data-card="plan-goals"><h2>Goals</h2>${goals.length ? `<ul class="a3-rows a3-rclist">${goals.join('')}</ul>` : '<p class="a3-sub">No goals yet. A goal is money set aside for something, kept in your bank or in an account of its own</p>'}
     <div class="a3-actions"><button type="button" class="a3-btn" id="plAddGoal">Add a goal</button></div></section>`);
+  /* [E1, M13, M23] accounts: every bank, cash and e-wallet with what it holds today (the engine's figure); tap one to rename
+     it or set its own Keep at least; Add an account after setup (the same step the assistant uses) */
+  const mainId = ((book.home || {}).main || {}).v ? book.home.main.v.acct : null;
+  const acctRows = plAccounts3(PL_OWN3).map(a => {
+    const k = r.accounts[a.id];
+    const kind = a.id === mainId ? 'Your main bank, where pay lands' : PL_KIND3[a.type] || 'Account';
+    const min = a.minBank ? `<br><span class="when">Keep at least ${plFig3('accounts.*.minimum', a.minBank.a, a.minBank.cur || a.cur)}</span>` : '';
+    return plRow3(`data-acct="${esc3(a.id)}"`, `${esc3(a.name)}<br><span class="when">${esc3(kind)}</span>${min}`,
+      k && k.bank != null ? `<span data-fig="acct-bank">${plFig3('accounts.*.bank', k.bank, a.cur)}</span><br><span class="when">${a.type === 'bank' ? esc3(label3('bankToday')).toLowerCase() : 'holds today'}</span>` : '');   // [qc-numbers run 1 C1, M51] cash is never called a bank
+  });
+  out.push(`<section class="a3-card" data-card="plan-accounts"><h2>Accounts</h2>${acctRows.length ? `<ul class="a3-rows a3-rclist">${acctRows.join('')}</ul>` : '<p class="a3-sub">No accounts</p>'}
+    <p class="a3-sub">What each holds changes at Check your bank</p>
+    <div class="a3-actions"><button type="button" class="a3-btn" id="plAddAcct">Add an account</button></div></section>`);
   /* cards and loans */
   const owedRows = plAccounts3({ card: 1, loan: 1 }).map(a => {
     const k = a.type === 'card' ? r.cards[a.id] : r.owed[a.id];
@@ -10634,6 +10908,8 @@ function drawPlan3() {
   on('#plAddGoal', () => plGoalForm3(null));
   on('#plAddCard', () => plCardForm3());
   on('#plAddLoan', () => plLoanForm3());
+  on('#plAddAcct', () => plAcctAddForm3());
+  host.querySelectorAll('[data-acct]').forEach(b => b.addEventListener('click', () => plAcctForm3(b.dataset.acct)));
   host.querySelectorAll('[data-line]').forEach(b => b.addEventListener('click', () => plLineForm3(b.dataset.line)));
   host.querySelectorAll('[data-bill]').forEach(b => b.addEventListener('click', () => plBillForm3(b.dataset.bill)));
   host.querySelectorAll('[data-pay]').forEach(b => b.addEventListener('click', () => plBillForm3(b.dataset.pay)));
@@ -10674,7 +10950,7 @@ function plForm3(title, fields, buttons, note) {
       const el = $('#pl-' + f.key), t = el.value.trim();
       if (f.kind === 'amount') {
         if (!t) vals[f.key] = f.optional ? null : undefined;
-        else { const v = typed3(t, cur); if (v === null) return { bad: `Type ${f.label.toLowerCase()} as an amount`, el }; vals[f.key] = v; }
+        else { const v = typed3(t, cur); if (v === null) return { bad: typedSlip3(t, cur) || `Type ${f.label.toLowerCase()} as an amount`, el }; vals[f.key] = v; }
       } else if (f.kind === 'day') vals[f.key] = t ? Number(t) : null;
       else vals[f.key] = t;
     }
@@ -10747,6 +11023,16 @@ function plLineForm3(id) {
 }
 const PL_EVERY3 = [{ v: 'month', name: 'On a day each month' }, { v: 'days', name: 'On two days each month' }, { v: 'weeks1', name: 'Every week' }, { v: 'weeks2', name: 'Every 2 weeks' },
   { v: 'weeks3', name: 'Every 3 weeks' }, { v: 'weeks4', name: 'Every 4 weeks' }, { v: 'none', name: 'No fixed pay: it comes when it comes' }];
+/* [E1b, M13] how often a bill added after setup is due, as setup asks: a day each month, or once a year on a month's day */
+const PL_BILL_EVERY3 = [{ v: 'month', name: 'On a day each month' }, { v: 'year', name: 'Once a year' }];
+const PL_MONTHS3 = [['1', 'January'], ['2', 'February'], ['3', 'March'], ['4', 'April'], ['5', 'May'], ['6', 'June'], ['7', 'July'], ['8', 'August'], ['9', 'September'], ['10', 'October'], ['11', 'November'], ['12', 'December']];
+function plMonth3(m) { return { key: 'month', label: 'Month it is due', kind: 'pick', value: String(m), options: PL_MONTHS3.map(([v, name]) => ({ v, name })) }; }
+/* the month box shows only for once a year */
+function plYearly3() {
+  const show = () => { $('#pl-month').closest('.a3-field').hidden = $('#pl-every').value !== 'year'; };
+  $('#pl-every').addEventListener('change', show);
+  show();
+}
 const PL_DAY2_3 = '1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31'.split(' ').map(d => ({ v: d, name: d })).concat([{ v: 'last', name: 'the last day' }]);
 /* a bill; id null adds one */
 function plBillForm3(id) {
@@ -10754,13 +11040,17 @@ function plBillForm3(id) {
   const book = E3.book, accts = plAccounts3({ bank: 1, cash: 1, ewallet: 1, wallet: 1, card: 1 }).map(a => ({ v: a.id, name: a.name }));
   if (!id) {
     plForm3('Add a bill', [{ key: 'name', label: 'Name', kind: 'text', hint: 'Like Rent or Phone' }, { key: 'amount', label: 'Amount', kind: 'amount' },
+      { key: 'every', label: 'How often', kind: 'pick', value: 'month', options: PL_BILL_EVERY3 }, plMonth3(Number(E3.today().slice(5, 7))),
       { key: 'day', label: 'Day of the month it is due', kind: 'day' }, { key: 'acct', label: 'Paid from', kind: 'pick', options: accts, value: (accts[0] || {}).v }],
-    [{ label: 'Add', solid: true, step: v => ['addBill', w => PLAN3W.addBill(w, { name: v.name, amount: v.amount, day: v.day, acct: v.acct }), 'Bill added'] }],
+    [{ label: 'Add', solid: true, step: v => ['addBill', w => PLAN3W.addBill(w, { name: v.name, amount: v.amount, every: v.every, month: Number(v.month), day: v.day, acct: v.acct }), 'Bill added'] }],
     'It is due from today on. On a weekend or holiday it moves to the next working day');
+    plYearly3();
     return;
   }
   const s = book.schedules.find(x => x.id === id), v0 = BurrowEngine.periods.scheduleView(book, E3.today())[id];
-  const day = v0.rule && v0.rule.every === 'month' && v0.rule.days.length === 1 ? v0.rule.days[0] : null;
+  /* [E1b] a yearly bill: its month and day */
+  const yearly = s.kind === 'bill' && !!(v0.rule && v0.rule.every === 'year');
+  const day = v0.rule && v0.rule.every === 'month' && v0.rule.days.length === 1 ? v0.rule.days[0] : yearly ? Number(v0.rule.date.slice(3)) : null;
   const pay = s.kind === 'income';
   /* [slice 6] a pay can change how often it lands; for the pay that starts the period, each line counted each pay is
      asked about, with its amount now filled in. [slice 6b] Two days each month and no fixed pay too, both ways: to no
@@ -10779,8 +11069,9 @@ function plBillForm3(id) {
   const perPay = every.length && starts ? (everyNow === 'none' ? PLAN3W.linesEachMonth({ book, today: E3.today() }) : PLAN3W.linesEachPay({ book, today: E3.today() })) : [];
   const lines = perPay.map(l => ({ key: 'ln-' + l.key, label: `${l.name} ${everyNow === 'none' ? 'a month' : 'each pay'} from the change`, kind: 'amount', value: l.amount, optional: true, hint: ' ' }));
   plForm3(s.name, [{ key: 'name', label: 'Name', kind: 'text', value: s.name }, { key: 'amount', label: 'Amount', kind: 'amount', value: v0.amount }].concat(every.slice(0, 1),
-    [{ key: 'day', label: 'Day of the month it is due', kind: 'day', value: dayNow }], every.slice(1), [{ key: 'from', label: 'Changes from', kind: 'date', value: v0.changeFrom, hint: 'Earlier ones stay as they were' }], lines),
-  [{ label: 'Save', solid: true, step: v => ['changeBill', w => PLAN3W.changeBill(w, id, { name: v.name, amount: v.amount, day: v.day, from: v.from,
+    yearly ? [plMonth3(Number(v0.rule.date.slice(0, 2)))] : [], [{ key: 'day', label: 'Day of the month it is due', kind: 'day', value: dayNow }], every.slice(1), [{ key: 'from', label: 'Changes from', kind: 'date', value: v0.changeFrom, hint: 'Earlier ones stay as they were' }],
+    pay ? [] : [{ key: 'acct', label: 'Paid from', kind: 'pick', options: accts, value: s.acct, hint: 'A change counts from the next one' }], lines),
+  [{ label: 'Save', solid: true, step: v => ['changeBill', w => PLAN3W.changeBill(w, id, { name: v.name, amount: v.amount, day: v.day, from: v.from, ...(yearly ? { month: Number(v.month) } : {}), ...(pay ? {} : { acct: v.acct }),
     ...(every.length ? { every: v.every, day2: v.day2 === 'last' ? 'last' : Number(v.day2), start: v.start, lines: Object.fromEntries(perPay.map(l => [l.key, v['ln-' + l.key] == null ? l.amount : v['ln-' + l.key]])) } : {}) }), pay ? 'Pay changed' : 'Bill changed'] }]
     .concat(pay || !v0.next ? [] : [{ label: 'Change the next one only', step: v => ['changeOnce', w => PLAN3W.changeOnce(w, id, { due: v0.next.due, amount: v.amount }), s.name + ' on ' + day3(v0.next.land, 'any') + ' changed'] },
       { label: 'End this bill', sure: [`End ${s.name}? Nothing is due after the day in "Changes from"`, 'Yes, end it'], step: v => ['endBill', w => PLAN3W.endBill(w, id, { last: v.from }), s.name + ' ends'] }]),
@@ -10844,10 +11135,46 @@ function plOwedForm3(id) {
   const fields = [{ key: 'name', label: 'Name', kind: 'text', value: a.name }, { key: 'payDay', label: 'Day of the month it is paid', kind: 'day', value: a.payDay }];
   if (card) fields.push({ key: 'cutDay', label: 'Day the statement closes', kind: 'day', value: a.cutDay, hint: 'Leave it empty if you are not sure: then all that is owed is due on each payment day' });
   else fields.push({ key: 'amount', label: 'Usual payment', kind: 'amount', value: a.amount });
-  plForm3(a.name, fields, [{ label: 'Save', solid: true, step: v => ['changeOwed', w => PLAN3W.changeOwed(w, id, card ? { name: v.name, payDay: v.payDay, cutDay: v.cutDay } : { name: v.name, payDay: v.payDay, amount: v.amount }), a.name + ' changed'] }]
+  fields.push(plPayFrom3(a.payFrom), plShift3(a.shift));   // [E1b, M13, M23]
+  plForm3(a.name, fields, [{ label: 'Save', solid: true, step: v => ['changeOwed', w => PLAN3W.changeOwed(w, id, Object.assign(card ? { name: v.name, payDay: v.payDay, cutDay: v.cutDay } : { name: v.name, payDay: v.payDay, amount: v.amount }, { payFrom: v.payFrom, shift: v.shift })), a.name + ' changed'] }]
     .concat(card ? [] : [{ label: 'Close this loan', sure: [`Close ${a.name}? It leaves your plan`, 'Yes, close it'], step: () => ['closeLoan', w => PLAN3W.closeLoan(w, id), a.name + ' closed'] }]),
     card ? '' : 'A loan closes once it is paid off');
 }
+/* [E1, M13] an account's own sheet: its name, and its own Keep at least (the main bank's is in Settings) */
+function plAcctForm3(id) {
+  PL3.sheet = 'account';
+  const a = E3.book.accounts.find(x => x.id === id), main = ((E3.book.home || {}).main || {}).v, isMain = main && main.acct === id;
+  const fields = [{ key: 'name', label: 'Name', kind: 'text', value: a.name }];
+  if (!isMain) fields.push({ key: 'min', label: 'Keep at least', kind: 'amount', optional: true, value: a.minBank ? a.minBank.a : null, hint: 'Leave it empty for none. Safe to spend never counts this part' });
+  plForm3(a.name, fields, [{ label: 'Save', solid: true, step: v => ['changeAccount', w => PLAN3W.changeAccount(w, id, isMain ? { name: v.name } : { name: v.name, min: v.min }), a.name + ' changed'] }],
+    isMain ? 'Your main bank, where pay lands. What it holds changes at Check your bank' : 'What it holds changes at Check your bank');
+}
+/* [E1, M13, M23] a bank, cash or e-wallet after setup: what it holds today, and whether that money was taken from the
+   main bank since its last figure (then it moves from there, never counted twice) [qc-foundation F3] */
+function plAcctAddForm3() {
+  PL3.sheet = 'addAccount';
+  const book = E3.book, day = E3.today(), main = ((book.home || {}).main || {}).v, from = main && main.acct, fromName = E3.nameOf(from);
+  const last = (book.events || []).filter(e => plLive3(e) && e.k === 'check' && !e.stmt && e.acct === from && e.date <= day).map(e => e.date).sort().pop() || day;
+  const since = last === day ? 'today' : day3(last, day.slice(0, 4));
+  const fields = [{ key: 'name', label: 'Name', kind: 'text', hint: 'Like Savings, Cash or PayPay' },
+    { key: 'type', label: 'What it is', kind: 'pick', value: 'bank', options: [{ v: 'bank', name: 'A bank account' }, { v: 'cash', name: 'Cash' }, { v: 'ewallet', name: 'An e-wallet' }] },
+    { key: 'amount', label: 'What it holds today', kind: 'amount', hint: 'Type 0 if it is empty' },
+    { key: 'source', label: 'Where that money came from', kind: 'pick', value: 'new', options: [{ v: 'new', name: `Not taken from ${fromName} since its figure of ${since}` }, { v: 'moved', name: `Moved from ${fromName} after its figure of ${since}` }],
+      hint: `New money, or money moved before that figure, is added as it is. Money moved after it comes out of ${fromName}, so it is not counted twice` }];
+  if (last < day) fields.push({ key: 'date', label: 'If it was moved, the day', kind: 'date', value: day });
+  fields.push({ key: 'min', label: 'Keep at least', kind: 'amount', optional: true, hint: 'Leave it empty for none' });
+  plForm3('Add an account', fields, [{ label: 'Add', solid: true, step: v => ['addAccount', w => PLAN3W.addAccount(w, Object.assign({ name: v.name, type: v.type, amount: v.amount, min: v.min, moved: v.source === 'moved' },
+    v.source === 'moved' ? { date: v.date || day, afterFigure: true } : {})), 'Account added'] }],
+  'A card or a loan: add it under Cards and loans');
+}
+/* [E1b, M13, M23] which account pays a card or a loan (the main bank first, as setup asks), and what happens when its day
+   is a weekend or holiday; a change counts from the next payment */
+function plPayFrom3(v) {
+  const main = ((E3.book.home || {}).main || {}).v, mainId = main && main.acct;
+  const list = plAccounts3(PL_OWN3).sort((x, y) => (x.id === mainId ? -1 : y.id === mainId ? 1 : 0)).map(a => ({ v: a.id, name: a.name }));
+  return { key: 'payFrom', label: 'Paid from', kind: 'pick', options: list, value: v || mainId, hint: 'A change counts from the next payment' };
+}
+function plShift3(v) { return { key: 'shift', label: 'When that day is a weekend or holiday, it comes out', kind: 'pick', options: [{ v: 'after', name: 'the working day after' }, { v: 'before', name: 'the working day before' }], value: v || 'after' }; }
 /* a card after setup (QC F1): the same questions setup asks, written through ACT3 */
 function plCardForm3() {
   PL3.sheet = 'addCard';
@@ -10855,16 +11182,16 @@ function plCardForm3() {
   plForm3('Add a card', [{ key: 'name', label: 'Name', kind: 'text', hint: 'Like Visa' }, { key: 'owed', label: 'What is on it now', kind: 'amount', hint: 'Type 0 if nothing is on it' },
     { key: 'payDay', label: 'Day of the month it is paid from your bank', kind: 'day' },
     { key: 'cutDay', label: 'Day its statement closes', kind: 'pick', options: closes, value: 'not sure', hint: 'If you are not sure, all that is on it is due on each payment day' },
-    { key: 'shift', label: 'When that day is a weekend or holiday, it comes out', kind: 'pick', options: [{ v: 'after', name: 'the working day after' }, { v: 'before', name: 'the working day before' }], value: 'after' }],
-  [{ label: 'Add', solid: true, step: v => ['addCard', w => PLAN3W.addCard(w, { name: v.name, owed: v.owed, payDay: v.payDay, cutDay: v.cutDay === 'not sure' || v.cutDay === 'last' ? v.cutDay : Number(v.cutDay), shift: v.shift }), 'Card added'] }],
-  'It is paid in full from your main bank. Its payment counts in what is due before next pay');
+    plPayFrom3(null), plShift3('after')],
+  [{ label: 'Add', solid: true, step: v => ['addCard', w => PLAN3W.addCard(w, { name: v.name, owed: v.owed, payDay: v.payDay, cutDay: v.cutDay === 'not sure' || v.cutDay === 'last' ? v.cutDay : Number(v.cutDay), shift: v.shift, payFrom: v.payFrom }), 'Card added'] }],
+  'It is paid in full each month. Its payment counts in what is due before next pay');
 }
 function plLoanForm3() {
   PL3.sheet = 'addLoan';
   plForm3('Add a loan', [{ key: 'name', label: 'Name', kind: 'text', hint: 'Like Car loan' }, { key: 'owed', label: 'Still owed today', kind: 'amount' },
-    { key: 'amount', label: 'Usual payment', kind: 'amount' }, { key: 'payDay', label: 'Day of the month it is paid', kind: 'day' }],
-  [{ label: 'Add', solid: true, step: v => ['addLoan', w => PLAN3W.addLoan(w, { name: v.name, owed: v.owed, amount: v.amount, payDay: v.payDay }), 'Loan added'] }],
-  'It is paid from your main bank. Its payment counts in what is due before next pay');
+    { key: 'amount', label: 'Usual payment', kind: 'amount' }, { key: 'payDay', label: 'Day of the month it is paid', kind: 'day' }, plPayFrom3(null)],
+  [{ label: 'Add', solid: true, step: v => ['addLoan', w => PLAN3W.addLoan(w, { name: v.name, owed: v.owed, amount: v.amount, payDay: v.payDay, payFrom: v.payFrom }), 'Loan added'] }],
+  'Its payment counts in what is due before next pay');
 }
 
 /* Home's ways into Plan's own forms (one form each, never a second copy): 'free' Set Free to spend, 'card' Add a card,
@@ -10889,6 +11216,21 @@ if (ACT3) ACT3.onChange(() => { if (!PL3.form) renderPlan3(); });
    [item 14] Each section has its own Save and is held as a draft on this device until "See my money" turns the saved
    answers into a book through engine/build_book.js and keeps it through the store (the draft section below says
    how). Nothing is worked out here. The words are drafts for Mako's copy pass. */
+/* [qc-controls run 1 blocker 2, coordinator 16's ruling B] setup has no step for these: its last step says where they go */
+/* [TABSETUP_PLAN 3, coordinator 17] setup finished in another tab while this one was still on setup (the screens or the
+   chat): this tab closes onto Home with the book from there, and says so; nothing typed here is written */
+/* [qc-foundation 4, 5] the line says what was typed here only when something was (setup open, or the chat's setup
+   answers); a fill still held in the other tab is said; the setup draft as stored is cleared, so it never comes back */
+addEventListener('burrow3:started', e => {
+  const st = typeof CHAT3 !== 'undefined' && CHAT3.state, typed = !!setup3 || !!(st && st.draft);
+  if (setup3) endSetup3();
+  draftWrite3(null).catch(() => {});
+  renderHome3();
+  if (typeof renderChat3 === 'function') renderChat3();
+  const held = e && e.detail && e.detail.held;
+  msg3('Your money was set up in another tab, so this tab shows it now' + (held ? '. It can still be undone in that tab' : '') + (typed ? '. What you typed here was not saved' : ''));
+});
+const SETUP3_LATER = 'Loans, goals and budget lines like Gifts are not part of setup. Add them on Plan after this: Add a loan, Add a goal, Add a line';
 let setup3 = null;
 function dayOptions3(sel, extra) {
   const out = [];
@@ -11039,6 +11381,7 @@ async function openSetup3() {
         <p class="a3-sub" id="s3MinH" data-hint="min">Safe to spend leaves this much in your bank as a cushion</p></div>
       ${saveBar3('min')}
     </section>
+    <p class="a3-sub" data-hint="later">${esc3(SETUP3_LATER)}</p>
     <p class="a3-err" id="a3SetupErr" role="alert"></p>
     <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3SetupSave">See my money</button><button type="button" class="a3-btn" id="a3SetupX">Back</button></div>
   </div>`;
@@ -11129,7 +11472,7 @@ function form3(strict, sec) {
   const asks = el => strict && (!sec || sec.contains(el));
   const ask = (el, words) => { fieldErr3(el, words); el.focus(); throw new Error('asked'); };
   /* [M47] a bank's own box reads a minus (bankBox3) */
-  const amount = (el, words) => { const v = bankBox3(el) ? typedBank3(el.value, cur) : typed3(el.value, cur); if (v !== null) return v; return asks(el) ? ask(el, words) : null; };
+  const amount = (el, words) => { const v = bankBox3(el) ? typedBank3(el.value, cur) : typed3(el.value, cur); if (v !== null) return v; return asks(el) ? ask(el, typedSlip3(el.value, cur) || words) : null; };
   const maybe = (el, words) => (el.value.trim() ? amount(el, words) : null);
   const text = (el, dflt) => (el.value || '').trim() || dflt;
   const dayOf = v => (v === 'last' ? 'last' : Number(v));
@@ -11358,10 +11701,23 @@ function typedNow3(sections, skip) {
    on its way never lands after a later one (See my money's clear above all: E3.rec reads, then writes the device record) */
 let draftQ3 = Promise.resolve();
 const draftWrite3 = v => (draftQ3 = draftQ3.then(() => E3.rec('setup', v), () => E3.rec('setup', v)));
-const keepDraft3 = (sections, days, skip, kept) => {
+/* [qc-data-safety 26 Nov, blocker 1; M61] two tabs of one phone share the draft: a write changes only what this tab
+   changed (the sections in `touched`, saved or taken back; the boxes typed and not saved) on the draft as stored now,
+   so a section another tab saved is never wiped. E3.recEdit reads and writes in one turn, one tab at a time */
+const draftEdit3 = fn => (draftQ3 = draftQ3.then(() => E3.recEdit('setup', fn), () => E3.recEdit('setup', fn)));
+const keepDraft3 = (sections, days, skip, kept, touched) => {
   const typed = setup3 && setup3.base ? typedNow3(sections, skip) : Object.assign({}, kept);
   if (skip) delete typed[skip];
-  return draftWrite3(Object.keys(sections).length || Object.keys(typed).length ? { v: 1, sections, days, typed } : null);
+  return draftEdit3(cur => {
+    const d = cur && cur.v ? { v: 1, sections: Object.assign({}, cur.sections), days: Object.assign({}, cur.days), typed: Object.assign({}, cur.typed) } : { v: 1, sections: {}, days: {}, typed: {} };
+    for (const sec of touched || []) {
+      if (sections[sec]) { d.sections[sec] = sections[sec]; d.days[sec] = days[sec]; } else { delete d.sections[sec]; delete d.days[sec]; }
+      delete d.typed[sec];
+    }
+    if (skip) delete d.typed[skip];
+    Object.assign(d.typed, typed);
+    return Object.keys(d.sections).length || Object.keys(d.typed).length ? d : null;
+  });
 };
 /* what is typed is kept a moment after the typing stops, and at once on Back */
 /* what a row shows (its questions and their words) is worked out while the person types, not only when the box is left:
@@ -11385,7 +11741,7 @@ async function saveSec3(sec) {
   const before = setup3.saved[sec] || null, beforeDay = setup3.days[sec] || null, now = snap3(sec);
   const sections = Object.assign({}, setup3.saved, { [sec]: now }), days = Object.assign({}, setup3.days, { [sec]: E3.today() });
   setup3.busy = true;
-  const ok = await keepDraft3(sections, days);
+  const ok = await keepDraft3(sections, days, null, null, [sec]);
   setup3.busy = false;
   if (!setup3) return;
   if (ok !== true) { el.querySelector(`[data-saved="${sec}"]`).textContent = 'This could not be saved on this device. Nothing changed'; return; }
@@ -11394,8 +11750,12 @@ async function saveSec3(sec) {
   /* [qc-assistant run 4, fix B] the section goes into the chat's draft too: one set of answers (chat3.js) */
   const cw = typeof chat3FromScreens === 'function' ? chat3FromScreens(sec) : null;
   markAll3();
-  MSG3.post({ kind: 'undo', key: 'act3', text: `${secName3(sec)}: saved`, action: { label: 'Undo', run: () => undoSec3(sec, before, beforeDay, now, cw) } });
+  setup3Undo = MSG3.post({ kind: 'undo', key: 'act3', text: `${secName3(sec)}: saved`, action: { label: 'Undo', run: () => undoSec3(sec, before, beforeDay, now, cw) } });
 }
+/* [coordinator 16, 26 Nov] once the app is filled (by the chat or by See my money) a section's Save has nothing left to undo:
+   its Undo is taken off, never left to say "Undone" while nothing changes. E3.start calls this */
+let setup3Undo = null;
+function setup3Filled() { if (setup3Undo) { MSG3.dismiss(setup3Undo); setup3Undo = null; } }
 /* Undo a section's Save: the section as it was before it (or as it started); refused when it was saved again since */
 async function undoSec3(sec, before, beforeDay, now, cw) {
   const open = !!setup3, kept = open ? null : ((await E3.rec('setup')) || {});
@@ -11408,7 +11768,7 @@ async function undoSec3(sec, before, beforeDay, now, cw) {
      section is put back, or its write, made from the save being undone, would land after this one and win */
   const me = open ? setup3 : null;
   if (me) me.busy = true;
-  const ok = await keepDraft3(sections, days, sec, open ? null : kept.typed);
+  const ok = await keepDraft3(sections, days, sec, open ? null : kept.typed, [sec]);
   if (me) me.busy = false;
   if (ok !== true) { MSG3.post({ kind: 'toast', key: 'act3', text: 'This could not be saved on this device. Nothing changed' }); return; }
   if (me && setup3 === me) { setup3.saved = sections; setup3.days = days; put3(sec, before || setup3.base[sec]); }
@@ -11448,6 +11808,7 @@ async function saveSetup3() {
   let built;
   try { built = ANSWERS3.build(ans, { day: E3.today(), told: E3.told(), newId: E3.newId, currency: $('#s3Cur').value }); } catch (e) { err.textContent = e.message; return; }
   const ok = await E3.start(built.book);
+  if (!ok && E3.startWhy === 'there') return;   // another tab finished setup: its book is shown and said (burrow3:started)
   if (!ok) { err.textContent = 'This could not be saved on this device. Nothing changed'; return; }
   endSetup3();   // first: no typed-keeping write is asked after this
   await draftWrite3(null);
@@ -11556,9 +11917,10 @@ async function saveSetup3() {
           out[k] = list;
         } else if (isRecords(x)) out[k] = x.map(mark);
         else if (isSetting(x)) out[k] = mark(x);   // a setting, { v } with or without a change time
-        // a setting here (or in the copy last synced) that the restored copy lacks is saved marked gone, its value kept
-        // beside the mark (SCHEMA_V3 0 "Nothing is deleted"): left out, the join would read "never changed" and bring it back
-        else if (x === undefined && os.some(o => isSetting(o[k]))) { const e = os.map(o => o[k]).find(isSetting); out[k] = Object.assign(mark(e), { gone: e.gone || gone }); }
+        // a setting here (or in the copy last synced) that the restored copy lacks is saved as whichdoor's marker, v null
+        // (every reader reads it as not set, as the restored copy has it), marked gone, its value kept beside the mark in
+        // `before` (SCHEMA_V3 0 "Nothing is deleted"): left out, the join would read "never changed" and bring it back
+        else if (x === undefined && os.some(o => isSetting(o[k]))) { const e = os.map(o => o[k]).find(isSetting); out[k] = Object.assign(mark(e), { v: null, before: e.v === undefined ? null : e.v, gone: e.gone || gone }); }
         else if (isMap(x)) out[k] = walk(x, os.map(o => o[k]).filter(isMap), false);
         else if (x === undefined) { const w = walk({}, os.map(o => o[k]).filter(isMap), false); if (Object.keys(w).length) out[k] = w; }
         else out[k] = C(x);
@@ -11599,14 +11961,22 @@ async function saveSetup3() {
     })(isMap(copy) ? copy : {}, '', true);
     return out;
   }
+  /* [qc-foundation point 6 on TABSETUP_PLAN] ONE diff by record id, each record counted once: only in `now` (n, by
+     kind), only in `from` (back, by kind: what Put it back or a restore brings back), in both and different (changed).
+     since(b, a) is since(a, b) with n and back swapped, so the restore question and Put it back count the same things */
   function since(from, now) {
-    const a = holds(from), b = holds(now), out = { n: 0, money: 0, checks: 0, other: 0, changed: 0, all: 0 };   // all: added and changed together
+    const a = holds(from), b = holds(now), out = { n: 0, money: 0, checks: 0, other: 0, changed: 0, all: 0, back: { n: 0, money: 0, checks: 0, other: 0 } };   // all: every record counted, once
     for (const [k, v] of b) {
       const w = a.get(k);
       if (w) { if (w.c !== v.c) { out.changed++; out.all++; } }
       else if (k.startsWith('/checkins#')) continue;
       else if (v.kind === 'plain') { out.changed++; out.all++; }
       else { out.n++; out.all++; out[v.kind]++; }
+    }
+    for (const [k, w] of a) {
+      if (b.has(k) || k.startsWith('/checkins#')) continue;
+      if (w.kind === 'plain') { out.changed++; out.all++; }   // a plain value only one side has: it differs
+      else { out.back.n++; out.all++; out.back[w.kind]++; }
     }
     return out;
   }
@@ -12247,8 +12617,18 @@ function offAsk3() {
       <button type="button" class="a3-btn" id="a3CloudDel">Delete the cloud copy</button>
       <button type="button" class="a3-btn" id="a3CloudKeep">Keep it on</button></div>`;
   $('#a3CloudStop').addEventListener('click', () => turnOff3(false));
-  $('#a3CloudDel').addEventListener('click', () => turnOff3(true));
+  $('#a3CloudDel').addEventListener('click', delAsk3);
   $('#a3CloudKeep').addEventListener('click', () => { $('#a3CloudForm').innerHTML = ''; });
+}
+/* [coordinator's ruling 26 Nov, M61, M66] Delete asks first: the server then keeps only the mark that it was deleted, so
+   every earlier saved version goes too. Keep it is the easy choice and sends nothing */
+function delAsk3() {
+  $('#a3CloudForm').innerHTML = `<p class="a3-warn" data-cloud="delask">Delete the cloud copy for good? The earlier saved versions on the server go too, and this cannot be undone. The money on this device stays</p>
+    <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3CloudDelNo">Keep it</button>
+      <button type="button" class="a3-btn" id="a3CloudDelYes">Delete it for good</button></div>`;
+  $('#a3CloudDelNo').addEventListener('click', () => { $('#a3CloudForm').innerHTML = ''; });
+  $('#a3CloudDelYes').addEventListener('click', () => turnOff3(true));
+  $('#a3CloudDelNo').focus();
 }
 async function turnOff3(del) {
   const st = await cloudState3();
@@ -12333,22 +12713,16 @@ function paintOther3() {
       <div class="a3-actions"><button type="button" class="a3-btn" data-useother="${n}:${o.i}">Use the other one</button></div></div>`).join('')).join('');
   for (const b of box.querySelectorAll('[data-useother]')) b.addEventListener('click', () => { const [n, i] = b.dataset.useother.split(':').map(Number); useOther3(lines[n], i); });
 }
-/* the other version back: the engine's own answer (every version stays kept), with an Undo that puts the one before back */
-async function pickVersion3(of, matches) {
-  const S = BurrowEngine.sync, k = (E3.book.keptVersions || []).find(r => r.of === of);
-  const i = k ? k.versions.findIndex(matches) : -1;
-  if (i < 0) return false;
-  let next;
-  try { next = S.answer({ copy: E3.book, of, pick: i, now: nowIso3(), by: deviceBy3() }); } catch (e) { return false; }
-  return (await E3.put(next)) === true;
-}
+/* [WHICH_DOOR_PLAN] the other version back: the engine's own answer (every version stays kept), written through the one
+   write door (ACT3.answerSync), so it has the door's check, the saved Undo journal and its Undo bar like every write */
 async function useOther3(x, i) {
-  const S = BurrowEngine.sync, before = x.inUse, want = x.k.versions[i], name = x.cur.name || nameOf3(x.k);
-  if (!(await pickVersion3(x.k.of, v => S.same(v, want)))) { setMsg3('That choice could not be made, so nothing changed', true); return; }
-  renderHome3(); if (SET3.open) paintQuestions3();
-  MSG3.post({ kind: 'undo', key: 'act3', text: `${name}: the other one is back`, action: { label: 'Undo', run: async () => {
-    if (await pickVersion3(x.k.of, v => S.same(v, before))) { renderHome3(); if (SET3.open) paintQuestions3(); }
-  } } });
+  const S = BurrowEngine.sync, want = x.k.versions[i], name = x.cur.name || nameOf3(x.k), of = x.k.of;
+  const r = await ACT3.answerSync('Use the other one', (b, o) => {
+    const k = (b.keptVersions || []).find(y => y.of === of), j = k ? k.versions.findIndex(v => S.same(v, want)) : -1;
+    if (j < 0) throw new BurrowAct3.Bad(STALE3);
+    return S.answer({ copy: b, of, pick: j, now: o.now, by: o.by });
+  }, { undo: `${name}: the other one is back` });
+  if (!r.ok) setMsg3(r.why === 'bad' && r.text ? r.text : 'That choice could not be made, so nothing changed', true);
 }
 function paintQuestions3() {
   const box = $('#a3CloudQs'); if (!box || !E3.book) { if (box) box.innerHTML = ''; return; }
@@ -12366,7 +12740,11 @@ function paintQuestions3() {
     return `<div class="a3-q" data-cloudq="${esc3(q.q)}"><p class="a3-next">${esc3(QWORDS3[q.q] || 'Something needs a choice after joining your devices.')}</p>
       <div class="a3-actions">${picks.map(([p, t]) => `<button type="button" class="a3-btn" data-q="${i}" data-pick="${esc3(p)}">${esc3(t)}</button>`).join('')}</div></div>`;
   }).join('');
-  const drawn = qs.map(q => (q.q === 'which' ? stampsOf3(E3.book, q.of) : null));   // what the rows were drawn from
+  /* what the rows were drawn from: a "which" row its item's stamps; a check question (x8, closed, minimum, main) has no
+     row stamps, so it carries the door's whole-book mark from paint time (WHICH_DOOR_PLAN item 6): answered on a book
+     that changed since, it is refused, never written over the newer book */
+  const paintVer = typeof ACT3 === 'object' && ACT3 && ACT3.ver ? ACT3.ver() : null;
+  const drawn = qs.map(q => (q.q === 'which' ? stampsOf3(E3.book, q.of) : { ver: paintVer }));
   for (const b of box.querySelectorAll('[data-q]')) b.addEventListener('click', () => answer3(qs[+b.dataset.q], b.dataset.pick, drawn[+b.dataset.q]));
 }
 /* [M20, M61] a "which to keep" answer is written only on the book its row was drawn from: the question still open, its
@@ -12382,45 +12760,22 @@ function stampsOf3(book, of) {
   return { ask: !!(k && k.ask), k: k ? k.at || '' : '', item: it && it.at ? it.at : '' };
 }
 const STALE3 = 'This was already chosen or changed somewhere else, so nothing changed';
-/* Undo right after Keep: the item and its kept versions as they were before the answer, written with a newer time so the
-   other devices take the Undo too. Refused when either changed since the answer */
-async function undoAnswer3(of, before, answered) {
-  const now = stampsOf3(E3.book, of), was = stampsOf3(answered, of);
-  if (now.k !== was.k || now.item !== was.item) { setMsg3(STALE3, true); return; }
-  const clock = BurrowClock.makeClock(); clock.see(E3.book);
-  const stamp = { at: clock.stamp(), by: deviceBy3() };
-  const kb = (before.keptVersions || []).find(r => r.of === of);
-  let out;
-  if (of === 'copy') out = JSON.parse(JSON.stringify(before));
-  else {
-    out = JSON.parse(JSON.stringify(E3.book));
-    const holder = pathOf3(out, kb.in), it = itemOf3(before, kb);
-    if (Array.isArray(holder)) { const i = holder.findIndex(r => r && r.id === of); if (it && i >= 0) holder[i] = Object.assign(JSON.parse(JSON.stringify(it)), stamp); }
-    else if (holder && it) holder[of.split('.').pop()] = Object.assign(JSON.parse(JSON.stringify(it)), stamp);
-  }
-  out.keptVersions = (out.keptVersions || []).map(r => (r.of === of ? Object.assign(JSON.parse(JSON.stringify(kb)), stamp) : r));
-  const ok = await E3.put(out);
-  if (ok !== true) { setMsg3('This could not be saved on this device, so nothing changed', true); return; }
-  renderHome3(); if (SET3.open) paintQuestions3();
-}
 async function answer3(q, pick, drawn) {
-  if (drawn) {
+  if (drawn && q.q === 'which') {
     const now = stampsOf3(E3.book, q.of);
     if (!now.ask || now.k !== drawn.k || now.item !== drawn.item) { setMsg3(STALE3, true); paintQuestions3(); return; }
   }
-  const S = BurrowEngine.sync, before = E3.book, base = { copy: E3.book, now: nowIso3(), by: deviceBy3() };
-  let next;
-  try {
-    if (q.q === 'which') next = S.answer(Object.assign(base, { of: q.of, pick: pick === 'both' ? 'both' : +pick }));
-    else next = S.answerCheck(Object.assign(base, { question: q, pick }));
-  } catch (e) { setMsg3('That choice could not be made, so nothing changed', true); return; }
-  const ok = await E3.put(next);   // an edit with this device's clock; every version stays kept
-  if (ok !== true) { setMsg3(ok && ok.text ? ok.text : 'This could not be saved on this device, so nothing changed', true); paintQuestions3(); return; }
-  renderHome3();
-  if (q.q === 'which') MSG3.post({ kind: 'undo', key: 'act3', text: 'Kept - the other version can still come back', action: { label: 'Undo', run: () => undoAnswer3(q.of, before, next) } });
-  else setMsg3('Kept - the other version can still come back');
-  paintQuestions3();
+  /* [WHICH_DOOR_PLAN] the engine makes the answer on the book as it is in the step; the one write door writes what differs,
+     with its check, the saved Undo journal (Undo after a reload) and its Undo bar; every version stays kept */
+  const S = BurrowEngine.sync;
+  const r = await ACT3.answerSync(q.q === 'which' ? 'Kept' : 'Chosen', (b, o) => (q.q === 'which'
+    ? S.answer({ copy: b, of: q.of, pick: pick === 'both' ? 'both' : +pick, now: o.now, by: o.by })
+    : S.answerCheck({ copy: b, question: q, pick, now: o.now, by: o.by })), Object.assign({ undo: 'Kept - the other version can still come back' }, q.q !== 'which' && drawn && drawn.ver != null ? { ver: drawn.ver } : {}));
+  if (!r.ok && r.why === 'other') { setMsg3(STALE3, true); paintQuestions3(); return; }
+  if (!r.ok) { setMsg3(r.why === 'save' ? r.text || 'This could not be saved on this device, so nothing changed' : 'That choice could not be made, so nothing changed', true); paintQuestions3(); }
 }
+/* every write through the door redraws the questions while Settings is open (an answer, its Undo, a change elsewhere) */
+if (typeof ACT3 === 'object' && ACT3) ACT3.onChange(() => { if (typeof SET3 === 'object' && SET3.open) { try { paintQuestions3(); } catch (e) { /* drawn next time */ } } });
 /* ---------- Settings (DECISIONS_ROUND2 D2, D5, D7, E2, BD5, BE3) ----------
    One sheet: the currency shown, this device's storage line (store/persist.js), the backup file (src/backup3.js) and the
    cloud copy (src/cloud3_page.js adds its own card when it is in the page). Nothing here works out money.
@@ -12612,7 +12967,7 @@ async function readBackup3(file, code) {
   /* [M7; qc-data-safety B2] records in the backup dated or told after today (a clock that was ahead): said before the yes */
   const nAhead = typeof rcAhead3 === 'function' ? rcAhead3(r.copy).length : 0;
   const aheadSay = nAhead ? ` ${nAhead === 1 ? '1 of them is' : nAhead + ' of them are'} dated after today. They do not count until their day, and Receipts lists them.` : '';
-  const after = E3.book ? `<br>Anything you logged after this backup was made goes${on ? ', on every device' : ' from this device'}${s.n ? `: ${things3(s.n)} here now ${s.n === 1 ? 'is' : 'are'} not in it ${kinds3(s)}` : ''}. Put it back brings it back.` : '';
+  const after = E3.book ? `<br>Anything you logged after this backup was made goes${on ? ', on every device' : ' from this device'}${s.n ? `: ${things3(s.n)} here now ${s.n === 1 ? 'is' : 'are'} not in it ${kinds3(s)}` : ''}.${s.changed ? ` ${things3(s.changed)} here now ${s.changed === 1 ? 'goes back to how the backup has it' : 'go back to how the backup has them'}.` : ''}${s.back && s.back.n ? ` ${things3(s.back.n)} in the backup and not here now ${s.back.n === 1 ? 'comes' : 'come'} back ${kinds3(s.back)}.` : ''} Put it back brings it back.` : '';
   ask.innerHTML = `<p class="a3-warn" data-set="restoreask">${E3.book ? 'This replaces the money on this device with the backup. What is here now is kept, and Put it back brings it back.' : 'This puts the money from the backup on this device.'} The backup holds ${n} record${n === 1 ? '' : 's'}.${aheadSay}${others}${after}</p>
     <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3BkGo">Restore it</button><button type="button" class="a3-btn" id="a3BkNo">Cancel</button></div>`;
   $('#a3BkGo').addEventListener('click', async () => {
@@ -12631,8 +12986,11 @@ function backWords3(s, on) {
   const all = s.all, where = on ? ', on every device after the next send' : ', from this device';
   if (!all) return 'Put this copy back? Nothing was added or changed since it was kept. What is here now is kept first, with its own Put it back.';
   const added = s.n ? `${things3(s.n)} added since it was kept ${s.n === 1 ? 'goes' : 'go'} ${kinds3(s)}` : 'Nothing was added since it was kept';
-  const changed = s.changed ? `, and ${things3(s.changed)} changed since ${s.changed === 1 ? 'goes back to how it was' : 'go back to how they were'}` : '';
-  return `Put this copy back? ${added}${changed}${where}. What is here now is kept first, and its own Put it back brings ${all === 1 ? 'it' : 'them'} back.`;
+  const b = s.back || { n: 0 };
+  const changed = s.changed ? `${b.n ? ',' : ', and'} ${things3(s.changed)} changed since ${s.changed === 1 ? 'goes back to how it was' : 'go back to how they were'}` : '';
+  /* [qc-foundation point 6] what the copy holds that is not here now (taken out since, by a restore or a remove) comes back */
+  const back = b.n ? `, and ${things3(b.n)} taken out since ${b.n === 1 ? 'comes' : 'come'} back ${kinds3(b)}` : '';
+  return `Put this copy back? ${added}${changed}${back}${where}. What is here now is kept first, and its own Put it back brings ${all === 1 ? 'it' : 'them'} back.`;
 }
 function dropWords3(s) {
   return `Drop this copy? It is the only copy of the money from before your first restore${s.n ? `, with ${things3(s.n)} that ${s.n === 1 ? 'is' : 'are'} not in the money here now ${kinds3(s)}` : ''}. Undo brings it back while Settings stays open, and after that nothing can.`;
@@ -13109,7 +13467,7 @@ function stmt3Review() {
   const said = [c.settles ? c.settles + ' are bills, pay or card payments you expected' : '', c.typed ? `${c.typed} ${c.typed === 1 ? 'is one you typed' : 'are ones you typed'}` : '',
     c.meets ? c.meets + ' read twice, from your bank and your card' : '', c.repeat ? c.repeat + ' already here, left out' : '', c.pick ? `${c.pick} ${c.pick === 1 ? 'card payment needs' : 'card payments need'} you to say which card` : '', c.askmove ? `${c.askmove} sent out: ${c.askmove === 1 ? 'is it' : 'are they'} a move to your own account?` : ''].filter(Boolean);
   const sheet = stmt3Show(`<h1 id="a3StmtT">What was read</h1>
-    <section class="a3-card"><h2>${c.read} ${c.read === 1 ? 'line' : 'lines'}</h2><p class="a3-sub" data-fig="stmtsum">${esc3(said.join('. ') || 'All new')}</p>
+    <section class="a3-card"><h2>${c.read} ${c.read === 1 ? 'line' : 'lines'}</h2><p class="a3-sub" data-fig="stmtsum">${esc3(said.join('. ') || 'All new')}</p>${(p.moved || []).map(m => `<p class="a3-warn" data-fig="stmtmoved">${esc3(STMT3P.movedWords(m, E3.nameOf, d => day3(d, yr)))}</p>`).join('')}
       <ul class="a3-rows">${readRows}</ul></section>
     ${asks ? `<section class="a3-card" id="a3StmtMoves"><h2>Is this a move to one of your accounts?</h2><p class="a3-sub">Money moved between your own accounts is not spending. It is added once you answer</p>${asks}</section>` : ''}
     ${picks ? `<section class="a3-card" id="a3StmtPicks"><h2>Which card does this pay?</h2><p class="a3-sub">These left your bank as a card payment, and more than one card could be the one. It is added once you choose</p>${picks}</section>` : ''}
@@ -13513,7 +13871,7 @@ Actions:
     { n: 12, key: 'asked', ask: 'For each bill in NEEDED that was due since your last pay: "Phone was due on 20 Nov. Has it come out of your bank already?" For each card statement in NEEDED: how much was on it. If a pay lands today: has it already landed in that figure?' },
     { n: 13, key: 'free', ask: "How much do you want for food and everyday stuff each pay period? Groceries, eating out, getting around, fun. Leave it blank if you don't know yet." },
     { n: 14, key: 'min', ask: 'Keep at least ___ in your bank? Skip it and there is no minimum.' },
-    { n: 15, key: 'fill', ask: 'Show what you have (the draft), then ask: shall I fill in your Burrow? When they say yes, call fill_book.' },
+    { n: 15, key: 'fill', ask: 'Show what you have (the draft), then ask: shall I fill in your Burrow? When they say yes, call fill_book. After it is filled, say that loans, goals and budget lines like Gifts are not part of setup: they are added on Plan (Add a loan, Add a goal, Add a line), and goals and budget lines can also be told to you.' },
   ];
   /* [qc-assistant blocker 3; M17] ONE table: what every screen and every sheet is for, in one plain line each. The
      assistant is told all of it (SYSTEM), and with each message which screen is open and which sheet is on top
@@ -13521,7 +13879,7 @@ Actions:
      tests/e3_fakeai_page.js opens each of Plan's sheets. These are words for a person too: the wording lint reads them. */
   const SCREENS = {
     home: { name: 'Home', does: 'Home shows what is safe to spend until your next pay, what each account holds today, what is due before pay, and your goals' },
-    plan: { name: 'Plan', does: 'Plan shows your pay and bills, Free to spend and your budget lines, goals, cards and loans. Tap a row to change it' },
+    plan: { name: 'Plan', does: 'Plan shows your pay and bills, Free to spend and your budget lines, goals, your accounts, cards and loans. Tap a row to change it' },
     receipts: { name: 'Receipts', does: 'Receipts is where you log money that came in, went out or moved between your accounts, and see what you logged. Tap a record to change or remove it' },
     settings: { name: 'Settings', does: 'Settings holds the backup file, the cloud copy, the code word for the AI and the assistant\'s error log' },
     check: { name: 'Check your bank', does: 'Check your bank is where you type what your bank and cards show today. The app compares each with what it expected and asks about the gap' },
@@ -13541,6 +13899,8 @@ Actions:
     card: { name: 'A card\'s own sheet', does: 'Changes the card\'s name, the day it is paid and the day its statement closes' },
     addLoan: { name: 'Add a loan', does: 'Adds a loan: its name, what is still owed, the usual payment and the day it is paid' },
     loan: { name: 'A loan\'s own sheet', does: 'Changes the loan\'s name, the day it is paid or the usual payment, or closes the loan' },
+    addAccount: { name: 'Add an account', does: 'Adds a bank, cash or e-wallet after setup: its name, what it holds today, and whether that money was moved from your main bank' },
+    account: { name: 'An account\'s own sheet', does: 'Renames a bank, cash or e-wallet, or sets its own Keep at least' },
     record: { name: 'A record\'s own sheet', does: 'Changes or removes one thing you logged on Receipts' },
   };
   const SYSTEM = `You are the assistant inside The Burrow, a money app the person has open right now. You set it up with them by talking, and after that you answer questions and make changes for them.
@@ -13577,12 +13937,12 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
   /* ---- the tools (BU2: no figures or draft read tool) ---- */
   const num = { type: 'number', description: 'A plain number in the currency, no symbol.' };
   const str = d => ({ type: 'string', description: d });
-  const DO = ['landed', 'bank_figure', 'card_figure', 'log_spend', 'refund', 'money_in', 'move_money', 'remove', 'add_bill', 'change_bill', 'end_bill', 'add_pay', 'add_line', 'change_line', 'end_line', 'set_free', 'add_goal', 'set_aside', 'add_card', 'add_account'];
+  const DO = ['landed', 'bank_figure', 'card_figure', 'log_spend', 'refund', 'money_in', 'move_money', 'remove', 'add_bill', 'change_bill', 'end_bill', 'add_pay', 'add_line', 'change_line', 'end_line', 'set_free', 'add_goal', 'set_aside', 'add_card', 'add_account', 'change_account'];
   /* a step that was asked for and left out, in words for the person (the card says which was not done) */
   const DO_WORDS = { landed: 'ticking off a pay or bill', bank_figure: 'a bank figure', card_figure: 'a card figure', log_spend: 'a spend', refund: 'a refund', money_in: 'money that came in',
     move_money: 'money moved between accounts', remove: 'removing a record', add_bill: 'a new bill', change_bill: 'a change to a bill or pay', end_bill: 'ending a bill', add_pay: 'a new pay',
     add_line: 'a new line', change_line: 'a change to a line', end_line: 'ending a line', set_free: 'a change to Free to spend', add_goal: 'a new goal', set_aside: 'money set aside for a goal',
-    add_card: 'a new card', add_account: 'a new account' };
+    add_card: 'a new card', add_account: 'a new account', change_account: 'a change to an account' };
   const CURS = ['JPY', 'PHP', 'USD', 'EUR'];
   const SECTIONS = ['country', 'currency', 'banks', 'pays', 'cards', 'bills', 'asked', 'statements', 'payToday', 'free', 'min'];
   const TOOLS = [
@@ -13593,7 +13953,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     { name: 'draft_set', description: 'Save one setup section into the draft, its whole value. Nothing reaches the app until fill_book. Sections: country "JP"|"PH"|"XX"; currency "JPY"|"PHP"|"USD"|"EUR" (a change of currency drops the amounts saved before it: ask each again); banks [{name, amount, type?, confirmed?}] (first is where pay lands; confirmed true when the person gave the figure again today); pays [{name, amount, every: month|days|weeks|none, day?, day2?, n?, start?, shift?: before|after, bank?, afterTax, same?}]; cards [{name, owed, payDay, closeDay: day|"last"|"not sure", shift?, payFrom?, confirmed?}]; bills [{name, amount, day, every?: month|year, month?, from?}]; asked [{name, out: true|false}]; statements [{name, amount|"not sure"}]; payToday {landed: true|false}; free amount|null; min amount|null.',
       input_schema: { type: 'object', properties: { section: { type: 'string', enum: SECTIONS }, value: { description: 'The section\'s whole value.' } }, required: ['section', 'value'] } },
     { name: 'fill_book', description: 'Turn the draft into the person\'s Burrow. Only when they said to fill it in. Refused while NEEDED is not empty.', input_schema: { type: 'object', properties: {} } },
-    { name: 'change', description: 'Make up to ' + MAX_STEPS + ' changes, each a named step: ' + DO.join(', ') + '. landed {ref: the P, B or card A ref, amount? only if it was different, date? the day it landed}; bank_figure and card_figure {account, amount}. Fields: amount, account (A ref), every (add_bill: month|year|months, with month 1..12 for a year, n and start for months), from and to (A refs), line (L ref), goal (G ref), ref (the record: S, B, P, L or G ref), date (YYYY-MM-DD, today or before), note, name, day, day2, every (month|days|weeks1..4|none), start, when (now|next|once), stop (set_free: true stops play money from now or next, Undo brings it back), target, due, owed, payDay, closeDay, type (bank|cash|ewallet), moved (true|false), from (the A ref the money came from), afterFigure (true|false: moved after they looked at that bank on the day of its figure).',
+    { name: 'change', description: 'Make up to ' + MAX_STEPS + ' changes, each a named step: ' + DO.join(', ') + '. landed {ref: the P, B or card A ref, amount? only if it was different, date? the day it landed}; bank_figure and card_figure {account, amount}. Fields: amount, account (A ref), every (add_bill: month|year|months, with month 1..12 for a year, n and start for months), from and to (A refs), line (L ref), goal (G ref), ref (the record: S, B, P, L or G ref; remove takes an S, B or L ref only: a pay or a goal cannot be removed in this app yet, so say that and that it can be changed on Plan), date (YYYY-MM-DD, today or before), note, name, day, day2, every (month|days|weeks1..4|none), start, when (now|next|once), stop (set_free: true stops play money from now or next, Undo brings it back), target, due, owed, payDay, closeDay, type (bank|cash|ewallet), moved (true|false), shift (after|before: a card weekend rule), from (the A ref the money came from), afterFigure (true|false: moved after they looked at that bank on the day of its figure). change_account {account: a bank, cash or e-wallet A ref, name?, min?: its own Keep at least, 0 for none}.',
       input_schema: { type: 'object', properties: { steps: { type: 'array', items: { type: 'object', properties: { do: { type: 'string', enum: DO }, amount: num }, required: ['do'] } } }, required: ['steps'] } },
   ];
 
@@ -13608,9 +13968,10 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     for (const x of sch) {
       const ref = x.kind === 'income' ? 'P' + (++p) : 'B' + (++b); refs[ref] = x.id;
       /* one figure, one source: the amount and the rhythm in force today are the engine's own answer (its schedule view,
-         the one Plan shows), never worked out again here from the saved lists (a change dated later is not today's) */
+         the one Plan shows), never worked out again here from the saved lists (a change dated later is not today's);
+         [qc-controls 2to5 F2] its next day in Plan's words, with why when a weekend or holiday moved it */
       const v = view[x.id] || {};
-      lines.push(`${ref} | ${x.name} | ${v.amount != null ? SM.format(v.amount, x.cur || home) : 'no fixed amount'} | ${ruleWords(v.rule)}${x.ends ? ' | ends ' + day1(x.ends) : ''}`);
+      lines.push(`${ref} | ${x.name} | ${v.amount != null ? SM.format(v.amount, x.cur || home) : 'no fixed amount'} | ${ruleWords(v.rule)}${v.next ? ', next ' + SN.landLabel(v.next.land, v.next.due, v.next.land.slice(0, 4) !== today.slice(0, 4)) : ''}${x.ends ? ' | ends ' + day1(x.ends) : ''}`);
     }
     if (lines.length) out.push('Pays and bills (ref | name | amount | when):\n' + lines.join('\n'));
     return { text: out.join('\n'), refs };
@@ -13863,7 +14224,8 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     const hist = state.turns.filter(t => t.who === 'person' || t.who === 'ai');
     const past = hist.slice(0, hist.length - 1).slice(-TURNS), messages = [];
     const push = (role, text) => { const last = messages[messages.length - 1]; if (last && last.role === role) last.content[0].text += '\n\n' + text; else messages.push({ role, content: [{ type: 'text', text }] }); };
-    for (const t of past) push(t.who === 'person' ? 'user' : 'assistant', t.text || '(a card)');
+    /* [qc-foundation on CONFUSING1_PLAN, 3] its own words from a turn where nothing was done are sent with that said */
+    for (const t of past) push(t.who === 'person' ? 'user' : 'assistant', (t.text || '(a card)') + (t.notDone ? ' (the app did not do this: nothing changed)' : ''));
     if (messages.length && messages[0].role === 'assistant') messages.shift();
     const now = stateText(state, ctx);
     const first = (rounds || []).length ? 'THE PERSON SAYS\n' + message : now + '\n\nTHE PERSON SAYS\n' + message;
@@ -13993,6 +14355,12 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       if (!from || !to || !x || !d) return { bad: 'a move I could not read' };
       return { kind: 'moveMoney', args: [{ date: d, a: x, from, to }], text: `Move ${m(x)} from ${nm(from)} to ${nm(to)}, ${on(d)}`, amount: x };
     }
+    /* [qc-controls run 1 blocker 6] a pay or a goal cannot be removed anywhere in the app yet: said plainly, with where
+       it can be changed (Plan, tap it), never "a ref I do not know" */
+    if (what === 'remove' && /^[PG]\d/.test(String(a.ref || ''))) {
+      const which = String(a.ref).charAt(0) === 'P' ? 'a pay' : 'a goal';
+      return { bad: 'remove takes an S, B or L ref: ' + which + ' cannot be removed in this app yet. Say so, and that it can be changed on Plan', left: 'removing ' + which + ', which the app cannot do yet. You can change it on Plan: tap it' };
+    }
     if (what === 'remove' || what === 'end_bill' || what === 'end_line') {
       const id = ref(a.ref, what === 'end_line' ? 'L' : what === 'end_bill' ? 'BP' : 'SBL');
       if (!id) return { bad: 'a ' + what.replace('_', ' ') + ' for a ref I do not know' };
@@ -14015,7 +14383,8 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       const id = ref(a.ref, 'BP'); if (!id) return { bad: 'a change to a bill or pay I do not know' };
       const ch = {}; if (a.amount != null) { ch.amount = amt(a.amount); if (!ch.amount) return { bad: 'an amount I could not read' }; }
       if (a.day != null) ch.day = a.day; if (a.every) { ch.every = a.every; ch.day2 = a.day2; ch.start = a.start; } if (a.name) ch.name = clean(a.name, 60);
-      return { kind: 'changeBill', args: [id, ch], text: `${schName(id)}: ` + [ch.amount ? m(ch.amount) : '', ch.day ? 'on day ' + ch.day : '', ch.every ? ch.every : '', ch.name ? 'called ' + ch.name : ''].filter(Boolean).join(', ') + ' from its next one', amount: ch.amount || 0, figs: ch.amount ? [ch.amount] : [], ref: a.ref };
+      if (a.account) { ch.acct = ref(a.account, 'A'); if (!ch.acct) return { bad: 'a bill paid from an account I do not know' }; }   // [E1b, M13] its paying account
+      return { kind: 'changeBill', args: [id, ch], text: `${schName(id)}: ` + [ch.amount ? m(ch.amount) : '', ch.day ? 'on day ' + ch.day : '', ch.every ? ch.every : '', ch.name ? 'called ' + ch.name : '', ch.acct ? 'paid from ' + nm(ch.acct) : ''].filter(Boolean).join(', ') + ' from its next one', amount: ch.amount || 0, figs: ch.amount ? [ch.amount] : [], ref: a.ref };
     }
     if (what === 'add_pay') {
       const x = a.amount == null ? null : amt(a.amount), acct = acctOr(a.account);
@@ -14037,7 +14406,9 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     }
     if (what === 'add_card') {
       const x = amt(a.owed != null ? a.owed : a.amount, null, true); if (x == null || !a.name || !dayOk(a.payDay)) return { bad: 'a card I could not read' };
-      return { kind: 'addCard', args: [{ name: clean(a.name, 60), owed: x, payDay: a.payDay, cutDay: a.closeDay }], text: `Add ${clean(a.name, 60)}: ${m(x)} on it now, paid on day ${a.payDay}`, amount: x, figs: [x] };
+      /* [E1b, M23] the account that pays it (the main bank when none is named) and its weekend rule */
+      const pf = a.account ? ref(a.account, 'A') : mainAcct; if (!pf) return { bad: 'a card paid from an account I do not know' };
+      return { kind: 'addCard', args: [Object.assign({ name: clean(a.name, 60), owed: x, payDay: a.payDay, cutDay: a.closeDay, payFrom: pf }, a.shift ? { shift: a.shift } : {})], text: `Add ${clean(a.name, 60)}: ${m(x)} on it now, paid on day ${a.payDay} from ${nm(pf)}${a.shift === 'before' ? ', the working day before a weekend or holiday' : ''}`, amount: x, figs: [x] };
     }
     if (what === 'add_account') {
       const x = amt(a.amount, null, true); if (x == null || !a.name) return { bad: 'an account I could not read' };
@@ -14051,6 +14422,16 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       if (a.moved === true && needLooked && typeof a.afterFigure !== 'boolean') return { bad: `ask: "${lookedQ.replace('If it was moved: was', 'Was')}" Then change again with afterFigure` };
       return { kind: 'addAccount', args: [Object.assign({ name: clean(a.name, 60), type: a.type || 'bank', amount: x, moved: a.moved }, a.date ? { date: a.date } : {},
         a.from ? { from: ref(a.from, 'A') || 'none' } : {}, typeof a.afterFigure === 'boolean' ? { afterFigure: a.afterFigure } : {})], text: `Add ${clean(a.name, 60)} with ${m(x)}${a.moved ? ' moved from ' + nm(a.from ? ref(a.from, 'A') : mainAcct) : ''}`, amount: x, figs: [x] };
+    }
+    /* [E1, M13] a bank, cash or e-wallet renamed, or its own Keep at least set (0 clears it): PLAN3W.changeAccount */
+    if (what === 'change_account') {
+      const id = ref(a.account || a.ref, 'A'), rec = id && acctRec(id);
+      if (!rec || rec.type === 'card' || rec.type === 'loan') return { bad: 'change_account is for a bank, cash or e-wallet. ' + whereOf(rec && rec.type === 'loan' ? 'loan' : 'card') };
+      const ch = {}; if (a.name) ch.name = clean(a.name, 60);
+      if (a.min !== undefined) { if (a.min === null || a.min === 0 || a.min === '') ch.min = null; else { ch.min = amt(a.min, rec.cur); if (!ch.min) return { bad: 'a Keep at least I could not read' }; } }
+      if (!Object.keys(ch).length) return { bad: 'a change to an account with nothing to change' };
+      const words = [ch.name ? 'called ' + ch.name : '', ch.min !== undefined ? (ch.min ? 'keep at least ' + m(ch.min, rec.cur) : 'no Keep at least') : ''].filter(Boolean).join(', ');
+      return { kind: 'changeAccount', args: [id, ch], text: `${rec.name}: ${words}`, amount: 0, figs: ch.min ? [ch.min] : [] };
     }
     return { bad: what ? 'a change I can\'t make (' + what.slice(0, 30) + '). ' + whereOf(what) : 'a change I could not read' };
   }
@@ -14166,6 +14547,35 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     state.used = (state.used || []).concat(...card.plan.map(s => figsOf(s).map(plain)));
     state.wrote = true;
   }
+  /* [CONFUSING 1, coordinator 16's ruling b] what a turn did: a refused step tells the person in a note; a turn where
+     steps were refused and nothing was written or asked marks the AI's words as not done (never changed or hidden) */
+  /* [TABSETUP_PLAN 4] the fill found a book another tab made: the same words as the setup screens */
+  const OTHER_TAB = 'Your money was set up in another tab, so this tab shows it now. What you typed here was not saved';
+  const DONE_WORDS = 'The app did not do this: nothing changed';
+  function refused(frame, state, shown, deps, text) {
+    if (frame) frame.refused++;
+    addTurn(state, { who: 'note', text, at: deps.told() }, shown);
+  }
+  function did(frame) { if (frame) frame.did = true; }
+  /* [qc-foundation on CONFUSING1_PLAN, 1 and 2] the chat's own book: a book that still holds a record written at the
+     chat's fill. Any other book was made on the screens (or elsewhere). Nothing about it is saved: it is worked out from
+     the book each time, so a book that goes away opens the setup answers again */
+  function ownBook(state, book) {
+    if (!book || !state.fill) return false;
+    const recs = [].concat(book.accounts || [], book.schedules || [], book.events || [], book.checkins || [], book.places || []);
+    return recs.some(r => r && r.at === state.fill.told);
+  }
+  const setupShut = (state, book) => !!book && !ownBook(state, book);
+  /* setup finished on the screens while the chat was part way: one note, once per book (said again for a later book) */
+  const SETUP_CLOSED = 'Setup was finished on the screens, so these setup answers are closed. Change things on the screens, or tell me what to change';
+  function closeSetup(state, book, shown, told) {
+    if (!book) { if (state.fill) state.fill = null; state.shutSaid = false; return false; }
+    if (!setupShut(state, book) || state.shutSaid) return false;
+    if (!state.turns.some(t => t.who === 'card' && t.card && t.card.kind === 'draft')) return false;
+    state.shutSaid = true;
+    addTurn(state, { who: 'note', text: SETUP_CLOSED, at: told }, shown);
+    return true;
+  }
   /* ---- one tool call ---- */
   function addTurn(state, t, shown) {
     const turn = Object.assign({ id: 't' + (++state.seq) }, t);
@@ -14179,15 +14589,19 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     if (call.name === 'list') return list(book, today, x);
     if (call.name === 'explain') return explain(x.topic);
     if (call.name === 'draft_set') {
-      if (book) return 'Setup is done: change things with change instead.';
+      if (book) { refused(frame, state, shown, deps, 'Not saved: setup is done. Change it on the screens, or tell me what to change'); return 'Setup is done: change things with change instead.'; }
       const r = draftSet(state.draft, x.section, x.value, today);
-      if (!r.ok) { addTurn(state, { who: 'note', text: 'Not saved: ' + r.text, at: deps.told() }, shown); return 'Not saved: ' + r.text; }
-      state.draft = r.draft;
+      if (!r.ok) { refused(frame, state, shown, deps, 'Not saved: ' + r.text); return 'Not saved: ' + r.text; }
+      state.draft = r.draft; did(frame);
       addTurn(state, { who: 'note', text: r.text, at: deps.told() }, shown);
       const need = ANS.need(r.draft, { day: today });
       return r.text + '. NEEDED now: ' + (need.length ? need.join(' ') : 'nothing');
     }
-    if (call.name === 'fill_book') { const f = await fillNow(state, deps, shown, true); return f.ok ? 'Filled in. ' + f.text : 'Not filled in: ' + f.text; }
+    if (call.name === 'fill_book') {
+      const f = await fillNow(state, deps, shown, true);
+      if (f.ok) did(frame); else refused(frame, state, shown, deps, 'Not filled in: ' + f.text);
+      return f.ok ? 'Filled in. ' + f.text : 'Not filled in: ' + f.text;
+    }
     if (call.name === 'change') {
       if (!book || !deps.door) return 'There is no book yet: finish setup first.';
       /* [STALE_SHEET_PLAN, M61] the refs the AI holds are places in lists (S7 is the seventh spend told): if the book
@@ -14195,24 +14609,26 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       const verNow = typeof deps.door.ver === 'function' ? deps.door.ver() : null;
       if (frame && frame.ver != null && verNow !== frame.ver) {
         frame.ver = verNow;
-        addTurn(state, { who: 'note', text: 'Nothing was changed, because something changed somewhere else while I was answering. Say it again', at: deps.told() }, shown);
+        refused(frame, state, shown, deps, 'Nothing was changed, because something changed somewhere else while I was answering. Say it again');
         return 'Not changed: the book changed somewhere else after FIGURES were sent, so the refs may be old. Nothing was done. Use list again before any change, or ask the person to say it again.';
       }
       const raw = Array.isArray(x.steps) ? x.steps : [];
       const refs = allRefs(book, today), plan = [], dropped = [], left = [];
+      let again = false;   // [qc-controls run 2 CONFUSING] some left-out step could work if said again (not one the app cannot do)
       for (const a of raw) {
-        if (plan.length >= MAX_STEPS) { dropped.push('more than ' + MAX_STEPS + ' at a time'); if (!left.includes('the changes after the first ' + MAX_STEPS)) left.push('the changes after the first ' + MAX_STEPS); continue; }
+        if (plan.length >= MAX_STEPS) { again = true; dropped.push('more than ' + MAX_STEPS + ' at a time'); if (!left.includes('the changes after the first ' + MAX_STEPS)) left.push('the changes after the first ' + MAX_STEPS); continue; }
         const s = stepOf(a, { book, today, refs, payWith: state.payWith });
         if (s.bad) {
           dropped.push(s.bad); if (s.payWith) state.askPay = true;
           /* a note that tells the AI to ask something is no words for the person */
-          left.push(/^(ask|which account)/i.test(s.bad) ? 'one step that needs an answer from you first' : DO_WORDS[a && a.do] || 'a change the assistant can\'t make here');
+          if (!s.left) again = true;
+          left.push(s.left || (/^(ask|which account)/i.test(s.bad) ? 'one step that needs an answer from you first' : DO_WORDS[a && a.do] || 'a change the assistant can\'t make here'));
         } else plan.push(s);
       }
       /* [AI_JOIN_FIXES H6] the answer to "card or bank?" is kept for this chat */
       const named = plan.find(s => s.named);
       if (state.askPay && named) { state.payWith = named.named; state.askPay = false; }
-      if (!plan.length) return 'Nothing changed: ' + (dropped.join('; ') || 'no steps');
+      if (!plan.length) { refused(frame, state, shown, deps, 'Not done: ' + (left.length ? left.join(', and ') : 'nothing was asked for') + '. Nothing changed'); return 'Nothing changed: ' + (dropped.join('; ') || 'no steps'); }
       /* [BW] a delete, or a change larger than safe to spend, asks first; [AI_FIRST_PLAN 7] an amount the person did not
          type is a guess and asks first too */
       const safe = LA.lookahead(book, today).safeToSpend.headline;
@@ -14226,15 +14642,16 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
          check, on the book the step would make, larger than safe to spend) asks first, with the gap in words: an extra
          zero never goes in silently */
       const far = farFigures(plan, book, today, deps, safe);
-      const card = { kind: 'change', status: 'ask', ver: verNow, lines: plan.map(s => s.text + (far.has(s) ? '. ' + far.get(s) : '') + (guess.includes(s) ? ' (my guess)' : '')), rows: [], plan, dropped, left };
+      const card = { kind: 'change', status: 'ask', ver: verNow, lines: plan.map(s => s.text + (far.has(s) ? '. ' + far.get(s) : '') + (guess.includes(s) ? ' (my guess)' : '')), rows: [], plan, dropped, left, again };
       if (del || big || far.size || guess.length) {
         card.ask = del ? 'delete' : big ? 'large' : far.size ? 'gap' : 'guess';
         card.why = del ? 'this removes something' : big ? 'this is more than safe to spend' : far.size ? 'the figure is far from what the app expected' : 'I guessed an amount';
+        did(frame);
         addTurn(state, { who: 'card', text: card.lines.join('. '), at: deps.told(), card }, shown);
         return resultOf(card) + (dropped.length ? ' Left out: ' + dropped.join('; ') : '');
       }
       const res = await carryOut(state, card, deps);
-      if (res.ok) wrote(state, card, book, today);
+      if (res.ok) { wrote(state, card, book, today); did(frame); } else if (frame) frame.refused++;   // its card says why
       if (frame && typeof deps.door.ver === 'function') frame.ver = deps.door.ver();   // the turn's own steps
       addTurn(state, { who: 'card', text: card.lines.join('. '), at: deps.told(), card }, shown);
       return (res.ok ? resultOf(card) : 'Not changed: ' + res.text) + (dropped.length ? ' Left out: ' + dropped.join('; ') : '');
@@ -14251,6 +14668,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     const rounds = [];
     const draftWas = JSON.stringify(state.draft);
     const end = stop => {
+      if (frame.refused && !frame.did) for (const t of shown) if (t.who === 'ai') t.notDone = true;
       if (!state.fill && state.draft && JSON.stringify(state.draft) !== draftWas) {
         state.turns = state.turns.filter(t => !(t.who === 'card' && t.card && t.card.kind === 'draft'));
         addTurn(state, { who: 'card', text: 'The draft so far', at: deps.told(), card: draftCard(state.draft, deps.today()) }, shown);
@@ -14258,7 +14676,8 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       return { state, shown, stop };
     };
     /* the book as it is when the figures are sent, kept beside the chat state (never in it, never sent) */
-    const frame = { ver: deps.door && typeof deps.door.ver === 'function' && deps.book && deps.book() ? deps.door.ver() : null };
+    const frame = { ver: deps.door && typeof deps.door.ver === 'function' && deps.book && deps.book() ? deps.door.ver() : null, refused: 0, did: false };
+    closeSetup(state, deps.book ? deps.book() : null, shown, deps.told());
     for (let i = 0; i < ROUNDS; i++) {
       const body = request(state, clean(message, 4000), rounds, ctxOf(deps));
       let res;
@@ -14354,7 +14773,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     const told = deps.told();
     let built;
     try { built = ANS.build(state.draft, { day: today, told, newId: deps.newId }); } catch (e) { return { state, shown, ok: false, text: e.message }; }
-    if (!(await deps.start(built.book))) return { state, shown, ok: false, text: 'This could not be saved on this device. Nothing changed' };
+    if (!(await deps.start(built.book))) return { state, shown, ok: false, text: deps.why && deps.why() === 'there' ? OTHER_TAB : 'This could not be saved on this device. Nothing changed' };
     const v = LA.lookahead(built.book, today), main = built.ids.bank1;
     state.fill = { at: told, told, day: today };
     state.wrote = true;   // [M6] what was typed for setup is not typed for a later change
@@ -14416,7 +14835,7 @@ ${card.need.length && state.draft ? 'STILL NEEDED: ' + card.need.join(' ') : ''}
   const api = {
     ROUNDS, TURNS, KEEP, MAX_TOKENS, MAX_STEPS, TIER: 'default', EFFORT: 'low', GUIDE, TOOLS, SYSTEM, SCREENS,
     fresh: () => ({ v: 1, turns: [], draft: null, fill: null, seq: 0 }),
-    turn, confirm, notNow, undo, startOver, draftEdit,
+    turn, confirm, notNow, undo, startOver, draftEdit, DONE_WORDS, setupShut,
     SCREEN_SECS, fromScreens, undoScreens, chatNewer,
     /* [AI_JOIN_FIXES H2] what the first screen says before anything is typed: the welcome, and the first question */
     welcome: () => [GUIDE[0].ask, GUIDE[1].ask, GUIDE[2].ask],
@@ -14448,6 +14867,7 @@ const CHAT3_WORDS = {
   /* why a change card asks first (M6): the core's card.ask; its card.why is the AI's own words, not shown here */
   ask: { delete: 'This takes something away. Do it?', large: 'This is more than safe to spend. Do it?', guess: 'You didn\'t type this amount, it\'s the AI\'s guess. Is it right?', gap: 'This is far from what the app expected. Is the figure right?' },
   fillKept: 'To change something, tell me or change it on its screen',
+  later: 'Loans, goals and budget lines like Gifts are not part of setup. Add them on Plan after this: Add a loan, Add a goal, Add a line',   // [qc-controls run 1 blocker 2] the same words as setup's last step
 };
 
 /* below the wide screen the page scrolls inside #a3, above the bar (app3.css): every screen's scrollTo moves it too.
@@ -14506,7 +14926,7 @@ function chat3Deps() {
   return {
     send: chat3Send, today: () => E3.today(), told: () => E3.told(), newId: () => E3.newId(),
     book: () => E3.book, mode: () => E3.mode, door: E3.book ? ACT3 : null,
-    start: b => E3.fill(b), discard: () => E3.discard(),
+    start: b => E3.fill(b), discard: () => E3.discard(), why: () => E3.startWhy,
     anon: CHAT3.anon || '', invite: chat3Invite(), screen: chat3Screen, sheet: chat3Sheet,
   };
 }
@@ -14554,8 +14974,10 @@ function chat3Card(t) {
       : c.status === 'ask' ? `<p class="a3-sub" data-chat="status" data-ask="${esc3(c.ask || '')}">${esc3(CHAT3_WORDS.ask[c.ask] || CHAT3_WORDS.ask.large)}</p><div class="a3-actions"><button type="button" class="a3-btn solid" data-chatok="${id}">Do it</button><button type="button" class="a3-btn" data-chatnot="${id}">Not now</button></div>`
       : `<p class="a3-sub" data-chat="status">${esc3(c.status === 'undone' ? 'Taken back' : c.status === 'not now' ? 'Not done' : (c.why || 'The app refused it'))}</p>`;
     return `<div class="a3-card a3-chat-card" data-card="chat-change" data-turn="${id}" data-status="${esc3(c.status)}"><h3>${c.status === 'ask' ? 'A change to check' : c.status === 'refused' || c.status === 'not now' ? 'Not changed' : 'Changed'}</h3>
-      <ul class="a3-chat-lines">${(c.lines || []).map(l => `<li>${esc3(l)}</li>`).join('')}</ul>${(c.left || []).length ? `<p class="a3-warn" data-chat="left">Not done: ${esc3(c.left.join(', and '))}. Say that part again on its own</p>` : ''}${chat3Figs(c.rows)}${c.note && c.status === 'done' ? `<p class="a3-sub" data-chat="note">${esc3(c.note)}</p>` : ''}${foot}</div>`;
+      <ul class="a3-chat-lines">${(c.lines || []).map(l => `<li>${esc3(l)}</li>`).join('')}</ul>${(c.left || []).length ? `<p class="a3-warn" data-chat="left">Not done: ${esc3(c.left.join(', and '))}${c.again === false ? '' : '. Say that part again on its own'}</p>` : ''}${chat3Figs(c.rows)}${c.note && c.status === 'done' ? `<p class="a3-sub" data-chat="note">${esc3(c.note)}</p>` : ''}${foot}</div>`;
   }
+  /* [CONFUSING 1] a setup card is not drawn while a book is here that the chat did not fill (worked out each time) */
+  if (c.kind === 'draft' && CHAT3C.setupShut(CHAT3.state || CHAT3C.fresh(), E3.book)) return '';
   if (c.kind === 'draft') {
     return `<div class="a3-card a3-chat-card" data-card="chat-draft" data-turn="${id}"><h3>Your answers so far</h3>
       ${(c.sections || []).map(s => `<div data-section="${esc3(s.key)}"><p class="a3-acct">${esc3(s.title)}</p><ul class="a3-chat-lines">${(s.lines || []).map(l => `<li>${esc3(l)}</li>`).join('')}</ul></div>`).join('')}
@@ -14569,14 +14991,14 @@ function chat3Card(t) {
        that there is no Start over (the store refuses it once the hold is gone): the card says how to change things */
     const foot = c.status === 'done' ? (E3.held() ? `<div class="a3-actions"><button type="button" class="a3-btn" data-chatundo="${id}">Undo</button></div>` : `<p class="a3-sub" data-chat="status">${esc3(CHAT3_WORDS.fillKept)}</p>`)
       : `<p class="a3-sub" data-chat="status">${c.status === 'undone' ? 'Taken back. Your answers are kept' : 'Started over. Your answers are kept'}</p>`;
-    return `<div class="a3-card a3-chat-card" data-card="chat-fill" data-turn="${id}" data-status="${esc3(c.status)}"><h3>Filled in</h3>${figs}${foot}</div>`;
+    return `<div class="a3-card a3-chat-card" data-card="chat-fill" data-turn="${id}" data-status="${esc3(c.status)}"><h3>Filled in</h3>${figs}${c.status === 'done' ? `<p class="a3-sub" data-chat="later">${esc3(CHAT3_WORDS.later)}</p>` : ''}${foot}</div>`;
   }
   return '';
 }
 function chat3Turn(t) {
   if (t.who === 'person') return `<p class="a3-ask-me" data-turn="${esc3(t.id)}">${esc3(t.text)}</p>`;
   /* [AI_FIRST_PLAN 7] an amount the AI wrote that is in nothing it was given: marked for checking against the screens */
-  if (t.who === 'ai') return `<p class="a3-ask-ai" data-turn="${esc3(t.id)}">${esc3(t.text)}${(t.check || []).length ? `<span class="a3-chat-check" data-chat="check"><br>Check this: ${esc3(t.check.join(', '))} is the AI's own figure, not the app's. The screens have the app's figures</span>` : ''}</p>`;
+  if (t.who === 'ai') return `<p class="a3-ask-ai" data-turn="${esc3(t.id)}">${esc3(t.text)}${(t.check || []).length ? `<span class="a3-chat-check" data-chat="check"><br>Check this: ${esc3(t.check.join(', '))} is the AI's own figure, not the app's. The screens have the app's figures</span>` : ''}${t.notDone ? `<span class="a3-chat-check" data-chat="notdone"><br>${esc3(CHAT3C.DONE_WORDS)}</span>` : ''}</p>`;
   if (t.who === 'note') return `<p class="a3-chat-saved" data-turn="${esc3(t.id)}" role="status">${esc3(t.text)}</p>`;
   if (t.who === 'card') return chat3Card(t);
   return '';
@@ -15017,7 +15439,9 @@ root3.BurrowApp3.chat = { CHAT3, CHAT3C, redraw: chat3Redraw, save: chat3Save };
    Check-in reminders on chosen days (the day after pay lands and the middle of each pay period, both by default) and
    bill reminders a chosen number of days before each bill leaves the bank, put in the phone's own calendar: a calendar
    file (.ics, every dated reminder for the next year, made on this device and opened by the calendar app), or a Google
-   or Outlook link. Nothing is sent anywhere by this page and nothing is saved: the choices start fresh each time. The
+   or Outlook link. Nothing is sent anywhere by this page. [E1b, M13, M61] The choices are kept on this device (E3.rec
+   'remind', the device record), each one as it is made, and come back after a reload; a calendar already filled changes
+   only with a new calendar file, and the sheet says so. The
    events carry words only, never an amount. The days are REMIND3's (src/remind3.js), from the engine's calendars.
    This file chooses, writes and places; it never adds, takes away or rounds. */
 const REM3 = { open: false, was: null, afterPay: true, mid: true, before: 2, time: '09:00', off: {} };
@@ -15031,10 +15455,21 @@ function rem3Data() {
   const bills = all.filter(b => !REM3.off[b.id]);
   return { day, checkins, all, bills, events: REMIND3.events({ checkins, bills, time: REM3.time }) };
 }
-function openRem3() {
+const REM3_KEEP = ['afterPay', 'mid', 'before', 'time', 'off'];
+const REM3_KEPT = 'Your choices are kept on this phone. A calendar you already filled changes only when you save the calendar file again';
+/* each choice saved as it is made; the line under the calendar button says whether it was */
+async function rem3Keep() {
+  const ok = await E3.rec('remind', Object.fromEntries(REM3_KEEP.map(k => [k, REM3[k]])));
+  const el = $('[data-rem="kept"]');
+  if (el) el.textContent = ok ? 'Saved on this phone. A calendar you already filled changes only when you save the calendar file again' : 'These choices could not be kept on this phone. They count for the calendar file you save now';
+}
+async function openRem3() {
   if (REM3.open) return;
   if (!E3.book) { msg3('Set up first'); return; }
   REM3.open = true;
+  const k = await E3.rec('remind');
+  if (k && typeof k === 'object') for (const key of REM3_KEEP) if (k[key] !== undefined && k[key] !== null) REM3[key] = k[key];
+  if (!REM3.open) return;   // closed while it was read
   const sheet = $('#a3Rem');
   sheet.innerHTML = `<div class="a3-sheet-in">
     <h1 id="a3RemT">Reminders</h1>
@@ -15053,17 +15488,18 @@ function openRem3() {
       <p class="a3-next" data-rem="what">Nothing is sent anywhere. The calendar file is made on this phone and your calendar app opens it. The reminders say what is due, never an amount.</p>
       <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3RemIcs">Save the calendar file</button></div>
       <p class="a3-sub" id="a3RemCount"></p>
+      <p class="a3-sub" data-rem="kept">${esc3(REM3_KEPT)}</p>
       <p class="a3-sub">Google Calendar repeats each one. Outlook adds the next one only. The calendar file has every one for the next year, moved for weekends and holidays.</p>
       <ul class="a3-rows" id="a3RemLinks"></ul></div>
     <div class="a3-actions"><button type="button" class="a3-btn" id="a3RemClose">Close</button></div>
   </div>`;
   REM3.was = [...document.querySelectorAll('[data-panel], .a3-tabs, #a3Check, #a3StmtBar, #a3Stmt, #a3Set, #a3Setup')].map(el => [el, el.hidden]);
   REM3.was.forEach(([el]) => { el.hidden = true; }); sheet.hidden = false;
-  $('#a3RemAfter').addEventListener('change', e => { REM3.afterPay = e.target.checked; rem3Paint(); });
-  $('#a3RemMid').addEventListener('change', e => { REM3.mid = e.target.checked; rem3Paint(); });
-  $('#a3RemBefore').addEventListener('change', e => { REM3.before = Number(e.target.value); rem3Paint(); });
-  $('#a3RemTime').addEventListener('change', e => { if (!e.target.value) e.target.value = REM3.time; /* a cleared time goes back to the time in use, shown in the box */ REM3.time = e.target.value; rem3Paint(); });
-  $('#a3RemBills').addEventListener('change', e => { const c = e.target.closest('[data-rembill]'); if (!c) return; REM3.off[c.dataset.rembill] = !c.checked; rem3Paint(); });
+  $('#a3RemAfter').addEventListener('change', e => { REM3.afterPay = e.target.checked; rem3Paint(); rem3Keep(); });
+  $('#a3RemMid').addEventListener('change', e => { REM3.mid = e.target.checked; rem3Paint(); rem3Keep(); });
+  $('#a3RemBefore').addEventListener('change', e => { REM3.before = Number(e.target.value); rem3Paint(); rem3Keep(); });
+  $('#a3RemTime').addEventListener('change', e => { if (!e.target.value) e.target.value = REM3.time; /* a cleared time goes back to the time in use, shown in the box */ REM3.time = e.target.value; rem3Paint(); rem3Keep(); });
+  $('#a3RemBills').addEventListener('change', e => { const c = e.target.closest('[data-rembill]'); if (!c) return; REM3.off = Object.assign({}, REM3.off, { [c.dataset.rembill]: !c.checked }); rem3Paint(); rem3Keep(); });
   $('#a3RemIcs').addEventListener('click', rem3Save);
   $('#a3RemClose').addEventListener('click', closeRem3);
   rem3Paint(); scrollTo(0, 0); $('#a3RemAfter').focus();
