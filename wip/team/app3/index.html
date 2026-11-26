@@ -9899,8 +9899,9 @@ function drawHome3() {
   if (cloudLine) out.push(`<p class="a3-warn" data-cloud="home">${esc3(cloudLine)}</p>`);
   /* bank today, one figure per account, with its age */
   for (const id of ids) {
-    const a = r.accounts[id];
-    out.push(`<section class="a3-card" data-card="bank" data-acct="${esc3(id)}"><h2>${esc3(label3('bankToday'))}: ${esc3(E3.nameOf(id))}</h2>
+    const a = r.accounts[id], isBank = ((E3.book.accounts || []).find(x => x.id === id) || {}).type === 'bank';
+    /* [qc-numbers run 1 C1, M51] cash or an e-wallet is never called a bank: "Wallet today" */
+    out.push(`<section class="a3-card" data-card="bank" data-acct="${esc3(id)}"><h2>${isBank ? `${esc3(label3('bankToday'))}: ${esc3(E3.nameOf(id))}` : `${esc3(E3.nameOf(id))} today`}</h2>
       <p class="a3-big" data-fig="bank">${fig3('accounts.*.bank', a.bank, a.currency)}</p>
       <p class="a3-sub" data-fig="age">${bankParts3(a, yr)}</p></section>`);
   }
@@ -10776,7 +10777,7 @@ function drawPlan3() {
     const kind = a.id === mainId ? 'Your main bank, where pay lands' : PL_KIND3[a.type] || 'Account';
     const min = a.minBank ? `<br><span class="when">Keep at least ${plFig3('accounts.*.minimum', a.minBank.a, a.minBank.cur || a.cur)}</span>` : '';
     return plRow3(`data-acct="${esc3(a.id)}"`, `${esc3(a.name)}<br><span class="when">${esc3(kind)}</span>${min}`,
-      k && k.bank != null ? `<span data-fig="acct-bank">${plFig3('accounts.*.bank', k.bank, a.cur)}</span><br><span class="when">${esc3(label3('bankToday')).toLowerCase()}</span>` : '');
+      k && k.bank != null ? `<span data-fig="acct-bank">${plFig3('accounts.*.bank', k.bank, a.cur)}</span><br><span class="when">${a.type === 'bank' ? esc3(label3('bankToday')).toLowerCase() : 'holds today'}</span>` : '');   // [qc-numbers run 1 C1, M51] cash is never called a bank
   });
   out.push(`<section class="a3-card" data-card="plan-accounts"><h2>Accounts</h2>${acctRows.length ? `<ul class="a3-rows a3-rclist">${acctRows.join('')}</ul>` : '<p class="a3-sub">No accounts</p>'}
     <p class="a3-sub">What each holds changes at Check your bank</p>

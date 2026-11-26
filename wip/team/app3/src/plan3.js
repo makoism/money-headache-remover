@@ -119,7 +119,7 @@ function drawPlan3() {
     const kind = a.id === mainId ? 'Your main bank, where pay lands' : PL_KIND3[a.type] || 'Account';
     const min = a.minBank ? `<br><span class="when">Keep at least ${plFig3('accounts.*.minimum', a.minBank.a, a.minBank.cur || a.cur)}</span>` : '';
     return plRow3(`data-acct="${esc3(a.id)}"`, `${esc3(a.name)}<br><span class="when">${esc3(kind)}</span>${min}`,
-      k && k.bank != null ? `<span data-fig="acct-bank">${plFig3('accounts.*.bank', k.bank, a.cur)}</span><br><span class="when">${esc3(label3('bankToday')).toLowerCase()}</span>` : '');
+      k && k.bank != null ? `<span data-fig="acct-bank">${plFig3('accounts.*.bank', k.bank, a.cur)}</span><br><span class="when">${a.type === 'bank' ? esc3(label3('bankToday')).toLowerCase() : 'holds today'}</span>` : '');   // [qc-numbers run 1 C1, M51] cash is never called a bank
   });
   out.push(`<section class="a3-card" data-card="plan-accounts"><h2>Accounts</h2>${acctRows.length ? `<ul class="a3-rows a3-rclist">${acctRows.join('')}</ul>` : '<p class="a3-sub">No accounts</p>'}
     <p class="a3-sub">What each holds changes at Check your bank</p>
