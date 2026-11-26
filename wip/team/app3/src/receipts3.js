@@ -261,7 +261,8 @@ function rcPays3(x) {
     .sort((a, b) => (a.lands < b.lands ? -1 : a.lands > b.lands ? 1 : 0));
 }
 function rcPayAsk3(x, pays) {
-  const yr = E3.today().slice(0, 4), nm = o => `${E3.occName(o.item)} pay of ${day3(o.lands, yr)}`;
+  /* "your Office job pay of 15 Jan"; a pay called "Pay" or "Side pay" is not called "pay pay" */
+  const yr = E3.today().slice(0, 4), nm = o => { const n = E3.occName(o.item); return `${/^pay$/i.test(n) ? 'pay' : /pay$/i.test(n) ? n : n + ' pay'} of ${day3(o.lands, yr)}`; };
   $('#rcPayText').textContent = pays.length === 1 ? `Is this your ${nm(pays[0])}? Yes ticks it off, so it is counted once` : 'Is this one of your pays? Yes ticks it off, so it is counted once';
   $('#rcPayBtns').innerHTML = pays.map(o => `<button type="button" class="a3-btn solid" data-payyes="${esc3(o.item)}">${esc3(pays.length === 1 ? 'Yes, tick it off' : 'Yes, ' + nm(o))}</button>`).join('')
     + '<button type="button" class="a3-btn" data-payno>No, other money</button>';

@@ -113,6 +113,11 @@ async function logIn(p, amt, acct, note) {
   bk = await saved(p);
   ck('G: the pay picked is ticked', live(bk).some(e => e.id === 'set:' + SIDE + '@2026-12-10' && e.a === 60000) && !live(bk).some(e => e.id === 'set:' + occ));
 
+  /* H: a pay whose name already ends in "pay" is not called "Pay pay" */
+  { const bk = oneJob(); bk.schedules.find(x => x.id === MAIN).name = 'Pay';
+    await start(p, bk, '2026-12-12'); await logIn(p, 175000);
+    const t = await p.$eval('#rcPayText', e => e.textContent).catch(() => '');
+    ck('H: "Is this your pay of 10 Dec?", never "Pay pay"', /^Is this your pay of 10 Dec\?/.test(t) && !/Pay pay/i.test(t), t); }
   ck('no page errors', errs.length === 0, errs.join(' | '));
   await b.close();
   T.done('e3_payin');
