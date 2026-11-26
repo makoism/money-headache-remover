@@ -12363,6 +12363,16 @@ const WHY3 = {
   fmt: 'The cloud copy is not one this version can read. Update the app. Nothing here was changed.',
   deleted: 'The cloud copy was deleted on another device. This device keeps its money. Turn the cloud copy on again with a new code to share it.',
 };
+/* [coordinator 18 polish] an earlier version's words: when it was sent, to the second when another was sent in the same
+   minute, and "another copy" when even that is the same, so no two rows read alike */
+function verWords3(v, all) {
+  const w = x => (x.updated ? 'Sent ' + when3(x.updated) : 'An earlier version');
+  const sec = x => (x.updated ? 'Sent ' + new Date(x.updated).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'An earlier version');
+  const same = all.filter(x => w(x) === w(v));
+  if (same.length < 2) return w(v);
+  const twins = all.filter(x => sec(x) === sec(v));
+  return twins.length < 2 || !twins.indexOf(v) ? sec(v) : `${sec(v)}, another copy`;
+}
 const when3 = ms => { const d = new Date(ms); return d.toDateString() === new Date().toDateString() ? d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : d.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); };
 
 /* one sync; the book here takes what it gives, joined again with any change made while it ran.
@@ -12603,7 +12613,7 @@ async function versions3() {
   if (!r.ok) { f.innerHTML = `<p class="a3-warn">${esc3(WHY3[r.why] || WHY3.server)}</p>`; return; }
   if (!r.versions.length) { f.innerHTML = '<p class="a3-sub" data-cloud="versions">The cloud has no earlier versions of this copy yet</p>'; return; }
   f.innerHTML = `<p class="a3-next" data-cloud="versions">The cloud keeps the last ${r.versions.length === 1 ? 'version' : r.versions.length + ' versions'} before the one it holds now. Restoring one replaces the money on this device. What is here now is kept, and Put it back brings it back. ${esc3(OTHERS3)}</p>
-    <ul class="a3-rows">${r.versions.map(v => `<li data-cloudver="${v.rev}"><span>${v.updated ? 'Sent ' + esc3(when3(v.updated)) : 'An earlier version'}</span><button type="button" class="a3-btn">Restore this one</button></li>`).join('')}</ul>
+    <ul class="a3-rows">${r.versions.map((v, i, all) => `<li data-cloudver="${v.rev}"><span>${esc3(verWords3(v, all))}</span><button type="button" class="a3-btn">Restore this one</button></li>`).join('')}</ul>
     <div id="a3CloudVerAsk"></div>`;
   for (const li of f.querySelectorAll('[data-cloudver]')) li.querySelector('button').addEventListener('click', () => verAsk3(+li.dataset.cloudver, li.querySelector('span').textContent));
 }

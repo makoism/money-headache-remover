@@ -112,6 +112,9 @@ const homeFigs = async p => JSON.stringify((await T.figs(p)).filter(f => f.amt !
     await A.p.click('#a3CloudVers');
     ck('Earlier versions lists the copies the cloud keeps, newest first', await until(async () => (await A.p.$$('[data-cloudver]')).length >= 3));
     const vers = await A.p.$$eval('[data-cloudver]', ls => ls.map(l => +l.dataset.cloudver));
+    /* [coordinator 18 polish] two copies sent in the same minute never read the same */
+    const vwords = await A.p.$$eval('[data-cloudver] span', ls => ls.map(l => l.textContent));
+    ck('each earlier version reads differently', new Set(vwords).size === vwords.length, JSON.stringify(vwords));
     ck('each with its own revision, newest first', vers.every((v, i) => i === 0 || v < vers[i - 1]), vers.join(','));
     ck('the list says the other devices follow too', (await A.p.$eval('[data-cloud=versions]', e => e.textContent)).includes(OTHERS));
     await A.p.click(`[data-cloudver="${vers[vers.length - 1]}"] button`);
