@@ -1139,7 +1139,9 @@ const steps = list => [].concat(...list.map(([, r]) => r));
       const r = await K.turn(K.fresh(), 'remove it', h.deps(FAKE.make([say('', [call('change', { steps: [{ do: 'remove', ref }] })]), say('OK')])));
       const n = lastNote(r).join(' | ');
       const card = r.shown.filter(x => x.who === 'card' && x.card.kind === 'change').map(x => x.card)[0];
-      if (ref === 'P1') ok(card && card.status === 'ask' && !/a record|do not know/.test(n), ref + ': ' + n + ' ' + JSON.stringify(card && card.lines));   // this book has no goal: G1 is refused, nothing changed
+      /* after slices 2 to 5's check before asking: a remove that would be refused says why at once (the pay that starts
+         the periods: "End it instead"), else it asks first; never "a record I do not know" */
+      if (ref === 'P1') ok(card && (card.status === 'ask' || (card.status === 'refused' && /starts your pay periods\. End it instead/.test(card.why))) && !/a record|do not know/.test(n + ' ' + (card.why || '')), ref + ': ' + n + ' ' + JSON.stringify(card));   // this book has no goal: G1 is refused, nothing changed
       eq(JSON.stringify(h.book), before, ref + ': nothing changed');
     }
   });
