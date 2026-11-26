@@ -70,6 +70,22 @@ const freeLeft = h => { const p = L.lookahead(h.book, h.day).period; return p &&
     const c = cards[0] || {};
     ck('3. nothing expected: the figure goes in with no list', main(h) === 285000 && !/gone out|came in/.test((c.lines || []).join(' ')), main(h) + ' ' + (c.lines || []).join(' | '));
   }
+  /* [qc-foundation run 1, for the builder 2; coordinator 18: MAIN 24 on wip-38.31; M37] a figure the bank showed on an
+     earlier day ("it showed 204,000 yesterday") is written on that day, with what was expected by that day */
+  {
+    const h = page('2026-11-24'); await setup(h);
+    h.day = '2026-12-01';
+    const cards = await talk(h, 'my bank showed 204,000 yesterday', [{ name: 'change', input: { steps: [{ do: 'bank_figure', account: 'A1', amount: 204000, date: '2026-11-30' }] } }]);
+    const c = cards[0] || {};
+    const chk = (h.book.events || []).filter(e => e.k === 'check' && !e.gone).map(e => e.date);
+    ck('4. the figure is written on 30 Nov', chk.includes('2026-11-30') && !chk.includes('2026-12-01'), JSON.stringify(chk));
+    ck('4. the card says the day', /30 Nov/.test((c.lines || []).join(' ')), (c.lines || []).join(' | '));
+    ck('4. Rent (27 Nov) is ticked: Main 204,000, Rent no longer expected', main(h) === 204000 && !rentDue(h), main(h) + ' ' + rentDue(h));
+    const f = await talk(h, 'it showed 1 at some point', [{ name: 'change', input: { steps: [{ do: 'bank_figure', account: 'A1', amount: 1, date: '2026-12-05' }] } }]);
+    ck('4. a day after today is refused, nothing written', main(h) === 204000, main(h));
+    await talk(h, 'and 300,000 on the 25th', [{ name: 'change', input: { steps: [{ do: 'bank_figure', account: 'A1', amount: 300000, date: '2026-11-25' }] } }]);
+    ck('4. a day before that account\'s last check is refused, nothing written', main(h) === 204000 && !(h.book.events || []).some(e => e.k === 'check' && e.date === '2026-11-25'), main(h));
+  }
   console.log(bad ? `chatfig: ${bad} of ${n} FAILED` : `chatfig: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })().catch(e => { console.log('FAIL crashed ' + e.stack); process.exit(1); });
