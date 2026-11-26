@@ -831,6 +831,14 @@
       else banks[id] = bankInfo(id);
     }
     res.heldByCheck = heldBy;
+    // [AMOUNT_HISTORY_PLAN 4] each spend or refund whose amount was corrected (or that was removed) after the check that
+    // first held it, split in two: what it was at the check counts on its own day, `after` on the check's day. Receipts
+    // lists the record in its own period at `atCheck` and the change as its own row in the check's period
+    res.splits = events.filter(e => e.was && e.was.length && heldAt.has(e.id) && (e.k === 'spend' || (e.k === 'in' && e.sub === 'refund')))
+      .map(e => { const h = heldAt.get(e.id), a0 = amountAt(e, h.key), last = e.was[e.was.length - 1];
+        return { id: e.id, check: dayStr(h.day), atCheck: a0, after: (e.gone ? 0 : e.a) - a0, told: String(last.told).slice(0, 10), day: h.day, own: e.day }; })
+      .filter(x => x.after && x.day > x.own).map(({ day, own, ...x }) => x)
+      .sort((x, y) => (x.id < y.id ? -1 : x.id > y.id ? 1 : 0));
     // [W2] a card, loan or pay-later payment in another currency than its paying account is listed apart
     const otherOf = (id, from) => (acct[from] && cur(id) !== cur(from) ? { otherCur: true, currency: cur(id) } : { otherCur: false });
     for (const id in cards) for (const ci of cards[id].cardItems) items.push(Object.assign({ kind: 'card', acct: cards[id].payFrom, card: id, settled: false }, ci, otherOf(id, cards[id].payFrom)));
