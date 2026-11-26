@@ -26,4 +26,10 @@ test('the button is a "?" with its key; the lines are hidden until tapped, sever
   assert.match(t, /^<p class="burrow-help-text" data-helptext="period" hidden>Your money runs from one pay to the next, not by calendar month\. Your pay is due on 10 Jan/);
 });
 
+test('[coordinator 18 polish] the no Free to spend help adds to the card, never repeats its line', () => {
+  const status = require('../status.js'), card = status.WORDS['reason.no_free'].text, t = help.text('noFree').replace(/<[^>]+>/g, ' ');
+  assert.ok(!/leaves room for it/.test(t), t);
+  assert.ok(!t.includes(card), t);
+});
+
 run('help.js');
