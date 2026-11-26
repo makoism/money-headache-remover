@@ -2,14 +2,14 @@
 
 LANE P: session_01BFpKEW1VPRCsZX1GAQj5Dn (took over from LANE N session_01BFpKEYrXD1v3TRranaJ9WE, 26 Nov about 16:00 JST). Coordinator 18 session_01BFpKEVNiZLwPaZF7W9sbtP. Merger MAIN 24 session_01BFpKEW9b3sUkGfcHygE46v. Engine lane LANE O session_01BFpKEWJpva6S7WZASSwRQK. Keep-going task made by the coordinator (this session cannot make tasks or sessions: depth limit). Hand off at about 230k.
 
-## Now (LANE P, 26 Nov about 16:50 JST)
-- Do not touch lane/controls-6 or lane/controls-11 until LANE N says its two helpers landed.
-- Worktrees: .claude/worktrees/estate (this page), c5, c8, c13, ds1 (lane/dsafe-1). Tools /home/claude/work/tools.
-- controls-5: qc-foundation confirm FAIL d4f3f716 (N1 removed bill blocks card close; N2 bill ended today; N3 reopen words). HELPER RUNNING on c5 fixing N1-N3 test first + full check into the round's check3.txt. Then: report ready to MAIN 24 + coordinator (asked coordinator whether it wants a confirm 2), then merge into controls-8.
-- controls-13 MAINBANK_PLAN: qc-foundation FAIL 96de985a (F1 FOUNDATIONAL spending money account by date = engine change, ruling asked; F2-F5 to fold into the plan). Next: on the ruling, rewrite the plan, then qc-novice on the plan.
-- controls-8: asked coordinator for scope.txt (round 2026-11-26_controls7to8); merge fixed controls-5 first.
-- lane/dsafe-1 (from lane/ai-join 0f729b02): item (1) stale which-to-keep answer: test tests/e3_cloudstale.js + fix in src/cloud3_page.js (bothChose3, reads the joined Undo journal) ALL PASS; check3 quick running; commit next. Item (2) restore partway through setup: not started (design: say the saved setup answers go; Put it back for them; maybe a helper).
-- Sent coordinator 18 one message at about 16:40 JST (verdicts, F1 ruling, controls-8 scope).
+## Now (LANE P, 26 Nov about 17:20 JST)
+- c6 (loan check) is still LANE N's until it says. c11 (slice 10) is mine now.
+- Worktrees: estate, c5, c8, c11, c13, ds1 (lane/dsafe-1), ds2 (lane/dsafe-2). Tools /home/claude/work/tools.
+- Rulings (coordinator 18, about 15:40 JST): controls-5 needs no confirm 2, ready after fixes + full check. Main bank mid-period: YES, spending money follows the new bank from the next period start; LANE O builds engine (a) shares {from, acct} in force, (b) acct on line steps, (c) SCHEMA item, on lane/mainbank-engine, sends me the commit; then short qc-foundation confirm on the plan before building. controls7to8 scope.txt already existed (coordinator 16); add a line for the cash payer ruling.
+- controls-5: HELPER RUNNING on c5 (N1-N3, then full check). Then report ready to MAIN 24 + coordinator; merge into controls-8.
+- controls-13: plan F2-F5 folded in 23daf5eb; waits for LANE O's commit, then qc-foundation confirm on the plan, then qc-novice.
+- controls-11: rulings written into CHECKFIX_PLAN ce7c2b06; merged amounthist 35cd5262 (8c9c8ef8), engine tests pass; scope.txt drafted 2dc48f30; FULL CHECK RUNNING (scratchpad c11_full.txt). Then reviewers qc-controls, qc-data-safety, qc-numbers (Kenji).
+- dsafe-1: item (1) DONE 1cb5cc79 test + 8196cd01 fix, quick ALL GOOD. dsafe-2: HELPER RUNNING on item (2) restore during setup. Then merge ds2 into ds1, full check, qc-data-safety.
 
 # Below: LANE N's page at handoff
 
