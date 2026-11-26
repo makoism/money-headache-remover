@@ -10461,6 +10461,7 @@ function rcFormHtml3() {
     <div class="a3-field"><label for="rcNote">Note</label><input class="a3-in a3-text" type="text" id="rcNote" autocomplete="off" value="${esc3(e && e.note ? e.note : '')}" placeholder="Optional"></div>
     <p class="a3-sub" id="rcAfter" aria-live="polite"></p>
     <p class="a3-err" id="rcErr" role="alert"></p><div id="rcSure"></div>
+    <div class="a3-warn" id="rcPay" role="alert" hidden><p id="rcPayText"></p><div class="a3-actions" id="rcPayBtns"></div></div>
     <div class="a3-warn" id="rcAsk" role="alert" hidden><p id="rcAskText"></p><div class="a3-actions"><button type="button" class="a3-btn solid" id="rcAskYes">Save it anyway</button><button type="button" class="a3-btn" id="rcAskNo">Change the amount</button></div></div>
     <div class="a3-actions"><button type="button" class="a3-btn solid" id="rcSave">${e ? 'Save change' : word}</button>${e ? '<button type="button" class="a3-btn" id="rcRemove">Remove</button><button type="button" class="a3-btn" id="rcCancel">Cancel</button>' : ''}</div>`;
 }
@@ -10538,10 +10539,51 @@ function rcHolds3(x) {
     return r.accounts[x.acct] ? r.accounts[x.acct].bank : null;
   } catch (e) { return null; }
 }
-function rcAskOff3() { const q = $('#rcAsk'); if (q) q.hidden = true; }
-async function rcSave3(sure) {
+function rcAskOff3() { const q = $('#rcAsk'); if (q) q.hidden = true; const y = $('#rcPay'); if (y) y.hidden = true; }
+/* [qc-novice B1, coordinator 18's ruling; M22 M36 M45] the pays the engine expects into this account and not ticked yet,
+   due on or before today or within the next 5 days (Check your bank's list, on the day 5 days ahead): a new Money in to
+   that account asks first whether it is one of them, so a pay is never counted twice */
+function rcPays3(x) {
+  if (RC3.mode !== 'in' || RC3.edit || !x.acct) return [];
+  const D = BurrowEngine.dates, until = D.dayStr(D.dayNum(E3.today()) + 5);
+  let r; try { r = E3.view(until); } catch (e) { return []; }
+  const inc = id => ((E3.book.schedules || []).find(s => s.id === id && !s.gone) || {}).kind === 'income';
+  return ((r.checkIn && r.checkIn.toConfirm) || []).filter(o => o.account === x.acct && o.lands <= until && inc((BurrowEngine.ids.occurrence(o.item) || {}).schedule))
+    .sort((a, b) => (a.lands < b.lands ? -1 : a.lands > b.lands ? 1 : 0));
+}
+function rcPayAsk3(x, pays) {
+  const yr = E3.today().slice(0, 4), nm = o => `${E3.occName(o.item)} pay of ${day3(o.lands, yr)}`;
+  $('#rcPayText').textContent = pays.length === 1 ? `Is this your ${nm(pays[0])}? Yes ticks it off, so it is counted once` : 'Is this one of your pays? Yes ticks it off, so it is counted once';
+  $('#rcPayBtns').innerHTML = pays.map(o => `<button type="button" class="a3-btn solid" data-payyes="${esc3(o.item)}">${esc3(pays.length === 1 ? 'Yes, tick it off' : 'Yes, ' + nm(o))}</button>`).join('')
+    + '<button type="button" class="a3-btn" data-payno>No, other money</button>';
+  for (const b of document.querySelectorAll('[data-payyes]')) b.addEventListener('click', () => rcSave3(false, pays.find(o => o.item === b.dataset.payyes)));
+  $('[data-payno]').addEventListener('click', () => rcSave3(false, null));
+  $('#rcPay').hidden = false; $('[data-payyes]').focus();
+}
+/* Yes: the same tick Check your bank writes (the engine's check-in writer, no figure), with the amount and day typed */
+async function rcPayTick3(x, o) {
+  const today = E3.today(), ci = { day: today, told: E3.told(), newId: E3.newId, ticked: [o.item], expected: { [o.item]: o.amount }, lands: { [o.item]: o.lands }, unticked: [] };
+  if (x.a !== o.amount) ci.amounts = { [o.item]: x.a };
+  if (x.date && x.date !== today) ci.landed = { [o.item]: x.date };
+  let out;
+  try { out = BurrowEngine.checkin.checkIn(E3.book, ci); } catch (e) { $('#rcErr').textContent = `That day is too early for ${E3.occName(o.item)}: it was not in your last bank check. Pick a later day`; return; }
+  if (x.note && x.note.trim()) out.events[0].note = x.note.trim();
+  const said = `${E3.occName(o.item)} of ${day3(o.lands, today.slice(0, 4))} ticked off: ${money3(x.a, E3.curOf(x.acct))} into ${E3.nameOf(x.acct)}`;
+  const before = rcFigs3(E3.book);
+  const r = await ACT3.addRecords('Money came in', out, { undo: said });
+  if (!r.ok) { $('#rcErr').textContent = r.text; return; }
+  RC3.last = before;
+  renderRc3();
+  const a = $('#rcAmt'); if (a) a.focus();
+}
+async function rcSave3(sure, pay) {
   const err = $('#rcErr'), x = rcDraft3();
   if (x.bad) { err.textContent = x.bad; $('#rcAmt').focus(); return; }
+  /* [qc-novice B1] asked once: pay undefined asks, an expected pay ticks it, null is other money */
+  if (RC3.mode === 'in' && !RC3.edit) {
+    if (pay) return rcPayTick3(x, pay);
+    if (pay === undefined) { const pays = rcPays3(x); if (pays.length) { rcAskOff3(); rcPayAsk3(x, pays); return; } }
+  }
   /* [north star F5] a spend larger than what its account holds asks first; nothing is saved until "Save it anyway" */
   if (RC3.mode === 'spend' && !sure) {
     const holds = rcHolds3(x);

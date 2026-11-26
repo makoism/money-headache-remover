@@ -27,3 +27,4 @@ cloud3_page.js :: String(p || '').split('.').reduce((o, x) => (o && x ? o[x] : o
 chat3.js :: abc[b % abc.length] :: a random letter of the assistant's device id (BU3); not money
 plan3_write.js :: SC.dayNum(date) - 1 :: a moved account opens the day before its move (qc-foundation F3); a day, not money
 e3.js :: (Date.parse(y.at) || 0) - (Date.parse(x.at) || 0) :: kept whole copies listed newest first by moment (each at has its own offset); a clock, not money
+receipts3.js :: D.dayNum(E3.today()) + 5 :: a day count (the ruled 5-day window for an expected pay, qc-novice B1), never a money figure
