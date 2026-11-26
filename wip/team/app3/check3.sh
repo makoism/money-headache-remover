@@ -44,6 +44,7 @@ node|tests/backup3.test.js|backup3: ALL PASS||300|the backup file's core
 node|tests/answers3.test.js|answers3: ALL PASS||300|answers3, the one answers-to-book function (BV1): same answers, same book
 node|tests/chat3_core.test.js|chat3_core: ALL PASS||300|the assistant's core with the fake model: Mako's setup chat to 201,400, before tax, a side job, a stale draft, a skipped question, changes with Undo (BU, BV, BW)
 node|tests/restore3.test.js|restore3: ALL PASS||300|a restore while the cloud copy is on: restamped so it sticks, nothing added after the backup returns, two devices on the fake vault, Put it back reaches both
+node|tests/cardland.test.js|cardland: ALL PASS||300|a card or loan payment moved by a weekend or holiday says why to the assistant (qc-numbers run 3 POLISH)
 node|tests/ask3_core.test.js|ask3_core: ALL PASS||300|Ask, the pure half (the summary sent, the reply checked, steps through act3, Undo)
 node|tests/remind3.test.js|remind3: ALL PASS||300|reminders, the pure half (days from the engine's calendar, the calendar file, Google and Outlook links)
 node|tests/no_maths.js|NO MATHS PASS||300|no money maths in screens
@@ -72,6 +73,7 @@ page|tests/e3_stmt_once.js|e3_stmt_once: ALL PASS||300|each record once after a 
 page|tests/e3_period.js|e3_period: ALL PASS||300|the period by its dates
 page|tests/e3_receipts.js|e3_receipts: ALL PASS||300|Receipts
 page|tests/e3_listfix.js|e3_listfix: ALL PASS||300|the LISTFIX fixes on the page (app3/LISTFIX.md): gaps in Receipts and the rest
+page|tests/e3_cardland.js|e3_cardland: ALL PASS||300|a card payment moved by a weekend says why on Plan (qc-numbers run 3 POLISH)
 page|tests/e3_cardgap.js|e3_cardgap: ALL PASS||300|a card's gap across pay day (CARDGAP): Mako's shape from setup, cards typed 6 and 13 Dec, two rows in Receipts, the rows add up to each period's spent, Plan and Home agree, a reload
 page|tests/e3_cardpay.js|e3_cardpay: ALL PASS||300|Check your bank asks whether a card's unticked payment went out when the card shows far less than the app had; Yes ticks it (M11, M27)
 page|tests/e3_doors.js|e3_doors: ALL PASS||300|Receipts' two doors at 320 (M22): Money went out and Money came in, Refund and Moved under them, one of each door saved
@@ -170,7 +172,7 @@ page_tests_for() {   # page_tests_for <changed path, relative to app3/>
     src/home3.js)             echo e3_cloudstatus e3_home e3_ns e3_homeplan e3_warnwords e3_cardline e3_bankparts e3_names e3_payday ;;
     src/checkin3.js)          echo e3_checkin e3_checkgap e3_checkblank e3_cardfig e3_reload e3_bankparts e3_payday e3_overdrawn e3_cardpay e3_paycame ;;
     src/receipts3.js)         echo e3_removes e3_receipts e3_listfix e3_moneyin e3_bigspend e3_stmt_once e3_period e3_names e3_doors e3_moved1 e3_moved2 e3_cardgap ;;
-    src/plan3.js|src/plan3_write.js) echo e3_accounts e3_billyear e3_payfrom e3_removes e3_aijoin e3_plan e3_rhythms e3_lineshare e3_homeplan e3_paychange e3_names ;;
+    src/plan3.js|src/plan3_write.js) echo e3_accounts e3_cardland e3_billyear e3_payfrom e3_removes e3_aijoin e3_plan e3_rhythms e3_lineshare e3_homeplan e3_paychange e3_names ;;
     src/setup3.js|src/answers3.js) echo e3_twodrafts e3_fillcard e3_setup e3_setupfix e3_setup6 e3_income2 e3_weeks3 e3_first e3_onepay e3_overdrawn e3_paytoday e3_chatwalk e3_chat e3_setup2tabs e3_setuplater e3_tabsetup ;;
     src/chat3*.js)            echo e3_twodrafts e3_ailog e3_aiwords e3_fillcard e3_cloudfirst e3_aijoin e3_chat e3_chatwalk e3_fakeai_page e3_fillundo e3_invite e3_back e3_cloudhold ;;
     src/start3.js)            echo e3_first e3_file e3_try e3_chat e3_cloudtake ;;
