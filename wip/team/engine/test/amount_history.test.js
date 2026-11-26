@@ -103,7 +103,7 @@ t('removed before any check held it, then a new check: nothing in the closed per
 //   Fixed 14 Dec to 128,400: the first period stays 17,600; this period 62,400 + 54,000 (plus, C1's gap, on 14 Dec)
 //   - 54,000 (minus, C2's gap, on 14 Dec) = 62,400; safe to spend unchanged. Today nothing reads a check's was:
 //   71,600 and 8,400, safe to spend up 54,000.
-function kenji(withC2, fixDay, which) {
+function kenji(withC2, fixDay, which, trip) {
   const newId = IDS.idMaker('k3n7ji');
   const out = BB.buildBook({ day: '2026-11-24', told: '2026-11-24T12:00:00.000' + TZ, currency: 'JPY', country: 'JP',
     banks: [{ key: 'bank1', name: 'Main bank', amount: 200000, main: true, min: null }],
@@ -117,6 +117,7 @@ function kenji(withC2, fixDay, which) {
     book = CI.apply(book, CI.checkIn(book, { day, told: day + 'T12:00:00.000' + TZ, newId, figures: { [bank]: fig }, ticked: r.checkIn.toConfirm.map(x => x.item), unticked: [], amounts: {}, expected, lands, landed: {} }));
   };
   check('2026-12-05', 182400);
+  if (trip) { book.places = (book.places || []).concat([{ id: 'trip', name: 'Trip', kind: 'goal', keptIn: { acct: bank, mode: 'inBank' } }]); book.checkins[book.checkins.length - 1].fillerPlace = { [bank]: 'trip' }; }
   if (withC2) check('2026-12-12', 420000);
   const c = d => book.events.find(e => e.k === 'check' && e.date === d && !e.gone);
   const before = view(book, fixDay);
@@ -205,5 +206,41 @@ function twoCards(rev) {
 }
 t('[ruling (B)] a removed card payment held by the bank check and the card check (two cards): 60,000 safe to spend, 0 spent, in both card orders', () => {
   for (const rev of [false, true]) { const x = twoCards(rev); eq([x.before, x.after], [[60000, 0, 550000], [60000, 0, 550000]]); }
+});
+// [ruling (A), qc-foundation confirm finding 2] a check figure corrected BEFORE the next check is written: the next
+// check's gap is worked out from the corrected figure already, so nothing carries to it. Made-up yen, Mako's shape:
+// set up 24 Nov, bank 300,000, pay 300,000 on the 10th, Free to spend 60,000 (first period from the setup day:
+// 60,000 x 16 / 30 = 32,000). 6 Dec check 300,000 (no gap). 8 Dec it is corrected to 299,000, the real figure: 1,000
+// spent on 8 Dec, in the 10 Nov to 9 Dec period (left 31,000). Pay lands on the 10th. 13 Dec check, pay ticked:
+// 299,000 + 300,000 = 599,000, no gap. The closed period keeps its 1,000; this period 0, safe to spend 60,000.
+// Today the fix's minus part is carried to the 13 Dec gap: the closed period shows 0, this one 1,000, 59,000.
+function fixedBefore() {
+  const newId = IDS.idMaker('f1x8be');
+  const out = BB.buildBook({ day: '2026-11-24', told: '2026-11-24T12:00:00.000' + TZ, currency: 'JPY', country: 'JP', banks: [{ key: 'bank1', name: 'Main bank', amount: 300000, main: true, min: null }],
+    pays: [{ key: 'pay1', name: 'Pay', bank: 'bank1', amount: 300000, every: 'month', day: 10, shift: 'none', startsPeriod: true }], cards: [], bills: [], free: 60000 }, { newId });
+  let book = out.book || out;
+  const bank = book.accounts.find(a => a.type !== 'card').id;
+  const check = (day, fig) => {
+    const r = LA.lookahead(book, day), expected = {}, lands = {};
+    for (const x of r.checkIn.toConfirm) { expected[x.item] = x.amount; lands[x.item] = x.lands; }
+    book = CI.apply(book, CI.checkIn(book, { day, told: day + 'T12:00:00.000' + TZ, newId, figures: { [bank]: fig }, ticked: r.checkIn.toConfirm.map(x => x.item), unticked: [], amounts: {}, expected, lands, landed: {} }));
+  };
+  check('2026-12-06', 300000);
+  fix(book.events.find(e => e.k === 'check' && e.date === '2026-12-06'), 299000, '2026-12-08T09:00:00.000' + TZ);
+  const on8 = view(book, '2026-12-08');
+  check('2026-12-13', 599000);
+  return { on8, on14: view(book, '2026-12-14') };
+}
+t('[ruling (A)] a check fixed before the next check (300,000 to 299,000 on 8 Dec, pay 10 Dec, 13 Dec check): the closed period keeps 1,000, safe to spend 60,000', () => {
+  const { on8, on14 } = fixedBefore();
+  eq([on8.now, on8.safe], [1000, 31000]);
+  eq([on14.old, on14.now, on14.safe], [1000, 0, 60000]);
+});
+// Both parts of a fix stay on the corrected check's line: Kenji with C1's gap put on a goal (Trip) at its check-in. C1
+// fixed on 14 Dec after C2: the plus 54,000 and the minus 54,000 both go on Trip on 14 Dec (they cancel there), and
+// C2's own gap stays 62,400 on Free to spend. Today the minus part goes on C2's line: Free to spend shows 8,400.
+t('[ruling (A)] both parts of a fix stay on the corrected check\'s line (C1 on Trip, C2 on Free to spend): this period still 62,400', () => {
+  const { after } = kenji(true, '2026-12-14', 'c1', true);
+  eq([after.old, after.now], [0, 62400]);
 });
 done('amount_history.test.js');
