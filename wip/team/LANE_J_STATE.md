@@ -1,11 +1,21 @@
-# LANE H state page (controls slices after the AI-first candidate)
+# LANE J state page (controls slices after the AI-first candidate)
 
-LANE H: session_01BFpKEX35AmbptMfHTaRc9F (took over from LANE E session_01BFpKEV7kdsYcuUud2xQn49 on 26 Nov 2026, about 08:20 JST).
-Report to: Burrow coordinator 16 (talk to this one), session_01BFpKEXBhaZ6NZ92Lntxb2A. MAIN 21 (session_01BFpKEVHbyeXL6RPkGN8J84) is the only session that merges into wip-38.31. LANE G (session_01BFpKEYUsU5n41PCNmuMV4H) has lane/whichdoor (act3 plan(), writer, undo()).
-Keep-going task: trig_01YAKbKsvFSEfinBn9hNEaCf (hourly, bound to LANE H). Switch it off at handoff or when told to pause. LANE E's trig_01YUs9DHQaHbGbv9XdihHvo3: LANE E was asked to switch it off.
+LANE J: session_01BFpKEXkcELFPCxnuiX8jFx (took over from LANE H session_01BFpKEX35AmbptMfHTaRc9F on 26 Nov 2026, about 09:10 JST; LANE H took over from LANE E).
+Report to: Burrow coordinator 16 (talk to this one), session_01BFpKEXBhaZ6NZ92Lntxb2A. MAIN 21 (session_01BFpKEVHbyeXL6RPkGN8J84) is the only session that merges into wip-38.31. LANE I (session_01BFpKEXsvX4vt1YU8Dx8ePx) runs engine slices and touches act3.js plan(), writer, undo(): agree merge order in one message when needed.
+Keep-going task: trig_01AkkfjQvAD9e6Mtosopy688 (hourly, bound to LANE J). Switch it off at handoff or when told to pause. LANE H's trig_01YAKbKsvFSEfinBn9hNEaCf: LANE H was asked to switch it off.
 Never push to wip-38.31, lane/ai-join or main. Until Sun 29 Nov 09:00 JST: up to two helpers or reviewers at once, model opus.
 
-## Now (keep current; 26 Nov about 11:15 JST; LANE H at handoff size, replacement asked of the coordinator)
+## Now (keep current; 26 Nov about 09:30 JST)
+- Machine set up fresh (tools, unshallow). Worktrees: main checkout on lane/controls-1 (reviewers of slice 1 used it); .claude/worktrees/c5 (controls-5), c6 (controls-6, loan plan), c8 (controls-8, holds 7), estate (lane/e-state).
+- lane/controls-1 bb44ce00: READY, both confirming runs PASS. Held until MAIN 21's candidate is out.
+- RUNNING: a helper tracing qc-controls_confirm1's "Power moved to a short Beta Bank: safe to spend 107,400 to 100,000, no why" (worked example by hand; right = the change card says why; wrong = numbers fault to the coordinator, with whether it is on ai-join).
+- RUNNING: check3 full on lane/controls-8 69ca8f20 (newest ai-join 1d02850a merged in; sw3 and e3_boxwalk conflict taken from ai-join).
+- Next: round for slices 2 to 5 on lane/controls-5 (scope.txt is in, 5dc92184): qc-controls, qc-foundation, qc-data-safety, two at a time, build path .claude/worktrees/c5/wip/team/app3/index.html, round 2026-11-26_controls2to5.
+- Loan check plan: qc-foundation confirm 1 FAIL, plan revised e6ce6324 on lane/controls-6; needs a second confirming run (ask the coordinator for confirm file 2).
+- Slices 7 and 8 (lane/controls-8): after full check, qc-controls and qc-foundation, round 2026-11-26_controls7to8 (scope.txt from the coordinator).
+- Non-blocking follow-ups from slice 1 reports: listed under the old Now below.
+
+## Old Now (LANE H at handoff)
 - Worktrees: main checkout on lane/controls-1 (reviewers use it); .claude/worktrees/c2 (controls-2), c3 (controls-3), c5 (controls-5), c6 (controls-6, loan check), c7 (lane/controls-8, controls-7 below it), estate (lane/e-state). A fresh machine: tools line (RESUME), `git fetch --unshallow`, worktrees again. Merge helper idea: union check3.sh lines; READ THE WHOLE MERGE OUTPUT (a conflict was once committed).
 - lane/controls-1 bb44ce00: READY, both confirming runs PASS (round 2026-11-26_controls1: qc-controls_confirm1.md, qc-assistant_confirm1.md; check3 full ALL GOOD at faab7f49). Reported to the coordinator for MAIN 21 to merge.
   Small follow-ups from those reports (not blockers, do on controls-1 or carry up): refusal words read as if done (say "Phone stays on Main bank for now. Its 20 Nov payment is not ticked off yet: tick it at Check your bank, then ask again"); Plan's bill rows should say "from <account>"; Add a loan does not ask the weekend rule; the change card for a bill moved to another account shows only safe to spend (add the item's own before/after and a below-zero line, same cause as earlier CONFUSING 2); a typed "nothing"/"zero" counts as a guess.
