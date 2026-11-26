@@ -13,9 +13,15 @@ const RC_OWN3 = { bank: 1, cash: 1, ewallet: 1, wallet: 1 };
 /* ---- what is in the book, by name (lookups, nothing worked out) ---- */
 const rcLive3 = x => x && !x.gone;
 function rcAccounts3(kinds) { return ((E3.book && E3.book.accounts) || []).filter(a => rcLive3(a) && kinds[a.type] && !a.closed); }
-function rcFors3() {
+/* [qc-foundation confirm on monthrule, 26 Nov; M51] a line that has ended (its `ends` on or before today) is not offered
+   for a new spend; a record already filed to it keeps it, marked ended, so it can still be changed (`keep`) */
+function rcFors3(keep) {
   const b = E3.book || {}, out = [{ v: 'line:free', name: 'Free to spend' }];
-  for (const l of ((b.plan || {}).budgets || []).filter(rcLive3)) out.push({ v: 'line:' + l.id, name: l.name });
+  for (const l of ((b.plan || {}).budgets || []).filter(rcLive3)) {
+    const ended = !!l.ends && l.ends <= E3.today();
+    if (!ended) out.push({ v: 'line:' + l.id, name: l.name });
+    else if (l.id === keep) out.push({ v: 'line:' + l.id, name: l.name + ' (ended)' });
+  }
   for (const g of (b.places || []).filter(rcLive3)) out.push({ v: 'place:' + g.id, name: g.name });
   return out;
 }
@@ -147,7 +153,7 @@ function rcFormHtml3() {
   } else if (m === 'in') {
     fields = `<div class="a3-field"><label for="rcAcct">Came into</label><select class="a3-in a3-sel" id="rcAcct">${rcOptions3(fromList, fromSel)}</select></div>`;
   } else {
-    const fors = m === 'refund' ? [{ v: '', name: 'Nothing, it only comes back to the account' }].concat(rcFors3()) : rcFors3();
+    const keep = e && e.line, fors = m === 'refund' ? [{ v: '', name: 'Nothing, it only comes back to the account' }].concat(rcFors3(keep)) : rcFors3(keep);
     const forSel = e ? (e.place ? 'place:' + e.place : e.line ? 'line:' + e.line : m === 'refund' ? '' : 'line:free') : m === 'refund' ? '' : 'line:free';
     fields = `<div class="a3-field"><label for="rcFor">${m === 'refund' ? 'Give it back to' : 'What it was for'}</label><select class="a3-in a3-sel" id="rcFor">${rcOptions3(fors, forSel)}</select></div>
       <div class="a3-field"><label for="rcAcct">${m === 'refund' ? 'Came back to' : 'Paid from'}</label><select class="a3-in a3-sel" id="rcAcct">${rcOptions3(fromList, fromSel)}</select></div>`;

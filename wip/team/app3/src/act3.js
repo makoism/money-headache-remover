@@ -59,6 +59,8 @@
     if (kinds && !kinds[a.type]) bad(a.name + ' can not be used for this. Pick another account');
     return a;
   }
+  const MON = { '01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr', '05': 'May', '06': 'Jun', '07': 'Jul', '08': 'Aug', '09': 'Sep', '10': 'Oct', '11': 'Nov', '12': 'Dec' };
+  const dayWords = d => d.slice(8, 10).replace(/^0/, '') + ' ' + MON[d.slice(5, 7)] + ' ' + d.slice(0, 4);   // "2026-11-22" as "22 Nov 2026
   function checkEvent(book, e, today) {
     if (!Number.isInteger(e.a) || !(e.a > 0)) bad('Type an amount above zero');
     if (!DAY_RE.test(String(e.date || ''))) bad('Pick the day');
@@ -71,6 +73,9 @@
     else account(book, e.acct, SPEND_FROM, e.k === 'in' ? 'the money came back to' : 'it was paid from');
     if (e.line != null && e.place != null) bad('Pick a line or a place, not both');
     if (e.line != null && e.line !== 'free' && !((book.plan || {}).budgets || []).some(l => live(l) && l.id === e.line)) bad('That line is not in your plan any more. Pick another');
+    /* [qc-foundation confirm on monthrule, 26 Nov; M7, M51] a line that has ended takes nothing dated after its end */
+    const ln = e.line != null && e.line !== 'free' && ((book.plan || {}).budgets || []).find(l => live(l) && l.id === e.line);
+    if (ln && ln.ends && e.date > ln.ends) bad(ln.name + ' ended on ' + dayWords(ln.ends) + '. Pick another line');
     if (e.place != null && !(book.places || []).some(g => live(g) && g.id === e.place)) bad('That place is not there any more. Pick another');
     if (e.note != null && typeof e.note !== 'string') bad('A note is words');
   }
