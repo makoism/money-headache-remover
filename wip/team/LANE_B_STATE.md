@@ -11,7 +11,8 @@ NOW (26 Nov about 10:30 JST): ruling (2) was built by LANE I (50452e69). amounth
 Finding 2 RULED (coordinator 17): money in follows the same amount history rule; test: check 15 Dec holds a 3,000 money-in row, removed 20 Dec, safe to spend stays 26,666; say whether the write door changed (then qc-foundation confirms too). Given to the amounthist helper.
 QUEUED by coordinator 17 after current items (no fixed pay, from qc-numbers on ai-join 2256e94e, qc_reports/2026-11-25_ai_first/qc-numbers.md B3): bank 500,000, Free to spend 100,000 a month, rent 80,000: Home says "Lasts about 12 weeks" and "goes below zero in Jun 2027"; the sum repeats "Free to spend by day" 27 times and takes Rent on 27 Jan under "next 30 days"; no-fixed-pay setup asks "How much lands in your bank each pay day". One answer for how long money lasts, from the engine.
 monthrule: (a) 953bf874, (b) 351bf964, full ALL GOOD f32e0fe7. Asked coordinator 18 for confirm_qc-foundation.txt; then the confirming qc-foundation. To tell the coordinator next message: with fixed pay a line ended mid-period still holds that period's amount (old Food 26,666 beside the new Food; plan says ending counts from the next period); Home's reason line for no fixed pay says "left this period" not "this month".
-amounthist: helper building rulings (B) and (A) (coordinator 17) after 3d56895a and acf042e9.
+amounthist: tip 19ea6ed2 full ALL GOOD (blocker 1 test acf042e9, money in 3d56895a, ruling B c208f651, ruling A 3cdcf4b7). Asked coordinator 18 for confirm_qc-numbers.txt and confirm_qc-foundation.txt; then both confirming runs. Findings 3 to 6 traced, not this branch's (asked: KNOWN or a lane). LANE M told the tip.
+monthrule: confirming qc-foundation (second) RUNNING on db13ac5b, report foundation_confirm2.md.
 shortgap: qc-foundation on the plan RUNNING (round qc_reports/2026-11-26_shortgap_plan); qc-novice plan mode next.
 QUEUE: LANE I's 1 to 5 otherwise.
 
