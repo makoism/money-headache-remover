@@ -5407,6 +5407,8 @@ details summary { min-height: 44px; }
     safeToSpend: ['What you can spend before your next pay and still cover everything due before it.',
       'Bills and card payments due by then are already taken off.'],
     status: ['How things stand today, in one line.', 'It changes when you check your bank or log a spend.'],
+    /* [qc-north-star B1] the status card when no Free to spend is set: what it is, not the general status words */
+    noFree: ['Free to spend is what you plan to spend on food and everyday things each pay period.', 'Set it, and safe to spend leaves room for it.'],
     period: ['Your money runs from one pay to the next, not by calendar month.'],
     periodMoved: ['Your pay is due on {due}, but that day is a weekend or a holiday, so it lands on {landed}. The pay period moves with it.'],
     lineShare: ['This line started partway through the pay period, so only the part for the days left counts now.',
@@ -9917,7 +9919,7 @@ function drawHome3() {
   /* the one status; on a sample screen the yellow band already says these are made-up numbers, so no second card */
   const names = {}; for (const id of ids.concat(Object.keys(r.cards), Object.keys(r.owed || {}))) names[id] = E3.nameOf(id);
   const st = BurrowScreens.status.statusOf(r, { currency: home, origin, names });
-  if (origin !== 'sample') out.push(`<section class="a3-card a3-status" data-card="status" data-level="${esc3(st.level)}">${helpHead3(`<h2>${esc3(st.text.state)}</h2>`, 'status')}<p class="a3-sub">${esc3(st.text.reason)}</p>${st.state === 'plan_over' ? `<p class="a3-next" data-fig="status-next">${esc3(st.text.next)}</p>` : ''}${st.state === 'no_free' ? `<div class="a3-actions"><button type="button" class="a3-btn solid" id="a3FreeGo">${esc3(st.text.next)}</button></div>` : ''}</section>`);
+  if (origin !== 'sample') out.push(`<section class="a3-card a3-status" data-card="status" data-level="${esc3(st.level)}">${helpHead3(`<h2>${esc3(st.text.state)}</h2>`, st.state === 'no_free' ? 'noFree' : 'status')}<p class="a3-sub">${esc3(st.text.reason)}</p>${st.state === 'plan_over' ? `<p class="a3-next" data-fig="status-next">${esc3(st.text.next)}</p>` : ''}${st.state === 'no_free' ? `<div class="a3-actions"><button type="button" class="a3-btn solid" id="a3FreeGo">${esc3(st.text.next)}</button></div>` : ''}</section>`);
   /* the cloud copy's one status (cloud3_page.js cloudStatus3): one plain line, only when it is not in step */
   const cloudLine = origin !== 'sample' && typeof cloudHome3 === 'function' ? cloudHome3() : '';
   /* [M20; qc-data-safety B3] something was changed on two devices: asked here too, until it is answered in Settings */

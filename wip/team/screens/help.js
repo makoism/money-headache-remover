@@ -17,6 +17,8 @@
     safeToSpend: ['What you can spend before your next pay and still cover everything due before it.',
       'Bills and card payments due by then are already taken off.'],
     status: ['How things stand today, in one line.', 'It changes when you check your bank or log a spend.'],
+    /* [qc-north-star B1] the status card when no Free to spend is set: what it is, not the general status words */
+    noFree: ['Free to spend is what you plan to spend on food and everyday things each pay period.', 'Set it, and safe to spend leaves room for it.'],
     period: ['Your money runs from one pay to the next, not by calendar month.'],
     periodMoved: ['Your pay is due on {due}, but that day is a weekend or a holiday, so it lands on {landed}. The pay period moves with it.'],
     lineShare: ['This line started partway through the pay period, so only the part for the days left counts now.',
