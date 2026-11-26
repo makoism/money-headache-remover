@@ -82,7 +82,7 @@
     out.push(due.items.length ? `Due before next pay: ${due.items.map(o => `${occName(o.item)} ${day(o.lands, today)} ${m(o.amount, o.currency)}`).join('; ')}. Together ${m(due.total)}.` : 'Nothing is due before next pay.');
     if (r.notSeenYet.items.length) out.push(`Due and not ticked off yet: ${r.notSeenYet.items.map(o => `${occName(o.item)} ${day(o.lands, today)} ${m(o.amount, o.currency)}`).join('; ')}.`);
     const cards = Object.keys(r.cards);
-    if (cards.length) out.push('Cards (name | owed | next payment):\n' + cards.map(id => { const c = r.cards[id], nx = c.next; return `${name(id)} | ${m(c.owedNow, (accts.find(a => a.id === id) || {}).cur)} owed | ` + (nx && nx.amount ? `next payment ${m(nx.amount)} on ${day(nx.payment_date, today)}` : 'nothing to pay yet') + ((c.overdue || []).length ? ' | a payment is overdue' : ''); }).join('\n'));
+    if (cards.length) out.push('Cards (name | owed | next payment):\n' + cards.map(id => { const c = r.cards[id], nx = c.next; return `${name(id)} | ${m(c.owedNow, (accts.find(a => a.id === id) || {}).cur)} owed | ` + (nx && nx.amount ? `next payment ${m(nx.amount)} on ${SN.landLabel(nx.payment_date, nx.due_date, nx.payment_date.slice(0, 4) !== today.slice(0, 4))}` : 'nothing to pay yet') + ((c.overdue || []).length ? ' | a payment is overdue' : ''); }).join('\n'));
     const owed = Object.keys(r.owed || {});
     if (owed.length) out.push('Loans (name | owed): ' + owed.map(id => `${name(id)} | ${m(r.owed[id].owedNow != null ? r.owed[id].owedNow : 0)}`).join('; ') + '.');
     /* [S4] the notes in the same words as Home (screens/status.js), each amount with its currency */

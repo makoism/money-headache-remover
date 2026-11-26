@@ -736,11 +736,11 @@
       }
       if (nextPoint) walkItems.push({ land: nextPoint.land, amount: nextExp ? planned(rest + nextExp, nextPoint.due) : nextAmount, label: c.name + (notSure ? ', all owed' : ' still open, closes ' + short(nextPoint.closes)) });
       // [F4, H8] a payment past its day and not ticked is overdue (late, then not seen), never the next one
-      const shown = p => ({ item: p.id, amount: p.asks, payment_date: dayStr(p.land), statement: label || 'closed', closed_on: p.closed != null ? dayStr(p.closed) : undefined });
+      const shown = p => ({ item: p.id, amount: p.asks, payment_date: dayStr(p.land), due_date: dayStr(p.due), statement: label || 'closed', closed_on: p.closed != null ? dayStr(p.closed) : undefined });
       const overdue = unpaid.filter(p => p.land < today).map(p => Object.assign(shown(p), { state: payState(p.land, payFrom) }));
       const coming = unpaid.filter(p => p.land >= today);
       const next = coming.length ? Object.assign(shown(coming[0]), { state: 'coming' })
-        : nextPoint ? { item: nextPoint.id, amount: nextAmount, payment_date: dayStr(nextPoint.land), statement: label || 'open', closes_on: nextPoint.closes != null ? dayStr(nextPoint.closes) : undefined, state: 'coming' } : null;
+        : nextPoint ? { item: nextPoint.id, amount: nextAmount, payment_date: dayStr(nextPoint.land), due_date: dayStr(nextPoint.due), statement: label || 'open', closes_on: nextPoint.closes != null ? dayStr(nextPoint.closes) : undefined, state: 'coming' } : null;
       const cardItems = unpaid.map(p => ({ id: p.id, due: p.due, land: p.land, amount: p.part, statement: label || 'closed' }));
       if (nextPoint) cardItems.push({ id: nextPoint.id, due: nextPoint.due, land: nextPoint.land, amount: nextAmount, statement: label || 'open' });
       // [BK6] this card's payment days after one day and up to another (one a month on its pay day, after the weekend rule)
@@ -800,7 +800,7 @@
         loanItems.push({ id: d.iid, sid: id, kind: 'loan', acct: payFrom, card: id, due: d.due, land: d.land, amount: amt, settled: false, name: a.name });
       }
       // [F4, H8] a payment past its day and not ticked is overdue (late, then not seen), never the next one
-      const shown = x => ({ item: x.id, amount: x.amount, payment_date: dayStr(x.land) });
+      const shown = x => ({ item: x.id, amount: x.amount, payment_date: dayStr(x.land), due_date: dayStr(x.due) });
       const nx = loanItems.find(x => x.land >= today);
       return { owedNow, loanItems, payFrom, next: nx ? Object.assign(shown(nx), { state: 'coming' }) : null,
         overdue: loanItems.filter(x => x.land < today).map(x => Object.assign(shown(x), { state: payState(x.land, payFrom) })) };

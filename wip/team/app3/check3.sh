@@ -160,7 +160,7 @@ page_tests_for() {   # page_tests_for <changed path, relative to app3/>
   case "$1" in
     tests/lib3.js|src/e3.js|src/money3.js|src/act3.js|src/shell.html|src/app3.css|build3.sh|../screens/*|../store/*|fixtures/*)
                               echo e3_try e3_home e3_checkin e3_receipts e3_plan e3_panels e3_amounts e3_names e3_band e3_undobar ;;
-    ../engine/*)              echo e3_try e3_home e3_checkin e3_receipts e3_plan e3_panels e3_amounts e3_names e3_cardgap ;;
+    ../engine/*)              echo e3_try e3_home e3_checkin e3_receipts e3_plan e3_panels e3_amounts e3_names e3_cardgap e3_cardland ;;
     tests/lives3.js)          echo e3_life_a e3_life_a2 e3_life_b e3_life_c e3_life_d ;;
     tests/e3_act_book.js)     echo e3_home e3_checkin ;;
     tests/fake_vault.js)      echo e3_cloudfirst e3_cloud e3_cloudbase e3_cloudtake e3_cloudsend e3_cloudhold e3_cloudwhich e3_cloudwhich2 e3_cloudstatus e3_listfix e3_restore ;;
