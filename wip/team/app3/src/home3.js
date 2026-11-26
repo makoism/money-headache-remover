@@ -233,7 +233,9 @@ function drawHome3() {
     .filter(([o]) => !odSeen.has(o.item)).sort((a, b) => (a[0].lands < b[0].lands ? -1 : a[0].lands > b[0].lands ? 1 : 0));
   const lateHtml = lateOut.length ? `<div data-fig="duelate"><p class="a3-acct">Late, not ticked off yet</p><p class="a3-sub">Safe to spend takes these off today</p><ul class="a3-rows">${lateOut.map(([o, path]) => `<li><span>${esc3(E3.occName(o.item))}<br><span class="when">${esc3(day3(o.lands, yr))}, late</span></span><span class="amt">${fig3(path, o.amount, o.currency || home)}</span></li>`).join('')}</ul></div>` : '';
   const dueNone = lateOut.length ? '' : `<p class="a3-sub">${odSeen.size ? 'Nothing else' : 'Nothing'} is due ${r.period ? 'before next pay' : 'in the next 30 days'}</p>`;
-  out.push(`<section class="a3-card" data-card="due"><h2>${esc3(dueName)}</h2>${due.items.length ? byAcct + `<ul class="a3-rows"><li class="total"><span>Together</span><span class="amt" data-fig="duetotal">${fig3('dueBeforeNextPay.total', due.total, home)}</span></li></ul>` : dueNone}${lateHtml}</section>`);
+  /* [qc-numbers confirming run 3, CONFUSING] on a pay day the heading says when the pay after today's is */
+  const dueHead = dueName + (!!r.period && np0.days === 0 && r.safeToSpend.until && r.safeToSpend.until !== np0.next_pay ? ', on ' + day3(r.safeToSpend.until, yr) : '');
+  out.push(`<section class="a3-card" data-card="due"><h2>${esc3(dueHead)}</h2>${due.items.length ? byAcct + `<ul class="a3-rows"><li class="total"><span>Together</span><span class="amt" data-fig="duetotal">${fig3('dueBeforeNextPay.total', due.total, home)}</span></li></ul>` : dueNone}${lateHtml}</section>`);
   /* overdue card and loan payments: past their day and not ticked, never dropped from the page [F4, H8, BF2] (plan lane).
      [C10] It sits right above the cards box and is the one place a late payment is listed: the same payment is left out of
      "May still go through" and "Not seen yet" (its state, late or not seen, is in its words here) */
