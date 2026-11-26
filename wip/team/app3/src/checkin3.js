@@ -11,12 +11,21 @@ function openCheck3() {
   /* [monthrule2 1b, coordinator's ruling way c; M31, M38, M44] a pay ticked after its due day: when did it come in? The due
      day is picked, so one tap goes on as before; Today, or another day in a date box. Asked once per pay, on this sheet */
   const isPay = it => (E3.book.schedules || []).some(s => s && !s.gone && s.kind === 'income' && s.id === BurrowEngine.ids.scheduleOf(it));
-  const came = {}; for (const o of list) if (!from[o.item] && o.lands < day && isPay(o.item)) came[o.item] = { pick: 'due', min: BurrowEngine.checkin.landedFrom(E3.book, { day }, o.item) || '' };
-  check3 = { day, list, from, came, sure: {}, ver: ACT3.ver() };   // [STALE_SHEET_PLAN] the book as this sheet saw it
+  /* [LISTED 2c, N3] an item whose account had a figure given without it listed (the assistant's "I don't know"): the
+     row asks the day the bank app shows next to it; "I don't know" (picked, the safe side) files it the day after that
+     figure (afterFigure), and a new bank figure sets it right */
+  const ask = {}; for (const o of list) { const f = BurrowEngine.checkin.askAfter(E3.book, { day, lands: { [o.item]: o.lands } }, o.item); if (f) ask[o.item] = { fig: f, pick: 'unsure', min: BurrowEngine.checkin.landedFrom(E3.book, { day }, o.item) || '' }; }
+  for (const it of Object.keys(ask)) delete from[it];   // one question per row: the day asked here covers it
+  const came = {}; for (const o of list) if (!from[o.item] && !ask[o.item] && o.lands < day && isPay(o.item)) came[o.item] = { pick: 'due', min: BurrowEngine.checkin.landedFrom(E3.book, { day }, o.item) || '' };
+  check3 = { day, list, from, came, ask, sure: {}, ver: ACT3.ver() };   // [STALE_SHEET_PLAN] the book as this sheet saw it
   const wd = d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date(d + 'T00:00:00Z').getUTCDay()] + ' ' + day3(d, yr);
   const cameRow = (o, i) => (came[o.item] ? `<fieldset class="a3-field a3-came" data-camein="${esc3(o.item)}"><legend class="a3-q">When did it come in?</legend>
       <div class="a3-segs"><button type="button" class="a3-seg a3-seg-s" data-came="due" aria-pressed="true">${esc3(wd(o.lands))} (the due day)</button><button type="button" class="a3-seg a3-seg-s" data-came="today" aria-pressed="false">Today, ${esc3(wd(day))}</button><button type="button" class="a3-seg a3-seg-s" data-came="other" aria-pressed="false">Another day</button></div>
       <input class="a3-in" type="date" id="a3cm${i}" aria-label="The day ${esc3(E3.occName(o.item))} came in" data-cameday="${esc3(o.item)}" value="${esc3(o.lands)}"${came[o.item].min ? ` min="${esc3(came[o.item].min)}"` : ''} max="${esc3(day)}" hidden></fieldset>` : '');
+  const askRow = (o, i) => (ask[o.item] ? `<fieldset class="a3-field a3-came" data-dayask="${esc3(o.item)}"><legend class="a3-q">What day does your bank app show next to it?</legend>
+      <p class="a3-sub">Your bank figure on ${esc3(wd(ask[o.item].fig))} didn't say if it had gone. Not sure? It goes after that figure, and your next bank figure sets it right</p>
+      <div class="a3-segs"><button type="button" class="a3-seg a3-seg-s" data-dayk="unsure" aria-pressed="true">I don't know</button><button type="button" class="a3-seg a3-seg-s" data-dayk="day" aria-pressed="false">Pick the day</button></div>
+      <input class="a3-in" type="date" id="a3ak${i}" aria-label="The day your bank app shows for ${esc3(E3.occName(o.item))}" data-askday="${esc3(o.item)}" value="${esc3(o.lands < ask[o.item].min ? ask[o.item].min : o.lands)}"${ask[o.item].min ? ` min="${esc3(ask[o.item].min)}"` : ''} max="${esc3(day)}" hidden></fieldset>` : '');
   const landedRow = (o, i) => (from[o.item] ? `<div class="a3-field a3-landed"><label for="a3l${i}">Landed on</label>
       <input class="a3-in" type="date" id="a3l${i}" data-landed="${esc3(o.item)}" value="${esc3(from[o.item])}" min="${esc3(from[o.item])}" max="${esc3(day)}"></div>` : '');
   const rows = list.map((o, i) => `<div class="a3-tick" data-item="${esc3(o.item)}">
@@ -25,6 +34,7 @@ function openCheck3() {
       <input class="a3-in" data-amount type="text" inputmode="decimal" autocomplete="off" aria-label="Amount for ${esc3(E3.occName(o.item))}" data-amt="${esc3(o.item)}" value="${SM.toInput(o.amount, E3.curOf(o.account))}">
       ${landedRow(o, i)}
       ${cameRow(o, i)}
+      ${askRow(o, i)}
     </div>`).join('');
   const figs = Object.keys(r.accounts).map(id => `<div class="a3-field"><label for="a3f-${esc3(id)}">What does ${esc3(E3.nameOf(id))} show today?</label>
       <input class="a3-in" data-amount type="text" inputmode="decimal" autocomplete="off" id="a3f-${esc3(id)}" data-bankfig="${esc3(id)}" placeholder="${esc3(SM.symbol(r.accounts[id].currency).trim())}">
@@ -59,6 +69,13 @@ function openCheck3() {
     if (box && !box.checked) { box.checked = true; box.dispatchEvent(new Event('change', { bubbles: true })); }
     checkPreview3();
   }));
+  sheet.querySelectorAll('[data-dayk]').forEach(el => el.addEventListener('click', () => {
+    const box = el.closest('[data-dayask]'), c = check3.ask[box.dataset.dayask];
+    c.pick = el.dataset.dayk;
+    box.querySelectorAll('[data-dayk]').forEach(x => x.setAttribute('aria-pressed', String(x === el)));
+    const d = box.querySelector('[data-askday]'); d.hidden = c.pick !== 'day'; if (!d.hidden) d.focus();
+    checkPreview3();
+  }));
   sheet.querySelectorAll('[data-came]').forEach(el => el.addEventListener('click', () => {
     const box = el.closest('[data-camein]'), c = check3.came[box.dataset.camein];
     c.pick = el.dataset.came;
@@ -90,7 +107,7 @@ function readCheck3(strict) {
     if (v === null) { if (strict) return bad(typedSlip3(el.value, E3.curOf(id)) || `Type what is on ${E3.nameOf(id)} now, as an amount, or leave it blank`, el); continue; }
     figures[id] = v;
   }
-  const ticked = [], amounts = {}, expected = {}, lands = {}, landed = {};
+  const ticked = [], amounts = {}, expected = {}, lands = {}, landed = {}, afterFigure = {};
   for (const o of check3.list) {
     expected[o.item] = o.amount; lands[o.item] = o.lands;
     const row = [...sheet.querySelectorAll('.a3-tick')].find(x => x.dataset.item === o.item);
@@ -110,10 +127,17 @@ function readCheck3(strict) {
       if (!cd.value || cd.value > check3.day || (c.min && cd.value < c.min)) { if (strict) return bad(`Pick the day ${E3.occName(o.item)} came in, ${c.min ? `between ${day3(c.min, check3.day.slice(0, 4))} and today` : 'today or before'}`, cd); continue; }
       landed[o.item] = cd.value;
     }
+    const q = (check3.ask || {})[o.item];
+    if (q && q.pick === 'unsure') afterFigure[o.item] = true;
+    if (q && q.pick === 'day') {
+      const ad = row.querySelector('[data-askday]');
+      if (!ad.value || ad.value > check3.day || (q.min && ad.value < q.min)) { if (strict) return bad(`Pick the day your bank app shows for ${E3.occName(o.item)}, ${q.min ? `between ${day3(q.min, check3.day.slice(0, 4))} and today` : 'today or before'}, or tap I don't know`, ad); afterFigure[o.item] = true; continue; }
+      landed[o.item] = ad.value;
+    }
   }
-  return { figures, ticked, amounts, expected, lands, landed };
+  return { figures, ticked, amounts, expected, lands, landed, afterFigure };
 }
-const checkOut3 = d => BurrowEngine.checkin.checkIn(E3.book, { day: check3.day, told: E3.told(), newId: E3.newId, figures: d.figures, ticked: d.ticked, unticked: [], amounts: d.amounts, expected: d.expected, lands: d.lands, landed: d.landed });
+const checkOut3 = d => BurrowEngine.checkin.checkIn(E3.book, { day: check3.day, told: E3.told(), newId: E3.newId, figures: d.figures, ticked: d.ticked, unticked: [], amounts: d.amounts, expected: d.expected, lands: d.lands, landed: d.landed, afterFigure: d.afterFigure, listed: check3.list.map(o => o.item) });   // [LISTED 3] the whole list was in front of them
 const checkView3 = out => BurrowEngine.lookahead.lookahead(BurrowEngine.checkin.apply(E3.book, out), check3.day);
 /* [NS-FIX 2] the gap a typed figure leaves, in words, from the engine's filler for this check (never worked out here):
    a bank that shows less than the app had lost money nobody logged, and that counts as spending */
