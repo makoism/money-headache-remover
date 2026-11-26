@@ -177,7 +177,7 @@ function rcFormHtml3() {
 function rcDraft3() {
   const m = RC3.mode, acct = m === 'moved' ? $('#rcFrom').value : $('#rcAcct').value;
   const a = typed3($('#rcAmt').value, E3.curOf(acct));
-  if (a === null) return { bad: 'Type the amount, like 1200' };
+  if (a === null) return { bad: typedSlip3($('#rcAmt').value, E3.curOf(acct)) || 'Type the amount, like 1200' };
   const x = { date: $('#rcDate').value, a, note: $('#rcNote').value };
   if (m === 'moved') return Object.assign(x, { from: acct, to: $('#rcTo').value });
   x.acct = acct;

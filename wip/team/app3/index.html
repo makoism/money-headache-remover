@@ -4510,6 +4510,17 @@ details summary { min-height: 44px; }
     if (s === '') return { ok: false, reason: 'empty' };
     const m = /^(-)?(\d[\d,]*)?(?:\.(\d*))?$/.exec(s);
     if (!m || (!m[2] && !m[3])) return { ok: false, reason: 'not_a_number' };
+    /* [qc-numbers run 1 B4] a comma not in a thousands place ("1,0000", "10,00") is a slip: refused with both readings
+       (the commas dropped, or each group after the first made three digits), never read one way silently */
+    if (m[2] && m[2].includes(',')) {
+      const g = m[2].split(',');
+      if (g[0].length > 3 || g.slice(1).some(x => x.length !== 3)) {
+        const fr = (m[3] || '').padEnd(d, '0').slice(0, d);
+        const a = g.join(''), b = g[0] + g.slice(1).map(x => x.slice(0, 3).padEnd(3, '0')).join('');
+        const means = [...new Set([a, b].map(x => Number(x.replace(/^0+(?=\d)/, '') + fr)))].sort((x, y) => x - y);
+        return { ok: false, reason: 'commas', means };
+      }
+    }
     const whole = (m[2] || '0').replace(/,/g, '').replace(/^0+(?=\d)/, ''), frac = m[3] || '';
     if (frac.length > d) return { ok: false, reason: 'decimals' };
     if (whole.length > MAX_WHOLE_DIGITS) return { ok: false, reason: 'too_big' };
@@ -5045,6 +5056,7 @@ details summary { min-height: 44px; }
     decimals_none: E('{name} has no decimals. Type a whole amount'),
     minus: E('That can\'t be below zero. Type it without the minus'),
     too_big: E('That amount is too big. Check the digits'),
+    commas: E('Did you mean {means}?'),
   };
   const CURRENCY_NAMES = { JPY: 'Yen', KRW: 'Won' };
 
@@ -5057,7 +5069,8 @@ details summary { min-height: 44px; }
     if (r.ok) return { ok: true, minor: r.minor, value: money.toInput(r.minor, opts.code) };
     const d = money.digits(opts.code);
     const key = r.reason === 'decimals' && d === 0 ? 'decimals_none' : r.reason;
-    const message = ERRORS[key].text.replace('{digits}', String(d)).replace('{name}', CURRENCY_NAMES[opts.code] || opts.code);
+    const means = (r.means || []).map(n => money.format(n, opts.code)).join(' or ');
+    const message = ERRORS[key].text.replace('{digits}', String(d)).replace('{name}', CURRENCY_NAMES[opts.code] || opts.code).replace('{means}', means);
     return { ok: false, reason: r.reason, value: raw, message };
   }
 
@@ -8425,6 +8438,9 @@ function screen3(draw) {
 function typed3(text, cur) { const r = SM.parse(text, cur); return r.ok ? r.minor : null; }
 /* [M47, K29] what a bank shows today can be below zero: the one box where a minus is read (a bank only, never a card,
    a pay or a bill), as whole minor units or null */
+/* [qc-numbers run 1 B4] a comma not in a thousands place ("1,0000"): the question to show in place of the box's own
+   words, "Did you mean ¥1,000 or ¥10,000?", or null for any other text */
+function typedSlip3(text, cur) { const r = SM.parse(text, cur, { allowMinus: true }); return !r.ok && r.reason === 'commas' ? `Did you mean ${r.means.map(n => money3(n, cur)).join(' or ')}?` : null; }
 function typedBank3(text, cur) { const r = SM.parse(text, cur, { allowMinus: true }); return r.ok ? r.minor : null; }
 /* '2026-12-10' as '10 Dec', with the year when it is not the shown day's year */
 const day3 = (s, thisYear) => (s ? SN.dayLabel(s, !!thisYear && s.slice(0, 4) !== thisYear) : '');
@@ -10080,14 +10096,14 @@ function readCheck3(strict) {
     const id = el.dataset.bankfig;
     if (!el.value.trim()) continue;   // [qc-controls run 1 blocker 3] blank: not looked at today, nothing written for it, as for a card
     const v = typedBank3(el.value, E3.curOf(id));
-    if (v === null) { if (strict) return bad(`Type what ${E3.nameOf(id)} shows today, as an amount, or leave it blank`, el); continue; }
+    if (v === null) { if (strict) return bad(typedSlip3(el.value, E3.curOf(id)) || `Type what ${E3.nameOf(id)} shows today, as an amount, or leave it blank`, el); continue; }
     figures[id] = v;
   }
   for (const el of sheet.querySelectorAll("[data-cardfig]")) {
     const id = el.dataset.cardfig;
     if (!el.value.trim()) continue;   // blank: this card is not checked
     const v = typed3(el.value, E3.curOf(id));
-    if (v === null) { if (strict) return bad(`Type what is on ${E3.nameOf(id)} now, as an amount, or leave it blank`, el); continue; }
+    if (v === null) { if (strict) return bad(typedSlip3(el.value, E3.curOf(id)) || `Type what is on ${E3.nameOf(id)} now, as an amount, or leave it blank`, el); continue; }
     figures[id] = v;
   }
   const ticked = [], amounts = {}, expected = {}, lands = {}, landed = {};
@@ -10096,7 +10112,7 @@ function readCheck3(strict) {
     const row = [...sheet.querySelectorAll('.a3-tick')].find(x => x.dataset.item === o.item);
     if (!row || !row.querySelector('input[type=checkbox]').checked) continue;
     const v = typed3(row.querySelector('[data-amt]').value, E3.curOf(o.account));
-    if (v === null) { if (strict) return bad(`Type the amount for ${E3.occName(o.item)}`, row.querySelector('[data-amt]')); continue; }
+    if (v === null) { if (strict) return bad(typedSlip3(row.querySelector('[data-amt]').value, E3.curOf(o.account)) || `Type the amount for ${E3.occName(o.item)}`, row.querySelector('[data-amt]')); continue; }
     ticked.push(o.item); if (v !== o.amount) amounts[o.item] = v;
     const ld = row.querySelector('[data-landed]');
     if (ld) {
@@ -10407,7 +10423,7 @@ function rcFormHtml3() {
 function rcDraft3() {
   const m = RC3.mode, acct = m === 'moved' ? $('#rcFrom').value : $('#rcAcct').value;
   const a = typed3($('#rcAmt').value, E3.curOf(acct));
-  if (a === null) return { bad: 'Type the amount, like 1200' };
+  if (a === null) return { bad: typedSlip3($('#rcAmt').value, E3.curOf(acct)) || 'Type the amount, like 1200' };
   const x = { date: $('#rcDate').value, a, note: $('#rcNote').value };
   if (m === 'moved') return Object.assign(x, { from: acct, to: $('#rcTo').value });
   x.acct = acct;
@@ -10841,7 +10857,7 @@ function plForm3(title, fields, buttons, note) {
       const el = $('#pl-' + f.key), t = el.value.trim();
       if (f.kind === 'amount') {
         if (!t) vals[f.key] = f.optional ? null : undefined;
-        else { const v = typed3(t, cur); if (v === null) return { bad: `Type ${f.label.toLowerCase()} as an amount`, el }; vals[f.key] = v; }
+        else { const v = typed3(t, cur); if (v === null) return { bad: typedSlip3(t, cur) || `Type ${f.label.toLowerCase()} as an amount`, el }; vals[f.key] = v; }
       } else if (f.kind === 'day') vals[f.key] = t ? Number(t) : null;
       else vals[f.key] = t;
     }
@@ -11363,7 +11379,7 @@ function form3(strict, sec) {
   const asks = el => strict && (!sec || sec.contains(el));
   const ask = (el, words) => { fieldErr3(el, words); el.focus(); throw new Error('asked'); };
   /* [M47] a bank's own box reads a minus (bankBox3) */
-  const amount = (el, words) => { const v = bankBox3(el) ? typedBank3(el.value, cur) : typed3(el.value, cur); if (v !== null) return v; return asks(el) ? ask(el, words) : null; };
+  const amount = (el, words) => { const v = bankBox3(el) ? typedBank3(el.value, cur) : typed3(el.value, cur); if (v !== null) return v; return asks(el) ? ask(el, typedSlip3(el.value, cur) || words) : null; };
   const maybe = (el, words) => (el.value.trim() ? amount(el, words) : null);
   const text = (el, dflt) => (el.value || '').trim() || dflt;
   const dayOf = v => (v === 'last' ? 'last' : Number(v));

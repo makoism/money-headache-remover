@@ -264,7 +264,7 @@ function form3(strict, sec) {
   const asks = el => strict && (!sec || sec.contains(el));
   const ask = (el, words) => { fieldErr3(el, words); el.focus(); throw new Error('asked'); };
   /* [M47] a bank's own box reads a minus (bankBox3) */
-  const amount = (el, words) => { const v = bankBox3(el) ? typedBank3(el.value, cur) : typed3(el.value, cur); if (v !== null) return v; return asks(el) ? ask(el, words) : null; };
+  const amount = (el, words) => { const v = bankBox3(el) ? typedBank3(el.value, cur) : typed3(el.value, cur); if (v !== null) return v; return asks(el) ? ask(el, typedSlip3(el.value, cur) || words) : null; };
   const maybe = (el, words) => (el.value.trim() ? amount(el, words) : null);
   const text = (el, dflt) => (el.value || '').trim() || dflt;
   const dayOf = v => (v === 'last' ? 'last' : Number(v));
