@@ -13,6 +13,7 @@ Never push to wip-38.31, lane/ai-join or main. Until Sun 29 Nov 09:00 JST: up to
 - Loan plan: confirm 2 FAIL (same place twice), simplified at lane/controls-6 487714ad (Not sure dropped). Asked the coordinator for confirm file 3.
 - lane/controls-8 69ca8f20 check3 full ALL GOOD; scope.txt for 2026-11-26_controls7to8 is on origin 97bf1263 (pull). Reviewers after the 2-5 fixes are merged up into 8.
 - CHECKFIX_PLAN.md (slice 10): qc-foundation FAIL (report saved), plan revised 53be0479; F2 (fillerPlace instead of a fixed gap spend) and F4 (join revive, who builds) ASKED of the coordinator 11:35 JST; then a confirming run (confirm file from the coordinator).
+- LANE I lane/amounthist 40c9cc74 changes lookahead bankInfo check walk (heldAt/holdAt instead of CHECKGAP lateDay, goneMoves with `was`), card check loop, leftOf, res.splits; act3 edit/remove write `was`. Build slice 10 on top of it (merge amounthist first if it has landed).
 - Loan plan confirm 3 RUNNING (confirm file 3c188b62 plus 0748fcbc: Not now keeps the typed figure on the device).
 - lane/controls-1 is going into the candidate (MAIN 22): do not move it.
 - lane/controls-9 follow-ups done: ded15efc, 1def4ae2, 02d256a3, 3dd4e58d.
