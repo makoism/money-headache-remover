@@ -975,6 +975,21 @@
       return (fp !== null && gain > fp) || gain * 5 > had;
     };
     const heldGain = (id, f) => largeGain(id, f) && f.answer !== 'right';
+    // [coordinator ruled, qc-numbers confirm blocker 2] a check gap counts the same way in both directions: a large gain
+    // held to be asked about is never counted, so a later drop on that account counts as spending only past it (a bank
+    // typed 950,000 for 99,000, then checked at 94,000: 3,000 of the 854,000 drop is spending, never 854,000). The part
+    // it undoes comes off the drop's own part, on that check's day and line (`undid`)
+    for (const bid in banks) {
+      let held = 0;
+      banks[bid].fillers = banks[bid].fillers.map(f => {
+        if (heldGain(bid, f)) { held += Math.max(0, -f.amount); return f; }
+        if (!held || f.amount <= 0) return f;
+        const r = Math.min(held, f.amount), parts = f.parts.map(pt => Object.assign({}, pt)), own = parts.find(pt => pt.from === f.to && !pt.place);
+        held -= r;
+        if (own) own.amount -= r; else parts.push({ from: f.to, to: f.to, days: 1, amount: -r });
+        return Object.assign({}, f, { amount: f.amount - r, parts: parts.filter(pt => pt.amount), undid: r });
+      });
+    }
 
     // ----- places: goals and the other kept places [B6, F22, E5, H7, P1, P2, R1, T2, T7, V1, X5] -----
     const places = (book.places || []).filter(p => p && p.id);
