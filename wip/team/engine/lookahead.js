@@ -1115,15 +1115,18 @@
       // [qc-foundation second confirm on monthrule, coordinator 18; M7, M31, M51] the one rule for "does this line take
       // a spend dated on a day" (lineTakes below): `closes` is the first day it takes none, null while it is open. A
       // line that ended stays open to the end of the pay period it ended in, as its amount here does ("Ends after this
-      // pay period"): it closes on the pay that starts the next period (while that pay is late, the day after the end)
+      // pay period"): it closes on the pay that starts the next period, once that pay is ticked
       const closesOf = id => {
         const ends = endsOf(id);
         if (!ends) return null;
         const e = dayNum(ends);
-        if (n.start === null || e > n.start) return next ? dayStr(Math.max(next.land, e + 1)) : null;
+        // [coordinator 18, a late pay; M46] its period really ends when the pay is in: while that pay is due or late and
+        // not ticked (`waiting`) it stays open and holds its money, as safe to spend does (closesWithPay below)
+        if (n.start === null || e > n.start) return next && !waiting ? dayStr(Math.max(next.land, e + 1)) : null;
         const after = allStartDays.filter(d => d >= e);   // [qc-foundation third confirm] ended on a period's first day: it holds 0 there, so it closes that day
         return dayStr(after.length ? Math.min(...after) : Math.max(n.start, e + 1));
       };
+      const withPay = id => { const ends = endsOf(id); return !!ends && waiting && (n.start === null || dayNum(ends) > n.start); };
       res.period = {
         start: n.start === null ? null : dayStr(n.start),
         end: next ? dayStr(waiting ? today : next.land - 1) : n.end === null ? null : dayStr(Math.max(today, n.end - 1)),
@@ -1131,7 +1134,7 @@
         nextPay: next ? { occ: next.id, due: dayStr(next.due), state } : null,
         // [QC F5, B2] amount: the line's full amount a period; counts: the part that counts in this period (less when it
         // started mid-period); spent; left = counts - spent; over: how far past it, taken from safe to spend
-        lines: (planLeft.lines || []).map(l => ({ id: l.src.id, name: l.name, acct: l.acct, per: l.per, amount: l.amount, left: l.left, counts: l.counts, spent: l.spent, over: Math.max(0, -l.left), closes: closesOf(l.src.id) })),
+        lines: (planLeft.lines || []).map(l => ({ id: l.src.id, name: l.name, acct: l.acct, per: l.per, amount: l.amount, left: l.left, counts: l.counts, spent: l.spent, over: Math.max(0, -l.left), closes: closesOf(l.src.id), ...(withPay(l.src.id) ? { closesWithPay: true } : {}) })),
         free: planLeft.free ? { acct: planLeft.free.acct, per: planLeft.free.per, amount: planLeft.free.amount, left: planLeft.free.left, counts: planLeft.free.counts } : null };
     } else res.period = null;   // [B4] no fixed pay: no periods
     // [F2, qc-foundation on the month rule build, 26 Nov] no fixed pay: this calendar month's lines and Free to spend,
