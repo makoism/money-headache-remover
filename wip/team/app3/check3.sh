@@ -47,6 +47,7 @@ node|tests/restore3.test.js|restore3: ALL PASS||300|a restore while the cloud co
 node|tests/ask3_core.test.js|ask3_core: ALL PASS||300|Ask, the pure half (the summary sent, the reply checked, steps through act3, Undo)
 node|tests/remind3.test.js|remind3: ALL PASS||300|reminders, the pure half (days from the engine's calendar, the calendar file, Google and Outlook links)
 node|tests/no_maths.js|NO MATHS PASS||300|no money maths in screens
+node|tests/cents3.test.js|cents3: ALL PASS||300|the one formatter writes cents where the currency has them, yen whole, and nothing in src/ writes an amount its own way (M48, M51, qc-numbers run 1 B1)
 node|tests/m_lines.test.js|m_lines: ALL PASS||300|every line of MAKO_SAYS.md is named by a test, a reviewer brief or a scope file (QC_ROLES scripts e); its KNOWN gaps are in tests/QCSCRIPTS_FOUND.md
 node|tests/wording_lint.test.js|wording_lint: ALL PASS||300|a wording lint over the words a person sees (QC_ROLES scripts f): no em dash, VOICE.md's full stop rules, none of the words or marks VOICE.md forbids, no real figures (M54, M55, M62); its KNOWN lines are in tests/QCSCRIPTS_FOUND.md
 page|../screens/test/run_all.sh|every file passed||900|the shared screen pieces (screens/test/run_all.sh)
@@ -87,6 +88,7 @@ page|tests/e3_billyear.js|e3_billyear: ALL PASS||300|a yearly bill after setup (
 page|tests/e3_payfrom.js|e3_payfrom: ALL PASS||300|which account pays a card, a loan or a bill, chosen and changed after setup (M13, M23), with a card's weekend rule; refused with words while a payment gone by is not ticked off; Undo; after a reload
 page|tests/e3_remkeep.js|e3_remkeep: ALL PASS||300|Reminders keep each choice on this phone (M13, M61): after Close and a reload as left, and the sheet says so; a calendar already filled changes only with a new file
 page|tests/e3_rhythms.js|e3_rhythms: ALL PASS||300|Plan names every rhythm: two days, weeks with the weekday, every few months, set months, once a year, once, the last working day, no fixed day (slice 6)
+page|tests/e3_cents.js|e3_cents: ALL PASS||300|every dollar and peso amount on screen has its cents, yen whole: Home, Receipts and its message, Plan, Check your bank, Settings, the assistant's change card and what it is sent (M48, M51, qc-numbers run 1 B1)
 page|tests/e3_names.js|e3_names: ALL PASS||300|one figure, one name on Home, Receipts and Plan (labels from screens/names.js)
 page|tests/e3_first.js|e3_first: ALL PASS||300|the ways out of the first screen and the made-up numbers
 page|tests/e3_file.js|e3_file: ALL PASS||300|as a plain file:the first screen, the try book and its day box
@@ -156,7 +158,7 @@ SLOW="e3_walk e3_life_b e3_life_d e3_life_a e3_life_c e3_paychange e3_life_a2 e3
 page_tests_for() {   # page_tests_for <changed path, relative to app3/>
   case "$1" in
     tests/lib3.js|src/e3.js|src/money3.js|src/act3.js|src/shell.html|src/app3.css|build3.sh|../screens/*|../store/*|fixtures/*)
-                              echo e3_try e3_home e3_checkin e3_receipts e3_plan e3_panels e3_amounts e3_names e3_band e3_undobar ;;
+                              echo e3_try e3_home e3_checkin e3_receipts e3_plan e3_panels e3_amounts e3_names e3_band e3_undobar e3_cents ;;
     ../engine/*)              echo e3_try e3_home e3_checkin e3_receipts e3_plan e3_panels e3_amounts e3_names e3_cardgap ;;
     tests/lives3.js)          echo e3_life_a e3_life_a2 e3_life_b e3_life_c e3_life_d ;;
     tests/e3_act_book.js)     echo e3_home e3_checkin ;;
@@ -171,7 +173,7 @@ page_tests_for() {   # page_tests_for <changed path, relative to app3/>
     src/receipts3.js)         echo e3_removes e3_receipts e3_listfix e3_moneyin e3_bigspend e3_stmt_once e3_period e3_names e3_doors e3_moved1 e3_moved2 e3_cardgap ;;
     src/plan3.js|src/plan3_write.js) echo e3_accounts e3_billyear e3_payfrom e3_removes e3_aijoin e3_plan e3_rhythms e3_lineshare e3_homeplan e3_paychange e3_names ;;
     src/setup3.js|src/answers3.js) echo e3_twodrafts e3_fillcard e3_setup e3_setupfix e3_setup6 e3_income2 e3_weeks3 e3_first e3_onepay e3_overdrawn e3_paytoday e3_chatwalk e3_chat e3_setup2tabs e3_setuplater ;;
-    src/chat3*.js)            echo e3_twodrafts e3_ailog e3_aiwords e3_fillcard e3_cloudfirst e3_aijoin e3_chat e3_chatwalk e3_fakeai_page e3_fillundo e3_invite e3_back e3_cloudhold ;;
+    src/chat3*.js)            echo e3_cents e3_twodrafts e3_ailog e3_aiwords e3_fillcard e3_cloudfirst e3_aijoin e3_chat e3_chatwalk e3_fakeai_page e3_fillundo e3_invite e3_back e3_cloudhold ;;
     src/start3.js)            echo e3_first e3_file e3_try e3_chat e3_cloudtake ;;
     src/back3.js)             echo e3_back e3_undobar e3_checkin e3_plan e3_receipts e3_setupfix e3_stmt e3_remind e3_backup e3_tabs e3_stalesheet e3_cloudhold ;;
     src/stmt3*.js)            echo e3_stmt e3_stmt_once e3_walk4 e3_invite e3_chat ;;
