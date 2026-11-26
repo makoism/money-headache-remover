@@ -23,6 +23,14 @@ const DAY = '2026-12-10';
   const boxes = await p.$$eval('[data-bankfig]', es => es.map(e => ({ id: e.dataset.bankfig, hint: e.closest('.a3-field').textContent })));
   ck('both places have a box', boxes.length === 2, JSON.stringify(boxes.map(x => x.id)));
   ck('every bank and cash box says it may be left blank', boxes.every(x => /Leave it blank if you have not looked/.test(x.hint)), JSON.stringify(boxes.map(x => x.hint.slice(0, 120))));
+  /* [qc-numbers ai_first POLISH, coordinator 18] ticks saved with every figure box blank: the words say the ticks were
+     saved and the bank was not checked, never "Bank checked" */
+  const ticks = await p.$$eval('.a3-tick input[type=checkbox]', es => es.filter(e => e.checked).length);
+  ck('pay day: a payment is ticked already', ticks > 0, String(ticks));
+  await p.click('#a3CheckSave'); await T.w(500);
+  const said = await p.$eval('#a3Msg', e => e.textContent.replace(/\s+/g, ' ').trim()).catch(() => '');
+  ck('ticks only: it says the ticks were saved and the bank was not checked', /ticked/i.test(said) && /not checked/i.test(said) && !/Bank checked/.test(said), said);
+  await p.click('#a3CheckGo'); await T.w(300);
   await p.tap(`[data-bankfig="${bank}"]`); await p.keyboard.type('339,000');
   await p.click('#a3CheckSave'); await T.w(500);
   ck('Save saved with the wallet left empty: the sheet closed', await p.$eval('#a3Check', e => e.hidden), await p.$eval('#a3CheckErr', e => e.textContent).catch(() => ''));
