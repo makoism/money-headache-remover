@@ -84,7 +84,7 @@
   const sig = r => (r.at || '') + '|' + (r.by || '');
   const other = () => { const e = new Bad(OTHER); e.why = 'other'; return e; };
   function writer(book, s, seen) {
-    const log = { added: [], edited: [], removed: [], revived: [] };
+    const log = { added: [], edited: [], removed: [], revived: [], swapped: [] };
     const mine = new Set();   // records this step itself wrote: never refused by the note
     const fresh = (list, r) => { if (seen && !mine.has(r.id) && seen[r.id] !== sig(r)) throw other(); };
     const wholeList = list => { if (seen && REPLACES[list]) for (const r of listOf(book, list)) if (r && !mine.has(r.id) && seen[r.id] !== sig(r)) throw other(); };
@@ -159,10 +159,80 @@
         log.edited.push({ list, id, before });
         return r;
       },
+      /* [WHICH_DOOR_PLAN] one item the cloud copy names as engine/sync.js names it, set whole: `where` the dotted path of
+         its holder ('' the book), `of` a record id in a list of records or `where.key` for a settings item; `value`
+         undefined takes it out. opts.stamp moves its `at` and `by` to this step's (an Undo, so other devices take it). */
+      swap(where, of, value, opts) {
+        const sl = slot(book, where, of, value !== undefined);
+        const old = sl.get();
+        /* [qc-foundation on WHICH_DOOR_PLAN, F1] a record is never taken out of its list (a delete does not last: the store
+           keeps it and a join brings it back): it is marked gone, as Remove does */
+        const marked = value === undefined && sl.list && !!old;
+        /* [qc-foundation confirm on lane/whichdoor, WATCH] a record already removed stays as its Remove left it, so that
+           Remove's own Undo still works */
+        if (marked && old.gone) return old;
+        if (marked) value = Object.assign(clone(old), { gone: s.day, goneBy: s.id });
+        /* [coordinator 15, 26 Nov; SCHEMA_V3 2.1] a settings item ({ v, at, by }) is never deleted either: a delete does
+           not last (the next join brings the other copy's value back). It is marked not set, { v: null, at, by, gone },
+           and every reader takes v null as not set */
+        const unset = value === undefined && !sl.list && fieldValue(old);
+        if (unset && old.v === null && old.gone) return old;   // already not set: left as it was, so the earlier answer's Undo still works
+        if (unset) value = Object.assign({}, old, { v: null, gone: s.day });
+        const v = value === undefined ? undefined : clone(value);
+        if ((marked || unset || (opts && opts.stamp)) && v && typeof v === 'object' && !Array.isArray(v)) stamp(v);
+        sl.set(v);
+        log.swapped.push({ where, of, had: old !== undefined, before: old === undefined ? null : clone(old), after: v && v.at ? v.at : null });
+        return v;
+      },
       find: id => findIn(book, id),
       book,
     };
   }
+
+  /* ---- [WHICH_DOOR_PLAN] the cloud copy's answers: the engine makes the answer (engine/sync.js answer, answerCheck);
+     the door carries the difference item by item. Nothing here decides what an answer means. ---- */
+  const isMapV = x => !!x && typeof x === 'object' && !Array.isArray(x);
+  const isRecs = l => Array.isArray(l) && l.every(r => isMapV(r) && typeof r.id === 'string');
+  const fieldValue = x => isMapV(x) && 'v' in x && 'at' in x;   // a settings item, as engine/sync.js keeps one
+  const canonJ = x => (Array.isArray(x) ? '[' + x.map(canonJ).join(',') + ']' : isMapV(x) ? '{' + Object.keys(x).filter(k => x[k] !== undefined).sort().map(k => JSON.stringify(k) + ':' + canonJ(x[k])).join(',') + '}' : JSON.stringify(x === undefined ? null : x));
+  const sameJ = (a, b) => (a === undefined || b === undefined ? a === b : canonJ(a) === canonJ(b));
+  function holderAt(book, where, make) {
+    let o = book;
+    if (!where) return o;
+    for (const k of where.split('.')) { if (o[k] === undefined) { if (!make) return undefined; o[k] = {}; } o = o[k]; if (o === null || typeof o !== 'object') return undefined; }
+    return o;
+  }
+  function slot(book, where, of, make) {
+    const h = holderAt(book, where, make);
+    if (h === undefined) return { get: () => undefined, set: () => { throw new Bad('That is not there any more'); } };
+    if (Array.isArray(h)) return {
+      list: true,
+      get: () => h.find(r => r && r.id === of),
+      set: v => { const i = h.findIndex(r => r && r.id === of); if (v === undefined) { if (i >= 0) h.splice(i, 1); } else if (i >= 0) h[i] = v; else h.push(v); },
+    };
+    const key = where ? of.split('.').pop() : of;   // a settings item's key is the last part of its name, as the page reads it
+    return { get: () => h[key], set: v => { if (v === undefined) delete h[key]; else h[key] = v; } };
+  }
+  /* every item that differs between two books, as the cloud copy names items: a list of records by id (order never
+     counts), a plain object walked into, anything else whole. The book's `rev`, `at`, `fmt` and Undo `journal` are not its content */
+  function syncDiff(cur, next) {
+    const out = [];
+    const index = l => new Map((l || []).map(r => [r.id, r]));
+    (function walk(a, b, where) {
+      const keys = [...new Set(Object.keys(a || {}).concat(Object.keys(b || {})))].sort();
+      for (const k of keys) {
+        if (!where && (k === 'rev' || k === 'journal' || k === 'at' || k === 'fmt')) continue;   // the store's own marks (store/idb.js NOT_IN_BOOK) and the Undo journal
+        const p = where ? where + '.' + k : k, x = a ? a[k] : undefined, y = b ? b[k] : undefined;
+        if ((Array.isArray(x) || Array.isArray(y)) && (x === undefined || isRecs(x)) && (y === undefined || isRecs(y))) {
+          const X = index(x), Y = index(y);
+          for (const id of [...new Set([...X.keys(), ...Y.keys()])].sort()) if (!sameJ(X.get(id), Y.get(id))) out.push({ where: p, of: id, value: Y.get(id) });
+        } else if ((isMapV(x) || x === undefined) && (isMapV(y) || y === undefined) && !fieldValue(x) && !fieldValue(y)) walk(x, y, p);   // a holder one copy lacks is walked into too, so each settings item in it is swapped (and marked) on its own
+        else if (!sameJ(x, y)) out.push({ where, of: p, value: y });
+      }
+    })(cur, next, '');
+    return out;
+  }
+  const BIG = 50;   // an answer that swaps more items than this, or the whole-copy question (two whole books), keeps no old values in the saved journal
 
   /* ---- the named actions, as steps on a writer ---- */
   const typed = () => ({ type: 'typed' });
@@ -238,8 +308,9 @@
   const keptEdit = x => { const before = {}; for (const k of Object.keys(x.before)) before[k] = x.before[k] === undefined ? null : clone(x.before[k]); return { list: x.list, id: x.id, before }; };
   const ownAt = (j, id) => (j.moved && j.moved[id]) || j.moment;
   function fromJournal(j) {
-    const m = { id: j.id, label: j.label, at: j.moment, added: j.added || [], edited: j.edited || [], removed: j.removed || [], revived: j.revived || [], own: {} };
+    const m = { id: j.id, label: j.label, at: j.moment, added: j.added || [], edited: j.edited || [], removed: j.removed || [], revived: j.revived || [], swapped: j.swapped || [], own: {} };
     for (const x of m.added.concat(m.edited, m.removed, m.revived)) m.own[x.id] = ownAt(j, x.id);
+    for (const x of m.swapped) m.own[x.of] = x.after;   // [WHICH_DOOR_PLAN] the `at` the answer left on each item
     return m;
   }
 
@@ -261,16 +332,17 @@
       if (!by) by = String(id).split('-')[0];
       const s = { id, label, at: nowAt(), by, told: o.told(), day: o.today(), newId: o.newId };
       const w = writer(book, s, guard && guard.seen);
-      w.today = s.day;
+      w.today = s.day; w.at = s.at; w.by = s.by;
       const out = fn(w);
-      if (!w.log.added.length && !w.log.edited.length && !w.log.removed.length && !w.log.revived.length) throw new Bad('Nothing changed');
+      if (!w.log.added.length && !w.log.edited.length && !w.log.removed.length && !w.log.revived.length && !w.log.swapped.length) throw new Bad('Nothing changed');
       if (o.check && !dry) {
         try { o.check(book); } catch (e) { const err = new Bad('This would leave numbers the app refuses: ' + e.message); err.why = 'engine'; throw err; }
       }
-      const step = { id, label, out, at: s.at, added: w.log.added, edited: w.log.edited, removed: w.log.removed, revived: w.log.revived };
+      const step = { id, label, out, at: s.at, added: w.log.added, edited: w.log.edited, removed: w.log.removed, revived: w.log.revived, swapped: w.log.swapped };
       /* [BZ1] the step's journal entry goes into the same save, so an Undo after a reload finds what it edited too */
       if (!dry && !undoing) journalAdd(book, { id, label, moment: s.at, day: s.day, by: s.by, told: s.told,
-        added: clone(w.log.added), edited: w.log.edited.map(keptEdit), removed: clone(w.log.removed), revived: clone(w.log.revived) });
+        added: clone(w.log.added), edited: w.log.edited.map(keptEdit), removed: clone(w.log.removed), revived: clone(w.log.revived),
+        swapped: w.log.swapped.length > BIG || w.log.swapped.some(x => x.of === 'kept:copy') ? w.log.swapped.map(x => ({ where: x.where, of: x.of, after: x.after, big: true })) : clone(w.log.swapped) });
       if (undoing) undoing(book, s);
       return { book, step };
     }
@@ -287,6 +359,7 @@
         if (clock) clock.see(planned.step.at);
         const st = planned.step;
         st.own = {}; for (const x of st.added.concat(st.edited, st.removed, st.revived)) st.own[x.id] = st.at;   // the `at` this step left on each record
+        for (const x of st.swapped || []) st.own[x.of] = x.after;
         if (opts.seen && !opts.isUndo) for (const x of st.added.concat(st.edited, st.removed, st.revived)) { const f = findIn(planned.book, x.id); if (f) opts.seen[x.id] = sig(f.rec); }   // the caller's own step: its note follows
         if (opts.after) opts.after(st);
         if (!opts.isUndo) steps.push(st);
@@ -332,7 +405,11 @@
         const revived = mem ? mem.revived || [] : [];   // after a reload a revived record is found by grp with the added ones, and marked gone
         const recOf = x => listOf(w.book, x.list).find(r => r && r.id === x.id);
         const later = x => { const r = recOf(x); return !r || (mem && r.at !== mem.own[x.id]); };
-        if (added.concat(removed, edited, revived).some(later)) { const e = new Bad('Something changed it since. Undo that change first'); e.why = 'later'; throw e; }
+        const swapped = mem ? mem.swapped || [] : [];
+        const laterSwap = x => { const v = slot(w.book, x.where, x.of, false).get(); return ((v && v.at) || null) !== mem.own[x.of]; };
+        if (added.concat(removed, edited, revived).some(later) || swapped.some(laterSwap)) { const e = new Bad('Something changed it since. Undo that change first'); e.why = 'later'; throw e; }
+        if (swapped.some(x => x.big)) bad('This was the choice of a whole copy. It can be undone only until the app is closed, so nothing changed');
+        for (const x of swapped) w.swap(x.where, x.of, x.had ? x.before : undefined, { stamp: true });   // a record the answer added is marked gone
         for (const x of added) w.remove(x.list, x.id);
         for (const x of revived) w.putBack(x.list, x.id, x.before);
         for (const x of removed) {
@@ -367,6 +444,12 @@
       return C && C.markOf ? C.markOf(stamps) : stamps.sort().join(',');   // the hash lives in store/clock.js (no sums in a screen file)
     }
     const api = { run, undo, seen, ver: () => ver(), steps: () => steps.slice(), onChange: f => listeners.push(f) };
+    /* [WHICH_DOOR_PLAN] A.answerSync(label, make, opts): make(book, { now, by }) is the engine's answer on the book as it
+       is in this step (S.answer or S.answerCheck); the door writes what differs, item by item, with Undo */
+    api.answerSync = (label, make, opts) => run(label, w => {
+      const next = make(clone(w.book), { now: w.at, by: w.by });
+      for (const x of syncDiff(w.book, next)) w.swap(x.where, x.of, x.value);
+    }, opts);
     for (const name of Object.keys(ACTIONS)) {
       const n = ARGS[name];   // the action's own arguments, before the options
       api[name] = (...args) => {
@@ -386,7 +469,7 @@
     return api;
   }
 
-  const api = { make, PATHS, listOf, Bad, OTHER };
+  const api = { make, PATHS, listOf, Bad, OTHER, syncDiff };
   if (node) module.exports = api;
   else root.BurrowAct3 = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
