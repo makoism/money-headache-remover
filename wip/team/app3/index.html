@@ -10636,7 +10636,7 @@ function drawHome3() {
   $('#a3CheckGo').addEventListener('click', openCheck3);
   /* [CHECKFIX] an account's figure, or its Checks link, opens its checks; a held gain's Answer opens its newest */
   host.querySelectorAll('[data-checks]').forEach(el => el.addEventListener('click', () => openChecks3(el.dataset.checks)));
-  host.querySelectorAll('[data-card=bank] [data-fig=bank]').forEach(el => { el.setAttribute('role', 'button'); el.tabIndex = 0; el.addEventListener('click', () => openChecks3(el.closest('[data-acct]').dataset.acct)); });
+  host.querySelectorAll('[data-card=bank] [data-fig=bank]').forEach(el => el.addEventListener('click', () => openChecks3(el.closest('[data-acct]').dataset.acct)));   // the Checks link under it is the button
   host.querySelectorAll('[data-gainacct]').forEach(el => el.addEventListener('click', () => { const c = checks3List(el.dataset.gainacct)[0]; openChecks3(el.dataset.gainacct, c && c.id); }));
   $('#a3LogGo').addEventListener('click', rcLogFromHome3);
 }
