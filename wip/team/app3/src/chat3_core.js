@@ -644,7 +644,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
   function rowsOf(b0, b1, today, steps) {
     const r0 = LA.lookahead(b0, today), r1 = LA.lookahead(b1, today);
     const rows = [{ key: 'safe', label: SN.label('safeToSpend'), before: r0.safeToSpend.headline, after: r1.safeToSpend.headline }];
-    const f0 = r0.period && r0.period.free, f1 = r1.period && r1.period.free;
+    const f0 = (r0.period || r0.month || {}).free, f1 = (r1.period || r1.month || {}).free;   // no fixed pay: the month's
     if ((f0 || f1) && steps.some(s => s.kind === 'logSpend' || s.kind === 'setFree' || s.kind === 'refund')) rows.push({ key: 'free', label: 'Free to spend left', before: f0 ? f0.left : null, after: f1 ? f1.left : null });
     for (const id of Object.keys(r1.accounts)) {
       const a0 = r0.accounts[id], a1 = r1.accounts[id];

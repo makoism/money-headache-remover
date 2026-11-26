@@ -71,7 +71,9 @@
       // [QC F5, B2] the amount that counts this period, the full amount a period beside it only when they differ
       out.push(`Budget lines this ${perW} (ref | name | amount | left):\n` + lines.map((l, i) => { const ref = 'L' + (i + 1); refs[ref] = l.id; return `${ref} | ${l.name} | ${m(l.counts)}${l.counts !== l.amount ? ` (part of ${m(l.amount)} a ${p ? 'period' : 'month'}, for the days left)` : ''} | ${m(l.left)} left`; }).join('\n'));
     } else out.push('Budget lines: none yet.');
-    out.push(p && p.free ? `Free to spend this pay period: ${m(p.free.counts)}${p.free.counts !== p.free.amount ? ` (part of ${m(p.free.amount)} a period, for the days left)` : ''}, ${m(p.free.left)} left.` : 'Free to spend: not set yet.');
+    /* [qc-foundation confirm, 26 Nov; M1, M3, M7] no fixed pay: Free to spend is the month's, as the headline reads it */
+    const fr = pm && pm.free;
+    out.push(fr ? `Free to spend this ${perW}: ${m(fr.counts)}${fr.counts !== fr.amount ? ` (part of ${m(fr.amount)} a ${p ? 'period' : 'month'}, for the days left)` : ''}, ${m(fr.left)} left.` : 'Free to spend: not set yet.');
     const goals = (book.places || []).filter(g => live(g) && g.kind === 'goal');
     if (goals.length) {
       out.push('Goals (ref | name | set aside | date | pace):\n' + goals.map((g, i) => {
@@ -192,7 +194,7 @@ Actions:
     if (!res.ok) return res;
     const r0 = LA.lookahead(book, o.today), r1 = LA.lookahead(b, o.today);
     const rows = [{ key: 'safe', label: SN.label('safeToSpend'), before: r0.safeToSpend.headline, after: r1.safeToSpend.headline }];
-    const f0 = r0.period && r0.period.free, f1 = r1.period && r1.period.free;
+    const f0 = (r0.period || r0.month || {}).free, f1 = (r1.period || r1.month || {}).free;   // no fixed pay: the month's
     if (f0 || f1) rows.push({ key: 'free', label: 'Free to spend left', before: f0 ? f0.left : null, after: f1 ? f1.left : null });
     const seen = {};
     for (const s of steps) {
