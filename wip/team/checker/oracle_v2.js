@@ -570,7 +570,7 @@ function oracle(sc, asOfStr, opts) {
   // a period whose pay is inside the opening but lands after the ask still starts in the walk
   for (const st of starts) if (st.day > T && st.day <= H) futureStarts.push({ day: st.day, occ: st.occ });
 
-  const accountsOut = {};
+  const accountsOut = {}, plain = {};
   let sumHead = 0, shortfall = 0;
   for (const id of Object.keys(money)) {
     const a = accts[id];
@@ -603,21 +603,57 @@ function oracle(sc, asOfStr, opts) {
     let start = money[id].bank;
     for (const g of Object.values(goals)) if (g.keptIn === id) start -= Math.max(0, g.kept);
     for (const l of lines) if (reserveAcct(l.acct) === id) start -= lineLeft[l.id];
-    let bal = start, lowest = start, lowestDay = T, lowAt = 0;
     items.sort((x, y) => x.day - y.day || x.order - y.order);
-    let k = 0;
+    plain[id] = { start, items };
+  }
+  // ---------- a short account is helped by a move [SHORTGAP, coordinator 16 and 18, 26 Nov 2026] ----------
+  // Written from foundation_review/SHORTGAP_PLAN.md rules 2, 3, 5 and 6: each new low under an account's minimum (end of
+  // day) is a move of the new part out of the spend-from account with the most room (before any move; ties: the lower
+  // id), due the calendar day before (today at the earliest; under this morning: today). The helper takes it as its own
+  // step (after a pay that day, as a bill), only what it can spare from that day on; the rest stays short.
+  const lowOf = (id, extra) => {
+    const its = plain[id].items.concat(extra || []).sort((x, y) => x.day - y.day || x.order - y.order);
+    let bal = plain[id].start, lowest = bal, lowestDay = T, lowAt = 0, k = 0;
+    const ends = [];
     for (let day = T; day <= H; day++) {
       let any = false;
-      while (k < items.length && items[k].day === day) { bal += items[k].amt; k += 1; any = true; }
+      while (k < its.length && its[k].day === day) { bal += its[k].amt; k += 1; any = true; }
+      if (any) ends.push({ day, bal });
       if (any && bal < lowest) { lowest = bal; lowestDay = day; lowAt = k; }
     }
+    return { lowest, lowestDay, lowAt, items: its, ends, start: plain[id].start };
+  };
+  const extra = {}, helped = {};
+  const first = {}; for (const id of Object.keys(plain)) first[id] = lowOf(id).lowest - accts[id].min;
+  const helpers = Object.keys(plain).filter((id) => accts[id].spendFrom && first[id] > 0).sort((x, y) => first[y] - first[x] || (x < y ? -1 : 1));
+  for (const id of Object.keys(plain).filter((x) => first[x] < 0).sort()) {
+    const from = helpers.find((x) => x !== id);
+    if (!from) continue;
+    const w0 = lowOf(id), m = accts[id].min, moves = [];
+    let worst = Math.max(0, m - w0.start);
+    if (worst > 0) moves.push({ day: T, amt: worst });
+    for (const e of w0.ends) if (m - e.bal > worst) { moves.push({ day: Math.max(T, e.day - 1), amt: m - e.bal - worst }); worst = m - e.bal; }
+    let got = 0;
+    for (const mv of moves) {
+      const w = lowOf(from, extra[from]);
+      let low = w.start; for (const e of w.ends) if (e.day <= mv.day) low = e.bal;
+      for (const e of w.ends) if (e.day > mv.day) low = Math.min(low, e.bal);
+      const can = Math.max(0, Math.min(mv.amt, low - accts[from].min));
+      if (can > 0) (extra[from] = extra[from] || []).push({ day: mv.day, order: 1, amt: -can, what: 'move to ' + id });
+      got += can;
+    }
+    helped[id] = got;
+  }
+  for (const id of Object.keys(plain)) {
+    const a = accts[id], start = plain[id].start;
+    const { lowest, lowestDay, lowAt, items } = lowOf(id, extra[id]);
     // The checker's own working, for a person to read: what comes off today, then each step to the lowest day.
     const steps = [{ what: 'bank today', amt: money[id].bank, day: ds(T) }, { what: 'kept and left this period', amt: start - money[id].bank, day: ds(T) }]
       .concat(items.slice(0, lowAt).map((x) => ({ what: x.what, amt: x.amt, day: ds(x.day) })), [{ what: 'minimum', amt: -a.min, day: '' }]);
     const headroom = lowest - a.min;
     accountsOut[id] = { bank: out(money[id].bank), asOf: ds(money[id].asOf), headroom: out(headroom), lowest: out(lowest), lowestDay: ds(lowestDay), steps: steps.map((x) => Object.assign({}, x, { amt: out(x.amt) })) };
     if (a.spendFrom && headroom > 0) sumHead += headroom;
-    if (headroom < 0) shortfall += -headroom;
+    if (headroom < 0) shortfall += Math.max(0, -headroom - (helped[id] || 0));
   }
 
   // ---------- the headline [SCHEMA.md 10.3 step 5, F9, B9, G2] ----------

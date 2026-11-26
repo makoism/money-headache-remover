@@ -35,8 +35,9 @@ function world(ans, seed) {
   w.sch = name => w.book.schedules.find(s => s.name === name).id;
   return w;
 }
-const MAKO_BILLS = [{ key: 'rent', name: 'Rent', from: 'main', amount: 72000, day: 27 }, { key: 'power', name: 'Power', from: 'main', amount: 7400, day: 26 },
-  { key: 'phone', name: 'Phone', from: 'main', amount: 4800, day: 20 }, { key: 'net', name: 'Internet', from: 'main', amount: 5200, day: 27 }];
+// the bills as the setup chat saves them (a weekend or holiday moves them later: Rent and Power of Dec land 28 Dec)
+const MAKO_BILLS = [{ key: 'rent', name: 'Rent', from: 'main', amount: 72000, day: 27, shift: 'after' }, { key: 'power', name: 'Power', from: 'main', amount: 7400, day: 26, shift: 'after' },
+  { key: 'phone', name: 'Phone', from: 'main', amount: 4800, day: 20, shift: 'after' }, { key: 'net', name: 'Internet', from: 'main', amount: 5200, day: 27, shift: 'after' }];
 const PAY = [{ key: 'pay', name: 'Pay', bank: 'main', amount: 240000, every: 'month', day: 10, shift: 'before', startsPeriod: true }];
 function ans(o) {
   return Object.assign({ day: '2026-11-24', told: noon('2026-11-24'), currency: 'JPY', country: 'JP',
@@ -152,12 +153,13 @@ const orders = [e => e, e => e.reverse(), e => e.sort((x, y) => (x.id < y.id ? -
     const n = world(ans({ day: '2026-11-24', banks: [{ key: 'main', name: 'Main bank', amount: 201400, main: true, min: null }, { key: 'beta', name: 'Beta Bank', amount: 32000 }],
       cards: [], bills: [{ key: 'gym', name: 'Gym', from: 'beta', amount: 40000, day: 1 }] }), 't3k7ra');
     const r = LA.lookahead(n.book, '2026-12-01');
+    // the look ahead runs to 15 Jan, so January's Gym (1 Jan) is in it too: 40,000 by 31 Dec, after the pay
     t('a gap today: the move is dated today, 8,000 by 1 Dec, off canSpare', () => {
-      eq(r.accounts[n.ids.beta].cover, { from: n.ids.main, moves: [{ day: '2026-12-01', amount: 8000 }] });
+      eq(r.accounts[n.ids.beta].cover, { from: n.ids.main, moves: [{ day: '2026-12-01', amount: 8000 }, { day: '2026-12-31', amount: 40000 }] });
       eq(r.canSpare.amount, 201400 - 8000);
     });
     const r0 = LA.lookahead(n.book, '2026-11-30');
-    t('a gap tomorrow: the move is dated today', () => { eq(r0.accounts[n.ids.beta].cover.moves, [{ day: '2026-11-30', amount: 8000 }]); });
+    t('a gap tomorrow: the move is dated today', () => { eq(r0.accounts[n.ids.beta].cover.moves, [{ day: '2026-11-30', amount: 8000 }, { day: '2026-12-31', amount: 40000 }]); });
   }
   // ---- a bill on pay day and the day after pay ----
   // Card A (54,000) is paid from Beta on 10 Dec, pay day: its move is due 9 Dec, before the pay, so it comes off this
@@ -168,7 +170,7 @@ const orders = [e => e, e => e.reverse(), e => e.sort((x, y) => (x.id < y.id ? -
       cards: [], bills: [{ key: 'school', name: 'School', from: 'beta', amount: 54000, day: 11 }] }), 'd8f2um');
     const r = LA.lookahead(n.book, '2026-12-01');
     t('a bill the day after pay: 22,000 by 10 Dec, after the pay, so canSpare is all of the main bank, 201,400', () => {
-      eq(r.accounts[n.ids.beta].cover.moves, [{ day: '2026-12-10', amount: 22000 }]);
+      eq(r.accounts[n.ids.beta].cover.moves, [{ day: '2026-12-10', amount: 22000 }, { day: '2027-01-10', amount: 54000 }]);   // and January's, by 10 Jan
       eq(r.canSpare.amount, 201400);
     });
   }
@@ -178,7 +180,7 @@ const orders = [e => e, e => e.reverse(), e => e.sort((x, y) => (x.id < y.id ? -
       cards: [], bills: [{ key: 'lessons', name: 'Lessons', from: 'wallet', amount: 8000, day: 15 }] }), 'w9b4ce');
     const r = LA.lookahead(n.book, '2026-12-01');
     t('a wallet short: 5,000 by 14 Dec from the main bank, after the pay', () => {
-      eq(r.accounts[n.ids.wallet].cover, { from: n.ids.main, moves: [{ day: '2026-12-14', amount: 5000 }] });
+      eq(r.accounts[n.ids.wallet].cover, { from: n.ids.main, moves: [{ day: '2026-12-14', amount: 5000 }, { day: '2027-01-14', amount: 8000 }] });   // and January's
       eq(r.canSpare.amount, 201400);
     });
   }
