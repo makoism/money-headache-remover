@@ -99,6 +99,8 @@ test('a comma not in a thousands place is refused with both readings, never read
   assert.deepStrictEqual(money.parse('1,0000', 'JPY'), { ok: false, reason: 'commas', means: [1000, 10000] });
   assert.deepStrictEqual(money.parse('10,00', 'JPY'), { ok: false, reason: 'commas', means: [1000, 10000] });
   assert.deepStrictEqual(money.parse('1,00.50', 'USD'), { ok: false, reason: 'commas', means: [10050, 100050] });
+  // [coordinator 18, 26 Nov] the two readings of what was typed: "1,000,0" is 10,000 (commas dropped) or 1,000,000 (the last group made three digits), never 1,000
+  assert.deepStrictEqual(money.parse('1,000,0', 'JPY'), { ok: false, reason: 'commas', means: [10000, 1000000] });
   assert.deepStrictEqual(money.parse('1,000', 'JPY'), { ok: true, minor: 1000 });
   assert.deepStrictEqual(money.parse('12,345,678', 'JPY'), { ok: true, minor: 12345678 });
   assert.deepStrictEqual(money.parse('1234', 'JPY'), { ok: true, minor: 1234 });
