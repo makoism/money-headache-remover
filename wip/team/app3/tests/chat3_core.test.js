@@ -1181,6 +1181,62 @@ const steps = list => [].concat(...list.map(([, r]) => r));
       eq(r.shown.filter(x => x.who === 'card').length, 0); eq(JSON.stringify(hp.book), before);
     });
   }
+  /* [CHECKFIX_PLAN slice 10; M3, M6, M13, M14] "the figure I gave was wrong": change_check changes a bank figure typed
+     before (the latest when no date), with its change card (the figure's before and after) and Undo; remove_check takes
+     the latest only and asks first in the plan's words; an older one is refused with words; place null sends the gap
+     back to Free to spend. Setup as above (24 Nov); Main bank (A1) said to show 280,000 today. */
+  {
+    const withFigure = async day => {
+      const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
+      if (day) hp.day = day;
+      const f = FAKE.make([say('', [call('change', { steps: [{ do: 'bank_figure', account: 'A1', amount: 280000 }] })]), say('Saved.')]);
+      const d = hp.deps(f), r = await K.turn(state, 'my bank shows 280,000', d);
+      ok(r.shown.some(x => x.who === 'card' && x.card.status === 'done'), JSON.stringify(r.shown.map(x => x.card && [x.card.status, x.card.ask])));
+      return { hp, d, state: r.state, id: hp.book.events.filter(e => e.k === 'check' && e.a === 280000 && !e.gone).pop().id };
+    };
+    await t('[CHECKFIX] change_check: "it was 285,000, not 280,000": changed at once, was kept, the card shows the figure before and after; Undo puts it back', async () => {
+      const { hp, d, state, id } = await withFigure();
+      const f = FAKE.make([say('', [call('change', { steps: [{ do: 'change_check', account: 'A1', amount: 285000 }] })]), say('Changed.')]);
+      const r = await K.turn(state, 'sorry, it was 285,000 not 280,000', Object.assign(hp.deps(f), { door: d.door }));
+      const tc = r.shown.find(x => x.who === 'card'), c = tc.card;
+      eq([c.status, c.lines], ['done', ['Main bank\'s figure of 24 Nov: ¥280,000 to ¥285,000']]);
+      const e = hp.book.events.find(x => x.id === id);
+      eq([e.a, e.was.map(w => w.a)], [285000, [280000]]);
+      ok(c.rows.some(x => x.key === 'check:' + id && x.before === 280000 && x.after === 285000), JSON.stringify(c.rows));
+      const u = await K.undo(r.state, tc.id, { door: d.door, told: d.told, book: () => hp.book });
+      ok(u.ok, JSON.stringify(u)); eq(hp.book.events.find(x => x.id === id).a, 280000);
+    });
+    await t('[CHECKFIX, M6] remove_check asks first with the plan\'s words; OK removes the latest; an older one is refused with words', async () => {
+      const { hp, d, state, id } = await withFigure();
+      const f = FAKE.make([say('', [call('change', { steps: [{ do: 'remove_check', account: 'A1' }] })]), say('Tap OK.')]);
+      const r = await K.turn(state, 'remove that bank check, wrong account', Object.assign(hp.deps(f), { door: d.door }));
+      const tc = r.shown.find(x => x.who === 'card');
+      eq([tc.card.status, tc.card.ask, tc.card.lines], ['ask', 'delete', ['Remove the check of Main bank on 24 Nov? Its figure ¥280,000 goes']]);
+      ok(!hp.book.events.find(x => x.id === id).gone, 'nothing yet');
+      const c = await K.confirm(r.state, tc.id, Object.assign(hp.deps(f), { door: d.door }));
+      ok(c.ok, JSON.stringify(c)); ok(hp.book.events.find(x => x.id === id).gone, 'removed');
+      /* the opening is the latest now: refused, with the words the screens give */
+      const f2 = FAKE.make([say('', [call('change', { steps: [{ do: 'remove_check', account: 'A1' }] })]), say('I can\'t.')]);
+      await K.turn(c.state || r.state, 'remove that one too', Object.assign(hp.deps(f2), { door: d.door }));
+      ok(/Change its figure instead/.test(FAKE.results(f2.bodies[1])[0].text), FAKE.results(f2.bodies[1])[0].text);
+    });
+    await t('[CHECKFIX] remove_check of an older check by its date is refused: only the latest', async () => {
+      const { hp, d, state } = await withFigure('2026-11-25');
+      const f = FAKE.make([say('', [call('change', { steps: [{ do: 'remove_check', account: 'A1', date: '2026-11-24' }] })]), say('I can\'t.')]);
+      const book0 = JSON.stringify(hp.book);
+      const r = await K.turn(state, 'remove the check from setup', Object.assign(hp.deps(f), { door: d.door }));
+      const res = FAKE.results(f.bodies[1])[0].text;
+      ok(/Only the latest check of Main bank can be removed\. Change its figure instead/.test(res), res);
+      eq([r.shown.filter(x => x.who === 'card').length, JSON.stringify(hp.book) === book0], [0, true], 'no card, nothing written');
+    });
+    await t('[CHECKFIX] list checks names each figure with its day, the latest marked', async () => {
+      const { hp, d, state } = await withFigure();
+      const f = FAKE.make([say('', [call('list', { what: 'checks', account: 'A1' })]), say('ok')]);
+      await K.turn(state, 'what figures did I give?', Object.assign(hp.deps(f), { door: d.door }));
+      const res = FAKE.results(f.bodies[1])[0].text;
+      ok(/^date \| figure \| from\n2026-11-24 \| ¥280,000 \| typed \| the latest\n2026-11-24 \| /.test(res), res);
+    });
+  }
   await t('[amount history] list spends finds an older spend by day or amount, past the last 30', async () => {
     const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
     hp.day = '2026-11-25';
