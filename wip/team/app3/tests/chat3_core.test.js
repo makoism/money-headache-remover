@@ -759,16 +759,22 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const c = r.shown.find(x => x.who === 'card').card;
     eq(c.rows.map(x => [x.label, x.before, x.after]).filter(x => /Safe|Free/.test(x[0])), [['Safe to spend', 27096, 25096], ['Free to spend left', 27096, 25096]]);
   });
-  /* [qc-foundation confirm on monthrule, 26 Nov; M4, M51] Food ended on 22 Nov and a new Food was added: list lines
-     gives the assistant one Food, the live one */
-  await t('[ended line] list lines gives one Food, the new one', async () => {
-    const { endedFoodBook } = require('./e3_act_book.js'), h = page('2026-11-25');
+  /* [qc-foundation second confirm on monthrule, coordinator 18; M1, M3, M4, M7, M27, M31, M51] Mako is paid on the
+     10th: Food ended on 22 Nov still holds 26,666 this pay period. list lines gives the assistant both Foods with refs,
+     and "here are my food receipts" filed to the old one on 25 Nov is kept and comes off it (26,666 to 21,666) */
+  await t('[ended line, fixed pay] list lines gives both Foods; a 5,000 receipt to the old Food is kept and comes off it', async () => {
+    const { endedFoodBook, FOOD } = require('./e3_act_book.js'), h = page('2026-11-25');
     h.book = endedFoodBook();
     let listed = '';
-    const f = FAKE.make([say('', [call('list', { what: 'lines' })]), body => { listed = FAKE.results(body)[0].text; return say('One Food.'); }]);
-    await K.turn(K.fresh(), 'what lines do I have?', h.deps(f));
-    eq(listed.split('\n').filter(l => /\| Food \|/.test(l)).length, 1, listed);
-    ok(/Food \| ¥30,000 each/.test(listed), listed);
+    const f = FAKE.make([say('', [call('list', { what: 'lines' })]), body => {
+      listed = FAKE.results(body)[0].text;
+      const old = listed.split('\n').find(l => /\| ¥40,000 each/.test(l)) || '';
+      return say('', [call('change', { steps: [{ do: 'log_spend', amount: 5000, account: 'A1', line: old.split(' | ')[0] }] })]);
+    }, say('Filed.')]);
+    await K.turn(K.fresh(), 'here is a food receipt, 5,000, for the old Food', h.deps(f));
+    eq(listed.split('\n').filter(l => /\| Food/.test(l)).length, 2, listed);
+    ok(h.book.events.some(e => e.k === 'spend' && e.a === 5000 && e.line === FOOD), 'the receipt is filed to the old Food: ' + listed);
+    eq(L.lookahead(h.book, h.day).period.lines.find(l => l.id === FOOD).left, 21666);
   });
   console.log(bad ? `chat3_core: ${bad} of ${n} FAILED` : `chat3_core: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);

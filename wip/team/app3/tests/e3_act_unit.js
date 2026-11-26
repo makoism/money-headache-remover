@@ -477,23 +477,46 @@ const ev = (b, id) => b.events.find(e => e.id === id);
     const r = await h.A.run('tick', w => w.add('events', rec()));
     eq([r.ok, r.why], [false, 'bad']); ok(/there already/.test(r.text), r.text);
   });
-  /* [qc-foundation confirm on monthrule, 26 Nov; M7, M51] a spend dated after a line's end is refused in plain words
-     (it would come off nothing while the new Food still showed its full amount left); on or before the end it is kept,
-     and a receipt filed there before it ended can still be changed */
-  await t('[ended line] a spend on Food dated after Food ended (22 Nov) is refused, nothing saved; on 21 or 22 Nov it is kept', async () => {
-    const h = setup({ book: endedFoodBook() }), before = JSON.stringify(h.book);
+  /* [qc-foundation second confirm on monthrule, coordinator 18; M4, M7, M27, M31, M51] Mako is paid on the 10th: Food
+     (40,000) ended on 22 Nov still holds its part of this pay period (26,666), so it takes spends dated up to 9 Dec, and
+     the door says so from the engine's rule (LA.lineTakes). A spend dated 10 Dec, his next pay day, is refused in plain
+     words. A receipt filed to it can still be changed, but not moved to 10 Dec */
+  await t('[ended line, fixed pay] Food ended 22 Nov: a spend on it dated 25 Nov is kept and comes off it; dated 10 Dec it is refused', async () => {
+    const h = setup({ book: endedFoodBook() });
+    const left = b => L.lookahead(b, DAY).period.lines.find(l => l.id === FOOD).left;
+    eq(left(h.book), 26666);
     const r = await h.A.logSpend({ date: DAY, a: 1000, acct: bank, line: FOOD });
-    eq([r.ok, r.text, JSON.stringify(h.book) === before], [false, 'Food ended on 22 Nov 2026. Pick another line', true]);
-    const rf = await h.A.refund({ date: '2026-11-23', a: 500, acct: bank, line: FOOD });
-    eq([rf.ok, rf.text], [false, 'Food ended on 22 Nov 2026. Pick another line']);
-    const r1 = await h.A.logSpend({ date: '2026-11-21', a: 1000, acct: bank, line: FOOD });
-    ok(r1.ok, JSON.stringify(r1));
-    ok((await h.A.logSpend({ date: '2026-11-22', a: 700, acct: bank, line: FOOD })).ok, 'on the day it ended');
-    const id = h.book.events.find(e => e.a === 1000 && e.line === FOOD).id;
-    ok((await h.A.edit(id, { a: 1100 })).ok, 'a receipt filed before the end can still be changed');
-    const moved = await h.A.edit(id, { date: '2026-11-24' });
-    eq([moved.ok, moved.text], [false, 'Food ended on 22 Nov 2026. Pick another line']);
+    ok(r.ok, JSON.stringify(r));
+    eq(left(h.book), 25666, 'the old Food\'s left goes down');
+    ok((await h.A.refund({ date: '2026-11-23', a: 500, acct: bank, line: FOOD })).ok, 'a refund to it is kept too');
     ok((await h.A.logSpend({ date: DAY, a: 1000, acct: bank, line: NEW_FOOD })).ok, 'the new Food takes it');
+    /* on 12 Dec (the 10 Dec pay not ticked yet), a late receipt dated 9 Dec is kept, one dated 10 Dec is refused */
+    let book = h.book;
+    const A = A3.make({ book: () => book, put: async b => { book = b; return true; }, told: () => '2026-12-12T12:00+09:00', newId: I.idMaker('t3actx', () => 0.4),
+      today: () => '2026-12-12', queue: { post: () => {} }, check: b => L.lookahead(b, '2026-12-12') });
+    const before = JSON.stringify(book);
+    const r10 = await A.logSpend({ date: '2026-12-10', a: 1000, acct: bank, line: FOOD });
+    eq([r10.ok, r10.text, JSON.stringify(book) === before], [false, 'Food ended on 22 Nov 2026 and takes spends dated up to 9 Dec 2026. Pick another line', true]);
+    ok((await A.logSpend({ date: '2026-12-09', a: 700, acct: bank, line: FOOD })).ok, 'dated 9 Dec, the last day of the pay period it ended in');
+    const id = book.events.find(e => e.a === 700 && e.line === FOOD).id;
+    ok((await A.edit(id, { a: 800 })).ok, 'a receipt filed to it can still be changed');
+    const moved = await A.edit(id, { date: '2026-12-11' });
+    eq([moved.ok, moved.text], [false, 'Food ended on 22 Nov 2026 and takes spends dated up to 9 Dec 2026. Pick another line']);
+  });
+  /* [qc-foundation confirm on monthrule, 26 Nov; M7, M51] Kai, no fixed pay: a line closes on its end day */
+  await t('[ended line, no fixed pay] Kai\'s Food ended 22 Dec: a spend dated 22 Dec is kept, 23 Dec is refused', async () => {
+    const BB = require(E + 'build_book.js'), newId = I.idMaker('k4i9pz');
+    const out = BB.buildBook({ day: '2026-11-01', told: '2026-11-01T09:00:00.000+09:00', currency: 'JPY', country: 'JP',
+      banks: [{ key: 'bank1', name: 'Main bank', amount: 2000000, main: true, min: null }],
+      pays: [{ key: 'pay1', name: 'Work', bank: 'bank1', amount: null, every: 'none' }], cards: [], bills: [], free: 60000 }, { newId });
+    let book = out.book || out;
+    const kb = book.accounts.find(a => a.type === 'bank').id, food = newId(), at = '2026-12-22T20:00:00.000+09:00';
+    book.plan.budgets.push({ id: food, name: 'Food', place: 'bills', cur: 'JPY', acct: kb, per: 'month', from: '2026-12-18', steps: [{ from: null, amount: 31000 }, { from: '2026-12-22', amount: 0 }], ends: '2026-12-22', told: at, at, by: 'k4i9pz' });
+    const A = A3.make({ book: () => book, put: async b => { book = b; return true; }, told: () => '2026-12-24T12:00+09:00', newId: I.idMaker('t3actk', () => 0.5),
+      today: () => '2026-12-24', queue: { post: () => {} }, check: b => L.lookahead(b, '2026-12-24') });
+    const r = await A.logSpend({ date: '2026-12-23', a: 1000, acct: kb, line: food });
+    eq([r.ok, r.text], [false, 'Food ended on 22 Dec 2026. Pick another line']);
+    ok((await A.logSpend({ date: '2026-12-22', a: 1000, acct: kb, line: food })).ok, 'on the day it ended');
   });
   console.log(bad ? `e3_act_unit: ${bad} FAIL of ${n}` : `e3_act_unit: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);

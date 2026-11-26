@@ -270,26 +270,25 @@ async function figsMatch(p, book, what) {
     ck('no page errors (B2)', errs.length === 0, errs.join(' | '));
     await b.close();
   }
-  /* [qc-foundation confirm on monthrule, 26 Nov; M4, M7, M51] Food ended on 22 Nov and a new Food was added that day:
-     the picker offers one Food, the new one. A receipt of 21 Nov filed to the old Food opens with its own line, marked
-     ended, so it can still be changed */
+  /* [qc-foundation second confirm on monthrule, coordinator 18; M4, M7, M27, M31, M51] Mako is paid on the 10th: Food
+     ended on 22 Nov still holds 26,666 this pay period, so on 25 Nov the picker offers both Foods (the old one marked
+     ended), and a 5,000 receipt filed to the old Food by the screen is kept and comes off it (26,666 to 21,666) */
   {
     const prof3 = require('fs').mkdtempSync(require('os').tmpdir() + '/a3rc3-');
     const { b, p, errs } = await T.open({ profile: prof3 });
-    const bk = endedFoodBook(), OLDR = 'k7m2qa-f3n8p1x6wd-9902';
-    bk.events.push({ id: OLDR, date: '2026-11-21', told: '2026-11-21T19:00+09:00', at: '2026-11-21T19:00:00.000+09:00', by: 'k7m2qa', k: 'spend', acct: bank, a: 2100, line: FOOD, src: { type: 'typed' } });
+    const bk = endedFoodBook();
     await p.goto(T.URL0 + '?today=' + DAY); await T.w(300);
     await p.evaluate(async bk => { const s = await BurrowStore.open(); const r = await s.save(bk, { full: true }); if (s.db) s.db.close(); return r; }, bk);
     await p.reload(); await T.w(400);
     await p.tap('[data-tab=receipts]'); await T.w(300);
-    const opts = () => p.$$eval('#rcFor option', os => os.map(o => ({ v: o.value, name: o.textContent })));
-    let o = await opts();
+    const o = await p.$$eval('#rcFor option', os => os.map(o => ({ v: o.value, name: o.textContent })));
     const foods = o.filter(x => /^Food/.test(x.name));
-    ck('ended line: the picker offers one Food, the new one', foods.length === 1 && foods[0].v === 'line:' + NEW_FOOD, JSON.stringify(o));
-    await p.tap(`[data-rc="${OLDR}"] button`); await T.w(200);
-    o = await opts();
-    const sel = await p.$eval('#rcFor', e => e.value);
-    ck('ended line: a receipt filed to the old Food opens with it, marked ended', sel === 'line:' + FOOD && o.some(x => x.v === 'line:' + FOOD && /ended/.test(x.name)), sel + ' ' + JSON.stringify(o));
+    ck('ended line, fixed pay: the picker offers both Foods, the old one marked ended', foods.length === 2 && foods.some(x => x.v === 'line:' + NEW_FOOD) && foods.some(x => x.v === 'line:' + FOOD && /ended/.test(x.name)), JSON.stringify(o));
+    await type(p, '#rcAmt', '5000'); await setVal(p, '#rcFor', 'line:' + FOOD); await T.w(100);
+    await p.tap('#rcSave'); await T.w(400);
+    const kept = await saved(p);
+    ck('ended line, fixed pay: a receipt to the old Food on 25 Nov is kept', kept.events.some(e => e.k === 'spend' && e.a === 5000 && e.line === FOOD), JSON.stringify(await bar(p)));
+    ck('ended line, fixed pay: the old Food\'s left goes down, 26,666 to 21,666', T.L.lookahead(kept, DAY).period.lines.find(l => l.id === FOOD).left === 21666);
     ck('no page errors (ended line)', errs.length === 0, errs.join(' | '));
     await b.close();
   }

@@ -208,14 +208,20 @@ const ctxOf = h => ({ book: h.book, today: DAY });
     eq([row('safe').before, row('safe').after], [27096, 25096]);
     eq([row('free').label, row('free').before, row('free').after], ['Free to spend left', 27096, 25096]);
   });
-  /* [qc-foundation confirm on monthrule, 26 Nov; M4, M51] Food ended on 22 Nov and a new Food was added: the assistant
-     is given one Food to pick, the live one; the ended one has no ref, so no spend can be filed to it */
-  await t('[ended line] the summary gives one Food with a ref, the new one; the ended Food has none', async () => {
-    const { endedFoodBook, FOOD, NEW_FOOD } = require('./e3_act_book.js'), b = endedFoodBook(), S2 = K.summary(b, DAY);
-    const rows = S2.text.split('\n').filter(l => /^L\d+ \| Food \|/.test(l));
-    eq(rows.length, 1, S2.text.match(/Budget lines[^]*?(?=\nFree)/)[0]);
-    eq(S2.refs[rows[0].split(' | ')[0]], NEW_FOOD);
-    ok(!Object.values(S2.refs).includes(FOOD), 'the ended Food has a ref');
+  /* [qc-foundation second confirm on monthrule, coordinator 18; M3, M4, M7, M27, M31, M51] Mako is paid on the 10th:
+     Food ended on 22 Nov still holds 26,666 this pay period, so the assistant is given both Foods with refs, and a
+     receipt to the old one on 25 Nov goes through act3 and comes off it (26,666 to 21,666) */
+  await t('[ended line, fixed pay] the summary gives both Foods with refs; a 5,000 receipt to the old one is kept and comes off it', async () => {
+    const { endedFoodBook, FOOD, NEW_FOOD } = require('./e3_act_book.js'), h = door(endedFoodBook()), S2 = K.summary(h.book, DAY);
+    const rows = S2.text.split('\n').filter(l => /^L\d+ \| Food/.test(l));
+    eq(rows.length, 2, S2.text.match(/Budget lines[^]*?(?=\nFree)/)[0]);
+    const oldRef = Object.keys(S2.refs).find(k => S2.refs[k] === FOOD);
+    ok(oldRef && Object.values(S2.refs).includes(NEW_FOOD), JSON.stringify(S2.refs));
+    const c = K.check({ answer: 'x', actions: [{ do: 'log_spend', amount: 5000, line: oldRef }] }, S2.refs, { book: h.book, today: DAY });
+    eq(c.dropped, []);
+    const res = await K.apply(h.A, c.steps);
+    ok(res.ok, res.text);
+    eq(L.lookahead(h.book, DAY).period.lines.find(l => l.id === FOOD).left, 21666);
   });
   console.log(bad ? `ask3_core: ${bad} FAIL of ${n}` : `ask3_core: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
