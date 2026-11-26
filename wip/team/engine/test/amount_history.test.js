@@ -85,4 +85,12 @@ t('res.splits: two corrections, 900 stood at the check, +6,100 after', () => {
   const { book } = life({ before: e => fix(e, 900, T9), bank13: 594100, after: e => fix(e, 7000, T14) });
   eq(LA.lookahead(book, '2026-12-14').splits, [{ id: 'lunch8', check: '2026-12-13', atCheck: 900, after: 6100, more: 6100, less: 0, told: '2026-12-14' }]);
 });
+// [coordinator 16, ruling (a)] a removed record is held only by a check written BEFORE the removal: removed on 9 Dec,
+// before the 13 Dec check (which then matches the bank without it, 595,000), it counts nowhere: the old period keeps
+// 5,000, nothing minus today, safe to spend 60,000
+t('removed before any check held it, then a new check: nothing in the closed period, nothing minus today', () => {
+  const { book } = life({ before: e => { e.was = [{ a: 700, told: T9 }]; e.gone = '2026-12-09'; e.goneBy = 'stepx'; }, bank13: 595000 }), v = view(book, '2026-12-14');
+  eq([v.old, v.now, v.safe], [5000, 0, 60000]);
+  eq(v.r.splits, []);
+});
 done('amount_history.test.js');
