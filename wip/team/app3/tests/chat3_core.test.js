@@ -538,6 +538,7 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     ok(hp.book.events.some(e => e.id === 'set:' + loan + '@2026-12-27' && !e.gone), 'the 28 Dec answer ticked that payment');
     /* [qc-numbers loancheck_build CONFUSING 4] a loan figure far from what the app shows still owed asks first, in the
        bank check's words (screens/status.js farText); nothing is written until the OK */
+    hp.day = '2026-12-30';   // the next day: this page's door stamps every record of a day with one time
     const f4 = FAKE.make([say('', [call('change', { steps: [{ do: 'card_figure', account: A, amount: 8500000 }] })]), say('Tap OK.')]);
     const r4 = await K.turn(r.state, 'the car loan is 8,500,000', hp.deps(f4));
     const t4 = r4.shown.find(x => x.who === 'card');
