@@ -1,3 +1,13 @@
+# LANE N state page (controls slices after the AI-first candidate)
+
+LANE N: session_01BFpKEYrXD1v3TRranaJ9WE (took over from LANE M session_01BFpKEWyTdLJxPoDySdQrVW, 26 Nov about 11:45 JST). Coordinator: "Burrow coordinator 18 (talk to this one)" session_01BFpKEVNiZLwPaZF7W9sbtP. MAIN 23 session_01BFpKEW8KtuZCmSEeaQB36v is the only merger. LANE L session_01BFpKEXEN4ow4uyeRCZ9aSM owns lane/amounthist.
+Keep-going task: (LANE N, see Now). LANE M stays until its two running jobs land (close-account helper on controls-5fix, qc-foundation on loancheck): do not touch controls-5fix or the loancheck round until LANE M says.
+
+## Now (LANE N, 26 Nov about 11:45 JST)
+- Set up: tools installed, worktree estate. Next: decide first item (controls-10 B1 helper, controls-8 reviewers, slice 10 waiting on amounthist).
+
+# Below: LANE M's page at handoff
+
 # LANE M state page (controls slices after the AI-first candidate)
 
 LANE M: session_01BFpKEWyTdLJxPoDySdQrVW (took over from LANE J session_01BFpKEXkcELFPCxnuiX8jFx, 26 Nov about 09:40 JST... see Now). Coordinator: "Burrow coordinator 18 (talk to this one)" session_01BFpKEVNiZLwPaZF7W9sbtP (from 26 Nov 11:25 JST; 17 was session_01BFpKEZ9Gn1VKFM5HMC5Wn1). MAIN 22 (session_01BFpKEVPdcTtDvMBQEUFsEx) is the only session that merges. LANE L (session_01BFpKEXEN4ow4uyeRCZ9aSM) owns lane/amounthist (engine lane; slice 10 merges it first; both touch act3.js).
