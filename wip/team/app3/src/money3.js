@@ -34,6 +34,9 @@ function typedSlip3(text, cur) {
 function typedBank3(text, cur) { const r = SM.parse(text, cur, { allowMinus: true }); return r.ok ? r.minor : null; }
 /* '2026-12-10' as '10 Dec', with the year when it is not the shown day's year */
 const day3 = (s, thisYear) => (s ? SN.dayLabel(s, !!thisYear && s.slice(0, 4) !== thisYear) : '');
+/* [qc-controls 2to5 F2] a pay or bill's landing day, and why when a weekend or holiday moved it (screens/names.js
+   landLabel): `o` is the engine's occurrence { land, due } */
+const land3 = (o, thisYear) => (o && o.land ? SN.landLabel(o.land, o.due, !!thisYear && o.land.slice(0, 4) !== thisYear) : '');
 const label3 = (key, ctx) => SN.label(key, ctx);
 /* [slice 6] a schedule's rhythm in words, one function for every screen: "day 10 each month", "day 15 and the last day
    each month", "every 2 weeks, on Fridays", "every 3 months, on day 15", "each year in May and Nov, on day 31", "each

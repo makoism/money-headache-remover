@@ -162,6 +162,17 @@
     return { y: m[1], m: m[2], d: m[3].replace(/^0/, ''), s: m[0] };
   }
   function dayLabel(s, withYear) { const p = parseDay(s); return [p.d, MONTHS[p.m]].concat(withYear ? [p.y] : []).join(' '); }
+  /* [qc-controls 2to5 F2] the day a pay or bill lands, in one set of words for every screen and the assistant: its
+     landing day, and when a weekend or holiday moved it off its due day, why: "25 Dec (26 Dec is a Saturday, so the
+     working day before)". Without the reason a row reading "day 26 each month, next 25 Dec" looks like the change did
+     not take effect. The engine's occurrence gives both days (land, due); nothing is worked out here but the weekday. */
+  const WEEKDAY = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  function landLabel(land, due, withYear) {
+    const at = dayLabel(land, withYear);
+    if (!due || due === land) return at;
+    const wd = new Date(parseDay(due).s + 'T00:00:00Z').getUTCDay();
+    return `${at} (${dayLabel(due, withYear)} is ${wd === 0 || wd === 6 ? 'a ' + WEEKDAY[wd] : 'a holiday'}, so the working day ${land < due ? 'before' : 'after'})`;
+  }
   /* a month as VOICE says: "Feb 2027" (from a real day in it) */
   function monthLabel(s) { const p = parseDay(s); return MONTHS[p.m] + ' ' + p.y; }
   /* "10 Nov to 9 Dec"; across the new year both days carry their year (for Mako: whether the year shows otherwise) */
@@ -182,5 +193,5 @@
     return words.length ? words.join(', ') + ' and ' + tail : tail;
   }
 
-  return { NAMES, label, byFigure, labelKey, check, forMako, notInEngine, dayLabel, dayList, monthLabel, periodLabel };
+  return { NAMES, label, byFigure, labelKey, check, forMako, notInEngine, dayLabel, landLabel, dayList, monthLabel, periodLabel };
 });
