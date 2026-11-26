@@ -2649,12 +2649,16 @@ details summary { min-height: 44px; }
       const moves = live().filter(e => delta(e, id) !== 0 || (e.was && e.was.length && (e.account === id || e.from === id || e.to === id)));   // [AMOUNT_HISTORY] a record corrected to 0 is still held by its check
       const goneMoves = events.filter(e => e.gone && e.was && e.was.length && delta(e, id) !== 0);   // [AMOUNT_HISTORY] removed after a check
       const fillers = [];
+      const changed = moves.concat(goneMoves).filter(e => e.was && e.was.length);   // records corrected or removed since
       let lastGap = null;
       // [coordinator ruled (A), CHECKFIX FB] a check's figure corrected later (`was`): each fix counts its change on the
       // day of the fix in both gaps beside that check, plus in the gap before it and minus in the gap after it, so with a
       // later check the two cancel and a closed period never moves; on the latest check only the plus part counts
-      const fixesOf = c => (c.was || []).filter(w => w && w.told).map((w, i, ws) => ({ day: dayNum(String(w.told).slice(0, 10)), d: w.a - (i + 1 < ws.length ? ws[i + 1].a : c.a) }));
-      let carry = [];   // the minus parts the check before leaves to the next gap
+      const fixesOf = c => (c.was || []).filter(w => w && w.told).map((w, i, ws) => ({ day: dayNum(String(w.told).slice(0, 10)), key: keyOf(w.told), d: w.a - (i + 1 < ws.length ? ws[i + 1].a : c.a) }));
+      // [qc-foundation confirm finding 2] only a fix told after the next check was written carries a minus part to it: a
+      // check written after the fix already has its gap worked out from the corrected figure. The minus part stays on
+      // the corrected check's line (`place`), as its plus part does
+      let carry = [];   // the minus parts the check before leaves to the next gap: { day, key, d, place }
       // [T2, AS6] the place a filler was put on is the check-in's `fillerPlace` for this account: the check-in the check
       // was written with (`grp`), or the one whose figures name it
       const fillerPlaceOf = c => {
@@ -2685,17 +2689,17 @@ details summary { min-height: 44px; }
         // (corrected or removed after it, told before it): that part of the gap is explained, so it never makes a large
         // gain that is held to be asked about (a removed 50,000 move into this account opens a 50,000 gain here)
         let explained = 0;
-        for (const e of moves.concat(goneMoves)) {
+        for (const e of changed) {
           const h = heldAcct.get(e.id) && heldAcct.get(e.id).get(id);
-          if (!h || h.day !== cc.day || keyCmp(h.key, cc.key) !== 0 || keyCmp(e.key, cc.key) > 0 || !(e.was && e.was.length)) continue;
+          if (!h || h.day !== cc.day || keyCmp(h.key, cc.key) !== 0 || keyCmp(e.key, cc.key) > 0) continue;
           explained += movedAs(e, id, e.gone ? { a: 0, a2: 0 } : { a: e.a, a2: e.a2 != null ? e.a2 : null }) - movedAs(e, id, asAt(e, cc.key));
         }
         const filler = makeFiller(id, c.day > base.day ? base.day + 1 : c.day, c.day, computed - c.a);
-        const fixes = fixesOf(c), extra = fixes.map(x => ({ day: x.day, amount: x.d })).concat(carry.map(x => ({ day: x.day, amount: -x.d })));
-        carry = fixes;
+        const fixes = fixesOf(c), extra = fixes.map(x => ({ day: x.day, amount: x.d })).concat(carry.filter(x => keyCmp(x.key, cc.key) > 0).map(x => ({ day: x.day, amount: -x.d, place: x.place })));
+        carry = fixes.map(x => Object.assign({}, x, { place: fp || 'free' }));
         if (extra.some(x => x.amount)) {
           const own = filler.amount - extra.reduce((t, x) => t + x.amount, 0);
-          filler.parts = [{ from: dayStr(c.day), to: dayStr(c.day), days: 1, amount: own }].concat(extra.filter(x => x.amount).map(x => ({ from: dayStr(x.day), to: dayStr(x.day), days: 1, amount: x.amount }))).filter(x => x.amount);
+          filler.parts = [{ from: dayStr(c.day), to: dayStr(c.day), days: 1, amount: own }].concat(extra.filter(x => x.amount).map(x => Object.assign({ from: dayStr(x.day), to: dayStr(x.day), days: 1, amount: x.amount }, x.place && x.place !== (fp || 'free') ? { place: x.place } : {}))).filter(x => x.amount);
         }
         fillers.push(Object.assign(filler, fp ? { place: fp } : {},
           { had: computed, gain: c.a - computed, answer: c.gain || null }, explained ? { explained } : {}));
@@ -2832,6 +2836,7 @@ details summary { min-height: 44px; }
       // the bank's order, never as told. A record on the card dated by a check and told after it explains part of that
       // check's gap and counts with it (holdAt)
       const cardChecks = live().filter(x => x.k === 'check' && x.account === id && !x.stmt).sort(byTime);
+      const twoSided = events.filter(x => x.account !== id && (x.from === id || x.to === id) && x.k !== 'check');   // a card payment, money taken from the card
       for (const e of cardChecks) {
         // the check before this one: the latest on an earlier day, else the card's opening day (its opening check is not
         // among the live records); a second check on the same day covers that one day only
@@ -2842,7 +2847,7 @@ details summary { min-height: 44px; }
         for (const x of events) if (x.account === id && x.k !== 'check' && x.day <= e.day && (!x.gone || (x.was && x.was.length && removedAfter(x, e.key)))) holdAt(x.id, e.day, e.key);
         // [ruling (B), qc-foundation confirm finding 1] a card payment (or money taken from the card) is held on the card's
         // side as well, per account, so a removal after both checks cancels on both sides (lineless)
-        for (const x of events) if (x.account !== id && (x.from === id || x.to === id) && x.k !== 'check' && x.day <= e.day && keyCmp(x.key, e.key) <= 0 && (!x.gone || (x.was && x.was.length && removedAfter(x, e.key)))) { holdAt(x.id, e.day, e.key); holdAcct(x.id, id, e.day, e.key, null); }
+        for (const x of twoSided) if (x.day <= e.day && keyCmp(x.key, e.key) <= 0 && (!x.gone || (x.was && x.was.length && removedAfter(x, e.key)))) { holdAt(x.id, e.day, e.key); holdAcct(x.id, id, e.day, e.key, null); }
         let gap = 0, closed = null, first0 = null;
         const stretch = (from, to) => { const f = Math.min(from, to); if (first0 === null || f < first0) first0 = f; };
         const sx = live().find(x => x.k === 'check' && x.account === id && x.stmt && x.grp != null && x.grp === e.grp);
@@ -3161,7 +3166,7 @@ details summary { min-height: 44px; }
           if (e.place === g.id && mv.to !== g.id) amt -= mv.a;
         }
       }
-      for (const bid in banks) for (const f of banks[bid].fillers) if (f.place === g.id && !heldGain(bid, f)) amt -= f.amount;   // [T2, X4]
+      for (const bid in banks) for (const f of banks[bid].fillers) if (!heldGain(bid, f)) for (const pt of f.parts) if ((pt.place || f.place) === g.id) amt -= pt.amount;   // [T2, X4] by part: a fix's minus part keeps its own check's place
       return Math.max(0, amt);
     }
     const placings = g => live().filter(e => e.k === 'move' && e.placed === I.built.rm(g.id));
@@ -3273,8 +3278,8 @@ details summary { min-height: 44px; }
         let filled = 0;   // [T2] the filler is spending, signed; [X4] a held gain places nothing
         for (const bid in banks) {
           if (acct[bid].type === 'investment' || cur(bid) !== cur(acctId)) continue;
-          for (const f of banks[bid].fillers) if ((f.place || 'free') === lineId && !heldGain(bid, f))
-            for (const pt of f.parts) if ((fromOpening || dayNum(pt.from) >= lp) && dayNum(pt.from) <= upTo) filled += pt.amount;
+          for (const f of banks[bid].fillers) if (!heldGain(bid, f))
+            for (const pt of f.parts) if ((pt.place || f.place || 'free') === lineId && (fromOpening || dayNum(pt.from) >= lp) && dayNum(pt.from) <= upTo) filled += pt.amount;
         }
         if (lineId === 'free') for (const cid in cards) {
           if (cur(cid) !== cur(acctId)) continue;
@@ -10513,7 +10518,7 @@ function rcGaps3(per) {
   const onWhat = place => (!place || place === 'free' ? { line: 'free' } : ((E3.book.plan || {}).budgets || []).some(l => l.id === place) ? { line: place } : { place });
   for (const id of Object.keys(r.accounts || {})) for (const f of r.accounts[id].fillers || []) {
     if (f.held || f.apart) continue;   // [LISTFIX2] held for its question, or never spending (the engine's marks)
-    for (const pt of f.parts || []) if (pt.amount && inPer(pt.from)) out.push({ acct: id, check: f.to, from: f.from, to: f.to, amount: pt.amount, on: onWhat(f.place) });
+    for (const pt of f.parts || []) if (pt.amount && inPer(pt.from)) out.push({ acct: id, check: f.to, from: f.from, to: f.to, amount: pt.amount, on: onWhat(pt.place || f.place) });
   }
   /* [CARDGAP] a card's gap by its parts too (the engine cuts it by days at each period start, as a bank's) */
   for (const id of Object.keys(r.cards || {})) for (const f of r.cards[id].fillers || []) {

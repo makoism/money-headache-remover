@@ -345,7 +345,7 @@ function rcGaps3(per) {
   const onWhat = place => (!place || place === 'free' ? { line: 'free' } : ((E3.book.plan || {}).budgets || []).some(l => l.id === place) ? { line: place } : { place });
   for (const id of Object.keys(r.accounts || {})) for (const f of r.accounts[id].fillers || []) {
     if (f.held || f.apart) continue;   // [LISTFIX2] held for its question, or never spending (the engine's marks)
-    for (const pt of f.parts || []) if (pt.amount && inPer(pt.from)) out.push({ acct: id, check: f.to, from: f.from, to: f.to, amount: pt.amount, on: onWhat(f.place) });
+    for (const pt of f.parts || []) if (pt.amount && inPer(pt.from)) out.push({ acct: id, check: f.to, from: f.from, to: f.to, amount: pt.amount, on: onWhat(pt.place || f.place) });
   }
   /* [CARDGAP] a card's gap by its parts too (the engine cuts it by days at each period start, as a bank's) */
   for (const id of Object.keys(r.cards || {})) for (const f of r.cards[id].fillers || []) {
