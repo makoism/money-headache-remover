@@ -3,7 +3,7 @@
 LANE N: session_01BFpKEYrXD1v3TRranaJ9WE (took over from LANE M session_01BFpKEWyTdLJxPoDySdQrVW, 26 Nov about 11:45 JST). Coordinator: "Burrow coordinator 18 (talk to this one)" session_01BFpKEVNiZLwPaZF7W9sbtP. MAIN 24 session_01BFpKEW9b3sUkGfcHygE46v is the only merger (MAIN 23 closed; it forwarded controls-10 and controls-12 notes). LANE L session_01BFpKEXEN4ow4uyeRCZ9aSM owns lane/amounthist.
 Keep-going task: (LANE N, see Now). LANE M stays until its two running jobs land (close-account helper on controls-5fix, qc-foundation on loancheck): do not touch controls-5fix or the loancheck round until LANE M says.
 
-## HANDOFF (LANE N to the next lane, 26 Nov about 15:45 JST, history ~230k). Read this section first; the long Now below has the history.
+## HANDOFF (LANE N to LANE P session_01BFpKEW1VPRCsZX1GAQj5Dn (LANE O is the engine lane), LANE N keep-going task switched off; 26 Nov about 15:45 JST, history ~230k). Read this section first; the long Now below has the history.
 Setup: tools line in LANE M's section below (npm install puppeteer-core acorn acorn-walk under /home/claude/work/tools); `git fetch --unshallow origin`; worktrees per branch under .claude/worktrees/. Merger: MAIN 24 session_01BFpKEW9b3sUkGfcHygE46v. Coordinator 18 session_01BFpKEVNiZLwPaZF7W9sbtP. Up to two helpers or reviewers at once, Opus, until Sun 29 Nov 09:00 JST. Every brief starts "read wip/team/MAKO_SAYS.md first". qc-foundation has no Write: save its reply as the report.
 
 | Branch | Tip | State | Next |
