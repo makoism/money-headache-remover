@@ -306,5 +306,13 @@
     }
     return out.sort((a, b) => (a.o.lands < b.o.lands ? -1 : a.o.lands > b.o.lands ? 1 : 0));
   }
-  return { statusOf, capParts, warningText, laterText, laterLowText, moveText, lateList, WORDS, STALE_DAYS, OLD_DAYS };
+  /* [qc-novice C7] an account added as money moved in opens at 0 the day before the move, with a figure of 0 written in
+     the same step: nobody looked at it. True while every figure of it (by `day`) is one of those; a figure typed later,
+     or an account added with what it holds today, gives false. A lookup, nothing worked out */
+  function notChecked(book, id, day) {
+    const ev = ((book && book.events) || []).filter(e => e && !e.gone);
+    const checks = ev.filter(e => e.k === 'check' && !e.stmt && e.acct === id && (!day || e.date <= day));
+    return checks.length > 0 && checks.every(c => c.grp && ev.some(o => o.k === 'open' && o.acct === id && o.a === 0 && o.grp === c.grp) && ev.some(t => t.k === 'transfer' && t.acct2 === id && t.grp === c.grp));
+  }
+  return { statusOf, capParts, warningText, laterText, laterLowText, moveText, lateList, notChecked, WORDS, STALE_DAYS, OLD_DAYS };
 });

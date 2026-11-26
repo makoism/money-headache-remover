@@ -170,7 +170,7 @@ function checkPreview3() {
   try { r0 = checkView3(checkOut3(Object.assign({}, d, { figures: {} }))); r1 = checkView3(checkOut3(d)); } catch (e) { return; }
   for (const el of sheet.querySelectorAll('[data-expected]')) {
     const id = el.dataset.expected, a = r0.accounts[id];
-    if (a) el.textContent = `Expected now ${money3(a.bank, a.currency)}, last checked ${money3(a.checked, a.currency)} on ${day3(a.asOf, yr)}`;
+    if (a) el.textContent = `Expected now ${money3(a.bank, a.currency)}, ` + (BurrowScreens.status.notChecked(E3.book, id, check3.day) ? 'not checked yet' : `last checked ${money3(a.checked, a.currency)} on ${day3(a.asOf, yr)}`);   // [qc-novice C7]
     /* [BM4, BL5] a card in credit is written the way Home writes it, "in credit ¥3,000", never with a minus */
     else if (r0.cards[id]) { const c = E3.lastCheckOf(id, check3.day), k = r0.cards[id]; el.textContent = `Expected now ${k.credit ? label3('inCredit').toLowerCase() + ' ' + money3(k.credit, E3.curOf(id)) : money3(k.owedNow, E3.curOf(id))}${c ? `, last checked ${money3(c.a, E3.curOf(id))} on ${day3(c.date, yr)}` : ''}`; }
   }

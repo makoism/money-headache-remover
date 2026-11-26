@@ -14,7 +14,13 @@ function ageWords3(days) {
    says "checked today". [C13, M51] The parts are written as the sum that ends with the big figure above (the engine's
    bank), in the way Home writes its other sums, so it never reads as two figures for the bank. One way of writing
    cents for the line (money.js formatter); the signs are written, nothing is worked out here. */
-function bankParts3(a, yr) {
+function bankParts3(a, yr, id) {
+  /* [qc-novice C7] added as money moved in, never looked at: "not checked yet", never the day of the 0 it opened with */
+  if (id && BurrowScreens.status.notChecked(E3.book, id, E3.today())) {
+    if (!a.loggedIn && !a.loggedOut) return 'not checked yet';
+    const g = fmt3(a.currency, [a.checked, a.loggedOut, a.loggedIn, a.bank]);
+    return esc3(`not checked yet: ${g(a.checked)} when added${a.loggedOut ? ` ${SM.MINUS} ${g(a.loggedOut)} (out, logged since)` : ''}${a.loggedIn ? ` + ${g(a.loggedIn)} (in, logged since)` : ''} = ${g(a.bank)}`);
+  }
   /* [M36] a figure dated after this device's day (another device a day ahead): its day only, never a negative age */
   if (!a.loggedIn && !a.loggedOut) return a.ageDays < 0 ? `checked on ${esc3(day3(a.asOf, yr))}` : `${ageWords3(a.ageDays)}, on ${esc3(day3(a.asOf, yr))}`;
   const f = fmt3(a.currency, [a.checked, a.loggedOut, a.loggedIn, a.bank]);
@@ -172,7 +178,7 @@ function drawHome3() {
     /* [qc-numbers run 1 C1, M51] cash or an e-wallet is never called a bank: "Wallet today" */
     out.push(`<section class="a3-card" data-card="bank" data-acct="${esc3(id)}"><h2>${isBank ? `${esc3(label3('bankToday'))}: ${esc3(E3.nameOf(id))}` : `${esc3(E3.nameOf(id))} today`}</h2>
       <p class="a3-big" data-fig="bank">${fig3('accounts.*.bank', a.bank, a.currency)}</p>
-      <p class="a3-sub" data-fig="age">${bankParts3(a, yr)}</p></section>`);
+      <p class="a3-sub" data-fig="age">${bankParts3(a, yr, id)}</p></section>`);
   }
   /* safe to spend until next pay, with the sum behind it */
   const until = safeUntil3(r, yr, home);

@@ -55,7 +55,7 @@
     for (const a of accts.filter(x => SPEND_FROM[x.type])) {
       const ref = 'A' + (++k); refs[ref] = a.id;
       const fig = r.accounts[a.id];
-      rows.push(`${ref} | ${a.name} | ${a.type} | ` + (fig ? `${m(fig.bank, fig.currency)} today, checked ${fig.ageDays === 0 ? 'today' : fig.ageDays === 1 ? 'yesterday' : fig.ageDays < 0 ? 'on a later day' : fig.ageDays + ' days ago'}` : 'see cards'));
+      rows.push(`${ref} | ${a.name} | ${a.type} | ` + (fig ? `${m(fig.bank, fig.currency)} today, ` + (ST.notChecked(book, a.id, today) ? 'not checked yet' : `checked ${fig.ageDays === 0 ? 'today' : fig.ageDays === 1 ? 'yesterday' : fig.ageDays < 0 ? 'on a later day' : fig.ageDays + ' days ago'}`) : 'see cards'));   // [qc-novice C7]
     }
     out.push('Accounts you can spend from (ref | name | kind | bank today):\n' + rows.join('\n'));
     for (const id of Object.keys(r.accounts)) if (r.accounts[id].spendFrom && r.accounts[id].whyParts) out.push(`How safe to spend is worked out for ${name(id)}: ${SM.sumLine(r.accounts[id].whyParts, r.accounts[id].headroom, r.accounts[id].currency)}`);   // [S4] as Home writes it

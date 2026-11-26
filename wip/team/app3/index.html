@@ -5054,7 +5054,15 @@ details summary { min-height: 44px; }
     }
     return out.sort((a, b) => (a.o.lands < b.o.lands ? -1 : a.o.lands > b.o.lands ? 1 : 0));
   }
-  return { statusOf, capParts, warningText, laterText, laterLowText, moveText, lateList, WORDS, STALE_DAYS, OLD_DAYS };
+  /* [qc-novice C7] an account added as money moved in opens at 0 the day before the move, with a figure of 0 written in
+     the same step: nobody looked at it. True while every figure of it (by `day`) is one of those; a figure typed later,
+     or an account added with what it holds today, gives false. A lookup, nothing worked out */
+  function notChecked(book, id, day) {
+    const ev = ((book && book.events) || []).filter(e => e && !e.gone);
+    const checks = ev.filter(e => e.k === 'check' && !e.stmt && e.acct === id && (!day || e.date <= day));
+    return checks.length > 0 && checks.every(c => c.grp && ev.some(o => o.k === 'open' && o.acct === id && o.a === 0 && o.grp === c.grp) && ev.some(t => t.k === 'transfer' && t.acct2 === id && t.grp === c.grp));
+  }
+  return { statusOf, capParts, warningText, laterText, laterLowText, moveText, lateList, notChecked, WORDS, STALE_DAYS, OLD_DAYS };
 });
 /* One input behaviour for every box (DECISIONS_ROUND2 C, sweep2_repeats A11: "$1,212", "TripLisbon"). The first tap or
    click into a box selects what is in it, so what is typed next replaces the old value instead of adding to it. A
@@ -9788,7 +9796,13 @@ function ageWords3(days) {
    says "checked today". [C13, M51] The parts are written as the sum that ends with the big figure above (the engine's
    bank), in the way Home writes its other sums, so it never reads as two figures for the bank. One way of writing
    cents for the line (money.js formatter); the signs are written, nothing is worked out here. */
-function bankParts3(a, yr) {
+function bankParts3(a, yr, id) {
+  /* [qc-novice C7] added as money moved in, never looked at: "not checked yet", never the day of the 0 it opened with */
+  if (id && BurrowScreens.status.notChecked(E3.book, id, E3.today())) {
+    if (!a.loggedIn && !a.loggedOut) return 'not checked yet';
+    const g = fmt3(a.currency, [a.checked, a.loggedOut, a.loggedIn, a.bank]);
+    return esc3(`not checked yet: ${g(a.checked)} when added${a.loggedOut ? ` ${SM.MINUS} ${g(a.loggedOut)} (out, logged since)` : ''}${a.loggedIn ? ` + ${g(a.loggedIn)} (in, logged since)` : ''} = ${g(a.bank)}`);
+  }
   /* [M36] a figure dated after this device's day (another device a day ahead): its day only, never a negative age */
   if (!a.loggedIn && !a.loggedOut) return a.ageDays < 0 ? `checked on ${esc3(day3(a.asOf, yr))}` : `${ageWords3(a.ageDays)}, on ${esc3(day3(a.asOf, yr))}`;
   const f = fmt3(a.currency, [a.checked, a.loggedOut, a.loggedIn, a.bank]);
@@ -9946,7 +9960,7 @@ function drawHome3() {
     /* [qc-numbers run 1 C1, M51] cash or an e-wallet is never called a bank: "Wallet today" */
     out.push(`<section class="a3-card" data-card="bank" data-acct="${esc3(id)}"><h2>${isBank ? `${esc3(label3('bankToday'))}: ${esc3(E3.nameOf(id))}` : `${esc3(E3.nameOf(id))} today`}</h2>
       <p class="a3-big" data-fig="bank">${fig3('accounts.*.bank', a.bank, a.currency)}</p>
-      <p class="a3-sub" data-fig="age">${bankParts3(a, yr)}</p></section>`);
+      <p class="a3-sub" data-fig="age">${bankParts3(a, yr, id)}</p></section>`);
   }
   /* safe to spend until next pay, with the sum behind it */
   const until = safeUntil3(r, yr, home);
@@ -10231,7 +10245,7 @@ function checkPreview3() {
   try { r0 = checkView3(checkOut3(Object.assign({}, d, { figures: {} }))); r1 = checkView3(checkOut3(d)); } catch (e) { return; }
   for (const el of sheet.querySelectorAll('[data-expected]')) {
     const id = el.dataset.expected, a = r0.accounts[id];
-    if (a) el.textContent = `Expected now ${money3(a.bank, a.currency)}, last checked ${money3(a.checked, a.currency)} on ${day3(a.asOf, yr)}`;
+    if (a) el.textContent = `Expected now ${money3(a.bank, a.currency)}, ` + (BurrowScreens.status.notChecked(E3.book, id, check3.day) ? 'not checked yet' : `last checked ${money3(a.checked, a.currency)} on ${day3(a.asOf, yr)}`);   // [qc-novice C7]
     /* [BM4, BL5] a card in credit is written the way Home writes it, "in credit ¥3,000", never with a minus */
     else if (r0.cards[id]) { const c = E3.lastCheckOf(id, check3.day), k = r0.cards[id]; el.textContent = `Expected now ${k.credit ? label3('inCredit').toLowerCase() + ' ' + money3(k.credit, E3.curOf(id)) : money3(k.owedNow, E3.curOf(id))}${c ? `, last checked ${money3(c.a, E3.curOf(id))} on ${day3(c.date, yr)}` : ''}`; }
   }
@@ -13570,7 +13584,7 @@ function stmt3Bar() {
     for (const a of accts.filter(x => SPEND_FROM[x.type])) {
       const ref = 'A' + (++k); refs[ref] = a.id;
       const fig = r.accounts[a.id];
-      rows.push(`${ref} | ${a.name} | ${a.type} | ` + (fig ? `${m(fig.bank, fig.currency)} today, checked ${fig.ageDays === 0 ? 'today' : fig.ageDays === 1 ? 'yesterday' : fig.ageDays < 0 ? 'on a later day' : fig.ageDays + ' days ago'}` : 'see cards'));
+      rows.push(`${ref} | ${a.name} | ${a.type} | ` + (fig ? `${m(fig.bank, fig.currency)} today, ` + (ST.notChecked(book, a.id, today) ? 'not checked yet' : `checked ${fig.ageDays === 0 ? 'today' : fig.ageDays === 1 ? 'yesterday' : fig.ageDays < 0 ? 'on a later day' : fig.ageDays + ' days ago'}`) : 'see cards'));   // [qc-novice C7]
     }
     out.push('Accounts you can spend from (ref | name | kind | bank today):\n' + rows.join('\n'));
     for (const id of Object.keys(r.accounts)) if (r.accounts[id].spendFrom && r.accounts[id].whyParts) out.push(`How safe to spend is worked out for ${name(id)}: ${SM.sumLine(r.accounts[id].whyParts, r.accounts[id].headroom, r.accounts[id].currency)}`);   // [S4] as Home writes it
