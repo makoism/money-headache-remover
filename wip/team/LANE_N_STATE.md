@@ -3,6 +3,21 @@
 LANE N: session_01BFpKEYrXD1v3TRranaJ9WE (took over from LANE M session_01BFpKEWyTdLJxPoDySdQrVW, 26 Nov about 11:45 JST). Coordinator: "Burrow coordinator 18 (talk to this one)" session_01BFpKEVNiZLwPaZF7W9sbtP. MAIN 24 session_01BFpKEW9b3sUkGfcHygE46v is the only merger (MAIN 23 closed; it forwarded controls-10 and controls-12 notes). LANE L session_01BFpKEXEN4ow4uyeRCZ9aSM owns lane/amounthist.
 Keep-going task: (LANE N, see Now). LANE M stays until its two running jobs land (close-account helper on controls-5fix, qc-foundation on loancheck): do not touch controls-5fix or the loancheck round until LANE M says.
 
+## HANDOFF (LANE N to the next lane, 26 Nov about 15:45 JST, history ~230k). Read this section first; the long Now below has the history.
+Setup: tools line in LANE M's section below (npm install puppeteer-core acorn acorn-walk under /home/claude/work/tools); `git fetch --unshallow origin`; worktrees per branch under .claude/worktrees/. Merger: MAIN 24 session_01BFpKEW9b3sUkGfcHygE46v. Coordinator 18 session_01BFpKEVNiZLwPaZF7W9sbtP. Up to two helpers or reviewers at once, Opus, until Sun 29 Nov 09:00 JST. Every brief starts "read wip/team/MAKO_SAYS.md first". qc-foundation has no Write: save its reply as the report.
+
+| Branch | Tip | State | Next |
+|---|---|---|---|
+| lane/controls-6 (loan check) | f25f2d2a+ | qc-foundation confirm PASS; qc-numbers confirm FAIL: a 0 loan check between two others drops the No question. HELPER RUNNING (LANE N's) fixing the shared "payments to ask" list + full check | ask coordinator for qc-numbers confirm 2 file (and its ruling on folding the 782,300 far-question wording into KNOWN (b)); run qc-numbers confirm 2 and qc-foundation confirm2 (confirm2_qc-foundation.txt exists; save as qc-foundation_confirm2.md) in parallel; then report ready to MAIN 24 + coordinator |
+| lane/controls-11 (slice 10, bank check change/remove) | 42d36041+ | HELPER RUNNING (LANE N's): CHECKFIX_PLAN built, far-figure ask, amounthist 5e666883 merged, tick removable later; doing: words items, ruling (A) Receipts lists every ticked bill and pay with Remove/Undo (Home lines = Receipts rows test), then full check; QUESTIONS.md in qc_reports/2026-11-26_checkfix_build | read QUESTIONS.md, send its questions to the coordinator; reviewers on the build: qc-controls, qc-data-safety, qc-numbers (ask coordinator for scope). Merge conflict later with controls-6 Receipts rows (7116d450) and farFigure (identical copy in engine/checkin.js) |
+| lane/controls-5 (slices 2-5) | ac21b39f | qc-controls confirm 2 PASS | qc-foundation confirm (confirm_qc-foundation.txt; save as qc-foundation_confirm1.md); if PASS report ready |
+| lane/controls-8 (slices 7-8 + 2-5 + cash payer ruling) | af31749c | full ALL GOOD | qc-controls + qc-foundation, round 2026-11-26_controls7to8 (no scope.txt yet: ask coordinator) |
+| lane/controls-13 (slice 13 plan) | 66e61ceb | MAINBANK_PLAN.md written | qc-foundation on the plan (round 2026-11-26_mainbank_plan), then qc-novice |
+| lane/controls-10, lane/controls-12 | 4f505487, 9865c43a | DONE, with MAIN 24 (merge after the candidate goes to Mako, 10 then 12) | nothing |
+| (new branch from lane/ai-join) | | QUEUED data-safety items (1) and (2), see Now below | helper, then qc-data-safety |
+Own todo: older chat card "Do it" breaks a newer card; Wallet +10,000 in a close/reopen/close run (trace). Small notes: "1,2,3" pasted read as 123 silently; "Undone" notice stays into the next sheet.
+LANE N stays until its two running helpers land, saves their results, then tells the next lane and stops.
+
 ## Now (LANE N, 26 Nov about 12:00 JST)
 - 26 Nov 13:00 to 15:20 JST: both helpers stopped at the 5-hour usage limit; resumed 15:26 JST (SendMessage to the same agents). c6 loan helper: a c d e committed (7e21c558, 7116d450, 97be5136, e1b21c8b), full check next. c11 slice 10 helper: amounthist 5e666883 merged (52c31f31), tick removable later 42d36041, words items in progress.
 - Keep-going task: trig_01FMeQ7rvvWb3eaPHZzBJ5ky (hourly at :26, made by coordinator 18, bound to LANE N). create_trigger refuses here (lineage depth 8): the coordinator starts the replacement at handoff.
