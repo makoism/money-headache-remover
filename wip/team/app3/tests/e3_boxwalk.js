@@ -60,7 +60,7 @@ const FORMS = {
   'Plan: Free to spend': PL(), 'Plan: Add a line': PL(), 'Plan: a line': PL(), 'Plan: the pay': PL(), 'Plan: a bill': PL(), 'Plan: Add a bill': PL(),
   'Plan: Add a goal': PL(), 'Plan: a goal': PL({ save: '[data-plbtn="1"]' }), 'Plan: a goal, Set aside': PL({ only: /Set aside now/, fill: { 'Set aside now': '1000' }, noValid: 'how much can be set aside depends on what the bank can spare that day (tests/e3_plan.js)' }),
   'Plan: a card': PL({ mayBeEmpty: [/^Day the statement closes/] }), 'Plan: Add a card': PL(), 'Plan: Add a loan': PL(), 'Plan: a loan': PL(),
-  'Check your bank': { save: '#a3CheckSave', mayBeEmpty: [/^What is on .* now\?/], minusOk: [/^What does .* show today\?/] },   // a bank below zero (M47, tests/e3_overdrawn.js)   // a card's figure is asked, never needed: left empty it is not checked
+  'Check your bank': { save: '#a3CheckSave', mayBeEmpty: [/^What is on .* now\?/, /^What does .* show today\?/], minusOk: [/^What does .* show today\?/] },   // a bank below zero (M47, tests/e3_overdrawn.js)   // a card's or a bank's figure is asked, never needed: left empty it is not checked (qc-controls run 1 blocker 3)
   'Settings': { save: '#a3SetWordKeep', only: /ode word/, fill: { 'ode word': 'walkword' } },
   'Settings: a backup file locked with a code': { save: '#a3BkSave', only: /Code for this file/, wrongText: ['', 'abc'], noValid: 'a right code saves a file to the device (tests/e3_backup.js)' },
   'Settings: I have a code': { save: '#a3CloudUse', only: /cloud code/, wrongText: ['', 'abc'], noValid: 'a right code calls the cloud (tests/e3_cloud.js)' },
@@ -71,7 +71,7 @@ const FORMS = {
 /* boxes written in app3/src that this walk never meets, each with why and the test that covers it */
 const NOT_WALKED = {
   'checkin3.js #a3l${i}': 'the day a late pay landed: shown only for a pay that was not seen on its day (tests/e3_walk.js)',
-  'checkin3.js #a3cm${i}': 'the day a pay ticked after its due day came in: shown only for such a pay (tests/e3_paycame.js)',
+  'checkin3.js #a3cm${i}': 'the day a pay ticked after its due day came in: shown only after Another day is tapped (tests/e3_paycame.js)',
   'checkin3.js data-gapspend': 'a tick, shown once the bank figure typed is lower than expected (tests/e3_checkgap.js)',
   'checkin3.js data-gapline': 'a list, shown once the bank figure typed is lower than expected (tests/e3_checkgap.js)',
   'settings3.js #a3BkFile': 'the hidden file chooser behind Restore from a file (tests/e3_backup.js)',

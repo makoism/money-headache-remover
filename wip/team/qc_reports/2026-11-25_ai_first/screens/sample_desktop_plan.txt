@@ -42,6 +42,15 @@ Goals
 No goals yet. A goal is money set aside for something, kept in your bank or in an account of its own
 
 Add a goal
+Accounts
+Main bank
+Your main bank, where pay lands
+¥286,000
+bank today
+
+What each holds changes at Check your bank
+
+Add an account
 Cards and loans
 Card A
 paid on day 10 from Main bank, close day not sure

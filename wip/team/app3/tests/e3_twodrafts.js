@@ -15,7 +15,8 @@
    F. [found by check3 full, 26 Nov] a draft write already on its way when See my money clears the draft never lands
       after the clear: no setup draft is left behind once the book exists (the store's writes made slow on purpose).
    G. [coordinator's ruling 26 Nov, M61] the device record (the setup draft, the cloud copy's state, the fill mark ...)
-      is read and written whole: ten keys written at once through E3.rec are all kept, and the same after a reload. */
+      is read and written whole: ten keys written at once through E3.rec are all kept, and the same after a reload.
+   H. [coordinator 16, 26 Nov] after the chat fills the app, the setup Save's Undo is taken off Home (it could undo nothing). */
 'use strict';
 const T = require('./lib3.js'), { ck } = T;
 const fs = require('fs'), os = require('os');
@@ -57,6 +58,11 @@ async function fill(p, ai) { ai.push(R.say('', [R.call('fill_book', {})]), R.say
       await fill(o.p, ai);
       const h = await R.home(o.p);
       ck('A: the chat\'s fill makes Home show Sora Bank 260,000 and safe to spend 260,000', h.bank === 260000 && h.safe === 260000, JSON.stringify(h));
+      /* H [coordinator 16's ruling 26 Nov: an Undo that says Undone and changes nothing says something untrue] once the app is
+         filled, the setup Save's "Your bank: saved" Undo is no longer on Home, now or after a reload */
+      ck('H: after the fill, no setup Save Undo on the band', !/Your bank: saved/.test(await band(o.p)), await band(o.p));
+      await o.p.reload(); await T.w(700);
+      ck('H: nor after a reload', !/: saved/.test(await band(o.p)), await band(o.p));
       ck('A: no page errors', !o.errs.length, o.errs.join(' | '));
     } catch (e) { ck('A: the check ran to its end', false, e.stack); }
     finally { await o.b.close(); }

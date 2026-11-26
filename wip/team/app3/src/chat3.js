@@ -18,6 +18,7 @@ const CHAT3_WORDS = {
   /* why a change card asks first (M6): the core's card.ask; its card.why is the AI's own words, not shown here */
   ask: { delete: 'This takes something away. Do it?', large: 'This is more than safe to spend. Do it?', guess: 'You didn\'t type this amount, it\'s the AI\'s guess. Is it right?', gap: 'This is far from what the app expected. Is the figure right?' },
   fillKept: 'To change something, tell me or change it on its screen',
+  later: 'Loans, goals and budget lines like Gifts are not part of setup. Add them on Plan after this: Add a loan, Add a goal, Add a line',   // [qc-controls run 1 blocker 2] the same words as setup's last step
 };
 
 /* below the wide screen the page scrolls inside #a3, above the bar (app3.css): every screen's scrollTo moves it too.
@@ -126,6 +127,8 @@ function chat3Card(t) {
     return `<div class="a3-card a3-chat-card" data-card="chat-change" data-turn="${id}" data-status="${esc3(c.status)}"><h3>${c.status === 'ask' ? 'A change to check' : c.status === 'refused' || c.status === 'not now' ? 'Not changed' : 'Changed'}</h3>
       <ul class="a3-chat-lines">${(c.lines || []).map(l => `<li>${esc3(l)}</li>`).join('')}</ul>${(c.left || []).length ? `<p class="a3-warn" data-chat="left">Not done: ${esc3(c.left.join(', and '))}. Say that part again on its own</p>` : ''}${chat3Figs(c.rows)}${c.note && c.status === 'done' ? `<p class="a3-sub" data-chat="note">${esc3(c.note)}</p>` : ''}${foot}</div>`;
   }
+  /* [CONFUSING 1] a setup card is not drawn while a book is here that the chat did not fill (worked out each time) */
+  if (c.kind === 'draft' && CHAT3C.setupShut(CHAT3.state || CHAT3C.fresh(), E3.book)) return '';
   if (c.kind === 'draft') {
     return `<div class="a3-card a3-chat-card" data-card="chat-draft" data-turn="${id}"><h3>Your answers so far</h3>
       ${(c.sections || []).map(s => `<div data-section="${esc3(s.key)}"><p class="a3-acct">${esc3(s.title)}</p><ul class="a3-chat-lines">${(s.lines || []).map(l => `<li>${esc3(l)}</li>`).join('')}</ul></div>`).join('')}
@@ -139,14 +142,14 @@ function chat3Card(t) {
        that there is no Start over (the store refuses it once the hold is gone): the card says how to change things */
     const foot = c.status === 'done' ? (E3.held() ? `<div class="a3-actions"><button type="button" class="a3-btn" data-chatundo="${id}">Undo</button></div>` : `<p class="a3-sub" data-chat="status">${esc3(CHAT3_WORDS.fillKept)}</p>`)
       : `<p class="a3-sub" data-chat="status">${c.status === 'undone' ? 'Taken back. Your answers are kept' : 'Started over. Your answers are kept'}</p>`;
-    return `<div class="a3-card a3-chat-card" data-card="chat-fill" data-turn="${id}" data-status="${esc3(c.status)}"><h3>Filled in</h3>${figs}${foot}</div>`;
+    return `<div class="a3-card a3-chat-card" data-card="chat-fill" data-turn="${id}" data-status="${esc3(c.status)}"><h3>Filled in</h3>${figs}${c.status === 'done' ? `<p class="a3-sub" data-chat="later">${esc3(CHAT3_WORDS.later)}</p>` : ''}${foot}</div>`;
   }
   return '';
 }
 function chat3Turn(t) {
   if (t.who === 'person') return `<p class="a3-ask-me" data-turn="${esc3(t.id)}">${esc3(t.text)}</p>`;
   /* [AI_FIRST_PLAN 7] an amount the AI wrote that is in nothing it was given: marked for checking against the screens */
-  if (t.who === 'ai') return `<p class="a3-ask-ai" data-turn="${esc3(t.id)}">${esc3(t.text)}${(t.check || []).length ? `<span class="a3-chat-check" data-chat="check"><br>Check this: ${esc3(t.check.join(', '))} is the AI's own figure, not the app's. The screens have the app's figures</span>` : ''}</p>`;
+  if (t.who === 'ai') return `<p class="a3-ask-ai" data-turn="${esc3(t.id)}">${esc3(t.text)}${(t.check || []).length ? `<span class="a3-chat-check" data-chat="check"><br>Check this: ${esc3(t.check.join(', '))} is the AI's own figure, not the app's. The screens have the app's figures</span>` : ''}${t.notDone ? `<span class="a3-chat-check" data-chat="notdone"><br>${esc3(CHAT3C.DONE_WORDS)}</span>` : ''}</p>`;
   if (t.who === 'note') return `<p class="a3-chat-saved" data-turn="${esc3(t.id)}" role="status">${esc3(t.text)}</p>`;
   if (t.who === 'card') return chat3Card(t);
   return '';

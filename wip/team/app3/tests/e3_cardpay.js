@@ -12,8 +12,9 @@
             gone, had 50,000: 29,000 less. With the payment ticked the app has 0 and the card shows 21,000 more: a far
             smaller gap. So the sheet asks, under the card: "Did Card A's payment of ¥50,000 go out on 10 Dec?"
             Yes ticks it. The same for Card B (¥24,000 on 11 Dec).
-            Saved with both ticked: the period to 9 Dec holds 30,000 + 14,000 + 9,000 + 3,000 = 56,000 and the new one
-            12,000 + 4,000 = 16,000, so safe to spend is 60,000 - 16,000 = 44,000 and the cards owe 21,000 and 7,000.
+            Saved with both ticked: the period to 9 Dec holds 30,000 + 14,000 = 44,000 and the new one the whole 13 Dec
+            gaps, 21,000 + 7,000 = 28,000 [CHECKGAP, coordinator 15, 26 Nov: a check's gap is its own period's; by days it
+            was 56,000 and 16,000], so safe to spend is 60,000 - 28,000 = 32,000 and the cards owe 21,000 and 7,000.
    Saved with the question not answered (before this fix: no question at all), the periods read 82,706 and minus
    10,706 and both payments stay on the list: the fault this test holds off. */
 'use strict';
@@ -84,11 +85,11 @@ async function checkin6(p) {
   ck('Yes ticks Card B\'s payment too', (await tickState(p, 'Card B')) === true && (await ask(p, 'Card B')) === null);
   await p.click('#a3CheckSave'); await w(700);
   ck('saved', await p.$eval('#a3Check', x => x.hidden), await txt(p, '#a3CheckErr'));
-  await L.home(p, '13 Dec, both payments ticked: 16,000 of the 60,000 spent since the pay', 44000, { [BANK]: 526000 });
+  await L.home(p, '13 Dec, both payments ticked: 28,000 of the 60,000 spent since the pay', 32000, { [BANK]: 526000 });
   const owed = await p.$$eval('#a3Home [data-card=cards] [data-fig=owed] [data-amt]', es => es.map(x => Number(x.dataset.amt)));
   ck('the cards owe what was typed, 21,000 and 7,000', JSON.stringify(owed) === '[21000,7000]', JSON.stringify(owed));
   await tab(p, 'plan');
-  ck('Plan: Free to spend has 44,000 left of 60,000', (await figAmt(p, '#a3Plan [data-line=free] [data-fig=free-left]')) === 44000);
+  ck('Plan: Free to spend has 32,000 left of 60,000', (await figAmt(p, '#a3Plan [data-line=free] [data-fig=free-left]')) === 32000);
   await L.sameAfterReload(p, '13 Dec after the check');
 
   /* ---- a card that really is not paid yet: "No" is to leave it unticked and Save again ---- */

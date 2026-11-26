@@ -23,14 +23,13 @@
      10 Dec  pay day, opened before anything is ticked: the bank still reads 327,000 and safe to spend is 7,300.
      12 Dec  (Sat) check: the pay (10 Dec), Card A's 55,000 (10 Dec) and Card B's 19,700 (11 Dec) ticked; bank 537,300
              (327,000 + 285,000 - 55,000 - 19,700, no gap); Card A 14,700 and Card B 5,005, not logged over 6 to
-             12 Dec, seven days: 6 to 9 Dec are before the pay (4 of 7), 10 to 12 Dec after (3 of 7).
-               Card A 14,700: 8,400 before, 6,300 after.  Card B 5,005: 2,860 before, the rest 2,145 after.
-             The period from 10 Dec: 60,000 - 6,300 - 2,145 =                        safe 51,555   bank 537,300
-             (With the whole gap dated on the check's day, as before the fix, it would read 40,295.)
-             The period 10 Nov to 9 Dec, gone by: 6,300 + 4,200 + 6,500 + 7,700 + 8,400 + 2,860 = 35,960 of 32,000.
+             12 Dec, found at the 12 Dec check. [CHECKGAP, coordinator 15, 26 Nov] A check's gap is the period the check
+             is in, whole (by days it was 8,400 + 2,860 before the pay and 6,300 + 2,145 after, safe 51,555):
+             The period from 10 Dec: 60,000 - 14,700 - 5,005 =                       safe 40,295   bank 537,300
+             The period 10 Nov to 9 Dec, gone by, keeps what it closed with: 6,300 + 4,200 + 6,500 + 7,700 = 24,700 of 32,000.
      19 Dec  (Sat) check: bank 537,300 (the rent leaves on the 28th); Card A 23,100 (8,400 not logged over 13 to
-             19 Dec), Card B 5,005 (nothing).  51,555 - 8,400 =                      safe 43,155   bank 537,300
-             This period on Receipts: 6,300 + 2,145 + 8,400 = 16,845 of 60,000. */
+             19 Dec), Card B 5,005 (nothing).  40,295 - 8,400 =                      safe 31,895   bank 537,300
+             This period on Receipts: 14,700 + 5,005 + 8,400 = 28,105 of 60,000. */
 'use strict';
 const L = require('./lives3.js').make('e3_walk_cardgap');
 const { ck, go, tab, typeIn, txt, w } = L;
@@ -116,33 +115,33 @@ const cardsOwed = p => p.$$eval('#a3Home [data-fig=owed]', es => es.map(e => Num
   await go(p, '2026-12-12');
   ticked = await checkin(p, { [BANK]: 537300, 'Card A': 14700, 'Card B': 5005 });
   ck('12 Dec: the check asked about the pay and both card payments, 55,000 and 19,700', ticked.length === 3 && ticked.some(t => /Card A/.test(t)) && ticked.some(t => /Card B/.test(t)), JSON.stringify(ticked));
-  await L.home(p, '12 Dec after the check across pay day (6,300 and 2,145 fall after the pay)', 51555, { [BANK]: 537300 });
+  await L.home(p, '12 Dec after the check across pay day (all 14,700 and 5,005 are this period\'s)', 40295, { [BANK]: 537300 });
   ck('12 Dec, Home: the cards show what was typed, 14,700 and 5,005', JSON.stringify(await cardsOwed(p)) === '[14700,5005]', JSON.stringify(await cardsOwed(p)));
   await tab(p, 'receipts');
   r = await receipts(p);
-  ck('12 Dec, Receipts: the period from 10 Dec, spent 8,445 of 60,000, its two gap rows 2,145 and 6,300 add up to it',
-    r.start === '2026-12-10' && r.spent === 8445 && r.of === 60000 && JSON.stringify(r.gaps) === '[2145,6300]' && r.spends.length === 0 && sum(r.gaps) === r.spent, JSON.stringify(r));
+  ck('12 Dec, Receipts: the period from 10 Dec, spent 19,705 of 60,000, its two gap rows 5,005 and 14,700 add up to it',
+    r.start === '2026-12-10' && r.spent === 19705 && r.of === 60000 && JSON.stringify(r.gaps) === '[5005,14700]' && r.spends.length === 0 && sum(r.gaps) === r.spent, JSON.stringify(r));
   await p.click('#rcOlder'); await w(250);
   r = await receipts(p);
-  ck('12 Dec, Receipts, Earlier: 10 Nov to 9 Dec, spent 35,960 of 32,000, with 8,400 and 2,860 from the 12 Dec check',
-    r.start === '2026-11-10' && r.end === '2026-12-09' && r.spent === 35960 && r.of === 32000 && JSON.stringify(r.gaps) === '[2860,6300,6500,7700,8400]', JSON.stringify(r));
+  ck('12 Dec, Receipts, Earlier: 10 Nov to 9 Dec, spent 24,700 of 32,000 as it closed, nothing from the 12 Dec check',
+    r.start === '2026-11-10' && r.end === '2026-12-09' && r.spent === 24700 && r.of === 32000 && JSON.stringify(r.gaps) === '[6300,6500,7700]', JSON.stringify(r));
   ck('12 Dec, Receipts, Earlier: its rows add up to its spent figure (five gap rows and the groceries)', JSON.stringify(r.spends) === '[4200]' && sum(r.gaps) + sum(r.spends) === r.spent, JSON.stringify(r));
   await tab(p, 'plan');
   const left = await p.$eval('#a3Plan [data-line=free] [data-fig=free-left]', x => Number((x.dataset.amt !== undefined ? x : x.querySelector('[data-amt]')).dataset.amt)).catch(() => null);
-  ck('12 Dec, Plan: Free to spend left is the same 51,555', left === 51555, left);
+  ck('12 Dec, Plan: Free to spend left is the same 40,295', left === 40295, left);
 
   /* 19 Dec: a week into the new period */
   await go(p, '2026-12-19');
   ticked = await checkin(p, { [BANK]: 537300, 'Card A': 23100, 'Card B': 5005 });
   ck('19 Dec: nothing to tick (the rent leaves on the 28th)', ticked.length === 0, JSON.stringify(ticked));
-  await L.home(p, '19 Dec after the check (8,400 not logged on Card A)', 43155, { [BANK]: 537300 });
+  await L.home(p, '19 Dec after the check (8,400 not logged on Card A)', 31895, { [BANK]: 537300 });
   await tab(p, 'receipts');
   r = await receipts(p);
-  ck('19 Dec, Receipts: the period from 10 Dec, spent 16,845 of 60,000, rows 2,145, 6,300 and 8,400',
-    r.start === '2026-12-10' && r.spent === 16845 && r.of === 60000 && JSON.stringify(r.gaps) === '[2145,6300,8400]' && sum(r.gaps) + sum(r.spends) === r.spent, JSON.stringify(r));
+  ck('19 Dec, Receipts: the period from 10 Dec, spent 28,105 of 60,000, rows 5,005, 8,400 and 14,700',
+    r.start === '2026-12-10' && r.spent === 28105 && r.of === 60000 && JSON.stringify(r.gaps) === '[5005,8400,14700]' && sum(r.gaps) + sum(r.spends) === r.spent, JSON.stringify(r));
   await p.click('#rcOlder'); await w(250);
   r = await receipts(p);
-  ck('19 Dec, Receipts, Earlier: the period gone by still reads 35,960 of 32,000', r.start === '2026-11-10' && r.spent === 35960 && r.of === 32000, JSON.stringify(r));
+  ck('19 Dec, Receipts, Earlier: the period gone by still reads 24,700 of 32,000', r.start === '2026-11-10' && r.spent === 24700 && r.of === 32000, JSON.stringify(r));
 
   await c.close();
   await L.finish();

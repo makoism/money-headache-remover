@@ -650,22 +650,11 @@ function lookahead(sc, asOf, opts = {}) {
     return { bank, asOfDay: base.day, fillers, lastGap, askAgain: askAgain ? wrong.day : null };
   }
 
-  // [A3, A4] The filler for a stretch from `first` to `last` (whole days). Split by days at each period start
-  // in the stretch, or all to the older period when the person says "mostly before pay".
-  // Positive means more went out than was logged.
+  // [A3, CHECKGAP] The filler for a stretch from `first` to `last` (whole days): the whole gap counts on the check's
+  // own day, in the period the check is in (coordinator 15, 26 Nov 2026, replacing A4's split by days and "mostly
+  // before pay"). Positive means more went out than was logged.
   function makeFiller(id, first, last, amount) {
-    const starts = periodStartDays.filter(d => d > first && d <= last).sort((x, y) => x - y);   // [F8, T6]
-    const cuts = [first, ...starts, last + 1];
-    const days = last - first + 1;
-    const parts = [];
-    let given = 0;
-    for (let i = 0; i < cuts.length - 1; i++) {
-      const n = cuts[i + 1] - cuts[i];
-      const share = opts.mostlyBeforePay ? (i === 0 ? amount : 0) : i === cuts.length - 2 ? amount - given : Math.round(amount * n / days);
-      given += share;
-      parts.push({ from: dayStr(cuts[i]), to: dayStr(cuts[i + 1] - 1), days: n, amount: share });
-    }
-    return { account: id, from: dayStr(first), to: dayStr(last), amount, parts };
+    return { account: id, from: dayStr(first), to: dayStr(last), amount, parts: [{ from: dayStr(last), to: dayStr(last), days: 1, amount }] };
   }
 
   // ----- cards [F5, F6, F7, F14, F18, H3, H4, H7] -----

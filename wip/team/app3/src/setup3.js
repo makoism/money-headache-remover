@@ -8,6 +8,8 @@
    [item 14] Each section has its own Save and is held as a draft on this device until "See my money" turns the saved
    answers into a book through engine/build_book.js and keeps it through the store (the draft section below says
    how). Nothing is worked out here. The words are drafts for Mako's copy pass. */
+/* [qc-controls run 1 blocker 2, coordinator 16's ruling B] setup has no step for these: its last step says where they go */
+const SETUP3_LATER = 'Loans, goals and budget lines like Gifts are not part of setup. Add them on Plan after this: Add a loan, Add a goal, Add a line';
 let setup3 = null;
 function dayOptions3(sel, extra) {
   const out = [];
@@ -158,6 +160,7 @@ async function openSetup3() {
         <p class="a3-sub" id="s3MinH" data-hint="min">Safe to spend leaves this much in your bank as a cushion</p></div>
       ${saveBar3('min')}
     </section>
+    <p class="a3-sub" data-hint="later">${esc3(SETUP3_LATER)}</p>
     <p class="a3-err" id="a3SetupErr" role="alert"></p>
     <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3SetupSave">See my money</button><button type="button" class="a3-btn" id="a3SetupX">Back</button></div>
   </div>`;
@@ -477,10 +480,23 @@ function typedNow3(sections, skip) {
    on its way never lands after a later one (See my money's clear above all: E3.rec reads, then writes the device record) */
 let draftQ3 = Promise.resolve();
 const draftWrite3 = v => (draftQ3 = draftQ3.then(() => E3.rec('setup', v), () => E3.rec('setup', v)));
-const keepDraft3 = (sections, days, skip, kept) => {
+/* [qc-data-safety 26 Nov, blocker 1; M61] two tabs of one phone share the draft: a write changes only what this tab
+   changed (the sections in `touched`, saved or taken back; the boxes typed and not saved) on the draft as stored now,
+   so a section another tab saved is never wiped. E3.recEdit reads and writes in one turn, one tab at a time */
+const draftEdit3 = fn => (draftQ3 = draftQ3.then(() => E3.recEdit('setup', fn), () => E3.recEdit('setup', fn)));
+const keepDraft3 = (sections, days, skip, kept, touched) => {
   const typed = setup3 && setup3.base ? typedNow3(sections, skip) : Object.assign({}, kept);
   if (skip) delete typed[skip];
-  return draftWrite3(Object.keys(sections).length || Object.keys(typed).length ? { v: 1, sections, days, typed } : null);
+  return draftEdit3(cur => {
+    const d = cur && cur.v ? { v: 1, sections: Object.assign({}, cur.sections), days: Object.assign({}, cur.days), typed: Object.assign({}, cur.typed) } : { v: 1, sections: {}, days: {}, typed: {} };
+    for (const sec of touched || []) {
+      if (sections[sec]) { d.sections[sec] = sections[sec]; d.days[sec] = days[sec]; } else { delete d.sections[sec]; delete d.days[sec]; }
+      delete d.typed[sec];
+    }
+    if (skip) delete d.typed[skip];
+    Object.assign(d.typed, typed);
+    return Object.keys(d.sections).length || Object.keys(d.typed).length ? d : null;
+  });
 };
 /* what is typed is kept a moment after the typing stops, and at once on Back */
 /* what a row shows (its questions and their words) is worked out while the person types, not only when the box is left:
@@ -504,7 +520,7 @@ async function saveSec3(sec) {
   const before = setup3.saved[sec] || null, beforeDay = setup3.days[sec] || null, now = snap3(sec);
   const sections = Object.assign({}, setup3.saved, { [sec]: now }), days = Object.assign({}, setup3.days, { [sec]: E3.today() });
   setup3.busy = true;
-  const ok = await keepDraft3(sections, days);
+  const ok = await keepDraft3(sections, days, null, null, [sec]);
   setup3.busy = false;
   if (!setup3) return;
   if (ok !== true) { el.querySelector(`[data-saved="${sec}"]`).textContent = 'This could not be saved on this device. Nothing changed'; return; }
@@ -513,8 +529,12 @@ async function saveSec3(sec) {
   /* [qc-assistant run 4, fix B] the section goes into the chat's draft too: one set of answers (chat3.js) */
   const cw = typeof chat3FromScreens === 'function' ? chat3FromScreens(sec) : null;
   markAll3();
-  MSG3.post({ kind: 'undo', key: 'act3', text: `${secName3(sec)}: saved`, action: { label: 'Undo', run: () => undoSec3(sec, before, beforeDay, now, cw) } });
+  setup3Undo = MSG3.post({ kind: 'undo', key: 'act3', text: `${secName3(sec)}: saved`, action: { label: 'Undo', run: () => undoSec3(sec, before, beforeDay, now, cw) } });
 }
+/* [coordinator 16, 26 Nov] once the app is filled (by the chat or by See my money) a section's Save has nothing left to undo:
+   its Undo is taken off, never left to say "Undone" while nothing changes. E3.start calls this */
+let setup3Undo = null;
+function setup3Filled() { if (setup3Undo) { MSG3.dismiss(setup3Undo); setup3Undo = null; } }
 /* Undo a section's Save: the section as it was before it (or as it started); refused when it was saved again since */
 async function undoSec3(sec, before, beforeDay, now, cw) {
   const open = !!setup3, kept = open ? null : ((await E3.rec('setup')) || {});
@@ -527,7 +547,7 @@ async function undoSec3(sec, before, beforeDay, now, cw) {
      section is put back, or its write, made from the save being undone, would land after this one and win */
   const me = open ? setup3 : null;
   if (me) me.busy = true;
-  const ok = await keepDraft3(sections, days, sec, open ? null : kept.typed);
+  const ok = await keepDraft3(sections, days, sec, open ? null : kept.typed, [sec]);
   if (me) me.busy = false;
   if (ok !== true) { MSG3.post({ kind: 'toast', key: 'act3', text: 'This could not be saved on this device. Nothing changed' }); return; }
   if (me && setup3 === me) { setup3.saved = sections; setup3.days = days; put3(sec, before || setup3.base[sec]); }

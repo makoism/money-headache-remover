@@ -41,6 +41,8 @@ Save the calendar file
 
 72 reminders in the file
 
+Your choices are kept on this phone. A calendar you already filled changes only when you save the calendar file again
+
 Google Calendar repeats each one. Outlook adds the next one only. The calendar file has every one for the next year, moved for weekends and holidays.
 
 Check your bank: after pay lands
