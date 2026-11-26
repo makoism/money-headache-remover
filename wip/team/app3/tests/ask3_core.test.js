@@ -175,6 +175,18 @@ const ctxOf = h => ({ book: h.book, today: DAY });
     ok(s.includes('Short by ¥20,000, below zero from 28 Dec.'), s);
     ok(!/before the pay|before then/.test(s), s);
   });
+  await t('[SHORTGAP] the summary names each move the engine asks for (from, amount, day), never "cover", and drops the helped bank\'s warning', async () => {
+    const BB = require(E + 'build_book.js');
+    const b = BB.buildBook({ day: '2026-12-01', told: '2026-12-01T12:00:00.000+09:00', currency: 'JPY', country: 'JP',
+      banks: [{ key: 'm', name: 'Main bank', amount: 201400, main: true, min: null }, { key: 'b', name: 'Beta Bank', amount: 32000 }],
+      pays: [{ key: 'p', name: 'Pay', bank: 'm', amount: 240000, every: 'month', day: 10, shift: 'before', startsPeriod: true }],
+      cards: [{ key: 'c', name: 'Card A', owed: 54000, payDay: 10, closeDay: 'not sure', payFrom: 'b', shift: 'after', inFull: true }],
+      bills: [{ key: 'r', name: 'Rent', from: 'b', amount: 72000, day: 27, shift: 'after' }], free: null }, { newId: I.idMaker('s7g4pk') }).book;
+    const s = K.summary(b, '2026-12-01').text;
+    ok(s.includes('To do: Move ¥22,000 from Main bank to Beta Bank by 9 Dec, and ¥72,000 more by 27 Dec. Safe to spend already counts it'), s);
+    ok(!/cover/i.test(s), 'no cover');
+    ok(!/Beta Bank goes/.test(s), 'no warning beside it');
+  });
   console.log(bad ? `ask3_core: ${bad} FAIL of ${n}` : `ask3_core: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })();

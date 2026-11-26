@@ -86,9 +86,16 @@
     const owed = Object.keys(r.owed || {});
     if (owed.length) out.push('Loans (name | owed): ' + owed.map(id => `${name(id)} | ${m(r.owed[id].owedNow != null ? r.owed[id].owedNow : 0)}`).join('; ') + '.');
     /* [S4] the notes in the same words as Home (screens/status.js), each amount with its currency */
-    const wctx = { currency: home, names: Object.fromEntries(accts.map(a => [a.id, a.name])), accounts: r.accounts };
-    for (const w of r.warnings || []) out.push('Note: ' + ST.warningText(w, wctx));
-    for (const l of r.laterOn || []) out.push('Note: ' + ST.laterText(l, wctx));
+    const wctx = { currency: home, names: Object.fromEntries(accts.map(a => [a.id, a.name])), accounts: r.accounts, types: Object.fromEntries(accts.map(a => [a.id, a.type])) };
+    /* [SHORTGAP] each account another one helps: the moves the engine names (from, amount, day), the same line as Home,
+       in place of its own warnings; the move itself is a move_money step */
+    for (const id of Object.keys(r.accounts).filter(x => r.accounts[x].cover)) {
+      const t = ST.helpText(id, wctx), rest = ST.helpRestText(id, wctx);
+      if (t) out.push(`To do: ${t}. Safe to spend already counts it`);
+      if (rest) out.push('Note: ' + rest);
+    }
+    for (const w of r.warnings || []) if (!(w.covered && r.accounts[w.account] && r.accounts[w.account].cover)) out.push('Note: ' + ST.warningText(w, wctx));
+    for (const l of r.laterOn || []) if (!l.covered) out.push('Note: ' + ST.laterText(l, wctx));
     return { text: out.join('\n'), refs };
   }
 
