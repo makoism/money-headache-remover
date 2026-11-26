@@ -69,4 +69,34 @@ t('a payment day after the check comes off the check\'s figure: check 845,000 on
   h.tick('2027-01-27', '2027-01-27');
   eq(L(h, '2027-02-01').owedNow, 815000);
 });
+// [LOAN_CHECK_PLAN "Saved data", finding 3] old books already hold checks on a loan: a moved debt's mv:check:debt:* (no
+// grp, the same day and amount as its opening) and closeLoan's check of 0. Owed and the payment items are the same as the
+// engine gave before the rule (a9d4aa75^, run on these books by hand and pinned here).
+const MV = require('../move.js');
+function movedDebt() {
+  const copy = { v: 1, rev: 412, steps: { a: [{ from: '2026-11', v: 310000 }] }, once: {}, items: {}, cfg: { bankStart: 480000, minBank: 50000 },
+    ui: { cur: '¥', name: 'Sample person', done: { pay: true, bills: true, goals: true }, accts: [{ id: 'ac1', name: 'Main bank', kind: 'bank' }] },
+    plan: { lines: [{ id: 'rent', key: 'bill:rent', jar: 'nec', name: 'Rent or mortgage', def: 90000 }, { id: 'loan', key: 'bill:loan', jar: 'nec', name: 'Loan or debt payment', def: 0 }],
+      goals: [], debts: [{ id: 'car', name: 'Car loan', kind: 'loan', balance: 640000, apr: 0, min: 25000, extra: 0 }], recurring: [] }, receipts: [] };
+  return MV.move({ copy, now: '2026-11-24T09:00:00.000+09:00', answers: { cur: 'JPY', pay: { a: { every: 'month', days: [10] } }, billDay: { rent: { every: 'month', days: [27] } }, loanLine: 'drop', debtDay: { car: 27 } } });
+}
+const brief = o => [o.owedNow, o.next && [o.next.payment_date, o.next.amount], o.overdue.map(x => [x.payment_date, x.amount, x.state])];
+t('old book: a moved debt with its mv:check:debt check gives the same owed and items as before the rule', () => {
+  const b = movedDebt(), id = 'mv:debt:car';
+  ok(b.events.some(e => e.id === 'mv:check:debt:car' && e.k === 'check' && e.a === 640000), 'the moved check is there');
+  eq(brief(LA.lookahead(b, '2026-11-24').owed[id]), [640000, ['2026-11-27', 25000], []]);
+  eq(brief(LA.lookahead(b, '2027-01-05').owed[id]), [640000, ['2027-01-27', 25000], [['2026-11-27', 25000, 'notSeen'], ['2026-12-27', 25000, 'notSeen']]]);
+  const r = CK.checkIn(b, { day: '2027-01-05', told: '2027-01-05T03:00:00.000+00:00', newId: IDS.idMaker('m7c2px'), figures: {}, ticked: [id + '@2026-11-27', id + '@2026-12-27'], expected: { [id + '@2026-11-27']: 25000, [id + '@2026-12-27']: 25000 }, unticked: [] });
+  const b2 = CK.apply(b, r);
+  eq(brief(LA.lookahead(b2, '2027-01-05').owed[id]), [590000, ['2027-01-27', 25000], []]);
+});
+t('old book: closeLoan\'s check of 0 on a paid-off loan gives the same owed and items as before the rule (0, none)', () => {
+  const h = kenji();
+  h.book.accounts.find(a => a.id === h.loan).amount = 30000;
+  for (const e of h.book.events) if (e.acct === h.loan && (e.k === 'open' || e.k === 'check')) e.a = 60000;
+  const told = '2026-12-28T05:00:00.000+00:00';
+  h.book.events.push({ id: h.newId(), k: 'check', acct: h.loan, date: '2026-12-28', a: 0, told, at: told, grp: h.newId() });
+  h.book.accounts.find(a => a.id === h.loan).closed = '2026-12-28';
+  for (const d of ['2026-12-28', '2027-02-03']) eq(brief(L(h, d)), [0, null, []]);
+});
 done();

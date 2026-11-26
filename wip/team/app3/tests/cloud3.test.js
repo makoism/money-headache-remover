@@ -299,6 +299,34 @@ const canon = x => S.canon(x);
     ck('B5: the per-minute limit is still "busy"', !rd.ok && rd.why === 'busy');
   }
 
+  // ---- [LOAN_CHECK_PLAN "Saved data"] `notYet` on a loan check after setup: kept by save and load (the store guard and the
+  //      pack envelope) and by a sync round trip between two devices ----
+  {
+    const G = window.BurrowGuard, bank = BOOK.accounts[0].id, loan = 'k7m2qa-f3n8p1x6wd-40', occ = loan + '@2027-01-27';
+    const t1 = '2027-02-03T03:00:00.000+00:00';
+    const withLoan = clone(BOOK);
+    withLoan.accounts.push({ id: loan, name: 'Car loan', type: 'loan', cur: 'JPY', owner: null, payDay: 27, shift: 'none', payFrom: bank, amount: 30000, told: '2026-11-20T04:00:00.000+00:00', at: '2026-11-20T04:00:00.000+00:00', by: by.a });
+    withLoan.events.push({ id: 'k7m2qa-f3n8p1x6wd-41', k: 'open', acct: loan, date: '2026-11-20', a: 900000, told: '2026-11-20T04:00:00.000+00:00', at: '2026-11-20T04:00:00.000+00:00', by: by.a, grp: 'k7m2qa-f3n8p1x6wd-43' },
+      { id: 'k7m2qa-f3n8p1x6wd-42', k: 'check', acct: loan, date: '2026-11-20', a: 900000, told: '2026-11-20T04:00:00.000+00:00', at: '2026-11-20T04:00:00.000+00:00', by: by.a, grp: 'k7m2qa-f3n8p1x6wd-43' },
+      { id: 'dsk001-q8r2m4x7tb-7', k: 'check', acct: loan, date: '2027-02-03', a: 812400, notYet: [occ], told: t1, at: t1, by: by.a, grp: 'dsk001-q8r2m4x7tb-6' });
+    const keyL = (await C.keysFor(C.newCode())).key;
+    const env = await pack.pack(withLoan, { key: keyL });
+    const back = await pack.unpack(env, { key: keyL });
+    const chkOf = c => ((c && c.events) || []).find(e => e.id === 'dsk001-q8r2m4x7tb-7');
+    ck('save and load: the store guard lets this shape be written and read, and the loan check keeps notYet', G.ledgerMayWrite(withLoan.v) && back.ok && JSON.stringify(chkOf(back.copy).notYet) === JSON.stringify([occ]) && canon(back.copy) === canon(withLoan), JSON.stringify(back).slice(0, 200));
+    const v7 = makeVault(), api7 = C.client({ fetch: v7.fetch, base: () => 'http://vault.test' });
+    let a7 = await C.syncOnce({ api: api7, pack, S, keys, device: {}, copy: withLoan }); let A7 = { copy: a7.copy, dev: a7.device };
+    let b7 = await C.syncOnce({ api: api7, pack, S, keys, device: {}, copy: null }); let B7 = { copy: b7.copy, dev: b7.device };
+    ck('sync: the other device takes the loan check with its notYet', a7.ok && b7.ok && JSON.stringify(chkOf(B7.copy).notYet) === JSON.stringify([occ]));
+    // the phone types a later loan check, also with a payment answered No; the desk takes it, notYet whole
+    const t2 = '2027-03-02T03:00:00.000+00:00', occ2 = loan + '@2027-02-27';
+    B7.copy.events.push({ id: 'phn002-w3k9d2v5ma-2', k: 'check', acct: loan, date: '2027-03-02', a: 790000, notYet: [occ2], told: t2, at: t2, by: by.b, grp: 'phn002-w3k9d2v5ma-1' });
+    b7 = await C.syncOnce({ api: api7, pack, S, keys, device: B7.dev, copy: B7.copy }); B7 = { copy: b7.copy, dev: b7.device };
+    a7 = await C.syncOnce({ api: api7, pack, S, keys, device: A7.dev, copy: A7.copy }); A7 = { copy: a7.copy, dev: a7.device };
+    const two = (A7.copy.events || []).find(e => e.id === 'phn002-w3k9d2v5ma-2');
+    ck('sync round trip: the phone\'s loan check reaches the desk with notYet, and both devices hold the same copy', b7.pushed && two && JSON.stringify(two.notYet) === JSON.stringify([occ2]) && canon(A7.copy) === canon(B7.copy) && JSON.stringify(chkOf(A7.copy).notYet) === JSON.stringify([occ]));
+  }
+
   // ---- VOICE.md: every toast and Home notice in cloud3_page.js is one line, with no full stop at the end and no semicolon ----
   {
     const src = require('fs').readFileSync(path.join(__dirname, '../src/cloud3_page.js'), 'utf8');
