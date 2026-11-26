@@ -180,6 +180,8 @@ details.a3-card summary { cursor: pointer; font-weight: 600; min-height: 44px; }
 .a3-chat-row { display: flex; gap: 8px; align-items: flex-end; }
 .a3-chat-row .a3-in { flex: 1 1 auto; min-width: 0; width: auto; min-height: 44px; padding: 10px 14px; text-align: left; resize: none; }
 .a3-chat-row .a3-btn { flex: none; }
+/* [qc-north-star B3] at 320 wide the placeholder "Ask or tell me something" needs about 187 px: less padding there so it fits on one line */
+@media (max-width: 360px) { .a3-chat-row .a3-in { padding-left: 10px; padding-right: 8px; } .a3-chat-row .a3-btn { padding: 0 14px; } }
 .a3-chat-log { display: flex; flex-direction: column; gap: 10px; }
 .a3-chat-log:empty { display: none; }
 .a3-chat-card { align-self: stretch; }
