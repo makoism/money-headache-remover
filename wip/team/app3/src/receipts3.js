@@ -345,7 +345,7 @@ function rcGaps3(per) {
   const onWhat = place => (!place || place === 'free' ? { line: 'free' } : ((E3.book.plan || {}).budgets || []).some(l => l.id === place) ? { line: place } : { place });
   for (const id of Object.keys(r.accounts || {})) for (const f of r.accounts[id].fillers || []) {
     if (f.held || f.apart) continue;   // [LISTFIX2] held for its question, or never spending (the engine's marks)
-    for (const pt of f.parts || []) if (pt.amount && inPer(pt.from)) out.push({ acct: id, check: f.to, from: f.from, to: f.to, amount: pt.amount, on: onWhat(f.place) });
+    for (const pt of f.parts || []) if (pt.amount && inPer(pt.from)) out.push({ acct: id, check: f.to, from: f.from, to: f.to, amount: pt.amount, on: onWhat(pt.place || f.place) });
   }
   /* [CARDGAP] a card's gap by its parts too (the engine cuts it by days at each period start, as a bank's) */
   for (const id of Object.keys(r.cards || {})) for (const f of r.cards[id].fillers || []) {
@@ -391,9 +391,12 @@ function rcList3() {
   const split = e => (!q && splits[e.id] && inPer(e.date) !== inPer(splits[e.id].check) ? splits[e.id] : null);
   const gone = ((E3.book && E3.book.events) || []).filter(e => e && e.gone && splits[e.id] && split(e));
   const changes = ((E3.book && E3.book.events) || []).filter(e => e && split(e) && inPer(splits[e.id].check));
+  /* [qc-numbers confirm, CONFUSING] money in on no line, changed or removed after the check that held it, both in this
+     period: its change counts on spending (beside the gap it opened), so it has its own row and the rows add to spent */
+  const sameIn = q ? [] : ((E3.book && E3.book.events) || []).filter(e => e && e.k === 'in' && !e.line && splits[e.id] && inPer(e.date) && inPer(splits[e.id].check));
   const items = rows.map(e => ({ date: e.date, e })).concat(gaps.map(g => ({ date: g.to, g })))
     .concat(gone.filter(e => inPer(e.date)).map(e => ({ date: e.date, e })))
-    .concat(changes.map(e => ({ date: splits[e.id].check, c: e })))
+    .concat(changes.concat(sameIn).map(e => ({ date: splits[e.id].check, c: e })))
     .sort((x, y) => (x.date !== y.date ? (x.date < y.date ? 1 : -1) : 0));
   const rcLi3 = e => {
     const s = split(e), shown = s ? s.atCheck : e.a, cur = E3.curOf(e.acct);

@@ -10,14 +10,17 @@
    2. The old period: the lunch at ¥700 (as it stood at the check), its row saying it is now ¥7,000; spent ¥5,700.
    3. Searching: the lunch at ¥7,000 (what it is now), no change row.
    4. Removed on 14 Dec instead: the old period still lists it at ¥700 as removed later (not a button); this period a
-      row "Removed on 14 Dec", ¥700 back. */
+      row "Removed on 14 Dec", ¥700 back.
+   5. [qc-numbers confirm, CONFUSING] a 3,000 gift into the bank on 11 Dec, held by the 13 Dec check (typed 597,300),
+      removed on 14 Dec: the record and its check in the same period. The gap row says ¥3,000 less went out; the removal
+      is its own row, "Removed on 14 Dec", ¥3,000 (the change counts on spending), so the rows add to spent: ¥0. */
 'use strict';
 const T = require('./lib3.js');
 const { ck } = T;
 const E = require('path').join(__dirname, '../../engine/');
 const BB = require(E + 'build_book.js'), LA = require(E + 'lookahead.js'), CI = require(E + 'checkin.js'), IDS = require(E + 'ids.js');
 const TZ = '+09:00', T14 = '2026-12-14T09:00:00.000' + TZ, DAY = '2026-12-14';
-function life(after) {
+function life(after, gift) {
   const newId = IDS.idMaker('h3s7qa');
   const out = BB.buildBook({ day: '2026-11-24', told: '2026-11-24T12:00:00.000' + TZ, currency: 'JPY', country: 'JP',
     banks: [{ key: 'bank1', name: 'Main bank', amount: 300000, main: true, min: null }],
@@ -34,12 +37,15 @@ function life(after) {
   spend('sp5dec', 5000, '2026-12-05', '2026-12-05T18:00:00.000', 'shop');
   check('2026-12-06', 295000);
   spend('lunch8', 700, '2026-12-08', '2026-12-08T13:00:00.000', 'lunch');
-  check('2026-12-13', 594300);
+  if (gift) book.events.push({ id: 'gift11', k: 'in', acct: bank, a: 3000, date: '2026-12-11', note: 'gift', src: { type: 'typed' }, told: '2026-12-11T13:00:00.000' + TZ, at: '2026-12-11T13:00:00.000' + TZ });
+  check('2026-12-13', gift ? 597300 : 594300);
   after(book.events.find(e => e.id === 'lunch8'));
   return book;
 }
 const corrected = life(e => { e.was = [{ a: 700, told: T14 }]; e.a = 7000; e.at = T14; });
 const removed = life(e => { e.was = [{ a: 700, told: T14 }]; e.gone = DAY; e.goneBy = 'stepx'; e.at = T14; });
+const giftGone = life(() => {}, true);
+{ const g = giftGone.events.find(e => e.id === 'gift11'); g.was = [{ a: 3000, told: T14 }]; g.gone = DAY; g.goneBy = 'stepy'; g.at = T14; }
 const txt = (p, sel) => p.$eval(sel, e => e.textContent.replace(/\s+/g, ' ').trim()).catch(() => null);
 const rows = p => p.$$eval('#rcList li', ls => ls.map(l => ({ rc: l.dataset.rc || null, split: l.dataset.split || null, gap: l.dataset.gap || null, button: !!l.querySelector('button'), text: l.textContent.replace(/\s+/g, ' ').trim() })));
 (async () => {
@@ -82,6 +88,12 @@ const rows = p => p.$$eval('#rcList li', ls => ls.map(l => ({ rc: l.dataset.rc |
   const g8 = rs.filter(r => r.split === 'lunch8' || r.rc === 'lunch8');
   ck('4: the old period still lists the lunch at ¥700, removed later, not a button', g8.length === 1 && /¥700$/.test(g8[0].text) && /removed on 14 Dec/i.test(g8[0].text) && !g8[0].button, JSON.stringify(rs));
   ck('4: the old period spent ¥5,700', /spent ¥5,700 of/.test(await txt(p, '[data-fig="rc-spent"]')), await txt(p, '[data-fig="rc-spent"]'));
+  /* 5 */
+  await fresh(giftGone);
+  rs = await rows(p);
+  const gf = rs.filter(r => r.split === 'gift11');
+  ck('5: a removed gift held by a check in the same period has its own row: Removed on 14 Dec, ¥3,000, not a button', gf.length === 1 && /Removed on 14 Dec/.test(gf[0].text) && /bank check on 13 Dec/.test(gf[0].text) && /counts here¥3,000$/.test(gf[0].text) && !gf[0].button, JSON.stringify(rs));
+  ck('5: beside the gap row of ¥3,000 less; spent ¥0', rs.some(r => r.gap && /less went out/.test(r.text) && /¥3,000$/.test(r.text)) && /spent ¥0 of/.test(await txt(p, '[data-fig="rc-spent"]')), JSON.stringify(rs) + ' ' + await txt(p, '[data-fig="rc-spent"]'));
   await b.close();
   const errs = [].concat(...errLists);
   ck('no page errors', !errs.length, errs.join(' | '));

@@ -103,7 +103,7 @@ t('removed before any check held it, then a new check: nothing in the closed per
 //   Fixed 14 Dec to 128,400: the first period stays 17,600; this period 62,400 + 54,000 (plus, C1's gap, on 14 Dec)
 //   - 54,000 (minus, C2's gap, on 14 Dec) = 62,400; safe to spend unchanged. Today nothing reads a check's was:
 //   71,600 and 8,400, safe to spend up 54,000.
-function kenji(withC2, fixDay, which) {
+function kenji(withC2, fixDay, which, trip) {
   const newId = IDS.idMaker('k3n7ji');
   const out = BB.buildBook({ day: '2026-11-24', told: '2026-11-24T12:00:00.000' + TZ, currency: 'JPY', country: 'JP',
     banks: [{ key: 'bank1', name: 'Main bank', amount: 200000, main: true, min: null }],
@@ -117,6 +117,7 @@ function kenji(withC2, fixDay, which) {
     book = CI.apply(book, CI.checkIn(book, { day, told: day + 'T12:00:00.000' + TZ, newId, figures: { [bank]: fig }, ticked: r.checkIn.toConfirm.map(x => x.item), unticked: [], amounts: {}, expected, lands, landed: {} }));
   };
   check('2026-12-05', 182400);
+  if (trip) { book.places = (book.places || []).concat([{ id: 'trip', name: 'Trip', kind: 'goal', keptIn: { acct: bank, mode: 'inBank' } }]); book.checkins[book.checkins.length - 1].fillerPlace = { [bank]: 'trip' }; }
   if (withC2) check('2026-12-12', 420000);
   const c = d => book.events.find(e => e.k === 'check' && e.date === d && !e.gone);
   const before = view(book, fixDay);
@@ -136,5 +137,150 @@ t('[ruling (A)] the fixed check is the latest (C2 420,000 fixed to 410,000 on 14
 t('[ruling (A)] the check and its fix in the same period (C1 fixed on 7 Dec, no later check): spent as if 128,400 was typed, 71,600', () => {
   const { before, after } = kenji(false, '2026-12-07');
   eq([before.now, after.now], [17600, 71600]);
+});
+// [ruling (B), qc-foundation confirm finding 1, qc-numbers confirm blocker 1] a move between own accounts removed after
+// a check that held BOTH sides is held on each side, whatever order the accounts are listed in. Made-up yen, section H's
+// cash way: set up 2 Dec, Main bank 200,000, Savings 500,000, Wallet (cash) 15,000, pay 250,000 on the 25th, Free to
+// spend 40,000 a period (25 Nov to 24 Dec, 30 days; from 2 Dec 23 days: 40,000 x 23 / 30 = 30,666).
+// 2 Dec: 2,000 cash spent from the Wallet, 20,000 moved Main to Wallet, 50,000 moved Savings to Main.
+// 7 Dec check, all three as the app expects: Main 200,000 - 20,000 + 50,000 = 230,000; Savings 450,000; Wallet
+// 15,000 - 2,000 + 20,000 = 33,000. Spent 2,000, safe to spend 30,666 - 2,000 = 28,666.
+// 8 Dec the 50,000 move is removed (it never happened, say). The 7 Dec check held it on both sides: Main's gap opens
+// +50,000 (the app now expects 180,000 against 230,000 checked: found money), Savings' -50,000 the other way. Each side
+// counts the change on its own check line, so both cancel: still spent 2,000, safe to spend 28,666. Today the hold
+// lands on whichever account comes first only: one order gives 0 safe and 102,000 spent.
+function three(rev) {
+  const newId = IDS.idMaker('m3s7wa');
+  let banks = [{ key: 'bank1', name: 'Main bank', amount: 200000, main: true, min: null }, { key: 'bank2', name: 'Savings', amount: 500000, main: false, min: null },
+    { key: 'bank3', name: 'Wallet', amount: 15000, type: 'cash', main: false, min: null }];
+  if (rev) banks = banks.reverse();
+  const out = BB.buildBook({ day: '2026-12-02', told: '2026-12-02T10:00:00.000' + TZ, currency: 'JPY', country: 'JP', banks,
+    pays: [{ key: 'pay1', name: 'Pay', bank: 'bank1', amount: 250000, every: 'month', day: 25, shift: 'none', startsPeriod: true }], cards: [], bills: [], free: 40000 }, { newId });
+  let book = out.book || out;
+  const id = n => book.accounts.find(a => a.name === n).id, M = id('Main bank'), S = id('Savings'), W = id('Wallet');
+  const ev = o => book.events.push(Object.assign({ src: { type: 'typed' }, note: 'x', told: '2026-12-02T13:00:00.000' + TZ, at: '2026-12-02T13:00:00.000' + TZ, date: '2026-12-02' }, o));
+  ev({ id: 'sp2', k: 'spend', acct: W, a: 2000, line: 'free' });
+  ev({ id: 'mv20', k: 'transfer', acct: M, acct2: W, a: 20000 });
+  ev({ id: 'mv50', k: 'transfer', acct: S, acct2: M, a: 50000 });
+  const r = LA.lookahead(book, '2026-12-07'), expected = {}, lands = {};
+  for (const x of r.checkIn.toConfirm) { expected[x.item] = x.amount; lands[x.item] = x.lands; }
+  book = CI.apply(book, CI.checkIn(book, { day: '2026-12-07', told: '2026-12-07T12:00:00.000' + TZ, newId, figures: { [M]: 230000, [S]: 450000, [W]: 33000 }, ticked: [], unticked: [], amounts: {}, expected, lands, landed: {} }));
+  const v = d => { const p = P.periods(book, d); return [LA.lookahead(book, d).safeToSpend.headline, p.current.free.spent]; };
+  const before = v('2026-12-07');
+  const e = book.events.find(x => x.id === 'mv50'), T = '2026-12-08T09:00:00.000' + TZ;
+  e.was = [{ a: 50000, told: T }]; e.gone = '2026-12-08'; e.goneBy = 'sx'; e.at = T;
+  return { before, after: v('2026-12-08') };
+}
+t('[ruling (B)] a removed move between own accounts held by a check of all three: 28,666 safe to spend, 2,000 spent, in both account orders', () => {
+  for (const rev of [false, true]) { const x = three(rev); eq([x.before, x.after], [[28666, 2000], [28666, 2000]]); }
+});
+// The card side of the same rule, Mako's shape (M27): Main bank 300,000, pay 300,000 on the 10th, Card A 30,000 paid on
+// the 10th, Card B 20,000 on the 11th, close days not sure, Free to spend 60,000. 6 Dec check: bank 300,000, A 30,000,
+// B 20,000. 8 Dec he logs 5,000 paid to Card A. 13 Dec check, pay and both card payments ticked (A's now 25,000):
+// bank 300,000 - 5,000 + 300,000 - 25,000 - 20,000 = 550,000, both cards 0. This period: nothing spent, 60,000 left.
+// 14 Dec the 5,000 payment is removed (logged by mistake). The bank's gap opens one way, Card A's the other: both
+// held by the 13 Dec checks, so they cancel: still 0 spent, 60,000. Today the card's check holds no card payment, so
+// its gap (-5,000, "less went out") stands alone: 65,000, spent -5,000.
+function twoCards(rev) {
+  const newId = IDS.idMaker('m4k0cd');
+  let cs = [{ key: 'card1', name: 'Card A', owed: 30000, payDay: 10, closeDay: 'not sure', payFrom: 'bank1', shift: 'none', inFull: true },
+    { key: 'card2', name: 'Card B', owed: 20000, payDay: 11, closeDay: 'not sure', payFrom: 'bank1', shift: 'none', inFull: true }];
+  if (rev) cs = cs.reverse();
+  const out = BB.buildBook({ day: '2026-11-24', told: '2026-11-24T12:00:00.000' + TZ, currency: 'JPY', country: 'JP', banks: [{ key: 'bank1', name: 'Main bank', amount: 300000, main: true, min: null }],
+    pays: [{ key: 'pay1', name: 'Pay', bank: 'bank1', amount: 300000, every: 'month', day: 10, shift: 'none', startsPeriod: true }], cards: cs, bills: [], free: 60000 }, { newId });
+  let book = out.book || out;
+  const id = n => book.accounts.find(a => a.name === n).id, B = id('Main bank'), A = id('Card A'), C = id('Card B');
+  const check = (day, figs) => {
+    const r = LA.lookahead(book, day), expected = {}, lands = {};
+    for (const x of r.checkIn.toConfirm) { expected[x.item] = x.amount; lands[x.item] = x.lands; }
+    book = CI.apply(book, CI.checkIn(book, { day, told: day + 'T12:00:00.000' + TZ, newId, figures: figs, ticked: r.checkIn.toConfirm.map(x => x.item), unticked: [], amounts: {}, expected, lands, landed: {} }));
+  };
+  check('2026-12-06', { [B]: 300000, [A]: 30000, [C]: 20000 });
+  book.events.push({ id: 'cp8', k: 'repay', acct: B, acct2: A, a: 5000, date: '2026-12-08', note: 'card A', src: { type: 'typed' }, told: '2026-12-08T13:00:00.000' + TZ, at: '2026-12-08T13:00:00.000' + TZ });
+  check('2026-12-13', { [B]: 550000, [A]: 0, [C]: 0 });
+  const v = d => { const r = LA.lookahead(book, d), p = P.periods(book, d); return [r.safeToSpend.headline, p.current.free.spent, r.accounts[B].bank]; };
+  const before = v('2026-12-14');
+  const e = book.events.find(x => x.id === 'cp8'), T = '2026-12-14T09:00:00.000' + TZ;
+  e.was = [{ a: 5000, told: T }]; e.gone = '2026-12-14'; e.goneBy = 'sx'; e.at = T;
+  return { before, after: v('2026-12-14') };
+}
+t('[ruling (B)] a removed card payment held by the bank check and the card check (two cards): 60,000 safe to spend, 0 spent, in both card orders', () => {
+  for (const rev of [false, true]) { const x = twoCards(rev); eq([x.before, x.after], [[60000, 0, 550000], [60000, 0, 550000]]); }
+});
+// [ruling (A), qc-foundation confirm finding 2] a check figure corrected BEFORE the next check is written: the next
+// check's gap is worked out from the corrected figure already, so nothing carries to it. Made-up yen, Mako's shape:
+// set up 24 Nov, bank 300,000, pay 300,000 on the 10th, Free to spend 60,000 (first period from the setup day:
+// 60,000 x 16 / 30 = 32,000). 6 Dec check 300,000 (no gap). 8 Dec it is corrected to 299,000, the real figure: 1,000
+// spent on 8 Dec, in the 10 Nov to 9 Dec period (left 31,000). Pay lands on the 10th. 13 Dec check, pay ticked:
+// 299,000 + 300,000 = 599,000, no gap. The closed period keeps its 1,000; this period 0, safe to spend 60,000.
+// Today the fix's minus part is carried to the 13 Dec gap: the closed period shows 0, this one 1,000, 59,000.
+function fixedBefore() {
+  const newId = IDS.idMaker('f1x8be');
+  const out = BB.buildBook({ day: '2026-11-24', told: '2026-11-24T12:00:00.000' + TZ, currency: 'JPY', country: 'JP', banks: [{ key: 'bank1', name: 'Main bank', amount: 300000, main: true, min: null }],
+    pays: [{ key: 'pay1', name: 'Pay', bank: 'bank1', amount: 300000, every: 'month', day: 10, shift: 'none', startsPeriod: true }], cards: [], bills: [], free: 60000 }, { newId });
+  let book = out.book || out;
+  const bank = book.accounts.find(a => a.type !== 'card').id;
+  const check = (day, fig) => {
+    const r = LA.lookahead(book, day), expected = {}, lands = {};
+    for (const x of r.checkIn.toConfirm) { expected[x.item] = x.amount; lands[x.item] = x.lands; }
+    book = CI.apply(book, CI.checkIn(book, { day, told: day + 'T12:00:00.000' + TZ, newId, figures: { [bank]: fig }, ticked: r.checkIn.toConfirm.map(x => x.item), unticked: [], amounts: {}, expected, lands, landed: {} }));
+  };
+  check('2026-12-06', 300000);
+  fix(book.events.find(e => e.k === 'check' && e.date === '2026-12-06'), 299000, '2026-12-08T09:00:00.000' + TZ);
+  const on8 = view(book, '2026-12-08');
+  check('2026-12-13', 599000);
+  return { on8, on14: view(book, '2026-12-14') };
+}
+t('[ruling (A)] a check fixed before the next check (300,000 to 299,000 on 8 Dec, pay 10 Dec, 13 Dec check): the closed period keeps 1,000, safe to spend 60,000', () => {
+  const { on8, on14 } = fixedBefore();
+  eq([on8.now, on8.safe], [1000, 31000]);
+  eq([on14.old, on14.now, on14.safe], [1000, 0, 60000]);
+});
+// Both parts of a fix stay on the corrected check's line: Kenji with C1's gap put on a goal (Trip) at its check-in. C1
+// fixed on 14 Dec after C2: the plus 54,000 and the minus 54,000 both go on Trip on 14 Dec (they cancel there), and
+// C2's own gap stays 62,400 on Free to spend. Today the minus part goes on C2's line: Free to spend shows 8,400.
+t('[ruling (A)] both parts of a fix stay on the corrected check\'s line (C1 on Trip, C2 on Free to spend): this period still 62,400', () => {
+  const { after } = kenji(true, '2026-12-14', 'c1', true);
+  eq([after.old, after.now], [0, 62400]);
+});
+// [coordinator ruled, qc-numbers confirm blocker 2] a check gap counts the same way in both directions: a large jump up
+// held to be asked about (never counted) does not let the drop back down count as spending; the drop counts only past
+// it. Made-up yen: set up 1 Dec, bank 100,000, pay 250,000 on the 10th, Free to spend 30,000 (1 to 9 Dec: 30,000 x 9
+// / 30 = 9,000). 3 Dec 1,000 spent. 5 Dec the bank is typed 950,000 (the app expects 99,000): a gain of 851,000, held.
+// 6 Dec 2,000 spent. 7 Dec the bank is checked at 94,000: the drop is 950,000 - 2,000 - 94,000 = 854,000; 851,000 of it
+// only undoes the jump, so 3,000 is spending: spent 1,000 + 2,000 + 3,000 = 6,000 (= 100,000 - 94,000), safe to spend
+// 9,000 - 6,000 = 3,000. 12 Dec, pay ticked, 344,000: the closed period keeps 6,000, safe to spend 30,000.
+// Checked again the same day instead (5 Dec 950,000, then 96,000): 1,000 + 3,000 = 4,000 spent, 5,000.
+// Today the drop counts whole: 857,000 spent (855,000 the same day).
+function typo(sameDay) {
+  const newId = IDS.idMaker('t9p0zr');
+  const out = BB.buildBook({ day: '2026-12-01', told: '2026-12-01T10:00:00.000' + TZ, currency: 'JPY', country: 'JP', banks: [{ key: 'bank1', name: 'Main bank', amount: 100000, main: true, min: null }],
+    pays: [{ key: 'pay1', name: 'Pay', bank: 'bank1', amount: 250000, every: 'month', day: 10, shift: 'none', startsPeriod: true }], cards: [], bills: [], free: 30000 }, { newId });
+  let book = out.book || out;
+  const bank = book.accounts.find(a => a.type !== 'card').id;
+  const spend = (id, a, date) => book.events.push({ id, k: 'spend', acct: bank, a, date, line: 'free', note: 'shop', src: { type: 'typed' }, told: date + 'T13:00:00.000' + TZ, at: date + 'T13:00:00.000' + TZ });
+  let n = 0;
+  const check = (day, fig) => {
+    n++;
+    const r = LA.lookahead(book, day), expected = {}, lands = {};
+    for (const x of r.checkIn.toConfirm) { expected[x.item] = x.amount; lands[x.item] = x.lands; }
+    book = CI.apply(book, CI.checkIn(book, { day, told: day + 'T1' + n + ':00:00.000' + TZ, newId, figures: { [bank]: fig }, ticked: r.checkIn.toConfirm.map(x => x.item), unticked: [], amounts: {}, expected, lands, landed: {} }));
+  };
+  const v = d => { const p = P.periods(book, d); return [p.past.length ? p.past[p.past.length - 1].free.spent : null, p.current.free.spent, LA.lookahead(book, d).safeToSpend.headline]; };
+  spend('s3', 1000, '2026-12-03');
+  check('2026-12-05', 950000);
+  const o = { on5: v('2026-12-05') };
+  if (sameDay) { check('2026-12-05', 96000); o.next = v('2026-12-05'); } else { spend('s6', 2000, '2026-12-06'); check('2026-12-07', 94000); o.next = v('2026-12-07'); }
+  check('2026-12-12', sameDay ? 346000 : 344000);
+  o.on12 = v('2026-12-12');
+  return o;
+}
+t('[ruled] a bank typed 950,000 then checked at 94,000 two days later: 6,000 spent, 3,000 safe to spend; the closed period keeps 6,000', () => {
+  const o = typo(false);
+  eq([o.on5, o.next, o.on12], [[null, 1000, 8000], [null, 6000, 3000], [6000, 0, 30000]]);
+});
+t('[ruled] the same day (950,000, then 96,000): 4,000 spent, 5,000 safe to spend; the closed period keeps 4,000', () => {
+  const o = typo(true);
+  eq([o.next, o.on12], [[null, 4000, 5000], [4000, 0, 30000]]);
 });
 done('amount_history.test.js');

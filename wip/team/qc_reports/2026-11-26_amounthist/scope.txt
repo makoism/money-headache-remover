@@ -58,3 +58,4 @@ Added by coordinator 18, 26 Nov 11:35 JST, after the first qc-numbers run. Trace
 - Dollars written two ways ("$10" and "$10.00"): cents always for dollars, being built (controls-10, LANE N).
 - No fixed pay: the by-day remainder line repeats and leaves one odd day figure, and "Nothing is due" uses another window than the sum above it (home3.js:228). Queued at LANE L with the no-fixed-pay work.
 - Removing a move after a check of only one account: spent is right, Receipts shows the gap row alone. Queued at LANE L.
+KNOWN (coordinator 18, 26 Nov): a card or bill payment ticked at Check your bank cannot be removed or changed later (only the Undo right after the check reaches it): Receipts, the card in Plan and Home show no row for it. Owner: LANE N (slice 10, change or remove a bank check later). Not this branch's rule.
