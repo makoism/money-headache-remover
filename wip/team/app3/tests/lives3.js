@@ -36,6 +36,9 @@ function make(label) {
     if (o.for) await selByText(p, '#rcFor', o.for);
     if (o.note) await p.fill('#rcNote', o.note);
     await w(100); await p.click('#rcSave'); await w(400);
+    /* [qc-novice B1] money in to an account with a pay due by today or within 5 days asks first whether it is that pay:
+       these lives log other money (a client payment, a gift), so the answer is No unless o.pay names the pay's item */
+    if (mode === 'in' && await p.$eval('#rcPay', e => !e.hidden).catch(() => false)) { await p.click(o.pay ? `[data-payyes="${o.pay}"]` : '[data-payno]'); await w(400); }
     const err = await txt(p, '#rcErr');
     ck(`logged ${mode} ${amount} ${o.note || ''}`, !err || err === '(none)', err);
   }
