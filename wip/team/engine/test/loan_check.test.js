@@ -133,4 +133,27 @@ t('two loan checks with a 2% minimum: 27 Jan asks 2% of the first check\'s 50,00
   const o = L(h, '2027-02-03');
   eq([o.owedNow, o.overdue.map(x => [x.payment_date, x.amount])], [50000, [['2027-01-27', 1000]]]);
 });
+// [qc-numbers loancheck_build blockers 1 and 2] a payment answered No, then ticked with no bank check after the loan
+// check (the tick is dated on its payment day): it still comes off what is owed (812,400 - 30,000 = 782,400)
+t('No at a check, then ticked at the next Check your bank with no bank figure since: owed 782,400', () => {
+  const h = kenji(), occ = h.loan + '@2027-01-27';
+  h.checkIn('2026-12-29', { figures: { [h.bank]: 1200000 } });   // the bank last checked 29 Dec, as in the review
+  h.checkIn('2027-02-03', { figures: { [h.loan]: 812400 }, notYet: { [h.loan]: [occ] } });
+  const r = h.checkIn('2027-02-05', { ticked: [occ], expected: { [occ]: 30000 }, lands: { [occ]: '2027-01-27' } });   // the page passes its landing day
+  ok(r.events.find(e => e.k === 'repay').date < '2027-02-03', 'the tick is dated before the loan check');
+  const o = L(h, '2027-02-05');
+  eq([o.owedNow, o.overdue.length, o.next && [o.next.payment_date, o.next.amount]], [782400, 0, ['2027-02-27', 30000]]);
+});
+// a check lower than the payment answered No: that payment asks at most what the lender says is still owed (10,000),
+// and with 0 nothing is asked and nothing is owed (never -30,000)
+t('No at a check of 10,000: 27 Jan asks 10,000; at a check of 0 nothing is asked and nothing is owed', () => {
+  const h = kenji(), occ = h.loan + '@2027-01-27';
+  h.checkIn('2027-02-03', { figures: { [h.loan]: 10000 }, notYet: { [h.loan]: [occ] } });
+  let o = L(h, '2027-02-03');
+  eq([o.owedNow, o.overdue.map(x => [x.payment_date, x.amount]), o.next], [10000, [['2027-01-27', 10000]], null]);
+  const g = kenji();
+  g.checkIn('2027-02-03', { figures: { [g.loan]: 0 }, notYet: { [g.loan]: [occ.replace(h.loan, g.loan)] } });
+  o = L(g, '2027-02-03');
+  eq([o.owedNow, o.overdue.length, o.next], [0, 0, null]);
+});
 done();
