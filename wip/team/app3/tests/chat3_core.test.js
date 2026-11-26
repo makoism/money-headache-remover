@@ -878,15 +878,17 @@ const steps = list => [].concat(...list.map(([, r]) => r));
   }
   await t('[amount history] list spends finds an older spend by day or amount, past the last 30', async () => {
     const hp = page('2026-11-24'); const { state } = await runSetup(hp, FAKE.make(steps(SETUP)));
+    hp.day = '2026-11-25';
     const d = hp.deps(FAKE.make([])), acct = hp.book.home.main.v.acct;
-    ok((await d.door.logSpend({ date: '2026-11-24', a: 777, acct, line: 'free', note: 'old one' }, {})).ok, 'first');
-    for (let i = 0; i < 31; i++) ok((await d.door.logSpend({ date: '2026-11-24', a: 100 + i, acct, line: 'free' }, {})).ok, 'spend ' + i);
-    const f = FAKE.make([say('', [call('list', { what: 'spends', account: 'A1' }), call('list', { what: 'spends', account: 'A1', amount: 777 }), call('list', { what: 'spends', account: 'A1', date: '2026-11-24' })]), say('Found it.')]);
+    ok((await d.door.logSpend({ date: '2026-11-25', a: 777, acct, line: 'free', note: 'old one' }, {})).ok, 'first');
+    hp.day = '2026-11-26';
+    for (let i = 0; i < 31; i++) ok((await d.door.logSpend({ date: '2026-11-26', a: 100 + i, acct, line: 'free' }, {})).ok, 'spend ' + i);
+    const f = FAKE.make([say('', [call('list', { what: 'spends', account: 'A1' }), call('list', { what: 'spends', account: 'A1', amount: 777 }), call('list', { what: 'spends', account: 'A1', date: '2026-11-25' })]), say('Found it.')]);
     await K.turn(state, 'the 777 one was wrong', Object.assign(hp.deps(f), { door: d.door }));
     const [all, byAmt, byDay] = FAKE.results(f.bodies[1]).map(x => x.text);
     ok(!/¥777/.test(all), 'the plain list holds the last 30 only');
-    ok(/^S\d+ \| 24 Nov \| ¥777 \| spend/m.test(byAmt) && byAmt.split('\n').length === 2, byAmt);
-    ok(/¥777/.test(byDay), 'by day finds it too');
+    ok(/^S\d+ \| 25 Nov \| ¥777 \| spend/m.test(byAmt) && byAmt.split('\n').length === 2, byAmt);
+    ok(/¥777/.test(byDay) && byDay.split('\n').length === 2, 'by day finds it too: ' + byDay);
   });
   console.log(bad ? `chat3_core: ${bad} of ${n} FAILED` : `chat3_core: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);

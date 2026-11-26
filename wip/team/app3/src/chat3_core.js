@@ -207,8 +207,8 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
   const CURS = ['JPY', 'PHP', 'USD', 'EUR'];
   const SECTIONS = ['country', 'currency', 'banks', 'pays', 'cards', 'bills', 'asked', 'statements', 'payToday', 'free', 'min'];
   const TOOLS = [
-    { name: 'list', description: 'Records with their refs: accounts, pays, bills, cards, lines, goals, or the recent spends of one account (amount, date and ref only).',
-      input_schema: { type: 'object', properties: { what: { type: 'string', enum: ['accounts', 'pays', 'bills', 'cards', 'lines', 'goals', 'spends'] }, account: str('An account ref like A1, for spends.') }, required: ['what'] } },
+    { name: 'list', description: 'Records with their refs: accounts, pays, bills, cards, lines, goals, or the recent spends of one account (amount, date and ref only; give date or amount to find an older one).',
+      input_schema: { type: 'object', properties: { what: { type: 'string', enum: ['accounts', 'pays', 'bills', 'cards', 'lines', 'goals', 'spends'] }, account: str('An account ref like A1, for spends.'), date: str('Spends on this day only, YYYY-MM-DD.'), amount: num }, required: ['what'] } },
     { name: 'explain', description: 'How a part of the app works, in the app\'s own words.',
       input_schema: { type: 'object', properties: { topic: { type: 'string', enum: ['safeToSpend', 'period', 'status', 'cards', 'free', 'goals', 'check', 'undo', 'setup', 'sent'] } }, required: ['topic'] } },
     { name: 'draft_set', description: 'Save one setup section into the draft, its whole value. Nothing reaches the app until fill_book. Sections: country "JP"|"PH"|"XX"; currency "JPY"|"PHP"|"USD"|"EUR" (a change of currency drops the amounts saved before it: ask each again); banks [{name, amount, type?, confirmed?}] (first is where pay lands; confirmed true when the person gave the figure again today); pays [{name, amount, every: month|days|weeks|none, day?, day2?, n?, start?, shift?: before|after, bank?, afterTax, same?}]; cards [{name, owed, payDay, closeDay: day|"last"|"not sure", shift?, payFrom?, confirmed?}]; bills [{name, amount, day, every?: month|year, month?, from?}]; asked [{name, out: true|false}]; statements [{name, amount|"not sure"}]; payToday {landed: true|false}; free amount|null; min amount|null.',
@@ -532,7 +532,10 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     if (what === 'spends') {
       const acct = refs[x.account];
       if (!acct || !String(x.account).startsWith('A')) return 'Which account? An A ref from FIGURES.';
-      const ev = (book.events || []).filter(e => live(e) && e.acct === acct && (e.k === 'spend' || e.k === 'in') && e.src && e.src.type === 'typed' && e.date <= today).slice(-30);
+      /* [AMOUNT_HISTORY_PLAN] an older one is found by its day or its amount; otherwise the last 30 */
+      const cur = ((book.accounts || []).find(a => a.id === acct) || {}).cur, want = x.amount != null ? amountIn(x.amount, cur || home) : null;
+      const ev = (book.events || []).filter(e => live(e) && e.acct === acct && (e.k === 'spend' || e.k === 'in') && e.src && e.src.type === 'typed' && e.date <= today
+        && (!x.date || e.date === x.date) && (want == null || e.a === want)).slice(-30);
       /* [BV6] amounts and dates only: never a note or a shop */
       return ev.length ? 'ref | date | amount | kind | line\n' + ev.map(e => `${back(e.id)} | ${day1(e.date)} | ${m(e.a)} | ${e.k === 'in' ? 'in' : 'spend'} | ${e.line === 'free' ? 'Free to spend' : back(e.line) || ''}`).join('\n') : 'No spends logged on that account yet.';
     }
