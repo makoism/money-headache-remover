@@ -2898,7 +2898,9 @@ details summary { min-height: 44px; }
         if (nextPoint && p.id === nextPoint.id) nextExp += o.amount;
         else if (!carries && (!nextPoint || p.land > nextPoint.land)) walkItems.push({ land: p.land, amount: o.amount, future: true, label: c.name + ', ' + o.name + ' ' + short(o.land) });
       }
-      if (nextPoint) walkItems.push({ land: nextPoint.land, amount: nextExp ? planned(rest + nextExp, nextPoint.due) : nextAmount, label: c.name + (notSure ? ', all owed' : ' still open, closes ' + short(nextPoint.closes)) });
+      // [CARDS_IN_HEADLINE 1.2] `exp`: the part of the open item that is bills charged to the card and still to come (not
+      // owed now); the cards-now walk keeps it on this payment day
+      if (nextPoint) walkItems.push({ land: nextPoint.land, amount: nextExp ? planned(rest + nextExp, nextPoint.due) : nextAmount, exp: carries ? 0 : nextExp, label: c.name + (notSure ? ', all owed' : ' still open, closes ' + short(nextPoint.closes)) });
       // [F4, H8] a payment past its day and not ticked is overdue (late, then not seen), never the next one
       const shown = p => ({ item: p.id, amount: p.asks, payment_date: dayStr(p.land), statement: label || 'closed', closed_on: p.closed != null ? dayStr(p.closed) : undefined });
       const overdue = unpaid.filter(p => p.land < today).map(p => Object.assign(shown(p), { state: payState(p.land, payFrom) }));
@@ -2909,7 +2911,7 @@ details summary { min-height: 44px; }
       if (nextPoint) cardItems.push({ id: nextPoint.id, due: nextPoint.due, land: nextPoint.land, amount: nextAmount, statement: label || 'open' });
       // [BK6] this card's payment days after one day and up to another (one a month on its pay day, after the weekend rule)
       const landsBetween = (from, to) => { const out = [], [y0, m0] = ymOf(from); for (let k = 0; ; k++) { const p = payOf(dayIn(y0, m0 + k, c.payDay)); if (p.land > to) break; if (p.land > from) out.push(p.land); if (k > 36) break; } return out; };
-      return { owedNow, statements: points, next, overdue, walkItems, cardItems, fillers, payFrom, landsBetween };
+      return { owedNow, carries, statements: points, next, overdue, walkItems, cardItems, fillers, payFrom, landsBetween };
     }
 
     // ----- loans and pay-later [B5, E6, F19, H7, I2, Q3, AB3, AC5, AD7] -----
@@ -3008,8 +3010,10 @@ details summary { min-height: 44px; }
     // of how often pay lands writes a new entry with its own `per` (a month with no fixed pay, each pay with a pay day)
     const sharesByFrom = shares.map(x => ({ f: x.from == null ? -Infinity : dayNum(x.from), at: x.at || '', per: (x.per || {}).free || 'month' })).sort((p, q) => p.f - q.f || (p.at < q.at ? -1 : p.at > q.at ? 1 : 0));
     const freePerOn = d => { let r = sharesByFrom.length ? sharesByFrom[0].per : 'month'; for (const x of sharesByFrom) if (x.f <= d) r = x.per; return r; };
+    // [CASH_PLAN 17 F1] an entry `free: 'none'` means no play amount from the period holding its `from`: read as null, so
+    // that period and the ones after it have no Free to spend; the periods before keep the amounts they had [M44]
     const freeSrc = shares.length ? { id: 'free', acct: shares[0].acct, per: freePerOn(today),
-      steps: shares.map(x => ({ from: x.from == null ? null : x.from, amount: x.free, at: x.at })) } : null;
+      steps: shares.map(x => ({ from: x.from == null ? null : x.from, amount: x.free === 'none' ? null : x.free, at: x.at })) } : null;
     const lineSrcs = budgets.map(l => ({ id: l.id, name: l.name, acct: l.acct, per: l.per, steps: l.steps, once: [l.once], field: 'amount', from: l.from || null }));
     if (freeSrc) Object.assign(freeSrc, { once: shares.map(x => x.once), field: 'free' });
     // [B8, T1, AE1] A period's amount: a live `once` key named by the occurrence of the pay that starts it, else the step in
@@ -3322,7 +3326,10 @@ details summary { min-height: 44px; }
         const starts = nextPays.filter(p => p.land >= today && !leftToday(p)).sort((x, z) => x.land - z.land);
         starts.forEach((p, i) => {
           const end = starts[i + 1] ? starts[i + 1].land : p.land + 30;
-          for (const l of lines) list.push({ land: Math.max(p.land, today), amount: perPeriod({ per: l.per, amount: periodAmount(l.src, p.land, p.id) }, p.land, end, p.id), label: l.name + ' for the period from ' + short(p.land) });
+          for (const l of lines) {
+            const amount = perPeriod({ per: l.per, amount: periodAmount(l.src, p.land, p.id) }, p.land, end, p.id);
+            if (amount != null) list.push({ land: Math.max(p.land, today), amount, label: l.name + ' for the period from ' + short(p.land) });   // [BJ2, F1] none in that period
+          }
         });
       } else {
         // [B4, M9, M10] no fixed pay: by day. A monthly amount x 12 / the year's days a day, rounded down, the rest of each
@@ -3354,7 +3361,11 @@ details summary { min-height: 44px; }
     // ----- the walk, one account at a time [B3, B9, F1, F2, F3, F9, F14, H5, H7, H8, Q2, Q4, S4, T3, T4, V2] -----
     // [BM2] `real`: the real-money walk, the bank's own money only (pays, bills, card payments, moves): no goals, no plan
     // lines. Below zero and under the minimum are judged on it; the full walk (goals and plan lines off) is what can be spared.
-    function walk(id, end, minimum, real) {
+    // [CARDS_IN_HEADLINE 1, R1] `cardsNow` (only while no play amount is in force, playOn): for each card paid in full from
+    // this account in its currency, everything owed now comes off today, in place of its dated payment steps (never on
+    // top of them); bills charged to the card and still to come stay on their payment days. A card that carries a balance
+    // stays dated.
+    function walk(id, end, minimum, real, cardsNow) {
       const start = banks[id].bank;
       const why = [{ label: acct[id].name + ' today', amount: start }];
       let bal = start;
@@ -3378,6 +3389,17 @@ details summary { min-height: 44px; }
       }
       for (const cid in cards) {
         if (cards[cid].payFrom !== id || cur(cid) !== cur(id)) continue;   // [H5] another currency: warned below
+        if (cardsNow && !cards[cid].carries) {
+          const k = cards[cid], owed = Math.max(0, k.owedNow), dated = k.walkItems.filter(w => !w.future && w.amount);
+          const pays = dated.length ? Math.min(...dated.map(w => w.land)) : null;
+          if (owed) steps.push({ day: today, order: 1, amount: -owed, label: acct[cid].name + ', owed now' + (pays !== null ? ', paid ' + short(pays) : ''), card: cid, now: true });
+          for (const w of k.walkItems) {
+            const amount = w.future ? w.amount : w.exp || 0;
+            if (!amount || w.land > end) continue;
+            steps.push({ day: Math.max(w.land, today), order: 1, amount: -Math.max(0, amount), label: w.future ? w.label + ', paid ' + short(w.land) : acct[cid].name + ', bills charged to it, paid ' + short(w.land), card: cid });
+          }
+          continue;
+        }
         for (const w of cards[cid].walkItems) {
           if (!w.amount) continue;
           if (w.future && w.land > end) continue;
@@ -3427,6 +3449,20 @@ details summary { min-height: 44px; }
     const touches = (e, id) => e.account === id || e.from === id || e.to === id;
     const reopened = id => closedOn(id) !== null && live().some(e => e.day > closedOn(id) && touches(e, id)
       && (e.k === 'check' ? e.a !== 0 : delta(e, id) !== 0));
+    // [CASH_PLAN 17 F1, R1] whether a play amount (Free to spend) is in force on a day: the entry in force for the period
+    // holding that day is an amount (a dated `free: 'none'` stops it). On today, the amount the period running now uses.
+    // The one place the engine answers this; the cards-now walk applies only when it is false for today.
+    function playOn(day) {
+      const d = typeof day === 'string' ? dayNum(day) : day;
+      if (!freeSrc) return false;
+      if (d === today) return !!planLeft.free;
+      if (!periodStream) return stepAmount(freeSrc.steps, d) != null;
+      const starts = pays.map(startDayOf).filter(x => x <= d), start = starts.length ? Math.max(...starts) : null;
+      return periodAmount(freeSrc, start, start === null ? null : occOn(start, d)) != null;
+    }
+    const cardsNowOn = !playOn(today);
+    const paysInFull = id => Object.keys(cards).some(c => cards[c].payFrom === id && cur(c) === cur(id) && !cards[c].carries);
+    const datedHeadroom = {};
     const realWalks = {};
     for (const id in banks) {
       const isClosed = closedOn(id) !== null && !reopened(id);
@@ -3434,17 +3470,21 @@ details summary { min-height: 44px; }
       if (isClosed && banks[id].bank !== 0) throw new Error(`${acct[id].name} is closed with ${fmt(banks[id].bank, cur(id))} in it: a closing is refused unless its figure is zero or moved out [P6]`);
       const a = acct[id], minimum = isClosed ? 0 : minimumOf(id);
       const w = walk(id, horizon, minimum), rw = walk(id, horizon, minimum, true);
+      // [CARDS_IN_HEADLINE 1.4] with no play amount: what the account can spare (headroom and its sum) from the cards-now
+      // walk; its lowest point, first day under and the goal warning stay on the dated walk, as do the real walk's
+      const wc = cardsNowOn && paysInFull(id) ? walk(id, horizon, minimum, false, true) : w;
+      datedHeadroom[id] = w.headroom;
       const r = res.accounts[id] = {
         bank: banks[id].bank, asOf: dayStr(banks[id].asOfDay), ageDays: today - banks[id].asOfDay,
         checked: banks[id].checked, loggedIn: banks[id].loggedIn, loggedOut: banks[id].loggedOut,
-        currency: a.cur, minimum, lowest: w.lowest, lowestDay: dayStr(w.lowestDay), headroom: w.headroom,
+        currency: a.cur, minimum, lowest: w.lowest, lowestDay: dayStr(w.lowestDay), headroom: wc.headroom,
         firstUnder: w.firstUnder ? dayStr(w.firstUnder.day) : null,   // [LISTFIX2] the first day the full walk (plan lines and goals too) goes under
         spendFrom: isClosed ? false : a.spendFrom != null ? a.spendFrom : !!SPEND_TYPES[a.type] && a.cur === home && !backsGoal(id),
-        why: whyText(w.why, w.headroom, a.cur), whyParts: w.why.map(p => ({ label: p.label, amount: p.amount })),
+        why: whyText(wc.why, wc.headroom, a.cur), whyParts: wc.why.map(p => ({ label: p.label, amount: p.amount })),
         // [LISTFIX2 A1] a gap that is never spending is marked `apart` (an investment's rise or fall [T watch], another
         // currency [T5]), as the lines count it, so a screen listing gaps as spending leaves it out
         fillers: banks[id].fillers.map(f => (heldGain(id, f) ? Object.assign({}, f, { held: true }) : acct[id].type === 'investment' || cur(id) !== home ? Object.assign({}, f, { apart: true }) : f)) };   // [X4] a held gain is named, so a screen listing gaps leaves it out (LISTFIX A1)   // [S4] the parts, for screens/money.js sumLine
-      if (w.todayParts) { r.todayParts = w.todayParts; r.todayEnd = w.todayParts.reduce((t, x) => t + x.amount, w.start); }
+      if (wc.todayParts) { r.todayParts = wc.todayParts; r.todayEnd = wc.todayParts.reduce((t, x) => t + x.amount, wc.start); }
       // [BM2] the real-money walk: its lowest point, and its sum for the screens (the "Short by" headline is its total)
       r.real = { lowest: rw.lowest, lowestDay: dayStr(rw.lowestDay), headroom: rw.headroom, whyParts: rw.why.map(p => ({ label: p.label, amount: p.amount })) };
       // what is set aside in it today (goals and other kept places); canSetAside is worked out below, once the next pay is known
@@ -3503,6 +3543,15 @@ details summary { min-height: 44px; }
     const raw = up - shortfalls;
     const oldest = Object.keys(res.accounts).reduce((d, id) => Math.min(d, dayNum(res.accounts[id].asOf)), today);
     res.safeToSpend = { headline: Math.max(0, cap === null ? raw : Math.min(cap, raw)), shortfall: Math.max(0, -raw), cappedByFreeToSpend: cap !== null && cap < raw, oldestInput: dayStr(oldest) };
+    // [CARDS_IN_HEADLINE 2, R1] with no play amount: what is owed now on the cards paid in full from the home-currency
+    // accounts (taken off today), and the shortfall the dated walk would have, so a screen can say the cards are the
+    // cause (`cards_over`) when only they make it short. Left out when no card was taken off.
+    if (cardsNowOn) {
+      const owed = Object.keys(cards).filter(c => !cards[c].carries && res.accounts[cards[c].payFrom] && cur(c) === cur(cards[c].payFrom) && cur(c) === home).reduce((t, c) => t + Math.max(0, cards[c].owedNow), 0);
+      const dUp = homeSpend.reduce((t, id) => t + Math.max(0, datedHeadroom[id]), 0);
+      const dShort = Object.keys(res.accounts).filter(id => res.accounts[id].currency === home).reduce((t, id) => t + Math.max(0, -datedHeadroom[id]), 0);
+      if (owed) res.safeToSpend.cardsNow = { owed, datedShortfall: Math.max(0, dShort - dUp) };
+    }
     // [BL3, replaces B1 for the headline] what the screens say when short: the amount is the sum's own total (how far
     // the account's walk ends under its minimum, or zero), before the first pay that brings money in after its lowest
     // point (null when none does); the first day it goes under is named beside it (`day`), with how far under then (`first`)
@@ -3641,6 +3690,7 @@ details summary { min-height: 44px; }
     const listed = items.filter(o => !o.settled && o.land <= today && fallsDue(o) && o.amount);
     const matched = items.filter(o => settledBy[o.id] && settledBy[o.id].byImport && o.land > lastCheckIn && o.land <= today && o.amount);
     res.checkIn = { since: dayStr(lastCheckIn), toConfirm: listed.filter(o => !o.otherCur).map(itemOut), apart: listed.filter(o => o.otherCur).map(itemOut), matched: matched.map(itemOut) };
+    Object.defineProperty(res, 'playOn', { value: playOn, enumerable: false });   // [CASH_PLAN 17 F1] r.playOn('YYYY-MM-DD')
     return res;
   }
 
@@ -4563,7 +4613,7 @@ details summary { min-height: 44px; }
     bankAfterCards: {
       label: 'After your cards are paid', figures: ['bankAfterCards.*.amount'], state: 'decided',
       source: 'DECISIONS_ROUND2 F10 (Mako, A5), BB2, BK1, BK3; NORTH_STAR; DECISIONS.md 169',
-      note: 'per bank and dated: "After your cards are paid on 10 and 11 Dec: Main bank", the engine walk to the last card payment on or before the first counted pay after the earliest unpaid one (res.bankAfterCards, BK3, BK5). Shown once, in the cards box, with its day and the pays in it, so it is never read as safe to spend. The undated total.afterCards is not shown (BB2)',
+      note: 'per bank and dated: "After your cards are paid on 10 and 11 Dec: Main bank", the bank on the day its last card is paid, with the counted pays landing by then (res.bankAfterCards, BK6, which replaced the day rule of BK3 and BK5). With no play amount it is not safe to spend plus the cards: the pays before the card days lie between them (CARDS_IN_HEADLINE 1). Shown once, in the cards box, with its day and the pays in it, so it is never read as safe to spend. The undated total.afterCards is not shown (BB2)',
     },
     safeToSpend: {
       label: 'Safe to spend', figures: ['safeToSpend.headline'], state: 'decided',
@@ -4732,7 +4782,10 @@ details summary { min-height: 44px; }
      ctx.oldDays   a bank figure older than this leads with "Check your bank", above a pay not in yet (14) [N26]
 
    One state, in this order (the first that is true wins, the rest go in `also` so they can sit under it):
-     sample > empty > short > warning > set_aside > plan_over > question > check (old) > late > check > zero > no_free > ok
+     sample > empty > short > warning > set_aside > cards_over > plan_over > question > check (old) > late > check > zero > no_free > ok
+   cards_over [CARDS_IN_HEADLINE 2, M90, R1, M91]: no play amount is set, so everything owed on the cards comes off
+   safe to spend now, and the cards alone take more than the bank can spare before pay (the dated walk has no
+   shortfall, so the bank itself never goes under: the pay covers the card payments); the way out is a play amount
    check (old) [N26]: the last bank check is over ctx.oldDays old, so a pay "not in yet" is only a guess; the check leads
    plan_over [LISTFIX A2]: the real money is fine (no short, no warning) but the plan lines need more than the accounts
    can spare, so nothing is safe to spend; it says so and by how much, never "it turns safe once your pay is in"
@@ -4750,7 +4803,7 @@ details summary { min-height: 44px; }
   const OLD_DAYS = 14;    // [N26] past this, "Check your bank" leads, above "Pay not in yet"
   const STALE_DAYS = 7;   // for Mako: how old a bank figure may get before the status asks for a check-in
   /* [C3, M47] short and under a minimum (or below zero) are 'warn', plain amber: never 'bad', never red */
-  const LEVEL = { sample: 'wait', empty: 'wait', short: 'warn', warning: 'warn', set_aside: 'bad', plan_over: 'bad', question: 'wait', late: 'wait', check: 'wait', zero: 'wait', no_free: 'wait', ok: 'good' };
+  const LEVEL = { sample: 'wait', empty: 'wait', short: 'warn', warning: 'warn', set_aside: 'bad', cards_over: 'wait', plan_over: 'bad', question: 'wait', late: 'wait', check: 'wait', zero: 'wait', no_free: 'wait', ok: 'good' };
   /* engine warning codes (lookahead_ref.js): which change the state, which are notes under it */
   const WARNING_STATE = { below_minimum: 'warning', set_aside_over: 'set_aside', check_again: 'question', gain_to_ask: 'question', minimum_other_currency: 'question' };
   const NOTE_ONLY = ['card_other_currency', 'loan_other_currency', 'income_other_currency', 'spend_other_currency', 'reopened', 'revived'];
@@ -4763,6 +4816,7 @@ details summary { min-height: 44px; }
     'state.short': W('Not safe to spend'),
     'state.warning': W('Under a minimum'),
     'state.set_aside': W('Set aside more than you can spare'),
+    'state.cards_over': W('Your cards take all you can spare'),
     'state.plan_over': W('Your plan needs more than you have'),
     'state.question': W('A question for you'),
     'state.late': W('Pay not in yet'),
@@ -4781,6 +4835,8 @@ details summary { min-height: 44px; }
     'reason.below_minimum': W('{account} goes {amount} under its minimum on {day}'),
     'reason.below_zero': W('{account} goes {amount} below zero on {day}'),
     'reason.set_aside_over': W('{who} is {amount} more than {account} can spare on {day}'),
+    'reason.cards_over': W('What\'s on your cards is {amount} more than your bank can spare before pay on {until}. Your pay covers the card payments, so your bank never goes below zero'),
+    'reason.cards_over_no_pay': W('What\'s on your cards is {amount} more than your bank can spare right now'),
     'reason.plan_over': W('Your plan lines need {amount} more than your bank can spare. It runs short from {day}'),
     'reason.plan_over_no_day': W('Your plan lines need {amount} more than your bank can spare'),
     'reason.gain_to_ask': W('{account} has more in it than the app expected'),
@@ -4801,6 +4857,7 @@ details summary { min-height: 44px; }
     'next.check_in': W('Check your bank'),
     'next.move_money_in': W('Move money in before {day}'),
     'next.move_money_in_now': W('Move money in or spend less'),
+    'next.set_play': W('Set a play amount'),
     'next.plan_over': W('Lower a plan line, or move money in'),
     'next.move_from': W('Move {amount} from {from} to {account} by {day}. {from} can spare it'),
     'next.answer': W('Answer the question'),
@@ -4853,6 +4910,7 @@ details summary { min-height: 44px; }
     if (r.code === 'short' && r.short) return r.until ? (r.short.minimum ? 'reason.short_before_min' : 'reason.short_before') : r.short.minimum ? 'reason.short_from_min' : 'reason.short_from';
     if (r.code === 'short') return r.day ? 'reason.short_on' : 'reason.short';
     if (r.code === 'to_confirm') return r.count === 1 ? 'reason.to_confirm_one' : 'reason.to_confirm_many';
+    if (r.code === 'cards_over') return r.until ? 'reason.cards_over' : 'reason.cards_over_no_pay';
     if (r.code === 'plan_over') return r.day ? 'reason.plan_over' : 'reason.plan_over_no_day';
     if (r.code === 'nothing_safe') return r.until ? 'reason.nothing_safe' : 'reason.nothing_safe_no_pay';
     if (r.code === 'safe') return r.until ? 'reason.safe' : 'reason.safe_no_pay';
@@ -4889,7 +4947,12 @@ details summary { min-height: 44px; }
     }
     /* [LISTFIX A2] the plan lines alone need more than the accounts can spare: the bank itself does not go under (no
        short, no below-zero warning) and no goal holds too much, so the shortfall is the plan's */
-    if (stp.shortfall > 0 && !stp.short && !below.length && !warnings.some(w => w.code === 'set_aside_over'))
+    /* [CARDS_IN_HEADLINE 2, R1] with no play amount the cards come off now: when the dated walk has no shortfall, the
+       cards alone make it short, so the reason is the cards and the way out a play amount (M91), never "the plan" */
+    const cardsOnly = stp.cardsNow && stp.cardsNow.datedShortfall === 0;
+    if (stp.shortfall > 0 && !stp.short && !below.length && !warnings.some(w => w.code === 'set_aside_over') && cardsOnly)
+      out.push({ state: 'cards_over', reason: { code: 'cards_over', amount: stp.shortfall, currency: ctx.currency, until }, next: { code: 'set_play' }, note: 'cards_over' });
+    if (stp.shortfall > 0 && !stp.short && !below.length && !warnings.some(w => w.code === 'set_aside_over') && !cardsOnly)
       out.push({ state: 'plan_over', reason: { code: 'plan_over', amount: stp.shortfall, currency: ctx.currency, day: planShortDay(accounts, ctx.currency) }, next: { code: 'plan_over' }, note: 'plan_over' });
     /* [N26] the last bank check is old: checking the bank comes before a pay that only looks late */
     const oldAfter = ctx.oldDays == null ? OLD_DAYS : ctx.oldDays;
@@ -5374,6 +5437,9 @@ details summary { min-height: 44px; }
   const WORDS = {
     safeToSpend: ['What you can spend before your next pay and still cover everything due before it.',
       'Bills and card payments due by then are already taken off.'],
+    /* [CARDS_IN_HEADLINE 2, R1] with no play amount, everything on the cards comes off now */
+    safeToSpendCards: ['What you can spend before your next pay and still cover everything due before it.',
+      'Bills due by then and everything on your cards now are already taken off.'],
     status: ['How things stand today, in one line.', 'It changes when you check your bank or log a spend.'],
     period: ['Your money runs from one pay to the next, not by calendar month.'],
     periodMoved: ['Your pay is due on {due}, but that day is a weekend or a holiday, so it lands on {landed}. The pay period moves with it.'],
@@ -9136,11 +9202,14 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     stampNew(r, 'steps');
     return id;
   }
+  /* [CASH_PLAN 17 F1, M91] x.stop: no play amount from this period ('now') or the next ('next'): an entry free 'none',
+     read by the engine as no amount from its period on; the periods before keep theirs; Undo removes it */
   function setFree(w, x) {
-    const a = x.amount === 0 ? 0 : amountOk(x.amount, 'an amount'), shares = A3.listOf(w.book, 'shares').filter(s => live(s) && s.free != null);
+    if (x.stop && x.when === 'once') bad('Stopping play money counts from this pay period or the next');
+    const a = x.stop ? 'none' : x.amount === 0 ? 0 : amountOk(x.amount, 'an amount'), shares = A3.listOf(w.book, 'shares').filter(s => live(s) && s.free != null);
     if (x.when === 'once') {
       const p = period(w), s = shares.slice(-1)[0];
-      if (!s) bad('Set Free to spend first');
+      if (!s || !LA.lookahead(w.book, w.today).period.free) bad('Set Free to spend first');
       if (!p.startsWith) bad('This pay period has no pay to name it by yet. Change it from the next one');
       const r = w.edit('shares', s.id, { once: Object.assign({}, s.once || {}, { [p.startsWith]: { free: a } }) });
       Object.assign(r.once[p.startsWith], { at: r.at, by: r.by });
@@ -9689,7 +9758,7 @@ function drawHome3() {
   /* the one status; on a sample screen the yellow band already says these are made-up numbers, so no second card */
   const names = {}; for (const id of ids.concat(Object.keys(r.cards), Object.keys(r.owed || {}))) names[id] = E3.nameOf(id);
   const st = BurrowScreens.status.statusOf(r, { currency: home, origin, names });
-  if (origin !== 'sample') out.push(`<section class="a3-card a3-status" data-card="status" data-level="${esc3(st.level)}">${helpHead3(`<h2>${esc3(st.text.state)}</h2>`, 'status')}<p class="a3-sub">${esc3(st.text.reason)}</p>${st.state === 'plan_over' ? `<p class="a3-next" data-fig="status-next">${esc3(st.text.next)}</p>` : ''}${st.state === 'no_free' ? `<div class="a3-actions"><button type="button" class="a3-btn solid" id="a3FreeGo">${esc3(st.text.next)}</button></div>` : ''}</section>`);
+  if (origin !== 'sample') out.push(`<section class="a3-card a3-status" data-card="status" data-level="${esc3(st.level)}">${helpHead3(`<h2>${esc3(st.text.state)}</h2>`, 'status')}<p class="a3-sub">${esc3(st.text.reason)}</p>${st.state === 'plan_over' ? `<p class="a3-next" data-fig="status-next">${esc3(st.text.next)}</p>` : ''}${st.state === 'no_free' || st.state === 'cards_over' ? `<div class="a3-actions"><button type="button" class="a3-btn solid" id="a3FreeGo">${esc3(st.text.next)}</button></div>` : ''}</section>`);
   /* the cloud copy's one status (cloud3_page.js cloudStatus3): one plain line, only when it is not in step */
   const cloudLine = origin !== 'sample' && typeof cloudHome3 === 'function' ? cloudHome3() : '';
   /* [M20; qc-data-safety B3] something was changed on two devices: asked here too, until it is answered in Settings */
@@ -9738,7 +9807,7 @@ function drawHome3() {
   const warns = (r.warnings || []).map(w => `<p class="a3-warn" data-warn="${esc3(w.code)}">${esc3(BurrowScreens.status.warningText(w, wctx))}</p>`
     + (w.later ? `<p class="a3-warn" data-warn="later_low">${esc3(BurrowScreens.status.laterLowText(w, wctx))}</p>` : '')
     + (BurrowScreens.status.moveText(w, wctx) ? `<p class="a3-next" data-fig="move-from">${esc3(BurrowScreens.status.moveText(w, wctx))}</p>` : '')).join('');
-  out.push(`<section class="a3-card" data-card="safe">${helpHead3(`<h2>${esc3(label3('safeToSpend'))}${until}</h2>`, 'safeToSpend')}
+  out.push(`<section class="a3-card" data-card="safe">${helpHead3(`<h2>${esc3(label3('safeToSpend'))}${until}</h2>`, r.safeToSpend.cardsNow ? 'safeToSpendCards' : 'safeToSpend')}
     <p class="a3-big" data-fig="safe">${fig3('safeToSpend.headline', r.safeToSpend.headline, home)}</p>${capSay}${short}${sums}${lastsWords3(r)}${warns}</section>`);
   /* the period by its dates, and the next pay */
   const p = r.period;
@@ -10105,9 +10174,10 @@ function rcFigs3(book) {
 }
 /* [NS-FIX 4] a spend on a line that leaves the line over (the engine's `over` on the book the draft would make): the same
    words as Plan, "¥1,076 over Food. It comes out of what your bank can spare" (BM1); null otherwise */
-/* [LISTFIX B6] a new spend on a card leaves the bank only when the card is paid, so safe to spend may not drop, or may
-   even rise: the words say when, from the engine's statements on the book with the spend (the first unpaid one it is in:
-   no close day, or closing on or after the spend's day; with the close day not sure, the next payment) */
+/* [LISTFIX B6] a new spend on a card leaves the bank only when the card is paid: the words say when, from the engine's
+   statements on the book with the spend (the first unpaid one it is in: no close day, or closing on or after the spend's
+   day; with the close day not sure, the next payment). [CARDS_IN_HEADLINE 2, R1] With no play amount it comes off safe to
+   spend now, and the words say so; with one, a play spend comes off play money left */
 function rcCardWords3(book, x) {
   if (RC3.edit || RC3.mode !== 'spend' || !x || !x.acct) return null;
   const a = ((E3.book && E3.book.accounts) || []).find(y => y.id === x.acct);
@@ -10116,7 +10186,7 @@ function rcCardWords3(book, x) {
   /* close day not sure: everything on it is paid on its next payment day (the engine's next, "all owed") */
   const k = r.cards[x.acct] || {};
   const st = k.next && k.next.statement === 'all owed' ? { payment: k.next.payment_date } : (k.statements || []).find(s => !s.paid && s.payment && (!s.closed || s.closed >= x.date));
-  return st ? `It goes on ${E3.nameOf(x.acct)} and leaves your bank when the card is paid on ${day3(st.payment, E3.today().slice(0, 4))}` : null;
+  return st ? `It goes on ${E3.nameOf(x.acct)} and leaves your bank when the card is paid on ${day3(st.payment, E3.today().slice(0, 4))}${r.safeToSpend.cardsNow ? '. It comes off safe to spend now' : ''}` : null;
 }
 function rcOver3(f, x) {
   if (!f || !f.period || !x || !x.line || x.line === 'free' || RC3.mode !== 'spend') return null;
@@ -13142,6 +13212,8 @@ function stmt3Bar() {
        and the first day under */
     const sh = r.safeToSpend.short;
     out.push(`Safe to spend until next pay: ${m(r.safeToSpend.headline)}.` + (sh ? ` Short by ${m(sh.amount)}${sh.beforePay ? ` before the pay on ${day(sh.beforePay, today)}` : ''}, below ${sh.minimum ? 'your minimum' : 'zero'} from ${day(sh.day, today)}.` : ''));
+    /* [CARDS_IN_HEADLINE 3, R1] no play amount: what the cards take off now, so "why did it drop?" is answered from the figures */
+    if (r.safeToSpend.cardsNow) out.push(`No play amount is set, so safe to spend takes off everything owed now on your cards paid in full: ${m(r.safeToSpend.cardsNow.owed)}.`);
     const rows = [];
     let k = 0;
     for (const a of accts.filter(x => SPEND_FROM[x.type])) {
@@ -13521,7 +13593,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     { name: 'draft_set', description: 'Save one setup section into the draft, its whole value. Nothing reaches the app until fill_book. Sections: country "JP"|"PH"|"XX"; currency "JPY"|"PHP"|"USD"|"EUR" (a change of currency drops the amounts saved before it: ask each again); banks [{name, amount, type?, confirmed?}] (first is where pay lands; confirmed true when the person gave the figure again today); pays [{name, amount, every: month|days|weeks|none, day?, day2?, n?, start?, shift?: before|after, bank?, afterTax, same?}]; cards [{name, owed, payDay, closeDay: day|"last"|"not sure", shift?, payFrom?, confirmed?}]; bills [{name, amount, day, every?: month|year, month?, from?}]; asked [{name, out: true|false}]; statements [{name, amount|"not sure"}]; payToday {landed: true|false}; free amount|null; min amount|null.',
       input_schema: { type: 'object', properties: { section: { type: 'string', enum: SECTIONS }, value: { description: 'The section\'s whole value.' } }, required: ['section', 'value'] } },
     { name: 'fill_book', description: 'Turn the draft into the person\'s Burrow. Only when they said to fill it in. Refused while NEEDED is not empty.', input_schema: { type: 'object', properties: {} } },
-    { name: 'change', description: 'Make up to ' + MAX_STEPS + ' changes, each a named step: ' + DO.join(', ') + '. landed {ref: the P, B or card A ref, amount? only if it was different, date? the day it landed}; bank_figure and card_figure {account, amount}. Fields: amount, account (A ref), every (add_bill: month|year|months, with month 1..12 for a year, n and start for months), from and to (A refs), line (L ref), goal (G ref), ref (the record: S, B, P, L or G ref), date (YYYY-MM-DD, today or before), note, name, day, day2, every (month|days|weeks1..4|none), start, when (now|next|once), target, due, owed, payDay, closeDay, type (bank|cash|ewallet), moved (true|false), from (the A ref the money came from), afterFigure (true|false: moved after they looked at that bank on the day of its figure).',
+    { name: 'change', description: 'Make up to ' + MAX_STEPS + ' changes, each a named step: ' + DO.join(', ') + '. landed {ref: the P, B or card A ref, amount? only if it was different, date? the day it landed}; bank_figure and card_figure {account, amount}. Fields: amount, account (A ref), every (add_bill: month|year|months, with month 1..12 for a year, n and start for months), from and to (A refs), line (L ref), goal (G ref), ref (the record: S, B, P, L or G ref), date (YYYY-MM-DD, today or before), note, name, day, day2, every (month|days|weeks1..4|none), start, when (now|next|once), stop (set_free: true stops play money from now or next, Undo brings it back), target, due, owed, payDay, closeDay, type (bank|cash|ewallet), moved (true|false), from (the A ref the money came from), afterFigure (true|false: moved after they looked at that bank on the day of its figure).',
       input_schema: { type: 'object', properties: { steps: { type: 'array', items: { type: 'object', properties: { do: { type: 'string', enum: DO }, amount: num }, required: ['do'] } } }, required: ['steps'] } },
   ];
 
@@ -13819,7 +13891,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
 
   /* ---- the explain topics (help words where they exist; drafts for Mako's copy pass) ---- */
   const EXPLAIN = {
-    cards: 'A card is paid in full from your bank on its payment day. What you spend on it comes out of the bank then, so safe to spend takes off what is due before your next pay.',
+    cards: 'A card is paid in full from your bank on its payment day. With a play amount set, a play spend on a card comes off your play money at once. With no play amount, everything on your cards comes off safe to spend now, whatever its payment day.',
     free: 'Free to spend is what you keep for food and everyday things each pay period. Safe to spend leaves room for it until each pay.',
     goals: 'A goal is money you set aside for something. It stays in your bank, marked as set aside, or in its own account.',
     check: 'Check your bank: type what your bank app shows today. The app compares it with what it expected and asks about the gap.',
@@ -13956,6 +14028,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       const id = ref(a.ref || a.line, 'L'), x = amt(a.amount, null, true); if (!id || x == null) return { bad: 'a change to a line I could not read' };
       return { kind: 'changeLine', args: [id, { amount: x, when: when(a.when) }], text: `${lineName(id)}: ${m(x)} each pay period`, amount: x, ref: a.ref || a.line };
     }
+    if (what === 'set_free' && a.stop) return { kind: 'setFree', args: [{ stop: true, when: a.when === 'next' ? 'next' : 'now' }], text: `Stop play money (Free to spend) ${a.when === 'next' ? 'from the next pay period' : 'from this pay period'}` };   // [CASH_PLAN 17 F1]
     if (what === 'set_free') { const x = amt(a.amount, null, true); if (x == null) return { bad: 'Free to spend I could not read' }; return { kind: 'setFree', args: [{ amount: x, when: when(a.when) }], text: `Free to spend: ${m(x)} each pay period`, amount: x }; }
     if (what === 'add_goal') { const x = amt(a.target != null ? a.target : a.amount); if (!x || !a.name) return { bad: 'a goal I could not read' }; return { kind: 'addGoal', args: [{ name: clean(a.name, 60), target: x, due: a.due || undefined }], text: `Add a goal, ${clean(a.name, 60)}: ${m(x)}${a.due ? ' by ' + day1(a.due) : ''}`, amount: 0, figs: [x] }; }
     if (what === 'set_aside') {
@@ -14016,6 +14089,8 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
   function noteOf(b0, b1, today) {
     const r0 = LA.lookahead(b0, today), r1 = LA.lookahead(b1, today), pay = (r1.daysToNextPay || {}).next_pay;
     if (!pay || r0.safeToSpend.headline !== r1.safeToSpend.headline) return null;
+    /* [CARDS_IN_HEADLINE 3, R1] no play amount: a card spend comes off now, so it stays the same only at 0 */
+    if (r1.safeToSpend.cardsNow) return r1.safeToSpend.headline === 0 && r1.safeToSpend.shortfall > r0.safeToSpend.shortfall ? `${SN.label('safeToSpend')} is already 0: your cards owe more than your bank can spare before pay` : null;
     const ids = Object.keys(r1.cards || {}).filter(id => { const c0 = (r0.cards || {})[id], c1 = r1.cards[id]; return c0 && c1.owedNow > c0.owedNow && c1.next && c1.next.payment_date && c1.next.payment_date >= pay; });
     if (!ids.length) return null;
     const names = ids.map(id => ((b1.accounts || []).find(x => x.id === id) || {}).name);
