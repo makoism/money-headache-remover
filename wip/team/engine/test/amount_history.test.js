@@ -360,11 +360,33 @@ t('[ruled] while a jump is held, safe to spend and what the accounts can spare l
   const out = BB.buildBook({ day: '2026-12-01', told: '2026-12-01T10:00:00.000' + TZ, currency: 'JPY', country: 'JP', banks: [{ key: 'bank1', name: 'Main bank', amount: 5000, main: true, min: null }],
     pays: [{ key: 'pay1', name: 'Pay', bank: 'bank1', amount: 250000, every: 'month', day: 10, shift: 'none', startsPeriod: true }], cards: [], bills: [], free: 30000 }, { newId });
   o.book = out.book || out; o.bank = o.book.accounts.find(a => a.type !== 'card').id;
-  const v = d => { const r = LA.lookahead(o.book, d), a = r.accounts[o.bank]; return [r.safeToSpend.headline, r.canSpare.amount, r.noJob.amount, a.bank, a.headroom, a.whyParts.map(p => p.amount)]; };
+  const v = d => { const r = LA.lookahead(o.book, d), a = r.accounts[o.bank]; return [r.safeToSpend.headline, r.canSpare.amount, r.noJob.amount, a.bank, a.headroom, a.whyParts.map(p => p.amount + 0)]; };
   const before = v('2026-12-05');
   o.check('2026-12-05', 105000); const on5 = v('2026-12-05');
   const w = LA.lookahead(o.book, '2026-12-05').warnings.find(x => x.code === 'gain_to_ask');
   o.check('2026-12-08', 104000); const on8 = v('2026-12-08');
   eq([before, on5, w && w.held, on8], [[5000, 5000, 0, 5000, 5000, [5000, 0]], [5000, 5000, 0, 105000, 5000, [105000, -100000, 0]], 100000, [8000, 104000, 96000, 104000, 104000, [104000, 0]]]);
+});
+// [qc-numbers confirm2, CONFUSING] a move between two of the person's own accounts, removed after the check that held
+// it, opens two gaps that cancel (Main 50,000 less than the records, Savings 50,000 more). The engine names that part on
+// each gap (`ownMoves`), changing no figure, so Receipts can show one plain row for the removed move instead of two gap
+// rows that read as spending. Made-up yen: Main 200,000, Savings 500,000, pay 250,000 on the 25th, Free to spend 40,000.
+// 2 Dec a 50,000 move Savings to Main. 7 Dec both checked (250,000 and 450,000): no gap. 8 Dec the move is removed.
+t('[confirm2] a removed own move held by a check: each gap names the part the move explains, figures unchanged', () => {
+  const newId = IDS.idMaker('m3v8qe');
+  const out = BB.buildBook({ day: '2026-12-01', told: '2026-12-01T10:00:00.000' + TZ, currency: 'JPY', country: 'JP', banks: [{ key: 'b1', name: 'Main bank', amount: 200000, main: true, min: null }, { key: 'b2', name: 'Savings', amount: 500000, main: false, min: null }],
+    pays: [{ key: 'pay1', name: 'Pay', bank: 'b1', amount: 250000, every: 'month', day: 25, shift: 'none', startsPeriod: true }], cards: [], bills: [], free: 40000 }, { newId });
+  let book = out.book || out;
+  const M = book.accounts.find(a => a.name === 'Main bank').id, S = book.accounts.find(a => a.name === 'Savings').id;
+  book.events.push({ id: 'mv2', k: 'transfer', acct: S, acct2: M, a: 50000, date: '2026-12-02', note: 'move', src: { type: 'typed' }, told: '2026-12-02T13:00:00.000' + TZ, at: '2026-12-02T13:00:00.000' + TZ });
+  const r7 = LA.lookahead(book, '2026-12-07'), expected = {}, lands = {};
+  for (const x of r7.checkIn.toConfirm) { expected[x.item] = x.amount; lands[x.item] = x.lands; }
+  book = CI.apply(book, CI.checkIn(book, { day: '2026-12-07', told: '2026-12-07T11:00:00.000' + TZ, newId, figures: { [M]: 250000, [S]: 450000 }, ticked: r7.checkIn.toConfirm.map(x => x.item), unticked: [], amounts: {}, expected, lands, landed: {} }));
+  const before = LA.lookahead(book, '2026-12-08').safeToSpend.headline;
+  const e = book.events.find(x => x.id === 'mv2'), T = '2026-12-08T09:00:00.000' + TZ;
+  e.was = [{ a: 50000, told: T }]; e.gone = '2026-12-08'; e.goneBy = 'sx'; e.at = T;
+  const r = LA.lookahead(book, '2026-12-08'), fm = r.accounts[M].fillers.slice(-1)[0], fs = r.accounts[S].fillers.slice(-1)[0];
+  eq([fm.amount, fm.ownMoves, fs.amount, fs.ownMoves, r.safeToSpend.headline, P.periods(book, '2026-12-08').current.free.spent],
+    [-50000, { ids: ['mv2'], amount: -50000 }, 50000, { ids: ['mv2'], amount: 50000 }, before, 0]);
 });
 done('amount_history.test.js');
