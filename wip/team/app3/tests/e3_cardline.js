@@ -31,7 +31,9 @@ const { ck } = T;
     }
     const order = await p.$$eval('#a3Home [data-card]', es => es.map(e => e.dataset.card));
     ck('C10: the overdue card sits right above the cards box', order.indexOf('overdue') >= 0 && order.indexOf('overdue') + 1 === order.indexOf('cards'), order.join());
-    ck('C10: the late bills and the late pay are still under Not seen yet', ['Rent', 'Power', 'Internet', 'Main job'].every(n => rows.some(x => x.card === 'notseen' && x.text.startsWith(n))), JSON.stringify(rows.filter(x => x.card === 'notseen')));
+    /* [one late list, qc-novice C5] the late bills once, in the due card's late list; the late pay still under Not seen yet */
+    const lateTxt = await p.$eval('[data-fig=duelate]', e => e.textContent).catch(() => '');
+    ck('C10: the late bills are in the one late list, the late pay still under Not seen yet', ['Rent', 'Power', 'Internet'].every(n => lateTxt.includes(n) && !rows.some(x => x.card === 'notseen' && x.text.startsWith(n))) && rows.some(x => x.card === 'notseen' && x.text.startsWith('Main job')), lateTxt + ' | ' + JSON.stringify(rows.filter(x => x.card === 'notseen')));
     const ac = (await p.$eval('[data-fig=aftercards]', e => e.textContent)).replace(/\u2060/g, '');
     ck('C10: the bank after the cards says today, not 12 Dec', ac.startsWith('After your cards are paid today: Main bank') && !/12 Dec/.test(ac) && /The overdue card payments are counted as going out today/.test(ac), ac);
   }

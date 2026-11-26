@@ -52,13 +52,18 @@ const typeIn = async (p, sel, v) => { await p.click(sel, { clickCount: 3 }); awa
   /* ---- BI4a ---- */
   for (const [day, names] of [['2026-11-28', ['Rent', 'Internet']], ['2026-12-11', ['Side job']]]) {
     await p.goto(T.URL0 + '?try=mako&today=' + day); await T.w(400);
-    const list = await p.$$eval('[data-card=maystill] li', ls => ls.map(l => l.textContent)).catch(() => []);
+    /* [one late list, qc-novice C5] a late bill is listed once, in the due card's late list; May still go through keeps the rest (a pay coming in) */
+    const list = await p.$$eval('[data-card=maystill] li, [data-fig=duelate] li', ls => ls.map(l => l.textContent)).catch(() => []);
     ck(day + ': what may still go through is listed by name: ' + names.join(', '), names.every(nm => list.some(t => t.indexOf(nm) === 0)), JSON.stringify(list));
     const r = T.L.lookahead(T.book(), day);
     /* [C10] a late card or loan payment is listed once, in the overdue card, so it is not in this list */
     const odItems = [].concat(...[r.cards, r.owed || {}].map(m => [].concat(...Object.values(m).map(x => (x.overdue || []).map(o => o.item)))));
     const mayWant = r.mayStillPost.filter(o => !odItems.includes(o.item));
-    ck(day + ': the list is the engine\'s, item for item (less the overdue card payments, listed in their own card)', list.length === mayWant.length, list.length + ' vs ' + mayWant.length);
+    /* [one late list] May still go through holds the engine's list less the overdue card payments and less the late bills
+       (those are in the due card's late list): the pays coming in */
+    const inc = new Set((T.book().schedules || []).filter(x => x.kind === 'income').map(x => x.id));
+    const mayOnly = await p.$$eval('[data-card=maystill] li', ls => ls.length).catch(() => 0), wantPays = mayWant.filter(o => inc.has(o.item.split('@')[0]));
+    ck(day + ': the list is the engine\'s, item for item (less the overdue card payments, listed in their own card, and the late bills, in the late list)', mayOnly === wantPays.length, mayOnly + ' vs ' + wantPays.length);
     if (day === '2026-11-28') await T.shot(p, 'home_maystill_' + day);
   }
   /* ---- BI4b ---- */

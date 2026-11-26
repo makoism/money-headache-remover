@@ -87,6 +87,7 @@ page|tests/e3_notchecked.js|e3_notchecked: ALL PASS||300|An account added as mon
 page|tests/e3_takeout.js|e3_takeout: ALL PASS||300|Money taken out of a goal says where it went and what safe to spend does (qc-novice C3)
 page|tests/e3_waiting.js|e3_waiting: ALL PASS||300|A pay or bill change saved for a later day shows as waiting on its Plan row and sheet (qc-novice C4)
 page|tests/e3_gapline.js|e3_gapline: ALL PASS||300|Home says a gap found at a bank check counts as spending this pay period (qc-novice C2)
+page|tests/e3_onelate.js|e3_onelate: ALL PASS||300|Home lists a late bill once, in the one late list, never again under May still go through or Not seen yet (qc-novice C5, KNOWN M51)
 page|tests/e3_amounts.js|e3_amounts: ALL PASS||300|every amount box: a tap, click or Tab, or a form's own focus, selects, so typing replaces (screens/inputs.js)
 page|tests/e3_bigspend.js|e3_bigspend: ALL PASS||300|a spend larger than what its account holds asks first, new or changed (north star F5)
 page|tests/e3_panels.js|e3_panels: ALL PASS||300|only the tapped tab's panel shows (every tab after every other, the sheets)
@@ -176,7 +177,7 @@ page_tests_for() {   # page_tests_for <changed path, relative to app3/>
     tests/fake_ai.js|tests/fake_ai_page.js) echo e3_fakeai_page e3_chatwalk e3_chat chat3_core.test ;;   # helpers (the fake model, and it behind a made-up relay), not tests
     tests/chat_real.js)       echo e3_ailog e3_aiwords e3_fillcard e3_cloudfirst e3_aijoin ;;   # a helper (the real core and panel with the fake model behind a made-up relay), not a test
     tests/*.js)               [ -f "$1" ] && basename "$1" .js ;;   # a test file removed on purpose has no test to run
-    src/home3.js)             echo e3_gapline e3_notchecked e3_cloudstatus e3_home e3_ns e3_homeplan e3_warnwords e3_cardline e3_bankparts e3_names e3_payday ;;
+    src/home3.js)             echo e3_onelate e3_gapline e3_notchecked e3_cloudstatus e3_home e3_ns e3_homeplan e3_warnwords e3_cardline e3_bankparts e3_names e3_payday ;;
     src/checkin3.js)          echo e3_notchecked e3_checkin e3_checkgap e3_checkblank e3_cardfig e3_reload e3_bankparts e3_payday e3_overdrawn e3_cardpay e3_paycame ;;
     src/receipts3.js)         echo e3_removes e3_receipts e3_listfix e3_moneyin e3_payin e3_bigspend e3_stmt_once e3_period e3_names e3_doors e3_moved1 e3_moved2 e3_cardgap ;;
     src/plan3.js|src/plan3_write.js) echo e3_waiting e3_takeout e3_accounts e3_addask e3_billyear e3_payfrom e3_removes e3_aijoin e3_plan e3_rhythms e3_lineshare e3_homeplan e3_paychange e3_names ;;
