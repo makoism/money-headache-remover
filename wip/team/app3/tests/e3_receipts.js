@@ -284,11 +284,17 @@ async function figsMatch(p, book, what) {
     const o = await p.$$eval('#rcFor option', os => os.map(o => ({ v: o.value, name: o.textContent })));
     const foods = o.filter(x => /^Food/.test(x.name));
     ck('ended line, fixed pay: the picker offers both Foods, the old one marked ended', foods.length === 2 && foods.some(x => x.v === 'line:' + NEW_FOOD) && foods.some(x => x.v === 'line:' + FOOD && /ended/.test(x.name)), JSON.stringify(o));
+    /* [coordinator 18, item 2; M7, M51] the picker's short form says until when it takes spends: "Food (ended, until 10 Dec)" */
+    ck('ended line, fixed pay: the picker says "Food (ended, until 10 Dec)"', foods.some(x => x.v === 'line:' + FOOD && x.name === 'Food (ended, until 10 Dec)'), JSON.stringify(foods));
     await type(p, '#rcAmt', '5000'); await setVal(p, '#rcFor', 'line:' + FOOD); await T.w(100);
     await p.tap('#rcSave'); await T.w(400);
     const kept = await saved(p);
     ck('ended line, fixed pay: a receipt to the old Food on 25 Nov is kept', kept.events.some(e => e.k === 'spend' && e.a === 5000 && e.line === FOOD), JSON.stringify(await bar(p)));
     ck('ended line, fixed pay: the old Food\'s left goes down, 26,666 to 21,666', T.L.lookahead(kept, DAY).period.lines.find(l => l.id === FOOD).left === 21666);
+    /* [coordinator 18, item 2; M7, M51] Plan says what the ended line still holds and until when, from the engine */
+    await p.tap('[data-tab=plan]'); await T.w(300);
+    const row = await p.$eval(`#a3Plan [data-line="${FOOD}"]`, e => e.textContent.replace(/\s+/g, ' ').replace(/\u2060/g, '').trim()).catch(() => '');
+    ck('ended line, fixed pay: Plan says "Food (ended): ¥21,666 left until 10 Dec, then it ends"', row.startsWith('Food (ended)') && row.includes('¥21,666 left until 10 Dec, then it ends'), row);
     ck('no page errors (ended line)', errs.length === 0, errs.join(' | '));
     await b.close();
   }

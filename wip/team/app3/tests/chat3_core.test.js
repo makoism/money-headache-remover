@@ -773,6 +773,7 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     }, say('Filed.')]);
     await K.turn(K.fresh(), 'here is a food receipt, 5,000, for the old Food', h.deps(f));
     eq(listed.split('\n').filter(l => /\| Food/.test(l)).length, 2, listed);
+    ok(/\| Food \(ended\) \| ¥40,000 each pay \| ¥26,666 left until 10 Dec, then it ends/.test(listed), listed);   // [coordinator 18, item 2]
     ok(h.book.events.some(e => e.k === 'spend' && e.a === 5000 && e.line === FOOD), 'the receipt is filed to the old Food: ' + listed);
     eq(L.lookahead(h.book, h.day).period.lines.find(l => l.id === FOOD).left, 21666);
   });

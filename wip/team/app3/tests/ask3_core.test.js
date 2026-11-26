@@ -216,6 +216,8 @@ const ctxOf = h => ({ book: h.book, today: DAY });
     const rows = S2.text.split('\n').filter(l => /^L\d+ \| Food/.test(l));
     eq(rows.length, 2, S2.text.match(/Budget lines[^]*?(?=\nFree)/)[0]);
     const oldRef = Object.keys(S2.refs).find(k => S2.refs[k] === FOOD);
+    /* [coordinator 18, item 2] the old line says what it still holds and until when */
+    ok(rows.some(l => l.startsWith(oldRef + ' | Food (ended) |') && l.endsWith('¥26,666 left until 10 Dec, then it ends')), rows.join(' / '));
     ok(oldRef && Object.values(S2.refs).includes(NEW_FOOD), JSON.stringify(S2.refs));
     const c = K.check({ answer: 'x', actions: [{ do: 'log_spend', amount: 5000, line: oldRef }] }, S2.refs, { book: h.book, today: DAY });
     eq(c.dropped, []);
