@@ -38,11 +38,20 @@ function openCheck3() {
       <input class="a3-in" data-amount type="text" inputmode="decimal" autocomplete="off" id="a3c-${esc3(id)}" data-cardfig="${esc3(id)}" placeholder="${esc3(SM.symbol(E3.curOf(id)).trim())}">
       <p class="a3-sub">Leave it blank if you have not looked. <span data-expected="${esc3(id)}"></span></p><p class="a3-warn" data-gap="${esc3(id)}" aria-live="polite" hidden></p>
       <div class="a3-gapask" data-payask="${esc3(id)}" hidden><p class="a3-sub" data-payq="${esc3(id)}"></p><button type="button" class="a3-btn" data-payyes="${esc3(id)}">Yes, tick it</button></div></div>`).join('');
+  /* [LOAN_CHECK_PLAN, M13] each live loan's "Still owed today", like a card's: optional, blank means not looked (nothing
+     written). A payment of the loan gone by and not ticked is asked Yes or No under it (loanQs3, shared with Plan); one on
+     the list above is answered by its tick there (ticked: it left; unticked: not yet) */
+  const onList = new Set(list.map(o => o.item));
+  const loans = (E3.book.accounts || []).filter(a => a && !a.gone && a.type === 'loan' && !a.closed && r.owed[a.id]);
+  const loanFigs = loans.map(a => `<div class="a3-field"><label for="a3o-${esc3(a.id)}">Still owed on ${esc3(a.name)} today</label>
+      <input class="a3-in" data-amount type="text" inputmode="decimal" autocomplete="off" id="a3o-${esc3(a.id)}" data-loanfig="${esc3(a.id)}" placeholder="${esc3(SM.symbol(E3.curOf(a.id)).trim())}">
+      <p class="a3-sub">Leave it blank if you have not looked. The app has ${money3(r.owed[a.id].owedNow, E3.curOf(a.id))}</p>
+      <div data-loanqs="${esc3(a.id)}">${loanQsHtml3(PLAN3W.loanQuestions(E3.book, day, a.id, day).filter(q => !onList.has(q.occ)))}</div></div>`).join('');
   const sheet = $('#a3Check');
   sheet.innerHTML = `<div class="a3-sheet-in">
     <h1 id="a3CheckT">Check your bank</h1>
     <section class="a3-card"><h2>${esc3(label3('checkInList'))} since ${esc3(day3(r.checkIn.since, yr))}</h2>${list.length ? '<p class="a3-sub">Untick anything that has not gone through yet. Change an amount if it was different</p>' + rows : '<p class="a3-sub">Nothing was due since then</p>'}</section>
-    <section class="a3-card"><h2>Your bank today</h2>${figs}${cardFigs ? '<h2>Your cards today</h2>' + cardFigs : ''}<p class="a3-err" id="a3CheckErr"></p></section>
+    <section class="a3-card"><h2>Your bank today</h2>${figs}${cardFigs ? '<h2>Your cards today</h2>' + cardFigs : ''}${loanFigs ? '<h2>Your loans today</h2>' + loanFigs : ''}<p class="a3-err" id="a3CheckErr"></p></section>
     <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3CheckSave">Save</button><button type="button" class="a3-btn" id="a3CheckX">Back</button></div>
   </div>`;
   sheet.hidden = false; $('#a3Home').hidden = true; scrollTo(0, 0);
@@ -50,6 +59,8 @@ function openCheck3() {
   sheet.querySelectorAll('[data-amt]').forEach(el => { const o = list.find(x => x.item === el.dataset.amt); BurrowScreens.inputs.bind(el, { kind: 'amount', code: E3.curOf(o.account) }); });
   sheet.querySelectorAll('[data-bankfig]').forEach(el => BurrowScreens.inputs.bind(el, { kind: 'amount', code: E3.curOf(el.dataset.bankfig), optional: true, allowMinus: true }));   // [M47] a bank can be below zero
   sheet.querySelectorAll('[data-cardfig]').forEach(el => BurrowScreens.inputs.bind(el, { kind: 'amount', code: E3.curOf(el.dataset.cardfig), optional: true }));
+  sheet.querySelectorAll('[data-loanfig]').forEach(el => BurrowScreens.inputs.bind(el, { kind: 'amount', code: E3.curOf(el.dataset.loanfig), optional: true }));
+  loanQsBind3(sheet);
   sheet.querySelectorAll('input, select').forEach(el => { el.addEventListener('input', checkPreview3); el.addEventListener('change', checkPreview3); });
   sheet.querySelectorAll('[data-gapyes]').forEach(el => el.addEventListener('click', () => { check3.sure[el.dataset.gapyes] = true; checkPreview3(); }));
   /* [card payment question] Yes ticks that card's payment on the list above; what is typed stays */
@@ -109,9 +120,25 @@ function readCheck3(strict) {
       landed[o.item] = cd.value;
     }
   }
-  return { figures, ticked, amounts, expected, lands, landed };
+  /* [LOAN_CHECK_PLAN] each loan figure typed, through the same refusals as the Plan sheet (PLAN3W.loanCheckArgs): a payment
+     answered Yes is ticked in this step, one answered No rides on the check as notYet. Only when saving (strict) */
+  const notYet = {};
+  if (strict) for (const el of sheet.querySelectorAll("[data-loanfig]")) {
+    const id = el.dataset.loanfig;
+    if (!el.value.trim()) continue;   // blank: this loan is not looked at
+    const v = typed3(el.value, E3.curOf(id));
+    if (v === null) return bad(`Type what is still owed on ${E3.nameOf(id)}, as an amount, or leave it blank`, el);
+    const answers = loanQsRead3(sheet.querySelector(`[data-loanqs="${id}"]`));
+    for (const o of check3.list) if (o.item.startsWith(id + '@')) answers[o.item] = ticked.includes(o.item) ? 'yes' : 'no';
+    let g;
+    try { g = PLAN3W.loanCheckArgs(E3.book, check3.day, id, { amount: v, answers }, { sameIsNothing: false }); } catch (e) { return bad(e.message, el); }
+    figures[id] = v;
+    for (const occ of g.yes) if (!ticked.includes(occ)) { ticked.push(occ); expected[occ] = g.expected[occ]; lands[occ] = g.lands[occ]; }
+    if (g.no.length) notYet[id] = g.no;
+  }
+  return { figures, ticked, amounts, expected, lands, landed, notYet };
 }
-const checkOut3 = d => BurrowEngine.checkin.checkIn(E3.book, { day: check3.day, told: E3.told(), newId: E3.newId, figures: d.figures, ticked: d.ticked, unticked: [], amounts: d.amounts, expected: d.expected, lands: d.lands, landed: d.landed });
+const checkOut3 = d => BurrowEngine.checkin.checkIn(E3.book, { day: check3.day, told: E3.told(), newId: E3.newId, figures: d.figures, ticked: d.ticked, unticked: [], amounts: d.amounts, expected: d.expected, lands: d.lands, landed: d.landed, notYet: d.notYet && Object.keys(d.notYet).length ? d.notYet : undefined });
 const checkView3 = out => BurrowEngine.lookahead.lookahead(BurrowEngine.checkin.apply(E3.book, out), check3.day);
 /* [NS-FIX 2] the gap a typed figure leaves, in words, from the engine's filler for this check (never worked out here):
    a bank that shows less than the app had lost money nobody logged, and that counts as spending */

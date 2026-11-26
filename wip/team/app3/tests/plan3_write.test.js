@@ -465,6 +465,13 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     y = await h.checkLoan({ amount: 812400 }); ok(y.ok, JSON.stringify(y));
     eq([h.owed().owedNow, h.owed().overdue.length], [812400, 0], 'dated today: owed once');
   });
+  await tk('loanCheckArgs (Check your bank): the same refusals, and with sameIsNothing false the app\'s own figure is taken', async () => {
+    const h = await kenji(); DAY = '2027-02-03';
+    let msg = ''; try { W.loanCheckArgs(h.book, DAY, h.loan, { amount: 840000 }, { sameIsNothing: false }); } catch (e) { msg = e.message; }
+    eq(msg, 'Has the 27 Jan payment of ' + SMF.format(30000, 'JPY') + ' left your bank?');
+    const g = W.loanCheckArgs(h.book, DAY, h.loan, { amount: 840000, answers: { [h.occ('2027-01-27')]: 'no' } }, { sameIsNothing: false });
+    eq([g.amount, g.day, g.yes, g.no], [840000, DAY, [], [h.occ('2027-01-27')]]);
+  });
   await t('Undo of a plan step marks what it added gone; the period no longer shows it', async () => {
     const h = setup();
     const r = await h.go('addLine', { name: 'Food', amount: 40000 });

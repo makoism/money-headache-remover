@@ -8,7 +8,10 @@
    - 9 Feb: the 3 Feb draft is refused with words built from the data, and the draft is kept; dated 5 Feb it is taken,
      owed counted once (812,400); Undo on the bar; dated today with the same figure, owed once; Settings > Recent
      changes names it with its own Undo;
-   - Forget it drops a draft, the book untouched. Made-up yen. */
+   - Forget it drops a draft, the book untouched;
+   - Check your bank: a Still owed today box per loan, blank writes nothing; a payment on the list is answered by its
+     tick there (unticked: No, it rides on the check as notYet; ticked: Yes, in the same step). A payment not on the list
+     would be asked under the loan with the same refusals (PLAN3W.loanCheckArgs, tests/plan3_write.test.js). Made-up yen. */
 'use strict';
 const T = require('./lib3.js'), { ck } = T;
 const fs = require('fs'), path = require('path');
@@ -119,5 +122,55 @@ const saved = p => p.evaluate(async () => { const s = await BurrowStore.open(); 
     ck('no page errors', !errs.length, errs.join(' | '));
   } finally { await b.close(); fs.rmSync(prof, { recursive: true, force: true }); }
 
+  /* Check your bank: each live loan gets an optional Still owed today box, like a card's (a fresh Kenji book on 3 Feb) */
+  const prof2 = fs.mkdtempSync(require('os').tmpdir() + '/a3loanck2-');
+  const o2 = await T.open({ profile: prof2 }), p2 = o2.p;
+  try {
+    const bk0 = kenjiBook();
+    const day = async d => { await p2.goto(T.URL0 + '?today=' + d); await T.w(600); };
+    await day('2027-02-03');
+    await p2.evaluate(async bk => { const s = await BurrowStore.open(); await s.load(); const r = await s.save(bk, { full: true }); s.close(); return r.ok; }, bk0);
+    await p2.reload(); await T.w(600);
+    const owed = () => p2.evaluate(id => BurrowApp3.E3.view(BurrowApp3.E3.today()).owed[id], LOAN);
+    const open = async () => { await p2.click('#a3CheckGo'); await T.w(400); };
+    const banks = async () => { for (const id of await p2.$$eval('[data-bankfig]', l => l.map(x => x.dataset.bankfig))) { await p2.tap(`[data-bankfig="${id}"]`); await p2.keyboard.type('100000'); } };
+    const loanBox = async v => { await p2.tap(`[data-loanfig="${LOAN}"]`); await p2.keyboard.type(v); };
+    const save = async () => { await p2.click('#a3CheckSave'); await T.w(700); };
+    const err = () => p2.$eval('#a3CheckErr', e => e.textContent).catch(() => '');
+    const checks = bk => bk.events.filter(e => e.k === 'check' && e.acct === LOAN && !e.gone && e.date > '2026-11-25');
+    const occ = LOAN + '@2027-01-27';
+    await open();
+    const label = await p2.$eval(`label[for="a3o-${LOAN}"]`, e => e.textContent).catch(() => '');
+    ck('Check your bank: Car loan has a Still owed today box, blank, like a card\'s', label === 'Still owed on Car loan today' && (await p2.$eval(`[data-loanfig="${LOAN}"]`, e => e.value)) === '', label);
+    ck('the 27 Jan payment is on the list above, so it is not asked again under the loan', !!(await p2.$(`.a3-tick[data-item="${occ}"]`)) && !(await p2.$(`[data-loanqs="${LOAN}"] [data-lcq]`)));
+    /* blank: nothing written for the loan */
+    await banks(); await p2.$eval(`.a3-tick[data-item="${occ}"] input[type=checkbox]`, e => { e.click(); }); await save();
+    let bk = await saved(p2);
+    ck('left blank: no check on the loan, and the 27 Jan payment unticked stays to tick', !checks(bk).length && !bk.events.some(e => e.id === 'set:' + occ && !e.gone));
+    /* 4 Feb: 27 Jan, left unticked, is on the list again: its tick there answers the question (unticked: not yet) */
+    await day('2027-02-04'); await open();
+    ck('4 Feb: the 27 Jan payment is on the list again and not asked twice under the loan', !!(await p2.$(`.a3-tick[data-item="${occ}"]`)) && !(await p2.$(`[data-loanqs="${LOAN}"] [data-lcq]`)));
+    const untick = () => p2.$eval(`.a3-tick[data-item="${occ}"] input[type=checkbox]`, e => { if (e.checked) e.click(); });
+    await banks(); await loanBox('abc'); await untick();
+    const b4 = JSON.stringify(await saved(p2));
+    await save();
+    ck('a figure that is not an amount is refused with words, nothing written', /Type what is still owed on Car loan, as an amount, or leave it blank/.test(await err()) && JSON.stringify(await saved(p2)) === b4, await err());
+    await p2.$eval(`[data-loanfig="${LOAN}"]`, e => { e.value = ''; }); await loanBox('812400'); await save();
+    bk = await saved(p2);
+    const c1 = checks(bk);
+    ck('unticked (No): one loan check of 812,400 today carrying notYet for 27 Jan, nothing ticked', c1.length === 1 && c1[0].a === 812400 && c1[0].date === '2027-02-04' && JSON.stringify(c1[0].notYet) === JSON.stringify([occ]) && !bk.events.some(e => e.id === 'set:' + occ && !e.gone), JSON.stringify(c1));
+    let o = await owed();
+    ck('owed 812,400 with 27 Jan still to tick', o.owedNow === 812400 && o.overdue.map(x => x.payment_date).join() === '2027-01-27', JSON.stringify(o));
+    ck('Undo on the bar takes the whole check back', await p2.evaluate(() => { const x = [...document.querySelectorAll('#a3Msg button')].find(y => /Undo/.test(y.textContent)); if (x) x.click(); return !!x; })); await T.w(700);
+    ck('after Undo: no loan check', !checks(await saved(p2)).length);
+    /* Yes: the payment ticked in the same step as the check */
+    await open(); await banks(); await loanBox('812400'); await save();   // 27 Jan ticked on the list (Yes)
+    bk = await saved(p2);
+    const c2 = checks(bk), t2 = bk.events.find(e => e.id === 'set:' + occ && !e.gone);
+    ck('Yes: the check and the 27 Jan tick share one step (grp), no notYet', c2.length === 1 && t2 && c2[0].grp === t2.grp && !c2[0].notYet, JSON.stringify([c2, t2]));
+    o = await owed();
+    ck('owed 812,400 once, nothing overdue', o.owedNow === 812400 && !o.overdue.length, JSON.stringify(o));
+    ck('no page errors (Check your bank)', !o2.errs.length, o2.errs.join(' | '));
+  } finally { await o2.b.close(); fs.rmSync(prof2, { recursive: true, force: true }); }
   T.done('e3_loancheck');
 })();
