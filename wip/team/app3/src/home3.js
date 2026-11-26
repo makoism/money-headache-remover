@@ -97,6 +97,10 @@ function safeUntil3(r, yr, home) {
   /* [CA8] on the morning of pay day, before the pay is ticked, today is still the old period's last day: the engine says
      the figure runs to today's pay (safeToSpend.untilPay is today's own pay), and the heading says so */
   if (n.days === 0 && r.safeToSpend.untilPay && r.safeToSpend.untilPay === np.item) return ` until today's pay is in`;
+  /* [qc-numbers run 1 B5, coordinator 17's ruling (a)] pay-day morning, today's pay not ticked (the period running now
+     still ends with it) and Free to spend left caps safe to spend: the figure is the old period's Free to spend left, so
+     the heading names the old period until the pay is ticked */
+  if (n.days === 0 && r.safeToSpend.cappedByFreeToSpend && r.period.end >= np.next_pay) return ` until today's pay is in`;
   /* [C8, M51] "next pay" on this screen is today's pay (the period card), so this one is named "the pay after today's" */
   if (n.days === 0 && r.safeToSpend.until) return ` until the pay after today's, on ${esc3(day3(r.safeToSpend.until, yr))}${r.safeToSpend.notCounting ? ', not counting today\'s pay (not in at your check today)' : ''}${notInWords}`;
   return ` until next pay on ${d}${notInWords}`;
