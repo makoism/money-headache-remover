@@ -151,6 +151,10 @@ async function figsMatch(p, book, what) {
   await type(p, '#rcAmt', '800'); await setVal(p, '#rcDate', '2026-11-26');
   await p.tap('#rcSave'); await T.w(300);
   ck('a day after today: it says so', /not come yet/.test(await p.$eval('#rcErr', e => e.textContent)), await p.$eval('#rcErr', e => e.textContent));
+  /* [cash-1 qc-numbers B3] a comma in the wrong place ("12,34") is refused with both readings, never logged as 1,234 */
+  await setVal(p, '#rcDate', DAY); await p.$eval('#rcAmt', e => { e.value = ''; }); await type(p, '#rcAmt', '12,34');
+  await p.tap('#rcSave'); await T.w(300);
+  ck('a comma in the wrong place: it asks which was meant', /Did you mean ¥1,234 or ¥12,340/.test(await p.$eval('#rcErr', e => e.textContent)), await p.$eval('#rcErr', e => e.textContent));
   ck('nothing was saved', (await saved(p)).events.length === n0);
 
   /* a reload keeps it all */
