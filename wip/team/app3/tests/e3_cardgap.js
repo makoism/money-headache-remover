@@ -15,13 +15,13 @@
              the pay. Free to spend left 32,000 - 44,000 = -12,000, so safe to spend is 0.
      13 Dec  Check your bank: the pay (10 Dec), Card A's 50,000 (10 Dec) and Card B's 24,000 (11 Dec) are ticked, bank
              526,000 (300,000 + 300,000 - 50,000 - 24,000, no gap of its own), Card A 21,000, Card B 7,000.
-             Not logged over 7 to 13 Dec, seven days: 7, 8 and 9 Dec are before the pay (3 of 7), 10 to 13 Dec after:
-               Card A 21,000 = 9,000 before and 12,000 after;  Card B 7,000 = 3,000 before and 4,000 after.
-             The period from 10 Dec: spent 12,000 + 4,000 = 16,000 of 60,000, so 44,000 left; safe to spend 44,000
+             Not logged over 7 to 13 Dec, found at the 13 Dec check. [CHECKGAP, coordinator 15, 26 Nov] A check's gap is
+             the period the check is in, whole (by days it was 9,000 + 3,000 before the pay and 12,000 + 4,000 after):
+             The period from 10 Dec: spent 21,000 + 7,000 = 28,000 of 60,000, so 32,000 left; safe to spend 32,000
              (the bank can spare all 526,000).
-             The period 10 Nov to 9 Dec: spent 30,000 + 14,000 + 9,000 + 3,000 = 56,000 of 32,000.
+             The period 10 Nov to 9 Dec keeps what its own check found: 30,000 + 14,000 = 44,000 of 32,000.
      Receipts shows each card's 13 Dec gap as two rows, one in each period, and the rows of a period add up to that
-     period's spent figure. Plan and Home say the same 44,000. A reload changes nothing. */
+     period's spent figure. Plan and Home say the same 32,000. A reload changes nothing. */
 'use strict';
 const path = require('path');
 const LA = require(path.join(__dirname, '../../engine/lookahead.js'));
@@ -106,33 +106,31 @@ async function read13(p) {
   await go(p, '2026-12-13');
   const ticked = await checkin(p, { [BANK]: 526000, 'Card A': 21000, 'Card B': 7000 });
   ck('13 Dec: the check asked about the pay and both card payments (three items, all ticked)', ticked.length === 3 && ticked.some(t => /Card A/.test(t)) && ticked.some(t => /Card B/.test(t)), JSON.stringify(ticked));
-  await L.home(p, '13 Dec after the check (16,000 of the 60,000 spent since the pay)', 44000, { [BANK]: 526000 });
+  await L.home(p, '13 Dec after the check (28,000 of the 60,000 spent since the pay)', 32000, { [BANK]: 526000 });
 
   const checks = async (v, when) => {
     const { now, old, plan, home } = v;
     /* the period running now, from 10 Dec */
-    ck(`${when}, Receipts: this period starts 10 Dec and Free to spend reads spent 16,000 of 60,000`, now.start === '2026-12-10' && now.spent === 16000 && now.of === 60000, JSON.stringify([now.start, now.end, now.spent, now.of]));
+    ck(`${when}, Receipts: this period starts 10 Dec and Free to spend reads spent 28,000 of 60,000`, now.start === '2026-12-10' && now.spent === 28000 && now.of === 60000, JSON.stringify([now.start, now.end, now.spent, now.of]));
     const nA = gapRows(now, 'Card A'), nB = gapRows(now, 'Card B');
-    ck(`${when}, Receipts: this period holds one row of Card A's gap, 12,000, for 10 to 13 Dec`, nA.length === 1 && nA[0].amount === 12000 && /Found at your bank check on 13 Dec/.test(nA[0].text) && /10 Dec to 13 Dec/.test(nA[0].text), JSON.stringify(nA));
-    ck(`${when}, Receipts: and one row of Card B's, 4,000`, nB.length === 1 && nB[0].amount === 4000 && /10 Dec to 13 Dec/.test(nB[0].text), JSON.stringify(nB));
+    ck(`${when}, Receipts: this period holds one row of Card A's gap, all 21,000, naming the days it covers, 7 to 13 Dec`, nA.length === 1 && nA[0].amount === 21000 && /Found at your bank check on 13 Dec/.test(nA[0].text) && /7 Dec to 13 Dec/.test(nA[0].text), JSON.stringify(nA));
+    ck(`${when}, Receipts: and one row of Card B's, 7,000`, nB.length === 1 && nB[0].amount === 7000 && /7 Dec to 13 Dec/.test(nB[0].text), JSON.stringify(nB));
     const nowGaps = now.rows.filter(x => x.gap), nowSpends = now.rows.filter(x => x.k === 'spend');
     ck(`${when}, Receipts: nothing else in this period is spending (no bank gap, no logged spend)`, nowGaps.length === 2 && nowSpends.length === 0, JSON.stringify(now.rows.map(x => [x.k, x.gap, x.amount])));
-    ck(`${when}, Receipts: this period's rows add up to its spent figure (12,000 + 4,000 = 16,000)`, nowGaps.reduce((s, x) => s + x.amount, 0) === now.spent, `${nowGaps.map(x => x.amount)} vs ${now.spent}`);
+    ck(`${when}, Receipts: this period's rows add up to its spent figure (21,000 + 7,000 = 28,000)`, nowGaps.reduce((s, x) => s + x.amount, 0) === now.spent, `${nowGaps.map(x => x.amount)} vs ${now.spent}`);
     /* the period gone by, 10 Nov to 9 Dec */
-    ck(`${when}, Receipts, Earlier: 10 Nov to 9 Dec, Free to spend reads spent 56,000 of 32,000`, old.start === '2026-11-10' && old.end === '2026-12-09' && old.spent === 56000 && old.of === 32000, JSON.stringify([old.start, old.end, old.spent, old.of]));
+    ck(`${when}, Receipts, Earlier: 10 Nov to 9 Dec, Free to spend reads spent 44,000 of 32,000, as it closed`, old.start === '2026-11-10' && old.end === '2026-12-09' && old.spent === 44000 && old.of === 32000, JSON.stringify([old.start, old.end, old.spent, old.of]));
     const oA = gapRows(old, 'Card A').map(x => [x.check, x.amount]).sort(), oB = gapRows(old, 'Card B').map(x => [x.check, x.amount]).sort();
-    ck(`${when}, Receipts, Earlier: Card A's rows are 30,000 (6 Dec) and the other 9,000 of the 13 Dec gap`, JSON.stringify(oA) === '[["2026-12-06",30000],["2026-12-13",9000]]', JSON.stringify(oA));
-    ck(`${when}, Receipts, Earlier: Card B's rows are 14,000 (6 Dec) and the other 3,000 of the 13 Dec gap`, JSON.stringify(oB) === '[["2026-12-06",14000],["2026-12-13",3000]]', JSON.stringify(oB));
-    const part = gapRows(old, 'Card A').find(x => x.check === '2026-12-13');
-    ck(`${when}, Receipts, Earlier: the 9,000 row names its days, 7 Dec to 9 Dec, and the check it was found at`, !!part && /7 Dec to 9 Dec/.test(part.text) && /Found at your bank check on 13 Dec/.test(part.text), JSON.stringify(part));
+    ck(`${when}, Receipts, Earlier: Card A's only row is 30,000 (6 Dec): nothing of the 13 Dec gap`, JSON.stringify(oA) === '[["2026-12-06",30000]]', JSON.stringify(oA));
+    ck(`${when}, Receipts, Earlier: Card B's only row is 14,000 (6 Dec)`, JSON.stringify(oB) === '[["2026-12-06",14000]]', JSON.stringify(oB));
     const oldGaps = old.rows.filter(x => x.gap);
-    ck(`${when}, Receipts, Earlier: its rows add up to its spent figure (30,000 + 14,000 + 9,000 + 3,000 = 56,000)`, oldGaps.length === 4 && old.rows.filter(x => x.k === 'spend').length === 0 && oldGaps.reduce((s, x) => s + x.amount, 0) === old.spent, `${oldGaps.map(x => x.amount)} vs ${old.spent}`);
+    ck(`${when}, Receipts, Earlier: its rows add up to its spent figure (30,000 + 14,000 = 44,000)`, oldGaps.length === 2 && old.rows.filter(x => x.k === 'spend').length === 0 && oldGaps.reduce((s, x) => s + x.amount, 0) === old.spent, `${oldGaps.map(x => x.amount)} vs ${old.spent}`);
     ck(`${when}: the two periods hold 72,000 in all, each card's 13 Dec gap once (21,000 and 7,000)`, now.spent + old.spent === 72000
       && [...gapRows(now, 'Card A'), ...gapRows(old, 'Card A')].filter(x => x.check === '2026-12-13').reduce((s, x) => s + x.amount, 0) === 21000
       && [...gapRows(now, 'Card B'), ...gapRows(old, 'Card B')].filter(x => x.check === '2026-12-13').reduce((s, x) => s + x.amount, 0) === 7000, `${now.spent} ${old.spent}`);
     /* Plan and Home say the same */
-    ck(`${when}, Plan: Free to spend left 44,000 of 60,000 (60,000 less this period's 16,000 on Receipts)`, plan.left === 44000 && plan.amount === 60000 && plan.amount - plan.left === now.spent, JSON.stringify(plan));
-    ck(`${when}, Home: safe to spend is the same 44,000, and its sum says Free to spend is the limit`, home.safe === 44000 && home.safe === plan.left && home.cap !== '(none)' && /44,000/.test(home.cap), JSON.stringify(home));
+    ck(`${when}, Plan: Free to spend left 32,000 of 60,000 (60,000 less this period's 28,000 on Receipts)`, plan.left === 32000 && plan.amount === 60000 && plan.amount - plan.left === now.spent, JSON.stringify(plan));
+    ck(`${when}, Home: safe to spend is the same 32,000, and its sum says Free to spend is the limit`, home.safe === 32000 && home.safe === plan.left && home.cap !== '(none)' && /32,000/.test(home.cap), JSON.stringify(home));
   };
   const first = await read13(p);
   await checks(first, '13 Dec');
@@ -140,9 +138,9 @@ async function read13(p) {
   /* the page against the engine on the book the store keeps: the same parts, the same card figures */
   const bk = await L.readBook(p), er = LA.lookahead(bk, '2026-12-13');
   const cardId = name => bk.accounts.find(a => a.name === name).id;
-  const parts13 = name => er.cards[cardId(name)].fillers.filter(f => f.day === '2026-12-13').map(f => f.parts.map(x => [x.from, x.to, x.amount]));
-  ck('the kept book, through the engine: Card A\'s 13 Dec gap is 9,000 for 7 to 9 Dec and 12,000 for 10 to 13 Dec', JSON.stringify(parts13('Card A')) === '[[["2026-12-07","2026-12-09",9000],["2026-12-10","2026-12-13",12000]]]', JSON.stringify(parts13('Card A')));
-  ck('the kept book, through the engine: Card B\'s is 3,000 and 4,000', JSON.stringify(parts13('Card B')) === '[[["2026-12-07","2026-12-09",3000],["2026-12-10","2026-12-13",4000]]]', JSON.stringify(parts13('Card B')));
+  const parts13 = name => er.cards[cardId(name)].fillers.filter(f => f.day === '2026-12-13').map(f => [f.from, f.to, f.parts.map(x => [x.from, x.to, x.amount])]);
+  ck('the kept book, through the engine: Card A\'s 13 Dec gap covers 7 to 13 Dec and counts whole, 21,000, on 13 Dec', JSON.stringify(parts13('Card A')) === '[["2026-12-07","2026-12-13",[["2026-12-13","2026-12-13",21000]]]]', JSON.stringify(parts13('Card A')));
+  ck('the kept book, through the engine: Card B\'s the same, 7,000', JSON.stringify(parts13('Card B')) === '[["2026-12-07","2026-12-13",[["2026-12-13","2026-12-13",7000]]]]', JSON.stringify(parts13('Card B')));
   ck('the kept book: the cards owe what was typed (21,000 and 7,000) and nothing is still asked for', er.cards[cardId('Card A')].owedNow === 21000 && er.cards[cardId('Card B')].owedNow === 7000 && er.checkIn.toConfirm.length === 0, JSON.stringify(er.checkIn.toConfirm));
 
   /* ---- a reload changes nothing ---- */

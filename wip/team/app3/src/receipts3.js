@@ -5,7 +5,7 @@
    write goes through ACT3 (src/act3.js), which gives the Undo bar. Free to spend left and safe to spend are the
    engine's, before and after: for a draft the engine is asked about the book the draft would make (ACT3.dry). This
    file chooses, writes and places; it never adds, takes away or rounds (tests: no_maths.js, e3_receipts.js). */
-const RC3 = { mode: 'spend', edit: null, at: null, search: '', last: null, held: null };
+const RC3 = { mode: 'spend', edit: null, at: null, search: '', last: null, held: null, from: null };
 const RC_KIND3 = { spend: 'logSpend', refund: 'refund', moved: 'moveMoney', in: 'moneyIn' };
 const RC_SPEND_FROM3 = { bank: 1, cash: 1, ewallet: 1, wallet: 1, card: 1, paylater: 1 };
 const RC_OWN3 = { bank: 1, cash: 1, ewallet: 1, wallet: 1 };
@@ -133,7 +133,9 @@ function rcFormHtml3() {
   const pick = (cur, list, dflt) => (cur != null ? cur : list.some(o => o.v === dflt) ? dflt : list[0] && list[0].v);
   const fromList = acctOpts(m === 'moved' || m === 'in' ? RC_OWN3 : RC_SPEND_FROM3);
   const mainId = main && main.acct;
-  const fromSel = pick(e ? e.acct : null, fromList, mainId);
+  /* [qc-numbers monthrule2 blocker 2] the From a person picked wins (also on a change), so To is every own account but that one */
+  const held = RC3.from && fromList.some(o => o.v === RC3.from) ? RC3.from : null;
+  const fromSel = pick(held || (e ? e.acct : null), fromList, mainId);
   let fields = '';
   /* [K18] money moves only between your own accounts: with one, there is nowhere to move it to, so the form says so
      instead of an empty To list and a Save that fails (a way to add an account goes here once the app has one) */
@@ -213,14 +215,14 @@ function rcWire3() {
   BurrowScreens.inputs.bind(amt, { kind: 'amount', code: E3.home(), optional: true });
   for (const el of document.querySelectorAll('#rcForm input, #rcForm select')) { el.addEventListener('input', rcPreview3); el.addEventListener('change', rcPreview3); }
   const from = $('#rcFrom');
-  if (from) from.addEventListener('change', () => { const keep = rcKeep3(); $('#rcForm').innerHTML = rcFormHtml3(); rcPut3(keep); rcWire3(); });
+  if (from) from.addEventListener('change', () => { const keep = rcKeep3(); RC3.from = from.value; $('#rcForm').innerHTML = rcFormHtml3(); rcPut3(keep); rcWire3(); });
   $('#rcSave').addEventListener('click', () => rcSave3());
   $('#rcAskYes').addEventListener('click', () => rcSave3(true));
   $('#rcAskNo').addEventListener('click', () => { rcAskOff3(); $('#rcAmt').focus(); });
   amt.addEventListener('keydown', e => { if (e.key === 'Enter') rcSave3(); });
   amt.addEventListener('input', rcAskOff3);
   if ($('#rcRemove')) $('#rcRemove').addEventListener('click', rcRemove3);
-  if ($('#rcCancel')) $('#rcCancel').addEventListener('click', () => { RC3.edit = null; RC3.mode = 'spend'; renderRc3(); });
+  if ($('#rcCancel')) $('#rcCancel').addEventListener('click', () => { RC3.from = null; RC3.edit = null; RC3.mode = 'spend'; renderRc3(); });
   rcPreview3();
 }
 /* what was typed survives a change of mode or account */
@@ -272,7 +274,7 @@ async function rcSave3(sure) {
   const r = RC3.edit ? await ACT3.edit(RC3.edit.id, rcFields3(x), { undo: said, seen: rcSeen3() }) : await ACT3[RC_KIND3[RC3.mode]](x, { undo: said });
   if (!r.ok) { $('#rcErr').textContent = r.text; rcLook3(r); return; }   // the form may have been drawn again meanwhile (another tab)
   RC3.last = before;
-  if (RC3.edit) { RC3.edit = null; RC3.mode = 'spend'; }
+  if (RC3.edit) { RC3.from = null; RC3.edit = null; RC3.mode = 'spend'; }
   renderRc3();
   const a = $('#rcAmt'); if (a) a.focus();
 }
@@ -283,7 +285,7 @@ const rcSeen3 = () => ({ [RC3.edit.id]: (RC3.edit.at || '') + '|' + (RC3.edit.by
 function rcLook3(r) {
   if (r.why !== 'other' || !RC3.edit) return;
   const now = ((E3.book && E3.book.events) || []).find(e => e.id === RC3.edit.id && !e.gone);
-  if (!now) { const t = $('#rcErr').textContent; RC3.edit = null; RC3.mode = 'spend'; renderRc3(); $('#rcErr').textContent = t; return; }
+  if (!now) { const t = $('#rcErr').textContent; RC3.from = null; RC3.edit = null; RC3.mode = 'spend'; renderRc3(); $('#rcErr').textContent = t; return; }
   RC3.edit = JSON.parse(JSON.stringify(now));
   if (typeof rcList3 === 'function') rcList3();
 }
@@ -296,12 +298,12 @@ async function rcRemoveGo3() {
   const before = rcFigs3(E3.book);
   const r = await ACT3.remove(e.id, { undo: `Removed ${money3(e.a, E3.curOf(e.acct))}, ${rcWhat3(e)}`, seen: rcSeen3() });
   if (!r.ok) { $('#rcErr').textContent = r.text; rcLook3(r); return; }
-  RC3.last = before; RC3.edit = null; RC3.mode = 'spend';
+  RC3.last = before; RC3.from = null; RC3.edit = null; RC3.mode = 'spend';
   renderRc3();
 }
 function rcOpen3(id) {
   const e = rcRows3().concat(rcAhead3()).find(x => x.id === id); if (!e) return;
-  RC3.edit = JSON.parse(JSON.stringify(e)); RC3.mode = e.k === 'transfer' ? 'moved' : rcMoneyIn3(e) ? 'in' : e.k === 'in' ? 'refund' : 'spend';
+  RC3.from = null; RC3.edit = JSON.parse(JSON.stringify(e)); RC3.mode = e.k === 'transfer' ? 'moved' : rcMoneyIn3(e) ? 'in' : e.k === 'in' ? 'refund' : 'spend';
   $('#rcForm').innerHTML = rcFormHtml3(); rcWire3();
   $('#rcForm').scrollIntoView({ block: 'start' }); $('#rcAmt').focus();
 }
@@ -418,7 +420,7 @@ function rcList3() {
 
 /* [NS-FIX 3] Home's "Log a spend": Receipts' own log form, in spend mode, with the amount box ready (no second form) */
 function rcLogFromHome3() {
-  RC3.edit = null; RC3.mode = 'spend';
+  RC3.from = null; RC3.edit = null; RC3.mode = 'spend';
   showTab3('receipts'); renderRc3();
   const f = $('#rcForm'); if (f) f.scrollIntoView({ block: 'start' });
   const a = $('#rcAmt'); if (a) a.focus();
@@ -426,7 +428,7 @@ function rcLogFromHome3() {
 /* every saved write and Undo draws Home and Receipts again */
 if (ACT3) ACT3.onChange((step, opts) => {
   if (opts && opts.isUndo) RC3.last = null;   // "was" figures belong to the step just taken back
-  if (RC3.edit && !rcRows3().concat(rcAhead3()).some(e => e.id === RC3.edit.id)) { RC3.edit = null; RC3.mode = 'spend'; }
+  if (RC3.edit && !rcRows3().concat(rcAhead3()).some(e => e.id === RC3.edit.id)) { RC3.from = null; RC3.edit = null; RC3.mode = 'spend'; }
   try { renderHome3(); } catch (e) { /* Home draws itself next time */ }
   renderRc3();
 });

@@ -1470,10 +1470,20 @@
       const inStretch = cardSteps.filter(x => x.day <= last);
       const laterCardDays = [];
       for (const c of mine) if (firstOf[c] != null) for (const d of cards[c].landsBetween(firstOf[c], last)) if (!cardSteps.some(x => x.card === c && x.day === d)) laterCardDays.push({ card: c, day: dayStr(d) });
+      // [qc-numbers monthrule2 blocker 4] a card paid in full whose close day is "not sure": the figure says it counts
+      // everything on the card now, so what is on it beyond the payments in the stretch (a spend after an overdue
+      // payment, held for the next payment) goes out with that card's first payment
+      const extraOn = {};
+      for (const c of mine) {
+        if (firstOf[c] == null || acct[c].inFull === false || !cards[c].cardItems.some(x => x.statement === 'all owed')) continue;
+        const taken = inStretch.filter(x => x.card === c).reduce((t, x) => t - x.amount, 0), extra = cards[c].owedNow - taken;
+        if (extra > 0) extraOn[firstOf[c]] = (extraOn[firstOf[c]] || 0) + extra;
+      }
       let bal = w.start, dip = null;
       const upTo = real.filter(x => x.day <= last);
       for (let i = 0; i < upTo.length; i++) {
         bal += upTo[i].amount + (upTo[i].fromPlace ? -upTo[i].fromPlace.amount : 0);
+        if (upTo[i].card && extraOn[upTo[i].day] && firstOf[upTo[i].card] === upTo[i].day) { bal -= extraOn[upTo[i].day]; delete extraOn[upTo[i].day]; }
         if (upTo[i + 1] && upTo[i + 1].day === upTo[i].day) continue;
         if (upTo[i].day < last && bal < 0 && (!dip || -bal > dip.amount)) dip = { day: dayStr(upTo[i].day), amount: -bal };
       }
