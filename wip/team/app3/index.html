@@ -10320,9 +10320,9 @@ function rcRows3() {
 }
 /* [M6, M61; qc-data-safety B1] the one question before a remove on the screens (Receipts and Plan use it; tests/e3_removes.js
    counts every removing button). The first tap writes nothing: `host` shows what goes, with a yes and a no */
-function sure3(host, words, yes, run) {
+function sure3(host, words, yes, run, more) {
   if (!host) return;
-  host.innerHTML = `<div class="a3-sure" data-sure><p class="a3-warn">${esc3(words)}</p><div class="a3-actions"><button type="button" class="a3-btn solid" data-sureyes>${esc3(yes)}</button><button type="button" class="a3-btn" data-sureno>No, keep it</button></div></div>`;
+  host.innerHTML = `<div class="a3-sure" data-sure><p class="a3-warn">${esc3(words)}</p>${more || ''}<div class="a3-actions"><button type="button" class="a3-btn solid" data-sureyes>${esc3(yes)}</button><button type="button" class="a3-btn" data-sureno>No, keep it</button></div></div>`;
   host.querySelector('[data-sureyes]').addEventListener('click', () => { host.innerHTML = ''; run(); });
   host.querySelector('[data-sureno]').addEventListener('click', () => { host.innerHTML = ''; });
   host.querySelector('[data-sureno]').focus();
@@ -10565,7 +10565,12 @@ function rcLook3(r) {
 }
 function rcRemove3() {
   const e = RC3.edit; if (!e) return;
-  sure3($('#rcSure'), `Remove ${money3(e.a, E3.curOf(e.acct))}, ${rcWhat3(e)}? Undo can bring it back until you reload`, 'Yes, remove it', rcRemoveGo3);
+  /* [LANE L queue D] the figures after removing it, the engine's on the book without it (the form's "After this" is
+     the change being typed, not the removal) */
+  let f = null; try { f = rcFigs3(ACT3.dry('remove', e.id)); } catch (x) { f = null; }
+  const cur = E3.home();
+  const more = f ? `<p class="a3-sub">After removing it: ${f.free != null ? `${esc3(label3('freeToSpendLeft'))} <b data-fig="rc-rm-free">${fig3('period.free.left', f.free, cur)}</b>, ` : ''}${esc3(label3('safeToSpend').toLowerCase())} <b data-fig="rc-rm-safe">${fig3('safeToSpend.headline', f.safe, cur)}</b></p>` : '';
+  sure3($('#rcSure'), `Remove ${money3(e.a, E3.curOf(e.acct))}, ${rcWhat3(e)}? Undo can bring it back until you reload`, 'Yes, remove it', rcRemoveGo3, more);
 }
 async function rcRemoveGo3() {
   const e = RC3.edit; if (!e) return;
