@@ -503,8 +503,8 @@ function plCardForm3() {
 function plLoanForm3() {
   PL3.sheet = 'addLoan';
   plForm3('Add a loan', [{ key: 'name', label: 'Name', kind: 'text', hint: 'Like Car loan' }, { key: 'owed', label: 'Still owed today', kind: 'amount' },
-    { key: 'amount', label: 'Usual payment', kind: 'amount' }, { key: 'payDay', label: 'Day of the month it is paid', kind: 'day' }, plPayFrom3(null)],
-  [{ label: 'Add', solid: true, step: v => ['addLoan', w => PLAN3W.addLoan(w, { name: v.name, owed: v.owed, amount: v.amount, payDay: v.payDay, payFrom: v.payFrom }), 'Loan added'] }],
+    { key: 'amount', label: 'Usual payment', kind: 'amount' }, { key: 'payDay', label: 'Day of the month it is paid', kind: 'day' }, plPayFrom3(null), plShift3('after')],
+  [{ label: 'Add', solid: true, step: v => ['addLoan', w => PLAN3W.addLoan(w, { name: v.name, owed: v.owed, amount: v.amount, payDay: v.payDay, payFrom: v.payFrom, shift: v.shift }), 'Loan added'] }],
   'Its payment counts in what is due before next pay');
 }
 

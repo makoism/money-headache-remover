@@ -419,6 +419,7 @@
   function addLoan(w, x) {
     const name = nameOk(x.name), owed = amountOk(x.owed, 'what is owed'), pay = amountOk(x.amount, 'the usual payment'), d = dayOfMonth(x.payDay);
     const payFrom = payerOk(w, x.payFrom || mainOf(w));
+    if (x.shift != null && x.shift !== '' && !SHIFTS[x.shift]) bad('Pick what happens on a weekend or holiday');
     sameName((w.book.accounts || []), name);
     const id = w.add('accounts', { name, type: 'loan', cur: home(w), owner: null, payDay: d, shift: x.shift || 'after', payFrom, amount: pay });
     w.add('events', { k: 'open', acct: id, date: w.today, a: owed });

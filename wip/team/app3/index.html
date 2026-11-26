@@ -9507,6 +9507,7 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
   function addLoan(w, x) {
     const name = nameOk(x.name), owed = amountOk(x.owed, 'what is owed'), pay = amountOk(x.amount, 'the usual payment'), d = dayOfMonth(x.payDay);
     const payFrom = payerOk(w, x.payFrom || mainOf(w));
+    if (x.shift != null && x.shift !== '' && !SHIFTS[x.shift]) bad('Pick what happens on a weekend or holiday');
     sameName((w.book.accounts || []), name);
     const id = w.add('accounts', { name, type: 'loan', cur: home(w), owner: null, payDay: d, shift: x.shift || 'after', payFrom, amount: pay });
     w.add('events', { k: 'open', acct: id, date: w.today, a: owed });
@@ -11165,8 +11166,8 @@ function plCardForm3() {
 function plLoanForm3() {
   PL3.sheet = 'addLoan';
   plForm3('Add a loan', [{ key: 'name', label: 'Name', kind: 'text', hint: 'Like Car loan' }, { key: 'owed', label: 'Still owed today', kind: 'amount' },
-    { key: 'amount', label: 'Usual payment', kind: 'amount' }, { key: 'payDay', label: 'Day of the month it is paid', kind: 'day' }, plPayFrom3(null)],
-  [{ label: 'Add', solid: true, step: v => ['addLoan', w => PLAN3W.addLoan(w, { name: v.name, owed: v.owed, amount: v.amount, payDay: v.payDay, payFrom: v.payFrom }), 'Loan added'] }],
+    { key: 'amount', label: 'Usual payment', kind: 'amount' }, { key: 'payDay', label: 'Day of the month it is paid', kind: 'day' }, plPayFrom3(null), plShift3('after')],
+  [{ label: 'Add', solid: true, step: v => ['addLoan', w => PLAN3W.addLoan(w, { name: v.name, owed: v.owed, amount: v.amount, payDay: v.payDay, payFrom: v.payFrom, shift: v.shift }), 'Loan added'] }],
   'Its payment counts in what is due before next pay');
 }
 
