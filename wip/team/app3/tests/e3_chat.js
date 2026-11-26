@@ -95,7 +95,7 @@ async function say(p, text) { await p.$eval('#a3ChatIn', (e, v) => { e.value = v
     ck('"See what is sent" shows the core\'s own text', (await p.$eval('#a3ChatSent', e => e.textContent)) === 'WHAT IS SENT: ');
     ck('with the AI off the two ways show', /assistant is off/.test(await p.$eval('[data-card=chat-off]', e => e.textContent)) && await shows(p, '#a3ChatScreens') && await shows(p, '#a3ChatAny'));
     await say(p, 'hello');
-    ck('a message with the AI off says so and keeps the message', /didn't go through: the assistant is off/.test(await p.$eval('#a3ChatLog', e => e.textContent)) && (await p.$eval('#a3ChatIn', e => e.value)) === 'hello');
+    ck('a message with the AI off says so and keeps the message', /The assistant is off right now\. Your message is back in the box/.test(await p.$eval('#a3ChatLog', e => e.textContent)) && (await p.$eval('#a3ChatIn', e => e.value)) === 'hello');
     /* 2 */
     await p.click('#a3ChatAny'); await T.w(100);
     const ask = await p.$eval('#a3ChatAnyAsk', e => e.value);
@@ -134,7 +134,8 @@ async function say(p, text) { await p.$eval('#a3ChatIn', (e, v) => { e.value = v
     ck('the person\'s words and the answer show', JSON.stringify(await turns(p)) === '["hi there","Heard: hi there"]', JSON.stringify(await turns(p)));
     fail.on = true;
     await say(p, 'are you there');
-    ck('a relay that fails says so, puts the message back and shows the ways', /didn't go through: the AI did not answer \(500\)/.test(await p.$eval('#a3ChatLog', e => e.textContent)) && (await p.$eval('#a3ChatIn', e => e.value)) === 'are you there' && await shows(p, '#a3ChatAny'));
+    { const t = await p.evaluate(() => document.body.innerText);
+      ck('a relay that fails says so once, plainly, puts the message back and shows the ways', /The assistant did not answer\. Send it again/.test(t) && !/500/.test(t) && t.split('did not answer').length === 2 && (await p.$eval('#a3ChatIn', e => e.value)) === 'are you there' && await shows(p, '#a3ChatAny'), t.slice(-400)); }
     fail.on = false;
     /* 5 */
     await p.reload(); await T.w(600); await p.evaluate(fake);
@@ -268,7 +269,7 @@ async function say(p, text) { await p.$eval('#a3ChatIn', (e, v) => { e.value = v
       ai.mode = mode;
       const before = ai.calls;
       await R.tell(p, 'Japan');
-      ck('E: ' + name + ': the call was made and failed in words', ai.calls === before + 1 && /did not answer/.test(await R.log(p)), String(ai.calls));
+      ck('E: ' + name + ': the call was made and failed in words', ai.calls === before + 1 && (mode === 'down' ? /No connection right now/ : /did not answer|Daily limit|Too many/i).test(await R.log(p)), String(ai.calls) + ' ' + (await R.log(p)).slice(-160));
       ck('E: after ' + name + ' the page does not say the assistant is off', !(await offShown()));
       ai.mode = 'ok'; ai.push(R.say('Got it.'));
       const n = (await R.log(p)).split('Got it.').length;

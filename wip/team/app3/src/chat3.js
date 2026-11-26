@@ -14,7 +14,7 @@ const CHAT3_WORDS = {
   privacy: 'What you type, today\'s figures with the names of your accounts, bills and income, and the setup answers so far go to Claude, the AI made by Anthropic, through this page\'s own server. Your notes, shops and single spends are not sent unless you type them. The chat stays on this device.',
   offLine: 'The assistant is off right now',   // the one wording for it, here and in Settings (AI_JOIN_FIXES G)
   off: 'The assistant is off right now. You can still finish everything:',
-  failed: 'That didn\'t go through. Send it again, or finish another way:',
+  failed: 'Or finish another way:',   // the failure itself is said once, in the chat (CHAT3C.failText)
   /* why a change card asks first (M6): the core's card.ask; its card.why is the AI's own words, not shown here */
   ask: { delete: 'This takes something away. Do it?', large: 'This is more than safe to spend. Do it?', guess: 'You didn\'t type this amount, it\'s the AI\'s guess. Is it right?', gap: 'This is far from what the app expected. Is the figure right?' },
   fillKept: 'To change something, tell me or change it on its screen',
@@ -243,9 +243,9 @@ async function chat3Go() {
   log.insertAdjacentHTML('beforeend', `<p class="a3-ask-me">${esc3(q)}</p><p class="a3-ask-ai a3-ask-wait" id="a3ChatWait">Working</p>`);
   let res = null;
   if (CHAT3.off) {
-    res = { state: CHAT3.state, shown: [], stop: 'error', error: 'the assistant is off right now' };
+    res = { state: CHAT3.state, shown: [], stop: 'error', error: CHAT3_WORDS.offLine };
   } else {
-    try { res = await CHAT3C.turn(CHAT3.state, q, chat3Deps()); } catch (e) { res = { state: CHAT3.state, shown: [], stop: 'error', error: String((e && e.message) || e) }; }
+    try { res = await CHAT3C.turn(CHAT3.state, q, chat3Deps()); } catch (e) { res = { state: CHAT3.state, shown: [], stop: 'error', error: CHAT3C.failText(e) }; }
   }
   CHAT3.state = res.state || CHAT3.state;
   if (CHAT3.word) {   // the word did not match: nothing of this message is kept; its box again, the message back in the box
@@ -268,7 +268,7 @@ async function chat3Go() {
     chat3Redraw();
     if (!res.shown.length) {   // nothing was kept by the core (the AI is off here): the message goes back in the box
       const b = $('#a3ChatIn'); if (b) b.value = q;
-      const l = $('#a3ChatLog'); if (l) l.insertAdjacentHTML('beforeend', `<p class="a3-ask-ai a3-bad" data-chat="error">That didn't go through: ${esc3(res.error || 'no answer')}. Your message is back in the box</p>`);
+      const l = $('#a3ChatLog'); if (l) l.insertAdjacentHTML('beforeend', `<p class="a3-ask-ai a3-bad" data-chat="error">${esc3(res.error || CHAT3C.failText(null))}. Your message is back in the box</p>`);
     }
     return;
   }

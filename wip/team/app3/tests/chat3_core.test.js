@@ -608,7 +608,13 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     eq([r.stop, f.bodies.length], ['rounds', 6]);
     const f2 = FAKE.make([{ error: 'too many requests right now, try again in a minute' }]);
     const r2 = await K.turn(r.state, 'hello', h7.deps(f2));
-    eq(r2.stop, 'error'); ok(/The AI did not answer: too many requests/.test(lastNote(r2)[0]));
+    eq(r2.stop, 'error'); eq(lastNote(r2)[0], 'The assistant did not answer. Send it again. Nothing was lost');
+    /* [coordinator follow-up, controls-9] said once, plainly, no code: the server's own words when it gave them; no network says the connection is down */
+    const r3 = await K.turn(r.state, 'hello', h7.deps(FAKE.make([{ error: 'Daily limit for this device reached. Try again tomorrow.', said: true }])));
+    eq(lastNote(r3)[0], 'Daily limit for this device reached. Try again tomorrow. Nothing was lost');
+    const r4 = await K.turn(r.state, 'hello', h7.deps(FAKE.make([{ error: 'no connection', offline: true }])));
+    eq(lastNote(r4)[0], 'No connection right now, so the assistant could not answer. Send it again when you are back online. Nothing was lost');
+    eq(K.failText(new Error('the AI did not answer (500)')), 'The assistant did not answer. Send it again');
     eq(r2.state.turns.filter(x => x.who === 'person').map(x => x.text), ['hi', 'hello']);
   });
   await t('bad replies are dropped with plain words: an unknown ref, an amount in words, a day ahead, a tool not in the list', async () => {

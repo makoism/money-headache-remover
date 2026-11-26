@@ -203,14 +203,14 @@ const idbText = p => p.evaluate(async () => {
       health.fail = { status, message };
       await ask(p, 'What is due before next pay?');
       const got = await lastAi(p);
-      ck(`C5: a ${status} shows the server's own message`, got === `The AI did not answer: ${message.replace(/\.$/, '')}. Nothing was lost`, got);
+      ck(`C5: a ${status} shows the server's own message`, got === `${message.replace(/\.$/, '')}. Nothing was lost`, got);
     }
     health.fail = { status: 500 };
     await ask(p, 'What is due before next pay?');
-    ck('C5: a reply with no message keeps the plain fallback', /the AI did not answer \(500\)/.test(await lastAi(p)), await lastAi(p));
+    ck('C5: a reply with no message says it plainly, once, with no code', /^The assistant did not answer\. Send it again/.test(await lastAi(p)) && !/500/.test(await lastAi(p)), await lastAi(p));
     health.fail = { status: 429 };
     await ask(p, 'What is due before next pay?');
-    ck('C5: a 429 with no message keeps the caller\'s words', /the daily limit is reached, or too many messages at once/.test(await lastAi(p)), await lastAi(p));
+    ck('C5: a 429 with no message keeps the caller\'s words', /the daily limit is reached, or too many messages at once/i.test(await lastAi(p)), await lastAi(p));
     health.fail = { status: 503, message: 'The relay has no API key yet.' };
     await p.click('#a3ChatClose'); await T.w(200);
     await pick(p);

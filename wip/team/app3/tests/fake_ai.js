@@ -28,7 +28,7 @@
       if (!queue.length) throw new Error('the fake AI has no recorded reply left');
       let s = queue.shift();
       if (typeof s === 'function') s = s(body, F);
-      if (s && s.error) throw new Error(s.error);
+      if (s && s.error) throw Object.assign(new Error(s.error), s.said ? { said: true } : {}, s.offline ? { code: 'offline' } : {});
       return reply(s);
     };
     return F;

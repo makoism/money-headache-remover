@@ -48,7 +48,7 @@ const STMT3_AI = (() => {
   async function post(base, body, busy) {
     let r;
     try { r = await fetch(base + '/api/ai', { method: 'POST', headers: { 'content-type': 'application/json', 'x-app': 'mhr2000' }, body: JSON.stringify(Object.assign({}, body, { invite: word() })) }); }
-    catch (e) { throw new Error('no connection. Check the internet and try again'); }
+    catch (e) { throw Object.assign(new Error('no connection right now. Check the internet and try again'), { code: 'offline', status: 0 }); }
     if (r.status === 401) {
       const j = await r.json().catch(() => null);
       if (j && j.error && j.error.code === 'invite_required') { setWord(''); const e = new Error(WORD_BAD); e.word = true; throw e; }
@@ -59,9 +59,10 @@ const STMT3_AI = (() => {
       const j = await r.json().catch(() => null), said = j && j.error && typeof j.error.message === 'string' ? j.error.message.trim().replace(/\.$/, '') : '';
       /* each Error carries the server's status and its own code (relay_unconfigured is the relay's "off") */
       const fail = m => Object.assign(new Error(m), { status: r.status, code: (j && j.error && typeof j.error.code === 'string') ? j.error.code : '' });
-      if (said && (r.status === 400 || r.status === 429 || r.status === 503)) throw fail(said);
-      if (r.status === 429) throw fail(busy || 'too many requests right now, try again in a minute');
-      throw fail('the AI did not answer (' + r.status + ')');
+      /* said: the words are the server's own or the caller's, fit to show as they are; any other failure is worded by the caller, and its status stays on the Error for the log, never in the words */
+      if (said && (r.status === 400 || r.status === 429 || r.status === 503)) throw Object.assign(fail(said), { said: true });
+      if (r.status === 429) throw Object.assign(fail(busy || 'too many requests right now, try again in a minute'), { said: true });
+      throw fail('no answer came back. Try again');
     }
     return r.json();
   }

@@ -194,6 +194,14 @@ SCREEN says which screen the person has open, and the sheet on top of it when th
 WHAT EACH SCREEN AND SHEET IS FOR:
 ${Object.keys(SCREENS).map(k => SCREENS[k].name + ': ' + SCREENS[k].does).join('\n')}
 WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line): change a goal or take money out of it: Plan, tap the goal. Change a spend: Receipts, tap it. Statements: Home, Add statements. Reminders: Reminders at the top. A backup or the cloud copy: Settings. Keep at least: Settings, Money (an account's own: Plan, tap it).`;
+  /* [coordinator follow-up, controls-9] the one wording for a call that failed: said once, plainly, never a code. The
+     server's own words when it gave them (a daily limit); no network says the connection is down, never that the assistant is off */
+  const failText = e => {
+    const m = String((e && e.message) || '').trim().replace(/\.$/, '');
+    if (e && e.code === 'offline') return 'No connection right now, so the assistant could not answer. Send it again when you are back online';
+    if (e && e.said && m) return m[0].toUpperCase() + m.slice(1);
+    return 'The assistant did not answer. Send it again';
+  };
   /* [AI_JOIN_FIXES H4] a change it can't make says where it is on the screens (the same map as SYSTEM) */
   const WHERE = [[/loan/, 'Plan, tap the loan'], [/card/, 'Plan, tap the card'], [/goal|take_out/, 'Plan, tap the goal'], [/spend|receipt/, 'Receipts, tap it'],
     [/statement/, 'Home, Add statements'], [/remind/, 'Reminders at the top'], [/keep|minimum/, 'Settings, Money'], [/backup|cloud/, 'Settings']];
@@ -984,8 +992,8 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       const body = request(state, clean(message, 4000), rounds, ctxOf(deps));
       let res;
       try { res = await deps.send(body); } catch (e) {
-        addTurn(state, { who: 'note', text: 'The AI did not answer: ' + (e && e.message ? e.message : 'try again') + '. Nothing was lost', at: deps.told() }, shown);
-        return Object.assign(end('error'), { error: e && e.message });
+        addTurn(state, { who: 'note', text: failText(e) + '. Nothing was lost', at: deps.told() }, shown);
+        return Object.assign(end('error'), { error: failText(e) });
       }
       const r = read(res);
       if (r.words) {
@@ -1135,7 +1143,7 @@ ${card.need.length && state.draft ? 'STILL NEEDED: ' + card.need.join(' ') : ''}
   }
 
   const api = {
-    ROUNDS, TURNS, KEEP, MAX_TOKENS, MAX_STEPS, TIER: 'default', EFFORT: 'low', GUIDE, TOOLS, SYSTEM, SCREENS,
+    ROUNDS, TURNS, KEEP, MAX_TOKENS, MAX_STEPS, TIER: 'default', EFFORT: 'low', GUIDE, TOOLS, SYSTEM, SCREENS, failText,
     fresh: () => ({ v: 1, turns: [], draft: null, fill: null, seq: 0 }),
     turn, confirm, notNow, undo, startOver, draftEdit,
     SCREEN_SECS, fromScreens, undoScreens, chatNewer,
