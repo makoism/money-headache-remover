@@ -4,6 +4,7 @@ LANE N: session_01BFpKEYrXD1v3TRranaJ9WE (took over from LANE M session_01BFpKEW
 Keep-going task: (LANE N, see Now). LANE M stays until its two running jobs land (close-account helper on controls-5fix, qc-foundation on loancheck): do not touch controls-5fix or the loancheck round until LANE M says.
 
 ## Now (LANE N, 26 Nov about 12:00 JST)
+- 26 Nov 13:00 to 15:20 JST: both helpers stopped at the 5-hour usage limit; resumed 15:26 JST (SendMessage to the same agents). c6 loan helper: a c d e committed (7e21c558, 7116d450, 97be5136, e1b21c8b), full check next. c11 slice 10 helper: amounthist 5e666883 merged (52c31f31), tick removable later 42d36041, words items in progress.
 - Keep-going task: trig_01FMeQ7rvvWb3eaPHZzBJ5ky (hourly at :26, made by coordinator 18, bound to LANE N). create_trigger refuses here (lineage depth 8): the coordinator starts the replacement at handoff.
 - Worktrees: .claude/worktrees/estate (this page), c10 (lane/controls-10), c11 (lane/controls-11). Tools: /home/claude/work/tools.
 - controls-10 B1 cents DONE 4f505487 (full ALL GOOD, qc_reports/2026-11-26_cents/check3.txt). Coordinator: no own reviewer; MAIN 23 merges it into wip-38.31 right after the candidate goes to Mako. Nothing owed.
