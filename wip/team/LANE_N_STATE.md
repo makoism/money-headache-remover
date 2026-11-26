@@ -4,7 +4,7 @@ LANE N: session_01BFpKEYrXD1v3TRranaJ9WE (took over from LANE M session_01BFpKEW
 Keep-going task: (LANE N, see Now). LANE M stays until its two running jobs land (close-account helper on controls-5fix, qc-foundation on loancheck): do not touch controls-5fix or the loancheck round until LANE M says.
 
 ## Now (LANE N, 26 Nov about 12:00 JST)
-- No keep-going task: create_trigger refused (session lineage depth 8 of 8). Coordinator told; its watch must wake LANE N.
+- Keep-going task: trig_01FMeQ7rvvWb3eaPHZzBJ5ky (hourly at :26, made by coordinator 18, bound to LANE N). create_trigger refuses here (lineage depth 8): the coordinator starts the replacement at handoff.
 - Worktrees: .claude/worktrees/estate (this page), c10 (lane/controls-10), c11 (lane/controls-11). Tools: /home/claude/work/tools.
 - HELPER 1 RUNNING on c10: B1 cents always for cent currencies (money3.js + every bypass, tests/e3_cents.js, full check into qc_reports/2026-11-26_cents/check3.txt). Then: report ready to MAIN 23 + coordinator.
 - HELPER 2 RUNNING on c11: lane/controls-11 = controls-9 + merge lane/amounthist + slice 10 build per CHECKFIX_PLAN (all sections, B1-B3), full check into qc_reports/2026-11-26_checkfix_build/check3.txt, QUESTIONS.md if any. Then: qc-controls + qc-data-safety + qc-numbers (Kenji numbers) on the build.
