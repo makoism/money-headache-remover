@@ -486,7 +486,8 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     const hist = state.turns.filter(t => t.who === 'person' || t.who === 'ai');
     const past = hist.slice(0, hist.length - 1).slice(-TURNS), messages = [];
     const push = (role, text) => { const last = messages[messages.length - 1]; if (last && last.role === role) last.content[0].text += '\n\n' + text; else messages.push({ role, content: [{ type: 'text', text }] }); };
-    for (const t of past) push(t.who === 'person' ? 'user' : 'assistant', t.text || '(a card)');
+    /* [qc-foundation on CONFUSING1_PLAN, 3] its own words from a turn where nothing was done are sent with that said */
+    for (const t of past) push(t.who === 'person' ? 'user' : 'assistant', (t.text || '(a card)') + (t.notDone ? ' (the app did not do this: nothing was added)' : ''));
     if (messages.length && messages[0].role === 'assistant') messages.shift();
     const now = stateText(state, ctx);
     const first = (rounds || []).length ? 'THE PERSON SAYS\n' + message : now + '\n\nTHE PERSON SAYS\n' + message;
@@ -799,6 +800,33 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     state.used = (state.used || []).concat(...card.plan.map(s => figsOf(s).map(plain)));
     state.wrote = true;
   }
+  /* [CONFUSING 1, coordinator 16's ruling b] what a turn did: a refused step tells the person in a note; a turn where
+     steps were refused and nothing was written or asked marks the AI's words as not done (never changed or hidden) */
+  const DONE_WORDS = 'The app did not do this: nothing was added';
+  function refused(frame, state, shown, deps, text) {
+    if (frame) frame.refused++;
+    addTurn(state, { who: 'note', text, at: deps.told() }, shown);
+  }
+  function did(frame) { if (frame) frame.did = true; }
+  /* [qc-foundation on CONFUSING1_PLAN, 1 and 2] the chat's own book: a book that still holds a record written at the
+     chat's fill. Any other book was made on the screens (or elsewhere). Nothing about it is saved: it is worked out from
+     the book each time, so a book that goes away opens the setup answers again */
+  function ownBook(state, book) {
+    if (!book || !state.fill) return false;
+    const recs = [].concat(book.accounts || [], book.schedules || [], book.events || [], book.checkins || [], book.places || []);
+    return recs.some(r => r && r.at === state.fill.told);
+  }
+  const setupShut = (state, book) => !!book && !ownBook(state, book);
+  /* setup finished on the screens while the chat was part way: one note, once per book (said again for a later book) */
+  const SETUP_CLOSED = 'Setup was finished on the screens, so these setup answers are closed. Change things on the screens, or tell me what to change';
+  function closeSetup(state, book, shown, told) {
+    if (!book) { if (state.fill) state.fill = null; state.shutSaid = false; return false; }
+    if (!setupShut(state, book) || state.shutSaid) return false;
+    if (!state.turns.some(t => t.who === 'card' && t.card && t.card.kind === 'draft')) return false;
+    state.shutSaid = true;
+    addTurn(state, { who: 'note', text: SETUP_CLOSED, at: told }, shown);
+    return true;
+  }
   /* ---- one tool call ---- */
   function addTurn(state, t, shown) {
     const turn = Object.assign({ id: 't' + (++state.seq) }, t);
@@ -812,15 +840,19 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     if (call.name === 'list') return list(book, today, x);
     if (call.name === 'explain') return explain(x.topic);
     if (call.name === 'draft_set') {
-      if (book) return 'Setup is done: change things with change instead.';
+      if (book) { refused(frame, state, shown, deps, 'Not saved: setup is done. Change it on the screens, or tell me what to change'); return 'Setup is done: change things with change instead.'; }
       const r = draftSet(state.draft, x.section, x.value, today);
-      if (!r.ok) { addTurn(state, { who: 'note', text: 'Not saved: ' + r.text, at: deps.told() }, shown); return 'Not saved: ' + r.text; }
-      state.draft = r.draft;
+      if (!r.ok) { refused(frame, state, shown, deps, 'Not saved: ' + r.text); return 'Not saved: ' + r.text; }
+      state.draft = r.draft; did(frame);
       addTurn(state, { who: 'note', text: r.text, at: deps.told() }, shown);
       const need = ANS.need(r.draft, { day: today });
       return r.text + '. NEEDED now: ' + (need.length ? need.join(' ') : 'nothing');
     }
-    if (call.name === 'fill_book') { const f = await fillNow(state, deps, shown, true); return f.ok ? 'Filled in. ' + f.text : 'Not filled in: ' + f.text; }
+    if (call.name === 'fill_book') {
+      const f = await fillNow(state, deps, shown, true);
+      if (f.ok) did(frame); else refused(frame, state, shown, deps, 'Not filled in: ' + f.text);
+      return f.ok ? 'Filled in. ' + f.text : 'Not filled in: ' + f.text;
+    }
     if (call.name === 'change') {
       if (!book || !deps.door) return 'There is no book yet: finish setup first.';
       /* [STALE_SHEET_PLAN, M61] the refs the AI holds are places in lists (S7 is the seventh spend told): if the book
@@ -828,7 +860,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       const verNow = typeof deps.door.ver === 'function' ? deps.door.ver() : null;
       if (frame && frame.ver != null && verNow !== frame.ver) {
         frame.ver = verNow;
-        addTurn(state, { who: 'note', text: 'Nothing was changed, because something changed somewhere else while I was answering. Say it again', at: deps.told() }, shown);
+        refused(frame, state, shown, deps, 'Nothing was changed, because something changed somewhere else while I was answering. Say it again');
         return 'Not changed: the book changed somewhere else after FIGURES were sent, so the refs may be old. Nothing was done. Use list again before any change, or ask the person to say it again.';
       }
       const raw = Array.isArray(x.steps) ? x.steps : [];
@@ -845,7 +877,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       /* [AI_JOIN_FIXES H6] the answer to "card or bank?" is kept for this chat */
       const named = plan.find(s => s.named);
       if (state.askPay && named) { state.payWith = named.named; state.askPay = false; }
-      if (!plan.length) return 'Nothing changed: ' + (dropped.join('; ') || 'no steps');
+      if (!plan.length) { refused(frame, state, shown, deps, 'Not done: ' + (left.length ? left.join(', and ') : 'nothing was asked for') + '. Nothing changed'); return 'Nothing changed: ' + (dropped.join('; ') || 'no steps'); }
       /* [BW] a delete, or a change larger than safe to spend, asks first; [AI_FIRST_PLAN 7] an amount the person did not
          type is a guess and asks first too */
       const safe = LA.lookahead(book, today).safeToSpend.headline;
@@ -863,11 +895,12 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       if (del || big || far.size || guess.length) {
         card.ask = del ? 'delete' : big ? 'large' : far.size ? 'gap' : 'guess';
         card.why = del ? 'this removes something' : big ? 'this is more than safe to spend' : far.size ? 'the figure is far from what the app expected' : 'I guessed an amount';
+        did(frame);
         addTurn(state, { who: 'card', text: card.lines.join('. '), at: deps.told(), card }, shown);
         return resultOf(card) + (dropped.length ? ' Left out: ' + dropped.join('; ') : '');
       }
       const res = await carryOut(state, card, deps);
-      if (res.ok) wrote(state, card, book, today);
+      if (res.ok) { wrote(state, card, book, today); did(frame); } else if (frame) frame.refused++;   // its card says why
       if (frame && typeof deps.door.ver === 'function') frame.ver = deps.door.ver();   // the turn's own steps
       addTurn(state, { who: 'card', text: card.lines.join('. '), at: deps.told(), card }, shown);
       return (res.ok ? resultOf(card) : 'Not changed: ' + res.text) + (dropped.length ? ' Left out: ' + dropped.join('; ') : '');
@@ -884,6 +917,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     const rounds = [];
     const draftWas = JSON.stringify(state.draft);
     const end = stop => {
+      if (frame.refused && !frame.did) for (const t of shown) if (t.who === 'ai') t.notDone = true;
       if (!state.fill && state.draft && JSON.stringify(state.draft) !== draftWas) {
         state.turns = state.turns.filter(t => !(t.who === 'card' && t.card && t.card.kind === 'draft'));
         addTurn(state, { who: 'card', text: 'The draft so far', at: deps.told(), card: draftCard(state.draft, deps.today()) }, shown);
@@ -891,7 +925,8 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
       return { state, shown, stop };
     };
     /* the book as it is when the figures are sent, kept beside the chat state (never in it, never sent) */
-    const frame = { ver: deps.door && typeof deps.door.ver === 'function' && deps.book && deps.book() ? deps.door.ver() : null };
+    const frame = { ver: deps.door && typeof deps.door.ver === 'function' && deps.book && deps.book() ? deps.door.ver() : null, refused: 0, did: false };
+    closeSetup(state, deps.book ? deps.book() : null, shown, deps.told());
     for (let i = 0; i < ROUNDS; i++) {
       const body = request(state, clean(message, 4000), rounds, ctxOf(deps));
       let res;
@@ -1049,7 +1084,7 @@ ${card.need.length && state.draft ? 'STILL NEEDED: ' + card.need.join(' ') : ''}
   const api = {
     ROUNDS, TURNS, KEEP, MAX_TOKENS, MAX_STEPS, TIER: 'default', EFFORT: 'low', GUIDE, TOOLS, SYSTEM, SCREENS,
     fresh: () => ({ v: 1, turns: [], draft: null, fill: null, seq: 0 }),
-    turn, confirm, notNow, undo, startOver, draftEdit,
+    turn, confirm, notNow, undo, startOver, draftEdit, DONE_WORDS, setupShut,
     SCREEN_SECS, fromScreens, undoScreens, chatNewer,
     /* [AI_JOIN_FIXES H2] what the first screen says before anything is typed: the welcome, and the first question */
     welcome: () => [GUIDE[0].ask, GUIDE[1].ask, GUIDE[2].ask],

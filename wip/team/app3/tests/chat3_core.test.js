@@ -852,6 +852,56 @@ const steps = list => [].concat(...list.map(([, r]) => r));
       eq(K.fillCheck(st.draft, DAY2, 'none').ok, true, 'the chat\'s fill asks nothing more');
     });
   }
+  /* [qc-data-safety run 3 CONFUSING 1, coordinator 16's ruling b] setup finished on the screens while the chat was part
+     way: the chat's setup card closes (one note says why), every refused step says it was not done, and the AI's own
+     "Done" after a turn where nothing was added is marked as not done */
+  await t('[CONFUSING 1] setup finished on the screens: the setup card closes, refused steps say not done, never Done', async () => {
+    const h = page('2026-11-24');
+    let { state } = await runSetup(h, FAKE.make(steps(SETUP.slice(0, 13))), 13);
+    ok(state.turns.some(x => x.who === 'card' && x.card.kind === 'draft'), 'a setup card is in the chat before');
+    /* the screens finish setup: a book appears that the chat did not make */
+    const h2 = page('2026-11-24'); await runSetup(h2, FAKE.make(steps(SETUP)));
+    h.book = h2.book;
+    const before = JSON.stringify(h.book);
+    const fake = FAKE.make([
+      say('', [call('draft_set', { section: 'cards', value: [{ name: 'Card C', owed: 10000, payDay: 5, closeDay: 'not sure', shift: 'after' }] }), call('fill_book', {})]),
+      say("Done. Here's Home."),
+    ]);
+    const r = await K.turn(state, 'add Card C, 10,000, paid on the 5th', h.deps(fake));
+    eq(JSON.stringify(h.book), before, 'nothing was added to the book');
+    eq(K.setupShut(r.state, h.book), true, 'the setup cards are closed while the screens\' book is here');
+    ok(!r.shown.some(x => x.who === 'card' && x.card.kind === 'draft'), 'no new setup card');
+    const notes = lastNote(r);
+    ok(notes.some(n => /finished on the screens/.test(n)), 'one note says setup was finished on the screens: ' + JSON.stringify(notes));
+    ok(notes.some(n => /^Not saved: /.test(n)), 'the refused answer says it was not saved: ' + JSON.stringify(notes));
+    ok(notes.some(n => /^Not filled in: /.test(n)), 'the refused fill says it was not done: ' + JSON.stringify(notes));
+    const ai = r.shown.filter(x => x.who === 'ai').pop();
+    eq(ai.notDone, true, 'the AI\'s Done is marked not done');
+    /* a second turn does not add the closing note again */
+    const r2 = await K.turn(r.state, 'thanks', h.deps(FAKE.make([say('You are welcome')])));
+    ok(!lastNote(r2).some(n => /finished on the screens/.test(n)), 'the closing note is said once');
+    eq(r2.shown.filter(x => x.who === 'ai').pop().notDone, undefined, 'words with nothing refused are not marked');
+    /* the AI is told its own Done was not done */
+    const sent = JSON.stringify(K.request(r2.state, 'next', [], { book: h.book, today: h.day }).messages);
+    ok(/Done\. Here's Home\. \(the app did not do this: nothing was added\)/.test(sent), 'the AI is sent that its Done was not done');
+    /* a change with every step refused says not done too */
+    const r3 = await K.turn(r2.state, 'do something odd', h.deps(FAKE.make([say('', [call('change', { steps: [{ do: 'no_such_thing' }] })]), say('Done.')])));
+    ok(lastNote(r3).some(n => /^Not done: /.test(n)), 'a change with nothing done says Not done: ' + JSON.stringify(lastNote(r3)));
+    eq(r3.shown.filter(x => x.who === 'ai').pop().notDone, true, 'its Done is marked');
+    /* a setup the chat filled itself keeps its cards as they were */
+    const h3 = page('2026-11-24'); const s3 = await runSetup(h3, FAKE.make(steps(SETUP)));
+    const r4 = await K.turn(s3.state, 'hello', h3.deps(FAKE.make([say('Hi')])));
+    eq(K.setupShut(r4.state, h3.book), false, 'the chat\'s own fill closes nothing');
+    ok(!lastNote(r4).some(n => /finished on the screens/.test(n)), 'and says nothing');
+    /* [qc-foundation 1, 2] the chat's book removed elsewhere, then setup finished on the screens: closed, said again */
+    h3.book = null;
+    const r5 = await K.turn(r4.state, 'hello again', h3.deps(FAKE.make([say('Hi')])));
+    eq([r5.state.fill, K.setupShut(r5.state, null)], [null, false], 'no book: the setup answers are open again');
+    h3.book = h2.book;
+    const r6 = await K.turn(r5.state, 'and now?', h3.deps(FAKE.make([say('Hi')])));
+    eq(K.setupShut(r6.state, h3.book), true, 'a book from the screens closes them');
+    ok(lastNote(r6).some(n => /finished on the screens/.test(n)), 'the note is said for this book');
+  });
   console.log(bad ? `chat3_core: ${bad} of ${n} FAILED` : `chat3_core: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })();
