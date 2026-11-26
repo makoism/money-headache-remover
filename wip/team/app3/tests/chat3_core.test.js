@@ -458,6 +458,14 @@ const steps = list => [].concat(...list.map(([, r]) => r));
     const r = await K.turn(S2, 'I started tutoring, 40,000 on the 1st', Object.assign(h.deps(f), { door: deps.door }));
     eq(r.shown.find(x => x.who === 'card').card.status, 'done');
     await K.undo(r.state, r.shown.find(x => x.who === 'card').id, { door: deps.door, told: deps.told, book: () => h.book });
+    /* [LANE J, qc-assistant controls1 confirm CONFUSING 3] a typed "nothing" or "zero" is a typed 0, never a guess */
+    for (const words of ['I got a new card, nothing on it yet, paid on the 5th', 'new card, zero on it, paid on the 5th']) {
+      const f0 = FAKE.make([say('', [call('change', { steps: [{ do: 'add_card', name: 'Card C', owed: 0, payDay: 5 }] })]), say('Added.')]);
+      const r0 = await K.turn(S2, words, Object.assign(h.deps(f0), { door: deps.door }));
+      const c0 = r0.shown.find(x => x.who === 'card').card;
+      eq(c0.status, 'done', words + ': ' + JSON.stringify(c0.lines));
+      await K.undo(r0.state, r0.shown.find(x => x.who === 'card').id, { door: deps.door, told: deps.told, book: () => h.book });
+    }
     const f2 = FAKE.make([say('', [call('change', { steps: [{ do: 'add_account', name: 'Gift', type: 'cash', amount: 500000, moved: false }] })]), say('Tap OK.')]);
     const r2 = await K.turn(S2, 'I was given 500,000 in cash', Object.assign(h.deps(f2), { door: deps.door }));
     eq([r2.shown.find(x => x.who === 'card').card.status, r2.shown.find(x => x.who === 'card').card.ask], ['ask', 'large']);

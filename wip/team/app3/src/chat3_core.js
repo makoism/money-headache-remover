@@ -877,7 +877,9 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
   function typedLeft(state) {
     const from = typedFrom(state);
     const text = state.turns.filter(t => t.who === 'person' && +String(t.id).slice(1) > from).slice(-TURNS).map(t => t.text).join(' ').normalize('NFKC').replace(/[,，]/g, '');
-    return f => (text.match(new RegExp('(^|[^\\d.])' + f.replace('.', '\\.') + '(?![\\d])', 'g')) || []).length - (state.used || []).filter(u => u === f).length;
+    /* a typed "nothing", "zero" or "none" is a typed 0 */
+    const zeros = (text.match(/\b(nothing|zero|none)\b/gi) || []).length;
+    return f => (text.match(new RegExp('(^|[^\\d.])' + f.replace('.', '\\.') + '(?![\\d])', 'g')) || []).length + (f === '0' ? zeros : 0) - (state.used || []).filter(u => u === f).length;
   }
   function wrote(state, card, book, today) {
     const plain = plainOf(book, today);
