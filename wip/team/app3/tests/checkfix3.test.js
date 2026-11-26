@@ -187,6 +187,10 @@ const checkOf = (b, id) => b.events.find(e => e.id === id);
     checkOf(h.book, c1.id).gain = 'wrong';
     ok((await h.go('changeCheck', c1.id, { amount: 190000 })).ok);
     eq(checkOf(h.book, c1.id).gain, undefined, 'gain cleared');
+    /* "Was that figure right?" Yes keeps the figure and answers right */
+    checkOf(h.book, c1.id).gain = 'asked';
+    ok((await h.go('changeCheck', c1.id, { right: true })).ok);
+    eq([checkOf(h.book, c1.id).gain, checkOf(h.book, c1.id).a], ['right', 190000]);
   });
 
   /* ---------- removeCheck ---------- */
