@@ -409,6 +409,7 @@
       for (const [a, v] of L.accountMoves(e, acct)) if (a === id) t += v;
       return t;
     };
+    const movedAs = (e, id, x) => delta(Object.assign({}, e, { a: x.a, a2: x.a2 }), id);   // what a record moved on account id at amounts x
     const postedOn = (e, id) => (e.account === id || e.from === id ? e.posted : reachOf(e) === id ? e.posted2 : null);
     const dayFor = (e, c, id) => { const p = c.avail !== 'available' && !isOwed(id) && postedOn(e, id); return p ? dayNum(p) : e.day; };
     const notGoneOut = (e, id) => e.settles.some(x => notYetOf(id).includes(x));   // [F20, X3, AB4]
@@ -467,6 +468,11 @@
       for (const w of e.was || []) if (w && w.told && keyCmp(keyOf(w.told), key) > 0) return w.a;   // the amount it had then
       return e.a;
     };
+    const asAt = (e, key) => {   // { a, a2 } as at the check
+      if (keyCmp(e.key, key) > 0) return { a: 0, a2: 0 };
+      for (const w of e.was || []) if (w && w.told && keyCmp(keyOf(w.told), key) > 0) return { a: w.a, a2: w.a2 != null ? w.a2 : null };
+      return { a: e.a, a2: e.a2 != null ? e.a2 : null };
+    };
     // the day each part of a record's amount counts on: [{ day, a }]
     // [coordinator 16 ruling (a)] a removed record is held only by a check written before its removal (the last `was`
     // entry's told): removed first, a later check never saw it
@@ -516,8 +522,17 @@
         // [S3, AN4] a record told after this check but inside it: named, so the screens can say the figure holds it
         const fp = fillerPlaceOf(c);
         moves.forEach((e, k) => { if (isIn[k] && !wasIn[k]) { holdAt(e.id, cc.day, cc.key, fp); holdAcct(e.id, id, cc.day, cc.key, fp); if (e.key > cc.key) heldBy.push({ id: e.id, account: id, check: dayStr(cc.day) }); } });
-        for (const e of goneMoves) if (!heldAt.has(e.id) && e.day <= cc.day && removedAfter(e, cc.key) && inside(e, cc, id)) { holdAt(e.id, cc.day, cc.key, fp); holdAcct(e.id, id, cc.day, cc.key, fp); }
+        for (const e of goneMoves) if (!(heldAcct.get(e.id) && heldAcct.get(e.id).has(id)) && e.day <= cc.day && removedAfter(e, cc.key) && inside(e, cc, id)) { holdAt(e.id, cc.day, cc.key, fp); holdAcct(e.id, id, cc.day, cc.key, fp); }
         wasIn = isIn;
+        // [ruling (B), qc-numbers confirm blocker 1] what records held by this check changed on this account since it
+        // (corrected or removed after it, told before it): that part of the gap is explained, so it never makes a large
+        // gain that is held to be asked about (a removed 50,000 move into this account opens a 50,000 gain here)
+        let explained = 0;
+        for (const e of moves.concat(goneMoves)) {
+          const h = heldAcct.get(e.id) && heldAcct.get(e.id).get(id);
+          if (!h || h.day !== cc.day || keyCmp(h.key, cc.key) !== 0 || keyCmp(e.key, cc.key) > 0 || !(e.was && e.was.length)) continue;
+          explained += movedAs(e, id, e.gone ? { a: 0, a2: 0 } : { a: e.a, a2: e.a2 != null ? e.a2 : null }) - movedAs(e, id, asAt(e, cc.key));
+        }
         const filler = makeFiller(id, c.day > base.day ? base.day + 1 : c.day, c.day, computed - c.a);
         const fixes = fixesOf(c), extra = fixes.map(x => ({ day: x.day, amount: x.d })).concat(carry.map(x => ({ day: x.day, amount: -x.d })));
         carry = fixes;
@@ -526,9 +541,9 @@
           filler.parts = [{ from: dayStr(c.day), to: dayStr(c.day), days: 1, amount: own }].concat(extra.filter(x => x.amount).map(x => ({ from: dayStr(x.day), to: dayStr(x.day), days: 1, amount: x.amount }))).filter(x => x.amount);
         }
         fillers.push(Object.assign(filler, fp ? { place: fp } : {},
-          { had: computed, gain: c.a - computed, answer: c.gain || null }));
+          { had: computed, gain: c.a - computed, answer: c.gain || null }, explained ? { explained } : {}));
         base = cc;
-        lastGap = { day: c.day, had: computed, gain: c.a - computed, answer: c.gain || null };
+        lastGap = Object.assign({ day: c.day, had: computed, gain: c.a - computed, answer: c.gain || null }, explained ? { explained } : {});
       }
       // [S3 for the opening; qc-numbers 25 Nov] a record inside the opening figure and still inside the last check is
       // named too, with the opening's day, so its row can say the bank figure already has it
@@ -668,6 +683,9 @@
         const openD = openEv[id] ? openDay(id) : null;
         const prevDay = sameDayEarlier ? e.day - 1 : before.length ? Math.max(...before) : openD != null && openD < e.day ? openD : null;
         for (const x of events) if (x.account === id && x.k !== 'check' && x.day <= e.day && (!x.gone || (x.was && x.was.length && removedAfter(x, e.key)))) holdAt(x.id, e.day, e.key);
+        // [ruling (B), qc-foundation confirm finding 1] a card payment (or money taken from the card) is held on the card's
+        // side as well, per account, so a removal after both checks cancels on both sides (lineless)
+        for (const x of events) if (x.account !== id && (x.from === id || x.to === id) && x.k !== 'check' && x.day <= e.day && keyCmp(x.key, e.key) <= 0 && (!x.gone || (x.was && x.was.length && removedAfter(x, e.key)))) { holdAt(x.id, e.day, e.key); holdAcct(x.id, id, e.day, e.key, null); }
         let gap = 0, closed = null, first0 = null;
         const stretch = (from, to) => { const f = Math.min(from, to); if (first0 === null || f < first0) first0 = f; };
         const sx = live().find(x => x.k === 'check' && x.account === id && x.stmt && x.grp != null && x.grp === e.grp);
@@ -945,9 +963,11 @@
     // [O watch, X4] a check-in figure above what the app had by more than the period's Free to spend, or by more than
     // 20% of what it had, is held until the person answers that it is right; an investment's rise is never asked [T watch]
     const largeGain = (id, g) => {
-      if (!g || g.gain <= 0 || acct[id].type === 'investment') return false;
+      // [ruling (B)] judged on the gap as it stood at the check: a change since, held by it, is explained (`explained`)
+      const gain = g ? g.gain + (g.explained || 0) : 0, had = g ? g.had - (g.explained || 0) : 0;
+      if (!g || gain <= 0 || acct[id].type === 'investment') return false;
       const fp = freePeriodAmount();
-      return (fp !== null && g.gain > fp) || g.gain * 5 > g.had;
+      return (fp !== null && gain > fp) || gain * 5 > had;
     };
     const heldGain = (id, f) => largeGain(id, f) && f.answer !== 'right';
 
@@ -1108,12 +1128,6 @@
         // but each bank check that holds it is: what it moved on that account at the check, corrected or removed since
         // (`was`), counts the change on the check's day on the line that check's gap goes on, so the gap it opens there
         // is explained and safe to spend does not move. Told after the check (never in `was`): nothing here, as before
-        const asAt = (e, key) => {   // { a, a2 } as at the check
-          if (keyCmp(e.key, key) > 0) return { a: 0, a2: 0 };
-          for (const w of e.was || []) if (w && w.told && keyCmp(keyOf(w.told), key) > 0) return { a: w.a, a2: w.a2 != null ? w.a2 : null };
-          return { a: e.a, a2: e.a2 != null ? e.a2 : null };
-        };
-        const movedAs = (e, id, x) => delta(Object.assign({}, e, { a: x.a, a2: x.a2 }), id);
         const lineless = e => {
           const m = heldAcct.get(e.id);
           if (!m || !(e.was && e.was.length) || lineOfSpend(e) || isFeeRecord(e)) return 0;
@@ -1121,7 +1135,9 @@
           for (const [aid, h] of m) {
             if ((h.place || 'free') !== lineId || keyCmp(e.key, h.key) > 0 || !openEv[aid] || cur(aid) !== cur(acctId) || inside(e, openingOf(aid), aid)) continue;
             if (!inDays(Math.max(e.day, h.day))) continue;
-            t -= movedAs(e, aid, e.gone ? { a: 0, a2: 0 } : { a: e.a, a2: e.a2 != null ? e.a2 : null }) - movedAs(e, aid, asAt(e, h.key));
+            // a card's gap runs the other way round from a bank's (what is owed: typed minus what the app had), so its change does too
+            const ch = movedAs(e, aid, e.gone ? { a: 0, a2: 0 } : { a: e.a, a2: e.a2 != null ? e.a2 : null }) - movedAs(e, aid, asAt(e, h.key));
+            t += isOwed(aid) ? ch : -ch;
           }
           return t;
         };
