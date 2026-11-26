@@ -82,6 +82,56 @@ const fig = w => { const p = P.periods(w.book, w.day); return [p.past[p.past.len
     ok(r.ok, JSON.stringify(r));
     eq(w.book.events.filter(e => recs.some(x => x.id === e.id)).map(e => [!!e.gone, e.was === undefined]), recs.map(() => [true, true]));
   });
+  /* [coordinator ruled finding 2, qc-numbers amounthist] the one amount history rule covers money in too. The reviewer's
+     three accounts life, made-up yen: set up 2 Dec, Main bank 200,000, Savings 500,000, Wallet (cash) 15,000, pay on the
+     25th, Free to spend 40,000. A 2,000 cash spend, 20,000 moved Main to Wallet, a 3,000 gift into Main bank, 50,000
+     moved Savings to Main. 15 Dec check: 233,000 / 450,000 / 31,000. 20 Dec the gift is removed (or corrected).
+     Hand-worked: the period is 25 Nov to 24 Dec; Free to spend from the setup day is 40,000 x 23 / 30 = 30,666.
+     Expected at the check: Main 200,000 - 20,000 + 3,000 + 50,000 = 233,000 (no gap), Savings 450,000 (no gap),
+     Wallet 15,000 + 20,000 - 2,000 = 33,000, typed 31,000: 2,000 more went out. Spent 2,000 + 2,000 = 4,000, safe to
+     spend 30,666 - 4,000 = 26,666. Removing the gift on 20 Dec: the 15 Dec check held it, so it keeps its 3,000 there
+     and the change (-3,000) counts on the check's day, beside the Main bank gap it now opens (3,000 less went out than
+     logged): spent 2,000 + 2,000 - 3,000 + 3,000 = 4,000, safe to spend stays 26,666 (today it reads 29,666). Corrected
+     to 1,000 instead: the same, 26,666. Undo: 26,666. */
+  async function three() {
+    const newId = IDS.idMaker('a3g2ft');
+    const out = BB.buildBook({ day: '2026-12-02', told: '2026-12-02T12:00:00.000' + TZ, currency: 'JPY', country: 'JP',
+      banks: [{ key: 'bank1', name: 'Main bank', amount: 200000, main: true, min: null }, { key: 'bank2', name: 'Savings', amount: 500000 }, { key: 'bank3', name: 'Wallet', amount: 15000, type: 'cash' }],
+      pays: [{ key: 'pay1', name: 'Pay', bank: 'bank1', amount: 250000, every: 'month', day: 25, shift: 'none', startsPeriod: true }],
+      cards: [], bills: [], free: 40000 }, { newId });
+    const w = { book: out.book || out, day: '2026-12-02', told: null };
+    const [main, sav, wal] = ['Main bank', 'Savings', 'Wallet'].map(n => w.book.accounts.find(a => a.name === n).id);
+    w.A = A3.make({ book: () => w.book, put: async x => { w.book = x; return true; }, told: () => w.told, newId, today: () => w.day, queue: { post: () => {} }, check: x => LA.lookahead(x, w.day) });
+    w.at = (day, hhmm) => { w.day = day; w.told = day + 'T' + hhmm + ':00.000' + TZ; };
+    w.at('2026-12-02', '13:00');
+    ok((await w.A.logSpend({ date: '2026-12-02', a: 2000, acct: wal, line: 'free', note: 'cash' })).ok);
+    ok((await w.A.moveMoney({ date: '2026-12-02', a: 20000, from: main, to: wal })).ok);
+    ok((await w.A.moneyIn({ date: '2026-12-02', a: 3000, acct: main, note: 'gift' })).ok);
+    ok((await w.A.moveMoney({ date: '2026-12-02', a: 50000, from: sav, to: main })).ok);
+    w.at('2026-12-15', '12:00');
+    const r = LA.lookahead(w.book, '2026-12-15'), expected = {}, lands = {};
+    for (const x of r.checkIn.toConfirm) { expected[x.item] = x.amount; lands[x.item] = x.lands; }
+    w.book = CI.apply(w.book, CI.checkIn(w.book, { day: '2026-12-15', told: w.told, newId, figures: { [main]: 233000, [sav]: 450000, [wal]: 31000 }, ticked: r.checkIn.toConfirm.map(x => x.item), unticked: [], amounts: {}, expected, lands, landed: {} }));
+    w.gift = () => w.book.events.find(e => e.note === 'gift');
+    w.safe = () => LA.lookahead(w.book, w.day).safeToSpend.headline;
+    return w;
+  }
+  await t('[finding 2] money in held by a check, removed later: safe to spend stays 26,666; Undo 26,666', async () => {
+    const w = await three();
+    eq(w.safe(), 26666, '15 Dec after the check');
+    w.at('2026-12-20', '09:00');
+    const r = await w.A.remove(w.gift().id); ok(r.ok, JSON.stringify(r));
+    eq(w.gift().was, [{ a: 3000, told: '2026-12-20T09:00:00.000' + TZ }], 'the door keeps the gift\'s amount');
+    eq(w.safe(), 26666, '20 Dec after the removal');
+    ok((await w.A.undo(r.step.id)).ok);
+    eq([w.gift().gone, w.gift().was, w.safe()], [undefined, undefined, 26666], 'after Undo');
+  });
+  await t('[finding 2] money in held by a check, corrected later (3,000 to 1,000): safe to spend stays 26,666', async () => {
+    const w = await three();
+    w.at('2026-12-20', '09:00');
+    ok((await w.A.edit(w.gift().id, { a: 1000 })).ok);
+    eq(w.safe(), 26666, '20 Dec after the correction');
+  });
   console.log(bad ? `act3_amount: ${bad} of ${n} FAILED` : `act3_amount: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })();
