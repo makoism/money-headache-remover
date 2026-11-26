@@ -29,4 +29,4 @@ Read `wip/team/qc/QC_COMMON.md` first and follow it exactly: it says which build
 8. Save a backup, change things, restore it, Undo the restore.
 
 ## Verdict
-FAIL on any STUCK job, any NOT MET or NOT BUILT as above, or any check 2 to 6 failing. COUNT: owner's lines MET / NOT MET / NOT BUILT / COULD NOT TELL, jobs done and stuck. Under 1,200 words.
+FAIL on any STUCK job (a job stuck only because of a line or fault the round's scope.txt names is marked STUCK (IN SCOPE FILE) and does not fail, as QC_COMMON says), any NOT MET or NOT BUILT as above, or any check 2 to 6 failing. COUNT: owner's lines MET / NOT MET / NOT BUILT / COULD NOT TELL, jobs done and stuck. Under 1,200 words.
