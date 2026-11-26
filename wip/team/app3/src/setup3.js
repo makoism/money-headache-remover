@@ -19,8 +19,13 @@ addEventListener('burrow3:started', e => {
   draftWrite3(null).catch(() => {});
   renderHome3();
   if (typeof renderChat3 === 'function') renderChat3();
-  const held = e && e.detail && e.detail.held;
-  msg3('Your money was set up in another tab, so this tab shows it now' + (held ? '. It can still be undone in that tab' : '') + (typed ? '. What you typed here was not saved' : ''));
+  const held = e && e.detail && e.detail.held, restored = !!(e && e.detail && e.detail.how === 'backup');
+  /* [qc-data-safety run 5 CONFUSING 2, 3] a notice: it stays until tapped away (a tab in the background is found later);
+     a restore is said as a restore */
+  const text = restored
+    ? 'A backup was restored in another tab, so this tab shows it now' + (typed ? '. What you had entered here in setup was replaced' : '')
+    : 'Your money was set up in another tab, so this tab shows it now' + (held ? '. It can still be undone in that tab' : '') + (typed ? '. What you typed here was not saved' : '');
+  MSG3.post({ kind: 'notice', key: 'tab', text });
 });
 const SETUP3_LATER = 'Loans, goals and budget lines like Gifts are not part of setup. Add them on Plan after this: Add a loan, Add a goal, Add a line';
 let setup3 = null;

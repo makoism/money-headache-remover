@@ -15,10 +15,10 @@ async function keepCopy3(why, pin) {
   return (await E3.rec('copy', Object.assign({ copy: JSON.parse(JSON.stringify(E3.book)), why }, pin ? { pin: true } : {}))) || null;
 }
 /* replace this device's book; the old one is kept first when there is one. Gives true when saved. */
-async function replaceBook3(next, why, pin) {
+async function replaceBook3(next, why, pin, how) {
   const had = !!E3.book;
   if (had && !(await keepCopy3(why, pin))) return false;
-  const ok = await E3.replace(next);
+  const ok = await E3.replace(next, how);
   if (ok && !had && typeof BurrowPersist === 'object') BurrowPersist.afterSetup().catch(() => {});   // the first book on this device [D7]
   if (ok) renderHome3();
   return ok;
@@ -33,7 +33,7 @@ async function restoreBook3(copy, why, opts) {
   const st = typeof cloudState3 === 'function' ? await cloudState3() : null;
   const next = BACKUP3.restamp(copy, E3.book, { by: String(E3.newId()).split('-')[0], day: E3.today(), also: st && st.on && st.base ? [st.base] : [] });
   const pin = !(opts && opts.back) && !((await E3.rec('copies')) || []).some(c => c.pin);
-  return replaceBook3(next, why, pin);
+  return replaceBook3(next, why, pin, opts && opts.how);
 }
 /* setup calls this once it has saved the first book [D7] */
 function afterSetup3() { return typeof BurrowPersist === 'object' ? BurrowPersist.afterSetup() : Promise.resolve(null); }
@@ -193,7 +193,7 @@ async function readBackup3(file, code) {
   ask.innerHTML = `<p class="a3-warn" data-set="restoreask">${E3.book ? 'This replaces the money on this device with the backup. What is here now is kept, and Put it back brings it back.' : 'This puts the money from the backup on this device.'} The backup holds ${n} record${n === 1 ? '' : 's'}.${aheadSay}${others}${after}</p>
     <div class="a3-actions"><button type="button" class="a3-btn solid" id="a3BkGo">Restore it</button><button type="button" class="a3-btn" id="a3BkNo">Cancel</button></div>`;
   $('#a3BkGo').addEventListener('click', async () => {
-    const ok = await restoreBook3(SET3.restore, 'Before a backup was restored');
+    const ok = await restoreBook3(SET3.restore, 'Before a backup was restored', { how: 'backup' });
     SET3.restore = null; ask.innerHTML = '';
     setMsg3(ok ? 'Restored from the backup file.' : 'This could not be saved on this device. Nothing changed.', !ok);
     paintKept3();

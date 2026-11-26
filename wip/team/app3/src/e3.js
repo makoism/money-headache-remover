@@ -84,7 +84,8 @@ const E3 = (() => {
     if (!r || r.empty || !r.copy || mode !== 'none') return false;
     book = r.copy; mode = 'kept'; readOnly = !!r.readOnly;
     hold = !!(r.device && r.device.fillHold);   // [qc-foundation 3] a chat fill still held in the other tab stays held here
-    try { root3.dispatchEvent(new CustomEvent('burrow3:started', { detail: { held: hold } })); } catch (e) { /* a screen's own fault */ }
+    const how = (r.device && r.device.madeBy) || null;   // 'backup': a restore made it, not setup
+    try { root3.dispatchEvent(new CustomEvent('burrow3:started', { detail: { held: hold, how } })); } catch (e) { /* a screen's own fault */ }
     return true;
   }
   function shown() { try { root3.dispatchEvent(new CustomEvent('burrow3:other')); } catch (e) { /* a screen's own fault */ } }
@@ -115,6 +116,7 @@ const E3 = (() => {
     if (mode !== 'none') { startWhy = 'there'; return false; }
     if (store) { const a = await adopt(); if (a === 'error') { startWhy = 'error'; return false; } if (a) { startWhy = 'there'; return false; } }
     const before = { book, mode };
+    if (store) await recEdit('madeBy', () => null);   // a book made by setup: an older restore's mark never names it
     book = newBook; mode = 'kept';
     const ok = await save({ full: true });
     if (!ok) { book = before.book; mode = before.mode; }
@@ -127,13 +129,16 @@ const E3 = (() => {
   /* backup lane: a whole new book from a restore or the cloud copy; the first one makes this device keep a book.
      Written whole (the store's replace: records the new book does not have are taken away). The caller keeps the old
      book first (rec('copy', ...), D2). A try book is never replaced. */
-  async function replace(next) {
+  /* [qc-data-safety run 5 CONFUSING 3] how: what made this book ('backup' for a backup file restored). On a device with no
+     book yet it is kept in the device record before the save, so another tab still on setup says what happened */
+  async function replace(next, how) {
     if (mode === 'try') return false;
-    const before = book, m = mode;
+    const before = book, m = mode, mark = m === 'none' && !!how;
+    if (mark) await rec('madeBy', how);
     book = next; mode = 'kept';
     let r = await saveR({ replace: true });
     if (!r.ok && r.why === 'behind' && store) { await store.catchUp(); book = next; r = await saveR({ replace: true }); }   // the whole book replaces the other tab's too
-    if (!r.ok) { book = before; mode = m; }
+    if (!r.ok) { book = before; mode = m; if (mark) await rec('madeBy', null); }
     else { try { root3.dispatchEvent(new CustomEvent('burrow3:book')); } catch (e) { /* a listener's own fault */ } }   // a whole new book: typing kept from before is dropped (back3)
     return r.ok;
   }
