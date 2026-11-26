@@ -102,6 +102,7 @@
     'warn.reopened': W('{account} was closed, but money came into it, so it is open again'),
     'warn.revived': W('{account} was removed, but money was logged on it on another device, so it is back'),
     'warn.revived_item': W('{name} was removed, but something logged on another device uses it, so it is back'),
+    'warn.revived_check': W('A bank check of {account} you removed came back, because another device added a later one'),
     'warn.minimum_other_currency': W('The minimum kept for {account} is in another currency: what is its minimum in its own'),
     'warn.card_other_currency': W('{card} is paid from {account} in another currency: it is not taken off safe to spend until it is paid'),
     'warn.loan_other_currency': W('{loan} is paid from {account} in another currency: it is not taken off safe to spend until it is paid'),
@@ -228,6 +229,7 @@
     if (w.code === 'set_aside_over') return fill('warn.set_aside_over', { who: whoOf(w), account: w.account, amount: w.amount, day: w.day, currency }, ctx);
     if (w.code === 'check_again') return fill('warn.check_again', { account: w.account, day: w.day }, ctx);
     if (w.code === 'gain_to_ask') return fill('warn.gain_to_ask', { account: w.account, amount: w.gain, currency }, ctx);
+    if (w.code === 'revived' && w.check) return fill('warn.revived_check', { account: w.acct }, ctx);   // [CHECKFIX FD1]
     if (w.code === 'revived') return w.account ? fill('warn.revived', { account: w.account }, ctx) : fill('warn.revived_item', { name: w.name || 'Something' }, ctx);   // [BZ3]
     if (w.code === 'card_other_currency') return fill('warn.card_other_currency', { account: w.account, card: w.card }, ctx);
     if (w.code === 'loan_other_currency') return fill('warn.loan_other_currency', { account: w.account, loan: w.loan }, ctx);

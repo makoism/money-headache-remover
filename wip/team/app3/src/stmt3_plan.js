@@ -14,7 +14,7 @@
   'use strict';
   const node = typeof module === 'object' && module.exports;
   const E = node ? { ids: require('../../engine/ids.js'), units: require('../../engine/units.js'), match: require('../../engine/match.js'),
-    lookahead: require('../../engine/lookahead.js'), schedules: require('../../engine/schedules.js') } : root.BurrowEngine;
+    lookahead: require('../../engine/lookahead.js'), schedules: require('../../engine/schedules.js'), checkin: require('../../engine/checkin.js') } : root.BurrowEngine;
   const dep = { cats: typeof STMT_CATS !== 'undefined' ? STMT_CATS : null, numbers: root.stmtNumbers };   // eslint-disable-line no-undef
   function use(d) { dep.cats = d.STMT_CATS; dep.numbers = d.stmtNumbers; }
   const TWO = { transfer: 1, repay: 1, borrow: 1, convert: 1 };
@@ -250,12 +250,17 @@
       // the check-in record below names it in `settled`, and the settle stays.
       if (e.k === 'repay' && e.settles && !e.gone) settled.push(e.id);
     }
+    const lastCheck = {};
     if (o.keepStatements !== false) for (const s of p.statements) {
       if (s.repeat || skip[s.id]) continue;
       const told = s.close + 'T24:00';   // as the opening's checks: the figure covers its whole close day [X9]
       const grp = 'stmt:' + s.acct + ':' + s.close;
-      events.push({ id: s.id, k: 'check', acct: s.acct, date: s.close, a: s.a, typedA: s.a, stmt: true, stmtDate: s.close, stmtPay: s.due || undefined, note: 'the statement ' + s.file, told, at: o.told, grp });
-      events.push({ id: 'imp:' + s.acct + ':ref:owed-' + s.close, k: 'check', acct: s.acct, date: s.close, a: s.a, typedA: s.a, note: 'owed on the statement ' + s.file, told, at: o.told, grp });
+      /* [CHECKFIX FD1] the first names the account's latest live check (of the book, or the statement before it in this
+         read), the second names the first */
+      const prev = lastCheck[s.acct] !== undefined ? lastCheck[s.acct] : E.checkin.prevCheck(book, s.acct);
+      events.push({ id: s.id, k: 'check', acct: s.acct, date: s.close, a: s.a, typedA: s.a, stmt: true, stmtDate: s.close, stmtPay: s.due || undefined, note: 'the statement ' + s.file, told, at: o.told, grp, prev: prev || undefined });
+      events.push({ id: 'imp:' + s.acct + ':ref:owed-' + s.close, k: 'check', acct: s.acct, date: s.close, a: s.a, typedA: s.a, note: 'owed on the statement ' + s.file, told, at: o.told, grp, prev: s.id });
+      lastCheck[s.acct] = 'imp:' + s.acct + ':ref:owed-' + s.close;
     }
     for (const e of events) for (const k of Object.keys(e)) if (e[k] === undefined) delete e[k];
     const checkins = settled.length ? [Object.assign(o.newId ? { id: o.newId() } : {}, { date: p.today, told: o.told, at: o.told, figures: [], settled, from: 'statements' })] : [];

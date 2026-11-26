@@ -72,8 +72,8 @@
     const main = fv(homeInfo.main) || {};
     const mainAcct = main.acct || null;
     const res = { asOf, at, accounts: {}, cards: {}, owed: {}, places: {}, warnings: [], laterOn: [] };
-    for (const x of RV.revived) res.warnings.push(Object.assign({ [x.kind]: x.id, code: 'revived', name: x.name, by: x.by },
-      { text: `${x.name || 'Something'} was removed, but a record on another device names it, so it is back` }));
+    for (const x of RV.revived) res.warnings.push(Object.assign({ [x.kind]: x.id, code: 'revived', name: x.name, by: x.by }, x.kind === 'check' ? { acct: x.acct } : {},
+      { text: x.kind === 'check' ? `A bank check of ${x.name || 'an account'} you removed came back, because another device added a later one` : `${x.name || 'Something'} was removed, but a record on another device names it, so it is back` }));
 
     // ----- accounts -----
     const acct = {};

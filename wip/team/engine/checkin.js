@@ -56,8 +56,8 @@
     const places = {};
     for (const acct of Object.keys(a.figures || {})) {
       if (!accts[acct]) throw new Error('no account ' + acct);
-      const id = a.newId();
-      events.push({ id, k: 'check', acct, date: a.day, a: whole(a.figures[acct], 'the figure for ' + acct), told: at, at, grp: cid });
+      const id = a.newId(), prev = prevCheck(book, acct);
+      events.push(Object.assign({ id, k: 'check', acct, date: a.day, a: whole(a.figures[acct], 'the figure for ' + acct), told: at, at, grp: cid }, prev ? { prev } : {}));
       figures.push({ acct, check: id, typedA: a.figures[acct] });
       if (a.fillerPlace && a.fillerPlace[acct]) places[acct] = a.fillerPlace[acct];
     }
@@ -89,13 +89,27 @@
     const D = node ? require('./dates.js') : root.BurrowEngine.dates;
     return D.dayStr(D.dayNum(prev) + 1);
   }
+  // [CHECKFIX FD1] The id of an account's latest live check as this device sees it (by date, then told, then id), or
+  // null: a new check names it in `prev`, so a check removed on one device comes back only when another device wrote a
+  // later check after it (ledger.js revive). Statement checks count.
+  const toldNum = e => { const n = Date.parse(e.told || ''); return isNaN(n) ? Date.parse(String(e.told || e.date).slice(0, 10)) + (864e5 - 1) || 0 : n; };   // 'T24:00': the end of its day
+  function latestCheck(book, acct) {
+    let best = null, bk = 0;
+    for (const e of book.events || []) {
+      if (!e || e.gone || e.k !== 'check' || e.acct !== acct) continue;
+      const k = toldNum(e);
+      if (!best || e.date > best.date || (e.date === best.date && (k > bk || (k === bk && String(e.id) > String(best.id))))) { best = e; bk = k; }
+    }
+    return best;
+  }
+  const prevCheck = (book, acct) => { const c = latestCheck(book, acct); return c ? c.id : null; };
   function apply(book, out) {
     const b = JSON.parse(JSON.stringify(book));
     b.events = (b.events || []).concat(out.events);
     b.checkins = (b.checkins || []).concat(out.checkins);
     return b;
   }
-  const api = { checkIn, apply, landedFrom };
+  const api = { checkIn, apply, landedFrom, latestCheck, prevCheck };
   if (node) module.exports = api;
   else (root.BurrowEngine = root.BurrowEngine || {}).checkin = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

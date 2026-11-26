@@ -100,7 +100,9 @@
       if (c.statement != null) {
         if (!gap) throw new Error(c.name + ': a statement figure is asked only between its close day and its payment day');
         const a = whole(c.statement, c.name + "'s statement");
-        book.events.push(stamp({ id: newId(), k: 'check', acct: x.id, date: day, a, stmt: true, stmtDate: gap.closed, paid: a === 0, grp }));
+        // [CHECKFIX FD1] it names the card's opening check, written just before it, in `prev`
+        const prev = book.events.filter(e => e.k === 'check' && e.acct === x.id).pop();
+        book.events.push(stamp(Object.assign({ id: newId(), k: 'check', acct: x.id, date: day, a, stmt: true, stmtDate: gap.closed, paid: a === 0, grp }, prev ? { prev: prev.id } : {})));
       }
     }
     book.home = { curs: [{ from: '1970-01-01', cur, at, by }], country: field(ans.country || 'XX'), mode: field('track'),

@@ -2111,7 +2111,44 @@ details summary { min-height: 44px; }
   // `payFrom`. With an account come its own records removed in the same step (the same `goneBy`, naming it). Read from the
   // data, nothing written: the book given back is a copy with those records live, and `revived` lists what came back and
   // the live records that named it, for the look ahead's warning and afterSync's notice. Nothing removed: the same book.
+  // [CHECKFIX FD1, FA] A removed bank or card check comes back only when named: a live check of the same account whose
+  // `prev` is its id (the writing device saw it live). With it come every record removed in the same step (its `goneBy`:
+  // the gap spend logged with it, the ticks it took back, its check-in record when that went too), so its group counts
+  // as before the remove. A chain is followed: a check brought back that names another removed check brings that one
+  // back too. A check with no `prev` (every old book) never brings anything back. Read only, nothing written.
+  function reviveChecks(book) {
+    const evs = book.events || [], gone = new Map();
+    for (const e of evs) if (e && e.gone && e.k === 'check' && e.id && e.goneBy) gone.set(e.id, e);
+    if (!gone.size) return { book, revived: [] };
+    const steps = new Map(), names = new Map();   // goneBy -> the live checks that brought it back
+    const isLive = e => e && e.k === 'check' && (!e.gone || (e.goneBy && steps.has(e.goneBy)));
+    for (let more = true; more;) {
+      more = false;
+      for (const e of evs) {
+        if (!isLive(e) || e.prev == null || !gone.has(e.prev)) continue;
+        const g = gone.get(e.prev);
+        if (g.acct !== e.acct || g.id === e.id) continue;
+        if (!steps.has(g.goneBy)) { steps.set(g.goneBy, true); more = true; }
+        const l = names.get(g.id) || []; if (!l.includes(e.id)) l.push(e.id); names.set(g.id, l);
+      }
+    }
+    if (!steps.size) return { book, revived: [] };
+    const strip = r => { const o = Object.assign({}, r); delete o.gone; delete o.goneBy; return o; };
+    const back = r => (r && r.gone && r.goneBy && steps.has(r.goneBy) ? strip(r) : r);
+    const out = Object.assign({}, book, { events: evs.map(back), checkins: (book.checkins || []).map(back) });
+    const acctName = id => ((book.accounts || []).find(a => a && a.id === id) || {}).name || null;
+    const revived = [];
+    for (const e of evs) if (e && e.gone && e.k === 'check' && steps.has(e.goneBy) && names.has(e.id)) revived.push({ kind: 'check', id: e.id, acct: e.acct, name: acctName(e.acct), by: names.get(e.id).slice().sort() });
+    // a check of the chain brought back by another brought-back check names that one
+    for (const e of evs) if (e && e.gone && e.k === 'check' && steps.has(e.goneBy) && !names.has(e.id)) revived.push({ kind: 'check', id: e.id, acct: e.acct, name: acctName(e.acct), by: [] });
+    revived.sort((x, y) => (x.id < y.id ? -1 : 1));
+    return { book: out, revived };
+  }
   function revive(book) {
+    const c = reviveChecks(book), r = reviveNamed(c.book);
+    return c.revived.length ? { book: r.book, revived: c.revived.concat(r.revived) } : r;
+  }
+  function reviveNamed(book) {
     const lists = { account: book.accounts || [], line: (book.plan && book.plan.budgets) || [], schedule: book.schedules || [] };
     const gone = {};
     let any = false;
@@ -2151,7 +2188,7 @@ details summary { min-height: 44px; }
     return { book: out, revived };
   }
 
-  const api = { TYPES, TWO, owed, yours, live, fieldValue, homeOn, ctx, accountMoves, apply, sums, placesOf, proof, revive };
+  const api = { TYPES, TWO, owed, yours, live, fieldValue, homeOn, ctx, accountMoves, apply, sums, placesOf, proof, revive, reviveChecks };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else (root.BurrowEngine = root.BurrowEngine || {}).ledger = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
@@ -2229,8 +2266,8 @@ details summary { min-height: 44px; }
     const main = fv(homeInfo.main) || {};
     const mainAcct = main.acct || null;
     const res = { asOf, at, accounts: {}, cards: {}, owed: {}, places: {}, warnings: [], laterOn: [] };
-    for (const x of RV.revived) res.warnings.push(Object.assign({ [x.kind]: x.id, code: 'revived', name: x.name, by: x.by },
-      { text: `${x.name || 'Something'} was removed, but a record on another device names it, so it is back` }));
+    for (const x of RV.revived) res.warnings.push(Object.assign({ [x.kind]: x.id, code: 'revived', name: x.name, by: x.by }, x.kind === 'check' ? { acct: x.acct } : {},
+      { text: x.kind === 'check' ? `A bank check of ${x.name || 'an account'} you removed came back, because another device added a later one` : `${x.name || 'Something'} was removed, but a record on another device names it, so it is back` }));
 
     // ----- accounts -----
     const acct = {};
@@ -4271,8 +4308,8 @@ details summary { min-height: 44px; }
     const places = {};
     for (const acct of Object.keys(a.figures || {})) {
       if (!accts[acct]) throw new Error('no account ' + acct);
-      const id = a.newId();
-      events.push({ id, k: 'check', acct, date: a.day, a: whole(a.figures[acct], 'the figure for ' + acct), told: at, at, grp: cid });
+      const id = a.newId(), prev = prevCheck(book, acct);
+      events.push(Object.assign({ id, k: 'check', acct, date: a.day, a: whole(a.figures[acct], 'the figure for ' + acct), told: at, at, grp: cid }, prev ? { prev } : {}));
       figures.push({ acct, check: id, typedA: a.figures[acct] });
       if (a.fillerPlace && a.fillerPlace[acct]) places[acct] = a.fillerPlace[acct];
     }
@@ -4304,13 +4341,27 @@ details summary { min-height: 44px; }
     const D = node ? require('./dates.js') : root.BurrowEngine.dates;
     return D.dayStr(D.dayNum(prev) + 1);
   }
+  // [CHECKFIX FD1] The id of an account's latest live check as this device sees it (by date, then told, then id), or
+  // null: a new check names it in `prev`, so a check removed on one device comes back only when another device wrote a
+  // later check after it (ledger.js revive). Statement checks count.
+  const toldNum = e => { const n = Date.parse(e.told || ''); return isNaN(n) ? Date.parse(String(e.told || e.date).slice(0, 10)) + (864e5 - 1) || 0 : n; };   // 'T24:00': the end of its day
+  function latestCheck(book, acct) {
+    let best = null, bk = 0;
+    for (const e of book.events || []) {
+      if (!e || e.gone || e.k !== 'check' || e.acct !== acct) continue;
+      const k = toldNum(e);
+      if (!best || e.date > best.date || (e.date === best.date && (k > bk || (k === bk && String(e.id) > String(best.id))))) { best = e; bk = k; }
+    }
+    return best;
+  }
+  const prevCheck = (book, acct) => { const c = latestCheck(book, acct); return c ? c.id : null; };
   function apply(book, out) {
     const b = JSON.parse(JSON.stringify(book));
     b.events = (b.events || []).concat(out.events);
     b.checkins = (b.checkins || []).concat(out.checkins);
     return b;
   }
-  const api = { checkIn, apply, landedFrom };
+  const api = { checkIn, apply, landedFrom, latestCheck, prevCheck };
   if (node) module.exports = api;
   else (root.BurrowEngine = root.BurrowEngine || {}).checkin = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
@@ -4416,7 +4467,9 @@ details summary { min-height: 44px; }
       if (c.statement != null) {
         if (!gap) throw new Error(c.name + ': a statement figure is asked only between its close day and its payment day');
         const a = whole(c.statement, c.name + "'s statement");
-        book.events.push(stamp({ id: newId(), k: 'check', acct: x.id, date: day, a, stmt: true, stmtDate: gap.closed, paid: a === 0, grp }));
+        // [CHECKFIX FD1] it names the card's opening check, written just before it, in `prev`
+        const prev = book.events.filter(e => e.k === 'check' && e.acct === x.id).pop();
+        book.events.push(stamp(Object.assign({ id: newId(), k: 'check', acct: x.id, date: day, a, stmt: true, stmtDate: gap.closed, paid: a === 0, grp }, prev ? { prev: prev.id } : {})));
       }
     }
     book.home = { curs: [{ from: '1970-01-01', cur, at, by }], country: field(ans.country || 'XX'), mode: field('track'),
@@ -4904,6 +4957,7 @@ details summary { min-height: 44px; }
     'warn.reopened': W('{account} was closed, but money came into it, so it is open again'),
     'warn.revived': W('{account} was removed, but money was logged on it on another device, so it is back'),
     'warn.revived_item': W('{name} was removed, but something logged on another device uses it, so it is back'),
+    'warn.revived_check': W('A bank check of {account} you removed came back, because another device added a later one'),
     'warn.minimum_other_currency': W('The minimum kept for {account} is in another currency: what is its minimum in its own'),
     'warn.card_other_currency': W('{card} is paid from {account} in another currency: it is not taken off safe to spend until it is paid'),
     'warn.loan_other_currency': W('{loan} is paid from {account} in another currency: it is not taken off safe to spend until it is paid'),
@@ -5030,6 +5084,7 @@ details summary { min-height: 44px; }
     if (w.code === 'set_aside_over') return fill('warn.set_aside_over', { who: whoOf(w), account: w.account, amount: w.amount, day: w.day, currency }, ctx);
     if (w.code === 'check_again') return fill('warn.check_again', { account: w.account, day: w.day }, ctx);
     if (w.code === 'gain_to_ask') return fill('warn.gain_to_ask', { account: w.account, amount: w.gain, currency }, ctx);
+    if (w.code === 'revived' && w.check) return fill('warn.revived_check', { account: w.acct }, ctx);   // [CHECKFIX FD1]
     if (w.code === 'revived') return w.account ? fill('warn.revived', { account: w.account }, ctx) : fill('warn.revived_item', { name: w.name || 'Something' }, ctx);   // [BZ3]
     if (w.code === 'card_other_currency') return fill('warn.card_other_currency', { account: w.account, card: w.card }, ctx);
     if (w.code === 'loan_other_currency') return fill('warn.loan_other_currency', { account: w.account, loan: w.loan }, ctx);
@@ -6560,13 +6615,23 @@ function stmtReceipts(rows, catOf, acctOf) {
   }
   // [AW6] Check-ins that differ only in their `settled` lists are joined three ways: what either device ticked since the base
   // is added, what either unticked is taken off.
+  // [CHECKFIX] and its `fillerPlace` account by account: two devices changing where the gap went for different accounts
+  // keep both; one account changed on one side takes that side's; changed on both, the newer write's
   function joinSettled(b, m, t) {
-    const strip = x => { const o = content(x); delete o.settled; return canon(o); };
+    const strip = x => { const o = content(x); delete o.settled; delete o.fillerPlace; return canon(o); };
     if (!isMap(m) || !isMap(t) || m.gone || t.gone || strip(m) !== strip(t)) return null;
     const bs = new Set((b && b.settled) || []), mset = new Set(m.settled || []), ts = new Set(t.settled || []);
     const all = [...new Set([...bs, ...mset, ...ts])].filter(x => (bs.has(x) ? mset.has(x) && ts.has(x) : mset.has(x) || ts.has(x))).sort();
     const w = M.winner(m, t), told = earliest(m.told, t.told);
-    return Object.assign(C(w), { settled: all }, told ? { told } : {});
+    const bf = (b && b.fillerPlace) || {}, mf = m.fillerPlace || {}, tf = t.fillerPlace || {}, places = {};
+    for (const k of [...new Set([...Object.keys(bf), ...Object.keys(mf), ...Object.keys(tf)])].sort()) {
+      const mc = mf[k] !== bf[k], tc = tf[k] !== bf[k];
+      const v = mc && tc ? (w === m ? mf[k] : tf[k]) : mc ? mf[k] : tf[k];
+      if (v != null) places[k] = v;
+    }
+    const o = Object.assign(C(w), { settled: all }, told ? { told } : {});
+    if (Object.keys(places).length) o.fillerPlace = places; else delete o.fillerPlace;
+    return o;
   }
   // Two copies of one kept record changed on both sides (both answered, or answered and asked again): every version
   // stays; whether it is still asked, and its `at` and `by`, come from the newer [AQ3].
@@ -7929,7 +7994,7 @@ RULES
   'use strict';
   const node = typeof module === 'object' && module.exports;
   const E = node ? { ids: require('../../engine/ids.js'), units: require('../../engine/units.js'), match: require('../../engine/match.js'),
-    lookahead: require('../../engine/lookahead.js'), schedules: require('../../engine/schedules.js') } : root.BurrowEngine;
+    lookahead: require('../../engine/lookahead.js'), schedules: require('../../engine/schedules.js'), checkin: require('../../engine/checkin.js') } : root.BurrowEngine;
   const dep = { cats: typeof STMT_CATS !== 'undefined' ? STMT_CATS : null, numbers: root.stmtNumbers };   // eslint-disable-line no-undef
   function use(d) { dep.cats = d.STMT_CATS; dep.numbers = d.stmtNumbers; }
   const TWO = { transfer: 1, repay: 1, borrow: 1, convert: 1 };
@@ -8165,12 +8230,17 @@ RULES
       // the check-in record below names it in `settled`, and the settle stays.
       if (e.k === 'repay' && e.settles && !e.gone) settled.push(e.id);
     }
+    const lastCheck = {};
     if (o.keepStatements !== false) for (const s of p.statements) {
       if (s.repeat || skip[s.id]) continue;
       const told = s.close + 'T24:00';   // as the opening's checks: the figure covers its whole close day [X9]
       const grp = 'stmt:' + s.acct + ':' + s.close;
-      events.push({ id: s.id, k: 'check', acct: s.acct, date: s.close, a: s.a, typedA: s.a, stmt: true, stmtDate: s.close, stmtPay: s.due || undefined, note: 'the statement ' + s.file, told, at: o.told, grp });
-      events.push({ id: 'imp:' + s.acct + ':ref:owed-' + s.close, k: 'check', acct: s.acct, date: s.close, a: s.a, typedA: s.a, note: 'owed on the statement ' + s.file, told, at: o.told, grp });
+      /* [CHECKFIX FD1] the first names the account's latest live check (of the book, or the statement before it in this
+         read), the second names the first */
+      const prev = lastCheck[s.acct] !== undefined ? lastCheck[s.acct] : E.checkin.prevCheck(book, s.acct);
+      events.push({ id: s.id, k: 'check', acct: s.acct, date: s.close, a: s.a, typedA: s.a, stmt: true, stmtDate: s.close, stmtPay: s.due || undefined, note: 'the statement ' + s.file, told, at: o.told, grp, prev: prev || undefined });
+      events.push({ id: 'imp:' + s.acct + ':ref:owed-' + s.close, k: 'check', acct: s.acct, date: s.close, a: s.a, typedA: s.a, note: 'owed on the statement ' + s.file, told, at: o.told, grp, prev: s.id });
+      lastCheck[s.acct] = 'imp:' + s.acct + ':ref:owed-' + s.close;
     }
     for (const e of events) for (const k of Object.keys(e)) if (e[k] === undefined) delete e[k];
     const checkins = settled.length ? [Object.assign(o.newId ? { id: o.newId() } : {}, { date: p.today, told: o.told, at: o.told, figures: [], settled, from: 'statements' })] : [];
@@ -9458,6 +9528,10 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
   const LA = node ? require('../../engine/lookahead.js') : root.BurrowEngine.lookahead;
   const PE = node ? require('../../engine/periods.js') : root.BurrowEngine.periods;
   const G = node ? require('../../engine/ledger.js') : root.BurrowEngine.ledger;
+  const CK = node ? require('../../engine/checkin.js') : root.BurrowEngine.checkin;
+  /* [CHECKFIX FD1] every check written names the account's latest live check this device saw (`prev`), so a check removed
+     on one device comes back only when a later one on another device names it */
+  const checkRec = (w, rec) => { const prev = CK.prevCheck(w.book, rec.acct); return prev ? Object.assign(rec, { prev }) : rec; };
   const bad = text => { throw new A3.Bad(text); };
   const BUILD = node ? require('../../engine/build_book.js') : root.BurrowEngine.build;
   const PAY_NEEDS_AMOUNT = BUILD.PAY_NEEDS_AMOUNT;
@@ -9756,7 +9830,7 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
       else {   // a new account of its own, opened today with nothing in it
         acct = w.add('accounts', { name: nameOk(x.acctName || name + ' account'), type: 'bank', cur, owner: null });
         w.add('events', { k: 'open', acct, date: w.today, a: 0 });
-        w.add('events', { k: 'check', acct, date: w.today, a: 0 });
+        w.add('events', checkRec(w, { k: 'check', acct, date: w.today, a: 0 }));
       }
     }
     const rec = { name, kind: 'goal', target, cur, keptIn: { acct, mode } };
@@ -9849,7 +9923,7 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     if (a.closed) bad(a.name + ' is already closed');
     const o = LA.lookahead(w.book, w.today).owed[id];
     if (o && o.owedNow !== 0) bad(a.name + ' still owes money. Tick its last payment at Check your bank first');
-    w.add('events', { k: 'check', acct: id, date: w.today, a: 0 });
+    w.add('events', checkRec(w, { k: 'check', acct: id, date: w.today, a: 0 }));
     w.edit('accounts', id, { closed: w.today });
     return id;
   }
@@ -9862,7 +9936,7 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     sameName((w.book.accounts || []), name);
     const id = w.add('accounts', { name, type: 'loan', cur: home(w), owner: null, payDay: d, shift: x.shift || 'after', payFrom, amount: pay });
     w.add('events', { k: 'open', acct: id, date: w.today, a: owed });
-    w.add('events', { k: 'check', acct: id, date: w.today, a: owed });
+    w.add('events', checkRec(w, { k: 'check', acct: id, date: w.today, a: owed }));
     return id;
   }
   /* a card added after setup (QC F1), the same shape setup writes (engine/build_book.js): it owns its payment day, is
@@ -9879,7 +9953,7 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     sameName((w.book.accounts || []), name);
     const id = w.add('accounts', { name, type: 'card', cur: home(w), owner: null, inFull: true, cutDay, payDay: d, payMonths: 1, shift, payFrom });
     w.add('events', { k: 'open', acct: id, date: w.today, a: x.owed });
-    w.add('events', { k: 'check', acct: id, date: w.today, a: x.owed });
+    w.add('events', checkRec(w, { k: 'check', acct: id, date: w.today, a: x.owed }));
     return id;
   }
   function changeOwed(w, id, x) {
@@ -9972,7 +10046,7 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
        the opening whatever day it was; an opening dated the move day and told later would already hold it [AN4] */
     const openDay = moved ? SC.dayStr(SC.dayNum(date) - 1) : w.today;
     w.add('events', { k: 'open', acct: id, date: openDay, a: moved ? 0 : x.amount });
-    w.add('events', { k: 'check', acct: id, date: openDay, a: moved ? 0 : x.amount });
+    w.add('events', checkRec(w, { k: 'check', acct: id, date: openDay, a: moved ? 0 : x.amount }));
     if (moved && x.amount > 0) w.add('events', { k: 'transfer', date, a: x.amount, acct: from, acct2: id, src: { type: 'typed' } });
     return id;
   }
@@ -10043,7 +10117,7 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     const v = LA.lookahead(w.book, w.today).accounts[id], held = v && v.bank != null ? v.bank : 0;
     if (held < 0) bad(a.name + ' is below zero. Move money into it first, then close it');
     for (const l of linksTo(w, id)) w.edit(l.list, l.rec.id, { [l.field]: to });
-    if (spent) w.add('events', { k: 'check', acct: id, date: w.today, a: 0 });
+    if (spent) w.add('events', checkRec(w, { k: 'check', acct: id, date: w.today, a: 0 }));
     else if (held > 0) w.add('events', { k: 'transfer', date: w.today, a: held, acct: id, acct2: to, src: { type: 'typed' } });
     w.edit('accounts', id, { closed: w.today });
     return id;
@@ -10056,7 +10130,7 @@ const ACT3 = typeof E3 === 'object' && typeof BurrowAct3 === 'object' ? BurrowAc
     if (a.closed) bad(a.name + ' is already closed');
     const c = LA.lookahead(w.book, w.today).cards[id];
     if (c && c.owedNow > 0) bad(a.name + ' still has ' + SMF.format(c.owedNow, a.cur || home(w)) + ' on it. Pay it off first, or tick its payment at Check your bank when it has gone');
-    w.add('events', { k: 'check', acct: id, date: w.today, a: 0 });
+    w.add('events', checkRec(w, { k: 'check', acct: id, date: w.today, a: 0 }));
     w.edit('accounts', id, { closed: w.today });
     return id;
   }

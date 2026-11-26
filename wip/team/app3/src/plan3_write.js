@@ -19,6 +19,10 @@
   const LA = node ? require('../../engine/lookahead.js') : root.BurrowEngine.lookahead;
   const PE = node ? require('../../engine/periods.js') : root.BurrowEngine.periods;
   const G = node ? require('../../engine/ledger.js') : root.BurrowEngine.ledger;
+  const CK = node ? require('../../engine/checkin.js') : root.BurrowEngine.checkin;
+  /* [CHECKFIX FD1] every check written names the account's latest live check this device saw (`prev`), so a check removed
+     on one device comes back only when a later one on another device names it */
+  const checkRec = (w, rec) => { const prev = CK.prevCheck(w.book, rec.acct); return prev ? Object.assign(rec, { prev }) : rec; };
   const bad = text => { throw new A3.Bad(text); };
   const BUILD = node ? require('../../engine/build_book.js') : root.BurrowEngine.build;
   const PAY_NEEDS_AMOUNT = BUILD.PAY_NEEDS_AMOUNT;
@@ -317,7 +321,7 @@
       else {   // a new account of its own, opened today with nothing in it
         acct = w.add('accounts', { name: nameOk(x.acctName || name + ' account'), type: 'bank', cur, owner: null });
         w.add('events', { k: 'open', acct, date: w.today, a: 0 });
-        w.add('events', { k: 'check', acct, date: w.today, a: 0 });
+        w.add('events', checkRec(w, { k: 'check', acct, date: w.today, a: 0 }));
       }
     }
     const rec = { name, kind: 'goal', target, cur, keptIn: { acct, mode } };
@@ -410,7 +414,7 @@
     if (a.closed) bad(a.name + ' is already closed');
     const o = LA.lookahead(w.book, w.today).owed[id];
     if (o && o.owedNow !== 0) bad(a.name + ' still owes money. Tick its last payment at Check your bank first');
-    w.add('events', { k: 'check', acct: id, date: w.today, a: 0 });
+    w.add('events', checkRec(w, { k: 'check', acct: id, date: w.today, a: 0 }));
     w.edit('accounts', id, { closed: w.today });
     return id;
   }
@@ -423,7 +427,7 @@
     sameName((w.book.accounts || []), name);
     const id = w.add('accounts', { name, type: 'loan', cur: home(w), owner: null, payDay: d, shift: x.shift || 'after', payFrom, amount: pay });
     w.add('events', { k: 'open', acct: id, date: w.today, a: owed });
-    w.add('events', { k: 'check', acct: id, date: w.today, a: owed });
+    w.add('events', checkRec(w, { k: 'check', acct: id, date: w.today, a: owed }));
     return id;
   }
   /* a card added after setup (QC F1), the same shape setup writes (engine/build_book.js): it owns its payment day, is
@@ -440,7 +444,7 @@
     sameName((w.book.accounts || []), name);
     const id = w.add('accounts', { name, type: 'card', cur: home(w), owner: null, inFull: true, cutDay, payDay: d, payMonths: 1, shift, payFrom });
     w.add('events', { k: 'open', acct: id, date: w.today, a: x.owed });
-    w.add('events', { k: 'check', acct: id, date: w.today, a: x.owed });
+    w.add('events', checkRec(w, { k: 'check', acct: id, date: w.today, a: x.owed }));
     return id;
   }
   function changeOwed(w, id, x) {
@@ -533,7 +537,7 @@
        the opening whatever day it was; an opening dated the move day and told later would already hold it [AN4] */
     const openDay = moved ? SC.dayStr(SC.dayNum(date) - 1) : w.today;
     w.add('events', { k: 'open', acct: id, date: openDay, a: moved ? 0 : x.amount });
-    w.add('events', { k: 'check', acct: id, date: openDay, a: moved ? 0 : x.amount });
+    w.add('events', checkRec(w, { k: 'check', acct: id, date: openDay, a: moved ? 0 : x.amount }));
     if (moved && x.amount > 0) w.add('events', { k: 'transfer', date, a: x.amount, acct: from, acct2: id, src: { type: 'typed' } });
     return id;
   }
@@ -604,7 +608,7 @@
     const v = LA.lookahead(w.book, w.today).accounts[id], held = v && v.bank != null ? v.bank : 0;
     if (held < 0) bad(a.name + ' is below zero. Move money into it first, then close it');
     for (const l of linksTo(w, id)) w.edit(l.list, l.rec.id, { [l.field]: to });
-    if (spent) w.add('events', { k: 'check', acct: id, date: w.today, a: 0 });
+    if (spent) w.add('events', checkRec(w, { k: 'check', acct: id, date: w.today, a: 0 }));
     else if (held > 0) w.add('events', { k: 'transfer', date: w.today, a: held, acct: id, acct2: to, src: { type: 'typed' } });
     w.edit('accounts', id, { closed: w.today });
     return id;
@@ -617,7 +621,7 @@
     if (a.closed) bad(a.name + ' is already closed');
     const c = LA.lookahead(w.book, w.today).cards[id];
     if (c && c.owedNow > 0) bad(a.name + ' still has ' + SMF.format(c.owedNow, a.cur || home(w)) + ' on it. Pay it off first, or tick its payment at Check your bank when it has gone');
-    w.add('events', { k: 'check', acct: id, date: w.today, a: 0 });
+    w.add('events', checkRec(w, { k: 'check', acct: id, date: w.today, a: 0 }));
     w.edit('accounts', id, { closed: w.today });
     return id;
   }

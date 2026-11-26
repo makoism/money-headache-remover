@@ -166,7 +166,44 @@
   // `payFrom`. With an account come its own records removed in the same step (the same `goneBy`, naming it). Read from the
   // data, nothing written: the book given back is a copy with those records live, and `revived` lists what came back and
   // the live records that named it, for the look ahead's warning and afterSync's notice. Nothing removed: the same book.
+  // [CHECKFIX FD1, FA] A removed bank or card check comes back only when named: a live check of the same account whose
+  // `prev` is its id (the writing device saw it live). With it come every record removed in the same step (its `goneBy`:
+  // the gap spend logged with it, the ticks it took back, its check-in record when that went too), so its group counts
+  // as before the remove. A chain is followed: a check brought back that names another removed check brings that one
+  // back too. A check with no `prev` (every old book) never brings anything back. Read only, nothing written.
+  function reviveChecks(book) {
+    const evs = book.events || [], gone = new Map();
+    for (const e of evs) if (e && e.gone && e.k === 'check' && e.id && e.goneBy) gone.set(e.id, e);
+    if (!gone.size) return { book, revived: [] };
+    const steps = new Map(), names = new Map();   // goneBy -> the live checks that brought it back
+    const isLive = e => e && e.k === 'check' && (!e.gone || (e.goneBy && steps.has(e.goneBy)));
+    for (let more = true; more;) {
+      more = false;
+      for (const e of evs) {
+        if (!isLive(e) || e.prev == null || !gone.has(e.prev)) continue;
+        const g = gone.get(e.prev);
+        if (g.acct !== e.acct || g.id === e.id) continue;
+        if (!steps.has(g.goneBy)) { steps.set(g.goneBy, true); more = true; }
+        const l = names.get(g.id) || []; if (!l.includes(e.id)) l.push(e.id); names.set(g.id, l);
+      }
+    }
+    if (!steps.size) return { book, revived: [] };
+    const strip = r => { const o = Object.assign({}, r); delete o.gone; delete o.goneBy; return o; };
+    const back = r => (r && r.gone && r.goneBy && steps.has(r.goneBy) ? strip(r) : r);
+    const out = Object.assign({}, book, { events: evs.map(back), checkins: (book.checkins || []).map(back) });
+    const acctName = id => ((book.accounts || []).find(a => a && a.id === id) || {}).name || null;
+    const revived = [];
+    for (const e of evs) if (e && e.gone && e.k === 'check' && steps.has(e.goneBy) && names.has(e.id)) revived.push({ kind: 'check', id: e.id, acct: e.acct, name: acctName(e.acct), by: names.get(e.id).slice().sort() });
+    // a check of the chain brought back by another brought-back check names that one
+    for (const e of evs) if (e && e.gone && e.k === 'check' && steps.has(e.goneBy) && !names.has(e.id)) revived.push({ kind: 'check', id: e.id, acct: e.acct, name: acctName(e.acct), by: [] });
+    revived.sort((x, y) => (x.id < y.id ? -1 : 1));
+    return { book: out, revived };
+  }
   function revive(book) {
+    const c = reviveChecks(book), r = reviveNamed(c.book);
+    return c.revived.length ? { book: r.book, revived: c.revived.concat(r.revived) } : r;
+  }
+  function reviveNamed(book) {
     const lists = { account: book.accounts || [], line: (book.plan && book.plan.budgets) || [], schedule: book.schedules || [] };
     const gone = {};
     let any = false;
@@ -206,7 +243,7 @@
     return { book: out, revived };
   }
 
-  const api = { TYPES, TWO, owed, yours, live, fieldValue, homeOn, ctx, accountMoves, apply, sums, placesOf, proof, revive };
+  const api = { TYPES, TWO, owed, yours, live, fieldValue, homeOn, ctx, accountMoves, apply, sums, placesOf, proof, revive, reviveChecks };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else (root.BurrowEngine = root.BurrowEngine || {}).ledger = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

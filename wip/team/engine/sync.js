@@ -160,13 +160,23 @@
   }
   // [AW6] Check-ins that differ only in their `settled` lists are joined three ways: what either device ticked since the base
   // is added, what either unticked is taken off.
+  // [CHECKFIX] and its `fillerPlace` account by account: two devices changing where the gap went for different accounts
+  // keep both; one account changed on one side takes that side's; changed on both, the newer write's
   function joinSettled(b, m, t) {
-    const strip = x => { const o = content(x); delete o.settled; return canon(o); };
+    const strip = x => { const o = content(x); delete o.settled; delete o.fillerPlace; return canon(o); };
     if (!isMap(m) || !isMap(t) || m.gone || t.gone || strip(m) !== strip(t)) return null;
     const bs = new Set((b && b.settled) || []), mset = new Set(m.settled || []), ts = new Set(t.settled || []);
     const all = [...new Set([...bs, ...mset, ...ts])].filter(x => (bs.has(x) ? mset.has(x) && ts.has(x) : mset.has(x) || ts.has(x))).sort();
     const w = M.winner(m, t), told = earliest(m.told, t.told);
-    return Object.assign(C(w), { settled: all }, told ? { told } : {});
+    const bf = (b && b.fillerPlace) || {}, mf = m.fillerPlace || {}, tf = t.fillerPlace || {}, places = {};
+    for (const k of [...new Set([...Object.keys(bf), ...Object.keys(mf), ...Object.keys(tf)])].sort()) {
+      const mc = mf[k] !== bf[k], tc = tf[k] !== bf[k];
+      const v = mc && tc ? (w === m ? mf[k] : tf[k]) : mc ? mf[k] : tf[k];
+      if (v != null) places[k] = v;
+    }
+    const o = Object.assign(C(w), { settled: all }, told ? { told } : {});
+    if (Object.keys(places).length) o.fillerPlace = places; else delete o.fillerPlace;
+    return o;
   }
   // Two copies of one kept record changed on both sides (both answered, or answered and asked again): every version
   // stays; whether it is still asked, and its `at` and `by`, come from the newer [AQ3].
