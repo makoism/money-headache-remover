@@ -455,6 +455,9 @@
       return e.a;
     };
     // the day each part of a record's amount counts on: [{ day, a }]
+    // [coordinator 16 ruling (a)] a removed record is held only by a check written before its removal (the last `was`
+    // entry's told): removed first, a later check never saw it
+    const removedAfter = (e, key) => !e.gone || !(e.was && e.was.length) || keyCmp(keyOf(e.was[e.was.length - 1].told), key) > 0;
     const countParts = e => {
       const h = heldAt.get(e.id), now = e.gone ? 0 : e.a;
       if (!h) return e.gone ? [] : [{ day: e.day, a: e.a }];
@@ -494,7 +497,7 @@
         moves.forEach((e, k) => { if (isIn[k] !== wasIn[k]) computed += isIn[k] ? delta(e, id) : -delta(e, id); });
         // [S3, AN4] a record told after this check but inside it: named, so the screens can say the figure holds it
         moves.forEach((e, k) => { if (isIn[k] && !wasIn[k]) { holdAt(e.id, cc.day, cc.key); if (e.key > cc.key) heldBy.push({ id: e.id, account: id, check: dayStr(cc.day) }); } });
-        for (const e of goneMoves) if (!heldAt.has(e.id) && e.day <= cc.day && inside(e, cc, id)) holdAt(e.id, cc.day, cc.key);
+        for (const e of goneMoves) if (!heldAt.has(e.id) && e.day <= cc.day && removedAfter(e, cc.key) && inside(e, cc, id)) holdAt(e.id, cc.day, cc.key);
         wasIn = isIn;
         const fp = fillerPlaceOf(c);
         fillers.push(Object.assign(makeFiller(id, c.day > base.day ? base.day + 1 : c.day, c.day, computed - c.a), fp ? { place: fp } : {},
@@ -639,7 +642,7 @@
         const sameDayEarlier = cardChecks.slice(0, cardChecks.indexOf(e)).some(x => x.day === e.day);
         const openD = openEv[id] ? openDay(id) : null;
         const prevDay = sameDayEarlier ? e.day - 1 : before.length ? Math.max(...before) : openD != null && openD < e.day ? openD : null;
-        for (const x of events) if (x.account === id && x.k !== 'check' && x.day <= e.day && (!x.gone || (x.was && x.was.length))) holdAt(x.id, e.day, e.key);
+        for (const x of events) if (x.account === id && x.k !== 'check' && x.day <= e.day && (!x.gone || (x.was && x.was.length && removedAfter(x, e.key)))) holdAt(x.id, e.day, e.key);
         let gap = 0, closed = null, first0 = null;
         const stretch = (from, to) => { const f = Math.min(from, to); if (first0 === null || f < first0) first0 = f; };
         const sx = live().find(x => x.k === 'check' && x.account === id && x.stmt && x.grp != null && x.grp === e.grp);

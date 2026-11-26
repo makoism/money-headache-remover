@@ -72,6 +72,16 @@ const fig = w => { const p = P.periods(w.book, w.day); return [p.past[p.past.len
     a.day = b.day = '2026-12-14';
     eq(fig(a), fig(b)); eq(fig(a), [5700, 0, 60000]);
   });
+  await t('[coordinator 16 ruling (a)] removing a whole check-in writes no was on its records (only a spend or refund of its own gets one)', async () => {
+    const w = await base();
+    w.check('2026-12-13', 594300);
+    const recs = w.book.events.filter(e => !e.gone && String(e.told || '').startsWith('2026-12-13') && e.note !== 'lunch');
+    ok(recs.length > 0, 'the check-in has records');
+    w.at('2026-12-14', '09:00');
+    const r = await w.A.run('Remove the check', wr => { for (const e of recs) wr.remove('events', e.id); }, {});
+    ok(r.ok, JSON.stringify(r));
+    eq(w.book.events.filter(e => recs.some(x => x.id === e.id)).map(e => [!!e.gone, e.was === undefined]), recs.map(() => [true, true]));
+  });
   console.log(bad ? `act3_amount: ${bad} of ${n} FAILED` : `act3_amount: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })();
