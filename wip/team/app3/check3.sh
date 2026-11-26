@@ -135,6 +135,7 @@ page|tests/e3_publish.js|e3_publish: ALL PASS||300|the private publish (a made-u
 page|tests/e3_tabs.js|e3_tabs: ALL PASS||300|two tabs on one device
 page|tests/e3_stalesheet.js|e3_stalesheet: ALL PASS||300|a sheet left open while the same thing changes in another tab: its save is refused, nothing is written, it is shown again as it is (STALE_SHEET_PLAN, M61)
 page|tests/e3_backup.js|e3_backup: ALL PASS||300|Settings and the backup file
+page|tests/e3_setupaside.js|e3_setupaside: ALL PASS||400|a restore part way through setup puts the saved setup answers aside, says so first, and Put it back brings them back into setup (qc-data-safety run 5 CONFUSING 4)
 page|tests/e3_invite.js|e3_invite: ALL PASS||300|the code word for the AI: the box, a word that does not match, Settings, never in the book
 page|tests/e3_remind.js|e3_remind: ALL PASS||300|Reminders on the page (check-ins and bills, the calendar file, Google and Outlook, nothing sent)
 page|tests/e3_cloud.js|e3_cloud: ALL PASS||300|the cloud copy, two devices through the page (local fake vault)
@@ -175,13 +176,13 @@ page_tests_for() {   # page_tests_for <changed path, relative to app3/>
     src/checkin3.js)          echo e3_checkin e3_checkgap e3_checkblank e3_cardfig e3_reload e3_bankparts e3_payday e3_overdrawn e3_cardpay e3_paycame ;;
     src/receipts3.js)         echo e3_removes e3_receipts e3_listfix e3_moneyin e3_bigspend e3_stmt_once e3_period e3_names e3_doors e3_moved1 e3_moved2 e3_cardgap ;;
     src/plan3.js|src/plan3_write.js) echo e3_accounts e3_billyear e3_payfrom e3_removes e3_aijoin e3_plan e3_rhythms e3_lineshare e3_homeplan e3_paychange e3_names ;;
-    src/setup3.js|src/answers3.js) echo e3_twodrafts e3_fillcard e3_setup e3_setupfix e3_setup6 e3_income2 e3_weeks3 e3_first e3_onepay e3_overdrawn e3_paytoday e3_chatwalk e3_chat e3_setup2tabs e3_setuplater e3_tabsetup ;;
+    src/setup3.js|src/answers3.js) echo e3_twodrafts e3_fillcard e3_setup e3_setupfix e3_setup6 e3_income2 e3_weeks3 e3_first e3_onepay e3_overdrawn e3_paytoday e3_chatwalk e3_chat e3_setup2tabs e3_setuplater e3_tabsetup e3_setupaside ;;
     src/chat3*.js)            echo e3_nsfix e3_twodrafts e3_ailog e3_aiwords e3_fillcard e3_cloudfirst e3_aijoin e3_chat e3_chatwalk e3_fakeai_page e3_fillundo e3_invite e3_back e3_cloudhold ;;
     src/start3.js)            echo e3_first e3_file e3_try e3_chat e3_cloudtake ;;
     src/back3.js)             echo e3_back e3_undobar e3_checkin e3_plan e3_receipts e3_setupfix e3_stmt e3_remind e3_backup e3_tabs e3_stalesheet e3_cloudhold ;;
     src/stmt3*.js)            echo e3_stmt e3_stmt_once e3_walk4 e3_invite e3_chat ;;
     src/ask3*.js)             echo e3_chat e3_invite e3_chatwalk ;;   # ask3_core.js: the summary the assistant is sent
-    src/backup3.js|src/settings3.js) echo e3_backup e3_tabs e3_ailog e3_invite e3_restore e3_cloudhold ;;
+    src/backup3.js|src/settings3.js) echo e3_backup e3_setupaside e3_tabs e3_ailog e3_invite e3_restore e3_cloudhold ;;
     src/sw3.js|src/settings3_sw.js|sw3.js) echo e3_sw offline e3_install ;;
     src/cloud3*.js)           echo e3_cloudfirst e3_cloud e3_cloudbase e3_cloudtake e3_cloudsend e3_cloudhold e3_cloudwhich e3_cloudwhich2 e3_cloudstale e3_cloudstatus e3_restore ;;
     src/remind3*.js)          echo e3_remind e3_remkeep ;;

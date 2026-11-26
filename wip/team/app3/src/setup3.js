@@ -497,6 +497,34 @@ const draftWrite3 = v => (draftQ3 = draftQ3.then(() => E3.rec('setup', v), () =>
    changed (the sections in `touched`, saved or taken back; the boxes typed and not saved) on the draft as stored now,
    so a section another tab saved is never wiped. E3.recEdit reads and writes in one turn, one tab at a time */
 const draftEdit3 = fn => (draftQ3 = draftQ3.then(() => E3.recEdit('setup', fn), () => E3.recEdit('setup', fn)));
+/* ---- [qc-data-safety run 5 CONFUSING 4; M61, M14] the draft put aside by a restore ----
+   A restore on a device with no book (settings3.js replaceBook3) makes a book, and a draft is only ever read while there
+   is none, so the saved answers would sit unseen. Before the restore writes, the draft is moved whole, in one turn of the
+   device record, to the device record's `setupAside` list ({ at, draft }, newest first); Settings' kept list shows each
+   with Put it back, which moves it back to `setup` (and setup opens with it). Both go through the draft's own queue, so
+   a write of the draft already asked lands first. */
+const setupNames3 = draft => SEC3.filter(([sec]) => draft && draft.sections && draft.sections[sec]).map(([, name]) => name);
+/* the answers a restore would put aside: { names, typed } or null when there is no draft */
+async function setupToAside3() {
+  const d = await E3.rec('setup');
+  return d && (d.sections || d.typed) && (Object.keys(d.sections || {}).length || Object.keys(d.typed || {}).length) ? { names: setupNames3(d), typed: !!Object.keys(d.typed || {}).length } : null;
+}
+/* gives the entry put aside, null when there was no draft, false when it could not be written */
+const asideSetup3 = () => (draftQ3 = draftQ3.then(() => null, () => null).then(() => E3.recTurn(d => {
+  if (!d.setup) return { next: null, out: null };
+  const entry = { at: E3.told(), draft: d.setup }, next = Object.assign({}, d, { setupAside: [entry].concat(d.setupAside || []) });
+  delete next.setup;
+  return { next, out: entry };
+})));
+/* the entry at `at` back to the open draft (Put it back, or a restore that could not be saved); over a draft there now
+   it is refused (false), so nothing typed since is written over */
+const unasideSetup3 = at => (draftQ3 = draftQ3.then(() => null, () => null).then(() => E3.recTurn(d => {
+  const list = d.setupAside || [], entry = list.find(x => x.at === at);
+  if (!entry || d.setup) return { next: null, out: false };
+  const next = Object.assign({}, d, { setup: entry.draft, setupAside: list.filter(x => x !== entry) });
+  if (!next.setupAside.length) delete next.setupAside;
+  return { next, out: entry };
+})));
 const keepDraft3 = (sections, days, skip, kept, touched) => {
   const typed = setup3 && setup3.base ? typedNow3(sections, skip) : Object.assign({}, kept);
   if (skip) delete typed[skip];
