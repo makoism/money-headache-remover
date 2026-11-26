@@ -99,4 +99,38 @@ t('old book: closeLoan\'s check of 0 on a paid-off loan gives the same owed and 
   h.book.accounts.find(a => a.id === h.loan).closed = '2026-12-28';
   for (const d of ['2026-12-28', '2027-02-03']) eq(brief(L(h, d)), [0, null, []]);
 });
+// [qc-foundation loancheck_build finding 1, plan rule 2b] two loan checks: a payment day after the first check takes what
+// was owed then from the first check's walk, not the opening's. Made-up yen: a 100,000 loan, 30,000 on the 27th, 27 Nov
+// and 27 Dec ticked (40,000 left by the opening walk); 5 Jan the lender says 25,000 (paid extra); 27 Jan not ticked;
+// 3 Feb the lender still says 25,000, answered No for 27 Jan. By hand: 27 Jan asks the 25,000 left, never 30,000;
+// ticked, nothing is owed (never -5,000).
+const small = (pay, minRule) => {
+  const h = kenji();
+  const a = h.book.accounts.find(x => x.id === h.loan); a.amount = pay; if (minRule) a.minRule = minRule;
+  for (const e of h.book.events) if (e.acct === h.loan && (e.k === 'open' || (e.k === 'check' && e.date === '2026-11-20'))) e.a = 100000;
+  return h;
+};
+t('two loan checks, No at the second: 27 Jan asks 25,000 from the first check, and once ticked nothing is owed', () => {
+  const h = small(30000), occ = h.loan + '@2027-01-27';
+  h.checkIn('2027-01-05', { figures: { [h.loan]: 25000 } });
+  eq(L(h, '2027-02-03').overdue.map(x => [x.payment_date, x.amount]), [['2027-01-27', 25000]]);
+  h.checkIn('2027-02-03', { figures: { [h.loan]: 25000 }, notYet: { [h.loan]: [occ] } });
+  let o = L(h, '2027-02-03');
+  eq([o.owedNow, o.overdue.map(x => [x.payment_date, x.amount])], [25000, [['2027-01-27', 25000]]]);
+  h.checkIn('2027-02-05', { ticked: [occ], expected: { [occ]: 25000 } });
+  o = L(h, '2027-02-05');
+  eq([o.owedNow, o.overdue.length, o.next], [0, 0, null]);
+});
+t('two loan checks with a 2% minimum: 27 Jan asks 2% of the first check\'s 50,000 (1,000), not of the opening walk', () => {
+  const h = small(null, { pct: 2, floor: 0 }), occ = h.loan + '@2027-01-27';
+  // ticks of the opening walk's own minimums: 2,000 then 1,960
+  h.book.events = h.book.events.filter(e => !(e.k === 'repay' && e.acct2 === h.loan) && !(e.settles && String(e.settles).startsWith(h.loan)));
+  h.book.checkins = [];
+  h.checkIn('2026-11-27', { ticked: [h.loan + '@2026-11-27'], expected: { [h.loan + '@2026-11-27']: 2000 } });
+  h.checkIn('2026-12-27', { ticked: [h.loan + '@2026-12-27'], expected: { [h.loan + '@2026-12-27']: 1960 } });
+  h.checkIn('2027-01-05', { figures: { [h.loan]: 50000 } });
+  h.checkIn('2027-02-03', { figures: { [h.loan]: 50000 }, notYet: { [h.loan]: [occ] } });
+  const o = L(h, '2027-02-03');
+  eq([o.owedNow, o.overdue.map(x => [x.payment_date, x.amount])], [50000, [['2027-01-27', 1000]]]);
+});
 done();
