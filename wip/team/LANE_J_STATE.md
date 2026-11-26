@@ -12,7 +12,9 @@ Never push to wip-38.31, lane/ai-join or main. Until Sun 29 Nov 09:00 JST: up to
 - Slices 2 to 5: qc-foundation FAIL (3 write-door findings), fixed on lane/controls-5fix 0e086977, 5ad3f455 (report saved there). qc-controls RUNNING on c5. Then: fold its fixes into controls-5fix, fast-forward lane/controls-5, check3 full, confirming runs (coordinator writes confirm files), qc-data-safety.
 - Loan plan: confirm 2 FAIL (same place twice), simplified at lane/controls-6 487714ad (Not sure dropped). Asked the coordinator for confirm file 3.
 - lane/controls-8 69ca8f20 check3 full ALL GOOD; scope.txt for 2026-11-26_controls7to8 is on origin 97bf1263 (pull). Reviewers after the 2-5 fixes are merged up into 8.
-- CHECKFIX_PLAN.md (slice 10) on lane/controls-9: qc-foundation RUNNING (round 2026-11-26_checkfix_plan, it cannot write: save its reply).
+- CHECKFIX_PLAN.md (slice 10): qc-foundation FAIL (report saved), plan revised 53be0479; F2 (fillerPlace instead of a fixed gap spend) and F4 (join revive, who builds) ASKED of the coordinator 11:35 JST; then a confirming run (confirm file from the coordinator).
+- Loan plan confirm 3 RUNNING (confirm file 3c188b62 plus 0748fcbc: Not now keeps the typed figure on the device).
+- lane/controls-1 is going into the candidate (MAIN 22): do not move it.
 - lane/controls-9 follow-ups done: ded15efc, 1def4ae2, 02d256a3, 3dd4e58d.
 - Later: currency Start again (plan first: kept copy plus setup draft from the book, qc-foundation and qc-data-safety; touches setup3/e3, MAIN's area).
 - Note: qc-foundation has no Write tool: save its reply as the report.
