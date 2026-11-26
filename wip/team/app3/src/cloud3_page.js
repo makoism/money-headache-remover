@@ -537,6 +537,27 @@ async function useOther3(x, i) {
   }, { undo: `${name}: the other one is back` });
   if (!r.ok) setMsg3(r.why === 'bad' && r.text ? r.text : 'That choice could not be made, so nothing changed', true);
 }
+/* [qc-data-safety run 5 CONFUSING 1, M20, M85] the same question answered on both devices, each its own way (one device
+   still showed the old question): the join asks again. Read from the saved Undo journal (joined from both devices): the
+   latest "Kept" answer of each device on this item, each the version it left, the two newest versions kept. Returns
+   [first answer, later answer] with { i: the version's place, mine }, or null when it was not answered both ways */
+function bothChose3(k) {
+  if (!k || k.of === 'copy' || !E3.book) return null;
+  const me = deviceBy3(), last = {};
+  for (const j of E3.book.journal || []) {
+    if (!j || j.undone || j.label !== 'Kept') continue;
+    const x = (j.swapped || []).find(y => y && y.of === k.of && y.after);
+    const i = x ? k.versions.findIndex(v => v && v.at === x.after) : -1;
+    if (i < 0) continue;
+    const mine = k.versions[i].by === me, had = last[mine];
+    if (!had || String(j.moment) > String(had.moment)) last[mine] = { i, mine, moment: String(j.moment) };
+  }
+  const a = last[true], b = last[false];
+  if (!a || !b || a.i === b.i) return null;
+  const newest = k.versions.map((v, i) => ({ at: String(v.at || ''), i })).sort((x, y) => (x.at < y.at ? 1 : -1)).slice(0, 2).map(x => x.i);
+  if (!newest.includes(a.i) || !newest.includes(b.i)) return null;
+  return a.moment < b.moment ? [a, b] : [b, a];
+}
 function paintQuestions3() {
   const box = $('#a3CloudQs'); if (!box || !E3.book) { if (box) box.innerHTML = ''; return; }
   paintOther3();
@@ -545,7 +566,15 @@ function paintQuestions3() {
   const kept = id => (E3.book.keptVersions || []).find(k => k.id === id);
   box.innerHTML = `<p class="a3-acct">To choose (${qs.length})</p>` + qs.map((q, i) => {
     if (q.q === 'which') {
-      const k = kept(q.kept);
+      const k = kept(q.kept), two = bothChose3(k);
+      if (two) {
+        const [first, later] = two, say = v => esc3(sayVersion3(k, v).replace(/ from (this|your other) device$/, '') || 'its version');
+        const fv = k.versions[first.i], lv = k.versions[later.i];
+        const words = later.mine ? `Your other device already chose ${say(fv)}. Keep that, or use ${say(lv)}?`
+          : `Your other device chose ${say(lv)} after this one chose ${say(fv)}. Keep ${say(fv)}, or use ${say(lv)}?`;
+        return `<div class="a3-q" data-cloudq="which"><p class="a3-next"><b>${esc3(nameOf3(k))}</b>: ${words}</p>
+      <div class="a3-actions"><button type="button" class="a3-btn" data-q="${i}" data-pick="${first.i}">Keep ${say(fv)}</button><button type="button" class="a3-btn" data-q="${i}" data-pick="${later.i}">Use ${say(lv)}</button></div></div>`;
+      }
       const opts = `${k.versions.map((v, j) => `<li><span>${esc3(versionLine3(k, v))}</span><button type="button" class="a3-btn" data-q="${i}" data-pick="${j}">Keep this one</button></li>`).join('')}${k.both ? `<li><span>Both changes together</span><button type="button" class="a3-btn" data-q="${i}" data-pick="both">Keep both</button></li>` : ''}`;
       return `<div class="a3-q" data-cloudq="which"><p class="a3-next"><b>${esc3(nameOf3(k))}</b> was changed on two devices. Which one should stay? The other is kept, so it can come back.</p><ul class="a3-rows">${opts}</ul></div>`;
     }
