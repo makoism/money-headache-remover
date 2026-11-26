@@ -413,6 +413,12 @@
     // Is event e inside check c (or the opening) of account id?
     function inside(e, c, id) {
       if (c.opening && notGoneOut(e, id)) return false;   // [AB4]
+      // [LOAN_CHECK_PLAN rules 3 and 2a] a later check on a loan: a payment answered "No" at it stays out whatever its day,
+      // and a record written in the same step (a payment answered "Yes", ticked with the check) is inside whatever its day
+      if (c.loanCheck) {
+        if ((e.settles || []).some(x => (c.notYet || []).includes(x))) return false;
+        if (c.grp != null && (e.momentGrp !== undefined ? e.momentGrp : e.grp) === c.grp) return true;
+      }
       const d = dayFor(e, c, id);
       if (d > c.day) return false;
       // [AP1] a closing's final check holds everything dated on or before the closing day, whatever its told; the
@@ -759,17 +765,24 @@
     // ----- loans and pay-later [B5, E6, F19, H7, I2, Q3, AB3, AC5, AD7] -----
     function loanInfo(id) {
       const a = acct[id], open = openingOf(id), cal = calOf(id), payFrom = a.payFrom || mainAcct;
-      const changes = [];
-      for (const e of live()) {
-        if (inside(e, open, id)) continue;
-        if ((e.k === 'borrow' || e.k === 'transfer') && e.from === id) changes.push({ day: e.day, d: e.a });
-        if (e.k === 'spend' && e.account === id && !isFeeRecord(e)) changes.push({ day: e.day, d: e.a });
-        if (e.k === 'in' && e.account === id) changes.push({ day: e.day, d: -e.a });
-        if (e.k === 'repay' && e.to === id) changes.push({ day: e.day, d: -(e.a2 != null ? e.a2 : e.a) });
-      }
       const parts = planParts(a);
-      if (a.of) for (const pt of parts) if (pt.due <= knownTo && pt.due > openDay(id) && openEv[a.of] && pt.due > openDay(a.of)) changes.push({ day: pt.due, d: -pt.amount });
-      changes.sort((x, z) => x.day - z.day);
+      const changesFrom = c => {
+        const changes = [];
+        for (const e of live()) {
+          if (inside(e, c, id)) continue;
+          if ((e.k === 'borrow' || e.k === 'transfer') && e.from === id) changes.push({ day: e.day, d: e.a });
+          if (e.k === 'spend' && e.account === id && !isFeeRecord(e)) changes.push({ day: e.day, d: e.a });
+          if (e.k === 'in' && e.account === id) changes.push({ day: e.day, d: -e.a });
+          if (e.k === 'repay' && e.to === id) changes.push({ day: e.day, d: -(e.a2 != null ? e.a2 : e.a) });
+        }
+        if (a.of) for (const pt of parts) if (pt.due <= knownTo && pt.due > c.day && openEv[a.of] && pt.due > openDay(a.of)) changes.push({ day: pt.due, d: -pt.amount });
+        return changes.sort((x, z) => x.day - z.day);
+      };
+      const changes = changesFrom(open);
+      // [LOAN_CHECK_PLAN rule 2, coordinator's ruling 26 Nov] the latest live check on the loan (by day, then told) sets
+      // what is owed from its day; a closing's check of 0 is one too
+      const lc = live().filter(e => e.k === 'check' && e.account === id && !e.stmt).sort((x, z) => x.day - z.day || x.key - z.key || x.idx - z.idx).pop();
+      const base = lc ? Object.assign({}, lc, { loanCheck: true }) : null;
       const days = [];
       const [y, mo] = ymOf(openDay(id));
       const stmtPaid = (openChecks[id] || []).filter(x => x.stmt && x.paid === true && x.stmtPay).map(x => x.stmtPay);
@@ -789,6 +802,21 @@
         d.owedThen = owed;
       }
       while (r < changes.length) owed += changes[r++].d;
+      if (base) {
+        // [rule 2b] payment days on or before the check day keep the walk above; from the check, its figure, with what is
+        // not inside it on top and interest from its day
+        const ch2 = changesFrom(base);
+        owed = base.a; r = 0;
+        while (r < ch2.length && ch2[r].day <= base.day) owed += ch2[r++].d;
+        for (const d of days) {
+          if (d.land <= base.day) continue;
+          if (d.land > knownTo) break;
+          while (r < ch2.length && ch2[r].day < d.land) owed += ch2[r++].d;
+          owed += interestOn(owed, a.apr);
+          d.owedThen = owed;
+        }
+        while (r < ch2.length) owed += ch2[r++].d;
+      }
       const owedNow = owed;
       const own = d => S.keyAmount(a.amounts, dayStr(d.due));   // [AC5, AE1] that payment, whole
       const asks = (d, i, bal) => (own(d) != null ? own(d) : (parts.length
@@ -799,7 +827,7 @@
       for (let i = 0; i < days.length; i++) {
         const d = days[i], past = d.land <= knownTo;
         let bal;
-        if (past) bal = Math.min(d.owedThen, owedNow) - unpaid;
+        if (past) bal = (base && d.land <= base.day ? d.owedThen : Math.min(d.owedThen, owedNow)) - unpaid;
         else { if (left === null) left = owedNow - unpaid; if (left <= 0) break; left += interestOn(left, a.apr); bal = left; }
         if (bal <= 0 || settledBy[d.iid]) continue;
         const amt = Math.min(bal, asks(d, i, bal));

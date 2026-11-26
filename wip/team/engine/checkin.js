@@ -57,7 +57,10 @@
     for (const acct of Object.keys(a.figures || {})) {
       if (!accts[acct]) throw new Error('no account ' + acct);
       const id = a.newId();
-      events.push({ id, k: 'check', acct, date: a.day, a: whole(a.figures[acct], 'the figure for ' + acct), told: at, at, grp: cid });
+      const chk = { id, k: 'check', acct, date: a.day, a: whole(a.figures[acct], 'the figure for ' + acct), told: at, at, grp: cid };
+      // [LOAN_CHECK_PLAN rule 3] a loan figure that still holds a payment gone by that had not left the bank ("No")
+      if (a.notYet && (a.notYet[acct] || []).length) chk.notYet = a.notYet[acct].slice();
+      events.push(chk);
       figures.push({ acct, check: id, typedA: a.figures[acct] });
       if (a.fillerPlace && a.fillerPlace[acct]) places[acct] = a.fillerPlace[acct];
     }
