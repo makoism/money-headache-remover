@@ -99,7 +99,7 @@ async function say(p, text) { await p.$eval('#a3ChatIn', (e, v) => { e.value = v
     /* 2 */
     await p.click('#a3ChatAny'); await T.w(100);
     const ask = await p.$eval('#a3ChatAnyAsk', e => e.value);
-    ck('"Use any AI" gives the core\'s request: the questions and the answer shape', /ANSWER SHAPE/.test(ask) && /QUESTIONS/.test(ask) && /Which bank does your pay go into/.test(ask));
+    ck('"Use any AI" gives the core\'s request: the questions and the answer shape', /ANSWER SHAPE/.test(ask) && /QUESTIONS/.test(ask) && /which one does your pay go into/.test(ask));
     await p.$eval('#a3ChatAnyPaste', e => { e.value = 'no json here'; }); await p.click('#a3ChatAnyCheck'); await T.w(100);
     ck('an answer with nothing to read is refused in words', /no answers I can read/.test(await p.$eval('#a3ChatAnyErr', e => e.textContent)));
     await p.$eval('#a3ChatAnyPaste', e => { e.value = 'Here you go:\n{"country":"JP","currency":"JPY","free":null,"min":null,"banks":[{"name":"Main bank","amount":286000}],"pays":[{"name":"Pay","amount":240000,"every":"month","day":10,"shift":"before","afterTax":true}],"bills":[{"name":"Rent","amount":72000,"day":27}]}'; }); await p.click('#a3ChatAnyCheck'); await T.w(300);

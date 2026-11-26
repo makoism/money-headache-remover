@@ -122,6 +122,9 @@ const steps = list => [].concat(...list.map(([, r]) => r));
   await t('the guide: the 15 questions in order, how many banks (one is fine), before or after tax, the side job the same each time', async () => {
     eq(K.GUIDE.map(g => g.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
     ok(/How many banks/.test(K.GUIDE[3].ask) && /One is fine/.test(K.GUIDE[3].ask));
+    /* [coordinator follow-up, controls-9] question 4 asks one thing at a time, and a second bank's figure is asked too */
+    eq(K.GUIDE[3].ask.split('?')[0], 'How many banks do you use'); ok(/on its own/.test(K.GUIDE[3].ask) && /which one does your pay go into/.test(K.GUIDE[3].ask), K.GUIDE[3].ask);
+    ok(/one bank at a time/.test(K.GUIDE[4].ask) && /each other bank/.test(K.GUIDE[4].ask), K.GUIDE[4].ask);
     ok(/before or after tax/.test(K.GUIDE[7].ask) && /差引支給額/.test(K.GUIDE[7].ask));
     ok(/same amount each time/.test(K.GUIDE[8].ask));
     ok(/ask anything about the app at any point/.test(K.SYSTEM), 'he can ask anything at any point');
