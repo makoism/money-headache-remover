@@ -55,6 +55,9 @@ const rows = p => p.$$eval('[data-card="plan-accounts"] [data-acct]', bs => bs.m
     ck('moved: one move of 20,000 from the main bank', ts && bk.events.filter(e => e.k === 'transfer' && e.acct === bank && e.acct2 === ts.id && e.a === 20000 && !e.gone).length === 1, JSON.stringify(ts));
     const nb = await fig(bank), nt = ts && await fig(ts.id);
     ck('moved: the main bank shows 20,000 less and the new one 20,000 (never counted twice)', bankBefore > 0 && nb === bankBefore - 20000 && nt === 20000, JSON.stringify([bankBefore, nb, nt]));
+    /* [qc-numbers run 1 C1, M51] Plan: the wallet's figure reads "holds today", a bank's "bank today" */
+    const under = id => p.$eval(`[data-card="plan-accounts"] [data-acct="${id}"]`, e => { const w = [...e.querySelectorAll('.when')].pop(); return w ? w.textContent : null; });
+    ck('C1: Plan says the wallet "holds today" and the bank "bank today"', await under(WALLET) === 'holds today' && await under(bank) === 'bank today', JSON.stringify([await under(WALLET), await under(bank)]));
     /* rename and Keep at least */
     await p.click(`[data-card="plan-accounts"] [data-acct="${WALLET}"]`); await T.w(300);
     ck('a row opens its own sheet', /Wallet/.test(await p.$eval('[data-card="plan-form"] h2', e => e.textContent)) && !!(await p.$('#pl-min')));
