@@ -1,7 +1,9 @@
 'use strict';
 // Real lives for the card gap rule (CARDGAP_PLAN "The grown test must also cover"; MAKO_SAYS M11, M30, M36, M38, M44,
-// M45, M48, M77). A card's unlogged spending found at a check is split by days over the stretch it covers, cut at
-// every day a reader counts from. Every figure below is worked by hand in the comment above its life, then asserted.
+// M45, M48, M77). A card's unlogged spending found at a check covers a stretch of days (kept for the words) and counts
+// WHOLE in the period the check is in [CHECKGAP, coordinator 15, 26 Nov 2026, replacing the split by days at every day
+// a reader counts from]. The comments above each life still tell the by-days working it was first written with; the
+// assertions are reworked by hand to the ruling, each with its new working in a NOW line.
 // All amounts are made up. Every life is written by the real writers: buildBook (setup), the check-in writer
 // (engine/checkin.js), the statement import's records (app3/src/stmt3_plan.js) and the Plan steps through act3
 // (app3/src/plan3_write.js changeBill and addCard, act3 logSpend).
@@ -54,7 +56,9 @@ const mako = seed => world({ day: '2026-11-24', told: noon('2026-11-24'), curren
   bills: [], free: 60000 }, seed);
 
 // the gaps of one card as [check day, gap, [[first day, last day, days, amount] of each part]]
-const gaps = (book, day, card) => LA.lookahead(book, day).cards[card].fillers.map(f => [f.day, f.amount, f.parts.map(p => [p.from, p.to, p.days, p.amount])]);
+const span = f => Math.round((Date.parse(f.to) - Date.parse(f.from)) / 864e5) + 1;
+// [CHECKGAP] the stretch a gap covers, as [[first day, last day, days, the whole gap]]: one row (its count is one part on the check's day)
+const gaps = (book, day, card) => LA.lookahead(book, day).cards[card].fillers.map(f => [f.day, f.amount, [[f.from, f.to, span(f), f.amount]]]);
 const gapOn = (book, day, card, on) => gaps(book, day, card).filter(g => g[0] === on);
 // Free to spend spent in each period, newest first: [[first day, spent], ...]
 const spent = (book, day) => { const p = P.periods(book, day); return [[p.current.start, p.current.free.spent]].concat(p.past.map(x => [x.start, x.free.spent])); };
@@ -79,13 +83,15 @@ const all = {};   // every life built here, for the last test
   await none.step('2026-12-03', 'changeBill', none.pay, { every: 'none', from: '2026-12-03', lines: { free: 60000 } });
   none.check('2026-12-06', { [none.bank]: 300000, [none.A]: 44000, [none.B]: 10000 });
   all.none = [none.book, '2026-12-06'];
-  t('no fixed pay from 3 Dec, mid stretch: the 16,000 is cut at 1 Dec and at the day of the change (4,000, 4,000, 8,000)', () => {
-    eq(gapOn(none.book, '2026-12-06', none.A, '2026-12-06'), [['2026-12-06', 16000, [['2026-11-29', '2026-11-30', 2, 4000], ['2026-12-01', '2026-12-02', 2, 4000], ['2026-12-03', '2026-12-06', 4, 8000]]]]);
+  t('no fixed pay from 3 Dec, mid stretch: the 16,000 covers 29 Nov to 6 Dec and counts whole on 6 Dec [CHECKGAP]', () => {
+    // NOW: the stretch is 29 Nov to 6 Dec, and all 16,000 counts on 6 Dec, after the change
+    eq(gapOn(none.book, '2026-12-06', none.A, '2026-12-06'), [['2026-12-06', 16000, [['2026-11-29', '2026-12-06', 8, 16000]]]]);
   });
-  t('no fixed pay from 3 Dec: only the 8,000 from the change comes off December\'s share, 48,129 left', () => {
+  t('no fixed pay from 3 Dec: all 16,000 found on 6 Dec comes off December\'s share from the change, 40,129 left [CHECKGAP]', () => {
+    // NOW: 56,129 (60,000 by the 29 days left of 31) - 16,000 = 40,129
     const r = LA.lookahead(none.book, '2026-12-06');
     eq(r.period, null);
-    ok(r.safeToSpend.cappedByFreeToSpend); eq(r.safeToSpend.headline, 48129);
+    ok(r.safeToSpend.cappedByFreeToSpend); eq(r.safeToSpend.headline, 40129);
   });
 
   // ---- 2. A statement import after two card checks, its close day between them ----
@@ -112,8 +118,9 @@ const all = {};   // every life built here, for the last test
     eq(gapOn(midBook8, '2026-12-08', mid.A, '2026-12-06'), [['2026-12-06', 17000, [['2026-12-01', '2026-12-06', 6, 17000]]]]);
     eq(LA.lookahead(midBook8, '2026-12-08').cards[mid.A].owedNow, 50000);
   });
-  t('the import, then a check across pay day: old period 39,000, new period 12,000', () => {
-    eq(spent(mid.book, '2026-12-13'), [['2026-12-10', 12000], ['2026-11-10', 39000]]);
+  t('the import, then a check across pay day: old period 30,000, new period 21,000 [CHECKGAP]', () => {
+    // NOW: old 8,000 + 5,000 + 17,000 (found on 28 Nov, 30 Nov, 6 Dec) = 30,000; new: the 21,000 found on 13 Dec
+    eq(spent(mid.book, '2026-12-13'), [['2026-12-10', 21000], ['2026-11-10', 30000]]);
   });
 
   // ---- 3. An import whose close day is on or before the check before it ----
@@ -160,10 +167,11 @@ const all = {};   // every life built here, for the last test
   t('a statement closing 9 Dec, the day before pay: 11,000 on 7 to 9 Dec and 10,000 on 10 to 13 Dec, no empty part', () => {
     eq(gapOn(eve.book, '2026-12-14', eve.A, '2026-12-09'), [['2026-12-09', 11000, [['2026-12-07', '2026-12-09', 3, 11000]]]]);
     eq(gapOn(eve.book, '2026-12-14', eve.A, '2026-12-13'), [['2026-12-13', 10000, [['2026-12-10', '2026-12-13', 4, 10000]]]]);
-    eq(gapOn(eve.book, '2026-12-14', eve.B, '2026-12-13'), [['2026-12-13', 7000, [['2026-12-07', '2026-12-09', 3, 3000], ['2026-12-10', '2026-12-13', 4, 4000]]]]);
+    eq(gapOn(eve.book, '2026-12-14', eve.B, '2026-12-13'), [['2026-12-13', 7000, [['2026-12-07', '2026-12-13', 7, 7000]]]]);
   });
-  t('the statement the day before pay: old period 58,000, new period 14,000, 72,000 in all', () => {
-    eq(spent(eve.book, '2026-12-14'), [['2026-12-10', 14000], ['2026-11-10', 58000]]);
+  t('the statement the day before pay: old period 55,000, new period 17,000, 72,000 in all [CHECKGAP]', () => {
+    // NOW: old 30,000 + 14,000 (6 Dec) + 11,000 (the statement's check, dated 9 Dec) = 55,000; new 10,000 + 7,000 (13 Dec)
+    eq(spent(eve.book, '2026-12-14'), [['2026-12-10', 17000], ['2026-11-10', 55000]]);
   });
 
   // ---- 5. A card check dated earlier than one told before it (told order is not day order) ----
@@ -177,19 +185,20 @@ const all = {};   // every life built here, for the last test
   late.check('2026-12-13', { [late.bank]: 526000, [late.A]: 21000, [late.B]: 7000 }, { amounts: l => { const o = {}; for (const x of l) if (x.statement) o[x.item] = x.amount === 20000 ? 50000 : 24000; return o; } });
   late.check('2026-12-06', { [late.A]: 50000, [late.B]: 24000 }, { told: '2026-12-14T08:30:00.000+09:00' });
   all.late = [late.book, '2026-12-14'];
-  const lateWant = { A: [['2026-12-06', 30000], ['2026-12-13', 21000, [['2026-12-07', '2026-12-09', 3, 9000], ['2026-12-10', '2026-12-13', 4, 12000]]]],
-    B: [['2026-12-06', 14000], ['2026-12-13', 7000, [['2026-12-07', '2026-12-09', 3, 3000], ['2026-12-10', '2026-12-13', 4, 4000]]]] };
+  // NOW: the 13 Dec gaps are the new period's whole: old 30,000 + 14,000 = 44,000, new 21,000 + 7,000 = 28,000
+  const lateWant = { A: [['2026-12-06', 30000], ['2026-12-13', 21000, [['2026-12-07', '2026-12-13', 7, 21000]]]],
+    B: [['2026-12-06', 14000], ['2026-12-13', 7000, [['2026-12-07', '2026-12-13', 7, 7000]]]] };
   const lateGot = book => ({ A: gaps(book, '2026-12-14', late.A).map((g, i) => (i ? g : g.slice(0, 2))), B: gaps(book, '2026-12-14', late.B).map((g, i) => (i ? g : g.slice(0, 2))) });
-  t('a 6 Dec check told after the 13 Dec one: the 13 Dec stretch is 7 to 13 Dec, old period 56,000, new 16,000', () => {
+  t('a 6 Dec check told after the 13 Dec one: the 13 Dec stretch is 7 to 13 Dec, old period 44,000, new 28,000 [CHECKGAP]', () => {
     eq(lateGot(late.book), lateWant);
-    eq(spent(late.book, '2026-12-14'), [['2026-12-10', 16000], ['2026-11-10', 56000]]);
+    eq(spent(late.book, '2026-12-14'), [['2026-12-10', 28000], ['2026-11-10', 44000]]);
     const r = LA.lookahead(late.book, '2026-12-14');
     eq([r.cards[late.A].owedNow, r.cards[late.B].owedNow, r.accounts[late.bank].bank], [21000, 7000, 526000]);
   });
   for (const [name, f] of Object.entries(ORDERS)) t('told out of day order, records ' + name + ': the same amounts and stretches', () => {
     const b = inOrder(late.book, f);
     eq(lateGot(b), lateWant);
-    eq(spent(b, '2026-12-14'), [['2026-12-10', 16000], ['2026-11-10', 56000]]);
+    eq(spent(b, '2026-12-14'), [['2026-12-10', 28000], ['2026-11-10', 44000]]);
   });
 
   // ---- 6. Two checks of one card on one day (two devices) ----
@@ -228,14 +237,15 @@ const all = {};   // every life built here, for the last test
   unt.check('2026-12-06', { [unt.bank]: 300000, [unt.A]: 50000, [unt.B]: 24000 });
   unt.check('2026-12-13', { [unt.bank]: 526000, [unt.A]: 21000, [unt.B]: 7000 }, { tick: x => !x.statement });
   all.unt = [unt.book, '2026-12-13'];
-  t('card payments left unticked: minus gaps of 29,000 and 17,000, spread over 7 to 13 Dec like the bank\'s 74,000', () => {
-    eq(gapOn(unt.book, '2026-12-13', unt.A, '2026-12-13'), [['2026-12-13', -29000, [['2026-12-07', '2026-12-09', 3, -12429], ['2026-12-10', '2026-12-13', 4, -16571]]]]);
-    eq(gapOn(unt.book, '2026-12-13', unt.B, '2026-12-13'), [['2026-12-13', -17000, [['2026-12-07', '2026-12-09', 3, -7286], ['2026-12-10', '2026-12-13', 4, -9714]]]]);
+  t('card payments left unticked: minus gaps of 29,000 and 17,000 over 7 to 13 Dec, and the bank\'s 74,000, all on 13 Dec [CHECKGAP]', () => {
+    eq(gapOn(unt.book, '2026-12-13', unt.A, '2026-12-13'), [['2026-12-13', -29000, [['2026-12-07', '2026-12-13', 7, -29000]]]]);
+    eq(gapOn(unt.book, '2026-12-13', unt.B, '2026-12-13'), [['2026-12-13', -17000, [['2026-12-07', '2026-12-13', 7, -17000]]]]);
     const bankGap = LA.lookahead(unt.book, '2026-12-13').accounts[unt.bank].fillers.filter(f => f.amount);
-    eq(bankGap.map(f => [f.amount, f.parts.map(p => [p.from, p.to, p.days, p.amount])]), [[74000, [['2026-12-07', '2026-12-09', 3, 31714], ['2026-12-10', '2026-12-13', 4, 42286]]]]);
+    eq(bankGap.map(f => [f.amount, f.from, f.to, f.parts.map(p => [p.from, p.to, p.days, p.amount])]), [[74000, '2026-12-07', '2026-12-13', [['2026-12-13', '2026-12-13', 1, 74000]]]]);
   });
-  t('card payments left unticked, bank and cards checked on the same days: old period 55,999, new 16,001 (truth 56,000 and 16,000)', () => {
-    eq(spent(unt.book, '2026-12-13'), [['2026-12-10', 16001], ['2026-11-10', 55999]]);
+  t('card payments left unticked, bank and cards checked on the same days: old period 44,000, new 28,000, as when ticked [CHECKGAP]', () => {
+    // NOW: all three gaps are the 13 Dec check's: 74,000 - 29,000 - 17,000 = 28,000 new; old keeps what 6 Dec found
+    eq(spent(unt.book, '2026-12-13'), [['2026-12-10', 28000], ['2026-11-10', 44000]]);
   });
   t('card payments left unticked: both are still asked for, 50,000 and 24,000, and the cards owe what was typed', () => {
     const r = LA.lookahead(unt.book, '2026-12-13');
@@ -251,8 +261,9 @@ const all = {};   // every life built here, for the last test
   unt2.check('2026-12-06', { [unt2.A]: 50000, [unt2.B]: 24000 });
   unt2.check('2026-12-13', { [unt2.bank]: 526000, [unt2.A]: 21000, [unt2.B]: 7000 }, { tick: x => !x.statement });
   all.unt2 = [unt2.book, '2026-12-13'];
-  t('card payments left unticked, the bank last checked at setup: old period 82,706, new period minus 10,706 (72,000 in all)', () => {
-    eq(spent(unt2.book, '2026-12-13'), [['2026-12-10', -10706], ['2026-11-10', 82706]]);
+  t('card payments left unticked, the bank last checked at setup: old period 44,000, new 28,000, never below zero [CHECKGAP]', () => {
+    // NOW: the bank's 74,000 covers 25 Nov to 13 Dec but counts whole on 13 Dec, with the cards' minus: the same as above
+    eq(spent(unt2.book, '2026-12-13'), [['2026-12-10', 28000], ['2026-11-10', 44000]]);
   });
 
   // ---- 8. Odd amounts and a minus gap, in yen ----
@@ -267,10 +278,11 @@ const all = {};   // every life built here, for the last test
   await odd.spend('2026-12-11', { a: 30000, acct: odd.A, line: 'free', note: 'Coat' });
   odd.check('2026-12-13', { [odd.bank]: 540000, [odd.A]: 19999, [odd.B]: 7003 });
   all.odd = [odd.book, '2026-12-13'];
-  t('yen, odd amounts: minus 10,001 is -4,286 and -5,715; 7,003 is 3,001 and 4,002; each adds up to its gap', () => {
-    eq(gapOn(odd.book, '2026-12-13', odd.A, '2026-12-13'), [['2026-12-13', -10001, [['2026-12-07', '2026-12-09', 3, -4286], ['2026-12-10', '2026-12-13', 4, -5715]]]]);
-    eq(gapOn(odd.book, '2026-12-13', odd.B, '2026-12-13'), [['2026-12-13', 7003, [['2026-12-07', '2026-12-09', 3, 3001], ['2026-12-10', '2026-12-13', 4, 4002]]]]);
-    eq(spent(odd.book, '2026-12-13'), [['2026-12-10', 28287], ['2026-11-10', 28715]]);
+  t('yen, odd amounts: minus 10,001 and 7,003, each whole on 13 Dec, not a yen lost [CHECKGAP]', () => {
+    // NOW: old 30,000 (6 Dec); new the coat 30,000 - 10,001 + 7,003 = 27,002; in all 57,002 as before
+    eq(gapOn(odd.book, '2026-12-13', odd.A, '2026-12-13'), [['2026-12-13', -10001, [['2026-12-07', '2026-12-13', 7, -10001]]]]);
+    eq(gapOn(odd.book, '2026-12-13', odd.B, '2026-12-13'), [['2026-12-13', 7003, [['2026-12-07', '2026-12-13', 7, 7003]]]]);
+    eq(spent(odd.book, '2026-12-13'), [['2026-12-10', 27002], ['2026-11-10', 30000]]);
   });
 
   // ---- 9. A cents currency (M48): US dollars, every amount in cents ----
@@ -287,9 +299,10 @@ const all = {};   // every life built here, for the last test
   usd.check('2026-12-06', { [usd.bank]: 300000, [usd.A]: 50000 });
   usd.check('2026-12-13', { [usd.bank]: 550000, [usd.A]: 10001 });
   all.usd = [usd.book, '2026-12-13'];
-  t('US dollars: $100.01 not logged is $42.86 before the pay and $57.15 after, to the cent', () => {
-    eq(gapOn(usd.book, '2026-12-13', usd.A, '2026-12-13'), [['2026-12-13', 10001, [['2026-12-07', '2026-12-09', 3, 4286], ['2026-12-10', '2026-12-13', 4, 5715]]]]);
-    eq(spent(usd.book, '2026-12-13'), [['2026-12-10', 5715], ['2026-11-10', 34286]]);
+  t('US dollars: $100.01 not logged is all the new period\'s, to the cent [CHECKGAP]', () => {
+    // NOW: old $300.00 (6 Dec), new $100.01 (13 Dec)
+    eq(gapOn(usd.book, '2026-12-13', usd.A, '2026-12-13'), [['2026-12-13', 10001, [['2026-12-07', '2026-12-13', 7, 10001]]]]);
+    eq(spent(usd.book, '2026-12-13'), [['2026-12-10', 10001], ['2026-11-10', 30000]]);
   });
 
   // ---- 10. Paid every two weeks and away three weeks: two period starts in one stretch, three parts ----
@@ -311,27 +324,30 @@ const all = {};   // every life built here, for the last test
   two.check('2026-11-20', { [two.bank]: 200000, [two.A]: 21000 });
   two.check('2026-12-12', { [two.bank]: 459000, [two.A]: 33005 });
   all.two = [two.book, '2026-12-12'];
-  t('paid every two weeks, away three: 33,005 in three parts, 9,001 then 21,003 then 3,001', () => {
-    eq(gapOn(two.book, '2026-12-12', two.A, '2026-12-12'), [['2026-12-12', 33005, [['2026-11-21', '2026-11-26', 6, 9001], ['2026-11-27', '2026-12-10', 14, 21003], ['2026-12-11', '2026-12-12', 2, 3001]]]]);
+  t('paid every two weeks, away three: 33,005 over 21 Nov to 12 Dec, all found on 12 Dec [CHECKGAP]', () => {
+    eq(gapOn(two.book, '2026-12-12', two.A, '2026-12-12'), [['2026-12-12', 33005, [['2026-11-21', '2026-12-12', 22, 33005]]]]);
   });
-  t('paid every two weeks, away three: the periods hold 15,001, 21,003 and 3,001, and 26,999 is left', () => {
-    eq(spent(two.book, '2026-12-12'), [['2026-12-11', 3001], ['2026-11-27', 21003], ['2026-11-13', 15001]]);
+  t('paid every two weeks, away three: the periods hold 6,000, 0 and 33,005; 3,005 over this period\'s 30,000 [CHECKGAP]', () => {
+    // NOW: the closed periods keep what their own checks found (20 Nov: 6,000; none in the second); the running one has
+    // the 12 Dec gap whole: 30,000 - 33,005 = -3,005 left
+    eq(spent(two.book, '2026-12-12'), [['2026-12-11', 33005], ['2026-11-27', 0], ['2026-11-13', 6000]]);
     const r = LA.lookahead(two.book, '2026-12-12');
-    eq([r.period.free.left, r.accounts[two.bank].bank, r.cards[two.A].owedNow], [26999, 459000, 33005]);
+    eq([r.period.free.left, r.accounts[two.bank].bank, r.cards[two.A].owedNow], [-3005, 459000, 33005]);
     eq(r.accounts[two.bank].fillers.filter(f => f.amount).length, 0);
   });
 
   // ---- every life above: a gap's parts add up to it, none is dated after its check, none has zero or fewer days ----
-  t('in all ' + Object.keys(all).length + ' lives every card gap\'s parts add up to the gap, none dated after its check, none with no days', () => {
+  t('in all ' + Object.keys(all).length + ' lives every card gap is one part, whole, on its check\'s day [CHECKGAP]', () => {
     let n = 0;
     for (const k of Object.keys(all)) {
       const [book, day] = all[k], r = LA.lookahead(book, day);
       for (const id of Object.keys(r.cards)) for (const f of r.cards[id].fillers) {
         eq(f.parts.reduce((s, p) => s + p.amount, 0), f.amount, k + ' ' + f.day);
-        for (const p of f.parts) { n++; ok(p.to <= f.day && p.days >= 1 && p.from <= p.to && p.amount !== 0, k + ' ' + JSON.stringify(p)); }
+        ok(f.parts.length === (f.amount ? 1 : 0), k + ' one part: ' + JSON.stringify(f.parts));   // [CHECKGAP]
+        for (const p of f.parts) { n++; ok(p.from === f.day && p.to === f.day && p.days === 1 && p.amount === f.amount && f.from <= f.to, k + ' ' + JSON.stringify(p)); }
       }
     }
-    ok(n >= 30, 'parts looked at: ' + n);
+    ok(n >= 20, 'parts looked at: ' + n);
   });
   done('card_gap_lives.test.js');
 })().catch(e => { console.log('FAIL card_gap_lives.test.js could not build a life: ' + (e && e.stack || e)); process.exitCode = 1; });

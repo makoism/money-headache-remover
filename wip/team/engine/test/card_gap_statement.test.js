@@ -43,11 +43,13 @@ t('a week later the same statement is still 42,000, and the card owes the 64,000
   const { book, card } = life('2026-12-26'), k = LA.lookahead(book, '2026-12-27').cards[card];
   eq([k.owedNow, k.next.amount, k.next.payment_date], [64000, 42000, '2027-01-10']);
 });
-t('the gap\'s parts still add up to the gap, and the pay periods read as before (cut at the 25 Dec pay only)', () => {
+t('the gap\'s parts still add up to the gap; for the pay periods the 26 Dec gap is the period from 25 Dec\'s, whole [CHECKGAP]', () => {
+  // the statements still take the gap by their close days (above); the pay periods take it whole on the check's day
   const { book, card } = life('2026-12-26'), r = LA.lookahead(book, '2026-12-27');
   for (const f of r.cards[card].fillers) eq(f.parts.reduce((s, p) => s + p.amount, 0), f.amount);
   const last = r.cards[card].fillers.slice(-1)[0];
-  eq(last.parts.map(p => [p.from, p.to, p.amount]), [['2026-12-20', '2026-12-24', 10000], ['2026-12-25', '2026-12-26', 4000]]);
+  eq([last.from, last.to], ['2026-12-20', '2026-12-26']);
+  eq(last.parts.map(p => [p.from, p.to, p.amount]), [['2026-12-26', '2026-12-26', 14000]]);
 });
 // ---- more lives, each worked by hand by qc-foundation on the plan (25 Nov). The same bank, pay and card unless said;
 //      the first three checks are always 28 Nov 8,000, 5 Dec 22,000 and 12 Dec 36,000. ----

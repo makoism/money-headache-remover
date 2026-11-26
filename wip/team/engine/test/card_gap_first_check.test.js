@@ -12,6 +12,10 @@
 //   line 609) looks for the check before among records that leave out the opening's own check, so it finds none.
 //   Seen by a person: set up before pay day, first card check after it, and ALL the card spending since setup lands
 //   in the new period. The old period reads 0 spent and the new one starts deep in the red.
+// [CHECKGAP, coordinator 15, 26 Nov 2026] A check's gap is now the check's period's, WHOLE: the stretch below is kept
+// for the words (`from`, `to`: the days it covers) and the count is one part on the check's day. So "ALL the card
+// spending since setup lands in the new period" in FAULT 1 is now the ruled behaviour; the stretches still start
+// where these faults said, and the figures below are reworked by hand to the ruling.
 // FAULT 2. A second check of one card on the same day is spread back over the whole stretch of the first.
 //   CARDGAP_PLAN fix 1: "A check on the same day as the one before has a stretch of that one day." The loop takes
 //   the check before as the latest one on an EARLIER day, so the second check of a day reaches back as far as the first.
@@ -56,7 +60,7 @@ const mako = seed => world({ day: '2026-11-24', told: noon('2026-11-24'), curren
   bills: [], free: 60000 }, seed);
 
 
-const gapOn = (book, day, card, on) => LA.lookahead(book, day).cards[card].fillers.filter(f => f.day === on).map(f => [f.day, f.amount, f.parts.map(p => [p.from, p.to, p.days, p.amount])]);
+const gapOn = (book, day, card, on) => LA.lookahead(book, day).cards[card].fillers.filter(f => f.day === on).map(f => [f.day, f.amount, [f.from, f.to], f.parts.map(p => [p.from, p.to, p.days, p.amount])]);
 const spent = (book, day) => { const p = P.periods(book, day); return [[p.current.start, p.current.free.spent]].concat(p.past.map(x => [x.start, x.free.spent])); };
 
 (async () => {
@@ -68,9 +72,9 @@ const spent = (book, day) => { const p = P.periods(book, day); return [[p.curren
   //   The engine today: one part, 13 Dec only, 19,000. Old period 0, new period 19,000 (41,000 left where 56,000 is right).
   const first = mako('f2k7pd');
   first.check('2026-12-13', { [first.bank]: 570000, [first.A]: 19000, [first.B]: 0 });
-  t('FAULT 1a: the first check after setup reaches back to the day after the opening: 15,000 old, 4,000 new', () => {
-    eq(gapOn(first.book, '2026-12-13', first.A, '2026-12-13'), [['2026-12-13', 19000, [['2026-11-25', '2026-12-09', 15, 15000], ['2026-12-10', '2026-12-13', 4, 4000]]]]);
-    eq(spent(first.book, '2026-12-13'), [['2026-12-10', 4000], ['2026-11-10', 15000]]);
+  t('FAULT 1a: the first check after setup covers the days from the day after the opening; all 19,000 is the new period\'s [CHECKGAP]', () => {
+    eq(gapOn(first.book, '2026-12-13', first.A, '2026-12-13'), [['2026-12-13', 19000, ['2026-11-25', '2026-12-13'], [['2026-12-13', '2026-12-13', 1, 19000]]]]);
+    eq(spent(first.book, '2026-12-13'), [['2026-12-10', 19000], ['2026-11-10', 0]]);
   });
 
   // ---- FAULT 1b. A card added after setup (Plan, addCard) ----
@@ -82,9 +86,9 @@ const spent = (book, day) => { const p = P.periods(book, day); return [[p.curren
   const added = mako('a6v3hm');
   await added.step('2026-11-28', 'addCard', { name: 'Card C', owed: 12000, payDay: 27, cutDay: 'not sure', shift: 'none' });
   added.check('2026-12-13', { [added.bank]: 570000, [added.C]: 27000 });
-  t('FAULT 1b: a card added on 28 Nov, first checked 13 Dec: its stretch starts 29 Nov, 11,000 old and 4,000 new', () => {
-    eq(gapOn(added.book, '2026-12-13', added.C, '2026-12-13'), [['2026-12-13', 15000, [['2026-11-29', '2026-12-09', 11, 11000], ['2026-12-10', '2026-12-13', 4, 4000]]]]);
-    eq(spent(added.book, '2026-12-13'), [['2026-12-10', 4000], ['2026-11-10', 11000]]);
+  t('FAULT 1b: a card added on 28 Nov, first checked 13 Dec: its stretch starts 29 Nov; all 15,000 is the new period\'s [CHECKGAP]', () => {
+    eq(gapOn(added.book, '2026-12-13', added.C, '2026-12-13'), [['2026-12-13', 15000, ['2026-11-29', '2026-12-13'], [['2026-12-13', '2026-12-13', 1, 15000]]]]);
+    eq(spent(added.book, '2026-12-13'), [['2026-12-10', 15000], ['2026-11-10', 0]]);
   });
 
   // ---- FAULT 1c. The same cause where told order is not day order, before the late check arrives ----
@@ -97,9 +101,9 @@ const spent = (book, day) => { const p = P.periods(book, day); return [[p.curren
   //   The engine today: old 0, new 72,000, and safe to spend reads 0 three days after pay day.
   const late = mako('t8q5wm');
   late.check('2026-12-13', { [late.bank]: 526000, [late.A]: 21000, [late.B]: 7000 }, { amounts: l => { const o = {}; for (const x of l) if (x.statement) o[x.item] = x.amount === 20000 ? 50000 : 24000; return o; } });
-  t('FAULT 1c: first checks on 13 Dec with the payments typed: old period 56,842, new 15,158, 44,842 left', () => {
-    eq(spent(late.book, '2026-12-13'), [['2026-12-10', 15158], ['2026-11-10', 56842]]);
-    eq(LA.lookahead(late.book, '2026-12-13').safeToSpend.headline, 44842);
+  t('FAULT 1c: first checks on 13 Dec with the payments typed: all 72,000 found on 13 Dec is the new period\'s [CHECKGAP]', () => {
+    eq(spent(late.book, '2026-12-13'), [['2026-12-10', 72000], ['2026-11-10', 0]]);
+    eq(LA.lookahead(late.book, '2026-12-13').safeToSpend.headline, 0);   // 60,000 - 72,000: nothing left, never below 0
   });
 
   // ---- FAULT 1d. A statement that closed before the card's first typed check ----
@@ -110,7 +114,7 @@ const spent = (book, day) => { const p = P.periods(book, day); return [[p.curren
   early.check('2026-11-28', { [early.A]: 28000 }); early.check('2026-12-06', { [early.A]: 50000 });
   early.importStatement('2026-12-08', early.A, '2026-11-26', 25000);
   t('FAULT 1d: a statement closing 26 Nov, two days after setup: its 5,000 covers 25 and 26 Nov', () => {
-    eq(gapOn(early.book, '2026-12-08', early.A, '2026-11-26'), [['2026-11-26', 5000, [['2026-11-25', '2026-11-26', 2, 5000]]]]);
+    eq(gapOn(early.book, '2026-12-08', early.A, '2026-11-26'), [['2026-11-26', 5000, ['2026-11-25', '2026-11-26'], [['2026-11-26', '2026-11-26', 1, 5000]]]]);
   });
 
   // ---- FAULT 2. Two checks of one card on one day ----
@@ -124,9 +128,9 @@ const spent = (book, day) => { const p = P.periods(book, day); return [[p.curren
   twice.check('2026-12-06', { [twice.bank]: 300000, [twice.A]: 50000, [twice.B]: 24000 });
   twice.check('2026-12-13', { [twice.bank]: 526000, [twice.A]: 21000, [twice.B]: 7000 });
   twice.check('2026-12-13', { [twice.A]: 22400 }, { told: '2026-12-13T21:10:00.000+09:00' });
-  t('FAULT 2: a second check the same day is that one day: 1,400 on 13 Dec, old period 56,000, new 17,400', () => {
-    eq(gapOn(twice.book, '2026-12-13', twice.A, '2026-12-13')[1], ['2026-12-13', 1400, [['2026-12-13', '2026-12-13', 1, 1400]]]);
-    eq(spent(twice.book, '2026-12-13'), [['2026-12-10', 17400], ['2026-11-10', 56000]]);
+  t('FAULT 2: a second check the same day is that one day: 1,400 on 13 Dec; old period 44,000, new 28,000 + 1,400 [CHECKGAP]', () => {
+    eq(gapOn(twice.book, '2026-12-13', twice.A, '2026-12-13')[1], ['2026-12-13', 1400, ['2026-12-13', '2026-12-13'], [['2026-12-13', '2026-12-13', 1, 1400]]]);
+    eq(spent(twice.book, '2026-12-13'), [['2026-12-10', 29400], ['2026-11-10', 44000]]);
   });
   done('card_gap_first_check.test.js');
 })().catch(e => { console.log('FAIL card_gap_first_check.test.js could not build a life: ' + (e && e.stack || e)); process.exitCode = 1; });

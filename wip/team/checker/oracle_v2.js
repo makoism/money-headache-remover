@@ -406,10 +406,9 @@ function oracle(sc, asOfStr, opts) {
     else if (e.kind === 'refund') spent[e.line] = (spent[e.line] || 0) - e.amt;
     else refuse('line on ' + e.kind);
   }
-  // The filler is spending from Free to spend, split by days at a period start [A4, T2];
-  // the older period's part rounded, the newer gets the rest.
+  // The filler is spending from Free to spend [T2], whole in the period its check is in [CHECKGAP, coordinator 15,
+  // 26 Nov 2026, replacing A4's split by days].
   let fillerHere = 0;
-  const allStarts = starts.map((s) => s.day);
   for (const id of Object.keys(money)) {
     for (const f of money[id].fillers) {
       // A large gain is held, never placed, until answered [O, X4].
@@ -417,20 +416,7 @@ function oracle(sc, asOfStr, opts) {
         const pf = periodBudget(starts.filter((s) => s.day <= f.to).pop() || curStart, true).free;
         if (-f.amt > pf || -f.amt * 5 > f.app) continue;
       }
-      // the part of the stretch in the current period
-      const cuts = allStarts.filter((x) => x > f.from && x <= f.to);
-      let parts = [];
-      let lo = f.from;
-      for (const c of cuts) { parts.push([lo, c - 1]); lo = c; }
-      parts.push([lo, f.to]);
-      const total = f.to - f.from + 1;
-      let given = 0;
-      parts.forEach((p, k) => {
-        const days = p[1] - p[0] + 1;
-        const share = k === parts.length - 1 ? f.amt - given : Math.round((f.amt * days) / total);
-        given += share;
-        if (p[0] >= curStart.day && p[1] <= T + 400) fillerHere += share;
-      });
+      if (f.to >= curStart.day && f.to <= T + 400) fillerHere += f.amt;
     }
   }
   const lineLeft = {};
