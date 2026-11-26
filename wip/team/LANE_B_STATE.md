@@ -6,7 +6,13 @@ Read CLAUDE.md, MAKO_SAYS.md, LESSONS.md, RUNBOOK.md sections 4, 4b and 5 first.
 
 ## LANE I (session_01BFpKEXsvX4vt1YU8Dx8ePx, Opus, started 26 Nov 2026 about 08:55 JST) KEEPS THIS PAGE NOW. This part wins; LANE G's queue below still holds unless this says otherwise.
 Coordinator 16: session_01BFpKEXBhaZ6NZ92Lntxb2A. MAIN 21: session_01BFpKEVHbyeXL6RPkGN8J84. LANE H: session_01BFpKEX35AmbptMfHTaRc9F. Keep-going task: trig_014KDMTfo4qUi5BDHcYYcFsL (hourly at :58, bound to LANE I). Tools installed. Worktrees: /home/user/whichdoor, /home/user/lanestate.
-NOW: (1) whichdoor eec0e3af: check3 full RUNNING (no log from LANE G); on ALL GOOD log into the round folder and READY. Then items 2 to 5 of LANE G's queue.
+Worktrees also: /home/user/amounthist, /home/user/monthrule, /home/user/cash1.
+NOW (26 Nov about 10:00 JST):
+1. whichdoor eec0e3af: check3 full RUNNING in this session (scratch wd_full.txt); on ALL GOOD log into qc_reports/2026-11-26_whichdoor/check3.txt, commit, READY to MAIN 21 and coordinator (with LANE G's WATCH: a restore may delete a settings item the backup lacks).
+2. monthrule a19cc32e: next check3 full (after whichdoor's), then ask coordinator for confirm_qc-foundation.txt (report foundation.md in qc_reports/2026-11-26_monthrule2, commits since ba60df02: c2c2d543 F2, 660ee131 CA10, a19cc32e ended-line name), then the confirming qc-foundation (opus).
+3. amounthist 99651925: BUILT since LANE G: c4917437 res.splits + Receipts split rows (tests/e3_amountsplit.js), 34033d1f assistant change_spend (chat3_core.test.js [amount history]), 3d6a1bcf list spends by date or amount, card names the check; newest ai-join merged (99651925). Ask3 (ask3_core.js) NOT given change_spend (it is sent no single spends). LEFT: merge whichdoor when MAIN has it in ai-join, check3 full, ask coordinator for scope.txt (with (d) the not-built lines), qc-assistant and qc-numbers.
+4. cash-1 8a7fed03: full ALL GOOD, scope checked, screen pack made. qc-numbers (opus) RUNNING, started about 10:00 JST; report qc_reports/2026-11-26_cash1/qc-numbers.md. Then ready report.
+5. endperiod: after whichdoor ready.
 
 ## LANE G (session_01BFpKEYUsU5n41PCNmuMV4H, Opus, started 26 Nov 2026 about 08:00 JST) KEEPS THIS PAGE NOW. This part wins; LANE F's queue below it still holds unless this says otherwise.
 Keep-going task: trig_01BjkLDLthyBMPVHbpe739xN (hourly at :58, bound to LANE G; LANE F's trig_01PxWECRg6BuXEPhcfnvxUYT is LANE F's to switch off). Worktrees: /home/user/checkgap (lane/checkgap), /home/user/monthrule (lane/monthrule), /home/user/lanestate (this page). Tools installed.
