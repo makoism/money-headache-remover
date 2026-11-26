@@ -5,15 +5,15 @@ Report to: Burrow coordinator 16 (talk to this one), session_01BFpKEXBhaZ6NZ92Ln
 Keep-going task: trig_01AkkfjQvAD9e6Mtosopy688 (hourly, bound to LANE J). Switch it off at handoff or when told to pause. LANE H's trig_01YAKbKsvFSEfinBn9hNEaCf: LANE H was asked to switch it off.
 Never push to wip-38.31, lane/ai-join or main. Until Sun 29 Nov 09:00 JST: up to two helpers or reviewers at once, model opus.
 
-## Now (keep current; 26 Nov about 09:30 JST)
-- Machine set up fresh (tools, unshallow). Worktrees: main checkout on lane/controls-1 (reviewers of slice 1 used it); .claude/worktrees/c5 (controls-5), c6 (controls-6, loan plan), c8 (controls-8, holds 7), estate (lane/e-state).
+## Now (keep current; 26 Nov about 10:15 JST)
+- Worktrees: main checkout on lane/controls-1; .claude/worktrees/c5 (controls-5, REVIEWERS RUNNING: do not edit), c6 (controls-6, loan plan), c8 (controls-8, holds 7; full check running), c9 (controls-9), estate (lane/e-state).
 - lane/controls-1 bb44ce00: READY, both confirming runs PASS. Held until MAIN 21's candidate is out.
-- RUNNING: a helper tracing qc-controls_confirm1's "Power moved to a short Beta Bank: safe to spend 107,400 to 100,000, no why" (worked example by hand; right = the change card says why; wrong = numbers fault to the coordinator, with whether it is on ai-join).
-- RUNNING: check3 full on lane/controls-8 69ca8f20 (newest ai-join 1d02850a merged in; sw3 and e3_boxwalk conflict taken from ai-join).
-- Next: round for slices 2 to 5 on lane/controls-5 (scope.txt is in, 5dc92184): qc-controls, qc-foundation, qc-data-safety, two at a time, build path .claude/worktrees/c5/wip/team/app3/index.html, round 2026-11-26_controls2to5.
-- Loan check plan: qc-foundation confirm 1 FAIL, plan revised e6ce6324 on lane/controls-6; needs a second confirming run (ask the coordinator for confirm file 2).
-- Slices 7 and 8 (lane/controls-8): after full check, qc-controls and qc-foundation, round 2026-11-26_controls7to8 (scope.txt from the coordinator).
-- Non-blocking follow-ups from slice 1 reports: listed under the old Now below.
+- Beta Bank trace DONE, sent to the coordinator 10:00 JST as a NUMBERS FAULT (also on ai-join): safe to spend takes a second bank's whole future shortfall off this period (lookahead.js 1345 to 1347, ai-join 1336 to 1339). Example: Beta 32,000 pays Card A 54,000 on 10 Dec, Rent 72,000 and Power 7,400 on 28 Dec moved to Beta: engine 179,400 to 107,400 to 100,000; right 179,400 throughout (only 22,000 is short before the 10 Dec pay). Waiting for the ruling; not fixed by me.
+- RUNNING: qc-controls and qc-foundation on lane/controls-5 (round 2026-11-26_controls2to5). Then qc-data-safety there.
+- RUNNING: check3 full on lane/controls-8 69ca8f20 into the scratchpad (check3_c8.txt); copy to round 2026-11-26_controls7to8 when it ends. Asked the coordinator for scope.txt there; then qc-controls, qc-foundation.
+- Asked the coordinator for confirm_qc-foundation.txt (2nd confirming run) for the loan plan e6ce6324, round 2026-11-26_loancheck_plan.
+- lane/controls-9 (from controls-8 69ca8f20), slice 1 follow-ups, each test first, quick ALL GOOD: ded15efc refusal words ("Card A stays paid from Savings for now. Its 10 Dec payment is not ticked off yet: tick it at Check your bank, then try again"); 1def4ae2 bill rows say "from <account>"; 02d256a3 a typed nothing/zero/none is a typed 0; 3dd4e58d Add a loan asks the weekend rule. PARKED until the shortfall ruling: the change card for a bill moved to another account (its own short-by row and below-zero line; same cause).
+- Then: slice 10 bank check changed or removed later; currency Start again; loan check build after its plan PASSES.
 
 ## Old Now (LANE H at handoff)
 - Worktrees: main checkout on lane/controls-1 (reviewers use it); .claude/worktrees/c2 (controls-2), c3 (controls-3), c5 (controls-5), c6 (controls-6, loan check), c7 (lane/controls-8, controls-7 below it), estate (lane/e-state). A fresh machine: tools line (RESUME), `git fetch --unshallow`, worktrees again. Merge helper idea: union check3.sh lines; READ THE WHOLE MERGE OUTPUT (a conflict was once committed).
