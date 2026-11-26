@@ -1,0 +1,40 @@
+the burrow
+Settings
+Reminders
+Ask
+
+Settings
+Money
+
+The currency is chosen in setup.
+
+This device
+
+The browser may clear your money if this device runs low on space. Keep the cloud copy on or save a backup file. Space used: 5 KB of 11 GB.
+
+Ask the browser to keep it
+Backup file
+
+A backup file is your own copy of your money, to keep anywhere. Restoring one replaces the money on this device. What is here now is kept first, so Put it back can bring it back.
+
+Lock it with a code
+Save a backup file
+Restore from a file
+Cloud copy
+
+Off. Your money is on this device only. A cloud copy is locked with a code only you have, and keeps your phone and computer the same.
+
+I have a code
+Code word for the AI
+
+No code word is kept on this device. One is needed only when the page's owner asks for it.
+
+Code word
+Keep it
+The assistant's error log
+
+When a message to the assistant fails, this device notes when, what kind of message, the error and the server's answer. Never your words or any money figures. Copy it to send to whoever helps you
+
+Copy the assistant's error log
+Clear
+Done
