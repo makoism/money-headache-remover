@@ -1,6 +1,6 @@
 # LANE M state page (controls slices after the AI-first candidate)
 
-LANE M: session_01BFpKEWyTdLJxPoDySdQrVW (took over from LANE J session_01BFpKEXkcELFPCxnuiX8jFx, 26 Nov about 09:40 JST... see Now). Coordinator: "Burrow coordinator 17 (talk to this one)" session_01BFpKEZ9Gn1VKFM5HMC5Wn1 (from 26 Nov 10:23 JST; 16 was session_01BFpKEXBhaZ6NZ92Lntxb2A). MAIN 22 (session_01BFpKEVPdcTtDvMBQEUFsEx) is the only session that merges. LANE L (session_01BFpKEXEN4ow4uyeRCZ9aSM) owns lane/amounthist (engine lane; slice 10 merges it first; both touch act3.js).
+LANE M: session_01BFpKEWyTdLJxPoDySdQrVW (took over from LANE J session_01BFpKEXkcELFPCxnuiX8jFx, 26 Nov about 09:40 JST... see Now). Coordinator: "Burrow coordinator 18 (talk to this one)" session_01BFpKEVNiZLwPaZF7W9sbtP (from 26 Nov 11:25 JST; 17 was session_01BFpKEZ9Gn1VKFM5HMC5Wn1). MAIN 22 (session_01BFpKEVPdcTtDvMBQEUFsEx) is the only session that merges. LANE L (session_01BFpKEXEN4ow4uyeRCZ9aSM) owns lane/amounthist (engine lane; slice 10 merges it first; both touch act3.js).
 Keep-going task: trig_01ETjeofWVuqzY2qbB7xDS4H (hourly, bound to LANE M). Switch off at handoff or pause.
 
 ## Now (LANE M handoff page, 26 Nov about 11:30 JST, history ~205k). Read this section only, plus the rules section of LANE J below if needed.
