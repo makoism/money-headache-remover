@@ -1,3 +1,14 @@
+# LANE P state page (controls, after LANE N)
+
+LANE P: session_01BFpKEW1VPRCsZX1GAQj5Dn (took over from LANE N session_01BFpKEYrXD1v3TRranaJ9WE, 26 Nov about 16:00 JST). Coordinator 18 session_01BFpKEVNiZLwPaZF7W9sbtP. Merger MAIN 24 session_01BFpKEW9b3sUkGfcHygE46v. Engine lane LANE O session_01BFpKEWJpva6S7WZASSwRQK. Keep-going task made by the coordinator (this session cannot make tasks or sessions: depth limit). Hand off at about 230k.
+
+## Now (LANE P)
+- Do not touch lane/controls-6 or lane/controls-11 until LANE N says its two helpers landed.
+- Worktrees: .claude/worktrees/estate (this page), c5, c8, c13. Tools /home/claude/work/tools.
+- Starting: qc-foundation confirm on lane/controls-5 (round 2026-11-26_controls2to5, save reply as qc-foundation_confirm1.md) and qc-foundation on MAINBANK_PLAN (lane/controls-13, round 2026-11-26_mainbank_plan) in parallel. Meanwhile own work: QUEUED data-safety items (1) and (2) on a new branch lane/dsafe-1 from lane/ai-join.
+
+# Below: LANE N's page at handoff
+
 # LANE N state page (controls slices after the AI-first candidate)
 
 LANE N: session_01BFpKEYrXD1v3TRranaJ9WE (took over from LANE M session_01BFpKEWyTdLJxPoDySdQrVW, 26 Nov about 11:45 JST). Coordinator: "Burrow coordinator 18 (talk to this one)" session_01BFpKEVNiZLwPaZF7W9sbtP. MAIN 24 session_01BFpKEW9b3sUkGfcHygE46v is the only merger (MAIN 23 closed; it forwarded controls-10 and controls-12 notes). LANE L session_01BFpKEXEN4ow4uyeRCZ9aSM owns lane/amounthist.
