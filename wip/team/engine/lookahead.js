@@ -836,7 +836,8 @@
     // lists the record in its own period at `atCheck` and the change as its own row in the check's period
     res.splits = events.filter(e => e.was && e.was.length && heldAt.has(e.id) && (e.k === 'spend' || (e.k === 'in' && e.sub === 'refund')))
       .map(e => { const h = heldAt.get(e.id), a0 = amountAt(e, h.key), last = e.was[e.was.length - 1];
-        return { id: e.id, check: dayStr(h.day), atCheck: a0, after: (e.gone ? 0 : e.a) - a0, told: String(last.told).slice(0, 10), day: h.day, own: e.day }; })
+        const after = (e.gone ? 0 : e.a) - a0;
+        return { id: e.id, check: dayStr(h.day), atCheck: a0, after, more: Math.max(after, 0), less: Math.max(-after, 0), told: String(last.told).slice(0, 10), day: h.day, own: e.day }; })
       .filter(x => x.after && x.day > x.own).map(({ day, own, ...x }) => x)
       .sort((x, y) => (x.id < y.id ? -1 : x.id > y.id ? 1 : 0));
     // [W2] a card, loan or pay-later payment in another currency than its paying account is listed apart

@@ -2599,19 +2599,32 @@ details summary { min-height: 44px; }
     const byTime = (x, y) => x.day - y.day || keyCmp(x.key, y.key) || x.idx - y.idx;
     const isClosingRecord = (e, id) => e.id === I.built.close(id) || String(e.id).startsWith(I.built.close(id) + ':');
     const heldBy = [];   // [S3] records told after a check that holds them: { id, account, check }
-    // [CHECKGAP] a record told after the first check that holds it (bank or card) only explains part of that check's
-    // gap, so it counts in the check's period (the day of the check), never in a closed one, and never moves safe to
-    // spend up: id -> the check's day, the earliest when two hold it
-    const lateDay = new Map();
-    const lateTo = (rid, day) => { if (!lateDay.has(rid) || lateDay.get(rid) > day) lateDay.set(rid, day); };
-    const countDay = e => (lateDay.has(e.id) ? Math.max(e.day, lateDay.get(e.id)) : e.day);
+    // [CHECKGAP, AMOUNT_HISTORY] the first check (bank or card) that holds each record: id -> { day, key }. A record's
+    // amount as it stood at that check counts on its own day; any change since (told after the check: all of it; an
+    // amount corrected later, `was`; removed later: minus what it had) counts on the check's day, where it only explains
+    // part of that check's gap, so a closed period never moves and safe to spend never goes up by it
+    const heldAt = new Map();
+    const holdAt = (rid, day, key) => { const h = heldAt.get(rid); if (!h || h.day > day || (h.day === day && keyCmp(h.key, key) > 0)) heldAt.set(rid, { day, key }); };
+    const amountAt = (e, key) => {
+      if (keyCmp(e.key, key) > 0) return 0;   // told after the check: none of it was known there
+      for (const w of e.was || []) if (w && w.told && keyCmp(keyOf(w.told), key) > 0) return w.a;   // the amount it had then
+      return e.a;
+    };
+    // the day each part of a record's amount counts on: [{ day, a }]
+    const countParts = e => {
+      const h = heldAt.get(e.id), now = e.gone ? 0 : e.a;
+      if (!h) return e.gone ? [] : [{ day: e.day, a: e.a }];
+      const a0 = e.gone && !(e.was && e.was.length) ? 0 : amountAt(e, h.key);
+      return [{ day: e.day, a: a0 }, { day: Math.max(e.day, h.day), a: now - a0 }].filter(x => x.a);
+    };
     function bankInfo(id) {
       let base = openingOf(id);
       // [Z1] a check whose large gain was answered "wrong" counts nowhere; the account asks for the figure again
       const checks = live().filter(e => e.k === 'check' && e.account === id && !e.stmt && e.gain !== 'wrong').sort(byTime);
       const wrong = events.filter(e => e.k === 'check' && e.account === id && e.gain === 'wrong').sort(byTime).pop();
       const askAgain = !!wrong && !checks.some(c => byTime(c, wrong) > 0);
-      const moves = live().filter(e => delta(e, id) !== 0);
+      const moves = live().filter(e => delta(e, id) !== 0 || (e.was && e.was.length && (e.account === id || e.from === id || e.to === id)));   // [AMOUNT_HISTORY] a record corrected to 0 is still held by its check
+      const goneMoves = events.filter(e => e.gone && e.was && e.was.length && delta(e, id) !== 0);   // [AMOUNT_HISTORY] removed after a check
       const fillers = [];
       let lastGap = null;
       // [T2, AS6] the place a filler was put on is the check-in's `fillerPlace` for this account: the check-in the check
@@ -2636,7 +2649,8 @@ details summary { min-height: 44px; }
         let computed = base.amount;
         moves.forEach((e, k) => { if (isIn[k] !== wasIn[k]) computed += isIn[k] ? delta(e, id) : -delta(e, id); });
         // [S3, AN4] a record told after this check but inside it: named, so the screens can say the figure holds it
-        moves.forEach((e, k) => { if (isIn[k] && !wasIn[k] && e.key > cc.key) { heldBy.push({ id: e.id, account: id, check: dayStr(cc.day) }); lateTo(e.id, cc.day); } });
+        moves.forEach((e, k) => { if (isIn[k] && !wasIn[k]) { holdAt(e.id, cc.day, cc.key); if (e.key > cc.key) heldBy.push({ id: e.id, account: id, check: dayStr(cc.day) }); } });
+        for (const e of goneMoves) if (!heldAt.has(e.id) && e.day <= cc.day && inside(e, cc, id)) holdAt(e.id, cc.day, cc.key);
         wasIn = isIn;
         const fp = fillerPlaceOf(c);
         fillers.push(Object.assign(makeFiller(id, c.day > base.day ? base.day + 1 : c.day, c.day, computed - c.a), fp ? { place: fp } : {},
@@ -2772,7 +2786,7 @@ details summary { min-height: 44px; }
       // [CARDGAP, CHECKGAP] each gap carries the days it covers (the day after this card's check before it, to this
       // check) for the words, and counts whole on the check's own day, as a bank's (makeFiller); the checks are walked in
       // the bank's order, never as told. A record on the card dated by a check and told after it explains part of that
-      // check's gap and counts with it (lateTo)
+      // check's gap and counts with it (holdAt)
       const cardChecks = live().filter(x => x.k === 'check' && x.account === id && !x.stmt).sort(byTime);
       for (const e of cardChecks) {
         // the check before this one: the latest on an earlier day, else the card's opening day (its opening check is not
@@ -2781,7 +2795,7 @@ details summary { min-height: 44px; }
         const sameDayEarlier = cardChecks.slice(0, cardChecks.indexOf(e)).some(x => x.day === e.day);
         const openD = openEv[id] ? openDay(id) : null;
         const prevDay = sameDayEarlier ? e.day - 1 : before.length ? Math.max(...before) : openD != null && openD < e.day ? openD : null;
-        for (const x of live()) if (x.account === id && x.k !== 'check' && x.day <= e.day && keyCmp(x.key, e.key) > 0) lateTo(x.id, e.day);
+        for (const x of events) if (x.account === id && x.k !== 'check' && x.day <= e.day && (!x.gone || (x.was && x.was.length))) holdAt(x.id, e.day, e.key);
         let gap = 0, closed = null, first0 = null;
         const stretch = (from, to) => { const f = Math.min(from, to); if (first0 === null || f < first0) first0 = f; };
         const sx = live().find(x => x.k === 'check' && x.account === id && x.stmt && x.grp != null && x.grp === e.grp);
@@ -2973,6 +2987,15 @@ details summary { min-height: 44px; }
       else banks[id] = bankInfo(id);
     }
     res.heldByCheck = heldBy;
+    // [AMOUNT_HISTORY_PLAN 4] each spend or refund whose amount was corrected (or that was removed) after the check that
+    // first held it, split in two: what it was at the check counts on its own day, `after` on the check's day. Receipts
+    // lists the record in its own period at `atCheck` and the change as its own row in the check's period
+    res.splits = events.filter(e => e.was && e.was.length && heldAt.has(e.id) && (e.k === 'spend' || (e.k === 'in' && e.sub === 'refund')))
+      .map(e => { const h = heldAt.get(e.id), a0 = amountAt(e, h.key), last = e.was[e.was.length - 1];
+        const after = (e.gone ? 0 : e.a) - a0;
+        return { id: e.id, check: dayStr(h.day), atCheck: a0, after, more: Math.max(after, 0), less: Math.max(-after, 0), told: String(last.told).slice(0, 10), day: h.day, own: e.day }; })
+      .filter(x => x.after && x.day > x.own).map(({ day, own, ...x }) => x)
+      .sort((x, y) => (x.id < y.id ? -1 : x.id > y.id ? 1 : 0));
     // [W2] a card, loan or pay-later payment in another currency than its paying account is listed apart
     const otherOf = (id, from) => (acct[from] && cur(id) !== cur(from) ? { otherCur: true, currency: cur(id) } : { otherCur: false });
     for (const id in cards) for (const ci of cards[id].cardItems) items.push(Object.assign({ kind: 'card', acct: cards[id].payFrom, card: id, settled: false }, ci, otherOf(id, cards[id].payFrom)));
@@ -3190,7 +3213,10 @@ details summary { min-height: 44px; }
         const fromOpening = !byDay && (lastPay === null || lastPay <= openDay(moved ? sa : acctId));
         const perOf = lineId === 'free' ? fPer : (lineSrcs.find(x => x.id === lineId) || {}).per;
         const start = byDay ? monthShare(amount, perOf, moved ? sa : acctId) : fromOpening ? (atOpening != null ? atOpening : amount) : amount;
-        const inLine = e => lineOfSpend(e) === lineId && e.account && openEv[e.account] && !inside(e, openingOf(e.account), e.account) && (fromOpening || countDay(e) >= lp) && countDay(e) <= upTo;   // [CHECKGAP] told after its check: the check's day
+        const inDays = d => (fromOpening || d >= lp) && d <= upTo;
+        const inLine0 = e => lineOfSpend(e) === lineId && e.account && openEv[e.account] && !inside(e, openingOf(e.account), e.account);
+        const inLine = e => inLine0(e) && countParts(e).some(x => inDays(x.day));   // [CHECKGAP, AMOUNT_HISTORY] by the parts' days
+        const inSum = e => inLine0(e) && cur(e.account) === cur(acctId) ? countParts(e).filter(x => inDays(x.day)).reduce((t, x) => t + x.a, 0) : 0;
         const counts = e => inLine(e) && cur(e.account) === cur(acctId);   // [T5] only spends in the line's own currency
         if (!past) for (const e of live().filter(x => x.k === 'spend' && !isFeeRecord(x) && inLine(x) && cur(x.account) !== cur(acctId)))
           res.warnings.push({ account: e.account, code: 'spend_other_currency', line: lineId, event: e.id,
@@ -3205,8 +3231,9 @@ details summary { min-height: 44px; }
           if (cur(cid) !== cur(acctId)) continue;
           for (const f of cards[cid].fillers) for (const pt of f.parts) if ((fromOpening || dayNum(pt.from) >= lp) && dayNum(pt.from) <= upTo) filled += pt.amount;   // [CARDGAP] by part, as a bank's
         }
-        const spent = live().filter(e => e.k === 'spend' && !isFeeRecord(e) && counts(e)).reduce((t, e) => t + e.a, 0)
-          - live().filter(e => e.k === 'in' && e.sub === 'refund' && counts(e)).reduce((t, e) => t + e.a, 0) + filled;   // [O] a refund given back to its line
+        const kept = e => !e.gone || (e.was && e.was.length && heldAt.has(e.id));   // [AMOUNT_HISTORY] removed after its check still counts what it had then
+        const spent = events.filter(e => kept(e) && e.k === 'spend' && !isFeeRecord(e)).reduce((t, e) => t + inSum(e), 0)
+          - events.filter(e => kept(e) && e.k === 'in' && e.sub === 'refund').reduce((t, e) => t + inSum(e), 0) + filled;   // [O] a refund given back to its line
         if (lineId !== 'free') { partsOf[lineId] = { start, spent }; return win ? { start, left: start - spent } : start - spent; }
         const inPeriod = (e, id) => openEv[id] && !inside(e, openingOf(id), id) && (fromOpening || e.day >= lp) && e.day <= upTo;
         // [Q2, S5] a fee in one currency comes out of Free to spend unless its fee record names another place
@@ -8773,6 +8800,11 @@ const E3 = (() => {
         if (r.gone) throw new Bad('That was removed. Undo the removal first');
         fresh(list, r); mine.add(id);
         const before = {};
+        /* [AMOUNT_HISTORY_PLAN] an event's amount changed: the amount it had and this step's `told` (the device's own clock,
+           as checks are ordered) are kept in its `was`, so the engine counts the change with the bank check that held it.
+           An Undo writes `was` back itself (it is in its fields), so it adds no entry */
+        const amountMoved = list === 'events' && !('was' in fields) && (('a' in fields && fields.a !== r.a) || ('a2' in fields && fields.a2 !== r.a2));
+        if (amountMoved) { before.was = r.was === undefined ? null : clone(r.was); r.was = (r.was || []).concat([Object.assign({ a: r.a }, r.a2 != null ? { a2: r.a2 } : {}, { told: s.told })]); }
         for (const k of Object.keys(fields)) {
           if (k === 'id' || k === 'told' || k === 'at' || k === 'by' || k === 'gone' || k === 'goneBy') throw new Error('act3: ' + k + ' is not edited');
           before[k] = k in r ? clone(r[k]) : undefined;
@@ -8789,6 +8821,9 @@ const E3 = (() => {
         if (r.gone) return r;
         fresh(list, r); mine.add(id);
         const before = { at: r.at, by: r.by };
+        /* [AMOUNT_HISTORY_PLAN] removing an event is a correction to 0 at this step's `told`: the amount it had is kept in
+           `was`, so a removal after a bank check agrees with correcting it down; Undo puts `was` back as it was */
+        if (list === 'events') { before.was = r.was === undefined ? null : clone(r.was); r.was = (r.was || []).concat([Object.assign({ a: r.a }, r.a2 != null ? { a2: r.a2 } : {}, { told: s.told })]); }
         r.gone = s.day; r.goneBy = s.id; stamp(r);
         log.removed.push({ list, id, before });
         return r;
@@ -8803,10 +8838,11 @@ const E3 = (() => {
         log.edited.push({ list, id, before: { at: now.at, by: now.by } });
         return r;
       },
-      restore(list, id) {   // put back a removed record [H6]: both marks cleared, `at` moved
+      restore(list, id, removedBefore) {   // put back a removed record [H6]: both marks cleared, `at` moved
         const r = listOf(book, list).find(x => x && x.id === id);
         if (!r || !r.gone) return r;
         const before = { gone: r.gone, goneBy: r.goneBy, at: r.at, by: r.by };
+        if (removedBefore && 'was' in removedBefore) { before.was = r.was === undefined ? null : clone(r.was); if (removedBefore.was === undefined || removedBefore.was === null) delete r.was; else r.was = clone(removedBefore.was); }   // [AMOUNT_HISTORY_PLAN] the Undo of a removal takes back its `was` entry
         delete r.gone; delete r.goneBy; stamp(r);
         log.edited.push({ list, id, before });
         return r;
@@ -8988,7 +9024,7 @@ const E3 = (() => {
         for (const x of added) w.remove(x.list, x.id);
         for (const x of revived) w.putBack(x.list, x.id, x.before);
         for (const x of removed) {
-          if (recOf(x).goneBy === stepId) w.restore(x.list, x.id);
+          if (recOf(x).goneBy === stepId) w.restore(x.list, x.id, x.before);
         }
         for (const x of edited) {
           const back = {};
@@ -10367,9 +10403,23 @@ function rcGapLi3(g, yr) {
   const what = g.amount > 0 ? 'more went out than you logged' : 'less went out than you logged, so it comes off your spending';
   return `<li data-gap="${esc3(g.acct)}" data-check="${esc3(g.check)}"><span>Found at your bank check on ${esc3(day3(g.check, yr))}<br><span class="when">${esc3(when)}, ${esc3(E3.nameOf(g.acct))}, ${esc3(what)}, on ${esc3(rcForName3(g.on))}</span></span><span class="amt">${money3(g.amount, E3.curOf(g.acct))}</span></li>`;
 }
+/* [AMOUNT_HISTORY_PLAN 4] a spend or refund whose amount was changed (or that was removed) after the bank check that
+   held it: the engine counts what it was at the check in its own period and the change in the check's period
+   (res.splits), so the list shows the same: id -> the split */
+function rcSplits3() {
+  const out = {};
+  try { for (const x of E3.view(E3.today()).splits || []) out[x.id] = x; } catch (e) { /* no figures: nothing to split */ }
+  return out;
+}
+/* the change's own row, in the check's period: not a button (the record is changed in its own row) */
+function rcSplitLi3(e, s, yr) {
+  const back = e.k === 'in' ? s.more : s.less, amt = back ? 'back ' + money3(back, E3.curOf(e.acct)) : money3(e.k === 'in' ? s.less : s.more, E3.curOf(e.acct));
+  const what = e.gone ? 'Removed' : 'Changed';
+  return `<li data-split="${esc3(e.id)}" data-k="${esc3(e.k)}"><span>${what} on ${esc3(day3(s.told, yr))}, ${esc3(rcWhat3(e))}<br><span class="when">${esc3(day3(e.date, yr))}, ${esc3(E3.nameOf(e.acct))}${rcNote3(e) ? ', ' + esc3(rcNote3(e)) : ''}, it was ${esc3(money3(s.atCheck, E3.curOf(e.acct)))} at your bank check on ${esc3(day3(s.check, yr))}, so the change counts here</span></span><span class="amt${back ? ' a3-in-amt' : ''}">${amt}</span></li>`;
+}
 function rcList3() {
   const host = $('#rcList'); if (!host) return;
-  const held = rcHeld3();
+  const held = rcHeld3(), splits = rcSplits3();
   const q = RC3.search.trim().toLowerCase(), yr = E3.today().slice(0, 4);
   const per = q ? null : rcPeriod3();
   const text = e => [rcWhat3(e), E3.nameOf(e.acct), rcNote3(e), money3(e.a, E3.curOf(e.acct)), String(e.a), day3(e.date, 'any')].join(' ').toLowerCase();
@@ -10379,10 +10429,24 @@ function rcList3() {
     : per && per.start && per.end ? `<div class="a3-pernav"><button type="button" class="a3-btn" id="rcOlder"${per.older ? '' : ' disabled'}>Earlier</button><p class="a3-mid a3-per" data-fig="rc-period" data-start="${esc3(per.start)}" data-end="${esc3(per.end)}">${esc3(period3(per))}</p><button type="button" class="a3-btn" id="rcNewer"${per.newer ? '' : ' disabled'}>Later</button></div>${rcSpent3(per)}`
     : `<p class="a3-sub" data-fig="rc-period">Everything</p>`;
   const gaps = q ? [] : rcGaps3(per && per.start && per.end ? per : null);
+  /* [AMOUNT_HISTORY_PLAN 4] with a period shown and the check in another period: the record here at what it was at the
+     check, and the change listed in the check's period; searching, or both in one period, the record as it is now */
+  const inPer = d => !!(per && per.start && per.end && d >= per.start && d <= per.end);
+  const split = e => (!q && splits[e.id] && inPer(e.date) !== inPer(splits[e.id].check) ? splits[e.id] : null);
+  const gone = ((E3.book && E3.book.events) || []).filter(e => e && e.gone && splits[e.id] && split(e));
+  const changes = ((E3.book && E3.book.events) || []).filter(e => e && split(e) && inPer(splits[e.id].check));
   const items = rows.map(e => ({ date: e.date, e })).concat(gaps.map(g => ({ date: g.to, g })))
+    .concat(gone.filter(e => inPer(e.date)).map(e => ({ date: e.date, e })))
+    .concat(changes.map(e => ({ date: splits[e.id].check, c: e })))
     .sort((x, y) => (x.date !== y.date ? (x.date < y.date ? 1 : -1) : 0));
-  const rcLi3 = e => `<li data-rc="${esc3(e.id)}" data-k="${esc3(e.k)}"><button type="button" class="a3-rcrow" aria-label="Change ${esc3(rcWhat3(e))}, ${esc3(money3(e.a, E3.curOf(e.acct)))}"><span>${esc3(rcWhat3(e))}<br><span class="when">${esc3(day3(e.date, yr))}, ${esc3(E3.nameOf(e.acct))}${rcNote3(e) ? ', ' + esc3(rcNote3(e)) : ''}${held[e.id] ? `<br><span data-fig="rc-held">already in your bank figure of ${esc3(day3(held[e.id], yr))}</span>` : ''}</span></span><span class="amt${e.k === 'in' ? ' a3-in-amt' : ''}">${e.k === 'in' ? 'back ' : ''}${money3(e.a, E3.curOf(e.acct))}</span></button></li>`;
-  const li = items.map(x => (x.g ? rcGapLi3(x.g, yr) : rcLi3(x.e))).join('');
+  const rcLi3 = e => {
+    const s = split(e), shown = s ? s.atCheck : e.a, cur = E3.curOf(e.acct);
+    const was = s ? `<br><span data-fig="rc-split">${e.gone ? `removed on ${esc3(day3(s.told, yr))}` : `now ${esc3(money3(e.a, cur))}`}, as it was at your bank check on ${esc3(day3(s.check, yr))}. The change counts in that check's pay period</span>` : '';
+    const inner = `<span>${esc3(rcWhat3(e))}<br><span class="when">${esc3(day3(e.date, yr))}, ${esc3(E3.nameOf(e.acct))}${rcNote3(e) ? ', ' + esc3(rcNote3(e)) : ''}${held[e.id] ? `<br><span data-fig="rc-held">already in your bank figure of ${esc3(day3(held[e.id], yr))}</span>` : ''}${was}</span></span><span class="amt${e.k === 'in' ? ' a3-in-amt' : ''}">${e.k === 'in' ? 'back ' : ''}${money3(shown, cur)}</span>`;
+    return e.gone ? `<li data-split="${esc3(e.id)}" data-k="${esc3(e.k)}">${inner}</li>`
+      : `<li data-rc="${esc3(e.id)}" data-k="${esc3(e.k)}"><button type="button" class="a3-rcrow" aria-label="Change ${esc3(rcWhat3(e))}, ${esc3(money3(e.a, cur))}">${inner}</button></li>`;
+  };
+  const li = items.map(x => (x.g ? rcGapLi3(x.g, yr) : x.c ? rcSplitLi3(x.c, splits[x.c.id], yr) : rcLi3(x.e))).join('');
   const ahead = rcAhead3().filter(e => !q || text(e).includes(q));
   const toldDay = e => String(e.told || e.date).slice(0, 10);
   const aheadLi = e => `<li data-rcahead="${esc3(e.id)}" data-k="${esc3(e.k)}"><button type="button" class="a3-rcrow" aria-label="Open ${esc3(rcWhat3(e))}, ${esc3(money3(e.a, E3.curOf(e.acct)))}"><span>${esc3(rcWhat3(e))}<br><span class="when">${esc3(day3(e.date, 'any'))}, ${esc3(E3.nameOf(e.acct))}${e.date <= E3.today() ? ', logged when a device said it was ' + esc3(day3(toldDay(e), 'any')) : ''}</span></span><span class="amt">${money3(e.a, E3.curOf(e.acct))}</span></button></li>`;

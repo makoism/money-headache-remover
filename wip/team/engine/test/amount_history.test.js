@@ -70,19 +70,19 @@ t('in every order the records can arrive in', () => {
   }
 });
 // [AMOUNT_HISTORY_PLAN 4] the engine names each split so Receipts can list the record in its own period at its amount at
-// the check and the change as its own row in the check's period: { id, check, atCheck, after, told }
+// the check and the change as its own row in the check's period: { id, check, atCheck, after, more, less, told } (more and less: the change as a positive amount, for the words)
 t('res.splits: the correction after the 13 Dec check names 700 at the check and +6,300 after, changed on 14 Dec', () => {
   const { book } = life({ after: e => fix(e, 7000, T14) });
-  eq(LA.lookahead(book, '2026-12-14').splits, [{ id: 'lunch8', check: '2026-12-13', atCheck: 700, after: 6300, told: '2026-12-14' }]);
+  eq(LA.lookahead(book, '2026-12-14').splits, [{ id: 'lunch8', check: '2026-12-13', atCheck: 700, after: 6300, more: 6300, less: 0, told: '2026-12-14' }]);
 });
 t('res.splits: a removal after the check is a correction to 0 (-700); none before a correction or for one made before the check', () => {
   const rm = life({ after: e => { e.was = [{ a: 700, told: T14 }]; e.gone = '2026-12-14'; e.goneBy = 'stepx'; } }).book;
-  eq(LA.lookahead(rm, '2026-12-14').splits, [{ id: 'lunch8', check: '2026-12-13', atCheck: 700, after: -700, told: '2026-12-14' }]);
+  eq(LA.lookahead(rm, '2026-12-14').splits, [{ id: 'lunch8', check: '2026-12-13', atCheck: 700, after: -700, more: 0, less: 700, told: '2026-12-14' }]);
   eq(LA.lookahead(life().book, '2026-12-14').splits, []);
   eq(LA.lookahead(life({ before: e => fix(e, 7000, T9), bank13: 588000 }).book, '2026-12-14').splits, []);
 });
 t('res.splits: two corrections, 900 stood at the check, +6,100 after', () => {
   const { book } = life({ before: e => fix(e, 900, T9), bank13: 594100, after: e => fix(e, 7000, T14) });
-  eq(LA.lookahead(book, '2026-12-14').splits, [{ id: 'lunch8', check: '2026-12-13', atCheck: 900, after: 6100, told: '2026-12-14' }]);
+  eq(LA.lookahead(book, '2026-12-14').splits, [{ id: 'lunch8', check: '2026-12-13', atCheck: 900, after: 6100, more: 6100, less: 0, told: '2026-12-14' }]);
 });
 done('amount_history.test.js');
