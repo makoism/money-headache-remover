@@ -27,9 +27,9 @@ function plFreeNow3(book, day) {
   return ((book.plan || {}).shares || []).filter(s => plLive3(s) && s.free != null && (!s.from || s.from <= day))
     .sort((p, q) => ((p.from || '') < (q.from || '') ? -1 : (p.from || '') > (q.from || '') ? 1 : (p.at || '') < (q.at || '') ? -1 : (p.at || '') > (q.at || '') ? 1 : 0)).pop();
 }
-function plNoPay3(book, day) {
+function plNoPay3(book, day, r) {
   const S = BurrowEngine.schedules, n = BurrowEngine.dates.dayNum(day);
-  const lines = ((book.plan || {}).budgets || []).filter(l => plLive3(l) && !(l.ends && l.ends <= day)).map(l => ({ l, a: S.stepOn(l, n) })).filter(x => x.a)
+  const lines = ((book.plan || {}).budgets || []).filter(l => plLive3(l) && (!l.ends || BurrowEngine.lookahead.lineTakes(r, l.id, day)))   /* [coordinator 18] the engine's one rule */.map(l => ({ l, a: S.stepOn(l, n) })).filter(x => x.a)
     .map(({ l, a }) => plRow3(`data-line="${esc3(l.id)}"`, `${esc3(l.name)}<br><span class="when">Starts again each month</span>`, `<span data-fig="line-amount">${plFig3('plan.budgets.*.steps', a)}</span> <span class="when">a month</span>`));
   const fr = plFreeNow3(book, day);
   const free = fr && fr.free ? plRow3('data-line="free"', `Free to spend<br><span class="when">Starts again each month</span>`, `<span data-fig="free-amount">${plFig3('plan.shares.*.free', fr.free)}</span> <span class="when">a month</span>`) : '';
@@ -52,18 +52,20 @@ function drawPlan3() {
   const out = [];
   /* this pay period */
   const p = r.period;
-  if (!p) out.push(plNoPay3(book, day));
+  if (!p) out.push(plNoPay3(book, day, r));
   else {
     const lines = p.lines.filter(l => !(l.amount === 0 && l.left === 0)).map(l => {
       const rec = ((book.plan || {}).budgets || []).find(x => x.id === l.id) || {};
-      const ends = rec.ends ? `<br><span class="when">Ends after this pay period</span>` : '';
+      /* [coordinator 18, item 2; M7, M51] an ended line says what it still holds and until when, from the engine */
+      const ended = BurrowScreens.status.endedLeft(l, x => money3(x, home));
+      const ends = ended ? `<br><span class="when" data-fig="line-ends">${esc3(ended)}</span>` : rec.ends ? `<br><span class="when">Ends after this pay period</span>` : '';
       /* [QC F5, B2] one amount for the period, the one that counts now; the full amount only in the sentence under it */
       const cur = E3.home(), f = fmt3(cur, [l.amount, l.counts, l.spent, l.over]);
       const part = l.counts !== l.amount ? `<br><span class="when" data-fig="line-part">Only the part for the days left in this pay period counts now: ${f(l.counts)} of ${f(l.amount)}</span>` : '';
       const over = l.over ? `<br><span class="when a3-late" data-fig="line-over">Spent ${f(l.spent)} of ${f(l.counts)}: ${esc3(overWords3(l.name, f(l.over)))}</span>` : '';
       /* [NS-FIX 5] the part-period sentence gets the help piece's "?" (beside the row's button, never inside it) */
       const why = part ? `<div class="a3-helprow"><span class="when">Why only part?</span>${HELP3.button('lineShare')}${HELP3.text('lineShare')}</div>` : '';
-      return plRow3(`data-line="${esc3(l.id)}"`, `${esc3(l.name)}${ends}${part}${over}`, `<span data-fig="line-left">${plFig3('period.lines.*.left', l.left)}</span> <span class="when">left of <span data-fig="line-amount">${plFig3('period.lines.*.counts', l.counts)}</span></span>`, why);
+      return plRow3(`data-line="${esc3(l.id)}"`, `${esc3(rec.ends ? `${l.name} (ended)` : l.name)}${ends}${part}${over}`, `<span data-fig="line-left">${plFig3('period.lines.*.left', l.left)}</span> <span class="when">left of <span data-fig="line-amount">${plFig3('period.lines.*.counts', l.counts)}</span></span>`, why);
     });
     const fp = p.free && p.free.counts !== p.free.amount ? (f => `<br><span class="when" data-fig="free-part">Only the part for the days left in this pay period counts now: ${f(p.free.counts)} of ${f(p.free.amount)}</span>`)(fmt3(E3.home(), [p.free.counts, p.free.amount])) : '';
     const free = p.free ? plRow3('data-line="free"', `${esc3(label3('freeToSpendLeft'))}${fp}`, `<span data-fig="free-left">${plFig3('period.free.left', p.free.left)}</span> <span class="when">of <span data-fig="free-amount">${plFig3('period.free.counts', p.free.counts)}</span></span>`) : '';

@@ -5069,7 +5069,11 @@ details summary { min-height: 44px; }
     return deepFreeze(s);
   }
 
-  return { statusOf, capParts, warningText, laterText, laterLowText, moveText, WORDS, STALE_DAYS, OLD_DAYS };
+  /* [coordinator 18; M7, M51] endedLeft(line, fmt): an ended line that still takes spends says what it holds and until
+     when, from the engine's line (period or month: .left, .closes): "¥26,666 left until 10 Dec, then it ends"; '' for a
+     line still open. fmt(minor) writes an amount. One place: Plan, Receipts and the assistant read the same words. */
+  function endedLeft(l, fmt) { return l && l.closes ? `${fmt(l.left)} left until ${names.dayLabel(l.closes, false)}, then it ends` : ''; }
+  return { statusOf, capParts, endedLeft, warningText, laterText, laterLowText, moveText, WORDS, STALE_DAYS, OLD_DAYS };
 });
 /* One input behaviour for every box (DECISIONS_ROUND2 C, sweep2_repeats A11: "$1,212", "TripLisbon"). The first tap or
    click into a box selects what is in it, so what is typed next replaces the old value instead of adding to it. A
@@ -10106,7 +10110,9 @@ function rcFors3(keep) {
   try { r = E3.view(day); } catch (e) { r = null; }
   for (const l of ((b.plan || {}).budgets || []).filter(rcLive3)) {
     const takes = !l.ends || !r || BurrowEngine.lookahead.lineTakes(r, l.id, day);   // no answer: the door still checks
-    if (takes || l.id === keep) out.push({ v: 'line:' + l.id, name: l.ends ? `${l.name} (ended)` : l.name });
+    /* [coordinator 18, item 2] the short form says until when: "Food (ended, until 10 Dec)" (the day from the engine) */
+    const closes = takes && l.ends && r ? (BurrowEngine.lookahead.lineOf(r, l.id) || {}).closes : null;
+    if (takes || l.id === keep) out.push({ v: 'line:' + l.id, name: !l.ends ? l.name : closes ? `${l.name} (ended, until ${day3(closes)})` : `${l.name} (ended)` });
   }
   for (const g of (b.places || []).filter(rcLive3)) out.push({ v: 'place:' + g.id, name: g.name });
   return out;
@@ -10522,9 +10528,9 @@ function plFreeNow3(book, day) {
   return ((book.plan || {}).shares || []).filter(s => plLive3(s) && s.free != null && (!s.from || s.from <= day))
     .sort((p, q) => ((p.from || '') < (q.from || '') ? -1 : (p.from || '') > (q.from || '') ? 1 : (p.at || '') < (q.at || '') ? -1 : (p.at || '') > (q.at || '') ? 1 : 0)).pop();
 }
-function plNoPay3(book, day) {
+function plNoPay3(book, day, r) {
   const S = BurrowEngine.schedules, n = BurrowEngine.dates.dayNum(day);
-  const lines = ((book.plan || {}).budgets || []).filter(l => plLive3(l) && !(l.ends && l.ends <= day)).map(l => ({ l, a: S.stepOn(l, n) })).filter(x => x.a)
+  const lines = ((book.plan || {}).budgets || []).filter(l => plLive3(l) && (!l.ends || BurrowEngine.lookahead.lineTakes(r, l.id, day)))   /* [coordinator 18] the engine's one rule */.map(l => ({ l, a: S.stepOn(l, n) })).filter(x => x.a)
     .map(({ l, a }) => plRow3(`data-line="${esc3(l.id)}"`, `${esc3(l.name)}<br><span class="when">Starts again each month</span>`, `<span data-fig="line-amount">${plFig3('plan.budgets.*.steps', a)}</span> <span class="when">a month</span>`));
   const fr = plFreeNow3(book, day);
   const free = fr && fr.free ? plRow3('data-line="free"', `Free to spend<br><span class="when">Starts again each month</span>`, `<span data-fig="free-amount">${plFig3('plan.shares.*.free', fr.free)}</span> <span class="when">a month</span>`) : '';
@@ -10547,18 +10553,20 @@ function drawPlan3() {
   const out = [];
   /* this pay period */
   const p = r.period;
-  if (!p) out.push(plNoPay3(book, day));
+  if (!p) out.push(plNoPay3(book, day, r));
   else {
     const lines = p.lines.filter(l => !(l.amount === 0 && l.left === 0)).map(l => {
       const rec = ((book.plan || {}).budgets || []).find(x => x.id === l.id) || {};
-      const ends = rec.ends ? `<br><span class="when">Ends after this pay period</span>` : '';
+      /* [coordinator 18, item 2; M7, M51] an ended line says what it still holds and until when, from the engine */
+      const ended = BurrowScreens.status.endedLeft(l, x => money3(x, home));
+      const ends = ended ? `<br><span class="when" data-fig="line-ends">${esc3(ended)}</span>` : rec.ends ? `<br><span class="when">Ends after this pay period</span>` : '';
       /* [QC F5, B2] one amount for the period, the one that counts now; the full amount only in the sentence under it */
       const cur = E3.home(), f = fmt3(cur, [l.amount, l.counts, l.spent, l.over]);
       const part = l.counts !== l.amount ? `<br><span class="when" data-fig="line-part">Only the part for the days left in this pay period counts now: ${f(l.counts)} of ${f(l.amount)}</span>` : '';
       const over = l.over ? `<br><span class="when a3-late" data-fig="line-over">Spent ${f(l.spent)} of ${f(l.counts)}: ${esc3(overWords3(l.name, f(l.over)))}</span>` : '';
       /* [NS-FIX 5] the part-period sentence gets the help piece's "?" (beside the row's button, never inside it) */
       const why = part ? `<div class="a3-helprow"><span class="when">Why only part?</span>${HELP3.button('lineShare')}${HELP3.text('lineShare')}</div>` : '';
-      return plRow3(`data-line="${esc3(l.id)}"`, `${esc3(l.name)}${ends}${part}${over}`, `<span data-fig="line-left">${plFig3('period.lines.*.left', l.left)}</span> <span class="when">left of <span data-fig="line-amount">${plFig3('period.lines.*.counts', l.counts)}</span></span>`, why);
+      return plRow3(`data-line="${esc3(l.id)}"`, `${esc3(rec.ends ? `${l.name} (ended)` : l.name)}${ends}${part}${over}`, `<span data-fig="line-left">${plFig3('period.lines.*.left', l.left)}</span> <span class="when">left of <span data-fig="line-amount">${plFig3('period.lines.*.counts', l.counts)}</span></span>`, why);
     });
     const fp = p.free && p.free.counts !== p.free.amount ? (f => `<br><span class="when" data-fig="free-part">Only the part for the days left in this pay period counts now: ${f(p.free.counts)} of ${f(p.free.amount)}</span>`)(fmt3(E3.home(), [p.free.counts, p.free.amount])) : '';
     const free = p.free ? plRow3('data-line="free"', `${esc3(label3('freeToSpendLeft'))}${fp}`, `<span data-fig="free-left">${plFig3('period.free.left', p.free.left)}</span> <span class="when">of <span data-fig="free-amount">${plFig3('period.free.counts', p.free.counts)}</span></span>`) : '';
@@ -13231,7 +13239,7 @@ function stmt3Bar() {
     const lines = ((pm && pm.lines) || []).filter(l => LA.lineTakes(r, l.id, today));
     if (lines.length) {
       // [QC F5, B2] the amount that counts this period, the full amount a period beside it only when they differ
-      out.push(`Budget lines this ${perW} (ref | name | amount | left):\n` + lines.map((l, i) => { const ref = 'L' + (i + 1); refs[ref] = l.id; return `${ref} | ${l.name} | ${m(l.counts)}${l.counts !== l.amount ? ` (part of ${m(l.amount)} a ${p ? 'period' : 'month'}, for the days left)` : ''} | ${m(l.left)} left`; }).join('\n'));
+      out.push(`Budget lines this ${perW} (ref | name | amount | left):\n` + lines.map((l, i) => { const ref = 'L' + (i + 1); refs[ref] = l.id; return `${ref} | ${l.closes ? `${l.name} (ended)` : l.name} | ${m(l.counts)}${l.counts !== l.amount ? ` (part of ${m(l.amount)} a ${p ? 'period' : 'month'}, for the days left)` : ''} | ${ST.endedLeft(l, x => m(x)) || `${m(l.left)} left`}`; }).join('\n'));
     } else out.push('Budget lines: none yet.');
     /* [qc-foundation confirm, 26 Nov; M1, M3, M7] no fixed pay: Free to spend is the month's, as the headline reads it */
     const fr = pm && pm.free;
@@ -13484,6 +13492,7 @@ Actions:
   const PER = node ? require('../../engine/periods.js') : E.periods;
   const SM = node ? require('../../screens/money.js') : root.BurrowScreens.money;
   const SN = node ? require('../../screens/names.js') : root.BurrowScreens.names;
+  const ST = node ? require('../../screens/status.js') : root.BurrowScreens.status;
   const HELP = node ? require('../../screens/help.js') : root.BurrowScreens.help;
   const AQ = node ? require('./ask3_core.js') : root.ASK3C;
   const ANS = node ? require('./answers3.js') : root.ANSWERS3;
@@ -13874,7 +13883,7 @@ WHERE ON THE SCREENS (what you can't do yet; when asked, say where in one line):
     }
     if (what === 'pays' || what === 'bills') return figures(book, today).text.split('Pays and bills (ref | name | amount | when):\n')[1]?.split('\n').filter(l => l.startsWith(what === 'pays' ? 'P' : 'B')).join('\n') || 'None.';
     /* [F2] with no fixed pay the engine's month section, shaped like the period's (never "None." for a person with lines) */
-    if (what === 'lines') { const pm = r.period || r.month, per = r.period ? 'each pay' : 'each month'; return ((pm && pm.lines) || []).filter(l => LA.lineTakes(r, l.id, today)).map(l => `${back(l.id)} | ${l.name} | ${m(l.amount)} ${per} | ${m(l.left)} left`).join('\n') || 'None.'; }
+    if (what === 'lines') { const pm = r.period || r.month, per = r.period ? 'each pay' : 'each month'; return ((pm && pm.lines) || []).filter(l => LA.lineTakes(r, l.id, today)).map(l => `${back(l.id)} | ${l.closes ? `${l.name} (ended)` : l.name} | ${m(l.amount)} ${per} | ${ST.endedLeft(l, x => m(x)) || `${m(l.left)} left`}`).join('\n') || 'None.'; }
     if (what === 'goals') return (book.places || []).filter(g => live(g) && g.kind === 'goal').map(g => `${back(g.id)} | ${g.name} | ${m((r.places[g.id] || {}).kept || 0)} set aside of ${m(g.target)}`).join('\n') || 'None.';
     return 'Pick accounts, pays, bills, cards, lines, goals or spends.';
   }

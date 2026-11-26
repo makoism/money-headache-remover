@@ -71,7 +71,7 @@
     const lines = ((pm && pm.lines) || []).filter(l => LA.lineTakes(r, l.id, today));
     if (lines.length) {
       // [QC F5, B2] the amount that counts this period, the full amount a period beside it only when they differ
-      out.push(`Budget lines this ${perW} (ref | name | amount | left):\n` + lines.map((l, i) => { const ref = 'L' + (i + 1); refs[ref] = l.id; return `${ref} | ${l.name} | ${m(l.counts)}${l.counts !== l.amount ? ` (part of ${m(l.amount)} a ${p ? 'period' : 'month'}, for the days left)` : ''} | ${m(l.left)} left`; }).join('\n'));
+      out.push(`Budget lines this ${perW} (ref | name | amount | left):\n` + lines.map((l, i) => { const ref = 'L' + (i + 1); refs[ref] = l.id; return `${ref} | ${l.closes ? `${l.name} (ended)` : l.name} | ${m(l.counts)}${l.counts !== l.amount ? ` (part of ${m(l.amount)} a ${p ? 'period' : 'month'}, for the days left)` : ''} | ${ST.endedLeft(l, x => m(x)) || `${m(l.left)} left`}`; }).join('\n'));
     } else out.push('Budget lines: none yet.');
     /* [qc-foundation confirm, 26 Nov; M1, M3, M7] no fixed pay: Free to spend is the month's, as the headline reads it */
     const fr = pm && pm.free;

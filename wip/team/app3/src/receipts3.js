@@ -22,7 +22,9 @@ function rcFors3(keep) {
   try { r = E3.view(day); } catch (e) { r = null; }
   for (const l of ((b.plan || {}).budgets || []).filter(rcLive3)) {
     const takes = !l.ends || !r || BurrowEngine.lookahead.lineTakes(r, l.id, day);   // no answer: the door still checks
-    if (takes || l.id === keep) out.push({ v: 'line:' + l.id, name: l.ends ? `${l.name} (ended)` : l.name });
+    /* [coordinator 18, item 2] the short form says until when: "Food (ended, until 10 Dec)" (the day from the engine) */
+    const closes = takes && l.ends && r ? (BurrowEngine.lookahead.lineOf(r, l.id) || {}).closes : null;
+    if (takes || l.id === keep) out.push({ v: 'line:' + l.id, name: !l.ends ? l.name : closes ? `${l.name} (ended, until ${day3(closes)})` : `${l.name} (ended)` });
   }
   for (const g of (b.places || []).filter(rcLive3)) out.push({ v: 'place:' + g.id, name: g.name });
   return out;
