@@ -363,10 +363,68 @@
     const a = find(w, 'accounts', id);
     if (a.type !== 'loan') bad('Only a loan closes here');
     if (a.closed) bad(a.name + ' is already closed');
+    /* [LOAN_CHECK_PLAN 2c] a payment a loan check said had not left the bank yet (notYet) is ticked first, even at 0 */
+    const held = notYetLeft(w.book, w.today, id)[0];
+    if (held) bad(`Tick the ${SN3.dayLabel(held.payment_date, false)} payment at Check your bank first`);
     const o = LA.lookahead(w.book, w.today).owed[id];
     if (o && o.owedNow !== 0) bad(a.name + ' still owes money. Tick its last payment at Check your bank first');
     w.add('events', { k: 'check', acct: id, date: w.today, a: 0 });
     w.edit('accounts', id, { closed: w.today });
+    return id;
+  }
+
+  /* ---- [LOAN_CHECK_PLAN] "Still owed today" on a loan after setup: a `check` on the loan, written through the check-in
+     writer (engine/checkin.js) so the payments answered Yes are ticked in the same step (one grp, inside the check) and
+     the ones answered No ride on the check as `notYet` [rules 2, 3, 2d]. Nothing is worked out here: the engine reads it.
+     loanQuestions(book, today, id, day): the unticked payments of the loan landing on or before `day`, each with its
+     question; checkLoan refuses until each is answered 'yes' or 'no' in x.answers (by occurrence). ---- */
+  const CK = node ? require('../../engine/checkin.js') : root.BurrowEngine.checkin;
+  const loanOf = (w, id) => { const a = (w.book.accounts || []).find(y => live(y) && y.id === id); if (!a || a.type !== 'loan') bad('That is not a loan'); return a; };
+  const owedOn = (book, day, id) => LA.lookahead(book, day).owed[id] || null;
+  const dueBy = (o, day) => (o ? (o.overdue || []).concat(o.next ? [o.next] : []) : []).filter(x => x && x.payment_date <= day);
+  const loanChecks = (book, id) => (book.events || []).filter(e => live(e) && e.k === 'check' && e.acct === id && !e.stmt);
+  /* the unticked payments a live check of the loan holds as not gone out yet (`notYet`) */
+  function notYetLeft(book, today, id) {
+    const held = new Set([].concat(...loanChecks(book, id).map(e => e.notYet || [])));
+    return dueBy(owedOn(book, today, id), today).filter(x => held.has(x.item));
+  }
+  function loanQuestions(book, today, id, day) {
+    const a = (book.accounts || []).find(y => live(y) && y.id === id);
+    if (!a || a.type !== 'loan' || !DAY.test(day || '') || day > today) return [];
+    /* a payment ticked since (a record that settles it, dated after `day`) is not asked about */
+    const ticked = new Set(); for (const e of book.events || []) if (live(e)) for (const st of e.settles || []) if (st && st.s === id) ticked.add(id + '@' + st.due);
+    return dueBy(owedOn(book, day, id), day).filter(x => !ticked.has(x.item)).map(x => ({ occ: x.item, day: x.payment_date, amount: x.amount,
+      text: `Has the ${SN3.dayLabel(x.payment_date, false)} payment of ${SMF.format(x.amount, a.cur || G.homeOn(book, today))} left your bank?` }));
+  }
+  function checkLoan(w, id, x) {
+    x = x || {};
+    const a = loanOf(w, id);
+    if (a.closed) bad(a.name + ' is closed');
+    if (x.amount == null || x.amount === '') bad('Nothing changed');
+    if (!(Number.isInteger(x.amount) && x.amount >= 0)) bad('Type what is still owed, zero or more');
+    const day = x.date == null || x.date === '' ? w.today : x.date;
+    if (!DAY.test(day)) bad('Pick a day');
+    if (day > w.today) bad('A check cannot be after today. Pick today or a day before');
+    const open = (w.book.events || []).find(e => live(e) && e.k === 'open' && e.acct === id);
+    if (open && day < open.date) bad(`${a.name} was added on ${SN3.dayLabel(open.date, false)}. Pick that day or later`);
+    const last = loanChecks(w.book, id).map(e => e.date).sort().pop();
+    if (last && day < last) bad(`${a.name} was already checked on ${SN3.dayLabel(last, false)}. Pick that day or later`);
+    /* [rule 2e] a payment due by then, recorded as leaving after that day: the figure typed cannot say whether it holds it */
+    let late = null;
+    for (const e of w.book.events || []) if (live(e) && e.date > day) for (const st of e.settles || []) if (st && st.s === id && st.due <= day && (!late || e.date > late.date)) late = { due: st.due, date: e.date };
+    if (late) bad(`The ${SN3.dayLabel(late.due, false)} payment is recorded as leaving on ${SN3.dayLabel(late.date, false)}. Type what the lender shows today, or date this ${SN3.dayLabel(late.date, false)} or later`);
+    const o = owedOn(w.book, day, id);
+    if (o && o.owedNow === x.amount) bad('Nothing changed');
+    const yes = [], no = [], expected = {}, lands = {}, answers = x.answers || {};
+    for (const q of loanQuestions(w.book, w.today, id, day)) {
+      const ans = answers[q.occ];
+      if (ans === 'yes' || ans === true) { yes.push(q.occ); expected[q.occ] = q.amount; lands[q.occ] = q.day; }
+      else if (ans === 'no' || ans === false) no.push(q.occ);
+      else bad(q.text);
+    }
+    const out = CK.checkIn(w.book, { day, told: w.told, newId: w.newId, figures: { [id]: x.amount }, ticked: yes, expected, lands, unticked: [], notYet: no.length ? { [id]: no } : undefined });
+    for (const c of out.checkins) w.add('checkins', c);
+    for (const e of out.events) w.add('events', e);
     return id;
   }
 
@@ -610,7 +668,7 @@
     return id;
   }
 
-  const api = { addPay, addAccount, changeAccount, closeAccount, reopenAccount, removeAccount, payOff, setKeep, setCountry, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan };
+  const api = { addPay, addAccount, changeAccount, closeAccount, reopenAccount, removeAccount, payOff, setKeep, setCountry, linesEachPay, linesEachMonth, addLine, changeLine, endLine, setFree, addBill, changeBill, changeOnce, endBill, addGoal, changeGoal, setAside, takeOut, addLoan, addCard, changeOwed, closeLoan, checkLoan, loanQuestions };
   if (node) module.exports = api;
   else root.PLAN3W = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

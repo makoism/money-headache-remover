@@ -10,7 +10,7 @@
   'use strict';
   const DOOR_KINDS = ['add', 'change', 'end', 'remove'];
   /* PLAN3W exports that are not steps (they list what a pay change would ask about) */
-  const HELPERS = ['linesEachPay', 'linesEachMonth'];
+  const HELPERS = ['linesEachPay', 'linesEachMonth', 'loanQuestions'];
   /* writes that go through act3 without a PLAN3W step: the check-in writer, a statement import, setup's fill */
   const OTHER_ACTIONS = ['checkIn', 'statementsAdded', 'fill', 'undo'];
   const ROWS = [
@@ -31,7 +31,7 @@
       remove: { action: 'removeAccount', screen: 'Plan > the card > Remove this card', ai: 'remove_account' } },
     { kind: 'loan', types: ['loan'],
       add: { action: 'addLoan', screen: 'Plan > Add a loan', ai: 'add_loan' },
-      change: [{ action: 'changeOwed', screen: 'Plan > the loan', ai: 'change_loan' }, { what: 'still owed today', todo: 'later: an engine rule (a check on a loan), asked of the coordinator' }],
+      change: [{ action: 'changeOwed', screen: 'Plan > the loan', ai: 'change_loan' }, { what: 'still owed today', action: 'checkLoan', todo: 'later: LOAN_CHECK_PLAN doors (the Plan loan sheet, Check your bank, card_figure on a loan), being built on lane/controls-6' }],
       end: [{ action: 'closeLoan', screen: 'Plan > the loan > Close this loan', ai: 'close_account' }, { what: 'paid off early', action: 'payOff', screen: 'Plan > the loan > Pay it off now', ai: 'pay_off' }],
       remove: { action: 'removeAccount', screen: 'Plan > the loan > Remove this loan', ai: 'remove_account' } },
     { kind: 'pay-later', types: ['paylater'], add: { todo: 'stage 2' } },

@@ -6,7 +6,7 @@
 const path = require('path'), fs = require('fs');
 const E = path.join(__dirname, '../../engine/');
 const L = require(E + 'lookahead.js'), I = require(E + 'ids.js'), PE = require(E + 'periods.js');
-const A3 = require('../src/act3.js'), W = require('../src/plan3_write.js');
+const A3 = require('../src/act3.js'), W = require('../src/plan3_write.js'), SMF = require('../../screens/money.js');
 let DAY = '2026-11-25';
 let bad = 0, n = 0;
 const t = async (name, fn) => { n++; try { await fn(); console.log('PASS ' + name); } catch (e) { bad++; console.log('FAIL ' + name + ': ' + String(e && e.stack || e).split('\n').slice(0, 3).join(' ')); } };
@@ -390,6 +390,80 @@ const stamped = (r, step) => { ok(I.isOrdinary(r.id), 'ordinary id ' + r.id); eq
     ok(!v.dueBeforeNextPay.items.some(o => o.item.startsWith(id + '@')), 'nothing more is due');
     ok(!v.warnings.some(w => w.code === 'reopened'), 'not reopened');
     DAY = '2026-11-25';
+  });
+  /* ---- [LOAN_CHECK_PLAN] "Still owed today" on a loan after setup: Kenji's car loan, 900,000 from 25 Nov, 30,000 on the
+     27th from the main bank (no weekend shift), 27 Nov and 27 Dec ticked on their days ---- */
+  const CKE = require(E + 'checkin.js');
+  async function kenji() {
+    DAY = '2026-11-25';
+    const h = setup();
+    ok((await h.go('addLoan', { name: 'Car loan', owed: 900000, amount: 30000, payDay: 27, shift: 'none' })).ok);
+    h.loan = h.book.accounts.slice(-1)[0].id;
+    h.occ = due => h.loan + '@' + due;
+    h.ci = async (day, x) => { DAY = day; const out = CKE.checkIn(h.book, Object.assign({ day, told: day + 'T12:00+09:00', newId: I.idMaker('p3wrtd', Math.random), figures: {}, ticked: [], unticked: [], expected: {} }, x)); const r = await h.A.addRecords('Check your bank', out); ok(r.ok, JSON.stringify(r)); return r; };
+    h.tick = (day, due) => h.ci(day, { ticked: [h.occ(due)], expected: { [h.occ(due)]: 30000 }, lands: { [h.occ(due)]: due } });
+    await h.tick('2026-11-27', '2026-11-27'); await h.tick('2026-12-27', '2026-12-27');
+    h.owed = () => view(h.book).owed[h.loan];
+    h.checkLoan = (x, label) => h.A.run('checkLoan', w => W.checkLoan(w, h.loan, x));
+    return h;
+  }
+  const tk = (name, fn) => t(name, async () => { try { await fn(); } finally { DAY = '2026-11-25'; } });
+  await tk('checkLoan refuses with what to do next: not a loan, before its opening, after today, before a check it already has, closed; empty or the same figure is "Nothing changed"', async () => {
+    const h = await kenji(); DAY = '2027-01-10';
+    const said = async (id, x) => { const r = await h.A.run('checkLoan', w => W.checkLoan(w, id, x)); ok(!r.ok && r.why === 'bad', JSON.stringify(r)); return r.text; };
+    eq(await said(BANK, { amount: 5000 }), 'That is not a loan');
+    eq(await said(h.loan, { amount: 812400, date: '2026-11-20' }), 'Car loan was added on 25 Nov. Pick that day or later');
+    eq(await said(h.loan, { amount: 812400, date: '2027-01-11' }), 'A check cannot be after today. Pick today or a day before');
+    eq(await said(h.loan, {}), 'Nothing changed');
+    eq(await said(h.loan, { amount: 840000 }), 'Nothing changed');
+    ok((await h.checkLoan({ amount: 845000, date: '2027-01-05' })).ok);
+    eq(await said(h.loan, { amount: 846000, date: '2027-01-03' }), 'Car loan was already checked on 5 Jan. Pick that day or later');
+    for (const a of [-1, 12.5, 'lots']) eq(await said(h.loan, { amount: a }), 'Type what is still owed, zero or more');
+    h.book.accounts.find(a => a.id === h.loan).closed = '2027-01-10';
+    eq(await said(h.loan, { amount: 800000 }), 'Car loan is closed');
+  });
+  await tk('checkLoan asks about each unticked payment due on or before its day; Yes ticks it in the same step (one grp with the check); Undo takes both back', async () => {
+    const h = await kenji(); DAY = '2027-02-03';
+    let r = await h.checkLoan({ amount: 812400 });
+    ok(!r.ok && r.text === 'Has the 27 Jan payment of ' + SMF.format(30000, 'JPY') + ' left your bank?', r.text);
+    eq(W.loanQuestions(h.book, DAY, h.loan, DAY).map(q => [q.occ, q.day, q.amount, q.text]), [[h.occ('2027-01-27'), '2027-01-27', 30000, 'Has the 27 Jan payment of ' + SMF.format(30000, 'JPY') + ' left your bank?']]);
+    const before = JSON.stringify(h.book.events);
+    r = await h.checkLoan({ amount: 812400, answers: { [h.occ('2027-01-27')]: 'yes' } }); ok(r.ok, JSON.stringify(r));
+    const chk = h.book.events.find(e => e.k === 'check' && e.acct === h.loan && e.date === DAY), tick = h.book.events.find(e => e.id === 'set:' + h.occ('2027-01-27'));
+    ok(chk && tick && chk.grp === tick.grp && !chk.notYet, JSON.stringify([chk, tick]));
+    ok(h.book.checkins.some(c => c.id === chk.grp && c.figures.some(f => f.check === chk.id)), 'one check-in record names the check');
+    eq([chk.a, tick.k, tick.acct2, tick.a], [812400, 'repay', h.loan, 30000]);
+    eq([h.owed().owedNow, h.owed().overdue.length, h.owed().next.payment_date], [812400, 0, '2027-02-27']);
+    ok((await h.A.undo(r.step.id)).ok);
+    eq(h.owed().owedNow, 840000, 'Undo brings back the walk from the opening');
+    ok(h.book.events.filter(e => e.grp === chk.grp).every(e => e.gone), 'the check and the tick are both marked gone, nothing deleted');
+    eq(h.book.events.length, JSON.parse(before).length + 2);
+  });
+  await tk('No: the check carries notYet; the payment stays to tick; closeLoan is refused until it is ticked, even at 0', async () => {
+    const h = await kenji(); DAY = '2027-02-03';
+    const r = await h.checkLoan({ amount: 0, answers: { [h.occ('2027-01-27')]: 'no' } }); ok(r.ok, JSON.stringify(r));
+    const chk = h.book.events.find(e => e.k === 'check' && e.acct === h.loan && e.date === DAY);
+    eq(chk.notYet, [h.occ('2027-01-27')]);
+    ok(!h.book.events.some(e => e.id === 'set:' + h.occ('2027-01-27') && !e.gone), 'nothing ticked');
+    eq(h.owed().overdue.map(o => o.payment_date), ['2027-01-27']);
+    const z = await h.go('closeLoan', h.loan); ok(!z.ok && z.text === 'Tick the 27 Jan payment at Check your bank first', z.text);
+    await h.tick('2027-02-05', '2027-01-27');
+    const y = await h.go('closeLoan', h.loan); ok(y.text !== z.text, 'ticked, that refusal is gone: ' + y.text);
+  });
+  await tk('rule 2e, Kenji book 4: a check dated before the recorded day of a tick is refused with words built from the data; dated that day or today it is taken, owed counted once', async () => {
+    const h = await kenji();
+    await h.ci('2027-02-04', { figures: { [BANK]: 500000 } });              // the bank checked with 27 Jan unticked
+    await h.tick('2027-02-08', '2027-01-27');   // dated 5 Feb by landedFrom (the day after the bank's check)
+    eq(h.book.events.find(e => e.id === 'set:' + h.occ('2027-01-27')).date, '2027-02-05');
+    DAY = '2027-02-09';
+    const r = await h.checkLoan({ amount: 812400, date: '2027-02-03' });
+    ok(!r.ok && r.text === 'The 27 Jan payment is recorded as leaving on 5 Feb. Type what the lender shows today, or date this 5 Feb or later', r.text);
+    eq(W.loanQuestions(h.book, DAY, h.loan, '2027-02-03'), [], 'a ticked payment is not asked about');
+    let y = await h.checkLoan({ amount: 812400, date: '2027-02-05' }); ok(y.ok, JSON.stringify(y));
+    eq(h.owed().owedNow, 812400, 'the 5 Feb tick is inside the 5 Feb check: owed once');
+    ok((await h.A.undo(y.step.id)).ok);
+    y = await h.checkLoan({ amount: 812400 }); ok(y.ok, JSON.stringify(y));
+    eq([h.owed().owedNow, h.owed().overdue.length], [812400, 0], 'dated today: owed once');
   });
   await t('Undo of a plan step marks what it added gone; the period no longer shows it', async () => {
     const h = setup();

@@ -273,7 +273,7 @@
       if (!by) by = String(id).split('-')[0];
       const s = { id, label, at: nowAt(), by, told: o.told(), day: o.today(), newId: o.newId };
       const w = writer(book, s, guard && guard.seen);
-      w.today = s.day;
+      w.today = s.day; w.told = s.told; w.newId = s.newId;   // a step that builds records through another writer (a loan check through the check-in writer)
       const out = fn(w);
       if (!w.log.added.length && !w.log.edited.length && !w.log.removed.length && !w.log.revived.length) throw new Bad('Nothing changed');
       if (o.check && !dry) {
