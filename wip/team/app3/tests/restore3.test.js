@@ -279,6 +279,24 @@ const shown = c => S.canon(Object.assign(Object.fromEntries(LISTS.map(k => [k, (
     ck('nothing here yet: everything in the copy counts', Bk.since(null, from).n === ['accounts', 'schedules', 'events'].reduce((a, k) => a + from[k].filter(r => !r.gone).length, 0) + 3, JSON.stringify(Bk.since(null, from)));
   }
 
+  /* ---- [whichdoor's WATCH, coordinator 16] a restore of a backup that lacks a settings item the engine reads (home.mode,
+     home.country, home.main) set after the backup: the item is saved marked gone, and every reader must then read it as
+     not set, the same as the backup (the whichdoor marker rule: never a value the person's chosen copy does not hold). ---- */
+  {
+    const L = require('../../engine/ledger.js');
+    const now = clone(BOOK);
+    now.home = Object.assign({}, now.home, { mode: { v: 'wallet', at: '2026-12-03T09:00:00.000+09:00', by: 'dsk001' } });
+    const file = clone(BOOK); delete file.home.mode;
+    const out = Bk.restamp(file, now, { now: '2026-12-07T10:00:00.000+09:00', by: 'dsk001', day: '2026-12-07' });
+    ck('restore: home.mode set after the backup is kept marked gone', !!out.home.mode && !!out.home.mode.gone, JSON.stringify(out.home.mode));
+    ck('restore: every reader reads home.mode as the backup has it (not set), never the gone value', L.fieldValue(out.home.mode) === L.fieldValue(file.home.mode), JSON.stringify(L.fieldValue(out.home.mode)));
+    for (const k of ['country', 'main']) {
+      const f2 = clone(BOOK); delete f2.home[k];
+      const o2 = Bk.restamp(f2, clone(BOOK), { now: '2026-12-07T10:00:00.000+09:00', by: 'dsk001', day: '2026-12-07' });
+      ck('restore: a backup with no home.' + k + ' reads as not set after the restore', L.fieldValue(o2.home[k]) == null, JSON.stringify(o2.home[k]));
+    }
+  }
+
   console.log(bad ? `restore3: ${bad} FAIL of ${n}` : `restore3: ALL PASS (${n})`);
   process.exit(bad ? 1 : 0);
 })().catch(e => { console.log('FAIL crashed ' + e.stack); process.exit(1); });
